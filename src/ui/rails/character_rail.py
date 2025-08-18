@@ -109,7 +109,7 @@ def delete_character(character, page: ft.Page):
     def del_char(character):
         dlg.open = False
         page.update()
-        user.active_story.delete_object_from_story(character)
+        user.active_story.delete_object(character)
         reload_character_rail(page)
         render_widgets(page)
         page.open(

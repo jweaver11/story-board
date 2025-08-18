@@ -21,8 +21,25 @@ from models.settings import Settings
 def main(page: ft.Page):
 
     # User file loads the user or creates them if they don't exist on program start
-
- 
+    
+    # Load any existing stories on startup
+    story_names = user.get_all_story_names()
+    for story_name in story_names:
+        if story_name not in user.stories:
+            user.load_existing_story(story_name)
+    
+    # Ensure we have an active story
+    if not user.active_story:
+        if "default_story" in user.stories:
+            user.active_story = user.stories["default_story"]
+        else:
+            # Create default story if it doesn't exist
+            user.create_new_story("default_story")
+            user.active_story = user.stories["default_story"]
+    
+    # Recreate character objects for all loaded stories now that we have page reference
+    for story in user.stories.values():
+        story.recreate_character_objects(page)
     
     # Checks if our user settings exist. This will only run if the user is newly created
     # Otherwise, when the user loads in, their settings will load as well

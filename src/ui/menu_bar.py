@@ -3,6 +3,7 @@ import flet as ft
 from models.user import user
 from handlers.render_widgets import remove_drag_targets
 from handlers.render_widgets import render_widgets
+from ui.story_manager import create_new_story_dialog, create_load_story_dialog, save_current_story
 
 def create_menu_bar(page: ft.Page):
     
@@ -14,9 +15,19 @@ def create_menu_bar(page: ft.Page):
         )
         page.update()
 
+    def handle_new_story_click(e):
+        """Handle New Story menu item click"""
+        dialog = create_new_story_dialog(page)
+        page.open(dialog)
+
+    def handle_save_story_click(e):
+        """Handle Save Story menu item click"""
+        save_current_story(page)
+
     def handle_file_open_click(e):
-        page.route = "/welcome"
-        page.update()
+        """Handle Open Story menu item click"""
+        dialog = create_load_story_dialog(page)
+        page.open(dialog)
 
 
     # Handlers called automatically for submenu events
@@ -64,43 +75,43 @@ def create_menu_bar(page: ft.Page):
                         content=ft.Text("New", weight=ft.FontWeight.BOLD),
                         leading=ft.Icon(ft.Icons.ADD_CIRCLE_ROUNDED,),
                         style=menubar_style,
-                        on_click=lambda e: print("New Story Clicked"),
+                        on_click=handle_new_story_click,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Save", weight=ft.FontWeight.BOLD),
-                        leading=ft.Icon(ft.Icons.INFO),
+                        leading=ft.Icon(ft.Icons.SAVE),
                         style=menubar_style,
-                        on_click=handle_menu_item_click,
+                        on_click=handle_save_story_click,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Save as", weight=ft.FontWeight.BOLD),
-                        leading=ft.Icon(ft.Icons.SAVE),
+                        leading=ft.Icon(ft.Icons.SAVE_AS),
                         style=menubar_style,
                         on_click=handle_menu_item_click,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Open", weight=ft.FontWeight.BOLD),
-                        leading=ft.Icon(ft.Icons.CLOSE),
+                        leading=ft.Icon(ft.Icons.FOLDER_OPEN),
                         style=menubar_style,
                         on_click=handle_file_open_click,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Import", weight=ft.FontWeight.BOLD),
-                        leading=ft.Icon(ft.Icons.CLOSE),
+                        leading=ft.Icon(ft.Icons.UPLOAD_FILE),
                         style=menubar_style,
-                        on_click=handle_file_open_click,
+                        on_click=handle_menu_item_click,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Export", weight=ft.FontWeight.BOLD),
-                        leading=ft.Icon(ft.Icons.CLOSE),
+                        leading=ft.Icon(ft.Icons.DOWNLOAD),
                         style=menubar_style,
-                        on_click=handle_file_open_click,
+                        on_click=handle_menu_item_click,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Quit", weight=ft.FontWeight.BOLD),
-                        leading=ft.Icon(ft.Icons.CLOSE),
+                        leading=ft.Icon(ft.Icons.EXIT_TO_APP),
                         style=menubar_style,
-                        on_click=handle_menu_item_click,
+                        on_click=lambda e: page.window.close(),
                     ),
                 ],
             ),
