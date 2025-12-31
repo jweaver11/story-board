@@ -229,10 +229,12 @@ class Content_Rail(Rail):
         
 
         # Gesture detector to put on top of stack on the rail to pop open menus on right click
-        gd = ft.GestureDetector(
+        menu_gesture_detector = ft.GestureDetector(
+            content=dt,
             expand=True,
+            on_hover=self.on_hovers,
             on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
-            content=dt
+            hover_interval=20,
         )
 
         self.content = ft.Column(
@@ -241,7 +243,7 @@ class Content_Rail(Rail):
             controls=[
                 header,
                 ft.Divider(),
-                gd
+                menu_gesture_detector
             ]
         )
         #self.content = content

@@ -318,14 +318,15 @@ class Timelines_Rail(Rail):
         # Finally, add our new item textfield at the bottom
         content.controls.append(self.new_item_textfield)
 
-        
+    
 
         # Gesture detector to put on top of stack on the rail to pop open menus on right click
-        gd = ft.GestureDetector(
-            expand=True,
-            on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
+        menu_gesture_detector = ft.GestureDetector(
             content=content,
-            #on_tap=lambda e: self.refresh_buttons(no_active_dropdown=True)
+            expand=True,
+            on_hover=self.on_hovers,
+            on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
+            hover_interval=20,
         )
 
         # Set our content to be a column
@@ -335,7 +336,7 @@ class Timelines_Rail(Rail):
             controls=[
                 header,
                 ft.Divider(),
-                gd
+                menu_gesture_detector
             ]
         )
 

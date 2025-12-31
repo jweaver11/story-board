@@ -450,11 +450,7 @@ class Canvas_Rail(Rail):
 
             ]
         )
-        ft.Paint()
-
-
-        content.controls.append(self.new_item_textfield)
-
+        
 
         # Build the content of our rail
         self.content = ft.Column(
@@ -463,7 +459,7 @@ class Canvas_Rail(Rail):
             controls=[
                 header,
                 ft.Divider(),
-                content
+                content,
                 # Add more controls here as needed
             ]
         )

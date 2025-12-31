@@ -306,6 +306,15 @@ class Rail(ft.Container):
         ''' Refreshes the buttons at top of the rail '''
         pass
 
+    # Called every time the mouse moves over the workspace
+    def on_hovers(self, e):
+        ''' Stores our mouse positioning so we know where to open menus '''
+
+        
+
+        self.story.mouse_x = e.global_x 
+        self.story.mouse_y = e.global_y 
+
     
 
     # Called when changes occure that require rail to be reloaded. Should be overwritten by children

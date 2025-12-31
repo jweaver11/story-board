@@ -932,19 +932,19 @@ class Story(ft.View):
     def open_menu(self, menu_options: list):
         ''' Pops open our menu options when right clicking an object on a rail '''
 
+        if len(menu_options) == 0:
+            return
+
         page_width = self.p.width
         page_height = self.p.height
-        #print(f"Page width: {page_width}, height: {page_height}")
-        #print(f"Mouse X: {self.mouse_x}, Mouse Y: {self.mouse_y}")
 
-        # If mouse x is within 120 pixels of width, move it left 120 pixels
-        # If mouse y is within 120 pixels move it up 120 pixels
+        # Adjust mouse positions if the menu would go off screen
         if self.mouse_x + 120 > page_width:
             self.mouse_x -= 120
-            print(f"Adjusted Mouse X: {self.mouse_x}")
+            #print(f"Adjusted Mouse X: {self.mouse_x}")
         if self.mouse_y + 90 > page_height:
             self.mouse_y -= 50
-            print(f"Adjusted Mouse Y: {self.mouse_y}")
+            #print(f"Adjusted Mouse Y: {self.mouse_y}")
 
         # Our container that contains a column of our options. Need to use container for positioning
         menu = ft.Container(
@@ -1039,19 +1039,7 @@ class Story(ft.View):
             drag_interval=10,
         )
 
-        # Called when mouse exits workspace area
-        def exit_workspace():
-            ''' Makes sure our drag targets are removed when mouse leaves workspace '''
-            self.workspace.remove_drag_targets()
-           
-
-        # Add gd with on_enter
-        # is_dragging, drag_completed
-        workspace_gd = ft.GestureDetector(
-            content=self.workspace,
-            expand=True,
-            on_exit=lambda e: exit_workspace(), 
-        )
+        
 
 
         # Save our 2 rails, divers, and our workspace container in a row
@@ -1066,26 +1054,13 @@ class Story(ft.View):
                 self.active_rail,    # Rail for the selected workspace
                 active_rail_resizer,   # Divider between rail and work area
                 
-                workspace_gd,    # Work area for pagelets
+                self.workspace,    # Work area for pagelets
             ],
         )
 
-        # Our gesture detector that holds our row, and allows us to track our mouse position
-        gd = ft.GestureDetector(
-            content=row,
-            expand=True,
-            on_hover=self.on_hover,
-            hover_interval=20,
-        )
-
         # Views render like columns, so we add elements top-down
-        self.controls = [self.menubar, gd]
+        self.controls = [self.menubar, row]
 
         page.update()
 
-    # Called every time the mouse moves over the workspace
-    def on_hover(self, e):
-        ''' Stores our mouse positioning so we know where to open menus '''
-
-        self.mouse_x = e.local_x 
-        self.mouse_y = e.local_y
+    
