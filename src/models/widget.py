@@ -50,9 +50,9 @@ class Widget(ft.Container):
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
             {
-                'key': return_safe_name(f"{self.directory_path}\\{self.title}"),  # Unique key for this widget based on directory path + title
+                'key': f"{self.directory_path}\\{return_safe_name(self.title)}_tag",  # Unique key for this widget based on directory path + title
                 'title': self.title,                            # Title of our widget  
-                'directory_path': return_safe_name(self.directory_path),          # Directory path to the file this widget's data is stored in
+                'directory_path': self.directory_path,          # Directory path to the file this widget's data is stored in
                 'tag': str,                                     # Tag to identify what type of widget this is
                 'pin_location': "main" if data is None else data.get('pin_location', "main"),       # Pin location this widget is rendered in the workspace (main, left, right, top, or bottom)
                 'index': int,                                   # Index of this widget in its pin location
@@ -101,8 +101,15 @@ class Widget(ft.Container):
 
         try:
 
-            # Set our file path
-            file_path = os.path.join(self.directory_path, f"{self.title}.json")
+            # Protect on initialization from creating two files
+            if self.data.get('tag', '') == '':
+                return
+            
+            # Update our key
+            self.data['key'] = f"{self.directory_path}\\{self.title}_{self.data.get('tag', '')}"
+            
+            # File path to save our json data to
+            file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json")
 
             # Create the directory if it doesn't exist. Catches errors from users deleting folders
             os.makedirs(self.directory_path, exist_ok=True)
@@ -113,7 +120,7 @@ class Widget(ft.Container):
         
         # Handle errors
         except Exception as e:
-            print(f"Error saving widget to {self.data.get('file_path', 'Could not retrieve path')}: {e}") 
+            print(f"Error saving widget to {file_path}: {e}") 
             print("Data that failed to save: ", self.data)
 
     # Called for little data changes

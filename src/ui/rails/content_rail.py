@@ -61,6 +61,30 @@ class Content_Rail(Rail):
         self.new_item_textfield.visible = True
         self.story.close_menu() 
 
+    # New characters
+    def new_character_clicked(self, e):
+        self.new_item_textfield.hint_text = "Character Name"
+        self.new_item_textfield.data = "character"
+        self.new_item_textfield.value = None
+        self.new_item_textfield.visible = True
+        self.story.close_menu()
+
+    # New timelines
+    def new_timeline_clicked(self, e):
+        self.new_item_textfield.hint_text = "Timeline Name"
+        self.new_item_textfield.data = "timeline"
+        self.new_item_textfield.value = None
+        self.new_item_textfield.visible = True
+        self.story.close_menu()
+
+    # New maps
+    def new_map_clicked(self, e):
+        self.new_item_textfield.hint_text = "Map Name"
+        self.new_item_textfield.data = "map"
+        self.new_item_textfield.value = None
+        self.new_item_textfield.visible = True
+        self.story.close_menu()
+
 
     # Called to return our list of menu options for the content rail
     def get_menu_options(self) -> list[ft.Control]:
@@ -164,7 +188,19 @@ class Content_Rail(Rail):
                             on_click=self.new_canvas_clicked
                         ),
                         ft.PopupMenuItem(
-                            text="Note", icon=ft.Icons.NOTE_ALT_OUTLINED,
+                            "Note", ft.Icons.NOTE_ALT_OUTLINED,
+                            on_click=self.new_note_clicked
+                        ),
+                        ft.PopupMenuItem(
+                            text="Character", icon=ft.Icons.PERSON_OUTLINED,
+                            on_click=self.new_note_clicked
+                        ),  
+                        ft.PopupMenuItem(
+                            text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
+                            on_click=self.new_note_clicked
+                        ),
+                        ft.PopupMenuItem(
+                            text="Map", icon=ft.Icons.MAP_OUTLINED,
                             on_click=self.new_note_clicked
                         ),
                     ]

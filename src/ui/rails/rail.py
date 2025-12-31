@@ -8,6 +8,7 @@ import json
 from models.views.story import Story
 from models.widgets.timeline import Timeline
 from styles.tree_view.tree_view_directory import Tree_View_Directory
+from handlers.check_widget_unique import check_widget_unique
 
 
 class Rail(ft.Container):
@@ -131,72 +132,28 @@ class Rail(ft.Container):
         tag = e.control.data
 
         # Generate our new key to compare. Requires normalization
-        nk = self.directory_path + "\\" + title
-        new_key = os.path.normcase(os.path.normpath(nk))
+        nk = self.directory_path + "\\" + title + "_" + e.control.data
+        new_key = os.path.normpath(nk)
 
-        title = title.rstrip() if title is not None else ""
-
-        # Check all our folders and compare them to the new key
         if tag == "category":
+            new_key = os.path.normcase(os.path.normpath(self.directory_path + "\\" + title))
+            new_key = new_key.rstrip()  # Remove trailing spaces for folder names
             for key in self.story.data['folders'].keys():
                 
                 # Path comparisons require normalization
                 if os.path.normcase(os.path.normpath(key)) == new_key:
                     self.item_is_unique = False
-                
-        # Check our chapters
-        elif tag == "chapter":
-            for key in self.story.chapters.keys():
-                if os.path.normcase(os.path.normpath(key)) == new_key:
-                    self.item_is_unique = False
+                    error_text = "Category must be unique."
+                    break
 
-        # Check our notes
-        elif tag == "note":
-            for key in self.story.notes.keys():
-                if os.path.normcase(os.path.normpath(key)) == new_key:
-                    self.item_is_unique = False
+        # Not a category, so we check the widget
+        else:
+            error_text, self.item_is_unique = check_widget_unique(self.story, new_key)
 
-        # Check our canvass
-        elif tag == "canvas":
-            for key in self.story.canvases.keys():
-                if os.path.normcase(os.path.normpath(key)) == new_key:
-                    self.item_is_unique = False
-
-        # Check our characters
-        elif tag == "character":
-            for key in self.story.characters.keys():
-                if os.path.normcase(os.path.normpath(key)) == new_key:
-                    self.item_is_unique = False
-
-        # Check our timelines
-        elif tag == "timeline":
-            for key in self.story.timelines.keys():
-                if os.path.normcase(os.path.normpath(key)) == new_key:
-                    self.item_is_unique = False
-
-        # Check our plot points
-        elif tag == "plot_point":
-            if self.timeline is not None:
-                for key in self.timeline.plot_points.keys():
-                    if key == title.capitalize():
-                        self.item_is_unique = False
-
-        # Check our arcs
-        elif tag == "arc":
-            if self.timeline is not None:
-                for key in self.timeline.arcs.keys():
-                    if key == title.capitalize():
-                        self.item_is_unique = False
-
-        # Check our maps
-        elif tag == "map":
-            for key in self.story.maps.keys():
-                if os.path.normcase(os.path.normpath(key)) == new_key:
-                    self.item_is_unique = False
-                
         # If we are NOT unique, show our error text
         if not self.item_is_unique:
-            e.control.error_text = "Title must be unique"
+            #print("Setting error text:", error_text)
+            e.control.error_text = error_text
 
         # Otherwise remove our error text
         else:

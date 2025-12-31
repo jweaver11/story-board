@@ -97,6 +97,7 @@ def load_directory_data(
 
         # Now go through our files
         for file_name in files:
+            widget = None
 
             try:
                 # Load the file data to see if it's valid
@@ -105,11 +106,12 @@ def load_directory_data(
 
                 key = file_data.get('key', None)
 
-                widget = None
+                
 
                 for widget in story.widgets:
                     if widget.data.get('key', None) == key:
                         widget = widget
+                        print("Loaded widget from file:", file_name)
                         break
 
             except Exception as e:

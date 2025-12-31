@@ -507,7 +507,7 @@ class Story(ft.View):
                             
                         # Error handling for invalid tags
                         else:
-                            print("content tag not valid, skipping")
+                            print("content tag not valid, skipping", content_data.get("tag", ""))
                             return
 
                             
