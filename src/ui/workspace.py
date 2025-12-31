@@ -110,7 +110,6 @@ class Workspace(ft.Container):
     # When a draggable starts dragging, we add our drag targets to the master stack
     def show_pin_drag_targets(self):
         ''' Adds our drag targets to the master stack so we can drop our widgets into pin locations '''
-        print("Showing drag targets in workspace")
 
         self.pin_drag_targets.visible = True
 
@@ -141,7 +140,6 @@ class Workspace(ft.Container):
     # Called whenever a drag target accepts a draggable
     def remove_drag_targets(self):
         ''' Removes our drag targets from the master stack, otherwise they sit overtop our widgets and get in the way '''
-        print("Removing drag targets from workspace")
         self.pin_drag_targets.visible = False
         self.master_stack.update()
 

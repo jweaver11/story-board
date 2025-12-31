@@ -4,6 +4,7 @@ import os
 import json
 from styles.menu_option_style import Menu_Option_Style
 from styles.colors import colors
+from styles.snack_bar import Snack_Bar
 
 # Expansion tile for all sub directories (folders) in a directory
 class Tree_View_Directory(ft.GestureDetector):
@@ -47,7 +48,7 @@ class Tree_View_Directory(ft.GestureDetector):
         self.new_item_textfield = ft.TextField(  
             hint_text="Sub-Category Name",          
             #data="category",                                       # Data for logic routing on submit
-            #on_submit=self.new_sub_category_clicked,               # Called when enter is pressed
+            on_submit=self.new_item_textfield_submit,               # Called when enter is pressed
             autofocus=True,
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=self.on_new_item_blur,
@@ -395,6 +396,26 @@ class Tree_View_Directory(ft.GestureDetector):
             
         self.p.update()
 
+    def new_item_textfield_submit(self):
+
+        self.are_submitting = True
+
+        title = self.new_item_textfield.value
+        tag = self.new_item_textfield.data
+
+        if self.item_is_unique:
+            match tag:
+                case "category":
+                    self.story.create_folder(directory_path=self.full_path, name=title, tag=tag)
+                case "chapter" | "canvas" | "note" | "character" | "timeline" | "map":
+                    self.story.create_widget(directory_path=self.full_path, title=title, tag=tag)
+                
+                case _:
+                    self.p.open(Snack_Bar(f"Error creating new item: Unknown type '{tag}'"))
+        else:
+            self.new_item_textfield.focus()                                  
+            self.p.update()
+
     def category_submit(self, e):
         # Get our name and check if its unique
         name = e.control.value
@@ -442,9 +463,10 @@ class Tree_View_Directory(ft.GestureDetector):
 
         # If it is, call the rename function. It will do everything else
         if self.item_is_unique:
-            self.story.create_note(
+            self.story.create_widget(
                 directory_path=self.full_path,
                 title=title,
+                tag="note",
             )
             
         # Otherwise make sure we show our error

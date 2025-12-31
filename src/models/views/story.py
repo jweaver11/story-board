@@ -114,8 +114,10 @@ class Story(ft.View):
         self.canvases: dict = {}        # canvases by the user for comic chapters, or to store images (as backgrounds)
         self.characters: dict = {}      # Characters in the story
         self.timelines: dict = {}       # Timelines for our story
-        self.world_building: None = None      # World building widget that contains our maps, lore, governments, history, etc
         self.maps: dict = {}            # Maps created inside of world building
+
+        self.world_building: None = None      # World building widget that contains our maps, lore, governments, history, etc
+        self.family_tree_view: None = None    # Family tree view widget for tracking character relationships
 
         # Store all our widgets above in a master list for easier rendering in the UI
         self.widgets: list = []    
@@ -358,61 +360,49 @@ class Story(ft.View):
     def delete_widget(self, widget) -> bool:
         ''' Deletes the object from our live story object and its reference in the pins.
         We then remove its storage file from our file storage as well. '''
+
         from models.widget import Widget
+        from styles.snack_bar import Snack_Bar
 
         # Called if file is successfully deleted. Then we remove the widget from its live storage
         def _delete_live_widget(widget: Widget):
+
             # Grab our widgets tag to see what type of object it is
             tag = widget.data.get('tag', None)
+
+            match tag:
+                case "chapter":
+                    del self.chapters[widget.data.get('key', '')]
+                case "canvas":
+                    del self.canvases[widget.data.get('key', '')]
+                case "note":
+                    del self.notes[widget.data.get('key', '')]
+                case "character":
+                    del self.characters[widget.data.get('key', '')]
+                case "timeline":
+                    del self.timelines[widget.data.get('key', '')]
+                case "map":
+                    del self.maps[widget.data.get('key', '')]
+                case "world_building":
+                    self.world_building = None
+                case "family_tree_view":
+                    self.family_tree_view = None
+
+                case _:
+                    self.p.open(Snack_Bar(f"Error deleting widget: Unknown tag {tag}"))
+                    return
             
-            # Based on its tag, it deletes it from our appropriate dict
-            if tag == "chapter":
-                if widget.data['key'] in self.chapters.keys():
-                    del self.chapters[widget.data['key']]
-
-            elif tag == "note":
-                if widget.data['key'] in self.notes.keys():
-                    del self.notes[widget.data['key']]
-
-            elif tag == "character":
-                if widget.data['key'] in self.characters.keys():
-                    del self.characters[widget.data['key']]
-
-            elif tag == "timeline":
-                if widget.data['key'] in self.timelines.keys():
-                    del self.timelines[widget.data['key']]
-
-            elif tag == "map":
-                if widget.data['key'] in self.maps.keys():
-                    del self.maps[widget.data['key']]
-
             
             # Remove from our master widgets list so it won't be rendered anymore
             if widget in self.widgets:
                 self.widgets.remove(widget)
         
-        # Call our internal functions above
-        try:
-            # If we can delete the file, we remove the live object
-            file_path = os.path.join(widget.directory_path, f"{widget.title}.json")
-            if widget.delete_file(file_path):
+        # If we successfully deleted the widget file, remove the live widget object as well
+        if widget.delete_file():
+            _delete_live_widget(widget)
 
-                _delete_live_widget(widget)
-
-                # Reload our workspace to apply the UI Change if was needed
-                if widget.visible:
-                    self.workspace.reload_workspace()
-
-                self.active_rail.content.reload_rail()
-                self.close_menu()
-
-                print(f"Successfully deleted widget: {widget.title}")
-
-        # Errors
-        except Exception as e:
-            print(f"Error deleting widget : {e}")
-            return
-
+            self.active_rail.content.reload_rail()
+            self.workspace.reload_workspace()
 
     # Called on story startup to load all our content objects
     def load_content(self):
@@ -541,31 +531,41 @@ class Story(ft.View):
             directory_path = self.data.get('content_directory_path',  '')
 
 
-        key = f"{directory_path}\\{title}"
-
         match tag:
             case "chapter":
-                self.chapters[key] = Chapter(title, self.p, directory_path, self)
+                widget = Chapter(title, self.p, directory_path, self)
+                key = widget.data.get('key', '')
+                self.chapters[key] = widget
                 self.widgets.append(self.chapters[key])
 
             case "note":
-                self.notes[key] = Note(title, self.p, directory_path, self)
+                widget = Note(title, self.p, directory_path, self)
+                key = widget.data.get('key', '')
+                self.notes[key] = widget
                 self.widgets.append(self.notes[key])
 
             case "canvas":
-                self.canvases[key] = Canvas(title, self.p, directory_path, self)
+                widget = Canvas(title, self.p, directory_path, self)
+                key = widget.data.get('key', '')
+                self.canvases[key] = widget
                 self.widgets.append(self.canvases[key])
 
             case "character":
-                self.characters[key] = Character(title, self.p, directory_path, self)
+                widget = Character(title, self.p, directory_path, self)
+                key = widget.data.get('key', '')
+                self.characters[key] = widget
                 self.widgets.append(self.characters[key])
 
             case "timeline":
-                self.timelines[key] = Timeline(title, self.p, directory_path, self)
+                widget = Timeline(title, self.p, directory_path, self)
+                key = widget.data.get('key', '')
+                self.timelines[key] = widget
                 self.widgets.append(self.timelines[key])
 
             case "map":
-                self.maps[key] = Map(title, self.p, directory_path, self)
+                widget = Map(title, self.p, directory_path, self)
+                key = widget.data.get('key', '')
+                self.maps[key] = widget
                 self.widgets.append(self.maps[key])
      
             case _:

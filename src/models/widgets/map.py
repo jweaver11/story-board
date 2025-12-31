@@ -34,9 +34,7 @@ class Map(Widget):
         title: str, 
         page: ft.Page, 
         directory_path: str, 
-        story: Story,
-        father: str = None,                     # Parent map this map belongs to (using data['key'] of the parent map)
-        category: str = None,                   # Type of map this is (world map, continent, country, city, dungeon, room, etc)
+        story: Story,                  
         data: dict = None
     ):
         
@@ -58,9 +56,7 @@ class Map(Widget):
             self,   
             {
                 'tag': "map", 
-                'father': father,               # Parent map this map belongs to. None if top level map
                 'information_display': {'visibility': True},   # Info display mini widget visibility
-                'category': category,           # Category/psuedo folder this map belongs to
                 'is_displayed': True,           # Whether the map is visible in the world building widget or not
                 'sub_maps': list,               # Sub maps contained within this map
                 'markers': dict,                # Markers placed on the map
@@ -109,6 +105,7 @@ class Map(Widget):
                 #on_pan_start=self.start_drawing,
                 #on_pan_update=self.is_drawing,
                 #on_pan_end=lambda e: self.save_canvas(),
+                on_double_tap=lambda e: print("Double tap detected"),
                 #drag_interval=10,
             ),
             expand=True

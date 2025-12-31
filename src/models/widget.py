@@ -14,6 +14,7 @@ from handlers.safe_string_checker import return_safe_name
 from styles.snack_bar import Snack_Bar
 from styles.colors import dark_gradient
 from styles.colors import colors
+from styles.snack_bar import Snack_Bar
 
 
 
@@ -155,66 +156,62 @@ class Widget(ft.Container):
             print(f"Error changing custom field {key}:{value} in widget {self.title}: {e}")
 
     # Called when moving widget files
-    def delete_file(self, old_file_path: str) -> bool:
+    def delete_file(self) -> bool:
         ''' Deletes our widget's json file from the directory '''
 
         try:
+
+            # File path to save our json data to
+            old_file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json")
+
             # Delete the file if it exists
             if os.path.exists(old_file_path):
                 os.remove(old_file_path)
+                return True
             else:
                 print(f"File {old_file_path} does not exist, cannot delete.")
-
-            return True
+                return False
 
         # Handle errors
         except Exception as e:
-            print(f"Error deleting widget file at {old_file_path}: {e}")
+            self.p.open(Snack_Bar(f"Error deleting file {old_file_path}: {e}"))
             return False
         
     # Called when moving widget files
     def move_file(self, new_directory: str):
-        ''' Moves our widget's json file to a new directory '''
+        ''' Deletes our old file and updates our directory, then saves the new file there '''
 
-        # Go through our new directory and check if any files there have the same title
-        files = os.listdir(new_directory)
-        for file in files:
+        if new_directory == self.data.get('directory_path', ''):
+            print("Same directory, not moving")
+            return
 
-            # Split the file name and extension
-            file_name, file_ext = os.path.splitext(file)
+        # New key to check for duplicates
+        new_key = f"{new_directory}\\{self.title}_{self.data.get('tag', '')}"
 
-            # Check the file name against our title
-            if file_name == self.title: 
+        # Go through our widgtes. If any have the same key as our new key, we cannot move, so we return false
+        for widget in self.story.widgets:
 
-                # If we dropped where we started, just return out of the function
-                if new_directory == self.directory_path:
-                    return
-                
-                # Otherwise, open our app bar dialog to show the error
-                self.p.open(
-                    Snack_Bar(f"Cannot move {self.title}. A file with that name already exists in the target directory.")
-                )
-
-                # Remove our drag targets since we arent moving anything
-                self.story.workspace.remove_drag_targets()
-                
-                # Return out of the function
-                return
+            # Skip ourselves
+            if widget == self:
+                continue
 
 
-        # If we passed the check earlier, delete the old file
-        self.delete_file(old_file_path=os.path.join(self.directory_path, f"{self.title}.json"))
+            # If this gets triggered, we cannot move since a widget with that name already exists in the target directory. Return out of function
+            elif widget.data.get('key', '') == new_key:
+                self.p.open(Snack_Bar(f"Cannot move {self.title}. A widget with that name already exists in the target directory."))
+                return 
+            
+        # Delete our old file
+        if self.delete_file():
 
-        # Set our data to the new path where we need to
-        self.data['directory_path'] = new_directory
-        self.directory_path = self.data['directory_path']
-        self.data['key'] = f"{new_directory}\\{self.title}"
+            # If it was successful, update our directory path and key, then save our new file
+            self.directory_path = new_directory
+            self.data['directory_path'] = new_directory
+            self.data['key'] = new_key
+            self.save_dict()
 
-        # Save our updated data
-        self.save_dict()
-
-        # Reload the rail to apply changes
-        self.story.active_rail.content.reload_rail()        
+            # Reload the rail to apply changes
+            self.story.active_rail.content.reload_rail()        
 
 
     # Called when renaming a widget
