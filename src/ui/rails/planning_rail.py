@@ -20,7 +20,7 @@ class Planning_Rail(Rail):
         super().__init__(
             page=page,
             story=story,
-            directory_path=story.data['planning_directory_path']
+            directory_path=story.data.get('content_directory_path', '')
         )
 
         # Reload the rail on start

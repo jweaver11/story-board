@@ -99,9 +99,7 @@ class Workspace(ft.Container):
         )
 
 
-        # Master stack that holds our widgets ^ row. We add our drag targets overtop our widgets, so we use a stack here
-        # And our drag targets when we start dragging widgets.
-        # We use global stack like this so there is always a drag target, even if a pin is empty
+        # Master stack that holds our widgets ^ row, and drag targets overtop. TransparentPointer allows the targets to be physical but not block widgets underneath
         self.master_stack = ft.Stack(expand=True, controls=[self.widgets, ft.TransparentPointer(self.pin_drag_targets)])
 
 

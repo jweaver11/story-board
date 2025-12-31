@@ -111,7 +111,7 @@ class Rail(ft.Container):
         # Makes sure the right textfield is visible and the others are hidden
         self.new_item_textfield.visible = True
 
-        # Set our textfield value to none, and the hint and data
+        # Set our textfield value to none, and the hint and data 
         self.new_item_textfield.value = None
         self.new_item_textfield.hint_text = "Category Name"
         self.new_item_textfield.data = "category"
@@ -216,31 +216,6 @@ class Rail(ft.Container):
             if tag == "category":
                 # Create our new category
                 self.story.create_folder(directory_path=self.directory_path, name=title)
-                 
-            # New chapters
-            elif tag == "chapter":
-                self.story.create_chapter(title)
-
-            # New Notes
-            elif tag == "note":
-                self.story.create_note(title)
-
-            elif tag == "canvas":
-                self.story.create_canvas(title)
-                self.story.change_data(**{'selected_rail': 'canvas'})
-                self.story.workspaces_rail.selected_rail = "canvas"
-                self.story.workspaces_rail.reload_rail(self.story)
-                self.story.active_rail.display_active_rail(self.story)
-
-            # New Characters
-            elif tag == "character":
-                self.story.create_character(title)
-                for character in self.story.characters.values():
-                    character.reload_widget()
-
-            # New Timelines
-            elif tag == "timeline":
-                self.story.create_timeline(title)
 
             # New plot points and arcs on timelines or arcs
             elif tag == "plot_point":
@@ -253,10 +228,13 @@ class Rail(ft.Container):
                 if self.timeline is not None:
                     print("Creating arc:", title)
                     self.timeline.create_arc(title)
+                 
+            # New widgets
+            else:
+                self.story.create_widget(title, tag)
 
-            # New Maps
-            elif tag == "map":
-                self.story.create_map(title)
+
+            
 
     # Called when we select a new dropdown
     def refresh_buttons(self):

@@ -111,7 +111,6 @@ def load_directory_data(
                 for widget in story.widgets:
                     if widget.data.get('key', None) == key:
                         widget = widget
-                        print("Loaded widget from file:", file_name)
                         break
 
             except Exception as e:

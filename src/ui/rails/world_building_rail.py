@@ -16,7 +16,7 @@ class World_Building_Rail(Rail):
         super().__init__(
             page=page,
             story=story,
-            directory_path=story.data['maps_directory_path']
+            directory_path=story.data.get('content_directory_path', '')
         )
 
         # Reload the rail on start

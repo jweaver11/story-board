@@ -19,7 +19,7 @@ class Content_Rail(Rail):
         super().__init__(
             page=page,
             story=story,
-            directory_path=story.data['content_directory_path']
+            directory_path=story.data.get('content_directory_path', '')
         )
 
         # Reload the rail on start
@@ -193,15 +193,15 @@ class Content_Rail(Rail):
                         ),
                         ft.PopupMenuItem(
                             text="Character", icon=ft.Icons.PERSON_OUTLINED,
-                            on_click=self.new_note_clicked
+                            on_click=self.new_character_clicked
                         ),  
                         ft.PopupMenuItem(
                             text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
-                            on_click=self.new_note_clicked
+                            on_click=self.new_timeline_clicked
                         ),
                         ft.PopupMenuItem(
                             text="Map", icon=ft.Icons.MAP_OUTLINED,
-                            on_click=self.new_note_clicked
+                            on_click=self.new_map_clicked
                         ),
                     ]
                 ),

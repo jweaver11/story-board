@@ -49,11 +49,6 @@ class Story(ft.View):
                 'tag': "story",
                 'selected_rail': "characters",
                 'content_directory_path': os.path.join(data_paths.stories_directory_path, self.route, "content"),
-                'characters_directory_path': os.path.join(data_paths.stories_directory_path, self.route, "characters"),
-                'timelines_directory_path': os.path.join(data_paths.stories_directory_path, self.route, "timelines"),
-                'world_building_directory_path': os.path.join(data_paths.stories_directory_path, self.route, "world_building"),
-                'maps_directory_path': os.path.join(data_paths.stories_directory_path, self.route, "world_building", "maps"),
-                'planning_directory_path': os.path.join(data_paths.stories_directory_path, self.route, "planning"),
                 'top_pin_height': 200,
                 'left_pin_width': 230,
                 'main_pin_height': int,
@@ -105,13 +100,7 @@ class Story(ft.View):
             },
         )
 
-        
-        
-        
-
-        # Stories have required structures as well, so we verify they exist or we will error out
-        # We also use this function to create most detailed structures from templates if newly created story
-        self.verify_story_structure(template)  
+        self.template = template
             
         # Declare our UI elements before we create them later. They are stored as objects so we can reload them when needed
         self.menubar: ft.Container = None     # Menu bar at top of page
@@ -125,7 +114,7 @@ class Story(ft.View):
         self.canvases: dict = {}        # canvases by the user for comic chapters, or to store images (as backgrounds)
         self.characters: dict = {}      # Characters in the story
         self.timelines: dict = {}       # Timelines for our story
-        self.world_building: None       # World building widget that contains our maps, lore, governments, history, etc
+        self.world_building: None = None      # World building widget that contains our maps, lore, governments, history, etc
         self.maps: dict = {}            # Maps created inside of world building
 
         # Store all our widgets above in a master list for easier rendering in the UI
@@ -144,20 +133,16 @@ class Story(ft.View):
     # Called from main when our program starts up. Needs a page reference, thats why not called here
     def startup(self):
 
+        # Stories have required structures as well, so we verify they exist or we will error out
+        # We also use this function to create most detailed structures from templates if newly created story
+        self.verify_story_structure(self.template)  
+
+        if self.data.get('is_new_story', True):
+            print("New story created:", self.title)
+            # Run logic here to initialize certain things
+
         # This also loads our canvas board images here, since they can be opened in either workspace
         self.load_content()
-
-        # Loads our characters from file storage into our characters list
-        self.load_characters()
-
-        # Loads our timeline from file storage, which holds our timelines
-        self.load_timelines()
-
-        # Load our world building objects from file storage
-        self.load_world_building()
-
-        # Loads our maps from file storage
-        #self.load_maps()
 
         # Everything we loaded above is a widget, but this just adds them all to self.widgets
         self.load_widgets()
@@ -210,21 +195,6 @@ class Story(ft.View):
         # Handle errors
         except Exception as e:
             print(f"Error changing data {key}:{value} for story {self.title}: {e}")
-
-    def update_canvas_data(self, **kwargs):
-        ''' Changes a key/value pair in our canvas_data dict and saves the json file '''
-        # Called by:
-        # story.update_canvas_data(**{'key': value, 'key2': value2})
-
-        try:
-            for key, value in kwargs.items():
-                self.data['canvas_data'].update({key: value})
-
-            self.save_dict()
-
-        # Handle errors
-        except Exception as e:
-            print(f"Error changing canvas_data {key}:{value} for story {self.title}: {e}")
             
 
     # Called when a new story is created and not loaded with any data
@@ -238,24 +208,13 @@ class Story(ft.View):
 
         try:
 
-            is_new_story = self.data.get('is_new_story', True)
 
             # Sets our path to our story folder
             directory_path = os.path.join(data_paths.stories_directory_path, self.route)
 
-            # Set our workspace folder structure inside our story folder
-            required_story_folders = [
-                "content",
-                "characters",
-                "timelines",
-                "world_building",
-                "planning",
-            ]
-
-            # Create the workspace folder strucutre above
-            for folder in required_story_folders:
-                folder_path = os.path.join(directory_path, folder)
-                os.makedirs(folder_path, exist_ok=True)     # Checks if they exist or not, so they won't be overwritten
+            # Makes sure our content folder exists
+            folder_path = os.path.join(directory_path, "content")
+            os.makedirs(folder_path, exist_ok=True)     # Checks if they exist or not, so they won't be overwritten
 
             # Save our data
             self.save_dict()
@@ -461,6 +420,11 @@ class Story(ft.View):
         from models.widgets.note import Note
         from models.widgets.chapter import Chapter
         from models.widgets.canvas import Canvas
+        from models.widgets.character import Character
+        from models.widgets.timeline import Timeline   
+        from models.widgets.map import Map
+        from models.widgets.world_building import World_Building
+        from models.widgets.family_tree_view import FamilyTreeView
 
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder
         if not os.path.exists(self.data['content_directory_path']):
@@ -484,31 +448,35 @@ class Story(ft.View):
 
                         # Read the JSON file and set our data
                         with open(file_path, "r", encoding='utf-8') as f:
-                            content_data = json.load(f)
+                            widget_data = json.load(f)
                         
                         # Extract the title from the data
-                        content_key = content_data.get("key", None)
-                        content_title = content_data.get("title", filename.replace(".json", ""))
+                        key = widget_data.get("key", None)
+                        title = widget_data.get("title", filename.replace(".json", ""))
+                        tag = widget_data.get("tag", "")
 
-                        # Check our tag to see what type of content it is, and load appropriately
-                        if content_data.get("tag", "") == "chapter":
+                        match tag:
+                            case "chapter": 
+                                self.chapters[key] = Chapter(title, self.p, dirpath, self, widget_data)
+                            case "canvas":
+                                self.canvases[key] = Canvas(title, self.p, dirpath, self, widget_data)
+                            case "note":
+                                self.notes[key] = Note(title, self.p, dirpath, self, widget_data)
+                            case "character":
+                                self.characters[key] = Character(title, self.p, dirpath, self, widget_data)
+                            case "timeline":
+                                self.timelines[key] = Timeline(title, self.p, dirpath, self, widget_data)
+                            case "map":
+                                self.maps[key] = Map(title, self.p, dirpath, self, widget_data)
+                            case "world_building":
+                                self.world_building = World_Building(title, self.p, dirpath, self, widget_data)
+                            case "family_tree_view":
+                                self.widgets.append(FamilyTreeView(title, self.p, dirpath, self, widget_data))
+                            case _:
+                                print("content tag not valid. Tag: ", tag)
                             
-                            self.chapters[content_key] = Chapter(content_title, self.p, dirpath, self, content_data)
-                            #print("Chapter loaded")
 
-                        elif content_data.get("tag", "") == "image":
-                            print("image tag found, skipping for now")
-
-                        elif content_data.get("tag", "") == "canvas":
-                            self.canvases[content_key] = Canvas(content_title, self.p, dirpath, self, content_data)
-
-                        elif content_data.get("tag", "") == "note":
-                            self.notes[content_key] = Note(content_title, self.p, dirpath, self, content_data)
-                            
-                        # Error handling for invalid tags
-                        else:
-                            print("content tag not valid, skipping", content_data.get("tag", ""))
-                            return
+                       
 
                             
                     # Handle errors if the path is wrong
@@ -517,224 +485,6 @@ class Story(ft.View):
 
         # Load animations -- TBD in future if possible
 
-    # Called as part of the startup method during program launch
-    def load_characters(self):
-        ''' Loads all our characters from our characters folder and adds them to the live story object'''
-        from models.widgets.character import Character
-        
-        # Check if the characters folder exists. Creates it if it doesn't. Handles errors on startup
-        if not os.path.exists(self.data['characters_directory_path']):
-            #print("Characters folder does not exist, creating it.")
-            os.makedirs(self.data['characters_directory_path'])    
-            return
-        
-        # Iterate through all files in the characters folder
-        #for filename in os.listdir(data_paths.characters_path):
-        for dirpath, dirnames, filenames in os.walk(self.data['characters_directory_path']):
-            for filename in filenames:
-
-                # All our objects are stored as JSON
-                if filename.endswith(".json"):
-                    file_path = os.path.join(dirpath, filename)   
-                    #print("dirpath = ", dirpath)
-                    
-                    try:
-                        # Read the JSON file
-                        with open(file_path, "r", encoding='utf-8') as f:
-                            character_data = json.load(f)
-                        
-                        # Extract the title from the data
-                        character_key = character_data.get("key", None)
-                        character_title = character_data.get("title", filename.replace(".json", ""))    # TODO Add error handling
-                            
-                        # Create our character object using our loaded data
-                        self.characters[character_key] = Character(character_title, self.p, dirpath, self, character_data)
-                        #self.widgets.append(self.characters[character_title])  # Add to our master list of widgets in our story
-                    # Handle errors if the path is wrong
-                    except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
-                        print(f"Error loading character from {filename}: {e}")
-
-    def get_character_names(self) -> list:
-        '''Return a sorted list of character names.
-
-        Prefers in-memory loaded Character objects (self.characters), but will
-        fall back to reading the filenames in the characters directory so names
-        are available even if characters haven't been instantiated yet.
-        '''
-        names = []
-        try:
-            # Use loaded character objects first
-            if isinstance(self.characters, dict) and len(self.characters) > 0:
-                for c in self.characters.values():
-                    try:
-                        t = getattr(c, 'title', None)
-                        if t:
-                            names.append(t)
-                    except Exception:
-                        continue
-
-            # Fall back to files on disk for any names not already included
-            path = self.data.get('characters_directory_path')
-            if path and os.path.exists(path):
-                for fname in os.listdir(path):
-                    if fname.endswith('.json') and not fname.endswith('_display.json'):
-                        name = os.path.splitext(fname)[0]
-                        if name and name not in names:
-                            names.append(name)
-
-        except Exception as e:
-            print(f"Error getting character names: {e}")
-
-        # Return unique, sorted names
-        try:
-            return sorted(list(dict.fromkeys(names)))
-        except Exception:
-            return names
-
-        
-
-    # Called on story startup to create our plotline object.
-    def load_timelines(self):
-        ''' Creates our timeline object, which in turn loads all our plotlines from storage '''
-        from models.widgets.timeline import Timeline
- 
-        # Check if the plotline folder directory exists. Creates it if it doesn't. 
-        # Handles errors on startup if people delete this folder, otherwise uneccessary
-        if not os.path.exists(self.data['timelines_directory_path']):
-            #print("Plotline folder does not exist, creating it.")
-            os.makedirs(self.data['timelines_directory_path'])    
-            return
-        
-        # Iterate through all files in the timelines folder
-        for dirpath, dirnames, filenames in os.walk(self.data['timelines_directory_path']):
-            for filename in filenames:
-
-                # All our objects are stored as JSON
-                if filename.endswith(".json"):
-                    file_path = os.path.join(dirpath, filename)   
-                    #print("dirpath = ", dirpath)
-                    
-                    try:
-                        # Read the JSON file
-                        with open(file_path, "r", encoding='utf-8') as f:
-                            timeline_data = json.load(f)
-                        
-                        # Extract the title from the data
-                        timeline_key = timeline_data.get("key", None)
-                        timeline_title = timeline_data.get("title", filename.replace(".json", ""))    
-                            
-                        # Create our timeline object using our loaded data
-                        self.timelines[timeline_key] = Timeline(timeline_title, self.p, dirpath, self, timeline_data)
-                        
-                    # Handle errors if the path is wrong
-                    except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
-                        print(f"Error loading timeline from {filename}: {e}")
-            
-        
-        # Create our plotline object with no data if story is new, or loaded data if it exists already
-        if len(self.timelines) == 0:
-            key = self.data['timelines_directory_path'] + "\\" + "Timeline 1"
-            self.timelines[key] = Timeline(
-                title="Timeline 1", 
-                page=self.p, 
-                directory_path=dirpath, 
-                story=self, 
-                data=None
-            )
-
-    # Called on story startup to load all our world building widget
-    def load_world_building(self):
-        ''' Loads our world object from storage, or creates a new one if it doesn't exist '''
-        from models.widgets.world_building import World_Building
- 
-        # Check if the plotline folder exists. Creates it if it doesn't. 
-        if not os.path.exists(self.data['world_building_directory_path']):
-            #print("Plotline folder does not exist, creating it.")
-            os.makedirs(self.data['world_building_directory_path'])    
-        
-        # Construct the path to plotline.json
-        world_building_json_path = os.path.join(self.data['world_building_directory_path'], 'World_Building.json')
-
-        # Set data blank initially
-        world_building_data = None
-        
-        # Attempt to open and read the plotline.json file. Sets our stored data if successful
-        try:
-            with open(world_building_json_path, 'r', encoding='utf-8') as file:
-                world_building_data = json.load(file)
-            
-        except Exception as e:
-            print("Error loading world building data: ", e)
-          
-        
-        # Create our world object with no data if story is new, or loaded data if it exists already
-        self.world_building = World_Building(
-            "World_Building", 
-            self.p, 
-            self.data['world_building_directory_path'], 
-            self, 
-            world_building_data
-        )
-
-    # Called in constructor
-    def load_maps(self):
-        ''' Loads our world maps from our dict into our live object '''
-        from models.widgets.map import Map
-        
-        try: 
-            
-            # Set the directory path to our maps
-            map_dir_path = os.path.join(self.data['world_building_directory_path'], "maps")
-            
-            # Make sure it exists to handle errors
-            if not os.path.exists(map_dir_path):
-                os.makedirs(map_dir_path)    
-                return
-            
-            # Iterate through all files in our maps folder
-            for dirpath, dirnames, filenames in os.walk(map_dir_path):
-                for filename in filenames:
-
-                    # Go through our files, and don't include the display files
-                    if filename.endswith(".json") and not filename.endswith("_display.json"):
-                        file_path = os.path.join(dirpath, filename)   
-                        #print("dirpath = ", dirpath)
-                        
-                        try:
-                            # Read the JSON file
-                            with open(file_path, "r", encoding='utf-8') as f:
-                                map_data = json.load(f)
-                            
-                            # Extract the title from the data
-                            map_key = map_data.get("key", None)
-                            map_title = map_data.get("title", filename.replace(".json", ""))    
-                                
-                            # Create our Map widgets.
-                            # TODO: Add in loading fathers? or get that from data inside of map constructor??
-                            self.maps[map_key] = Map(
-                                title=map_title, 
-                                page=self.p, 
-                                directory_path=dirpath, 
-                                story=self, 
-                                data=map_data
-                            )
-                            
-                            
-                        # Handle errors if the path is wrong
-                        except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
-                            print(f"Error loading map from {filename}: {e}")
-                
-            
-            # If we have no maps, create a default one to get started
-            if len(self.maps) == 0:
-                #print("No world maps found, creating default world map")
-                self.create_map(title="World Map", father=None, category="world")
-
-            #print(f"Loaded {len(self.maps)} maps into story '{self.title}'")
-
-        # Catch errors
-        except Exception as e:
-            print(f"Error loading maps: {e}")
 
     # Called in startup after we have loaded all our live objects
     def load_widgets(self):
@@ -777,146 +527,54 @@ class Story(ft.View):
             if note not in self.widgets:
                 self.widgets.append(note)
         
-
-
-    # Called to create a new chapter
-    def create_chapter(self, title: str, directory_path: str=None):
-        ''' Creates a new chapter object, saves it to our live story object, and saves it to storage'''
+    # Called to create a new widget based on tag (chapter, note, character, etc)
+    def create_widget(self, title: str, tag: str=None, directory_path: str=None):
+        ''' Creates our new widget based on the tag passed in and directory_path passed in'''
         from models.widgets.chapter import Chapter
-
-        # If no path is passed in, construct the full file path for the chapter JSON file
-        if directory_path is None:   # There SHOULD always be a path passed in, but this will catch errors
-            directory_path = self.data['content_directory_path']
-
-        # Set the key
-        key = directory_path + "\\" + title
-
-        # Save the new chapter and add it to the widget list
-        self.chapters[key] = Chapter(title, self.p, directory_path, self)
-        self.widgets.append(self.chapters[key])
-
-        # Apply the UI changes
-        self.active_rail.content.reload_rail()
-        self.workspace.reload_workspace()
-
-    # Called to create a note object
-    def create_note(self, title: str, directory_path: str=None):
-        ''' Creates a new note object, saves it to our live story object, and saves it to storage'''
         from models.widgets.note import Note
-
-        # If no path is passed in, construct the full file path for the note JSON file
-        if directory_path is None:   # There SHOULD always be a path passed in, but this will catch errors
-            directory_path = self.data['content_directory_path']
-           
-        # Set the key
-        key = directory_path + "\\" + title
-
-        # Save our new note and add it to the widget list
-        self.notes[key] = Note(title, self.p, directory_path, self)
-        self.widgets.append(self.notes[key]) 
-
-        # Apply the UI changes
-        self.active_rail.content.reload_rail()
-        self.workspace.reload_workspace()
-
-    # Called to create a canvas object
-    def create_canvas(self, title: str, directory_path: str=None, data: dict=None):
-        ''' Creates a new note object, saves it to our live story object, and saves it to storage'''
         from models.widgets.canvas import Canvas
-
-        # If no path is passed in, construct the full file path for the note JSON file
-        if directory_path is None:   # There SHOULD always be a path passed in, but this will catch errors
-            directory_path = self.data['content_directory_path']
-           
-        # Set the key
-        key = directory_path + "\\" + title
-
-        # Format our data if we have any
-        if data is not None:
-            new_data = {'canvas_meta': data}
-
-        # Save our new note and add it to the widget list
-        self.canvases[key] = Canvas(title, self.p, directory_path, self, new_data)
-        self.widgets.append(self.canvases[key]) 
-
-        # Apply the UI changes
-        self.active_rail.content_rail.reload_rail()
-        self.workspace.reload_workspace()
-
-
-    # Called to create a new character
-    def create_character(self, title: str, directory_path: str=None):
-        ''' Creates a new character object, saves it to our live story object, and saves it to storage'''
         from models.widgets.character import Character
-
-        # If no path is passed in, construct the full file path for the character JSON file
-        if directory_path is None:
-            directory_path = self.data['characters_directory_path'] # There SHOULD always be a path passed in, but this will catch errors
-
-        # Set the key
-        key = directory_path + "\\" + title
-        
-        # Save our new character and add it to the widget list
-        self.characters[key] = Character(title, self.p, directory_path, self)
-        self.widgets.append(self.characters[key])  
-
-        # Apply the UI changes
-        self.active_rail.content.reload_rail()
-        self.workspace.reload_workspace()
-
-    # Called to create a timeline object
-    def create_timeline(self, title: str):
-        ''' Creates a new timeline and updates the UI. Doesn't need a directory path since its always the same '''
         from models.widgets.timeline import Timeline
-
-        dirpath = self.data['timelines_directory_path']
-
-        # Set the key
-        key = dirpath + "\\" + title
-
-        # Save our new timeline and add it to the widget list
-        self.timelines[key] = Timeline(title, self.p, dirpath, self)
-        self.widgets.append(self.timelines[key])  
-
-        # Apply the UI changes
-        self.active_rail.content.reload_rail()
-        self.workspace.reload_workspace()
-
-    # Called to create a map object
-    def create_map(self, title: str, directory_path: str=None, father: str=None, category: str=None):
-        ''' Creates a new map object, saves it to our live story object, and saves it to storage'''
         from models.widgets.map import Map
 
-        # Path to where all our maps are stored
         if directory_path is None:
+            directory_path = self.data.get('content_directory_path',  '')
 
-            # If multi planetary, save it in our worlds folder
-            if self.data['settings']['multi_planetary']:
-                directory_path = os.path.join(self.data['world_building_directory_path'], "maps", "worlds")
-            # Otherwise just save it in the maps folder
-            else:
-                directory_path = os.path.join(self.data['world_building_directory_path'], "maps")
 
-        # Set the key
-        key = directory_path + "\\" + title
+        key = f"{directory_path}\\{title}"
 
-        # Create our new map object in our maps dict
-        self.maps[key] = Map(
-            title=title, 
-            page=self.p, 
-            directory_path=directory_path, 
-            story=self,
-            father=father,
-            category=category,
-            data=None
-        )
+        match tag:
+            case "chapter":
+                self.chapters[key] = Chapter(title, self.p, directory_path, self)
+                self.widgets.append(self.chapters[key])
 
-        # Add to our master list of widgets in our story
-        self.widgets.append(self.maps[key]) 
+            case "note":
+                self.notes[key] = Note(title, self.p, directory_path, self)
+                self.widgets.append(self.notes[key])
 
-        # Reload our UI's
+            case "canvas":
+                self.canvases[key] = Canvas(title, self.p, directory_path, self)
+                self.widgets.append(self.canvases[key])
+
+            case "character":
+                self.characters[key] = Character(title, self.p, directory_path, self)
+                self.widgets.append(self.characters[key])
+
+            case "timeline":
+                self.timelines[key] = Timeline(title, self.p, directory_path, self)
+                self.widgets.append(self.timelines[key])
+
+            case "map":
+                self.maps[key] = Map(title, self.p, directory_path, self)
+                self.widgets.append(self.maps[key])
+     
+            case _:
+                print("Widget tag not valid. Tag:", tag)
+
+        # Apply the UI changes
         self.active_rail.content.reload_rail()
         self.workspace.reload_workspace()
+
 
 
     # Called clicking outside the menu to close it

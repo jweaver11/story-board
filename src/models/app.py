@@ -20,7 +20,6 @@ class App:
         # Dict of all our stories.
         self.stories = {}
 
-
     # Called on app startup in main
     def load_settings(self, page: ft.Page):
         ''' Loads our settings from a JSON file into our rendered settings control. If none exist, creates default settings '''

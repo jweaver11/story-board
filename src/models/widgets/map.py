@@ -106,9 +106,9 @@ class Map(Widget):
         # The Visual Canvas map for drawing
         self.map = cv.Canvas(
             content=ft.GestureDetector(
-                on_pan_start=self.start_drawing,
-                on_pan_update=self.is_drawing,
-                on_pan_end=lambda e: self.save_canvas(),
+                #on_pan_start=self.start_drawing,
+                #on_pan_update=self.is_drawing,
+                #on_pan_end=lambda e: self.save_canvas(),
                 #drag_interval=10,
             ),
             expand=True
@@ -133,10 +133,6 @@ class Map(Widget):
         # Load the rest of our map details and data thats not sub maps
         self.load_details()
 
-        # Load our drawing/display
-        self.load_canvas()
-        
-
         # Reloads the information canvas of the map
         self.reload_widget()
 
@@ -145,117 +141,8 @@ class Map(Widget):
     # Their map dict is now list, and contains the title of their sub maps, not the data
 
 
-    # Called when loading our drawing data from its file
-    def load_canvas(self):
-        ''' Loads our drawing from our saved map drawing file '''
+    
 
-        # Clear existing shapes we might have
-        self.map.shapes.clear()
-
-        try:
-
-            # Set our file path
-            filename = os.path.join(self.directory_path, f"{self.title}_canvas.json")
-
-            # Check if file exists, if not create it with empty data
-            if not os.path.exists(filename):
-                with open(filename, "w") as f:
-                    json.dump({}, f)    
-
-            # Load the data from the file
-            with open(filename, "r") as f:
-                coords = json.load(f)
-                for x1, y1, x2, y2 in coords:
-                    self.map.shapes.append(cv.Line(x1, y1, x2, y2, paint=ft.Paint(stroke_width=3)))
-
-            # Update the page to reflect loaded drawing
-            self.p.update()
-
-        # Handle errors
-        except Exception as e:
-            print(f"Error loading canvas from {filename}: {e}")
-
-    # Called to save our drawing data to its file
-    def save_canvas(self):
-        ''' Saves our map drawing data to its own json file. Maps are special and get their 'drawing' saved seperately '''
-
-        try:
-
-            # Set our file path
-            file_path = os.path.join(self.directory_path, f"{self.title}_canvas.json")
-
-            # Create the directory if it doesn't exist. Catches errors from users deleting folders
-            os.makedirs(self.directory_path, exist_ok=True)
-            
-            # Save the data to the file (creates file if doesnt exist)
-            with open(file_path, "w") as f:   
-                json.dump(self.state.shapes, f)
-        
-        # Handle errors
-        except Exception as e:
-            print(f"Error saving widget to {file_path}: {e}") 
-            print("Data that failed to save: ", self.state.shapes)
-
-
-    # Use our parent delete file method, and delete our canvas as well
-    def delete_file(self, old_file_path) -> bool:
-
-        # Call our parent delete first
-        if super().delete_file(old_file_path):
-
-            try:
-
-                # Set our canvas file path
-                file_path = os.path.join(self.directory_path, f"{self.title}_canvas.json")
-
-                # Delete the file if it exists
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                else:
-                    print(f"File {old_file_path} does not exist, cannot delete.")
-
-                return True
-
-            except Exception as e:
-                print(f"Error deleting map canvas file: {e}")
-                return False
-
-        else:
-            return False
-        
-
-    # Called when renaming our map
-    def rename(self, title: str):
-        ''' Calls our parent to rename our json file, and then renames our canvas file as well '''
-
-        # Save our old title
-        old_title = self.title
-
-        # Call parent to rename our main widget file
-        super().rename(title)
-
-        # Save our old file path for renaming our canvas
-        old_file_path = os.path.join(self.directory_path, f"{old_title}_canvas.json")     
-                                               
-        # Rename our canvas file 
-        os.rename(old_file_path, self.data['key'] + "_canvas" + ".json") 
-
-        # Save our canvas
-        self.save_canvas()
-
-    # Called when moving file
-    def move_file(self, new_directory):
-        ''' Calls parent move, and then save canvas to give us our new canvas file '''
-
-        # Copy canvas file here first
-
-        # Call our parent move file. Since we defined our own delete file, it will delete the canvas file as well
-        super().move_file(new_directory)
-
-        # TODO: Paste new canvas file with correct title
-
-        # Now save our new canvas file
-        self.save_canvas()
             
 
     def load_details(self):
@@ -276,21 +163,7 @@ class Map(Widget):
         # Grab local mouse to figure out x and map it to our timeline
 
 
-    async def start_drawing(self, e: ft.DragStartEvent):
-        self.state.x, self.state.y = e.local_x, e.local_y
-
-    async def is_drawing(self, e: ft.DragUpdateEvent):
-        def draw_line():
-            line = cv.Line(
-                self.state.x, self.state.y, e.local_x, e.local_y,
-                paint=self.paint_brush
-            )
-            self.map.shapes.append(line)
-            self.state.shapes.append((self.state.x, self.state.y, e.local_x, e.local_y))
-            #self.map.update()
-            self.p.update()
-            self.state.x, self.state.y = e.local_x, e.local_y
-        Thread(target=draw_line, daemon=True).start()
+    
 
     # Called when we need to rebuild out timeline UI
     def reload_widget(self):       

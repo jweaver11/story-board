@@ -19,7 +19,7 @@ class Canvas_Rail(Rail):
         super().__init__(
             page=page,
             story=story,
-            directory_path=story.data.get('content_directory_path', ""),
+            directory_path=story.data.get('content_directory_path', ''),
         )
 
         # UI elements ---------------------------------------------

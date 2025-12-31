@@ -28,10 +28,13 @@ class Tree_View_File(ft.GestureDetector):
         # Check our tag and set our icon accordingly
         if tag is None: self.icon = ft.Icons.ERROR_OUTLINE  # Catch errors
         elif tag == "chapter": self.icon = ft.Icons.DESCRIPTION_OUTLINED
-        elif tag == "note": self.icon = ft.Icons.NOTE_ALT_OUTLINED
         elif tag == "canvas": self.icon = ft.Icons.BRUSH_OUTLINED
+        elif tag == "note": self.icon = ft.Icons.NOTE_ALT_OUTLINED
         elif tag == "character": self.icon = ft.Icons.PERSON_OUTLINED
+        elif tag == "timeline": self.icon = ft.Icons.TIMELINE_OUTLINED
         elif tag == "map": self.icon = ft.Icons.MAP_OUTLINED
+        elif tag == "world_building": self.icon = ft.Icons.PUBLIC_OUTLINED
+        elif tag == "family_tree_view": self.icon = ft.Icons.PEOPLE_OUTLINE_OUTLINED
         else: self.icon = ft.Icons.ERROR_OUTLINE            
 
         # Set our text style

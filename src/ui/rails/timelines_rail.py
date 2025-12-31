@@ -19,7 +19,7 @@ class Timelines_Rail(Rail):
         super().__init__(
             page=page,
             story=story,
-            directory_path=story.data['timelines_directory_path'],
+            directory_path=story.data.get('content_directory_path', '')
         )
 
         # Drop down we reference when adding new items to that dropdown
