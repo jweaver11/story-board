@@ -1,22 +1,22 @@
 import flet as ft
-from styles.timelines.timeline_dropdown import Timeline_Dropdown
-from models.mini_widget import Mini_Widget
-from styles.menu_option_style import Menu_Option_Style
-from models.mini_widgets.timelines.plot_point import Plot_Point
+from styles.timelines.timeline_dropdown import TimelineDropdown
+from models.mini_widget import MiniWidget
+from styles.menu_option_style import MenuOptionStyle
+from models.mini_widgets.timelines.plot_point import PlotPoint
 from styles.colors import colors
 
 
 # RAIL ITEMS FOR PLOTPOINTS AND ARCS
-class Timeline_Item(ft.GestureDetector):
+class TimelineItem(ft.GestureDetector):
     
     # Constructor
     def __init__(
         self, 
-        mini_widget: Mini_Widget, 
+        mini_widget: MiniWidget, 
         title: str,
         icon: ft.Icon = None,
         #father: Timeline = None,
-        dir_dropdown: Timeline_Dropdown = None,
+        dir_dropdown: TimelineDropdown = None,
         additional_menu_options: list[ft.Control] = None
     ):
         
@@ -29,7 +29,7 @@ class Timeline_Item(ft.GestureDetector):
         
 
         # Check if we're a plot point or an arc for icon purposes
-        if isinstance(self.mini_widget, Plot_Point): 
+        if isinstance(self.mini_widget, PlotPoint): 
             self.tag = "plot_point"
         else:
             self.tag = "arc"
@@ -74,7 +74,7 @@ class Timeline_Item(ft.GestureDetector):
         
         # Rename button
         menu_options = [
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.rename_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
@@ -85,7 +85,7 @@ class Timeline_Item(ft.GestureDetector):
                     ), 
                 ]),
             ),
-            Menu_Option_Style(
+            MenuOptionStyle(
                 content=ft.PopupMenuButton(
                     expand=True,
                     tooltip="",
@@ -101,7 +101,7 @@ class Timeline_Item(ft.GestureDetector):
                     items=self.get_color_options()
                 ),
             ),
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=lambda e: self.delete_clicked(e),
                 content=ft.Row([
                     ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED),

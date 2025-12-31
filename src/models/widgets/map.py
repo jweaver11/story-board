@@ -16,10 +16,10 @@ import os
 import json
 import flet as ft
 from models.widget import Widget
-from models.mini_widgets.world_building.map_information_display import Map_Information_Display
+from models.mini_widgets.world_building.map_information_display import MapInformationDisplay
 from models.views.story import Story
 from handlers.verify_data import verify_data
-from styles.snack_bar import Snack_Bar
+from styles.snack_bar import SnackBar
 from models.state import State
 import flet.canvas as cv
 from threading import Thread
@@ -116,7 +116,7 @@ class Map(Widget):
         # The display container for our map
         self.canvas: ft.InteractiveViewer = None
 
-        self.information_display = Map_Information_Display(
+        self.information_display = MapInformationDisplay(
             title=self.title,
             owner=self,                     # Our map is the owner of this mini widget
             father=self,                    # Our map is also the father of this mini widget

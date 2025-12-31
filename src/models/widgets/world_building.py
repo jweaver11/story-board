@@ -13,7 +13,7 @@ from models.views.story import Story
 from handlers.verify_data import verify_data
 
 
-class World_Building(Widget):
+class WorldBuilding(Widget):
 
     # Constructor
     def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):

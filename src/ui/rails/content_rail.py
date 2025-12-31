@@ -5,12 +5,12 @@ import os
 from models.views.story import Story
 from ui.rails.rail import Rail
 from handlers.tree_view import load_directory_data
-from styles.menu_option_style import Menu_Option_Style
+from styles.menu_option_style import MenuOptionStyle
 from handlers.new_canvas_alert_dlg import new_canvas_alert_dlg
 
 
 # Class is created in main on program startup
-class Content_Rail(Rail):
+class ContentRail(Rail):
 
     # Constructor
     def __init__(self, page: ft.Page, story: Story):
@@ -91,21 +91,21 @@ class Content_Rail(Rail):
             
         # Builds our buttons that are our options in the menu
         return [
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.new_category_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED),
                     ft.Text("Category", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ])
             ),
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.new_chapter_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.NOTE_ADD_OUTLINED),
                     ft.Text("Chapter", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ])
             ),
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.new_canvas_clicked,
                 data="canvas",
                 content=ft.Row([
@@ -113,7 +113,7 @@ class Content_Rail(Rail):
                     ft.Text("Canvas", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ])
             ),
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.new_note_clicked,
                 content=ft.Row(expand=True, controls=[
                     ft.Icon(ft.Icons.NOTE_ALT_OUTLINED),
@@ -127,7 +127,7 @@ class Content_Rail(Rail):
     
     def get_directory_menu_options(self) -> list[ft.Control]:
         return [
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.new_chapter_clicked,
                 data="chapter",
                 content=ft.Row([
@@ -135,7 +135,7 @@ class Content_Rail(Rail):
                     ft.Text("Chapter", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ])
             ),
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.new_canvas_clicked,
                 data="canvas",
                 content=ft.Row([
@@ -143,7 +143,7 @@ class Content_Rail(Rail):
                     ft.Text("Canvas", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ])
             ),
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.new_note_clicked,
                 data="note",
                 content=ft.Row([

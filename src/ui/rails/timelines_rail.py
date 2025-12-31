@@ -3,14 +3,14 @@
 import flet as ft
 from models.views.story import Story
 from ui.rails.rail import Rail
-from styles.timelines.timeline_dropdown import Timeline_Dropdown
-from styles.timelines.label_dropdown import Label_Dropdown
-from styles.timelines.timeline_item import Timeline_Item
-from styles.menu_option_style import Menu_Option_Style
+from styles.timelines.timeline_dropdown import TimelineDropdown
+from styles.timelines.label_dropdown import LabelDropdown
+from styles.timelines.timeline_item import TimelineItem
+from styles.menu_option_style import MenuOptionStyle
 
 
 # Class is created in main on program startup
-class Timelines_Rail(Rail):
+class TimelinesRail(Rail):
 
     # Constructor
     def __init__(self, page: ft.Page, story: Story):
@@ -23,7 +23,7 @@ class Timelines_Rail(Rail):
         )
 
         # Drop down we reference when adding new items to that dropdown
-        self.active_dropdown: Timeline_Dropdown = None
+        self.active_dropdown: TimelineDropdown = None
 
         # UI elements
         self.top_row_buttons = [
@@ -83,7 +83,7 @@ class Timelines_Rail(Rail):
 
         if len(self.story.timelines) == 1:
             return [
-                Menu_Option_Style(
+                MenuOptionStyle(
                     on_click=self.new_item_clicked,
                     data="plot_point",
                     content=ft.Row([
@@ -91,7 +91,7 @@ class Timelines_Rail(Rail):
                         ft.Text("Plot Point", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                     ])
                 ),
-                Menu_Option_Style(
+                MenuOptionStyle(
                     on_click=self.new_item_clicked,
                     data="arc",
                     content=ft.Row([
@@ -99,7 +99,7 @@ class Timelines_Rail(Rail):
                         ft.Text("Arc", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                     ])
                 ),
-                Menu_Option_Style(
+                MenuOptionStyle(
                     on_click=self.new_item_clicked,
                     data="timeline",
                     content=ft.Row([
@@ -111,7 +111,7 @@ class Timelines_Rail(Rail):
 
         else:
             return [
-                Menu_Option_Style(
+                MenuOptionStyle(
                     on_click=self.new_item_clicked,
                     data="timeline",
                     content=ft.Row([
@@ -132,7 +132,7 @@ class Timelines_Rail(Rail):
         if tag == "plot_points_label" and is_label:
             options.append(
                 # Create plot point button
-                Menu_Option_Style(
+                MenuOptionStyle(
                     data="plot_point",
                     content=ft.Row([
                         ft.Icon(ft.Icons.ADD_LOCATION_OUTLINED),
@@ -145,7 +145,7 @@ class Timelines_Rail(Rail):
         elif tag == "arcs_label" and is_label:
             options.append(
                 # Create arc button
-                Menu_Option_Style(
+                MenuOptionStyle(
                     data="arc",
                     content=ft.Row([
                         ft.Icon(ft.Icons.CIRCLE_OUTLINED),
@@ -157,7 +157,7 @@ class Timelines_Rail(Rail):
         else:
             options.extend([
                  # Create plot point button
-                Menu_Option_Style(
+                MenuOptionStyle(
                     data="plot_point",
                     content=ft.Row([
                         ft.Icon(ft.Icons.ADD_LOCATION_OUTLINED),
@@ -165,7 +165,7 @@ class Timelines_Rail(Rail):
                     ])
                 ),
                 # Create arc button
-                Menu_Option_Style(
+                MenuOptionStyle(
                     data="arc",
                     content=ft.Row([
                         ft.Icon(ft.Icons.CIRCLE_OUTLINED),
@@ -187,7 +187,7 @@ class Timelines_Rail(Rail):
         # Next, see if our dropdown is just a label. If it is, make the timeline_dropdown it sits inside as our active dropdown
         # We do this so we can add plot points and arcs even from the opposite label dropdown
         if self.active_dropdown is not None:
-            if isinstance(self.active_dropdown, Label_Dropdown):
+            if isinstance(self.active_dropdown, LabelDropdown):
                 self.active_dropdown = self.active_dropdown.timeline_dropdown
 
         # Go through each button and update their color, disabled state, and on click function
@@ -239,7 +239,7 @@ class Timelines_Rail(Rail):
         for timeline in self.story.timelines.values():
 
             # Create an expansion tile for our timeline that we need in order to load its data
-            timeline.timeline_dropdown = Timeline_Dropdown(
+            timeline.timeline_dropdown = TimelineDropdown(
                 title=timeline.title, 
                 story=self.story, 
                 timeline=timeline, 
@@ -251,7 +251,7 @@ class Timelines_Rail(Rail):
 
             # Load our timeline data
             # New drop down for our plotpoints
-            plot_points_dropdown = Label_Dropdown(
+            plot_points_dropdown = LabelDropdown(
                 title="Plot Points",
                 story=self.story,
                 additional_menu_options=self.get_sub_menu_options(tag="plot_points_label", is_label=True),
@@ -264,7 +264,7 @@ class Timelines_Rail(Rail):
             # Go through our plotpoints from our timeline, and add each item
             for plot_point in timeline.plot_points.values():
                 plot_points_dropdown.content.controls.append(
-                    Timeline_Item(title=plot_point.title, mini_widget=plot_point)
+                    TimelineItem(title=plot_point.title, mini_widget=plot_point)
                 )
 
             plot_points_dropdown.content.controls.append(plot_points_dropdown.new_item_textfield)
@@ -273,7 +273,7 @@ class Timelines_Rail(Rail):
             timeline.timeline_dropdown.content.controls.append(plot_points_dropdown)
 
             # New drop down for our arcs
-            arcs_dropdown = Label_Dropdown(
+            arcs_dropdown = LabelDropdown(
                 title="Arcs",
                 story=self.story,
                 additional_menu_options=self.get_sub_menu_options(tag="arcs_label", is_label=True),
@@ -287,7 +287,7 @@ class Timelines_Rail(Rail):
             for arc in timeline.arcs.values():
 
                 arcs_dropdown.content.controls.append(
-                    Timeline_Item(title=arc.title, mini_widget=arc)
+                    TimelineItem(title=arc.title, mini_widget=arc)
                 )
 
             arcs_dropdown.content.controls.append(arcs_dropdown.new_item_textfield)

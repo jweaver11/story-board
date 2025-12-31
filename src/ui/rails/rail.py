@@ -7,7 +7,7 @@ import os
 import json
 from models.views.story import Story
 from models.widgets.timeline import Timeline
-from styles.tree_view.tree_view_directory import Tree_View_Directory
+from styles.tree_view.tree_view_directory import TreeViewDirectory
 from handlers.check_widget_unique import check_widget_unique
 
 
@@ -33,7 +33,7 @@ class Rail(ft.Container):
         self.directory_path = directory_path
         self.timeline = timeline
 
-        self.active_dropdown: Tree_View_Directory = None
+        self.active_dropdown: TreeViewDirectory = None
 
         # Text style for our textfields
         self.text_style = ft.TextStyle(

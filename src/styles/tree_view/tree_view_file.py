@@ -1,17 +1,17 @@
 import flet as ft
 from models.widget import Widget
-from styles.menu_option_style import Menu_Option_Style
-from styles.tree_view.tree_view_directory import Tree_View_Directory
+from styles.menu_option_style import MenuOptionStyle
+from styles.tree_view.tree_view_directory import TreeViewDirectory
 import math
 from styles.colors import colors
 
 # Class for items within a tree view on the rail
-class Tree_View_File(ft.GestureDetector):
+class TreeViewFile(ft.GestureDetector):
 
     def __init__(
         self, 
         widget: Widget, 
-        father: Tree_View_Directory = None,
+        father: TreeViewDirectory = None,
         additional_menu_options: list[ft.Control] = None
     ):
         
@@ -67,7 +67,7 @@ class Tree_View_File(ft.GestureDetector):
         
         # Rename button
         menu_options = [
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.rename_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
@@ -91,7 +91,7 @@ class Tree_View_File(ft.GestureDetector):
 
         # Color changing popup menu
         menu_options.append(
-            Menu_Option_Style(
+            MenuOptionStyle(
                 content=ft.PopupMenuButton(
                     expand=True,
                     tooltip="",
@@ -111,7 +111,7 @@ class Tree_View_File(ft.GestureDetector):
 
         # Delete button
         menu_options.append(
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=lambda e: self.delete_clicked(e),
                 content=ft.Row([
                     ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED),

@@ -1,5 +1,5 @@
 import flet as ft
-from models.mini_widget import Mini_Widget
+from models.mini_widget import MiniWidget
 from models.widget import Widget
 from handlers.verify_data import verify_data
 import flet.canvas as cv
@@ -8,7 +8,7 @@ from models.app import app
 
 # Class for arcs (essentially sub-timelines that are connected) on a timeline. 
 # Arcs split off from the main timeline and can merge back in later. Exp: Characters going on different journeys that rejoin later
-class Arc(Mini_Widget):
+class Arc(MiniWidget):
 
     # Constructor.
     def __init__(

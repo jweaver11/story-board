@@ -12,7 +12,7 @@ from ui.rails.rail import Rail
 # -- Can see employees tasks
 
 # Class is created in main on program startup
-class Planning_Rail(Rail):
+class PlanningRail(Rail):
     # Constructor
     def __init__(self, page: ft.Page, story: Story):
         

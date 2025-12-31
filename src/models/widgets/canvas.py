@@ -19,7 +19,7 @@ import flet as ft
 from models.widget import Widget
 from models.views.story import Story
 from handlers.verify_data import verify_data
-from styles.snack_bar import Snack_Bar
+from styles.snack_bar import SnackBar
 from models.state import State
 import flet.canvas as cv
 from threading import Thread
@@ -229,7 +229,7 @@ class Canvas(Widget):
                 
                 else:
                     print("Unknown path element type while loading: ", element)
-                    self.p.open(Snack_Bar(f"Error loading {self.title}"))
+                    self.p.open(SnackBar(f"Error loading {self.title}"))
 
             self.canvas.shapes.append(new_path)
     
@@ -594,7 +594,7 @@ class Canvas(Widget):
                 #draw.line(points, fill=paint_settings.get('color', 'black'), width=2)
         
         #img.save(os.path.join(self.directory_path, filename))
-        self.page.open(Snack_Bar(f"Canvas exported to {filename} at {desired_width}x{desired_height}"))
+        self.page.open(SnackBar(f"Canvas exported to {filename} at {desired_width}x{desired_height}"))
         self.page.update()
 
     # Called when we need to rebuild out timeline UI

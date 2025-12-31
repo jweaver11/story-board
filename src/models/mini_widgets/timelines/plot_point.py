@@ -1,5 +1,5 @@
 import flet as ft
-from models.mini_widget import Mini_Widget
+from models.mini_widget import MiniWidget
 from models.widget import Widget
 from handlers.verify_data import verify_data
 import math
@@ -7,7 +7,7 @@ from styles.text_styles import text_style
 
 
 # Plotpoint mini widget object that appear on timelines and arcs
-class Plot_Point(Mini_Widget):
+class PlotPoint(MiniWidget):
 
     # Constructor. Requires title, owner widget, page reference, and optional data dictionary
     def __init__(

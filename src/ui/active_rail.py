@@ -7,12 +7,12 @@ And gives us the correct rail on startup based on selected workspace
 import flet as ft
 from models.app import app
 from models.views.story import Story
-from ui.rails.characters_rail import Characters_Rail  
-from ui.rails.content_rail import Content_Rail
-from ui.rails.timelines_rail import Timelines_Rail
-from ui.rails.world_building_rail import World_Building_Rail
-from ui.rails.canvas_rail import Canvas_Rail
-from ui.rails.planning_rail import Planning_Rail  
+from ui.rails.characters_rail import CharactersRail  
+from ui.rails.content_rail import ContentRail
+from ui.rails.timelines_rail import TimelinesRail
+from ui.rails.world_building_rail import WorldBuildingRail
+from ui.rails.canvas_rail import CanvasRail
+from ui.rails.planning_rail import PlanningRail  
 
 
 # Class is created in main on program startup
@@ -33,12 +33,12 @@ class Active_Rail(ft.Container):
         )
 
         # Add our 6 rails here first so they maintain consitent styling and don't have to be rebuilt on switches
-        self.content_rail = Content_Rail(page, story)
-        self.characters_rail = Characters_Rail(page, story)
-        self.timelines_rail = Timelines_Rail(page, story)
-        self.world_building_rail = World_Building_Rail(page, story)
-        self.canvas_rail = Canvas_Rail(page, story)
-        self.planning_rail = Planning_Rail(page, story)
+        self.content_rail = ContentRail(page, story)
+        self.characters_rail = CharactersRail(page, story)
+        self.timelines_rail = TimelinesRail(page, story)
+        self.world_building_rail = WorldBuildingRail(page, story)
+        self.canvas_rail = CanvasRail(page, story)
+        self.planning_rail = PlanningRail(page, story)
 
         # Displays our active rail on startup
         # All other rails have reload rail functions, but this one just displays the correct one

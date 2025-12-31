@@ -2,7 +2,7 @@ import flet as ft
 
 
 # Styling for our menu option buttons
-class Menu_Option_Style(ft.GestureDetector):
+class MenuOptionStyle(ft.GestureDetector):
 
     # Constructor
     def __init__(

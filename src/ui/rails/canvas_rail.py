@@ -3,7 +3,7 @@
 import flet as ft
 from models.views.story import Story
 from ui.rails.rail import Rail
-from styles.menu_option_style import Menu_Option_Style
+from styles.menu_option_style import MenuOptionStyle
 import math
 from flet_contrib.color_picker import ColorPicker
 from models.app import app
@@ -11,7 +11,7 @@ from handlers.new_canvas_alert_dlg import new_canvas_alert_dlg
 
 
 # Class for our Canvas Board rail
-class Canvas_Rail(Rail):
+class CanvasRail(Rail):
 
     def __init__(self, page: ft.Page, story: Story):
 

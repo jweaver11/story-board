@@ -3,11 +3,11 @@
 import flet as ft
 from models.views.story import Story
 from ui.rails.rail import Rail
-from styles.menu_option_style import Menu_Option_Style
+from styles.menu_option_style import MenuOptionStyle
 from handlers.tree_view import load_directory_data
 
 
-class World_Building_Rail(Rail):
+class WorldBuildingRail(Rail):
 
     # Constructor
     def __init__(self, page: ft.Page, story: Story):
@@ -49,7 +49,7 @@ class World_Building_Rail(Rail):
             
         # Builds our buttons that are our options in the menu
         return [
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.new_category_clicked,
                 data="category",
                 content=ft.Row([
@@ -57,7 +57,7 @@ class World_Building_Rail(Rail):
                     ft.Text("Category", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ])
             ),
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.new_map_clicked,
                 data="map",
                 content=ft.Row([
@@ -71,7 +71,7 @@ class World_Building_Rail(Rail):
     
     def get_directory_menu_options(self) -> list[ft.Control]:
         return [
-            Menu_Option_Style(
+            MenuOptionStyle(
                 data="map",
                 content=ft.Row([
                     ft.Icon(ft.Icons.MAP_OUTLINED),
@@ -82,7 +82,7 @@ class World_Building_Rail(Rail):
 
     def get_file_menu_options(self) -> list[ft.Control]:
         return [
-            Menu_Option_Style(
+            MenuOptionStyle(
                 data="map",
                 content=ft.Row([
                     ft.Icon(ft.Icons.MAP_OUTLINED),

@@ -11,10 +11,9 @@ import os
 import json
 from handlers.verify_data import verify_data
 from handlers.safe_string_checker import return_safe_name
-from styles.snack_bar import Snack_Bar
 from styles.colors import dark_gradient
 from styles.colors import colors
-from styles.snack_bar import Snack_Bar
+from styles.snack_bar import SnackBar
 
 
 
@@ -174,7 +173,7 @@ class Widget(ft.Container):
 
         # Handle errors
         except Exception as e:
-            self.p.open(Snack_Bar(f"Error deleting file {old_file_path}: {e}"))
+            self.p.open(SnackBar(f"Error deleting file {old_file_path}: {e}"))
             return False
         
     # Called when moving widget files
@@ -198,7 +197,7 @@ class Widget(ft.Container):
 
             # If this gets triggered, we cannot move since a widget with that name already exists in the target directory. Return out of function
             elif widget.data.get('key', '') == new_key:
-                self.p.open(Snack_Bar(f"Cannot move {self.title}. A widget with that name already exists in the target directory."))
+                self.p.open(SnackBar(f"Cannot move {self.title}. A widget with that name already exists in the target directory."))
                 return 
             
         # Delete our old file
@@ -307,7 +306,7 @@ class Widget(ft.Container):
 
     # Called when a draggable starts dragging.
     def start_drag(self, e: ft.DragStartEvent):
-        ''' Shows our pin drag targets '''
+        ''' Shows our pin drag targets. Needs its own function or story is not initialized on first launch, causing crash '''
         
         self.story.workspace.show_pin_drag_targets()
         

@@ -3,7 +3,7 @@ Extended flet controls that implement the same styling for easy access
 '''
 
 import flet as ft
-from styles.menu_option_style import Menu_Option_Style
+from styles.menu_option_style import MenuOptionStyle
 from models.views.story import Story
 from models.widgets.timeline import Timeline
 import os
@@ -14,7 +14,7 @@ from styles.colors import colors
 # so we can use the buttons at top of rail when there are multiple timelines
 
 # Expansion tiles used for timelines (when more than 1), plotpoints labels, and arcs labels
-class Timeline_Dropdown(ft.GestureDetector):
+class TimelineDropdown(ft.GestureDetector):
 
     # Constructor
     def __init__(
@@ -95,7 +95,7 @@ class Timeline_Dropdown(ft.GestureDetector):
 
         # Add our other three buttons
         menu_options.extend([
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.rename_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
@@ -107,7 +107,7 @@ class Timeline_Dropdown(ft.GestureDetector):
                 ]),
             ),
             # Color changing popup menu
-            Menu_Option_Style(
+            MenuOptionStyle(
                 content=ft.PopupMenuButton(
                     expand=True,
                     tooltip="",
@@ -124,7 +124,7 @@ class Timeline_Dropdown(ft.GestureDetector):
                 )
             ),
             # Delete button
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=lambda e: self.delete_clicked(e),
                 content=ft.Row([
                     ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED),

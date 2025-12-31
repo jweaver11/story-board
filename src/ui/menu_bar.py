@@ -7,7 +7,7 @@ import flet as ft
 from models.app import app
 from models.views.story import Story
 from handlers.check_story_unique import story_is_unique
-from styles.snack_bar import Snack_Bar
+from styles.snack_bar import SnackBar
 
 
 
@@ -308,9 +308,6 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                 ft.Container(expand=True),  # empty space in middle of menubar
                 # Fix broken widgets button
 
-                ft.IconButton(ft.Icons.BUG_REPORT_OUTLINED, tooltip="Test Snackbar", on_click=lambda e: page.open(Snack_Bar("This is a test snackbar!"))),
-                ft.IconButton(icon=ft.Icons.HOME_OUTLINED, on_click=lambda e: page.go("/"), tooltip="Home"),  # Temp for testing
-                ft.IconButton(icon=ft.Icons.BUILD_ROUNDED, on_click=lambda e: story.workspace.remove_drag_targets(), tooltip="Click if broken"),
                 ft.TextButton("Feedback"),  # Feedback button
                 ft.IconButton(icon=ft.Icons.SETTINGS_OUTLINED, on_click=settings_clicked),   # Settings button
                 ft.TextButton("Account Name", icon=ft.Icons.ACCOUNT_CIRCLE_OUTLINED),  # apps account name         

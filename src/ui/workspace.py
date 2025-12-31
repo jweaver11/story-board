@@ -77,7 +77,7 @@ class Workspace(ft.Container):
         )
 
         self.pin_drag_targets = ft.Container(
-            visible=False,
+            visible=True,
             expand=True,
             content=ft.Row(
                 spacing=0,
@@ -108,10 +108,8 @@ class Workspace(ft.Container):
         #self.reload_workspace() 
 
     # When a draggable starts dragging, we add our drag targets to the master stack
-    def show_pin_drag_targets(self):
+    def show_pin_drag_targets(self, e=None):
         ''' Adds our drag targets to the master stack so we can drop our widgets into pin locations '''
-
-        self.pin_drag_targets.visible = True
 
         visible_top_pin_controls = [control for control in self.top_pin.controls if getattr(control, 'visible', True)]
 
@@ -134,14 +132,9 @@ class Workspace(ft.Container):
         if len(visible_bottom_pin_controls) == 0:
             self.bottom_pin_drag_target.content.height = self.minimum_pin_height
         
-
         self.p.update()
 
-    # Called whenever a drag target accepts a draggable
-    def remove_drag_targets(self):
-        ''' Removes our drag targets from the master stack, otherwise they sit overtop our widgets and get in the way '''
-        self.pin_drag_targets.visible = False
-        self.master_stack.update()
+    
 
 
     # Called when a draggable hovers over a drag target before dropping

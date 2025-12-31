@@ -6,7 +6,7 @@ These objects is displayed in the timelines widget, and store our mini widgets p
 import json
 import os
 import flet as ft
-from styles.menu_option_style import Menu_Option_Style
+from styles.menu_option_style import MenuOptionStyle
 from models.views.story import Story
 from models.widget import Widget
 from models.mini_widgets.timelines.arc import Arc
@@ -129,9 +129,9 @@ class Timeline(Widget):
     # Called in the constructor
     def create_information_display(self):
         ''' Creates our timeline information display mini widget '''
-        from models.mini_widgets.timelines.timeline_information_display import Timeline_Information_Display
+        from models.mini_widgets.timelines.timeline_information_display import TimelineInformationDisplay
         
-        self.information_display = Timeline_Information_Display(
+        self.information_display = TimelineInformationDisplay(
             title=self.title,
             owner=self,
             father=self,
@@ -161,11 +161,11 @@ class Timeline(Widget):
     # Called in the constructor
     def load_plot_points(self):
         ''' Loads plotpoints from data into self.plotpoints  '''
-        from models.mini_widgets.timelines.plot_point import Plot_Point
+        from models.mini_widgets.timelines.plot_point import PlotPoint
 
         # Looks up our plotpoints in our data, then passes in that data to create a live object
         for key, data in self.data['plot_points'].items():
-            self.plot_points[key] = Plot_Point(
+            self.plot_points[key] = PlotPoint(
                 title=key, 
                 owner=self, 
                 father=self,
@@ -203,9 +203,9 @@ class Timeline(Widget):
     # Called when creating a new plotpoint
     def create_plot_point(self, title: str):
         ''' Creates a new plotpoint inside of our timeline object, and updates the data to match '''
-        from models.mini_widgets.timelines.plot_point import Plot_Point
+        from models.mini_widgets.timelines.plot_point import PlotPoint
 
-        new_plot_point = Plot_Point(
+        new_plot_point = PlotPoint(
             title=title, 
             owner=self, 
             father=self,
@@ -254,7 +254,7 @@ class Timeline(Widget):
         # Color, rename, delete
         return [
             # Delete button
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.rename_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
@@ -266,7 +266,7 @@ class Timeline(Widget):
                 ]),
             ),
             # Color changing popup menu
-            Menu_Option_Style(
+            MenuOptionStyle(
                 content=ft.PopupMenuButton(
                     expand=True,
                     tooltip="",
@@ -282,7 +282,7 @@ class Timeline(Widget):
                     items=self.get_color_options()
                 )
             ),
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.new_item_clicked,
                 data="arc",
                 content=ft.Row([
@@ -290,7 +290,7 @@ class Timeline(Widget):
                     ft.Text("Arc", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ])
             ),
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.new_item_clicked,
                 data="plot_point",
                 content=ft.Row([

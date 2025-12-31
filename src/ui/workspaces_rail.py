@@ -7,7 +7,7 @@ import flet as ft
 from models.views.story import Story
 
 # Class so we can store our all workspaces rail as an object inside of app
-class Workspaces_Rail(ft.Container):
+class WorkspacesRail(ft.Container):
     
     # Constructor for our all_workspaces_rail object. Needs a page reference passed in
     def __init__(self, page: ft.Page, story: Story = None):

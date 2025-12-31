@@ -9,7 +9,7 @@ import os
 from models.widget import Widget
 from models.views.story import Story
 from handlers.verify_data import verify_data
-from styles.menu_option_style import Menu_Option_Style
+from styles.menu_option_style import MenuOptionStyle
 
 
 
@@ -170,7 +170,7 @@ class Character(Widget):
 
         # Color, rename, delete
         return [
-            Menu_Option_Style(
+            MenuOptionStyle(
                 #on_click=self.rename_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
@@ -182,7 +182,7 @@ class Character(Widget):
                 ]),
             ),
             # Color changing popup menu
-            Menu_Option_Style(
+            MenuOptionStyle(
                 content=ft.PopupMenuButton(
                     expand=True,
                     tooltip="",

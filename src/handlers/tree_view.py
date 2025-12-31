@@ -8,8 +8,8 @@ import flet as ft
 import os
 import json
 from models.views.story import Story
-from styles.tree_view.tree_view_directory import Tree_View_Directory
-from styles.tree_view.tree_view_file import Tree_View_File
+from styles.tree_view.tree_view_directory import TreeViewDirectory
+from styles.tree_view.tree_view_file import TreeViewFile
 
 
 def load_directory_data(
@@ -17,7 +17,7 @@ def load_directory_data(
     story: Story,                                         # Story reference for any story related data
     directory: str,                                       # The directory to load data from
     rail: ft.Control,                                     # The rail this tree view is in
-    dir_dropdown: Tree_View_Directory = None,             # Optional parent expansion tile for when recursively called
+    dir_dropdown: TreeViewDirectory = None,             # Optional parent expansion tile for when recursively called
     column: ft.Column = None,                             # Optional parent column to add elements too when not starting inside a tile
     additional_directory_menu_options: list[ft.Control] = None,      # Additional menu options passed in from parent rail to be used for directories
     additional_file_menu_options: list[ft.Control] = None   
@@ -66,7 +66,7 @@ def load_directory_data(
             is_expanded = folders_meta.get(_canon_path(full_path), {}).get('is_expanded', False)
 
             # Create the expansion tile here
-            new_expansion_tile = Tree_View_Directory(
+            new_expansion_tile = TreeViewDirectory(
                 full_path=full_path,
                 title=capital_dir_path,
                 story=story,
@@ -121,7 +121,7 @@ def load_directory_data(
             if widget is not None:
             
                 # Create the file item
-                item = Tree_View_File(
+                item = TreeViewFile(
                     widget,
                     father=dir_dropdown if dir_dropdown is not None else None,
                     additional_menu_options=additional_file_menu_options

@@ -12,7 +12,7 @@ from models.widget import Widget
 from handlers.verify_data import verify_data
 
 
-class Mini_Widget(ft.Container):
+class MiniWidget(ft.Container):
 
     # Constructor. All mini widgets require a title, owner widget, father (parent), page reference...
     # Dictionary path, and optional data dictionary

@@ -6,12 +6,12 @@ the create 'character button' at the bottom.
 
 import flet as ft
 from models.widgets.character import Character
-from styles.menu_option_style import Menu_Option_Style
+from styles.menu_option_style import MenuOptionStyle
 from ui.rails.rail import Rail
 from models.views.story import Story
 from handlers.tree_view import load_directory_data
 
-class Characters_Rail(Rail):
+class CharactersRail(Rail):
     def __init__(self, page: ft.Page, story: Story):
 
         # Initialize the parent Rail class first
@@ -59,7 +59,7 @@ class Characters_Rail(Rail):
             
         # Builds our buttons that are our options in the menu
         return [
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.new_category_clicked,
                 data="category",
                 content=ft.Row([
@@ -67,7 +67,7 @@ class Characters_Rail(Rail):
                     ft.Text("Category", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ])
             ),
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.new_character_clicked,
                 data="character",
                 content=ft.Row([
@@ -81,7 +81,7 @@ class Characters_Rail(Rail):
     
     def get_directory_menu_options(self) -> list[ft.Control]:
         return [
-            Menu_Option_Style(
+            MenuOptionStyle(
                 data="character",
                 content=ft.Row([
                     ft.Icon(ft.Icons.PERSON_ADD_ALT_OUTLINED),

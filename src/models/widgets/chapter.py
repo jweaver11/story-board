@@ -2,7 +2,7 @@ import flet as ft
 from models.views.story import Story
 from models.widget import Widget
 from handlers.verify_data import verify_data
-from styles.menu_option_style import Menu_Option_Style
+from styles.menu_option_style import MenuOptionStyle
 from flet_quill import FletQuill
 
 
@@ -66,7 +66,7 @@ class Chapter(Widget):
 
         # Color, rename
         return [
-            Menu_Option_Style(
+            MenuOptionStyle(
                 #on_click=self.rename_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
@@ -78,7 +78,7 @@ class Chapter(Widget):
                 ]),
             ),
             # Color changing popup menu
-            Menu_Option_Style(
+            MenuOptionStyle(
                 content=ft.PopupMenuButton(
                     expand=True,
                     tooltip="",

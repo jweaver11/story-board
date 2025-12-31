@@ -2,7 +2,7 @@ import flet as ft
 
 
 # Give uniform styling to our snack bars
-class Snack_Bar(ft.SnackBar):
+class SnackBar(ft.SnackBar):
 
     # Constructor
     def __init__(self, error_text: str):

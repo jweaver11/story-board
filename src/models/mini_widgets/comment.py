@@ -3,13 +3,13 @@ Simple mini widget that consists of a title, and a body that is a string
 '''
 
 import flet as ft
-from models.mini_widget import Mini_Widget
+from models.mini_widget import MiniWidget
 from models.widget import Widget
 from handlers.verify_data import verify_data
 
 
 # Class that holds our mini note objects inside images or chapters
-class Comment(Mini_Widget):
+class Comment(MiniWidget):
     
     # Constructor
     def __init__(self, title: str, owner: Widget, father, page: ft.Page, key: str, data: dict=None):

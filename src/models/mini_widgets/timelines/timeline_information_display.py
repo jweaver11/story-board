@@ -1,11 +1,11 @@
 import flet as ft
-from models.mini_widget import Mini_Widget
+from models.mini_widget import MiniWidget
 from models.widget import Widget
 from models.widgets.timeline import Timeline
 
 
 # Display that makes timelines share much uniformaty in their information display like arcs do
-class Timeline_Information_Display(Mini_Widget):
+class TimelineInformationDisplay(MiniWidget):
 
     # Constructor. Requires title, owner widget, page reference, and optional data dictionary
     def __init__(self, title: str, owner: Widget, father: Timeline, page: ft.Page, key: str, data: dict=None):

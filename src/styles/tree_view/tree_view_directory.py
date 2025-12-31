@@ -2,12 +2,12 @@ import flet as ft
 from models.views.story import Story
 import os
 import json
-from styles.menu_option_style import Menu_Option_Style
+from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
-from styles.snack_bar import Snack_Bar
+from styles.snack_bar import SnackBar
 
 # Expansion tile for all sub directories (folders) in a directory
-class Tree_View_Directory(ft.GestureDetector):
+class TreeViewDirectory(ft.GestureDetector):
 
     def __init__(
         self, 
@@ -18,7 +18,7 @@ class Tree_View_Directory(ft.GestureDetector):
         rail: ft.Control,
         is_expanded: bool = False,                              # Whether this directory is expanded or not
         color: str = "primary",                                 # Color of the folder icon
-        father: 'Tree_View_Directory' = None,                   # Optional parent directory tile, if there is one
+        father: 'TreeViewDirectory' = None,                   # Optional parent directory tile, if there is one
         additional_menu_options: list[ft.Control] = None,       # Additional menu options when right clicking a category, depending on the rail
     ):
         
@@ -76,7 +76,7 @@ class Tree_View_Directory(ft.GestureDetector):
 
         # Declare our menu options list, and add our category option first
         menu_options = [
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=lambda e: self.new_item_clicked(type="category"),
                 content=ft.Row([
                     ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED),
@@ -97,7 +97,7 @@ class Tree_View_Directory(ft.GestureDetector):
         # Add our remaining built in options: rename, color change, delete
         menu_options.extend([
             # Rename button
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=self.rename_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
@@ -110,7 +110,7 @@ class Tree_View_Directory(ft.GestureDetector):
             ),
 
             # Color changing popup menu
-            Menu_Option_Style(
+            MenuOptionStyle(
                 content=ft.PopupMenuButton(
                     expand=True,
                     tooltip="",
@@ -128,7 +128,7 @@ class Tree_View_Directory(ft.GestureDetector):
             ),
         
             # Delete button
-            Menu_Option_Style(
+            MenuOptionStyle(
                 on_click=lambda e: self.delete_clicked(e),
                 content=ft.Row([
                     ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED),
@@ -411,7 +411,7 @@ class Tree_View_Directory(ft.GestureDetector):
                     self.story.create_widget(directory_path=self.full_path, title=title, tag=tag)
                 
                 case _:
-                    self.p.open(Snack_Bar(f"Error creating new item: Unknown type '{tag}'"))
+                    self.p.open(SnackBar(f"Error creating new item: Unknown type '{tag}'"))
         else:
             self.new_item_textfield.focus()                                  
             self.p.update()

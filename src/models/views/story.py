@@ -11,7 +11,7 @@ import shutil
 import json
 from constants import data_paths
 from handlers.verify_data import verify_data
-from styles.snack_bar import Snack_Bar
+from styles.snack_bar import SnackBar
 from handlers.safe_string_checker import return_safe_name
 
 
@@ -180,7 +180,7 @@ class Story(ft.View):
         
         # Handle errors
         except Exception as e:
-            self.p.open(Snack_Bar(f"Error saving story data: {e}"))
+            self.p.open(SnackBar(f"Error saving story data: {e}"))
 
     # Called for little data changes
     def change_data(self, **kwargs):
@@ -362,7 +362,6 @@ class Story(ft.View):
         We then remove its storage file from our file storage as well. '''
 
         from models.widget import Widget
-        from styles.snack_bar import Snack_Bar
 
         # Called if file is successfully deleted. Then we remove the widget from its live storage
         def _delete_live_widget(widget: Widget):
@@ -389,7 +388,7 @@ class Story(ft.View):
                     self.family_tree_view = None
 
                 case _:
-                    self.p.open(Snack_Bar(f"Error deleting widget: Unknown tag {tag}"))
+                    self.p.open(SnackBar(f"Error deleting widget: Unknown tag {tag}"))
                     return
             
             
@@ -413,7 +412,7 @@ class Story(ft.View):
         from models.widgets.character import Character
         from models.widgets.timeline import Timeline   
         from models.widgets.map import Map
-        from models.widgets.world_building import World_Building
+        from models.widgets.world_building import WorldBuilding
         from models.widgets.family_tree_view import FamilyTreeView
 
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder
@@ -459,7 +458,7 @@ class Story(ft.View):
                             case "map":
                                 self.maps[key] = Map(title, self.p, dirpath, self, widget_data)
                             case "world_building":
-                                self.world_building = World_Building(title, self.p, dirpath, self, widget_data)
+                                self.world_building = WorldBuilding(title, self.p, dirpath, self, widget_data)
                             case "family_tree_view":
                                 self.widgets.append(FamilyTreeView(title, self.p, dirpath, self, widget_data))
                             case _:
@@ -472,8 +471,6 @@ class Story(ft.View):
                     # Handle errors if the path is wrong
                     except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
                         print(f"Error loading content from {filename}: {e}")
-
-        # Load animations -- TBD in future if possible
 
 
     # Called in startup after we have loaded all our live objects
@@ -636,7 +633,7 @@ class Story(ft.View):
     def build_view(self) -> list[ft.Control]:
         ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
         from ui.menu_bar import create_menu_bar
-        from ui.workspaces_rail import Workspaces_Rail
+        from ui.workspaces_rail import WorkspacesRail
         from ui.active_rail import Active_Rail
         from ui.workspace import Workspace
         from models.app import app
@@ -652,7 +649,7 @@ class Story(ft.View):
         self.menubar = create_menu_bar(page, self)
 
         # Create our rails and workspace objects
-        self.workspaces_rail = Workspaces_Rail(page, self)  # Create our all workspaces rail
+        self.workspaces_rail = WorkspacesRail(page, self)  # Create our all workspaces rail
         self.active_rail = Active_Rail(page, self)  # Container stored in story for the active rails
         self.workspace = Workspace(page, self)  # Reference to our workspace object for pin locations
         self.workspace.reload_workspace()  # Load our workspace here instead of in the workspace constructor

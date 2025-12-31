@@ -1,6 +1,6 @@
 import flet as ft
 from models.views.story import Story
-from styles.snack_bar import Snack_Bar
+from styles.snack_bar import SnackBar
 
 # Called whenever a new story is laoded
 def route_change(e: ft.RouteChangeEvent) -> Story:
@@ -59,7 +59,7 @@ def route_change(e: ft.RouteChangeEvent) -> Story:
             # If theres an error loading the story, go to home view
             page.views.append(create_home_view(page))
             page.update()
-            page.open(Snack_Bar(f"Error loading story for route: {page.route}"))
+            page.open(SnackBar(f"Error loading story for route: {page.route}"))
                 
                     
             
