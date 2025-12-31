@@ -458,9 +458,9 @@ class Story(ft.View):
     # Called on story startup to load all our content objects
     def load_content(self):
         ''' Loads our content from our content folder inside of our story folder '''
-        from models.widgets.content.note import Note
-        from models.widgets.content.chapter import Chapter
-        from models.widgets.content.canvas import Canvas
+        from models.widgets.note import Note
+        from models.widgets.chapter import Chapter
+        from models.widgets.canvas import Canvas
 
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder
         if not os.path.exists(self.data['content_directory_path']):
@@ -520,7 +520,7 @@ class Story(ft.View):
     # Called as part of the startup method during program launch
     def load_characters(self):
         ''' Loads all our characters from our characters folder and adds them to the live story object'''
-        from models.widgets.character.character import Character
+        from models.widgets.character import Character
         
         # Check if the characters folder exists. Creates it if it doesn't. Handles errors on startup
         if not os.path.exists(self.data['characters_directory_path']):
@@ -645,7 +645,7 @@ class Story(ft.View):
     # Called on story startup to load all our world building widget
     def load_world_building(self):
         ''' Loads our world object from storage, or creates a new one if it doesn't exist '''
-        from models.widgets.world_building.world_building import World_Building
+        from models.widgets.world_building import World_Building
  
         # Check if the plotline folder exists. Creates it if it doesn't. 
         if not os.path.exists(self.data['world_building_directory_path']):
@@ -679,7 +679,7 @@ class Story(ft.View):
     # Called in constructor
     def load_maps(self):
         ''' Loads our world maps from our dict into our live object '''
-        from models.widgets.world_building.map import Map
+        from models.widgets.map import Map
         
         try: 
             
@@ -782,7 +782,7 @@ class Story(ft.View):
     # Called to create a new chapter
     def create_chapter(self, title: str, directory_path: str=None):
         ''' Creates a new chapter object, saves it to our live story object, and saves it to storage'''
-        from models.widgets.content.chapter import Chapter
+        from models.widgets.chapter import Chapter
 
         # If no path is passed in, construct the full file path for the chapter JSON file
         if directory_path is None:   # There SHOULD always be a path passed in, but this will catch errors
@@ -802,7 +802,7 @@ class Story(ft.View):
     # Called to create a note object
     def create_note(self, title: str, directory_path: str=None):
         ''' Creates a new note object, saves it to our live story object, and saves it to storage'''
-        from models.widgets.content.note import Note
+        from models.widgets.note import Note
 
         # If no path is passed in, construct the full file path for the note JSON file
         if directory_path is None:   # There SHOULD always be a path passed in, but this will catch errors
@@ -822,7 +822,7 @@ class Story(ft.View):
     # Called to create a canvas object
     def create_canvas(self, title: str, directory_path: str=None, data: dict=None):
         ''' Creates a new note object, saves it to our live story object, and saves it to storage'''
-        from models.widgets.content.canvas import Canvas
+        from models.widgets.canvas import Canvas
 
         # If no path is passed in, construct the full file path for the note JSON file
         if directory_path is None:   # There SHOULD always be a path passed in, but this will catch errors
@@ -847,7 +847,7 @@ class Story(ft.View):
     # Called to create a new character
     def create_character(self, title: str, directory_path: str=None):
         ''' Creates a new character object, saves it to our live story object, and saves it to storage'''
-        from models.widgets.character.character import Character
+        from models.widgets.character import Character
 
         # If no path is passed in, construct the full file path for the character JSON file
         if directory_path is None:
@@ -885,7 +885,7 @@ class Story(ft.View):
     # Called to create a map object
     def create_map(self, title: str, directory_path: str=None, father: str=None, category: str=None):
         ''' Creates a new map object, saves it to our live story object, and saves it to storage'''
-        from models.widgets.world_building.map import Map
+        from models.widgets.map import Map
 
         # Path to where all our maps are stored
         if directory_path is None:

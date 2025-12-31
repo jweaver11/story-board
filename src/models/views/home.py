@@ -11,7 +11,6 @@ def create_home_view(page: ft.Page) -> ft.View:
 
     menubar = create_menu_bar(page)   
 
-    
 
     # Called when giant new story button is clicked
     def create_new_story_button_clicked(e):

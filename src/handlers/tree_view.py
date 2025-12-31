@@ -105,6 +105,8 @@ def load_directory_data(
 
                 key = file_data.get('key', None)
 
+                widget = None
+
                 for widget in story.widgets:
                     if widget.data.get('key', None) == key:
                         widget = widget
@@ -114,20 +116,22 @@ def load_directory_data(
                 print(f"Error loading file {file_name} in directory {directory}: {e}")
                 continue
             
+            
+            if widget is not None:
+            
+                # Create the file item
+                item = Tree_View_File(
+                    widget,
+                    father=dir_dropdown if dir_dropdown is not None else None,
+                    additional_menu_options=additional_file_menu_options
+                )        
 
-            # Create the file item
-            item = Tree_View_File(
-                widget,
-                father=dir_dropdown if dir_dropdown is not None else None,
-                additional_menu_options=additional_file_menu_options
-            )        
-
-            # Add them to parent expansion tile if one exists, otherwise just add it to the column
-            if dir_dropdown is not None:
-                dir_dropdown.content.content.controls.append(item)
-            else: 
-                column.controls.append(item)
-            pass
+                # Add them to parent expansion tile if one exists, otherwise just add it to the column
+                if dir_dropdown is not None:
+                    dir_dropdown.content.content.controls.append(item)
+                else: 
+                    column.controls.append(item)
+                pass
 
         # Return the parent expansion tile or column depending on what was provided
         return dir_dropdown if dir_dropdown is not None else column

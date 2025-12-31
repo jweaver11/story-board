@@ -5,7 +5,7 @@ the create 'character button' at the bottom.
 '''
 
 import flet as ft
-from models.widgets.character.character import Character
+from models.widgets.character import Character
 from styles.menu_option_style import Menu_Option_Style
 from ui.rails.rail import Rail
 from models.views.story import Story

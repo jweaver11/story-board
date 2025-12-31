@@ -10,6 +10,7 @@ from models.views.story import Story
 import os
 import json
 from handlers.verify_data import verify_data
+from handlers.safe_string_checker import return_safe_name
 from styles.snack_bar import Snack_Bar
 from styles.colors import dark_gradient
 from styles.colors import colors
@@ -49,16 +50,15 @@ class Widget(ft.Container):
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
             {
-                'key': f"{self.directory_path}\\{self.title}",  # Unique key for this widget based on directory path + title
+                'key': return_safe_name(f"{self.directory_path}\\{self.title}"),  # Unique key for this widget based on directory path + title
                 'title': self.title,                            # Title of our widget  
-                'directory_path': self.directory_path,          # Directory path to the file this widget's data is stored in
+                'directory_path': return_safe_name(self.directory_path),          # Directory path to the file this widget's data is stored in
                 'tag': str,                                     # Tag to identify what type of widget this is
                 'pin_location': "main" if data is None else data.get('pin_location', "main"),       # Pin location this widget is rendered in the workspace (main, left, right, top, or bottom)
                 'index': int,                                   # Index of this widget in its pin location
                 'visible': True,                                # Whether this widget is visible in the workspace or not
                 'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
                 'color': "primary",                             # Color of the icon on the rail and next to title on rail
-                #'mini_widgets_location': "right",    OUTDATED           # Side of the widget the mini widgets show up on (left or right)
                 'custom_fields': dict,                          # Dictionary for any custom fields the widget wants to store
             },
         )
@@ -113,7 +113,7 @@ class Widget(ft.Container):
         
         # Handle errors
         except Exception as e:
-            print(f"Error saving widget to {file_path}: {e}") 
+            print(f"Error saving widget to {self.data.get('file_path', 'Could not retrieve path')}: {e}") 
             print("Data that failed to save: ", self.data)
 
     # Called for little data changes
