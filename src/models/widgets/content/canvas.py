@@ -89,7 +89,7 @@ class Canvas(Widget):
                 on_pan_update=self.is_drawing,
                 on_pan_end=lambda e: self.save_canvas(),
                 on_tap_up=self.add_point,      # Handles so we can add points
-                #drag_interval=10,
+                drag_interval=10,
             ),
             expand=True,
             on_resize=self.on_canvas_resize, resize_interval=100,
@@ -112,6 +112,7 @@ class Canvas(Widget):
 
         # Other UI elements
         self.header = ft.Row([
+            # Undo and redo buttons
             ft.PopupMenuButton(
                 icon=ft.Icons.IMAGE_ASPECT_RATIO_OUTLINED, tooltip="Set the background of your canvas. If one is set, it will be exported with the canvas",
                 menu_padding=ft.padding.all(0), 
@@ -199,6 +200,18 @@ class Canvas(Widget):
                 # Lineto jjust has x and y
                 elif element['type'] == 'lineto':
                     new_path.elements.append(cv.Path.LineTo(element['x'], element['y']))
+
+                elif element['type'] == 'arc':
+                    new_path.elements.append(
+                        cv.Path.Arc(
+                            width=element['width'],
+                            height=element['height'],
+                            x=element['x'],
+                            y=element['y'],
+                            start_angle=element['start_angle'],
+                            sweep_angle=element['sweep_angle'],
+                        )
+                    )
                         
 
                 # QuadraticTo has cp1x, cp1y, x, y, w
@@ -315,6 +328,7 @@ class Canvas(Widget):
                 large_arc=False,
                 x=e.local_x,
                 y=e.local_y,
+                clockwise=True,
             )
             self.current_path.elements.append(arc_element)
             self.state.paths[0]['elements'].append((arc_element.__dict__))
@@ -372,18 +386,27 @@ class Canvas(Widget):
 
             # Swap directions of arc depending if we drag up or down from starting point
             if e.local_y - self.state.y >= 0:   # Dragging down
-                arc_element.sweep_angle = math.pi
-                arc_element.height = abs(e.local_y - self.state.y) * 2
+                arc_element.sweep_angle = -math.pi
+                arc_element.height = abs(self.state.y - e.local_y)
+                arc_element.y = self.state.y - (arc_element.height / 2)
                 
             else:       # Dragging up
-                arc_element.sweep_angle = -math.pi
-                arc_element.height = abs(e.local_y - self.state.y) 
+                
+                arc_element.sweep_angle = math.pi
+                arc_element.height = abs(e.local_y - self.state.y)
+                arc_element.y = abs(self.state.y - (arc_element.height / 2))
+
+            print("arc element y adjustment: ", arc_element.height / 2)
+            print("arc height: ", arc_element.height)
+
+
+                
                 
 
             arc_element.width = abs(e.local_x - self.state.x) 
         
 
-            print("Arc width and height: ", arc_element.width, arc_element.height)
+            #print("Arc width and height: ", arc_element.width, arc_element.height)
 
             # Update the page and return early
             try:
@@ -392,6 +415,8 @@ class Canvas(Widget):
                 self.canvas.update()
             except Exception as ex:
                 self.p.update()
+
+
             return
         
         # Handle arcs
@@ -420,6 +445,7 @@ class Canvas(Widget):
         # If its not one of our custom styles, use free-draw stroke, which is constantly adding line_to segements
         else:
 
+            #TODO: Add check here to reduce num of lines based on previous start and edn
             # Set the path element based on what kind of path we're adding, add it to our current path and our state paths
             path_element = cv.Path.LineTo(e.local_x, e.local_y)
 

@@ -423,6 +423,7 @@ class Canvas_Rail(Rail):
 
                 # Add shapes and shapefill drawing modes. Path will use paint.style.paintingstyle fill or stroke.
                 # Add shadow effect option for paths
+                # Custom saved colors and custom brushes
 
                 ft.Row([ft.Text("Size", theme_style=ft.TextThemeStyle.LABEL_LARGE), paint_width]),
                 ft.Row([ft.Text("Opacity", theme_style=ft.TextThemeStyle.LABEL_LARGE), paint_opacity]),
