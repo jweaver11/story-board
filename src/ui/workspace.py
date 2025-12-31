@@ -102,7 +102,7 @@ class Workspace(ft.Container):
         # Master stack that holds our widgets ^ row. We add our drag targets overtop our widgets, so we use a stack here
         # And our drag targets when we start dragging widgets.
         # We use global stack like this so there is always a drag target, even if a pin is empty
-        self.master_stack = ft.Stack(expand=True, controls=[self.widgets, self.pin_drag_targets])
+        self.master_stack = ft.Stack(expand=True, controls=[self.widgets, ft.TransparentPointer(self.pin_drag_targets)])
 
 
 
@@ -112,6 +112,7 @@ class Workspace(ft.Container):
     # When a draggable starts dragging, we add our drag targets to the master stack
     def show_pin_drag_targets(self):
         ''' Adds our drag targets to the master stack so we can drop our widgets into pin locations '''
+        print("Showing drag targets in workspace")
 
         self.pin_drag_targets.visible = True
 
@@ -142,6 +143,7 @@ class Workspace(ft.Container):
     # Called whenever a drag target accepts a draggable
     def remove_drag_targets(self):
         ''' Removes our drag targets from the master stack, otherwise they sit overtop our widgets and get in the way '''
+        print("Removing drag targets from workspace")
         self.pin_drag_targets.visible = False
         self.master_stack.update()
 
