@@ -62,6 +62,10 @@ class Story(ft.View):
                     'type': self.type,             # Novel or comic. Affects templates and default data for new content
                     'multi_planetary': bool,       # Whether the story will take place on multiple planets
                     'multi_timelines': bool,       # Whether the story will have multiple timelines (regression, multiverse, etc.)
+                    'character_rail_sort_by': {
+                        'method': "role",          # None, alphabeticaly, role, moraiity, age
+                        'direction': "descending",       # ascending (top start low) or descending (top start high)
+                    },
                 },
                 
                 # Dict of all our categories INSIDE of basic story structure (content, characters, timelines)

@@ -11,7 +11,6 @@ from ui.rails.rail import Rail
 from models.views.story import Story
 from handlers.tree_view import load_directory_data
 from styles.tree_view.tree_view_directory import TreeViewDirectory
-from handlers.remove_empty_categories import remove_empty_categories
 from models.app import app
 
 class CharactersRail(Rail):
@@ -89,10 +88,53 @@ class CharactersRail(Rail):
                 ])
             ),
         ]
+    
+    def _default_char_list(self) -> list[ft.Control]:
+        direction = self.story.data.get('settings', {}).get('character_rail_sort_by', {}).get('direction', 'descending')
+        char_list = [char for char in self.story.characters.values()]
+
+        controls = []
+        for char in char_list:
+            controls.append(ft.Text(char.title))
+
+        return controls
+    
+    def _role_char_list(self) -> list[ft.Control]:
+        
+        main_chars = [char for char in self.story.characters.values() if char.data.get('role', 'background') == 'main']
+        side_chars = [char for char in self.story.characters.values() if char.data.get('role', 'background') == 'side']
+        background_chars = [char for char in self.story.characters.values() if char.data.get('role', 'background') == 'background']
+
+        direction = self.story.data.get('settings', {}).get('character_rail_sort_by', {}).get('direction', 'descending')
+
+        controls = []
+
+        if len(main_chars) > 0:
+            controls.append(ft.Text("Main Characters", weight=ft.FontWeight.BOLD))
+            for char in main_chars:
+                controls.append(ft.Text(char.title))
+            controls.append(ft.Container(height=10))
+
+        if len(side_chars) > 0:
+            controls.append(ft.Text("Side Characters", weight=ft.FontWeight.BOLD))
+            for char in side_chars:
+                controls.append(ft.Text(char.title))
+            controls.append(ft.Container(height=10))
+
+        if len(background_chars) > 0:
+            controls.append(ft.Text("Background Characters", weight=ft.FontWeight.BOLD))
+            for char in background_chars:
+                controls.append(ft.Text(char.title))
+            controls.append(ft.Container(height=10))
+
+        return controls
 
 
     # Called on startup and when we have changes to the rail that have to be reloaded 
     def reload_rail(self):
+
+        # TODO: Character rail should load from story.characters and organize them by main, side, background, etc. and have filter options to organize them that way.
+        # IT should not load from the content directory like other rails.
 
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -109,22 +151,14 @@ class CharactersRail(Rail):
             controls=[]
         )
 
-        # Load our content directory data into the rail
-        load_directory_data(
-            page=self.p,
-            story=self.story,
-            directory=self.directory_path,
-            rail=self,
-            tags=["character"],
-            column=content,
-            additional_directory_menu_options=self.get_directory_menu_options()
-        ) 
 
-        # Go through our content controls, and remove any directories that are empty because of tag filtering
-        if not app.settings.data.get('show_empty_categories', True):
-            for control in content.controls[:]:
-                if isinstance(control, TreeViewDirectory):
-                    remove_empty_categories(control, parent_column=content)
+        
+
+        sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', {}).get('method', 'none')
+        if sort_method is None:
+            content.controls = self._default_char_list
+        elif sort_method == "role":
+            content.controls = self._role_char_list()
                     
 
         content.controls.append(ft.Container(height=6))

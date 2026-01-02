@@ -51,12 +51,11 @@ class Settings(ft.View):
                 'active_rail_width': 200,  # Width of our active rail that we can resize
                 'theme_color': "blue",   # the color scheme of the app. Defaults to blue
                 'change_name_colors_based_on_morality': True,   # If characters names change colors in char based on morality
-                'workspaces_rail_is_collapsed': False,  # If the all workspaces rail is collapsed or not
-                'workspaces_rail_is_reorderable': False,  # If the all workspaces rail is reorderable or not
+                'workspaces_rail_is_collapsed': bool,  # If the all workspaces rail is collapsed or not
+                'workspaces_rail_is_reorderable': bool,  # If the all workspaces rail is reorderable or not
                 'page_is_maximized': True,   # If the window is maximized or not
                 'page_width': int,     # Last known page width
                 'page_height': int,    # Last known page height
-                'show_empty_categories': True,   # If empty categories are shown in rails (not content rail) or not
                 'workspaces_rail_order': [      # Order of the workspace rail
                     "content",
                     "characters",
@@ -285,11 +284,6 @@ class Settings(ft.View):
                     #on_click=lambda e: story.all_workspaces_rail.toggle_rail_reorderable(),
                     on_click=lambda e: self.workspaces_rail.toggle_reorder_rail(story=self.story)
                 ),
-                ft.Checkbox(
-                    label="Show Empty Categories", on_change=lambda e: self.change_data(**{'show_empty_categories': e.control.value}),
-                    value=self.data.get('show_empty_categories', True),
-                    tooltip="If disabled, categories with no content in them will be hidden in all rails except the content rail. (Example: folders with no characters in them would be hidden in the characters rail)",
-                )
             ]
         )
 

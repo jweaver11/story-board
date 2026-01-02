@@ -209,7 +209,7 @@ class Widget(ft.Container):
             self.save_dict()
 
             # Reload the rail to apply changes
-            self.story.active_rail.reload_all_rails()     
+            self.story.active_rail.content.reload_rail()
 
 
     # Called when renaming a widget

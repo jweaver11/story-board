@@ -232,7 +232,7 @@ class Rail(ft.Container):
             else:
                 # Create the widget and reload all our rails
                 self.story.create_widget(title, tag)
-                self.story.active_rail.reload_all_rails()
+                self.story.active_rail.content.reload_rail()
 
 
 
