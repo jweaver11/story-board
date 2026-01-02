@@ -142,7 +142,7 @@ class TreeViewDirectory(ft.GestureDetector):
         return menu_options
 
     # Called when expanding/collapsing the directory
-    def toggle_expand(self):
+    async def toggle_expand(self, e):
         ''' Makes sure our state and data match the updated expanded/collapsed state '''
 
         self.is_expanded = not self.is_expanded
@@ -158,19 +158,17 @@ class TreeViewDirectory(ft.GestureDetector):
             if hasattr(self.rail.active_dropdown, "is_focused"):
                 
                 self.rail.active_dropdown.is_focused = False
-                self.rail.active_dropdown.refresh_expansion_tile()
             
             else:
                 self.rail.active_dropdown.timeline_dropdown.is_focused = False
-                self.rail.active_dropdown.timeline_dropdown.refresh_expansion_tile()
 
         self.rail.active_dropdown = self
         self.rail.refresh_buttons()
 
         self.is_focused = True
-        self.refresh_expansion_tile()
+        await self.refresh_expansion_tile()
 
-    def refresh_expansion_tile(self):
+    async def refresh_expansion_tile(self):
         if self.is_focused:
             self.expansion_tile.bgcolor = ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE)
             self.expansion_tile.collapsed_bgcolor = ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE)
@@ -178,10 +176,13 @@ class TreeViewDirectory(ft.GestureDetector):
             self.expansion_tile.bgcolor = ft.Colors.TRANSPARENT
             self.expansion_tile.collapsed_bgcolor = ft.Colors.TRANSPARENT
 
-        self.p.update()
+        self.expansion_tile.update()
+
+        # TODO: Need to reload the other rails so that they match our new expanded/collapsed state
+        await self.story.active_rail.reload_all_other_rails()
 
     # Called when creating new category or when additional menu items are clicked
-    def new_item_clicked(self, type: str = "category"):
+    async def new_item_clicked(self, type: str = "category"):
         ''' Shows the textfield for creating new item. Requires what type of item (category, chapter, note, etc.) '''
 
         # Clear out any previous value
@@ -213,7 +214,7 @@ class TreeViewDirectory(ft.GestureDetector):
 
         # Check our expanded state. Rebuild if needed
         if self.is_expanded == False:
-            self.toggle_expand()
+            await self.toggle_expand()
             self.reload()
 
         # Close the menu, which will also update the page
@@ -573,7 +574,7 @@ class TreeViewDirectory(ft.GestureDetector):
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
             adaptive=True,
             shape=ft.RoundedRectangleBorder(),
-            on_change=lambda e: self.toggle_expand(),
+            on_change=self.toggle_expand,
             controls=[self.new_item_textfield], 
         )
 

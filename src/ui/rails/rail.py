@@ -102,16 +102,18 @@ class Rail(ft.Container):
 
 
     # Called when new category button or menu option is clicked
-    def new_category_clicked(self, e):
+    def new_item_clicked(self, e):
         ''' Handles setting our textfield for new category creation '''
+
+        tag = e.control.data
         
         # Makes sure the right textfield is visible and the others are hidden
         self.new_item_textfield.visible = True
 
         # Set our textfield value to none, and the hint and data 
         self.new_item_textfield.value = None
-        self.new_item_textfield.hint_text = "Category Name"
-        self.new_item_textfield.data = "category"
+        self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
+        self.new_item_textfield.data = f"{tag}"
 
         # Close the menu (if ones is open), which will update the page as well
         self.story.close_menu()
@@ -244,9 +246,6 @@ class Rail(ft.Container):
     # Called every time the mouse moves over the workspace
     def on_hovers(self, e):
         ''' Stores our mouse positioning so we know where to open menus '''
-
-        
-
         self.story.mouse_x = e.global_x 
         self.story.mouse_y = e.global_y 
 

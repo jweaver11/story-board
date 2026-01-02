@@ -12,6 +12,7 @@ from models.views.story import Story
 from handlers.tree_view import load_directory_data
 from styles.tree_view.tree_view_directory import TreeViewDirectory
 from handlers.remove_empty_categories import remove_empty_categories
+from models.app import app
 
 class CharactersRail(Rail):
     def __init__(self, page: ft.Page, story: Story):
@@ -25,36 +26,35 @@ class CharactersRail(Rail):
 
         # UI elements
         self.top_row_buttons = [
-            ft.IconButton(
-                tooltip="New Category",
-                icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
-                on_click=self.new_category_clicked
+           ft.PopupMenuButton(
+                icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                tooltip="New Content",
+                menu_padding=0,
+                items=[
+                    ft.PopupMenuItem(
+                        text="Category", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
+                        on_click=self.new_item_clicked, data="category"
+                    ),
+                    ft.PopupMenuItem(
+                        text="Character", icon=ft.Icons.PERSON_ADD_ALT_OUTLINED,
+                        on_click=self.new_item_clicked, data="character"
+                    ),
+                ]
             ),
-            
-            ft.IconButton(
-                tooltip="New Character",
-                icon=ft.Icons.PERSON_ADD_ALT_OUTLINED,
-                on_click=self.new_character_clicked
-            )
+            ft.PopupMenuButton(
+                icon=ft.Icons.FILE_UPLOAD_OUTLINED,
+                tooltip="Upload Content",
+                menu_padding=0,
+                items=[
+                    ft.PopupMenuItem(
+                        text="Character", icon=ft.Icons.PERSON_ADD_ALT_OUTLINED,
+                    ),
+                ]
+            ),
         ]
 
         # Reload the rail on start
-        self.reload_rail()
-
-    # Called when new character button or menu option is clicked
-    def new_character_clicked(self, e):
-        ''' Handles setting our textfield for new character creation '''
-        
-        # Makes sure the right textfield is visible and the others are hidden
-        self.new_item_textfield.visible = True
-
-        # Set our textfield value to none, and the hint and data
-        self.new_item_textfield.value = None
-        self.new_item_textfield.hint_text = "Character Name"
-        self.new_item_textfield.data = "character"
-
-        # Close the menu (if ones is open), which will update the page as well
-        self.story.close_menu()   
+        self.reload_rail() 
 
     # Called to return our list of menu options for the content rail
     def get_menu_options(self) -> list[ft.Control]:
@@ -62,7 +62,7 @@ class CharactersRail(Rail):
         # Builds our buttons that are our options in the menu
         return [
             MenuOptionStyle(
-                on_click=self.new_category_clicked,
+                on_click=self.new_item_clicked,
                 data="category",
                 content=ft.Row([
                     ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED),
@@ -70,15 +70,13 @@ class CharactersRail(Rail):
                 ])
             ),
             MenuOptionStyle(
-                on_click=self.new_character_clicked,
+                on_click=self.new_item_clicked,
                 data="character",
                 content=ft.Row([
                     ft.Icon(ft.Icons.PERSON_ADD_ALT_OUTLINED),
                     ft.Text("Character", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ])
             ),
-
-            # New and upload options? or just upload?? or how do i wanna do this?? Compact vs spread out view??
         ]
     
     def get_directory_menu_options(self) -> list[ft.Control]:
@@ -123,9 +121,10 @@ class CharactersRail(Rail):
         ) 
 
         # Go through our content controls, and remove any directories that are empty because of tag filtering
-        for control in content.controls:
-            if isinstance(control, TreeViewDirectory):
-                remove_empty_categories(control, parent_column=content)
+        if not app.settings.data.get('show_empty_categories', True):
+            for control in content.controls:
+                if isinstance(control, TreeViewDirectory):
+                    remove_empty_categories(control, parent_column=content)
                     
 
         content.controls.append(ft.Container(height=6))

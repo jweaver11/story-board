@@ -166,7 +166,7 @@ class Widget(ft.Container):
             # Delete the file if it exists
             if os.path.exists(old_file_path):
                 os.remove(old_file_path)
-                return True
+                return True 
             else:
                 print(f"File {old_file_path} does not exist, cannot delete.")
                 return False
@@ -181,7 +181,6 @@ class Widget(ft.Container):
         ''' Deletes our old file and updates our directory, then saves the new file there '''
 
         if new_directory == self.data.get('directory_path', ''):
-            print("Same directory, not moving")
             return
 
         # New key to check for duplicates
@@ -221,13 +220,13 @@ class Widget(ft.Container):
         self.toggle_visibility() 
 
         # Save our old file path for renaming later
-        old_file_path = os.path.join(self.directory_path, f"{self.title}.json")   
+        old_file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json")  
         old_key = f"{self.directory_path}\\{self.title}"  
                                                  
         # Update our live title, and associated data
         self.title = title.capitalize()                              
         self.data['title'] = self.title     
-        self.data['key'] = f"{self.directory_path}\\{self.title}"  
+        self.data['key'] = f"{self.directory_path}\\{return_safe_name(self.title)}_{self.data.get('tag', '')}"  
 
 
         # Rename our json file so it doesnt just create a new one
@@ -243,9 +242,9 @@ class Widget(ft.Container):
         if tag == "chapter":
             self.story.chapters.pop(old_key, None)
             self.story.chapters[self.data['key']] = self
-        elif tag == "image":
-            self.story.images.pop(old_key, None)
-            self.story.images[self.data['key']] = self
+        elif tag == "canvas":
+            self.story.canvases.pop(old_key, None)
+            self.story.canvases[self.data['key']] = self
         elif tag == "note":
             self.story.notes.pop(old_key, None)
             self.story.notes[self.data['key']] = self

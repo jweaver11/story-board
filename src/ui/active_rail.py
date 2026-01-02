@@ -55,6 +55,26 @@ class Active_Rail(ft.Container):
         self.canvas_rail.reload_rail()
         self.planning_rail.reload_rail()
 
+    # Called when we want to reload all other rails except the active one. Usually to keep expansion states of categories between rails
+    async def reload_all_other_rails(self):
+        ''' Reloads all rails except the active one '''
+        
+        active_rail = self.story.data.get('selected_rail', 'content')
+        
+        if active_rail != "content":
+            self.content_rail.reload_rail()
+        if active_rail != "characters":
+            self.characters_rail.reload_rail()
+        if active_rail != "timelines":
+            self.timelines_rail.reload_rail()
+        if active_rail != "world_building":
+            self.world_building_rail.reload_rail()
+        if active_rail != "canvas":
+            self.canvas_rail.reload_rail()
+        if active_rail != "planning":
+            self.planning_rail.reload_rail()
+        
+
         
     # Called when other workspaces are selected
     def display_active_rail(self, story: Story):

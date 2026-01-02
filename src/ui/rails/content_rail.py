@@ -25,18 +25,6 @@ class ContentRail(Rail):
         # Reload the rail on start
         self.reload_rail()
 
-    # Called when new category button is clicked
-    def new_category_clicked(self, e):
-        ''' Set our textfields hint text, data, value and visibility '''
-        
-        self.new_item_textfield.hint_text = "Category Name"
-        self.new_item_textfield.data = "category"
-        self.new_item_textfield.value = None
-        self.new_item_textfield.visible = True
-
-        # Close the menu, which will update the page as well
-        self.story.close_menu()
-
     # New chapters
     def new_chapter_clicked(self, e):
         self.new_item_textfield.hint_text = "Chapter Title"
@@ -92,7 +80,7 @@ class ContentRail(Rail):
         # Builds our buttons that are our options in the menu
         return [
             MenuOptionStyle(
-                on_click=self.new_category_clicked,
+                on_click=self.new_item_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED),
                     ft.Text("Category", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
@@ -172,12 +160,12 @@ class ContentRail(Rail):
             controls=[
                 ft.PopupMenuButton(
                     icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                    tooltip="New Content",
+                    tooltip="New",
                     menu_padding=0,
                     items=[
                         ft.PopupMenuItem(
                             text="Category", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
-                            on_click=self.new_category_clicked
+                            on_click=self.new_item_clicked
                         ),
                         ft.PopupMenuItem(
                             text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
@@ -207,7 +195,7 @@ class ContentRail(Rail):
                 ),
                 ft.PopupMenuButton(
                     icon=ft.Icons.FILE_UPLOAD_OUTLINED,
-                    tooltip="Upload Content",
+                    tooltip="Upload",
                     menu_padding=0,
                     items=[
                         ft.PopupMenuItem(

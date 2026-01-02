@@ -1,5 +1,4 @@
 from models.views.story import Story
-from models.widget import Widget
 
 # Called to check if our widget titles are unique
 def check_widget_unique(story: Story, new_key: str) -> tuple[str, bool]:

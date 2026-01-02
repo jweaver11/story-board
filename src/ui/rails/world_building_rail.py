@@ -50,7 +50,7 @@ class WorldBuildingRail(Rail):
         # Builds our buttons that are our options in the menu
         return [
             MenuOptionStyle(
-                on_click=self.new_category_clicked,
+                on_click=self.new_item_clicked,
                 data="category",
                 content=ft.Row([
                     ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED),
@@ -115,7 +115,7 @@ class WorldBuildingRail(Rail):
             ft.IconButton(
                 tooltip="New Category",
                 icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
-                on_click=self.new_category_clicked
+                on_click=self.new_item_clicked, data="category"
             ),
             
             ft.IconButton(

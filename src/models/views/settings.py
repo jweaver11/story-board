@@ -56,6 +56,7 @@ class Settings(ft.View):
                 'page_is_maximized': True,   # If the window is maximized or not
                 'page_width': int,     # Last known page width
                 'page_height': int,    # Last known page height
+                'show_empty_categories': True,   # If empty categories are shown in rails (not content rail) or not
                 'workspaces_rail_order': [      # Order of the workspace rail
                     "content",
                     "characters",
@@ -91,6 +92,22 @@ class Settings(ft.View):
         except Exception as e:
             print(f"Error saving widget to {self.file_path}: {e}") 
             print("Data that failed to save: ", self.data)
+
+    # Called for little data changes
+    def change_data(self, **kwargs):
+        ''' Changes a key/value pair in our data and saves the json file '''
+        # Called by:
+        # app.settings.change_data(**{'key': value, 'key2': value2})
+
+        try:
+            for key, value in kwargs.items():
+                self.data.update({key: value})
+
+            self.save_dict()
+
+        # Handle errors
+        except Exception as e:
+            print(f"Error changing data {key}:{value} in widget {self.title}: {e}")
 
     # Called when the page is resized
     def _page_resized(self, e=None):
@@ -266,10 +283,17 @@ class Settings(ft.View):
                     #on_click=lambda e: story.all_workspaces_rail.toggle_rail_reorderable(),
                     on_click=lambda e: self.workspaces_rail.toggle_reorder_rail(story=self.story)
                 ),
+                ft.Checkbox(
+                    label="Show Empty Categories in Rails", on_change=lambda e: self.change_data(**{'show_empty_categories': e.control.value}),
+                    value=self.data.get('show_empty_categories', True),
+                    tooltip="If disabled, categories with no content in them will be hidden in all rails except the content rail. (Example: folders with no characters in them would be hidden in the characters rail)",
+                )
             ]
         )
 
         return content
+    
+    # TOP HIDDEN FOLDER NOT HIDING
     
     def _load_account_settings(self):
         ''' Loads our account settings view '''

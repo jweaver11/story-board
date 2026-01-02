@@ -253,19 +253,12 @@ class LabelDropdown(ft.GestureDetector):
     # Called when we need to reload this directory tile
     def reload(self):
         
-        # Set our button for either plot ploints or
-        new_item_button = ft.IconButton(
-            ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, visual_density=ft.VisualDensity.COMPACT, icon_color=ft.Colors.PRIMARY, padding=ft.Padding(0,0,0,0),
-            size_constraints=ft.BoxConstraints(max_width=24, max_height=24),
-            on_click=lambda e: self.new_item_clicked(tag="plot_point" if self.title == "Plot Points" else "arc"),
-            hover_color=ft.Colors.with_opacity(.2, ft.Colors.PRIMARY)
-        ) 
 
         # Set our icon to a timeline unless we are labeld for Plot Points or Arcs dropdown
         if self.title == "Plot Points":
             icon = ft.Icon(ft.Icons.LOCATION_PIN, color=self.color)
         elif self.title == "Arcs":
-            icon = ft.Icon(ft.Icons.STACKED_LINE_CHART_OUTLINED, color=self.color)
+            icon = ft.Icon(ft.Icons.CIRCLE_OUTLINED, color=self.color)
         else:
             icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
 
