@@ -243,6 +243,7 @@ class ContentRail(Rail):
             story=self.story,
             directory=self.directory_path,
             rail=self,
+            tags=["chapter", "canvas", "note", "character", "timeline", "map", "world_building", "family_tree_view"],
             column=content,
             additional_directory_menu_options=self.get_directory_menu_options()
         )

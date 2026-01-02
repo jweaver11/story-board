@@ -15,10 +15,10 @@ class TreeViewDirectory(ft.GestureDetector):
         title: str,                                             # Title of this folder
         story: Story,                                           # Story reference for mouse positions and other logic
         page: ft.Page,                                          # Page reference for overlay menu
-        rail: ft.Control,
+        rail: ft.Control,                                       # Reference to the rail this directory is in
         is_expanded: bool = False,                              # Whether this directory is expanded or not
         color: str = "primary",                                 # Color of the folder icon
-        father: 'TreeViewDirectory' = None,                   # Optional parent directory tile, if there is one
+        father: 'TreeViewDirectory' = None,                     # Optional parent directory tile, if there is one
         additional_menu_options: list[ft.Control] = None,       # Additional menu options when right clicking a category, depending on the rail
     ):
         
