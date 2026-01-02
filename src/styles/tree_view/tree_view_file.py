@@ -4,6 +4,8 @@ from styles.menu_option_style import MenuOptionStyle
 from styles.tree_view.tree_view_directory import TreeViewDirectory
 import math
 from styles.colors import colors
+from handlers.check_widget_unique import check_widget_unique
+import os
 
 # Class for items within a tree view on the rail
 class TreeViewFile(ft.GestureDetector):
@@ -124,14 +126,14 @@ class TreeViewFile(ft.GestureDetector):
 
 
     # Called when hovering mouse over a tree view item
-    def on_hover(self, e):
+    async def on_hover(self, e):
         self.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.WHITE)
-        self.widget.p.update()
+        self.update()
 
     # Called when stopping hover over a tree view item
-    def on_stop_hover(self, e):
+    async def on_stop_hover(self, e):
         self.content.bgcolor = ft.Colors.TRANSPARENT
-        self.widget.p.update()
+        self.update()
 
     # Called when rename button is clicked
     def rename_clicked(self, e):
@@ -165,9 +167,6 @@ class TreeViewFile(ft.GestureDetector):
         def _name_check(e):
             ''' Checks if the name is unique within its type of widget '''
 
-            # Grab the new name, and tag
-            name = e.control.value.lower()
-            tag = self.widget.data.get('tag', None)
 
             # Nonlocal variables
             nonlocal is_unique
@@ -177,41 +176,25 @@ class TreeViewFile(ft.GestureDetector):
             submitting = False
             is_unique = True
 
+            # Grab out title and tag from the textfield, and set our new key to compare
+            title = e.control.value
+            if title.lower() == current_name:
+                return
 
-            # Check our widgets tag, and then check for uniqueness accordingly
-            if tag is not None:
+            # Generate our new key to compare. Requires normalization
+            nk = self.widget.directory_path + "\\" + title + "_" + e.control.data
+            new_key = os.path.normpath(nk)
 
-                # Chapters check 
-                if tag == "chapter":
-                    for chapter in self.widget.story.chapters.values():
-                        if chapter.title.lower() == name and chapter.title.lower() != current_name:
-                            is_unique = False
+            error_text, is_unique = check_widget_unique(self.widget.story, new_key)
 
-                # Notes
-                elif tag == "note":
-                    for note in self.widget.story.notes.values():
-                        if note.title.lower() == name and note.title.lower() != current_name:
-                            is_unique = False
-
-                # Characters
-                elif tag == "character":
-                    for character in self.widget.story.characters.values():
-                        if character.title.lower() == name and character.title.lower() != current_name:
-                            is_unique = False
-
-                # Maps
-                elif tag == "map":
-                    for map_ in self.widget.story.maps.values():
-                        if map_.title.lower() == name and map_.title.lower() != current_name:
-                            is_unique = False
-
-            # Give us our error text if not unique
+            # If we are NOT unique, show our error text
             if not is_unique:
-                e.control.error_text = "Name already exists"
+                e.control.error_text = error_text
+
+            # Otherwise remove our error text
             else:
                 e.control.error_text = None
-
-            # Apply the update
+                
             self.widget.p.update()
 
         # Called when submitting our textfield.
@@ -246,6 +229,7 @@ class TreeViewFile(ft.GestureDetector):
             autofocus=True,
             adaptive=True,
             text_size=14,
+            data=self.widget.data.get('tag', ''),
             text_style=self.text_style,
             on_submit=_submit_name,
             on_change=_name_check,
