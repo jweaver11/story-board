@@ -31,7 +31,7 @@ class MenuOptionStyle(ft.GestureDetector):
         )
 
     # Called when mouse is hovering over this option
-    def on_hover(self, e: ft.HoverEvent):
+    async def on_hover(self, e: ft.HoverEvent):
         ''' Changes background color to highlight hover '''
         
         self.content.bgcolor = ft.Colors.with_opacity(0.2, ft.Colors.ON_SURFACE_VARIANT)
@@ -41,7 +41,7 @@ class MenuOptionStyle(ft.GestureDetector):
         self.content.update()
 
     # Called when mouse is no longer hovering over this option
-    def on_hover_exit(self, e: ft.HoverEvent):
+    async def on_hover_exit(self, e: ft.HoverEvent):
         ''' Resets background color on hover exit '''
         
         self.content.bgcolor = None
