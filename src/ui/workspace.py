@@ -158,8 +158,6 @@ class Workspace(ft.Container):
         e.control.content.opacity = 0
         e.control.content.update()
 
-        self.remove_drag_targets()  # Remove our drag targets from the stack, since we have completed our drag
-
         # Load our event data
         event_data = json.loads(e.data)
         

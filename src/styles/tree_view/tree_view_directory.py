@@ -684,8 +684,6 @@ class TreeViewDirectory(ft.GestureDetector):
     # Called when a widget is dragged and dropped into this directory
     def on_drag_accept(self, e):
         ''' Moves our widgets into this directory from wherever they were '''
-
-        self.story.workspace.remove_drag_targets()
         
         # Load our data (draggables can't just pass in simple data for some reason)
         event_data = json.loads(e.data)
@@ -745,7 +743,6 @@ class TreeViewDirectory(ft.GestureDetector):
         drag_target = ft.DragTarget(
             group="widgets",
             on_accept=self.on_drag_accept,
-            on_leave=lambda e: self.story.workspace.remove_drag_targets(),
             content=self.expansion_tile,
         )
         

@@ -100,9 +100,6 @@ class Rail(ft.Container):
         # Call the move file using the new directory path
         widget.move_file(new_directory=new_directory)
 
-        # Remove the drag targets from our workspace to clean up
-        widget.story.workspace.remove_drag_targets()
-
 
     # Called when new category button or menu option is clicked
     def new_category_clicked(self, e):
