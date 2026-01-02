@@ -122,9 +122,11 @@ class CharactersRail(Rail):
 
         # Go through our content controls, and remove any directories that are empty because of tag filtering
         if not app.settings.data.get('show_empty_categories', True):
-            for control in content.controls:
+            for control in content.controls[:]:
                 if isinstance(control, TreeViewDirectory):
                     remove_empty_categories(control, parent_column=content)
+                else:
+                    print("Type of control skipped:", type(control))
                     
 
         content.controls.append(ft.Container(height=6))

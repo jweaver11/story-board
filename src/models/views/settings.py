@@ -102,6 +102,7 @@ class Settings(ft.View):
         try:
             for key, value in kwargs.items():
                 self.data.update({key: value})
+                print("Changed settings data:", key, "to", value)
 
             self.save_dict()
 
@@ -263,6 +264,7 @@ class Settings(ft.View):
     def _load_app_settings(self):
         ''' Loads our app settings view '''
 
+
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
         content=ft.Column(
             spacing=20,
@@ -284,7 +286,7 @@ class Settings(ft.View):
                     on_click=lambda e: self.workspaces_rail.toggle_reorder_rail(story=self.story)
                 ),
                 ft.Checkbox(
-                    label="Show Empty Categories in Rails", on_change=lambda e: self.change_data(**{'show_empty_categories': e.control.value}),
+                    label="Show Empty Categories", on_change=lambda e: self.change_data(**{'show_empty_categories': e.control.value}),
                     value=self.data.get('show_empty_categories', True),
                     tooltip="If disabled, categories with no content in them will be hidden in all rails except the content rail. (Example: folders with no characters in them would be hidden in the characters rail)",
                 )

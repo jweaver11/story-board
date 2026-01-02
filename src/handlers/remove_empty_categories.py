@@ -22,7 +22,7 @@ def remove_empty_categories(directory_control: TreeViewDirectory, parent_directo
 
     # If we're empty remove ourselves from our parent
     if is_empty:
-        print(f"Removing empty category: {directory_control.title}")
+        #print(f"Removing empty category: {directory_control.title}")
         
         # If we're inside another TreeViewDirectory
         if parent_directory_control is not None:

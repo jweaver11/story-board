@@ -80,14 +80,14 @@ class ContentRail(Rail):
         # Builds our buttons that are our options in the menu
         return [
             MenuOptionStyle(
-                on_click=self.new_item_clicked,
+                on_click=self.new_item_clicked, data="category",
                 content=ft.Row([
                     ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED),
                     ft.Text("Category", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ])
             ),
             MenuOptionStyle(
-                on_click=self.new_chapter_clicked,
+                on_click=self.new_chapter_clicked, data="chapter",
                 content=ft.Row([
                     ft.Icon(ft.Icons.NOTE_ADD_OUTLINED),
                     ft.Text("Chapter", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
@@ -165,19 +165,19 @@ class ContentRail(Rail):
                     items=[
                         ft.PopupMenuItem(
                             text="Category", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
-                            on_click=self.new_item_clicked
+                            on_click=self.new_item_clicked, data="category"
                         ),
                         ft.PopupMenuItem(
                             text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
-                            on_click=self.new_chapter_clicked
+                            on_click=self.new_chapter_clicked, data="chapter"
                         ),
                         ft.PopupMenuItem(
                             text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
-                            on_click=self.new_canvas_clicked
+                            on_click=self.new_canvas_clicked, data="canvas"
                         ),
                         ft.PopupMenuItem(
                             "Note", ft.Icons.NOTE_ALT_OUTLINED,
-                            on_click=self.new_note_clicked
+                            on_click=self.new_note_clicked, data="note"
                         ),
                         ft.PopupMenuItem(
                             text="Character", icon=ft.Icons.PERSON_OUTLINED,

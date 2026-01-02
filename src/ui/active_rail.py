@@ -44,72 +44,31 @@ class Active_Rail(ft.Container):
         # All other rails have reload rail functions, but this one just displays the correct one
         self.display_active_rail(story)
 
-    # Called when we create new widgets so all rails are in sync
-    def reload_all_rails(self):
-        ''' Reloads all rails in case of new widget creation '''
-        
-        self.content_rail.reload_rail()
-        self.characters_rail.reload_rail()
-        self.timelines_rail.reload_rail()
-        self.world_building_rail.reload_rail()
-        self.canvas_rail.reload_rail()
-        self.planning_rail.reload_rail()
-
-    # Called when we want to reload all other rails except the active one. Usually to keep expansion states of categories between rails
-    async def reload_all_other_rails(self):
-        ''' Reloads all rails except the active one '''
-        
-        active_rail = self.story.data.get('selected_rail', 'content')
-        
-        if active_rail != "content":
-            self.content_rail.reload_rail()
-        if active_rail != "characters":
-            self.characters_rail.reload_rail()
-        if active_rail != "timelines":
-            self.timelines_rail.reload_rail()
-        if active_rail != "world_building":
-            self.world_building_rail.reload_rail()
-        if active_rail != "canvas":
-            self.canvas_rail.reload_rail()
-        if active_rail != "planning":
-            self.planning_rail.reload_rail()
-        
-
         
     # Called when other workspaces are selected
     def display_active_rail(self, story: Story):
         ''' Reloads the active rail based on the selected workspace in workspaces_rail '''
 
+        selected_rail = story.data.get('selected_rail', "content")
+
+        match selected_rail:
+            case "content":
+                self.content = self.content_rail
+            case "characters":
+                self.content = self.characters_rail
+            case "timelines":
+                self.content = self.timelines_rail
+                # Make sure our timeline is shown if there is only one
+                if len(self.story.timelines) == 1:
+                    for tl in self.story.timelines.values():
+                        tl.toggle_visibility(value=True)
+            case "world_building":
+                self.content = self.world_building_rail
+            case "canvas":
+                self.content = self.canvas_rail
+            case "planning":
+                self.content = self.planning_rail
+            case _:
+                self.content = self.content_rail
        
-        # Give us the correct rail based on our selected workspace
-        if story.data.get('selected_rail', "content") == "content":
-            self.content = self.content_rail
-
-        elif story.data.get('selected_rail', "content") == "characters":
-            self.content = self.characters_rail
-
-        elif story.data.get('selected_rail', "content") == "timelines":
-            self.content = self.timelines_rail
-
-            # Make sure our timeline is shown if there is only one
-            if len(self.story.timelines) == 1:
-                for tl in self.story.timelines.values():
-                    tl.toggle_visibility(value=True)
-
-        elif story.data.get('selected_rail', "content") == "world_building":
-            self.content = self.world_building_rail
-
-        elif story.data.get('selected_rail', "content") == "canvas":
-            self.content = self.canvas_rail
-
-        elif story.data.get('selected_rail', "content") == "planning":
-            self.content = self.planning_rail
-
-        else:
-            # Default to the content rail
-            self.content = self.content_rail
-
-        # Update the page to reflect changes
-        self.p.update()
-
-       
+        self.content.reload_rail()

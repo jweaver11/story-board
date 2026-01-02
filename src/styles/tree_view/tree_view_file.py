@@ -128,11 +128,13 @@ class TreeViewFile(ft.GestureDetector):
     # Called when hovering mouse over a tree view item
     async def on_hover(self, e):
         self.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.WHITE)
+        self.page = self.widget.p
         self.update()
 
     # Called when stopping hover over a tree view item
     async def on_stop_hover(self, e):
         self.content.bgcolor = ft.Colors.TRANSPARENT
+        self.page = self.widget.p
         self.update()
 
     # Called when rename button is clicked

@@ -237,6 +237,8 @@ class Workspace(ft.Container):
 
         story = self.story
         
+        
+        
         try:
 
             # Clear all pin locations first
@@ -245,6 +247,9 @@ class Workspace(ft.Container):
             story.workspace.main_pin.controls.clear()
             story.workspace.right_pin.controls.clear()
             story.workspace.bottom_pin.controls.clear()
+
+            if len(story.widgets) == 0:
+                return
 
             # Lets widgets keep their order between sessions
             ordered_widgets = sorted(story.widgets, key=lambda w: w.data.get('index', 0))

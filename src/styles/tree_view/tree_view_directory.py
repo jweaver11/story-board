@@ -158,9 +158,11 @@ class TreeViewDirectory(ft.GestureDetector):
             if hasattr(self.rail.active_dropdown, "is_focused"):
                 
                 self.rail.active_dropdown.is_focused = False
+                await self.rail.active_dropdown.refresh_expansion_tile()
             
             else:
                 self.rail.active_dropdown.timeline_dropdown.is_focused = False
+                await self.rail.active_dropdown.timeline_dropdown.refresh_expansion_tile()
 
         self.rail.active_dropdown = self
         self.rail.refresh_buttons()
@@ -176,11 +178,9 @@ class TreeViewDirectory(ft.GestureDetector):
             self.expansion_tile.bgcolor = ft.Colors.TRANSPARENT
             self.expansion_tile.collapsed_bgcolor = ft.Colors.TRANSPARENT
 
+        self.expansion_tile.page = self.p
         self.expansion_tile.update()
-
-        # TODO: Need to reload the other rails so that they match our new expanded/collapsed state
-        await self.story.active_rail.reload_all_other_rails()
-
+       
     # Called when creating new category or when additional menu items are clicked
     async def new_item_clicked(self, type: str = "category"):
         ''' Shows the textfield for creating new item. Requires what type of item (category, chapter, note, etc.) '''
