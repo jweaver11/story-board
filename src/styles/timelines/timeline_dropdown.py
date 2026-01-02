@@ -453,8 +453,8 @@ class TimelineDropdown(ft.GestureDetector):
 
     def refresh_expansion_tile(self):
         if self.is_focused:
-            self.expansion_tile.bgcolor = ft.Colors.with_opacity(.1, "primary")
-            self.expansion_tile.collapsed_bgcolor = ft.Colors.with_opacity(.1, "primary")
+            self.expansion_tile.bgcolor = ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE)
+            self.expansion_tile.collapsed_bgcolor = ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE)
         else:
             self.expansion_tile.bgcolor = ft.Colors.TRANSPARENT
             self.expansion_tile.collapsed_bgcolor = ft.Colors.TRANSPARENT
@@ -465,8 +465,7 @@ class TimelineDropdown(ft.GestureDetector):
     # Called when we need to reload this directory tile
     def reload(self):
 
-        # Set our icon to a timeline unless we are labeld for Plot Points or Arcs dropdown
-        icon = ft.Icon(ft.Icons.TIMELINE_OUTLINED, color=self.color) if self.title != "Plot Points" and self.title != "Arcs" else None
+        
 
         self.expansion_tile = ft.ExpansionTile(
             title=ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left"),
@@ -475,12 +474,12 @@ class TimelineDropdown(ft.GestureDetector):
             visual_density=ft.VisualDensity.COMPACT,
             tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
             controls_padding=ft.Padding(10, 0, 0, 0),       # Keeps all sub children indented
-            leading=icon,
+            leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, color=self.color),
             maintain_state=True,
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
             adaptive=True,
-            bgcolor=ft.Colors.TRANSPARENT if not self.is_focused else ft.Colors.with_opacity(.2, "primary"),
-            collapsed_bgcolor=ft.Colors.TRANSPARENT if not self.is_focused else ft.Colors.with_opacity(.2, "primary"),
+            bgcolor=ft.Colors.TRANSPARENT if not self.is_focused else ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE),
+            collapsed_bgcolor=ft.Colors.TRANSPARENT if not self.is_focused else ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE),
             #shape=ft.RoundedRectangleBorder(),
             on_change=lambda e: self.toggle_expand(),
         )

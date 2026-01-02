@@ -10,6 +10,8 @@ from styles.menu_option_style import MenuOptionStyle
 from ui.rails.rail import Rail
 from models.views.story import Story
 from handlers.tree_view import load_directory_data
+from styles.tree_view.tree_view_directory import TreeViewDirectory
+from handlers.remove_empty_categories import remove_empty_categories
 
 class CharactersRail(Rail):
     def __init__(self, page: ft.Page, story: Story):
@@ -119,7 +121,13 @@ class CharactersRail(Rail):
             column=content,
             additional_directory_menu_options=self.get_directory_menu_options()
         ) 
- 
+
+        # Go through our content controls, and remove any directories that are empty because of tag filtering
+        for control in content.controls:
+            if isinstance(control, TreeViewDirectory):
+                remove_empty_categories(control, parent_column=content)
+                    
+
         content.controls.append(ft.Container(height=6))
         # Append our hidden textfield for creating new items
         content.controls.append(self.new_item_textfield)

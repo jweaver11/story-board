@@ -228,7 +228,10 @@ class Rail(ft.Container):
                  
             # New widgets
             else:
+                # Create the widget and reload all our rails
                 self.story.create_widget(title, tag)
+                self.story.active_rail.reload_all_rails()
+
 
 
             

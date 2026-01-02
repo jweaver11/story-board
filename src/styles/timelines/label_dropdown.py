@@ -261,6 +261,14 @@ class LabelDropdown(ft.GestureDetector):
             hover_color=ft.Colors.with_opacity(.2, ft.Colors.PRIMARY)
         ) 
 
+        # Set our icon to a timeline unless we are labeld for Plot Points or Arcs dropdown
+        if self.title == "Plot Points":
+            icon = ft.Icon(ft.Icons.LOCATION_PIN, color=self.color)
+        elif self.title == "Arcs":
+            icon = ft.Icon(ft.Icons.STACKED_LINE_CHART_OUTLINED, color=self.color)
+        else:
+            icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
+
         expansion_tile = ft.ExpansionTile(
             title=ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left"),
             #title=ft.Row([
@@ -268,6 +276,7 @@ class LabelDropdown(ft.GestureDetector):
                 #ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left"),
             #]),
             dense=True,
+            leading=icon,
             initially_expanded=self.is_expanded,
             visual_density=ft.VisualDensity.COMPACT,
             tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation

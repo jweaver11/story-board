@@ -44,6 +44,17 @@ class Active_Rail(ft.Container):
         # All other rails have reload rail functions, but this one just displays the correct one
         self.display_active_rail(story)
 
+    # Called when we create new widgets so all rails are in sync
+    def reload_all_rails(self):
+        ''' Reloads all rails in case of new widget creation '''
+        
+        self.content_rail.reload_rail()
+        self.characters_rail.reload_rail()
+        self.timelines_rail.reload_rail()
+        self.world_building_rail.reload_rail()
+        self.canvas_rail.reload_rail()
+        self.planning_rail.reload_rail()
+
         
     # Called when other workspaces are selected
     def display_active_rail(self, story: Story):

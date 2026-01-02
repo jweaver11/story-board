@@ -171,8 +171,8 @@ class TreeViewDirectory(ft.GestureDetector):
 
     def refresh_expansion_tile(self):
         if self.is_focused:
-            self.expansion_tile.bgcolor = ft.Colors.with_opacity(.1, "primary")
-            self.expansion_tile.collapsed_bgcolor = ft.Colors.with_opacity(.1, "primary")
+            self.expansion_tile.bgcolor = ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE)
+            self.expansion_tile.collapsed_bgcolor = ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE)
         else:
             self.expansion_tile.bgcolor = ft.Colors.TRANSPARENT
             self.expansion_tile.collapsed_bgcolor = ft.Colors.TRANSPARENT
