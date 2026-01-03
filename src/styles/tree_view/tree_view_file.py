@@ -80,8 +80,7 @@ class TreeViewFile(ft.GestureDetector):
             ),
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    expand=True,
-                    tooltip="",
+                    expand=True, tooltip="Change this item's color",
                     padding=ft.Padding(0,0,0,0),
                     content=ft.Row(
                         expand=True,
@@ -101,8 +100,6 @@ class TreeViewFile(ft.GestureDetector):
                 ]),
             )
         ]
-
-
 
     # Called when hovering mouse over a tree view item
     async def on_hover(self, e):

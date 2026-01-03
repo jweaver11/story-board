@@ -73,8 +73,9 @@ class Timeline(Widget):
             },
         ) 
 
-        # For tracking mouse position on timeline when adding new items
+        # State elements
         self.x_alignment: float = 0.00
+        self.timeline_width, self.timeline_height = 800, 200
 
         # Declare and create our information display, which is our timelines mini widget 
         self.information_display: ft.Container = None
@@ -118,6 +119,19 @@ class Timeline(Widget):
             on_exit=self.on_exit,
             on_enter=self.on_enter,
             on_tap=lambda e: self.information_display.toggle_visibility(value=True),
+        )
+
+
+
+        self.timeline_canvas = cv.Canvas(
+            expand=True, on_resize=self.timeline_resized, resize_interval=100,
+            content=ft.GestureDetector(
+                mouse_cursor=ft.MouseCursor.CLICK,
+                expand=True,
+                on_exit=self.on_exit, on_enter=self.on_enter,
+                on_tap=lambda e: self.information_display.toggle_visibility(value=True),
+                hover_interval=20, 
+            )
         )
 
         # Dropdown on the rail. We don't use it here, let the rail handle it
@@ -301,12 +315,12 @@ class Timeline(Widget):
         ]
     
     # Called when mouse enters our timeline area
-    def on_enter(self, e: ft.HoverEvent = None):
+    async def on_enter(self, e: ft.HoverEvent = None):
         ''' Highlights our timeline control for visual feedback '''
 
         # During hover, set our x position so we know where to add new items on the timeline
-        if e is not None:
-            self.x_alignment = (e.control.data - 100) / 100
+        #if e is not None:
+            #self.x_alignment = (e.control.data - 100) / 100
 
         # Make the edges highlight
         self.timeline_left_edge.content.color = ft.Colors.with_opacity(1, self.data.get('color', "primary"))
@@ -321,7 +335,7 @@ class Timeline(Widget):
         self.p.update()
 
     # Called when mouse exits our timeline area
-    def on_exit(self, e: ft.HoverEvent):
+    async def on_exit(self, e: ft.HoverEvent):
         ''' Un-highlights our timeline control for visual feedback '''
         
         self.timeline_left_edge.content.color = ft.Colors.with_opacity(.7, self.data.get('color', "primary"))
@@ -355,8 +369,6 @@ class Timeline(Widget):
         else:
             print("Error: No tag found for new item creation")
 
-    
-
 
     # Called when rename button is clicked
     def rename_clicked(self, e):
@@ -371,6 +383,15 @@ class Timeline(Widget):
 
         # Focus the title control for renaming
         self.information_display.title_control.focus()
+
+
+    async def timeline_resized(self, e: cv.CanvasResizeEvent):
+        print(int(e.width), int(e.height))
+        self.timeline_width = int(e.width)
+        self.timeline_height = int(e.height)
+        self.timeline_canvas.page = self.p
+        self.timeline_canvas.update()
+        pass
     
 
     # Called when we need to rebuild out timeline UI
@@ -467,7 +488,23 @@ class Timeline(Widget):
 
             else:  
                 continue
+
+
+
+        # Build our canvas here
+        self.timeline_canvas.shapes = [
+            cv.Path(
+                elements=[
+                    cv.Path.MoveTo(0, 0),
+                    cv.Path.LineTo(int(self.timeline_width), 0),
+                ], 
+            paint=ft.Paint(stroke_width=4, color=self.data.get('color', "primary"))
+            ),
+        ]
             
+
+
+
 
         # Create a stack so we can sit our plotpoints and arcs on our timeline
         timeline_stack = ft.Stack(
@@ -475,8 +512,8 @@ class Timeline(Widget):
             alignment=ft.Alignment(0, 0),
             controls=[
                 ft.Container(expand=True, ignore_interactions=True),    # Make sure we're expanded
-                timeline_row,
-                
+                #timeline_row,
+                self.timeline_canvas
             ]
         )
 
@@ -485,14 +522,11 @@ class Timeline(Widget):
 
         # Handler for timeline resize events
         for arc in sorted_arcs.values():
-
             # Add the arc control to the timeline stack
             timeline_stack.controls.append(arc.timeline_control)
 
-
         # Add our plot points to the timeline (They position themselves)
         for plot_point in self.plot_points.values():    
-            
             # Add the plot point control to the timeline stack
             timeline_stack.controls.append(plot_point.timeline_control)
 
@@ -509,13 +543,13 @@ class Timeline(Widget):
             )
         )
 
-        self.body_container.content = ft.Column([
-            timeline,
-        ])
+        self.body_container.content = timeline_stack
 
 
     
-        ''' Start building our header with filter dropdowns '''
+
+
+        ''' Start building our header with filter dropdowns ------------------------'''
 
         
         
