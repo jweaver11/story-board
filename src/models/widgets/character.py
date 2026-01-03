@@ -36,7 +36,7 @@ class Character(Widget):
                 'pin_location': "left" if data is None else data.get('pin_location', "left"),     # Start our characters on the left pin
 
                 'narrator': bool, # Whether this character is a narrator -- check box in edit view
-                'role': "background",   # Importance of character in the story. main, side, background
+                'role': "uncategorized",   # Importance of character in the story. main, side, background, uncategorized
                 'tab_color': "primary",
                 'name_color': "primary",
                 'sex_color': "primary",

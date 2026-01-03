@@ -169,27 +169,27 @@ class ContentRail(Rail):
                         ),
                         ft.PopupMenuItem(
                             text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
-                            on_click=self.new_chapter_clicked, data="chapter"
+                            on_click=self.new_item_clicked, data="chapter"
                         ),
                         ft.PopupMenuItem(
                             text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
-                            on_click=self.new_canvas_clicked, data="canvas"
+                            on_click=self.new_item_clicked, data="canvas"
                         ),
                         ft.PopupMenuItem(
                             "Note", ft.Icons.NOTE_ALT_OUTLINED,
-                            on_click=self.new_note_clicked, data="note"
+                            on_click=self.new_item_clicked, data="note"
                         ),
                         ft.PopupMenuItem(
                             text="Character", icon=ft.Icons.PERSON_OUTLINED,
-                            on_click=self.new_character_clicked
+                            on_click=self.new_item_clicked
                         ),  
                         ft.PopupMenuItem(
                             text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
-                            on_click=self.new_timeline_clicked
+                            on_click=self.new_item_clicked
                         ),
                         ft.PopupMenuItem(
                             text="Map", icon=ft.Icons.MAP_OUTLINED,
-                            on_click=self.new_map_clicked
+                            on_click=self.new_item_clicked
                         ),
                     ]
                 ),
@@ -198,6 +198,9 @@ class ContentRail(Rail):
                     tooltip="Upload",
                     menu_padding=0,
                     items=[
+                        ft.PopupMenuItem(
+                            text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,
+                        ),
                         ft.PopupMenuItem(
                             text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
                             on_click=self.new_chapter_clicked
@@ -210,8 +213,15 @@ class ContentRail(Rail):
                             on_click=self.new_note_clicked
                         ),
                         ft.PopupMenuItem(
-                            text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,
-                        )
+                            text="Character", icon=ft.Icons.PERSON_OUTLINED,
+                        ),
+                        ft.PopupMenuItem(
+                            text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
+                        ),
+                        ft.PopupMenuItem(
+                            text="Map", icon=ft.Icons.MAP_OUTLINED,
+                        ),
+                        
                     ]
                 ),
             ]

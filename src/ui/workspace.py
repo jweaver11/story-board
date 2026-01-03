@@ -138,14 +138,14 @@ class Workspace(ft.Container):
 
 
     # Called when a draggable hovers over a drag target before dropping
-    def on_hover_pin_drag_target(self, e):
+    async def on_hover_pin_drag_target(self, e):
         ''' Makes the drag target visible for so visual feedback '''
 
         e.control.content.opacity = .3
         e.control.content.update()
        
     # Called when a draggable leaves a drag target
-    def on_stop_hover_drag_target(self, e):
+    async def on_stop_hover_drag_target(self, e):
         ''' Makes the drag target invisible again '''
 
         e.control.content.opacity = 0
@@ -228,7 +228,7 @@ class Workspace(ft.Container):
         # Reload our widget to apply size changes that some of them need
         widget.reload_widget()
         
-        print(f"{pin_location} pin accepted")
+        #print(f"{pin_location} pin accepted")
 
     # Called when we drag a widget from one pin location to another
     def arrange_widgets(self):

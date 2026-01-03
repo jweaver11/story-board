@@ -253,7 +253,8 @@ class Canvas(Widget):
             self.canvas.update()
             
         except Exception as ex:
-            self.p.update()
+            self.canvas.page = self.p
+            self.canvas.update()
             
             
         # Save our canvas data
@@ -370,10 +371,10 @@ class Canvas(Widget):
             # Update the page and return early
             try:
                 # Page reference gets lost after dragging widget to new canvas, so we reset it and update
-                self.canvas.page = self.p
                 self.canvas.update()
             except Exception as ex:
-                self.p.update()
+                self.canvas.page = self.p
+                self.canvas.update()
             return
         
         if style == "arc" or style == "arcfill":

@@ -34,7 +34,7 @@ class Story(ft.View):
             spacing=0,                                                      # No spacing between menubar and rest of page
         )  
 
-        self.title = title.title()      # Gives our story a title when its created
+        self.title = title              # Gives our story a title when its created
         self.p = page                   # Reference to our page object for updating UI elements
         self.data = data                # Sets our data (if any) passed in. New stories just have none
         self.template = template        # Template for our story (sci-fi, fantasy, etc.)
@@ -63,7 +63,7 @@ class Story(ft.View):
                     'multi_planetary': bool,       # Whether the story will take place on multiple planets
                     'multi_timelines': bool,       # Whether the story will have multiple timelines (regression, multiverse, etc.)
                     'character_rail_sort_by': {
-                        'method': "role",          # None, alphabeticaly, role, moraiity, age
+                        'method': "role",          # None, alphabeticaly, role, morality, age
                         'direction': "descending",       # ascending (top start low) or descending (top start high)
                     },
                 },
