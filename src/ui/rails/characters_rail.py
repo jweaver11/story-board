@@ -54,21 +54,35 @@ class CharactersRail(Rail):
         # Builds our buttons that are our options in the menu
         return [
             MenuOptionStyle(
-                on_click=self.new_item_clicked,
-                data="category",
-                content=ft.Row([
-                    ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED),
-                    ft.Text("Category", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ])
+                content=ft.PopupMenuButton(
+                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    tooltip="New", menu_padding=0,
+                    items=[
+                        ft.PopupMenuItem(
+                            text="Character", icon=ft.Icons.PERSON_OUTLINED,
+                            on_click=self.new_item_clicked, data="character"
+                        ),  
+                        ft.PopupMenuItem(
+                            text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                            on_click=self.new_item_clicked, data="family_tree"
+                        ),
+                    ]
+                ),
             ),
             MenuOptionStyle(
-                on_click=self.new_item_clicked,
-                data="character",
-                content=ft.Row([
-                    ft.Icon(ft.Icons.PERSON_ADD_ALT_OUTLINED),
-                    ft.Text("Character", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ])
-            ),
+                content=ft.PopupMenuButton(
+                    content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    tooltip="Upload", menu_padding=0,
+                    items=[
+                        ft.PopupMenuItem(
+                            text="Character", icon=ft.Icons.PERSON_OUTLINED,
+                        ),
+                        ft.PopupMenuItem(
+                            text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                        ),
+                    ]
+                ),
+            )
         ]
     
     def get_directory_menu_options(self) -> list[ft.Control]:

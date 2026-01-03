@@ -55,28 +55,6 @@ class TimelinesRail(Rail):
         # Reload our rail to show timelines
         self.reload_rail()
         
-    # Called when a new item button or menu option is clicked
-    def new_item_clicked(self, e):
-
-        # Grab our tag from the new item clicked event
-        tag = e.control.data
-
-        # For timelines
-        if tag == "timeline":
-            self.new_item_textfield.hint_text = "Timeline Title"
-            self.new_item_textfield.data = "timeline"
-            self.new_item_textfield.visible = True
-            self.new_item_textfield.value = None
-
-        else:
-
-            # For other items, let the dropdown handle the logic
-            self.active_dropdown.new_item_clicked(tag=tag)
-
-
-        # Close the menu (if ones is open), which will update the page as well
-        self.story.close_menu()
-
 
     # Called to return our list of menu options when right clicking on the timeline rail
     def get_menu_options(self) -> list[ft.Control]:
@@ -85,41 +63,55 @@ class TimelinesRail(Rail):
         if len(self.story.timelines) == 1:
             return [
                 MenuOptionStyle(
-                    on_click=self.new_item_clicked,
-                    data="plot_point",
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.ADD_LOCATION_OUTLINED),
-                        ft.Text("Plot Point", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                    ])
+                    content=ft.PopupMenuButton(
+                        content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                        tooltip="New", menu_padding=0,
+                        items=[
+                            ft.PopupMenuItem(
+                                text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
+                                on_click=self.new_item_clicked, data="timeline"
+                            ),  
+                            ft.PopupMenuItem(
+                                text="Plot Point", icon=ft.Icons.ADD_LOCATION_OUTLINED,
+                                on_click=self.new_item_clicked, data="plot_point"
+                            ),
+                            ft.PopupMenuItem(
+                                text="Arc", icon=ft.Icons.CIRCLE_OUTLINED,
+                                on_click=self.new_item_clicked, data="arc"
+                            ),
+                        ]
+                    ),
                 ),
                 MenuOptionStyle(
-                    on_click=self.new_item_clicked,
-                    data="arc",
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.CIRCLE_OUTLINED),
-                        ft.Text("Arc", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                    ])
-                ),
-                MenuOptionStyle(
-                    on_click=self.new_item_clicked,
-                    data="timeline",
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.TIMELINE_OUTLINED),
-                        ft.Text("Timeline", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                    ])
-                ),
+                    content=ft.PopupMenuButton(
+                        content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                        tooltip="Upload", menu_padding=0,
+                        items=[ft.PopupMenuItem(text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,)]
+                    ),
+                )
             ]
 
         else:
             return [
                 MenuOptionStyle(
-                    on_click=self.new_item_clicked,
-                    data="timeline",
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.ADD_ROUNDED),
-                        ft.Text("Timeline", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                    ])
+                    content=ft.PopupMenuButton(
+                        content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                        tooltip="New", menu_padding=0,
+                        items=[
+                            ft.PopupMenuItem(
+                                text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
+                                on_click=self.new_item_clicked, data="timeline"
+                            ),  
+                        ]
+                    ),
                 ),
+                MenuOptionStyle(
+                    content=ft.PopupMenuButton(
+                        content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                        tooltip="Upload", menu_padding=0,
+                        items=[ft.PopupMenuItem(text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,)]
+                    ),
+                )
             ]
     
     # Called when right clicking a timeline, arc, or the arc/plot point drop downs

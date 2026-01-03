@@ -9,7 +9,7 @@ from models.views.story import Story
 from models.widgets.timeline import Timeline
 from styles.tree_view.tree_view_directory import TreeViewDirectory
 from handlers.check_widget_unique import check_widget_unique
-
+import asyncio
 
 class Rail(ft.Container):
 
@@ -102,7 +102,7 @@ class Rail(ft.Container):
 
 
     # Called when new category button or menu option is clicked
-    def new_item_clicked(self, e):
+    async def new_item_clicked(self, e):
         ''' Handles setting our textfield for new category creation '''
 
         tag = e.control.data
@@ -115,14 +115,19 @@ class Rail(ft.Container):
         match tag:
             case "family_tree":
                 self.new_item_textfield.hint_text = "Family Tree Name"
+            case "world_building":
+                self.new_item_textfield.hint_text = "World Building Name"
+            case "plot_point": 
+                self.new_item_textfield.hint_text = "Plot Point Title"
             case "character" | "category" :
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
             case _:
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
         
 
-        # Close the menu (if ones is open), which will update the page as well
-        self.story.close_menu()
+        # Close the menu (if ones is open)
+        await asyncio.sleep(.3)     # Wait for popupmenu's animations to close of we have issues
+        await self.story.close_menu()
         
 
     # Called whenever our user inputs a new key into one of our textfields for new items
@@ -150,6 +155,11 @@ class Rail(ft.Container):
                     self.item_is_unique = False
                     error_text = "Category must be unique."
                     break
+
+        elif tag == "plot_point" and self.timeline is not None:
+            pass
+        elif tag == "arc" and self.timeline is not None:
+            pass
 
         # Not a category, so we check the widget
         else:

@@ -576,7 +576,7 @@ class Story(ft.View):
 
 
     # Called clicking outside the menu to close it
-    def close_menu(self, e=None):
+    async def close_menu(self, e=None):
         ''' Closes our right click menu when clicking outside of it '''
         
         self.p.overlay.clear()
@@ -604,14 +604,14 @@ class Story(ft.View):
 
         # Our container that contains a column of our options. Need to use container for positioning
         menu = ft.Container(
-            left=self.mouse_x,     # Positions the menu at the mouse location
-            top=self.mouse_y,
+            left=self.mouse_x,  top=self.mouse_y,   # Positions the menu at the mouse location
             border_radius=ft.border_radius.all(4),
-            bgcolor=ft.Colors.ON_INVERSE_SURFACE,
-            width=120,
+            #padding=ft.padding.all(6),
+            bgcolor=ft.Colors.with_opacity(.65, ft.Colors.ON_INVERSE_SURFACE),
+            width=120, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
             shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=2, blur_style=ft.ShadowBlurStyle.NORMAL,),
             content=ft.Column(
-                spacing=4,
+                spacing=0,
                 horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                 controls=menu_options
             ),

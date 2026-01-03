@@ -81,21 +81,31 @@ class MapsRail(Rail):
         # Builds our buttons that are our options in the menu
         return [
             MenuOptionStyle(
-                on_click=self.new_item_clicked,
-                data="category",
-                content=ft.Row([
-                    ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED),
-                    ft.Text("Category", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ])
+                content=ft.PopupMenuButton(
+                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    tooltip="New", menu_padding=0,
+                    items=[
+                        ft.PopupMenuItem(
+                            text="Map", icon=ft.Icons.MAP_OUTLINED,
+                            on_click=self.new_item_clicked, data="map"
+                        ),
+                        ft.PopupMenuItem(
+                            text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,
+                            on_click=self.new_item_clicked, data="world_building"
+                        ),
+                    ]
+                ),
             ),
             MenuOptionStyle(
-                on_click=self.new_map_clicked,
-                data="map",
-                content=ft.Row([
-                    ft.Icon(ft.Icons.MAP_OUTLINED),
-                    ft.Text("Map", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ])
-            ),
+                content=ft.PopupMenuButton(
+                    content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    tooltip="Upload", menu_padding=0,
+                    items=[
+                        ft.PopupMenuItem(text="Map", icon=ft.Icons.MAP_OUTLINED,),
+                        ft.PopupMenuItem(text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,),
+                    ]
+                ),
+            )
 
             # New and upload options? or just upload?? or how do i wanna do this?? Compact vs spread out view??
         ]
@@ -131,12 +141,7 @@ class MapsRail(Rail):
 
     # Called on startup and when we have changes to the rail that have to be reloaded 
     def reload_rail(self):
-        # Button to 'Create New World'
-        # TODO: Option to create new world map depending on if multiplanetory or not
-        # Reads the maps categories for each level, and adds them to a list of categories. Then displays them in the rail
-        # This is how we get semi tree view for maps and pass categories in.
-        # Users can only create categories, maps, and markers on existing maps on the rail?
-        # Use the world building widget to create the categories of stuff on the rail, and have a maps as well.
+        ''' Reloads/Rebuilds our rail based on current data '''
 
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -150,14 +155,7 @@ class MapsRail(Rail):
             scroll=ft.ScrollMode.AUTO,
             spacing=0,
             controls=[]
-        )
-
-
-        # Maps showing up on the rail.........
-        # Categories rendered normal.
-        # Maps with no sub maps, get rendered as normal files.
-        # Maps with sub maps (saved in their data for reference) get drop downs like categories
-        
+        )        
 
         # Load our content directory data into the rail
         load_directory_data(

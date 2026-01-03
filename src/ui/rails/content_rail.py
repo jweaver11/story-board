@@ -74,14 +74,12 @@ class ContentRail(Rail):
                     ),
                     ft.PopupMenuItem(
                         text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
-                        on_click=self.new_chapter_clicked
                     ),
                     ft.PopupMenuItem(
                         text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
                     ),
                     ft.PopupMenuItem(
                         text="Note", icon=ft.Icons.NOTE_ALT_OUTLINED,
-                        on_click=self.new_note_clicked
                     ),
                     ft.PopupMenuItem(
                         text="Character", icon=ft.Icons.PERSON_OUTLINED,
@@ -106,54 +104,6 @@ class ContentRail(Rail):
         # Reload the rail on start
         self.reload_rail()
 
-    # New chapters
-    def new_chapter_clicked(self, e):
-        self.new_item_textfield.hint_text = "Chapter Title"
-        self.new_item_textfield.data = "chapter"
-        self.new_item_textfield.value = None
-        self.new_item_textfield.visible = True
-        self.story.close_menu()
-
-    # New canvases
-    def new_canvas_clicked(self, e):
-        # Close the menu (if ones is open), which will update the page as well
-        self.story.close_menu()   
-
-        self.p.open(new_canvas_alert_dlg(self.p, self.story))
-        self.p.update()
-        
-    # New notes
-    def new_note_clicked(self, e):
-        self.new_item_textfield.hint_text = "Note Title"
-        self.new_item_textfield.data = "note"
-        self.new_item_textfield.value = None
-        self.new_item_textfield.visible = True
-        self.story.close_menu() 
-
-    # New characters
-    def new_character_clicked(self, e):
-        self.new_item_textfield.hint_text = "Character Name"
-        self.new_item_textfield.data = "character"
-        self.new_item_textfield.value = None
-        self.new_item_textfield.visible = True
-        self.story.close_menu()
-
-    # New timelines
-    def new_timeline_clicked(self, e):
-        self.new_item_textfield.hint_text = "Timeline Name"
-        self.new_item_textfield.data = "timeline"
-        self.new_item_textfield.value = None
-        self.new_item_textfield.visible = True
-        self.story.close_menu()
-
-    # New maps
-    def new_map_clicked(self, e):
-        self.new_item_textfield.hint_text = "Map Name"
-        self.new_item_textfield.data = "map"
-        self.new_item_textfield.value = None
-        self.new_item_textfield.visible = True
-        self.story.close_menu()
-
 
     # Called to return our list of menu options for the content rail
     def get_menu_options(self) -> list[ft.Control]:
@@ -161,60 +111,86 @@ class ContentRail(Rail):
         # Builds our buttons that are our options in the menu
         return [
             MenuOptionStyle(
-                on_click=self.new_item_clicked, data="category",
-                content=ft.Row([
-                    ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED),
-                    ft.Text("Category", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ])
+                content=ft.PopupMenuButton(
+                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    tooltip="New", menu_padding=0,
+                    items=[
+                        ft.PopupMenuItem(
+                            text="Category", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
+                            on_click=self.new_item_clicked, data="category"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
+                            on_click=self.new_item_clicked, data="chapter"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
+                            on_click=self.new_item_clicked, data="canvas"
+                        ),
+                        ft.PopupMenuItem(
+                            "Note", ft.Icons.NOTE_ALT_OUTLINED,
+                            on_click=self.new_item_clicked, data="note"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Character", icon=ft.Icons.PERSON_OUTLINED,
+                            on_click=self.new_item_clicked, data="character"
+                        ),  
+                        ft.PopupMenuItem(
+                            text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                            on_click=self.new_item_clicked, data="family_tree"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
+                            on_click=self.new_item_clicked, data="timeline"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Map", icon=ft.Icons.MAP_OUTLINED,
+                            on_click=self.new_item_clicked, data="map"
+                        ),
+                        ft.PopupMenuItem(
+                            text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,
+                            on_click=self.new_item_clicked, data="world_building"
+                        ),
+                    ]
+                ),
             ),
             MenuOptionStyle(
-                on_click=self.new_chapter_clicked, data="chapter",
-                content=ft.Row([
-                    ft.Icon(ft.Icons.NOTE_ADD_OUTLINED),
-                    ft.Text("Chapter", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ])
-            ),
-            MenuOptionStyle(
-                on_click=self.new_canvas_clicked,
-                data="canvas",
-                content=ft.Row([
-                    ft.Icon(ft.Icons.BRUSH_OUTLINED),
-                    ft.Text("Canvas", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ])
-            ),
-            MenuOptionStyle(
-                on_click=self.new_note_clicked,
-                content=ft.Row(expand=True, controls=[
-                    ft.Icon(ft.Icons.NOTE_ALT_OUTLINED),
-                    ft.Text("Note", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                    ft.Container(expand=True)
-                ])
-            ),
-
-            # New and upload options? or just upload?? or how do i wanna do this?? Compact vs spread out view??
+                content=ft.PopupMenuButton(
+                    content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    tooltip="Upload", menu_padding=0,
+                    items=[
+                        ft.PopupMenuItem(text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,),
+                        ft.PopupMenuItem(text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,),
+                        ft.PopupMenuItem(text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,),
+                        ft.PopupMenuItem(text="Note", icon=ft.Icons.NOTE_ALT_OUTLINED,),
+                        ft.PopupMenuItem(text="Character", icon=ft.Icons.PERSON_OUTLINED,),
+                        ft.PopupMenuItem(text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED),
+                        ft.PopupMenuItem(text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,),
+                        ft.PopupMenuItem(text="Map", icon=ft.Icons.MAP_OUTLINED,),
+                        ft.PopupMenuItem(text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,),
+                    ]
+                ),
+            )
         ]
     
     def get_directory_menu_options(self) -> list[ft.Control]:
         return [
             MenuOptionStyle(
-                on_click=self.new_chapter_clicked,
-                data="chapter",
+                on_click=self.new_item_clicked, data="chapter",
                 content=ft.Row([
                     ft.Icon(ft.Icons.NOTE_ADD_OUTLINED),
                     ft.Text("Chapter", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ])
             ),
             MenuOptionStyle(
-                on_click=self.new_canvas_clicked,
-                data="canvas",
+                on_click=self.new_item_clicked, data="canvas",
                 content=ft.Row([
                     ft.Icon(ft.Icons.BRUSH_OUTLINED),
                     ft.Text("Canvas", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ])
             ),
             MenuOptionStyle(
-                on_click=self.new_note_clicked,
-                data="note",
+                on_click=self.new_item_clicked, data="note",
                 content=ft.Row([
                     ft.Icon(ft.Icons.NOTE_ALT_OUTLINED),
                     ft.Text("Note", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
