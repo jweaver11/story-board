@@ -125,7 +125,7 @@ class LabelDropdown(ft.GestureDetector):
         
 
     # Called when creating new category or when additional menu items are clicked
-    def new_item_clicked(self, e=None, tag: str=None):
+    async def new_item_clicked(self, e=None, tag: str=None):
         ''' Shows the textfield for creating new item. Requires what type of item (category, chapter, note, etc.) '''
 
         # Clear out any previous value
@@ -156,7 +156,7 @@ class LabelDropdown(ft.GestureDetector):
             self.reload()
 
         # Close the menu, which will also update the page
-        self.story.close_menu()
+        await self.story.close_menu()
 
 
     def new_item_check(self, e):

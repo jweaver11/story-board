@@ -95,7 +95,6 @@ class TimelineItem(ft.GestureDetector):
                         controls=[
                             ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
                             ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
-                            ft.Icon(ft.Icons.ARROW_RIGHT_OUTLINED, color=ft.Colors.ON_SURFACE, size=16),
                         ]
                     ),
                     items=self.get_color_options()

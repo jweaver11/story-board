@@ -75,18 +75,70 @@ class TreeViewDirectory(ft.GestureDetector):
     # Called when right clicking over our expansion tile
     def get_menu_options(self) -> list[ft.Control]:
         ''' Returns our built in menu options all tree view rails have, and any additional ones passed in '''
-
-        # Declare our menu options list, and add our category option first
-        menu_options = []
-
-        # Run through our additional menu options if we have any, and set their on_click methods
-        for option in self.additional_menu_options or []:
-            
-            # Add them to the list
-            menu_options.append(option)
-
+   
         # Add our remaining built in options: rename, color change, delete
-        menu_options.extend([
+        return [
+            MenuOptionStyle(
+                content=ft.PopupMenuButton(
+                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    tooltip="New", menu_padding=0,
+                    items=[
+                        ft.PopupMenuItem(
+                            text="Category", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
+                            on_click=self.new_item_clicked, data="category"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
+                            on_click=self.new_item_clicked, data="chapter"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
+                            on_click=self.new_item_clicked, data="canvas"
+                        ),
+                        ft.PopupMenuItem(
+                            "Note", ft.Icons.NOTE_ALT_OUTLINED,
+                            on_click=self.new_item_clicked, data="note"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Character", icon=ft.Icons.PERSON_OUTLINED,
+                            on_click=self.new_item_clicked, data="character"
+                        ),  
+                        ft.PopupMenuItem(
+                            text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                            on_click=self.new_item_clicked, data="family_tree"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
+                            on_click=self.new_item_clicked, data="timeline"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Map", icon=ft.Icons.MAP_OUTLINED,
+                            on_click=self.new_item_clicked, data="map"
+                        ),
+                        ft.PopupMenuItem(
+                            text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,
+                            on_click=self.new_item_clicked, data="world_building"
+                        ),
+                    ]
+                ),
+            ),
+            MenuOptionStyle(
+                content=ft.PopupMenuButton(
+                    content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),]),
+                    tooltip="Upload", menu_padding=0,
+                    items=[
+                        ft.PopupMenuItem(text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,),
+                        ft.PopupMenuItem(text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,),
+                        ft.PopupMenuItem(text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,),
+                        ft.PopupMenuItem(text="Note", icon=ft.Icons.NOTE_ALT_OUTLINED,),
+                        ft.PopupMenuItem(text="Character", icon=ft.Icons.PERSON_OUTLINED,),
+                        ft.PopupMenuItem(text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED),
+                        ft.PopupMenuItem(text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,),
+                        ft.PopupMenuItem(text="Map", icon=ft.Icons.MAP_OUTLINED,),
+                        ft.PopupMenuItem(text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,),
+                    ]
+                ),
+            ),
             # Rename button
             MenuOptionStyle(
                 on_click=self.rename_clicked,
@@ -125,10 +177,10 @@ class TreeViewDirectory(ft.GestureDetector):
                     ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
                 ]),
             ),
-        ])
+        ]
 
         # Return our menu options list
-        return menu_options
+        
 
     # Called when expanding/collapsing the directory
     async def toggle_expand(self, e=None):
@@ -143,11 +195,13 @@ class TreeViewDirectory(ft.GestureDetector):
 
        
     # Called when creating new category or when additional menu items are clicked
-    async def new_item_clicked(self, tag: str = "category"):
+    async def new_item_clicked(self, e=None):
         ''' Shows the textfield for creating new item. Requires what type of item (category, chapter, note, etc.) '''
 
         # Clear out any previous value
         self.new_item_textfield.value = None
+
+        tag = e.control.data
 
         # Make our textfield visible and set values
         self.new_item_textfield.visible = True

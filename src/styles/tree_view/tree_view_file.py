@@ -66,9 +66,7 @@ class TreeViewFile(ft.GestureDetector):
     def get_menu_options(self) -> list[ft.Control]:
         ''' Pops open a column of the menu options for this tree view item'''
 
-        
-        # Rename button
-        menu_options = [
+        return [
             MenuOptionStyle(
                 on_click=self.rename_clicked,
                 content=ft.Row([
@@ -79,20 +77,7 @@ class TreeViewFile(ft.GestureDetector):
                         color=ft.Colors.ON_SURFACE
                     ), 
                 ]),
-            )
-        ]
-        
-        # Run through our additional menu options if we have any, and set their on_click methods
-        for option in self.additional_menu_options or []:
-
-            # Set their on_click to call our on_click method, which can handle any type of widget
-            option.on_tap = lambda e, t=option.data: self.father.new_item_clicked(type=t)
-
-            # Add them to the list
-            menu_options.append(option)
-
-        # Color changing popup menu
-        menu_options.append(
+            ),
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
                     expand=True,
@@ -103,16 +88,11 @@ class TreeViewFile(ft.GestureDetector):
                         controls=[
                             ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
                             ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
-                            ft.Icon(ft.Icons.ARROW_RIGHT_OUTLINED, color=ft.Colors.ON_SURFACE, size=16),
                         ]
                     ),
                     items=self.get_color_options()
                 ),
-            )
-        )
-
-        # Delete button
-        menu_options.append(
+            ),
             MenuOptionStyle(
                 on_click=lambda e: self.delete_clicked(e),
                 content=ft.Row([
@@ -120,9 +100,8 @@ class TreeViewFile(ft.GestureDetector):
                     ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
                 ]),
             )
-        )
+        ]
 
-        return menu_options
 
 
     # Called when hovering mouse over a tree view item

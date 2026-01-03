@@ -149,21 +149,21 @@ class TimelinesRail(Rail):
 
         else:
             options.extend([
-                 # Create plot point button
                 MenuOptionStyle(
-                    data="plot_point",
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.ADD_LOCATION_OUTLINED),
-                        ft.Text("Plot Point", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                    ])
-                ),
-                # Create arc button
-                MenuOptionStyle(
-                    data="arc",
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.CIRCLE_OUTLINED),
-                        ft.Text("Arc", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                    ])
+                    content=ft.PopupMenuButton(
+                        content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                        tooltip="New", menu_padding=0,
+                        items=[
+                            ft.PopupMenuItem(
+                                text="Plot Point", icon=ft.Icons.ADD_LOCATION_OUTLINED,
+                                on_click=self.new_item_clicked, data="plot_point"
+                            ),  
+                            ft.PopupMenuItem(
+                                text="Arc", icon=ft.Icons.ADD_CIRCLE_OUTLINED,
+                                on_click=self.new_item_clicked, data="arc"
+                            ), 
+                        ]
+                    ),
                 ),
             ])
 

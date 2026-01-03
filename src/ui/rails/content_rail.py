@@ -209,7 +209,7 @@ class ContentRail(Rail):
             rail=self,
             tags=["chapter", "canvas", "note", "character", "timeline", "map", "world_building", "family_tree_view"],
             column=content,
-            additional_directory_menu_options=self.get_menu_options()
+            #additional_directory_menu_options=self.get_menu_options()
         )
 
         content.controls.append(ft.Container(height=6)) # Padding

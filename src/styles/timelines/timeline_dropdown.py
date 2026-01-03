@@ -27,7 +27,7 @@ class TimelineDropdown(ft.GestureDetector):
     ):
 
         # Set our parameters
-        self.title = title.title()
+        self.title = title
         self.story = story
         self.timeline = timeline
         self.additional_menu_options = additional_menu_options
@@ -53,15 +53,13 @@ class TimelineDropdown(ft.GestureDetector):
         # Textfield for creating new items (sub-categories, chapters, notes, characters, etc.)
         self.new_item_textfield = ft.TextField(  
             hint_text=f"new_item Title",   
-            data="data passed in",       
-            autofocus=True,
+            data="data passed in", autofocus=True,
             capitalization=ft.TextCapitalization.SENTENCES,
             on_change=self.new_item_check,
             on_blur=self.on_new_item_blur,
             on_submit=self.new_item_submit,
-            visible=False,
+            visible=False, dense=True,
             text_style=self.text_style,
-            dense=True,
         )
 
         self.expansion_tile: ft.ExpansionTile = None    # Placeholder for our expansion tile
@@ -82,19 +80,25 @@ class TimelineDropdown(ft.GestureDetector):
     def get_menu_options(self) -> list[ft.Control]:
         ''' Filters the five options we received, and only returns what we need with correct logic '''
     
-        # Our menu options list
-        menu_options: list[ft.Control] = []
-
-        # Run through our additional menu options if we have any, and set their on_click methods
-        for option in self.additional_menu_options or []:
-
-            option.on_tap = self.new_item_clicked
-
-            # Add to our menu options list
-            menu_options.append(option)
 
         # Add our other three buttons
-        menu_options.extend([
+        return [
+            MenuOptionStyle(
+                content=ft.PopupMenuButton(
+                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    tooltip="New", menu_padding=0,
+                    items=[
+                        ft.PopupMenuItem(
+                            text="Plot Point", icon=ft.Icons.ADD_LOCATION_OUTLINED,
+                            on_click=self.new_item_clicked, data="plot_point"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Arc", icon=ft.Icons.ADD_CIRCLE_OUTLINED,
+                            on_click=self.new_item_clicked, data="arc"
+                        ),
+                    ]
+                )
+            ),
             MenuOptionStyle(
                 on_click=self.rename_clicked,
                 content=ft.Row([
@@ -131,9 +135,8 @@ class TimelineDropdown(ft.GestureDetector):
                     ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
                 ]),
             ),
-        ])
-        # Return our menu options list
-        return menu_options
+        ]
+        
     
     # Called when expanding/collapsing the directory
     def toggle_expand(self):
