@@ -30,10 +30,18 @@ class CanvasRail(Rail):
                 icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                 on_click=self.new_canvas_clicked
             ),
-            ft.IconButton(
+            ft.PopupMenuButton(
                 icon=ft.Icons.FILE_UPLOAD_OUTLINED,
-                tooltip="Upload Canvas",
-                on_click=lambda e: print("Upload Canvas clicked")
+                tooltip="Upload",
+                menu_padding=0,
+                items=[
+                    ft.PopupMenuItem(
+                        text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,
+                    ),
+                    ft.PopupMenuItem(
+                        text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
+                    ),
+                ]
             )
         ]
 

@@ -107,13 +107,19 @@ class Rail(ft.Container):
 
         tag = e.control.data
         
-        # Makes sure the right textfield is visible and the others are hidden
+        # Make textfield visible, reset its value, and give it right data for logic
         self.new_item_textfield.visible = True
-
-        # Set our textfield value to none, and the hint and data 
         self.new_item_textfield.value = None
-        self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
-        self.new_item_textfield.data = f"{tag}"
+        self.new_item_textfield.data = tag
+
+        match tag:
+            case "family_tree":
+                self.new_item_textfield.hint_text = "Family Tree Name"
+            case "character" | "category" :
+                self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
+            case _:
+                self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
+        
 
         # Close the menu (if ones is open), which will update the page as well
         self.story.close_menu()

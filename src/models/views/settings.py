@@ -60,7 +60,7 @@ class Settings(ft.View):
                     "content",
                     "characters",
                     "timelines",
-                    "world_building",
+                    "maps",
                     "canvas",
                     "planning",
                 ],

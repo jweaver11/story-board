@@ -113,15 +113,14 @@ class Story(ft.View):
         self.workspace: ft.Container = None        # Main workspace area where our pins display our widgets
 
         # Our widgets objects. Keys are stored as directory paths + titles for uniqueness (example: c:\path\to\character\character_name)
-        self.chapters: dict = {}        # Text based chapeters only
-        self.notes: dict = {}           # Notes stored in our story
-        self.canvases: dict = {}        # canvases by the user for comic chapters, or to store images (as backgrounds)
-        self.characters: dict = {}      # Characters in the story
-        self.timelines: dict = {}       # Timelines for our story
-        self.maps: dict = {}            # Maps created inside of world building
-
-        self.world_building: None = None      # World building widget that contains our maps, lore, governments, history, etc
-        self.family_tree_view: None = None    # Family tree view widget for tracking character relationships
+        self.chapters: dict = dict()        # Text based chapeters only
+        self.notes: dict = dict()           # Notes stored in our story
+        self.canvases: dict = dict()        # canvases by the user for comic chapters, or to store images (as backgrounds)
+        self.characters: dict = dict()      # Characters in the story
+        self.timelines: dict = dict()       # Timelines for our story
+        self.maps: dict = dict()            # Maps created inside of world building
+        self.family_trees: dict = dict()   # Family tree views for tracking character relationships
+        self.world_buildings: dict = dict()     # World building widget that contains our maps, lore, governments, history, etc
 
         # Store all our widgets above in a master list for easier rendering in the UI
         self.widgets: list = []    
@@ -387,9 +386,9 @@ class Story(ft.View):
                 case "map":
                     del self.maps[widget.data.get('key', '')]
                 case "world_building":
-                    self.world_building = None
-                case "family_tree_view":
-                    self.family_tree_view = None
+                    del self.world_buildings[widget.data.get('key', '')]
+                case "family_tree":
+                    del self.family_trees[widget.data.get('key', '')]
 
                 case _:
                     self.p.open(SnackBar(f"Error deleting widget: Unknown tag {tag}"))
@@ -418,7 +417,7 @@ class Story(ft.View):
         from models.widgets.timeline import Timeline   
         from models.widgets.map import Map
         from models.widgets.world_building import WorldBuilding
-        from models.widgets.family_tree_view import FamilyTreeView
+        from models.widgets.family_tree import FamilyTree
 
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder
         if not os.path.exists(self.data['content_directory_path']):
@@ -463,14 +462,12 @@ class Story(ft.View):
                             case "map":
                                 self.maps[key] = Map(title, self.p, dirpath, self, widget_data)
                             case "world_building":
-                                self.world_building = WorldBuilding(title, self.p, dirpath, self, widget_data)
-                            case "family_tree_view":
-                                self.widgets.append(FamilyTreeView(title, self.p, dirpath, self, widget_data))
+                                self.world_buildings[key] = WorldBuilding(title, self.p, dirpath, self, widget_data)
+                            case "family_tree":
+                                self.family_trees[key] = FamilyTree(title, self.p, dirpath, self, widget_data)
                             case _:
                                 print("content tag not valid. Tag: ", tag)
                             
-
-                       
 
                             
                     # Handle errors if the path is wrong
@@ -482,42 +479,34 @@ class Story(ft.View):
     def load_widgets(self):
         ''' Loads all our widgets (characters, chapters, notes, etc.) into our master list of widgets '''
 
-        # Clear our widgets list first to avoid duplicates
-        self.widgets.clear() 
+        self.widgets.clear()   # Should be empty, but just in case
 
-        # Add all our characters to the widgets list
-        for character in self.characters.values():
-            if character not in self.widgets:
-                self.widgets.append(character)
-
-        # Add all our chapters to the widgets list
-        for chapter in self.chapters.values():
+        # Go through all the widgets we should have loaded, and add them to our widget list
+        for chapter in self.chapters.values():      # Chapters
             if chapter not in self.widgets:
                 self.widgets.append(chapter)
-
-        for canvas in self.canvases.values():
+        for canvas in self.canvases.values():    # Canvases
             if canvas not in self.widgets:
                 self.widgets.append(canvas)
-
-        # Add our plotline to the widgets list
-        for timeline in self.timelines.values():
-            if timeline not in self.widgets:
-                self.widgets.append(timeline)
-
-        # Add our world building to the widgets list
-        if self.world_building is not None:
-            if self.world_building not in self.widgets:
-                self.widgets.append(self.world_building)
-
-        # Add all our maps to the widgets list
-        for map in self.maps.values():
-            if map not in self.widgets:
-                self.widgets.append(map)
-
-        # Add all our notes to the widgets list
-        for note in self.notes.values():
+        for note in self.notes.values():        # Notes
             if note not in self.widgets:
                 self.widgets.append(note)
+        for character in self.characters.values():      # Characters
+            if character not in self.widgets:
+                self.widgets.append(character)
+        for timeline in self.timelines.values():        # Timelines
+            if timeline not in self.widgets:
+                self.widgets.append(timeline)
+        for map in self.maps.values():      # Maps
+            if map not in self.widgets:
+                self.widgets.append(map)
+        for wb in self.world_buildings.values():        # World Building
+            if wb not in self.widgets:
+                self.widgets.append(wb)
+        for ft in self.family_trees.values():           # Family Trees
+            if ft not in self.widgets:
+                self.widgets.append(ft)
+
         
     # Called to create a new widget based on tag (chapter, note, character, etc)
     def create_widget(self, title: str, tag: str=None, directory_path: str=None):
@@ -528,6 +517,7 @@ class Story(ft.View):
         from models.widgets.character import Character
         from models.widgets.timeline import Timeline
         from models.widgets.map import Map
+        from models.widgets.family_tree import FamilyTree
 
         if directory_path is None:
             directory_path = self.data.get('content_directory_path',  '')
@@ -569,6 +559,12 @@ class Story(ft.View):
                 key = widget.data.get('key', '')
                 self.maps[key] = widget
                 self.widgets.append(self.maps[key])
+
+            case "family_tree":
+                widget = FamilyTree(title, self.p, directory_path, self)
+                key = widget.data.get('key', '')
+                self.family_trees[key] = widget
+                self.widgets.append(self.family_trees[key])
      
             case _:
                 print("Widget tag not valid. Tag:", tag)

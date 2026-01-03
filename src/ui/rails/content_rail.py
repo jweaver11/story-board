@@ -22,6 +22,87 @@ class ContentRail(Rail):
             directory_path=story.data.get('content_directory_path', '')
         )
 
+        self.top_row_buttons = [
+            ft.PopupMenuButton(
+                icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                tooltip="New", menu_padding=0,
+                items=[
+                    ft.PopupMenuItem(
+                        text="Category", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
+                        on_click=self.new_item_clicked, data="category"
+                    ),
+                    ft.PopupMenuItem(
+                        text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
+                        on_click=self.new_item_clicked, data="chapter"
+                    ),
+                    ft.PopupMenuItem(
+                        text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
+                        on_click=self.new_item_clicked, data="canvas"
+                    ),
+                    ft.PopupMenuItem(
+                        "Note", ft.Icons.NOTE_ALT_OUTLINED,
+                        on_click=self.new_item_clicked, data="note"
+                    ),
+                    ft.PopupMenuItem(
+                        text="Character", icon=ft.Icons.PERSON_OUTLINED,
+                        on_click=self.new_item_clicked, data="character"
+                    ),  
+                    ft.PopupMenuItem(
+                        text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                        on_click=self.new_item_clicked, data="family_tree"
+                    ),
+                    ft.PopupMenuItem(
+                        text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
+                        on_click=self.new_item_clicked, data="timeline"
+                    ),
+                    ft.PopupMenuItem(
+                        text="Map", icon=ft.Icons.MAP_OUTLINED,
+                        on_click=self.new_item_clicked, data="map"
+                    ),
+                    ft.PopupMenuItem(
+                        text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,
+                        on_click=self.new_item_clicked, data="world_building"
+                    ),
+                ]
+            ),
+            ft.PopupMenuButton(
+                icon=ft.Icons.FILE_UPLOAD_OUTLINED,
+                tooltip="Upload", menu_padding=0,
+                items=[
+                    ft.PopupMenuItem(
+                        text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,
+                    ),
+                    ft.PopupMenuItem(
+                        text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
+                        on_click=self.new_chapter_clicked
+                    ),
+                    ft.PopupMenuItem(
+                        text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
+                    ),
+                    ft.PopupMenuItem(
+                        text="Note", icon=ft.Icons.NOTE_ALT_OUTLINED,
+                        on_click=self.new_note_clicked
+                    ),
+                    ft.PopupMenuItem(
+                        text="Character", icon=ft.Icons.PERSON_OUTLINED,
+                    ),
+                    ft.PopupMenuItem(
+                        text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
+                    ),
+                    ft.PopupMenuItem(
+                        text="Map", icon=ft.Icons.MAP_OUTLINED,
+                    ),
+                    ft.PopupMenuItem(
+                        text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                    ),
+                    ft.PopupMenuItem(
+                        text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,
+                    ),
+                    
+                ]
+            ),
+        ]
+
         # Reload the rail on start
         self.reload_rail()
 
@@ -157,74 +238,7 @@ class ContentRail(Rail):
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER,
-            controls=[
-                ft.PopupMenuButton(
-                    icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                    tooltip="New",
-                    menu_padding=0,
-                    items=[
-                        ft.PopupMenuItem(
-                            text="Category", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
-                            on_click=self.new_item_clicked, data="category"
-                        ),
-                        ft.PopupMenuItem(
-                            text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
-                            on_click=self.new_item_clicked, data="chapter"
-                        ),
-                        ft.PopupMenuItem(
-                            text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
-                            on_click=self.new_item_clicked, data="canvas"
-                        ),
-                        ft.PopupMenuItem(
-                            "Note", ft.Icons.NOTE_ALT_OUTLINED,
-                            on_click=self.new_item_clicked, data="note"
-                        ),
-                        ft.PopupMenuItem(
-                            text="Character", icon=ft.Icons.PERSON_OUTLINED,
-                            on_click=self.new_item_clicked
-                        ),  
-                        ft.PopupMenuItem(
-                            text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
-                            on_click=self.new_item_clicked
-                        ),
-                        ft.PopupMenuItem(
-                            text="Map", icon=ft.Icons.MAP_OUTLINED,
-                            on_click=self.new_item_clicked
-                        ),
-                    ]
-                ),
-                ft.PopupMenuButton(
-                    icon=ft.Icons.FILE_UPLOAD_OUTLINED,
-                    tooltip="Upload",
-                    menu_padding=0,
-                    items=[
-                        ft.PopupMenuItem(
-                            text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,
-                        ),
-                        ft.PopupMenuItem(
-                            text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
-                            on_click=self.new_chapter_clicked
-                        ),
-                        ft.PopupMenuItem(
-                            text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
-                        ),
-                        ft.PopupMenuItem(
-                            text="Note", icon=ft.Icons.NOTE_ALT_OUTLINED,
-                            on_click=self.new_note_clicked
-                        ),
-                        ft.PopupMenuItem(
-                            text="Character", icon=ft.Icons.PERSON_OUTLINED,
-                        ),
-                        ft.PopupMenuItem(
-                            text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
-                        ),
-                        ft.PopupMenuItem(
-                            text="Map", icon=ft.Icons.MAP_OUTLINED,
-                        ),
-                        
-                    ]
-                ),
-            ]
+            controls=self.top_row_buttons
         )
                  
 

@@ -7,7 +7,7 @@ from styles.menu_option_style import MenuOptionStyle
 from handlers.tree_view import load_directory_data
 
 
-class WorldBuildingRail(Rail):
+class MapsRail(Rail):
 
     # Constructor
     def __init__(self, page: ft.Page, story: Story):
@@ -18,6 +18,37 @@ class WorldBuildingRail(Rail):
             story=story,
             directory_path=story.data.get('content_directory_path', '')
         )
+
+        self.top_row_buttons = [
+            ft.PopupMenuButton(
+                icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                tooltip="New", menu_padding=0,
+                items=[
+                    ft.PopupMenuItem(
+                        text="Map", icon=ft.Icons.MAP_OUTLINED,
+                        on_click=self.new_item_clicked, data="map"
+                    ),
+                    ft.PopupMenuItem(
+                        text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,
+                        on_click=self.new_item_clicked, data="world_building"
+                    ),
+                ]
+            ),
+             ft.PopupMenuButton(
+                icon=ft.Icons.FILE_UPLOAD_OUTLINED,
+                tooltip="Upload", menu_padding=0,
+                items=[
+                    ft.PopupMenuItem(
+                        text="Map", icon=ft.Icons.MAP_OUTLINED,
+                        on_click=self.new_item_clicked, data="map"
+                    ),
+                    ft.PopupMenuItem(
+                        text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,
+                        on_click=self.new_item_clicked, data="world_building"
+                    ),
+                ]
+            ),
+        ]
 
         # Reload the rail on start
         self.reload_rail()
@@ -111,19 +142,8 @@ class WorldBuildingRail(Rail):
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER,
             
-            controls=[
-            ft.IconButton(
-                tooltip="New Category",
-                icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
-                on_click=self.new_item_clicked, data="category"
-            ),
-            
-            ft.IconButton(
-                tooltip="New Map",
-                icon=ft.Icons.MAP_OUTLINED,
-                on_click=self.new_map_clicked
-            ),
-        ])
+            controls=self.top_row_buttons
+        )
                  
         # Build the content of our rail
         content = ft.Column(

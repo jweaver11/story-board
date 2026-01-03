@@ -25,30 +25,23 @@ class CharactersRail(Rail):
 
         # UI elements
         self.top_row_buttons = [
-           ft.PopupMenuButton(
+            ft.PopupMenuButton(
                 icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                tooltip="New Content",
-                menu_padding=0,
+                tooltip="New", menu_padding=0,
                 items=[
-                    ft.PopupMenuItem(
-                        text="Category", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
-                        on_click=self.new_item_clicked, data="category"
-                    ),
                     ft.PopupMenuItem(
                         text="Character", icon=ft.Icons.PERSON_ADD_ALT_OUTLINED,
                         on_click=self.new_item_clicked, data="character"
                     ),
-                ]
-            ),
-            ft.PopupMenuButton(
-                icon=ft.Icons.FILE_UPLOAD_OUTLINED,
-                tooltip="Upload Content",
-                menu_padding=0,
-                items=[
                     ft.PopupMenuItem(
-                        text="Character", icon=ft.Icons.PERSON_ADD_ALT_OUTLINED,
+                        text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                        on_click=self.new_item_clicked, data="family_tree"
                     ),
                 ]
+            ),
+            ft.IconButton(
+                icon=ft.Icons.FILE_UPLOAD_OUTLINED,
+                tooltip="Upload Character",
             ),
         ]
 

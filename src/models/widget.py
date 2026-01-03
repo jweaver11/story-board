@@ -397,7 +397,7 @@ class Widget(ft.Container):
         elif tag == "settings": self.icon = ft.Icon(ft.Icons.SETTINGS_OUTLINED)
         elif tag == "timeline": self.icon = ft.Icon(ft.Icons.TIMELINE_ROUNDED)
         elif tag == "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
-        elif tag == "world_building": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
+        elif tag == "world_building": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
         else: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)     # Catch errors
         
         # Set the color and size

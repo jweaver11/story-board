@@ -9,7 +9,7 @@ from handlers.verify_data import verify_data
 
 
 
-class FamilyTreeView(Widget):
+class FamilyTree(Widget):
     # Constructor
     def __init__(self, name: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):
 
@@ -26,7 +26,7 @@ class FamilyTreeView(Widget):
         verify_data(
             object=self,   # Pass in our own data so the function can see the actual data we loaded
             required_data={
-                'tag': "character",
+                'tag': "family_tree",
                 
             },
         )

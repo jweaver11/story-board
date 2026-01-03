@@ -27,28 +27,29 @@ class TimelinesRail(Rail):
 
         # UI elements
         self.top_row_buttons = [
-            ft.IconButton(
-                tooltip="New Timeline",
-                icon=ft.Icons.TIMELINE_OUTLINED,
-                on_click=self.new_item_clicked,
-                data="timeline"
-            ),
-            ft.IconButton(
-                tooltip="New Plot Point",
-                icon=ft.Icons.ADD_LOCATION_OUTLINED,
-                icon_color=ft.Colors.PRIMARY if len(self.story.timelines) == 1 else ft.Colors.ON_SURFACE_VARIANT,
-                disabled=len(self.story.timelines) != 1,    # Set to if no active timeline
-                on_click=self.new_item_clicked,
-                data="plot_point"
-            ),
-            ft.IconButton(
-                tooltip="New Arc",
+            ft.PopupMenuButton(
                 icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                icon_color=ft.Colors.PRIMARY if len(self.story.timelines) == 1 else ft.Colors.ON_SURFACE_VARIANT,
-                disabled=len(self.story.timelines) != 1,
-                on_click=self.new_item_clicked,
-                data="arc"
-            )
+                tooltip="New", menu_padding=0,
+                items=[
+                    ft.PopupMenuItem(
+                        text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
+                        on_click=self.new_item_clicked, data="timeline"
+                    ),
+                    ft.PopupMenuItem(
+                        text="Plot Point", icon=ft.Icons.MAP_OUTLINED,
+                        on_click=self.new_item_clicked, data="plot_point"
+                    ),
+                    ft.PopupMenuItem(
+                        text="Arc", icon=ft.Icons.CIRCLE_OUTLINED,
+                        on_click=self.new_item_clicked, data="arc"
+                    ),
+                ]
+            ),
+            ft.IconButton(
+                icon=ft.Icons.FILE_UPLOAD_OUTLINED,
+                tooltip="Upload Timeline", disabled=False,
+                on_click=lambda e: print(""),
+            ),
         ]
  
         # Reload our rail to show timelines
