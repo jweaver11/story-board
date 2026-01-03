@@ -33,8 +33,6 @@ class Rail(ft.Container):
         self.directory_path = directory_path
         self.timeline = timeline
 
-        self.active_dropdown: TreeViewDirectory = None
-
         # Text style for our textfields
         self.text_style = ft.TextStyle(
             size=14,

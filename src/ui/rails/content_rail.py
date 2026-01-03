@@ -7,6 +7,8 @@ from ui.rails.rail import Rail
 from handlers.tree_view import load_directory_data
 from styles.menu_option_style import MenuOptionStyle
 from handlers.new_canvas_alert_dlg import new_canvas_alert_dlg
+import threading
+import asyncio
 
 
 # Class is created in main on program startup
@@ -156,7 +158,7 @@ class ContentRail(Rail):
             ),
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),]),
                     tooltip="Upload", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,),
@@ -172,32 +174,6 @@ class ContentRail(Rail):
                 ),
             )
         ]
-    
-    def get_directory_menu_options(self) -> list[ft.Control]:
-        return [
-            MenuOptionStyle(
-                on_click=self.new_item_clicked, data="chapter",
-                content=ft.Row([
-                    ft.Icon(ft.Icons.NOTE_ADD_OUTLINED),
-                    ft.Text("Chapter", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ])
-            ),
-            MenuOptionStyle(
-                on_click=self.new_item_clicked, data="canvas",
-                content=ft.Row([
-                    ft.Icon(ft.Icons.BRUSH_OUTLINED),
-                    ft.Text("Canvas", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ])
-            ),
-            MenuOptionStyle(
-                on_click=self.new_item_clicked, data="note",
-                content=ft.Row([
-                    ft.Icon(ft.Icons.NOTE_ALT_OUTLINED),
-                    ft.Text("Note", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ])
-            ),
-        ]
-
         
 
     # Reload the rail whenever we need
@@ -233,7 +209,7 @@ class ContentRail(Rail):
             rail=self,
             tags=["chapter", "canvas", "note", "character", "timeline", "map", "world_building", "family_tree_view"],
             column=content,
-            additional_directory_menu_options=self.get_directory_menu_options()
+            additional_directory_menu_options=self.get_menu_options()
         )
 
         content.controls.append(ft.Container(height=6)) # Padding

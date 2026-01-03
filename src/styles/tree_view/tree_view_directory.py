@@ -6,6 +6,8 @@ from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
 from styles.snack_bar import SnackBar
 from handlers.check_widget_unique import check_widget_unique
+import asyncio
+import threading
 
 # Expansion tile for all sub directories (folders) in a directory
 class TreeViewDirectory(ft.GestureDetector):
@@ -53,6 +55,7 @@ class TreeViewDirectory(ft.GestureDetector):
             autofocus=True,
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=self.on_new_item_blur,
+            on_change=self.on_new_item_change,
             visible=False,
             text_style=self.text_style,
             dense=True
@@ -64,8 +67,6 @@ class TreeViewDirectory(ft.GestureDetector):
             on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
         )
 
-        self.is_focused: bool = True
-
         self.expansion_tile: ft.ExpansionTile = None
 
         # Reload our directory tile to set up initial UI
@@ -76,22 +77,11 @@ class TreeViewDirectory(ft.GestureDetector):
         ''' Returns our built in menu options all tree view rails have, and any additional ones passed in '''
 
         # Declare our menu options list, and add our category option first
-        menu_options = [
-            MenuOptionStyle(
-                on_click=lambda e: self.new_item_clicked(type="category"),
-                content=ft.Row([
-                    ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED),
-                    ft.Text("Category", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
-                ])
-            ),
-        ]
+        menu_options = []
 
         # Run through our additional menu options if we have any, and set their on_click methods
         for option in self.additional_menu_options or []:
-
-            # Set their on_click to call our on_click method, which can handle any type of widget
-            option.on_tap = lambda e, t=option.data: self.new_item_clicked(type=t)
-
+            
             # Add them to the list
             menu_options.append(option)
 
@@ -114,14 +104,13 @@ class TreeViewDirectory(ft.GestureDetector):
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
                     expand=True,
-                    tooltip="",
+                    tooltip="Change category color",
                     padding=None,
                     content=ft.Row(
                         expand=True,
                         controls=[
                             ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
                             ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
-                            ft.Icon(ft.Icons.ARROW_DROP_DOWN_OUTLINED, color=ft.Colors.ON_SURFACE, size=16),
                         ]
                     ),
                     items=self.get_color_options()
@@ -142,47 +131,19 @@ class TreeViewDirectory(ft.GestureDetector):
         return menu_options
 
     # Called when expanding/collapsing the directory
-    async def toggle_expand(self, e):
+    async def toggle_expand(self, e=None):
         ''' Makes sure our state and data match the updated expanded/collapsed state '''
 
         self.is_expanded = not self.is_expanded
 
         self.story.change_folder_data(
             full_path=self.full_path,
-            key='is_expanded',
-            value=self.is_expanded
+            key='is_expanded', value=self.is_expanded
         )
 
-        #print("Active dropdown before:", self.rail.active_dropdown)
-        if self.rail.active_dropdown is not None:
-            if hasattr(self.rail.active_dropdown, "is_focused"):
-                
-                self.rail.active_dropdown.is_focused = False
-                await self.rail.active_dropdown.refresh_expansion_tile()
-            
-            else:
-                self.rail.active_dropdown.timeline_dropdown.is_focused = False
-                await self.rail.active_dropdown.timeline_dropdown.refresh_expansion_tile()
-
-        self.rail.active_dropdown = self
-        self.rail.refresh_buttons()
-
-        self.is_focused = True
-        await self.refresh_expansion_tile()
-
-    async def refresh_expansion_tile(self):
-        if self.is_focused:
-            self.expansion_tile.bgcolor = ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE)
-            self.expansion_tile.collapsed_bgcolor = ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE)
-        else:
-            self.expansion_tile.bgcolor = ft.Colors.TRANSPARENT
-            self.expansion_tile.collapsed_bgcolor = ft.Colors.TRANSPARENT
-
-        self.expansion_tile.page = self.p
-        self.expansion_tile.update()
        
     # Called when creating new category or when additional menu items are clicked
-    async def new_item_clicked(self, type: str = "category"):
+    async def new_item_clicked(self, tag: str = "category"):
         ''' Shows the textfield for creating new item. Requires what type of item (category, chapter, note, etc.) '''
 
         # Clear out any previous value
@@ -190,35 +151,30 @@ class TreeViewDirectory(ft.GestureDetector):
 
         # Make our textfield visible and set values
         self.new_item_textfield.visible = True
-        self.new_item_textfield.data = type
+        self.new_item_textfield.data = tag
 
-        match type:
-            case "category":
-                self.new_item_textfield.hint_text = "Category Name"
-                self.new_item_textfield.on_change = self.category_check
-                self.new_item_textfield.on_submit = self.category_submit
-
-            case "chapter" | "canvas" | "note" | "timeline":
-                self.new_item_textfield.hint_text = f"{type.capitalize()} Title"
-                self.new_item_textfield.on_change = self.on_new_item_change
-                self.new_item_textfield.on_submit = self.new_item_textfield_submit
-
-            case "character" | "map":
-                self.new_item_textfield.hint_text = f"{type.capitalize()} Name"
-                self.new_item_textfield.on_change = self.on_new_item_change
-                self.new_item_textfield.on_submit = self.new_item_textfield_submit
-
+        match tag:
+            case "family_tree":
+                self.new_item_textfield.hint_text = "Family Tree Name"
+            case "world_building":
+                self.new_item_textfield.hint_text = "World Building Name"
+            case "character" | "category":
+                self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
             case _:
-                self.p.open(SnackBar(f"Error creating new item: Unknown type '{type}'"))
+                self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
 
 
         # Check our expanded state. Rebuild if needed
         if self.is_expanded == False:
+            
             await self.toggle_expand()
             self.reload()
+            
+            
 
         # Close the menu, which will also update the page
-        self.story.close_menu()
+        await asyncio.sleep(.3)
+        await self.story.close_menu()
 
     # Called when clicking off the textfield and after submission
     def on_new_item_blur(self, e):
@@ -250,35 +206,6 @@ class TreeViewDirectory(ft.GestureDetector):
             e.control.error_text = None
             self.p.update()
 
-    # Called whenever our user inputs a new key into one of our textfields for new items
-    def category_check(self, e):
-        ''' Checks if our title is unique within its directory (default in this case) '''
-
-        # Start out assuming we are unique
-        self.item_is_unique = True
-
-        # Grab out title from the textfield, and set our new key to compare
-        title = e.control.value
-
-        # Generate our new key to compare. Requires normalization
-        nk = self.full_path + "\\" + title
-        new_key = os.path.normcase(os.path.normpath(nk))
-
-        # Compare all our folders that would be inside of this folder, and check for uniqueness
-        for key in self.story.data['folders'].keys():
-            if os.path.normcase(os.path.normpath(key)) == new_key and title != "":
-                self.item_is_unique = False
-                break
-            
-        # If we are NOT unique, show our error text
-        if not self.item_is_unique:
-            e.control.error_text = "Name must be unique"
-
-        # Otherwise remove our error text
-        else:
-            e.control.error_text = None
-
-        self.p.update()
 
     # Called whenever our user inputs a new key into one of our textfields for new items
     def on_new_item_change(self, e):
@@ -296,7 +223,7 @@ class TreeViewDirectory(ft.GestureDetector):
         new_key = os.path.normpath(nk)
 
         if tag == "category":
-            new_key = os.path.normcase(os.path.normpath(self.directory_path + "\\" + title))
+            new_key = os.path.normcase(os.path.normpath(self.full_path + "\\" + title))
             new_key = new_key.rstrip()  # Remove trailing spaces for folder names
             for key in self.story.data['folders'].keys():
                 
@@ -332,7 +259,7 @@ class TreeViewDirectory(ft.GestureDetector):
         if self.item_is_unique:
             match tag:
                 case "category":
-                    self.story.create_folder(directory_path=self.full_path, name=title, tag=tag)
+                    self.story.create_folder(directory_path=self.full_path, name=title)
                 case "chapter" | "canvas" | "note" | "character" | "timeline" | "map":
                     self.story.create_widget(directory_path=self.full_path, title=title, tag=tag)
                 
@@ -362,7 +289,7 @@ class TreeViewDirectory(ft.GestureDetector):
             self.p.update()
 
     # Called when rename button is clicked
-    def rename_clicked(self, e):
+    async def rename_clicked(self, e):
 
         # Track if our name is unique for checks, and if we're submitting or not
         self.is_unique = True
@@ -371,8 +298,6 @@ class TreeViewDirectory(ft.GestureDetector):
         # Called when clicking outside the input field to cancel renaming
         def _cancel_rename(e):
             ''' Puts our name back to static and unalterable '''
-
-            # Grab our submitting state
 
             # Since this auto calls on submit, we need to check. If it is cuz of a submit, do nothing
             if self.are_submitting:
@@ -383,7 +308,7 @@ class TreeViewDirectory(ft.GestureDetector):
             else:
 
                 self.story.active_rail.content.reload_rail()
-                
+       
 
         # Called everytime a change in textbox occurs
         def _name_check(e):
@@ -405,9 +330,10 @@ class TreeViewDirectory(ft.GestureDetector):
                     break
 
                 # Give us our would-be path to compare
-                nk = self.full_path[:self.full_path.rfind("\\")+1] + new_name
+                new_key = self.full_path + "\\" + new_name
+                new_key = new_key.rstrip()  # Remove trailing spaces for folder names
                 
-                if os.path.normcase(os.path.normpath(key)) == os.path.normcase(os.path.normpath(nk)):
+                if os.path.normcase(os.path.normpath(key)) == os.path.normcase(os.path.normpath(new_key)):
                     self.is_unique = False
            
 
@@ -454,14 +380,10 @@ class TreeViewDirectory(ft.GestureDetector):
                 
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
-            value=self.title,
-            expand=True,
-            dense=True,
-            autofocus=True,
-            adaptive=True,
+            value=self.title, expand=True, dense=True,
+            autofocus=True, adaptive=True,
             capitalization=ft.TextCapitalization.WORDS,
-            text_size=14,
-            text_style=self.text_style,
+            text_size=14, text_style=self.text_style,
             on_submit=_submit_name,
             on_change=_name_check, 
             on_blur=_cancel_rename,
@@ -471,14 +393,15 @@ class TreeViewDirectory(ft.GestureDetector):
         self.content.content.title = text_field
 
         # Clears our popup menu button and applies to the UI
-        self.story.close_menu()
+        await self.story.close_menu()
 
     def get_color_options(self) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
 
         # Called when a color option is clicked on popup menu to change icon color
-        def _change_icon_color(color: str):
+        async def _change_icon_color(e):
             ''' Passes in our kwargs to the widget, and applies the updates '''
+            color = e.control.data
 
             # Change the data
             self.story.change_folder_data(self.full_path, 'color', color)
@@ -486,7 +409,8 @@ class TreeViewDirectory(ft.GestureDetector):
             
             # Change our icon to match, apply the update
             self.story.active_rail.content.reload_rail()
-            #self.close_menu(None)      # Auto closing menu works, but has a grey screen bug
+            await asyncio.sleep(.3)
+            await self.story.close_menu()      
 
         # List for our colors when formatted
         color_controls = [] 
@@ -496,7 +420,7 @@ class TreeViewDirectory(ft.GestureDetector):
             color_controls.append(
                 ft.PopupMenuItem(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                    on_click=lambda e, col=color: _change_icon_color(col)
+                    data=color, on_click=_change_icon_color
                 )
             )
 
@@ -555,8 +479,6 @@ class TreeViewDirectory(ft.GestureDetector):
         widget.move_file(new_directory=self.full_path)
 
 
-        
-    
 
     # Called when we need to reload this directory tile
     def reload(self):
@@ -572,7 +494,7 @@ class TreeViewDirectory(ft.GestureDetector):
             controls_padding=ft.Padding(10, 0, 0, 0),       # Keeps all sub children indented
             maintain_state=True,
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
-            adaptive=True,
+            adaptive=True, bgcolor="transparent",
             shape=ft.RoundedRectangleBorder(),
             on_change=self.toggle_expand,
             controls=[self.new_item_textfield], 
@@ -594,7 +516,7 @@ class TreeViewDirectory(ft.GestureDetector):
         
         # Set the content
         self.content = drag_target
-        
+
 
 
 
