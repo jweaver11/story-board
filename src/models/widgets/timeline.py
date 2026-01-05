@@ -75,7 +75,7 @@ class Timeline(Widget):
 
         # State elements
         self.x_alignment: float = 0.00
-        self.timeline_width, self.timeline_height = 800, 200
+        #self.timeline_width, self.timeline_height = 800, 200
 
         # Declare and create our information display, which is our timelines mini widget 
         self.information_display: ft.Container = None
@@ -124,13 +124,14 @@ class Timeline(Widget):
 
 
         self.timeline_canvas = cv.Canvas(
-            expand=True, on_resize=self.timeline_resized, resize_interval=100,
+            expand=True, on_resize=self.timeline_resized, resize_interval=20,
+            #width=self.timeline_width, height=self.timeline_height,
             content=ft.GestureDetector(
                 mouse_cursor=ft.MouseCursor.CLICK,
-                expand=True,
+                expand=True, on_secondary_tap=self.on_secondary_tap,
                 on_exit=self.on_exit, on_enter=self.on_enter,
                 on_tap=lambda e: self.information_display.toggle_visibility(value=True),
-                hover_interval=20, 
+                hover_interval=20, content=ft.Container(expand=True, border=ft.border.all(2, "red"))
             )
         )
 
@@ -322,6 +323,8 @@ class Timeline(Widget):
         #if e is not None:
             #self.x_alignment = (e.control.data - 100) / 100
 
+        #print(e)
+
         # Make the edges highlight
         self.timeline_left_edge.content.color = ft.Colors.with_opacity(1, self.data.get('color', "primary"))
         self.timeline_right_edge.content.color = ft.Colors.with_opacity(1, self.data.get('color', "primary"))
@@ -333,6 +336,9 @@ class Timeline(Widget):
 
         # Apply the update
         self.p.update()
+
+    async def on_hover(self, e: ft.HoverEvent):
+        pass
 
     # Called when mouse exits our timeline area
     async def on_exit(self, e: ft.HoverEvent):
@@ -346,6 +352,9 @@ class Timeline(Widget):
                 control.content.color = ft.Colors.with_opacity(0.7, self.data.get('color', "primary"))
 
         self.p.update()
+
+    async def on_secondary_tap(self, e):
+        print(e)
 
     def new_item_clicked(self, e):
         ''' Called when new arc is clicked from timeline context menu '''
@@ -386,12 +395,33 @@ class Timeline(Widget):
 
 
     async def timeline_resized(self, e: cv.CanvasResizeEvent):
-        print(int(e.width), int(e.height))
-        self.timeline_width = int(e.width)
-        self.timeline_height = int(e.height)
+        ''' Redraws our timeline on the canvas when it is resized. Does it on startup as well '''
+
+        # Update our page reference and size
         self.timeline_canvas.page = self.p
+        width = int(e.width)
+        height = int(e.height)
+
+        padding = 6
+
+
+        # draw a horizontal line across the middle using a proper Color and Paint
+        self.timeline_canvas.shapes = [
+            cv.Path(
+                elements=[
+                    cv.Path.MoveTo(padding, height // 2 + 25),
+                    cv.Path.LineTo(padding, height // 2 - 25),
+
+                    cv.Path.MoveTo(padding, height // 2),
+                    cv.Path.LineTo(width - padding, height // 2),
+
+                    cv.Path.MoveTo(width - padding, height // 2 + 25),
+                    cv.Path.LineTo(width - padding, height // 2 - 25),
+                ],
+                paint=ft.Paint(stroke_width=2, style="stroke", color=ft.Colors.PRIMARY)
+            ),
+        ]
         self.timeline_canvas.update()
-        pass
     
 
     # Called when we need to rebuild out timeline UI
@@ -489,21 +519,7 @@ class Timeline(Widget):
             else:  
                 continue
 
-
-
-        # Build our canvas here
-        self.timeline_canvas.shapes = [
-            cv.Path(
-                elements=[
-                    cv.Path.MoveTo(0, 0),
-                    cv.Path.LineTo(int(self.timeline_width), 0),
-                ], 
-            paint=ft.Paint(stroke_width=4, color=self.data.get('color', "primary"))
-            ),
-        ]
-            
-
-
+        
 
 
         # Create a stack so we can sit our plotpoints and arcs on our timeline

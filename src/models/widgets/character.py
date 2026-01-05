@@ -319,11 +319,11 @@ class Character(Widget):
                                             expand = 4,
                                             hint_text="Select character to add",
                                             text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                                            options=[
-                                                ft.DropdownOption(text=name)
-                                                for name in self.story.get_character_names()
-                                                if name and name != self.title and name not in (self.data.get('connections') or [])
-                                            ],
+                                            #options=[
+                                                #ft.DropdownOption(text=name)
+                                                #for name in self.story.get_character_names()
+                                                #if name and name != self.title and name not in (self.data.get('connections') or [])
+                                            #],
                                             on_change=lambda e: self._on_add_connection(e.control.value),
                                         ),
                                     ]
