@@ -89,11 +89,11 @@ class TreeViewFile(ft.GestureDetector):
                             ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
                         ]
                     ),
-                    items=self.get_color_options()
+                    items=self._get_color_options()
                 ),
             ),
             MenuOptionStyle(
-                on_click=lambda e: self.delete_clicked(e),
+                on_click=self.delete_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED),
                     ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
@@ -221,7 +221,7 @@ class TreeViewFile(ft.GestureDetector):
         self.widget.p.overlay.clear()
         self.widget.p.update()
 
-    def get_color_options(self) -> list[ft.Control]:
+    def _get_color_options(self) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
 
         # Called when a color option is clicked on popup menu to change icon color
@@ -259,9 +259,10 @@ class TreeViewFile(ft.GestureDetector):
         def _delete_confirmed(e):
             ''' Deletes the widget after confirmation '''
 
-            self.widget.p.close(dlg)
-            self.widget.story.delete_widget(self.widget)
             
+            self.widget.story.delete_widget(self.widget)
+            self.widget.p.close(dlg)
+            self.widget.story.close_menu()
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(

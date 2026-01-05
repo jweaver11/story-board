@@ -73,16 +73,14 @@ class Timeline(Widget):
             },
         ) 
 
-        # State elements
-        self.x_alignment: float = 0.00
-        #self.timeline_width, self.timeline_height = 800, 200
+        
 
         # Declare and create our information display, which is our timelines mini widget 
         self.information_display: ft.Container = None
         self.create_information_display()
         
         # Declare dicts of our data types   
-        self.arcs: dict = {}        # TODO: No more infinite arcs
+        self.arcs: dict = {}       
         self.plot_points: dict = {} 
         self.time_skips: dict = {}
         self.connections: dict = {}  # Needed????
@@ -92,46 +90,22 @@ class Timeline(Widget):
         self.load_arcs()
         self.load_plot_points()
         
-        # UI elements
-        self.timeline_control = ft.GestureDetector(
-            mouse_cursor=ft.MouseCursor.CLICK,
-            expand=True,
-            on_exit=self.on_exit,        
-            on_tap=lambda e: self.information_display.toggle_visibility(value=True),
-            hover_interval=20,
-        )
+        # State elements
+        self.x_alignment: float = 0.00      # Alignment to pass into new plot points and arcs
+        self.timeline_width: int = int()    # Width of our timeline canvas. Just used in calculations, not applied
+        self.timeline_height: int = int()   # Height of our timeline canvas Just used in calculations, not applied
 
-        # Edges of our timeline
-        self.timeline_left_edge = ft.GestureDetector(
-            height=50,
-            data=0,
-            content=ft.VerticalDivider(color=ft.Colors.with_opacity(0.7, self.data.get('color', "primary")), thickness=3), 
-            mouse_cursor=ft.MouseCursor.CLICK,
-            on_exit=self.on_exit,
-            on_enter=self.on_enter,
-            on_tap=lambda e: self.information_display.toggle_visibility(value=True),
-        )
-        self.timeline_right_edge = ft.GestureDetector(
-            height=50,
-            data=200,
-            content=ft.VerticalDivider(color=ft.Colors.with_opacity(0.7, self.data.get('color', "primary")), thickness=3), 
-            mouse_cursor=ft.MouseCursor.CLICK,
-            on_exit=self.on_exit,
-            on_enter=self.on_enter,
-            on_tap=lambda e: self.information_display.toggle_visibility(value=True),
-        )
-
-
-
+        # Our timeline canvas that draws our timeline line and markers
         self.timeline_canvas = cv.Canvas(
-            expand=True, on_resize=self.timeline_resized, resize_interval=20,
-            #width=self.timeline_width, height=self.timeline_height,
+            on_resize=self.timeline_resized, resize_interval=20, expand=True, 
+            height=50, opacity=0.7,
             content=ft.GestureDetector(
                 mouse_cursor=ft.MouseCursor.CLICK,
                 expand=True, on_secondary_tap=self.on_secondary_tap,
                 on_exit=self.on_exit, on_enter=self.on_enter,
+                on_hover=self.hover_timeline_canvas,
                 on_tap=lambda e: self.information_display.toggle_visibility(value=True),
-                hover_interval=20, content=ft.Container(expand=True, border=ft.border.all(2, "red"))
+                hover_interval=20,
             )
         )
 
@@ -315,52 +289,47 @@ class Timeline(Widget):
             ),
         ]
     
-    # Called when mouse enters our timeline area
+    # Called when mouse enters our timeline on the canvas
     async def on_enter(self, e: ft.HoverEvent = None):
         ''' Highlights our timeline control for visual feedback '''
 
-        # During hover, set our x position so we know where to add new items on the timeline
-        #if e is not None:
-            #self.x_alignment = (e.control.data - 100) / 100
+        self.timeline_canvas.page = self.p
+        self.timeline_canvas.opacity = 1
+        self.timeline_canvas.update()
 
-        #print(e)
+    # Called when hovering over our timeline on the canvas
+    async def hover_timeline_canvas(self, e: ft.HoverEvent):
+        ''' Sets our coordinated for opening the menu when right clicking and updates our alignment we want to pass in '''
 
-        # Make the edges highlight
-        self.timeline_left_edge.content.color = ft.Colors.with_opacity(1, self.data.get('color', "primary"))
-        self.timeline_right_edge.content.color = ft.Colors.with_opacity(1, self.data.get('color', "primary"))
+        self.story.mouse_x = e.global_x
+        self.story.mouse_y = e.global_y
 
-        # Make the main timeline control highlight
-        for control in self.timeline_control.content.controls:
-            if isinstance(control, ft.GestureDetector):
-                control.content.color = ft.Colors.with_opacity(1, self.data.get('color', "primary"))
-
-        # Apply the update
-        self.p.update()
-
-    async def on_hover(self, e: ft.HoverEvent):
-        pass
+        w = max(int(self.timeline_width or 0), 1)
+        x = float(e.local_x)
+        raw = (2.0 * x / w) - 1.0
+        raw = max(-1.0, min(1.0, raw))
+        self.x_alignment = round(raw, 2)
+        
 
     # Called when mouse exits our timeline area
     async def on_exit(self, e: ft.HoverEvent):
         ''' Un-highlights our timeline control for visual feedback '''
         
-        self.timeline_left_edge.content.color = ft.Colors.with_opacity(.7, self.data.get('color', "primary"))
-        self.timeline_right_edge.content.color = ft.Colors.with_opacity(.7, self.data.get('color', "primary"))
+        self.timeline_canvas.page = self.p
+        self.timeline_canvas.opacity = .7
+        self.timeline_canvas.update()
 
-        for control in self.timeline_control.content.controls:
-            if isinstance(control, ft.GestureDetector):
-                control.content.color = ft.Colors.with_opacity(0.7, self.data.get('color', "primary"))
-
-        self.p.update()
-
+    # Called when right clicking our timeline on the canvas
     async def on_secondary_tap(self, e):
-        print(e)
+        ''' Opens our menu for the options of our related timeline '''
 
-    def new_item_clicked(self, e):
+        self.story.open_menu(self.get_menu_options())
+
+    async def new_item_clicked(self, e):
         ''' Called when new arc is clicked from timeline context menu '''
         #self.create_arc("New Arc")
         #self.new_item_container.visible = True
-        self.story.close_menu()
+        await self.story.close_menu()
 
         tag = e.control.data
 
@@ -380,11 +349,11 @@ class Timeline(Widget):
 
 
     # Called when rename button is clicked
-    def rename_clicked(self, e):
+    async def rename_clicked(self, e):
         ''' Makes sure our information display is visible, and focuses the title control for renaming '''
 
         # Close the menu
-        self.story.close_menu()
+        await self.story.close_menu()
 
         # Make sure our information display is visible
         if not self.information_display.visible:
@@ -399,8 +368,9 @@ class Timeline(Widget):
 
         # Update our page reference and size
         self.timeline_canvas.page = self.p
-        width = int(e.width)
-        height = int(e.height)
+        
+        self.timeline_width = int(e.width)
+        self.timeline_height = int(e.height)
 
         padding = 6
 
@@ -409,14 +379,14 @@ class Timeline(Widget):
         self.timeline_canvas.shapes = [
             cv.Path(
                 elements=[
-                    cv.Path.MoveTo(padding, height // 2 + 25),
-                    cv.Path.LineTo(padding, height // 2 - 25),
+                    cv.Path.MoveTo(padding, self.timeline_height // 2 + 25),
+                    cv.Path.LineTo(padding, self.timeline_height // 2 - 25),
 
-                    cv.Path.MoveTo(padding, height // 2),
-                    cv.Path.LineTo(width - padding, height // 2),
+                    cv.Path.MoveTo(padding, self.timeline_height // 2),
+                    cv.Path.LineTo(self.timeline_width - padding, self.timeline_height // 2),
 
-                    cv.Path.MoveTo(width - padding, height // 2 + 25),
-                    cv.Path.LineTo(width - padding, height // 2 - 25),
+                    cv.Path.MoveTo(self.timeline_width - padding, self.timeline_height // 2 + 25),
+                    cv.Path.LineTo(self.timeline_width - padding, self.timeline_height // 2 - 25),
                 ],
                 paint=ft.Paint(stroke_width=2, style="stroke", color=ft.Colors.PRIMARY)
             ),
@@ -436,100 +406,14 @@ class Timeline(Widget):
         # If event (pp, arc, etc.) is clicked on left side of screen bring mini widgets on right side, and vise versa
         # Time label is optional. Label vertial markers along the timeline with int and label if user provided
 
-
         
-
-
-        self.timeline_left_edge.content.color = ft.Colors.with_opacity(0.7, self.data.get('color', "primary"))
-        self.timeline_right_edge.content.color = ft.Colors.with_opacity(0.7, self.data.get('color', "primary"))
-
-        
-        # Row to hold our timeline edges and control
-        timeline_row = ft.Row(
-            spacing=0,
-            controls=[
-                ft.Container(width=20),
-                self.timeline_left_edge,
-                self.timeline_control,
-                self.timeline_right_edge,
-                ft.Container(width=20),
-            ]
-        )
-
-        # Reset the content of our timeline control so we can rebuild it
-        self.timeline_control.content = ft.Row(spacing=0, expand=True)
-
-        
-
-        # Called right after this to give us our list of division positions
-        def _set_division_list(total: int)-> list[int]:
-
-            # Calculate step size based on total width and number of divisions
-            step = total / self.data.get('divisions', 10)
-
-            # Our list may initially a float if not divisible evenly
-            float_list = [i * step for i in range(self.data.get('divisions', 10) + 1)]
-
-            # Convert to int list
-            int_list = [int(i) for i in float_list]
-
-            # Remove first and last item in list so we don't double up edges
-            int_list = int_list[1:-1]
-
-            # Return our list
-            return int_list
-
-        # Set our division list
-        division_list = _set_division_list(201)
-
-        # Add line segments so our timeline control isn't just flat
-        for i in range(201):
-
-            # Track if we are on a division
-            not_division = True
-
-            # Go through our divisions list. If we are on there, add vertical line, then break and continue
-            for num in division_list:
-                if i == num:
-                    # Vertical line only
-                    vertical_line = ft.GestureDetector(
-                        on_enter=self.on_enter, on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
-                        on_tap=lambda e: self.information_display.toggle_visibility(value=True),
-                        height=16, expand=True, 
-                        content=ft.VerticalDivider(color=ft.Colors.with_opacity(0.7, self.data.get('color', "primary")), thickness=3, width=3),
-                        data=i      # Set our data so we know where to add new items
-                    )
-                    self.timeline_control.content.controls.append(vertical_line)
-                    not_division = False
-                    break
-
-            # If we are not a division, add a horizontal line segment
-            if not_division:
-
-                # Horizontal followed up by a vertical line
-                horizontal_line = ft.GestureDetector(
-                    on_enter=self.on_enter, on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
-                    on_tap=lambda e: self.information_display.toggle_visibility(value=True),
-                    expand=True, height=16, 
-                    content=ft.Divider(color=ft.Colors.with_opacity(0.7, self.data.get('color', "primary")), thickness=3), 
-                    data=i      # Set our data so we know where to add new items
-                )
-                self.timeline_control.content.controls.append(horizontal_line)
-
-            else:  
-                continue
-
-        
-
-
         # Create a stack so we can sit our plotpoints and arcs on our timeline
         timeline_stack = ft.Stack(
             expand=True, 
             alignment=ft.Alignment(0, 0),
             controls=[
                 ft.Container(expand=True, ignore_interactions=True),    # Make sure we're expanded
-                #timeline_row,
-                self.timeline_canvas
+                self.timeline_canvas        # Add our canvas which has our visual timeline
             ]
         )
 
@@ -547,22 +431,7 @@ class Timeline(Widget):
             timeline_stack.controls.append(plot_point.timeline_control)
 
 
-        # The timeline shown under our timeliness that that will display timeskips, etc. 
-        timeline = ft.Container(
-            expand=True,
-            content=ft.Column(
-                expand=True,
-                alignment=ft.MainAxisAlignment.CENTER,
-                controls=[
-                    timeline_stack,   
-                ]
-            )
-        )
-
         self.body_container.content = timeline_stack
-
-
-    
 
 
         ''' Start building our header with filter dropdowns ------------------------'''

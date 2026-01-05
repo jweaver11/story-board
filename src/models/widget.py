@@ -14,6 +14,7 @@ from handlers.safe_string_checker import return_safe_name
 from styles.colors import dark_gradient
 from styles.colors import colors
 from styles.snack_bar import SnackBar
+from styles.menu_option_style import MenuOptionStyle
 
 
 
@@ -77,9 +78,7 @@ class Widget(ft.Container):
         self.tab_text: ft.Text = ft.Text()
         self.hide_tab_icon_button: ft.IconButton = ft.IconButton()    # 'X' icon button to hide widget from workspace'
 
-        # UI ELEMENTS - Body
-
-        # Declare our mini widgets list                      
+        # UI ELEMENTS - Body                   
         self.mini_widgets: list = []   
 
         # Currently active mini widget being focused on
@@ -228,7 +227,6 @@ class Widget(ft.Container):
         self.data['title'] = self.title     
         self.data['key'] = f"{self.directory_path}\\{return_safe_name(self.title)}_{self.data.get('tag', '')}"  
 
-
         # Rename our json file so it doesnt just create a new one
         os.rename(old_file_path, self.data['key'] + ".json")  
 
@@ -304,25 +302,30 @@ class Widget(ft.Container):
 
 
     # Called when a draggable starts dragging.
-    def start_drag(self, e: ft.DragStartEvent):
+    async def start_drag(self, e: ft.DragStartEvent):
         ''' Shows our pin drag targets. Needs its own function or story is not initialized on first launch, causing crash '''
-        
         self.story.workspace.show_pin_drag_targets()
         
-    # Called when mouse hovers over the tab part of the widget
-    def hover_tab(self, e):
+    # Called when mouse enters the tab part of the widget
+    async def enter_tab(self, e):
         ''' Changes the hide icon button color slightly for more interactivity '''
-
         self.hide_tab_icon_button.icon_color = ft.Colors.ON_SURFACE
-        self.p.update()
+        self.page = self.p
+        self.update()
+
+    # Called when mouse hovers over the tab part of the widget
+    async def hover_tab(self, e):
+        ''' Updates our mouse x/y state for opening menu at mouse position '''
+        self.story.mouse_x = e.global_x
+        self.story.mouse_y = e.global_y
 
     # Called when mouse stops hovering over the tab part of the widget
-    def stop_hover_tab(self, e):
+    async def stop_hover_tab(self, e):
         ''' Reverts the color change of the hide icon button '''
-
         self.hide_tab_icon_button.icon_color = ft.Colors.OUTLINE
-        self.p.update()
-
+        self.page = self.p
+        self.update()
+        
 
     # Called when app clicks the hide icon in the tab
     def toggle_visibility(self, e=None, value: bool=None):
@@ -348,12 +351,45 @@ class Widget(ft.Container):
 
     # Called when right clicking our tab
     def get_menu_options(self) -> list[ft.Control]:
-        ''' Returns our list of menu options for this widget '''
 
-        return []
+        # Color, rename
+        return [
+            MenuOptionStyle(
+                #on_click=self._rename_clicked,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
+                    ft.Text(
+                        "Rename", 
+                        weight=ft.FontWeight.BOLD, 
+                        color=ft.Colors.ON_SURFACE
+                    ), 
+                ]),
+            ),
+            MenuOptionStyle(
+                content=ft.PopupMenuButton(
+                    expand=True, tooltip="Change this item's color",
+                    padding=ft.Padding(0,0,0,0),
+                    content=ft.Row(
+                        expand=True,
+                        controls=[
+                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
+                            ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
+                        ]
+                    ),
+                    items=self._get_color_options()
+                ),
+            ),
+            MenuOptionStyle(
+                #on_click=_self.delete_clicked,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED),
+                    ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
+                ]),
+            )
+        ]
     
     # Called when color button is clicked
-    def get_color_options(self) -> list[ft.Control]:
+    def _get_color_options(self) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
 
         # Called when a color option is clicked on popup menu to change icon color
@@ -386,20 +422,20 @@ class Widget(ft.Container):
         ''' Creates our tab for our widget that has the title and hide icon '''
 
         # Grabs our tag to determine the icon we'll use
-        tag = self.data.get('tag', None)
+        tag = self.data.get('tag', '')
 
         # Set our icon based on what type of widget we are using tag
-        if tag is None: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)      # Catch errors
-        elif tag == "chapter": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
-        elif tag == "note": self.icon = ft.Icon(ft.Icons.COMMENT_OUTLINED)
-        elif tag == "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
-        elif tag == "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
-        elif tag == "settings": self.icon = ft.Icon(ft.Icons.SETTINGS_OUTLINED)
-        elif tag == "timeline": self.icon = ft.Icon(ft.Icons.TIMELINE_ROUNDED)
-        elif tag == "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
-        elif tag == "world_building": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
-        else: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)     # Catch errors
-        
+        match tag:
+            case "chapter": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
+            case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
+            case "note": self.icon = ft.Icon(ft.Icons.COMMENT_OUTLINED)
+            case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
+            case "timeline": self.icon = ft.Icon(ft.Icons.TIMELINE_ROUNDED)
+            case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
+            case "world_building": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
+            case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
+
+
         # Set the color and size
         self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
         #self.icon.scale = 0.8
@@ -452,8 +488,6 @@ class Widget(ft.Container):
 
                 # Drag event handlers
                 on_drag_start=self.start_drag,    # Shows our pin targets when we start dragging
-                #on_drag_complete = Do nothing. The accepted drag targets handle logic and removing pin drag targets
-                #on_drag_cancel=lambda e: story.workspace.remove_drag_targets,
 
                 # Content when we are dragging the follows the mouse
                 content_feedback=ft.TextButton(self.title), # Normal text won't restrict its own size, so we use a button
@@ -465,6 +499,8 @@ class Widget(ft.Container):
                     mouse_cursor=ft.MouseCursor.CLICK,
 
                     # Event handlers for hovering and stop hovering over tab
+                    
+                    on_enter=self.enter_tab,
                     on_hover=self.hover_tab,
                     on_exit=self.stop_hover_tab,
                     on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
@@ -565,5 +601,9 @@ class Widget(ft.Container):
 
         self.content = self.tabs
 
-        #self.content = row
-        self.p.update()
+        # First launch is less effecient since page isnt assigned yet
+        try:
+            self.page = self.p
+            self.update()
+        except:
+            self.p.update()

@@ -405,7 +405,7 @@ class Story(ft.View):
 
             self.active_rail.content.reload_rail()
             self.workspace.reload_workspace()
-            self.close_menu()
+            #await self.close_menu()
 
     # Called on story startup to load all our content objects
     def load_content(self):

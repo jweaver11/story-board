@@ -171,7 +171,7 @@ class TreeViewDirectory(ft.GestureDetector):
         
             # Delete button
             MenuOptionStyle(
-                on_click=lambda e: self.delete_clicked(e),
+                on_click=lambda e: self._delete_clicked(e),
                 content=ft.Row([
                     ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED),
                     ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
@@ -481,15 +481,15 @@ class TreeViewDirectory(ft.GestureDetector):
         return color_controls
     
     # Called when the delete button is clicked in the menu options
-    def delete_clicked(self, e):
+    def _delete_clicked(self, e):
         ''' Deletes this file from the story '''
 
-        def _delete_confirmed(e):
+        async def _delete_confirmed(e):
             ''' Deletes the widget after confirmation '''
 
             self.p.close(dlg)
             self.story.delete_folder(self.full_path)
-            self.story.close_menu()
+            await self.story.close_menu()
             
 
         # Append an overlay to confirm the deletion

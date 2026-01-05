@@ -40,41 +40,10 @@ class Note(Widget):
         # Load our widget UI on start after we have loaded our data
         self.reload_widget()
 
-    # Called when right clicking our controls for either timeline or an arc
-    def get_menu_options(self) -> list[ft.Control]:
-
-        # Color, rename
-        return [
-            MenuOptionStyle(
-                #on_click=self.rename_clicked,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
-                    ft.Text(
-                        "Rename", 
-                        weight=ft.FontWeight.BOLD, 
-                        color=ft.Colors.ON_SURFACE
-                    ), 
-                ]),
-            ),
-            # Color changing popup menu
-            MenuOptionStyle(
-                content=ft.PopupMenuButton(
-                    expand=True,
-                    tooltip="",
-                    padding=None,
-                    content=ft.Row(
-                        expand=True,
-                        controls=[
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
-                            ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
-                            ft.Icon(ft.Icons.ARROW_DROP_DOWN_OUTLINED, color=ft.Colors.ON_SURFACE, size=16),
-                        ]
-                    ),
-                    items=self.get_color_options()
-                )
-            ),
-        ]
-
+    # Saves content when text field is unfocused
+    async def save_content(self, e):
+        self.data['content'] = e.control.value
+        self.save_dict()
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def reload_widget(self):
@@ -85,9 +54,9 @@ class Note(Widget):
         
         # Body of the tab, which is the content of flet container
         body = ft.TextField(
-            expand=True,
-            multiline=True,
+            expand=True, multiline=True,
             value=self.data.get('content', ''),
+            on_blur=self.save_content,
         )
 
         # Assign the body_container content as whatever view you have built in the widget
