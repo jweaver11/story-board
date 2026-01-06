@@ -259,10 +259,11 @@ class TreeViewFile(ft.GestureDetector):
         def _delete_confirmed(e):
             ''' Deletes the widget after confirmation '''
 
-            
-            self.widget.story.delete_widget(self.widget)
+            #self.widget.story.close_menu_instant()
             self.widget.p.close(dlg)
-            self.widget.story.close_menu()
+            self.widget.story.delete_widget(self.widget)
+            
+            
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(

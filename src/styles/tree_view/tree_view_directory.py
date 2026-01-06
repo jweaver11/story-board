@@ -484,12 +484,12 @@ class TreeViewDirectory(ft.GestureDetector):
     def _delete_clicked(self, e):
         ''' Deletes this file from the story '''
 
-        async def _delete_confirmed(e):
+        def _delete_confirmed(e):
             ''' Deletes the widget after confirmation '''
 
             self.p.close(dlg)
             self.story.delete_folder(self.full_path)
-            await self.story.close_menu()
+            #self.story.close_menu_instant()
             
 
         # Append an overlay to confirm the deletion

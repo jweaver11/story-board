@@ -42,16 +42,15 @@ class Rail(ft.Container):
 
         # Textfield for creating new items (sub-categories, chapters, notes, characters, etc.)
         self.new_item_textfield = ft.TextField(     
-            hint_text="hint",                                   # Placeholder text before user starts typings
-            data="data",                                        # Data for logic routing on submit
-            autofocus=True,                                     # Auto-focus when made visible
-            capitalization=ft.TextCapitalization.WORDS,     # Capitalize sentences for names
+            hint_text="", data="",                 # Hint text and data tag for logic                      
+            autofocus=True, dense=True,                 
+            capitalization=ft.TextCapitalization.SENTENCES,     # Capitalize sentences for names
             visible=False,                                      # Hidden by default
             text_style=self.text_style,                         # Text style for consistency
             on_blur=self.on_new_item_blur,                      # Called when clicking off the textfield and after submitting
             on_change=self.on_new_item_change,                  # Called on every key input
             on_submit=self.submit_item,                         # Called when enter is pressed and textfield is focused
-            dense=True,
+            
         )
 
 
@@ -145,7 +144,7 @@ class Rail(ft.Container):
 
         if tag == "category":
             new_key = os.path.normcase(os.path.normpath(self.directory_path + "\\" + title))
-            new_key = new_key.rstrip()  # Remove trailing spaces for folder names
+            new_key = new_key.strip()  # Remove trailing spaces for folder names
             for key in self.story.data['folders'].keys():
                 
                 # Path comparisons require normalization
@@ -154,6 +153,7 @@ class Rail(ft.Container):
                     error_text = "Category must be unique."
                     break
 
+        # Some mini widgets that have their own uniquess checks
         elif tag == "plot_point" and self.timeline is not None:
             pass
         elif tag == "arc" and self.timeline is not None:
@@ -216,7 +216,7 @@ class Rail(ft.Container):
         title = e.control.value
 
         # Protect against empty titles. They break things
-        if title is None or title.rstrip() == "":
+        if title is None or title.strip() == "":
             return
             
         # If our new title unique (check from on_new_item_change), create the new item

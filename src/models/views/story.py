@@ -314,6 +314,7 @@ class Story(ft.View):
             self.save_dict()
 
             self.active_rail.content.reload_rail()
+            self.close_menu_instant()
 
         # Handle errors
         except Exception as e:
@@ -405,7 +406,7 @@ class Story(ft.View):
 
             self.active_rail.content.reload_rail()
             self.workspace.reload_workspace()
-            #await self.close_menu()
+            self.close_menu_instant()
 
     # Called on story startup to load all our content objects
     def load_content(self):
@@ -577,6 +578,12 @@ class Story(ft.View):
 
     # Called clicking outside the menu to close it
     async def close_menu(self, e=None):
+        ''' Closes our right click menu when clicking outside of it '''
+        
+        self.p.overlay.clear()
+        self.p.update()
+
+    def close_menu_instant(self, e=None):
         ''' Closes our right click menu when clicking outside of it '''
         
         self.p.overlay.clear()
