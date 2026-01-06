@@ -5,9 +5,10 @@ import json
 from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
 from styles.snack_bar import SnackBar
-from handlers.check_widget_unique import check_widget_unique
+from utils.check_widget_unique import check_widget_unique
+from utils.check_folder_content import return_folder_content
 import asyncio
-import threading
+from models.app import app
 
 # Expansion tile for all sub directories (folders) in a directory
 class TreeViewDirectory(ft.GestureDetector):
@@ -484,26 +485,45 @@ class TreeViewDirectory(ft.GestureDetector):
     def _delete_clicked(self, e):
         ''' Deletes this file from the story '''
 
-        def _delete_confirmed(e):
+        def _delete_confirmed(e=None):
             ''' Deletes the widget after confirmation '''
 
             self.p.close(dlg)
             self.story.delete_folder(self.full_path)
-            #self.story.close_menu_instant()
+
+        # Called to add our folder contents to the confirmation dialog
+        def _return_folder_content() -> ft.Control:
+            ''' Returns our folder/directories sub-folders and widgets so users are aware of what all they're deleting '''
+
+            column = ft.Column([
+                ft.Text("This will also delete the following items:", weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
+            ])
+
+            return_folder_content(self.full_path, self.story, column)
+
+            
+            # If empty folder, make the dialog smaller by returning None
+            return None if column.controls.__len__() == 1 else column
             
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Are you sure you want to delete '{self.title}' forever?", weight=ft.FontWeight.BOLD),
+            title=ft.Text(f"Are you sure you want to delete folder {self.title} forever?", weight=ft.FontWeight.BOLD),
             alignment=ft.alignment.center,
             title_padding=ft.padding.all(25),
+            content=_return_folder_content(),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg)),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
             ]
         )
 
-        self.p.open(dlg)
+        self.story.close_menu_instant()
+
+        if app.settings.data.get('confirm_item_delete', False):
+            self.p.open(dlg)
+        else:
+            _delete_confirmed()
 
     # Called when a widget is dragged and dropped into this directory
     def on_drag_accept(self, e):

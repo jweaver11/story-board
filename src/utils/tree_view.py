@@ -70,10 +70,8 @@ def load_directory_data(
             new_expansion_tile = TreeViewDirectory(
                 full_path=full_path,
                 title=capital_dir_path,
-                story=story,
-                page=page,
-                color=color,
-                rail=rail,
+                story=story, page=page,
+                color=color, rail=rail,
                 is_expanded=is_expanded,
                 additional_menu_options=additional_directory_menu_options,
                 father=dir_dropdown if dir_dropdown is not None else None,

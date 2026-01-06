@@ -44,18 +44,20 @@ class Settings(ft.View):
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
             {
-                
-                'active_story': "/",    # this works as a route for the correct story
-                'tab_title_color': "primary",        # the tab color
-                'theme_mode': "system",       # the apps theme mode, dark or light
-                'active_rail_width': 200,  # Width of our active rail that we can resize
-                'theme_color': "blue",   # the color scheme of the app. Defaults to blue
-                'change_name_colors_based_on_morality': True,   # If characters names change colors in char based on morality
+                # Settings the app uses and users do not directly change in the settings view
+                'active_story': "/",    # Route to our active story
                 'workspaces_rail_is_collapsed': bool,  # If the all workspaces rail is collapsed or not
                 'workspaces_rail_is_reorderable': bool,  # If the all workspaces rail is reorderable or not
+                'active_rail_width': 200,  # Width of our active rail that we can resize
                 'page_is_maximized': True,   # If the window is maximized or not
                 'page_width': int,     # Last known page width
                 'page_height': int,    # Last known page height
+
+                # Settings the user can change in the settings view
+                # Appearance settings
+                'theme_mode': "system",       # the apps theme mode, dark or light
+                'theme_color': "blue",   # the color scheme of the app. Defaults to blue
+                'change_name_colors_based_on_morality': True,   # If characters names change colors in char based on morality
                 'workspaces_rail_order': [      # Order of the workspace rail
                     "content",
                     "characters",
@@ -64,6 +66,9 @@ class Settings(ft.View):
                     "canvas",
                     "planning",
                 ],
+                
+                # App settings
+                'confirm_item_delete': True,   # If we should confirm before deleting items
             },
         )
         

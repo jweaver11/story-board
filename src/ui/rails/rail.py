@@ -8,7 +8,8 @@ import json
 from models.views.story import Story
 from models.widgets.timeline import Timeline
 from styles.tree_view.tree_view_directory import TreeViewDirectory
-from handlers.check_widget_unique import check_widget_unique
+from utils.check_widget_unique import check_widget_unique
+from utils.new_canvas_alert_dlg import new_canvas_alert_dlg
 import asyncio
 
 class Rail(ft.Container):
@@ -250,7 +251,13 @@ class Rail(ft.Container):
 
 
 
-            
+    # Called when new character button or menu option is clicked
+    def new_canvas_clicked(self, e):
+        ''' Handles setting our textfield for new character creation '''
+
+        # Close the menu (if ones is open), which will update the page as well
+        self.story.close_menu_instant()   
+        self.p.open(new_canvas_alert_dlg(self.p, self.story))
 
     # Called when we select a new dropdown
     def refresh_buttons(self):

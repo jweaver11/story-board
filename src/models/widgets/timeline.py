@@ -10,7 +10,7 @@ from styles.menu_option_style import MenuOptionStyle
 from models.views.story import Story
 from models.widget import Widget
 from models.mini_widgets.timelines.arc import Arc
-from handlers.verify_data import verify_data
+from utils.verify_data import verify_data
 import flet.canvas as cv
 
 

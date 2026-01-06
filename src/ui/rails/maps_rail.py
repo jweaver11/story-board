@@ -4,7 +4,7 @@ import flet as ft
 from models.views.story import Story
 from ui.rails.rail import Rail
 from styles.menu_option_style import MenuOptionStyle
-from handlers.tree_view import load_directory_data
+from utils.tree_view import load_directory_data
 
 
 class MapsRail(Rail):

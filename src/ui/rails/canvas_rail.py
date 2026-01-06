@@ -7,7 +7,6 @@ from styles.menu_option_style import MenuOptionStyle
 import math
 from flet_contrib.color_picker import ColorPicker
 from models.app import app
-from handlers.new_canvas_alert_dlg import new_canvas_alert_dlg
 
 
 # Class for our Canvas Board rail
@@ -26,7 +25,7 @@ class CanvasRail(Rail):
         # Buttons at the top of the rail
         self.top_row_buttons = [
             ft.IconButton(
-                tooltip="New Canvas",
+                tooltip="New Canvas", data="canvas",
                 icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                 on_click=self.new_canvas_clicked
             ),
@@ -78,16 +77,6 @@ class CanvasRail(Rail):
 
         # Reload the rail on start
         self.reload_rail()
-
-    # Called when new character button or menu option is clicked
-    def new_canvas_clicked(self, e):
-        ''' Handles setting our textfield for new character creation '''
-
-        # Close the menu (if ones is open), which will update the page as well
-        self.story.close_menu()   
-
-        self.p.open(new_canvas_alert_dlg(self.p, self.story))
-        self.p.update()
 
     # Called when color picker is closed
     def _set_color(self, e):

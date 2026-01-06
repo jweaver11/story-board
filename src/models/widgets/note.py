@@ -3,7 +3,7 @@
 import flet as ft
 from models.views.story import Story
 from models.widget import Widget
-from handlers.verify_data import verify_data
+from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
     
 

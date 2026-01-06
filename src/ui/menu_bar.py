@@ -6,7 +6,7 @@ Holds our settings icon, feedback, and account name as well
 import flet as ft
 from models.app import app
 from models.views.story import Story
-from handlers.check_story_unique import story_is_unique
+from utils.check_story_unique import story_is_unique
 from styles.snack_bar import SnackBar
 
 

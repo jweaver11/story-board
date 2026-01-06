@@ -9,7 +9,7 @@ Some mini widgets can have their own files IN ADDITION to normal storage, such a
 
 import flet as ft
 from models.widget import Widget
-from handlers.verify_data import verify_data
+from utils.verify_data import verify_data
 
 
 class MiniWidget(ft.Container):

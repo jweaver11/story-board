@@ -9,8 +9,8 @@ import flet as ft
 from models.views.story import Story
 import os
 import json
-from handlers.verify_data import verify_data
-from handlers.safe_string_checker import return_safe_name
+from utils.verify_data import verify_data
+from utils.safe_string_checker import return_safe_name
 from styles.colors import dark_gradient
 from styles.colors import colors
 from styles.snack_bar import SnackBar
@@ -486,7 +486,7 @@ class Widget(ft.Container):
                 group="widgets",    # Group for draggables (and receiving drag targets) to accept each other
                 data=self.data['key'],  # Pass ourself through the data (of our tab, NOT our object) so we can move ourself around
 
-                # Drag event handlers
+                # Drag event utils
                 on_drag_start=self.start_drag,    # Shows our pin targets when we start dragging
 
                 # Content when we are dragging the follows the mouse
@@ -498,7 +498,7 @@ class Widget(ft.Container):
                     # Change mouse cursor to the selector cursor when hovering over the tab
                     mouse_cursor=ft.MouseCursor.CLICK,
 
-                    # Event handlers for hovering and stop hovering over tab
+                    # Event utils for hovering and stop hovering over tab
                     
                     on_enter=self.enter_tab,
                     on_hover=self.hover_tab,

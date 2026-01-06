@@ -5,7 +5,7 @@ Simple mini widget that consists of a title, and a body that is a string
 import flet as ft
 from models.mini_widget import MiniWidget
 from models.widget import Widget
-from handlers.verify_data import verify_data
+from utils.verify_data import verify_data
 
 
 # Class that holds our mini note objects inside images or chapters

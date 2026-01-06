@@ -2,9 +2,9 @@ import flet as ft
 from models.widget import Widget
 from styles.menu_option_style import MenuOptionStyle
 from styles.tree_view.tree_view_directory import TreeViewDirectory
-import math
+from models.app import app
 from styles.colors import colors
-from handlers.check_widget_unique import check_widget_unique
+from utils.check_widget_unique import check_widget_unique
 import os
 
 # Class for items within a tree view on the rail
@@ -256,18 +256,16 @@ class TreeViewFile(ft.GestureDetector):
     def delete_clicked(self, e):
         ''' Deletes this file from the story '''
 
-        def _delete_confirmed(e):
+        def _delete_confirmed(e=None):
             ''' Deletes the widget after confirmation '''
 
             #self.widget.story.close_menu_instant()
             self.widget.p.close(dlg)
-            self.widget.story.delete_widget(self.widget)
-            
-            
+            self.widget.story.delete_widget(self.widget) 
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Are you sure you want to delete '{self.widget.title}' forever?", weight=ft.FontWeight.BOLD),
+            title=ft.Text(f"Are you sure you want to delete {self.widget.title} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
             alignment=ft.alignment.center,
             title_padding=ft.padding.all(25),
             actions=[
@@ -276,13 +274,16 @@ class TreeViewFile(ft.GestureDetector):
             ]
         )
 
-        self.widget.p.open(dlg)
+        self.widget.story.close_menu_instant()
+
+        if app.settings.data.get('confirm_item_delete', False):
+            self.widget.p.open(dlg)
+        else:
+            _delete_confirmed()
 
 
     # Called to reload our tree view file display
     def reload(self):
-
-        # If dir dropdown is not None, insert indentation icon ??
 
         self.content = ft.Container(
             expand=True, 

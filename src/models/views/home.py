@@ -1,7 +1,7 @@
 import flet as ft
 from ui.menu_bar import create_menu_bar
 from styles.colors import dark_gradient
-from handlers.check_story_unique import story_is_unique
+from utils.check_story_unique import story_is_unique
 
 
 # Called when creating our home view (No stories exist or none active)

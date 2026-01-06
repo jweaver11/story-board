@@ -8,7 +8,7 @@ import flet as ft
 import os
 from models.widget import Widget
 from models.views.story import Story
-from handlers.verify_data import verify_data
+from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 
 
@@ -49,7 +49,7 @@ class Character(Widget):
                 'title_prefix': str, #text input
                 'edit_mode': bool,  # Whether we are in edit mode or not
                 'physical_description': {
-                    'Race': str, #having this in a dict sort of complicates the on_change handlers
+                    'Race': str, #having this in a dict sort of complicates the on_change utils
                     'Species': str,
                     'Ethnicity': str,
                     'Skin Color': str,

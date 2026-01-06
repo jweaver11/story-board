@@ -9,7 +9,7 @@ from models.widgets.character import Character
 from styles.menu_option_style import MenuOptionStyle
 from ui.rails.rail import Rail
 from models.views.story import Story
-from handlers.tree_view import load_directory_data
+from utils.tree_view import load_directory_data
 from styles.tree_view.tree_view_directory import TreeViewDirectory
 from models.app import app
 

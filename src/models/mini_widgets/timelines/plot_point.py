@@ -1,7 +1,7 @@
 import flet as ft
 from models.mini_widget import MiniWidget
 from models.widget import Widget
-from handlers.verify_data import verify_data
+from utils.verify_data import verify_data
 import math
 from styles.text_styles import text_style
 

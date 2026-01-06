@@ -10,9 +10,9 @@ import os
 import shutil
 import json
 from constants import data_paths
-from handlers.verify_data import verify_data
+from utils.verify_data import verify_data
 from styles.snack_bar import SnackBar
-from handlers.safe_string_checker import return_safe_name
+from utils.safe_string_checker import return_safe_name
 
 
 class Story(ft.View):

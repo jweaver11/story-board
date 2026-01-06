@@ -5,7 +5,7 @@ Initializes the app, settings, page data, and renders our UI onto the page
 
 import flet as ft
 from models.app import app
-from handlers.route_change import route_change
+from utils.route_change import route_change
 from models.views.home import create_home_view
 from models.views.loading import create_loading_view
 

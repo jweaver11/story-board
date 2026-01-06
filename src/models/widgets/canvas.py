@@ -18,7 +18,7 @@ import json
 import flet as ft
 from models.widget import Widget
 from models.views.story import Story
-from handlers.verify_data import verify_data
+from utils.verify_data import verify_data
 from styles.snack_bar import SnackBar
 from models.state import State
 import flet.canvas as cv

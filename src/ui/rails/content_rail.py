@@ -4,9 +4,9 @@ import flet as ft
 import os
 from models.views.story import Story
 from ui.rails.rail import Rail
-from handlers.tree_view import load_directory_data
+from utils.tree_view import load_directory_data
 from styles.menu_option_style import MenuOptionStyle
-from handlers.new_canvas_alert_dlg import new_canvas_alert_dlg
+from utils.new_canvas_alert_dlg import new_canvas_alert_dlg
 import threading
 import asyncio
 
@@ -39,7 +39,7 @@ class ContentRail(Rail):
                     ),
                     ft.PopupMenuItem(
                         text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
-                        on_click=self.new_item_clicked, data="canvas"
+                        on_click=self.new_canvas_clicked, data="canvas"
                     ),
                     ft.PopupMenuItem(
                         "Note", ft.Icons.NOTE_ALT_OUTLINED,
