@@ -24,6 +24,10 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
         # Should pop open dialog to confirm deletion, warning that it cannot be undone
         pass
 
+    def handle_file_rename_click(e):
+        # Should pop open dialog to rename current story
+        pass
+
 
     # Called when file -> new is clicked
     def handle_create_new_story_clicked(e):
@@ -260,6 +264,12 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                         leading=ft.Icon(ft.Icons.MENU_BOOK_OUTLINED),
                         style=menubar_style,
                         on_click=handle_file_open_click,
+                    ),
+                    ft.MenuItemButton(
+                        content=ft.Text("Rename", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                        leading=ft.Icon(ft.Icons.EDIT_OUTLINED),
+                        style=menubar_style,
+                        on_click=handle_file_rename_click,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Upload", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
