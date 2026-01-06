@@ -77,7 +77,7 @@ def create_home_view(page: ft.Page) -> ft.View:
         story_title_field = ft.TextField(
             label="Story Title",
             autofocus=True,
-            capitalization=ft.TextCapitalization.WORDS,
+            capitalization=ft.TextCapitalization.SENTENCES,
             on_submit=submit_new_story,
             on_change=check_story_title_unique,
         )
@@ -117,7 +117,12 @@ def create_home_view(page: ft.Page) -> ft.View:
                 alignment=ft.alignment.center,
                 gradient=dark_gradient,
                 content=ft.FloatingActionButton(
-                    content=ft.Row([ft.Container(expand=True), ft.Icon(ft.Icons.ADD_OUTLINED), ft.Text("Create New Story", theme_style=ft.TextThemeStyle.BODY_LARGE), ft.Container(expand=True)], alignment=ft.alignment.center),
+                    content=ft.Row([
+                        ft.Container(expand=True), 
+                        ft.Icon(ft.Icons.ADD_OUTLINED), 
+                        ft.Text("Create New Story", theme_style=ft.TextThemeStyle.BODY_LARGE), 
+                        ft.Container(expand=True)
+                        ],  alignment=ft.alignment.center),
                     on_click=create_new_story_button_clicked,
                     width=200,
                     height=100,

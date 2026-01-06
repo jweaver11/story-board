@@ -85,7 +85,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
         # Create a reference to the text field so we can access its value
         story_title_field = ft.TextField(
             label="Story Title",
-            autofocus=True, capitalization=ft.TextCapitalization.WORDS,
+            autofocus=True, capitalization=ft.TextCapitalization.SENTENCES,
             on_submit=submit_new_story,
             on_change=textbox_value_changed,
         )
