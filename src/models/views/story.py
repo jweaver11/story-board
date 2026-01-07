@@ -47,7 +47,7 @@ class Story(ft.View):
                 'title': self.title,
                 'directory_path': os.path.join(data_paths.stories_directory_path, self.route),
                 'tag': "story",
-                'selected_rail': "characters",
+                'selected_rail': "content",
                 'content_directory_path': os.path.join(data_paths.stories_directory_path, self.route, "content"),
                 'top_pin_height': 200,
                 'left_pin_width': 230,

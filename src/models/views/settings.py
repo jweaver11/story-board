@@ -6,7 +6,7 @@ A Settings object is created for every story
 import flet as ft
 from models.views.story import Story
 from models.widget import Widget
-from handlers.verify_data import verify_data
+from utils.verify_data import verify_data
 from styles.colors import colors
 import os
 import json
@@ -66,6 +66,14 @@ class Settings(ft.View):
                     "canvas",
                     "planning",
                 ],
+                
+
+
+                
+                # App settings
+                'confirm_item_delete': True,   # If we should confirm before deleting items
+
+                # Widget settings
                 'default_chapter_color': "primary",   # Default colors for new widgets
                 'default_canvas_color': "primary",
                 'default_note_color': "primary",
@@ -75,9 +83,16 @@ class Settings(ft.View):
                 'default_planning_color': "primary",
                 'default_family_tree_color': "primary", 
                 'default_world_building_color': "primary",
-                
-                # App settings
-                'confirm_item_delete': True,   # If we should confirm before deleting items
+
+                'default_chapter_pin_location': "main",   # Default pin location for new chapters
+                'default_canvas_pin_location': "main",
+                'default_note_pin_location': "right",
+                'default_character_pin_location': "left",
+                'default_timeline_pin_location': "main",
+                'default_map_pin_location': "main",
+                'default_planning_pin_location': "main",
+                'default_family_tree_pin_location': "main",
+                'default_world_building_pin_location': "left",
             },
         )
         
@@ -90,12 +105,6 @@ class Settings(ft.View):
         ''' Saves our current data to the json file '''
 
         try:
-
-            # Set our file path
-            
-
-            # Create the directory if it doesn't exist. Catches errors from users deleting folders
-            #os.makedirs(self.file_path, exist_ok=True)
             
             # Save the data to the file (creates file if doesnt exist)
             with open(self.file_path, "w", encoding='utf-8') as f:   
@@ -111,11 +120,12 @@ class Settings(ft.View):
         ''' Changes a key/value pair in our data and saves the json file '''
         # Called by:
         # app.settings.change_data(**{'key': value, 'key2': value2})
+        # or
+        # app.settings.change_data(key=value)
 
         try:
             for key, value in kwargs.items():
                 self.data.update({key: value})
-                print("Changed settings data:", key, "to", value)
 
             self.save_dict()
 
@@ -145,38 +155,18 @@ class Settings(ft.View):
             self.save_dict()
             return
         
-    # Called when we select a new category of settings in our settings view
-    def _settings_category_changed(self, e):
-        ''' Determines which category is now active and changes our body container to match '''
-
-        if e.control.selected_index == 0:   # Appearance settings
-            self.body_container.content = self._load_appearance_settings()
-        
-        elif e.control.selected_index == 1:   # App settings
-            self.body_container.content = self._load_app_settings()
-        
-        elif e.control.selected_index == 2:   # Account settings
-            self.body_container.content = self._load_account_settings()
-        
-        elif e.control.selected_index == 3:   # Story settings
-            self.body_container.content = self._load_story_settings()
-
-        self.p.update()
-        
-    # Called when appearance settings category is selected
-    def _load_appearance_settings(self) -> ft.Container:
-        ''' Contains toggle for theme mode, and color scheme dropdown '''
-        
-        
-        def _get_theme_color_options():
+    def _get_color_options(e=None, is_theme_dropdown: bool=False):
             ''' Adds our choices to the color scheme dropdown control'''
-
-
             # Create a list to hold our dropdown options
             options = []
+            
 
             # Runs through our colors above and adds them to the dropdown
             for color in colors:
+                if is_theme_dropdown:
+                    if color in ["white", "grey", "black", "primary"]:
+                        continue   # Skip these colors for theme dropdown, as they are not supported
+                
                 options.append(
                     ft.DropdownOption(
                         key=color.capitalize(),
@@ -187,6 +177,32 @@ class Settings(ft.View):
                     )
                 )
             return options
+    
+    
+        
+    # Called when we select a new category of settings in our settings view
+    def _settings_category_changed(self, e):
+        ''' Determines which category is now active and changes our body container to match '''
+
+        if e.control.selected_index == 0:   # Appearance settings
+            self.body_container.content = self._load_appearance_settings()
+        elif e.control.selected_index == 1:   # App settings
+            self.body_container.content = self._load_app_settings()
+        elif e.control.selected_index == 2:   # Widgets settings
+            self.body_container.content = self._load_widgets_settings()
+        elif e.control.selected_index == 3:   # Story settings
+            self.body_container.content = self._load_story_settings()
+        elif e.control.selected_index == 4:   # Resources
+            self.body_container.content = self._load_resources_settings()
+
+        self.p.update()
+        
+    # Called when appearance settings category is selected
+    def _load_appearance_settings(self) -> ft.Container:
+        ''' Contains toggle for theme mode, and color scheme dropdown '''
+        
+        
+        
         
         # Called when a dropdown option is selected. Saves our choice, and applies it to the page
         def _set_theme_color(e):
@@ -205,72 +221,78 @@ class Settings(ft.View):
             self.p.update()
 
         # Dropdown so app can change their color scheme
-        self.theme_color_dropdown = ft.Dropdown(
-            label="Theme Color",
+        theme_color_dropdown = ft.Dropdown(
+            label="Theme Color", tooltip="Select the primary color scheme for the app",
             capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-            options=_get_theme_color_options(),
+            options=self._get_color_options(True),
             on_change=_set_theme_color,
             value=self.data.get('theme_color', "blue"),
             text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
             color=self.data.get('theme_color', None),
-            dense=True,
+            dense=True, data="theme_color_dropdown",
         )
 
 
         # Called when theme switch is changed. Switches from dark to light theme, or reverse
-        def toggle_theme(e):
+        def _toggle_theme(e):
             ''' Changes our settings theme data from dark to light or reverse '''
 
-            # Change theme mode data, and the icon to match
-            if self.data['theme_mode'] == "dark":   # Check which theme we're on
-                self.data['theme_mode'] = "light"   # change the theme mode so we can save it
-                self.theme_button.icon = ft.Icons.DARK_MODE # Change the icon of theme button
-            elif self.data['theme_mode'] == "light":
-                self.data['theme_mode'] = "dark"
-                self.theme_button.icon = ft.Icons.LIGHT_MODE
+            new_theme_mode = e.control.data   # Grabs the theme mode this button represents
+
+            if new_theme_mode == self.data['theme_mode']:
+                return   # No need to change anything if we're already on this theme
             
-            # Theme is set to system by default, this checks for that
-            else:  
-                
-                if self.p.theme_mode == ft.ThemeMode.DARK:
-                    self.data['theme_mode'] = "dark"
-                    self.theme_button.icon = ft.Icons.LIGHT_MODE
+            else:
+                if new_theme_mode == "dark":
+                    e.control.border = ft.border.all(2, ft.Colors.PRIMARY)
+                    self.light_theme_button.border = ft.border.all(2, ft.Colors.ON_SURFACE_VARIANT)
                 else:
-                    self.data['theme_mode'] = "light"
-                    self.theme_button.icon = ft.Icons.DARK_MODE
-               
-            # Save the updated settings to the JSON file, apply to the page and update
+                    e.control.border = ft.border.all(2, ft.Colors.PRIMARY)
+                    self.dark_theme_button.border = ft.border.all(2, ft.Colors.ON_SURFACE_VARIANT)
+
+            self.data['theme_mode'] = new_theme_mode
             self.save_dict()
             self.p.theme_mode = self.data['theme_mode']
             self.p.update()
-            
-        
 
-        # Icon of the theme button that changes depending on if we're dark or light mode
-        self.theme_icon = ft.Icons.DARK_MODE if self.p.theme_mode == ft.ThemeMode.LIGHT else ft.Icons.LIGHT_MODE
+
+            
 
         # Button that changes the theme from dark or light when clicked
-        self.theme_button = ft.TextButton(text="Toggle theme mode", icon=self.theme_icon, on_click=toggle_theme)
+        self.light_theme_button = ft.Container(
+            content=ft.Icon(ft.Icons.LIGHT_MODE, color=ft.Colors.YELLOW_700), height=100, width=100, border_radius=10, data="light",
+            border=ft.border.all(2, ft.Colors.ON_SURFACE_VARIANT) if self.data['theme_mode'] == "dark" else ft.border.all(2, ft.Colors.PRIMARY), 
+            bgcolor=ft.Colors.WHITE, on_click=_toggle_theme, tooltip="Set light mode"
+        )
+        self.dark_theme_button = ft.Container(
+            content=ft.Icon(ft.Icons.DARK_MODE, color=ft.Colors.WHITE), height=100, width=100, border_radius=10, data="dark",
+            border=ft.border.all(2, ft.Colors.ON_SURFACE_VARIANT) if self.data['theme_mode'] == "light" else ft.border.all(2, ft.Colors.PRIMARY), 
+            bgcolor=ft.Colors.GREY_900, on_click=_toggle_theme, tooltip="Set dark mode"
+        )
         
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
-        content=ft.Column(
-            spacing=20,
-            controls=[
-                ft.Row([
-                    ft.Text("Appearance", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
-                    ft.Container(expand=True),   # Spacer to push title to left
-                    ft.IconButton(
-                        ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
-                        scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
-                    )
-                ]),
-                ft.Divider(),
-                
-                self.theme_button,
-                self.theme_color_dropdown,
-                
-            ]
-        )
+        content=ft.Column([
+            ft.Row([
+                ft.Text("Appearance", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
+                ft.Container(expand=True),   # Spacer to push title to left
+                ft.IconButton(
+                    ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
+                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
+                )
+            ]),
+            ft.Container(height=10),    # Spacer
+            ft.Divider(),
+            ft.Container(height=10),    # Spacer
+
+            ft.Text("Theme", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),     # Theme headline
+            ft.Text("Adjust the color of the interface for better visibility and comfort.", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Container(height=10),    # Spacer
+
+            ft.Row([self.light_theme_button, self.dark_theme_button], spacing=20),
+            ft.Container(height=10),    # Spacer
+
+            theme_color_dropdown,      # Change theme primary color dropdown       
+        ])
 
         return content
     
@@ -279,50 +301,281 @@ class Settings(ft.View):
 
 
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
-        content=ft.Column(
-            spacing=20,
-            controls=[
-                ft.Row([
-                    ft.Text("Application Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
-                    ft.Container(expand=True),   # Spacer to push title to left
-                    ft.IconButton(
-                        ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
-                        scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
-                    )
-                ]),
-                ft.Divider(),
+        content=ft.Column([
+            ft.Row([
+                ft.Text("Application Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
+                ft.Container(expand=True),   # Spacer to push title to left
+                ft.IconButton(
+                    ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
+                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
+                )
+            ]),
+            ft.Divider(),
+            
+            ft.TextButton(      # Reorder workspaces rail button
+                "Reorder Workspaces", icon=ft.Icons.REORDER_ROUNDED,
+                on_click=lambda e: self.workspaces_rail.toggle_reorder_rail(story=self.story)
+            ),
                 
-                ft.TextButton(
-                    "Reorder Workspaces", 
-                    icon=ft.Icons.REORDER_ROUNDED,
-                    #on_click=lambda e: story.all_workspaces_rail.toggle_rail_reorderable(),
-                    on_click=lambda e: self.workspaces_rail.toggle_reorder_rail(story=self.story)
-                ),
-            ]
-        )
+        ])
 
         return content
     
     # TOP HIDDEN FOLDER NOT HIDING
     
-    def _load_account_settings(self):
+    def _load_widgets_settings(self):
         ''' Loads our account settings view '''
 
+        def _set_default_widget_color(e):
+            ''' Sets the default color for new widgets of a certain type '''
+
+            widget_type = e.control.data   # Grabs the type of widget we're changing the default color for
+            new_color = e.control.value    # Grabs the new color selected   
+
+            match widget_type:
+                case "chapter":
+                    self.data['default_chapter_color'] = new_color
+                case "canvas":
+                    self.data['default_canvas_color'] = new_color
+                case "note":
+                    self.data['default_note_color'] = new_color
+                case "character":
+                    self.data['default_character_color'] = new_color
+                case "timeline":
+                    self.data['default_timeline_color'] = new_color
+                case "map":
+                    self.data['default_map_color'] = new_color
+                case "planning":
+                    self.data['default_planning_color'] = new_color
+                case "family_tree":
+                    self.data['default_family_tree_color'] = new_color
+                case "world_building":
+                    self.data['default_world_building_color'] = new_color
+
+            # Save our updated settings
+            self.save_dict()
+            e.control.color = new_color   # Changes the dropdown text color to match the selected color
+            e.control.update()
+
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
-        content=ft.Column(
-            spacing=20,
-            controls=[
-                ft.Row([
-                    ft.Text("Account Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
-                    ft.Container(expand=True),   # Spacer to push title to left
-                    ft.IconButton(
-                        ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
-                        scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
-                    )
-                ]),
-                ft.Divider(),
-            ]
-        )
+        content=ft.Column([
+            ft.Row([
+                ft.Text("Widgets Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
+                ft.Container(expand=True),   # Spacer to push title to left
+                ft.IconButton(
+                    ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
+                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
+                )
+            ]),
+            ft.Container(height=10),    # Spacer
+            ft.Divider(),
+            ft.Container(height=10),    # Spacer
+
+            ft.Text("Widget Defaults", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),     # Headling for theme colors
+            ft.Text("Adjust the default colors and pin locations for newly created widgets.", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Container(height=10),    # Spacer
+
+            ft.Row([
+                ft.Text("Chapters", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
+                ft.Dropdown(
+                    label="Color", tooltip="Default color for new chapters",
+                    capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
+                    options=self._get_color_options(), on_change=_set_default_widget_color,
+                    value=self.data.get('default_chapter_color', "primary"),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    color=self.data.get('default_chapter_color', "primary"),
+                    dense=True, data="chapter",
+                ),
+                ft.Dropdown(
+                    label="Pin Location", tooltip="Default pin location for new chapters",
+                    capitalization= ft.TextCapitalization.SENTENCES,
+                    options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
+                    value=self.data.get('default_chapter_pin_location', "main").capitalize(),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    dense=True,
+                    on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                )
+            ]),
+
+            ft.Row([
+                ft.Text("Canvases", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
+                ft.Dropdown(
+                    label="Color", tooltip="Default color for new canvases",
+                    capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
+                    options=self._get_color_options(), on_change=_set_default_widget_color,
+                    value=self.data.get('default_canvas_color', "primary"),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    color=self.data.get('default_canvas_color', "primary"),
+                    dense=True, data="canvas",
+                ),
+                ft.Dropdown(
+                    label="Pin Location", tooltip="Default pin location for new canvases",
+                    capitalization= ft.TextCapitalization.SENTENCES,
+                    options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
+                    value=self.data.get('default_canvas_pin_location', "main").capitalize(),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    dense=True,
+                    on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                )
+            ]),
+
+            ft.Row([
+                ft.Text("Notes", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
+                ft.Dropdown(
+                    label="Color", tooltip="Default color for new notes",
+                    capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
+                    options=self._get_color_options(), on_change=_set_default_widget_color,
+                    value=self.data.get('default_note_color', "primary"),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    color=self.data.get('default_note_color', "primary"),
+                    dense=True, data="note",
+                ),
+                ft.Dropdown(
+                    label="Pin Location", tooltip="Default pin location for new notes",
+                    capitalization= ft.TextCapitalization.SENTENCES,
+                    options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
+                    value=self.data.get('default_note_pin_location', "main").capitalize(),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    dense=True,
+                    on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()), 
+                )
+            ]),
+
+            ft.Row([
+                ft.Text("Characters", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
+                ft.Dropdown(
+                    label="Color", tooltip="Default color for new characters",
+                    capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
+                    options=self._get_color_options(), on_change=_set_default_widget_color,
+                    value=self.data.get('default_character_color', "primary"),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    color=self.data.get('default_character_color', "primary"),
+                    dense=True, data="character",
+                ),
+                ft.Dropdown(
+                    label="Pin Location", tooltip="Default pin location for new characters",
+                    capitalization= ft.TextCapitalization.SENTENCES,
+                    options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
+                    value=self.data.get('default_character_pin_location', "main").capitalize(),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    dense=True,
+                    on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                )
+            ]),
+
+            ft.Row([
+                ft.Text("Timelines", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
+                ft.Dropdown(
+                    label="Color", tooltip="Default color for new timelines",
+                    capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
+                    options=self._get_color_options(), on_change=_set_default_widget_color,
+                    value=self.data.get('default_timeline_color', "primary"),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    color=self.data.get('default_timeline_color', "primary"),
+                    dense=True, data="timeline",
+                ),
+                ft.Dropdown(
+                    label="Pin Location", tooltip="Default pin location for new timelines",
+                    capitalization= ft.TextCapitalization.SENTENCES,
+                    options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
+                    value=self.data.get('default_timeline_pin_location', "main").capitalize(),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    dense=True,
+                    on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                )
+            ]),
+
+            ft.Row([
+                ft.Text("Maps", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
+                ft.Dropdown(
+                    label="Color", tooltip="Default color for new maps",
+                    capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
+                    options=self._get_color_options(), on_change=_set_default_widget_color,
+                    value=self.data.get('default_map_color', "primary"),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    color=self.data.get('default_map_color', "primary"),
+                    dense=True, data="map",
+                ),
+                ft.Dropdown(
+                    label="Pin Location", tooltip="Default pin location for new maps",
+                    capitalization= ft.TextCapitalization.SENTENCES,
+                    options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
+                    value=self.data.get('default_map_pin_location', "main").capitalize(),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    dense=True,
+                    on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                )
+            ]),
+
+            ft.Row([
+                ft.Text("Planning", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
+                ft.Dropdown(
+                    label="Color", tooltip="Default color for new planning widgets",
+                    capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
+                    options=self._get_color_options(), on_change=_set_default_widget_color,
+                    value=self.data.get('default_planning_color', "primary"),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    color=self.data.get('default_planning_color', "primary"),
+                    dense=True, data="planning",
+                ),
+                ft.Dropdown(
+                    label="Pin Location", tooltip="Default pin location for new planning widgets",
+                    capitalization= ft.TextCapitalization.SENTENCES,
+                    options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
+                    value=self.data.get('default_planning_pin_location', "main").capitalize(),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    dense=True,
+                    on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                )
+            ]),
+
+            ft.Row([
+                ft.Text("Family Trees", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
+                ft.Dropdown(
+                    label="Color", tooltip="Default color for new family trees",
+                    capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
+                    options=self._get_color_options(), on_change=_set_default_widget_color,
+                    value=self.data.get('default_family_tree_color', "primary"),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    color=self.data.get('default_family_tree_color', "primary"),
+                    dense=True, data="family_tree",
+                ),
+                ft.Dropdown(
+                    label="Pin Location", tooltip="Default pin location for new family trees",
+                    capitalization= ft.TextCapitalization.SENTENCES,
+                    options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
+                    value=self.data.get('default_family_tree_pin_location', "main").capitalize(),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    dense=True,
+                    on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                )
+            ]),
+
+            ft.Row([
+                ft.Text("World Building", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
+                ft.Dropdown(
+                    label="Color", tooltip="Default color for new world building widgets",
+                    capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
+                    options=self._get_color_options(), on_change=_set_default_widget_color,
+                    value=self.data.get('default_world_building_color', "primary"),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    color=self.data.get('default_world_building_color', "primary"),
+                    dense=True, data="world_building",
+                ),
+                ft.Dropdown(
+                    label="Pin Location", tooltip="Default pin location for new world building widgets",
+                    capitalization= ft.TextCapitalization.SENTENCES,
+                    options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
+                    value=self.data.get('default_world_building_pin_location', "main").capitalize(),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    dense=True,
+                    on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                )
+            ]),
+
+           
+            
+        ])
 
         return content
     
@@ -332,20 +585,35 @@ class Settings(ft.View):
         # Type - novel vs comic. Effects how new content is created
 
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
-        content=ft.Column(
-            spacing=20,
-            controls=[
-                ft.Row([
-                    ft.Text(f"{self.story.title} Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
-                    ft.Container(expand=True),   # Spacer to push close button to the right
-                    ft.IconButton(
-                        ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
-                        scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
-                    )
-                ]),
-                ft.Divider(),
-            ]
-        )
+        content=ft.Column([
+            ft.Row([
+                ft.Text(f"{self.story.title} Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
+                ft.Container(expand=True),   # Spacer to push close button to the right
+                ft.IconButton(
+                    ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
+                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
+                )
+            ]),
+            ft.Divider(),
+        ])
+
+        return content
+    
+    def _load_resources_settings(self):
+        ''' Loads our resources settings view '''
+
+        # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
+        content=ft.Column([
+            ft.Row([
+                ft.Text("Resources", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
+                ft.Container(expand=True),   # Spacer to push title to left
+                ft.IconButton(
+                    ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
+                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
+                )
+            ]),
+            ft.Divider(),
+        ])
 
         return content
 
@@ -384,10 +652,10 @@ class Settings(ft.View):
                     label_content=ft.Container(ft.Text("App Settings", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
                 ),
                 ft.NavigationRailDestination(
-                    icon=ft.Icons.ACCOUNT_CIRCLE_OUTLINED,
-                    selected_icon=ft.Icon(ft.Icons.ACCOUNT_CIRCLE_ROUNDED, color=ft.Colors.PRIMARY),
-                    label="Account",
-                    label_content=ft.Container(ft.Text("Account", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
+                    icon=ft.Icons.NOW_WIDGETS_OUTLINED,
+                    selected_icon=ft.Icon(ft.Icons.NOW_WIDGETS_ROUNDED, color=ft.Colors.PRIMARY),
+                    label="Widgets",
+                    label_content=ft.Container(ft.Text("Widgets", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
                 ),
                 ft.NavigationRailDestination(
                     icon=ft.Icons.MENU_BOOK_OUTLINED,
@@ -402,6 +670,12 @@ class Settings(ft.View):
                         ),
                     )
                 ),
+                ft.NavigationRailDestination(
+                    icon=ft.Icons.INFO_OUTLINED,
+                    selected_icon=ft.Icon(ft.Icons.INFO_ROUNDED, color=ft.Colors.PRIMARY),
+                    label="Resources",
+                    label_content=ft.Container(ft.Text("Resources", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
+                ),
             ],
         )
 
@@ -415,7 +689,7 @@ class Settings(ft.View):
         # Build the body of appearance view
         self.body_container = ft.Container(
             expand=True, 
-            padding=ft.padding.all(20),
+            padding=ft.padding.all(40),
             content=self._load_appearance_settings()        # Default to appearance settings when settings are first opened
         )
 
@@ -446,14 +720,3 @@ class Settings(ft.View):
             ),  
         ]
 
-
-
-        # OPTION TO NOT HAVE CHARACTERS SEX CHANGE COLORS?
-        # Option to change where certain widgets default display to in pins
-        # NOTE: Add is_first_launch check to run a tutorial
-
-
-
-        
-    
-        

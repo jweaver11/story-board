@@ -1,5 +1,5 @@
 import flet as ft
-from handlers.safe_string_checker import return_safe_name
+from utils.safe_string_checker import return_safe_name
 
 def story_is_unique(new_story_title: str, text_field: ft.TextField) -> bool:
     ''' Checks if the given story title is unique among existing stories '''
