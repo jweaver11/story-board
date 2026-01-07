@@ -9,7 +9,7 @@ from utils.verify_data import verify_data
 from models.app import app
 
 
-class FamilyTree(Widget):
+class CanvasBoard(Widget):
     # Constructor
     def __init__(self, name: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):
 

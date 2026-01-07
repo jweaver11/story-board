@@ -491,7 +491,7 @@ class Canvas(Widget):
     # Called when the canvas control is resized
     async def on_canvas_resize(self, e: ft.ControlEvent):
         """Rescales stored drawing coordinates to match the new canvas size."""
-        print(e.height, e.width)
+        #print(e.height, e.width)
         pass
 
     def _set_canvas_background(self, e):

@@ -24,10 +24,19 @@ class CanvasRail(Rail):
         # UI elements ---------------------------------------------
         # Buttons at the top of the rail
         self.top_row_buttons = [
-            ft.IconButton(
-                tooltip="New Canvas", data="canvas",
+            ft.PopupMenuButton(
                 icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                on_click=self.new_canvas_clicked
+                tooltip="New", menu_padding=0,
+                items=[
+                    ft.PopupMenuItem(
+                        text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
+                        on_click=self.new_canvas_clicked, data="canvas"
+                    ),
+                    ft.PopupMenuItem(
+                        "Canvas Board", icon=ft.Icons.SPACE_DASHBOARD_OUTLINED,
+                        on_click=self.new_item_clicked, data="canvas_board"
+                    ),
+                ]
             ),
             ft.PopupMenuButton(
                 icon=ft.Icons.FILE_UPLOAD_OUTLINED,

@@ -42,6 +42,10 @@ class ContentRail(Rail):
                         on_click=self.new_canvas_clicked, data="canvas"
                     ),
                     ft.PopupMenuItem(
+                        "Canvas Board", icon=ft.Icons.SPACE_DASHBOARD_OUTLINED,
+                        on_click=self.new_item_clicked, data="canvas_board"
+                    ),
+                    ft.PopupMenuItem(
                         "Note", ft.Icons.NOTE_ALT_OUTLINED,
                         on_click=self.new_item_clicked, data="note"
                     ),
