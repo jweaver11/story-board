@@ -106,6 +106,16 @@ class ContentRail(Rail):
         # Reload the rail on start
         self.reload_rail()
 
+    async def on_will_accepts(self, e):
+        ''' Changes our rails background to a transparent color on hover '''
+        e.control.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
+        e.control.content.update()
+
+    async def leave_rail(self, e):  
+        ''' Changes our rails background back to normal when not hovering '''
+        e.control.content.bgcolor = ft.Colors.with_opacity(0.0, ft.Colors.ON_SURFACE)
+        e.control.content.update()
+
 
     # Called to return our list of menu options for the content rail
     def get_menu_options(self) -> list[ft.Control]:
@@ -223,8 +233,8 @@ class ContentRail(Rail):
 
         # Wrap the gd in a drag target so we can move characters here
         dt = ft.DragTarget(
-            group="widgets",
-            content=content,     # Our content is the content we built above
+            group="widgets", on_will_accept=self.on_will_accepts, on_leave=self.leave_rail,
+            content=ft.Container(content=content, bgcolor=ft.Colors.with_opacity(0, ft.Colors.ON_SURFACE)),     # Our content is the content we built above
             on_accept=lambda e: self.on_drag_accept(e, self.directory_path)
         )
         
