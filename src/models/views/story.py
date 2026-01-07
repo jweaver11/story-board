@@ -510,7 +510,7 @@ class Story(ft.View):
 
         
     # Called to create a new widget based on tag (chapter, note, character, etc)
-    def create_widget(self, title: str, tag: str=None, directory_path: str=None):
+    def create_widget(self, title: str, tag: str=None, directory_path: str=None, data: dict=None):
         ''' Creates our new widget based on the tag passed in and directory_path passed in'''
         from models.widgets.chapter import Chapter
         from models.widgets.note import Note
@@ -519,6 +519,7 @@ class Story(ft.View):
         from models.widgets.timeline import Timeline
         from models.widgets.map import Map
         from models.widgets.family_tree import FamilyTree
+        from models.widgets.world_building import WorldBuilding
 
         if directory_path is None:
             directory_path = self.data.get('content_directory_path',  '')
@@ -538,7 +539,7 @@ class Story(ft.View):
                 self.widgets.append(self.notes[key])
 
             case "canvas":
-                widget = Canvas(title, self.p, directory_path, self)
+                widget = Canvas(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
                 self.canvases[key] = widget
                 self.widgets.append(self.canvases[key])
@@ -566,6 +567,12 @@ class Story(ft.View):
                 key = widget.data.get('key', '')
                 self.family_trees[key] = widget
                 self.widgets.append(self.family_trees[key])
+
+            case "world_building":
+                widget = WorldBuilding(title, self.p, directory_path, self)
+                key = widget.data.get('key', '')
+                self.world_buildings[key] = widget
+                self.widgets.append(self.world_buildings[key])
      
             case _:
                 print("Widget tag not valid. Tag:", tag)

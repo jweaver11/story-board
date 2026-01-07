@@ -6,7 +6,7 @@ import flet as ft
 from models.widget import Widget
 from models.views.story import Story
 from utils.verify_data import verify_data
-
+from models.app import app
 
 
 class FamilyTree(Widget):
@@ -27,6 +27,7 @@ class FamilyTree(Widget):
             object=self,   # Pass in our own data so the function can see the actual data we loaded
             required_data={
                 'tag': "family_tree",
+                'color': app.settings.data.get('default_family_tree_color'),
                 
             },
         )
@@ -68,8 +69,7 @@ class FamilyTree(Widget):
         )     
         
         # Set our content to the body_container (from Widget class) as the body we just built
-        self.body_container.controls.clear()
-        self.body_container.controls.append(body)
+        self.body_container.content = body
 
         # Call render widget (from Widget class) to update the UI
         self._render_widget()

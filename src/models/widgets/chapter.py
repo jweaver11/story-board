@@ -4,6 +4,7 @@ from models.widget import Widget
 from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 from flet_quill import FletQuill
+from models.app import app
 
 
 # Class that holds our text chapter objects
@@ -25,6 +26,7 @@ class Chapter(Widget):
             object=self,   # Pass in our own data so the function can see the actual data we loaded
             required_data={
                 'tag': "chapter",
+                'color': app.settings.data.get('default_canvas_color'),
                 'summary': str,     # Summary of what will happen in the chapter
                 'content': str,
                 'temp': str,

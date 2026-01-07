@@ -59,7 +59,7 @@ class Widget(ft.Container):
                 'index': int,                                   # Index of this widget in its pin location
                 'visible': True,                                # Whether this widget is visible in the workspace or not
                 'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
-                'color': "primary",                             # Color of the icon on the rail and next to title on rail
+                #'color': app.settings.data.get('default_character_color'),                             # Color of the icon on the rail and next to title on rail
                 'custom_fields': dict,                          # Dictionary for any custom fields the widget wants to store
             },
         )
@@ -310,8 +310,11 @@ class Widget(ft.Container):
     async def enter_tab(self, e):
         ''' Changes the hide icon button color slightly for more interactivity '''
         self.hide_tab_icon_button.icon_color = ft.Colors.ON_SURFACE
-        self.page = self.p
-        self.update()
+        try:
+            self.page = self.p
+            self.update()
+        except:
+            self.p.update()
 
     # Called when mouse hovers over the tab part of the widget
     async def hover_tab(self, e):

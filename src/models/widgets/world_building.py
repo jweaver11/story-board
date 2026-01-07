@@ -11,6 +11,7 @@ import flet as ft
 from models.widget import Widget
 from models.views.story import Story
 from utils.verify_data import verify_data
+from models.app import app
 
 
 class WorldBuilding(Widget):
@@ -31,7 +32,8 @@ class WorldBuilding(Widget):
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
             {
-                'tag': "world_building",            
+                'tag': "world_building",     
+                'color': app.settings.data.get('default_world_building_color'),       
 
                 'sub_categories': {                     # List of different categories for organizing our world maps on the rail. (Psuedo folders)
                     'category_name': {

@@ -24,7 +24,7 @@ from models.state import State
 import flet.canvas as cv
 from threading import Thread
 import math
-#from PIL import Image, ImageDraw
+from models.app import app
 
 
 
@@ -53,6 +53,7 @@ class Canvas(Widget):
             self,
             {
                 "tag": "canvas",
+                'color': app.settings.data.get('default_canvas_color'),
                 
                 "canvas_meta": {        # Set canvas data here
                     "width": int,

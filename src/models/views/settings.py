@@ -66,6 +66,15 @@ class Settings(ft.View):
                     "canvas",
                     "planning",
                 ],
+                'default_chapter_color': "primary",   # Default colors for new widgets
+                'default_canvas_color': "primary",
+                'default_note_color': "primary",
+                'default_character_color': "primary",
+                'default_timeline_color': "primary",
+                'default_map_color': "primary",
+                'default_planning_color': "primary",
+                'default_family_tree_color': "primary", 
+                'default_world_building_color': "primary",
                 
                 # App settings
                 'confirm_item_delete': True,   # If we should confirm before deleting items

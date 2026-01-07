@@ -12,6 +12,7 @@ from models.widget import Widget
 from models.mini_widgets.timelines.arc import Arc
 from utils.verify_data import verify_data
 import flet.canvas as cv
+from models.app import app
 
 
 class Timeline(Widget):
@@ -34,6 +35,8 @@ class Timeline(Widget):
             self,   # Pass in our own data so the function can see the actual data we loaded
             {
                 'tag': "timeline",
+                'color': app.settings.data.get('default_timeline_color'),
+
                 'filters': {   
                     'show_timeskips': True,
                     'show_plot_points': True,
@@ -44,7 +47,6 @@ class Timeline(Widget):
                 'time_label': str,                          # Label for the time axis (any str they want)
                 'start_date': str,                          # Start and end date of the branch, for timeline view
                 'end_date': str,                            # Start and end date of the branch, for timeline view
-                'color': "primary",                         # Color of the branch in the timeline
 
                 # Our rail dropdown states
                 'dropdown_is_expanded': True,               # If the branch dropdown is expanded on the rail

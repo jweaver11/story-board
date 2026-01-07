@@ -40,7 +40,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         # Set our data
         canvas_data[key] = value
 
-        print("Canvas data updated: ", canvas_data)
+        #print("Canvas data updated: ", canvas_data)
 
         if canvas_data.get('width') is None and canvas_data.get('height') is None:
             create_button.disabled = False
@@ -133,8 +133,9 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
 
         title = title_textfield.value if title_textfield.value != "" else f"Canvas {len(story.canvases) + 1}"
 
-        story.create_canvas(
+        story.create_widget(
             title=title,
+            tag="canvas",
             directory_path=directory_path,
             data=canvas_data
         )

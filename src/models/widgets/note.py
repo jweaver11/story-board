@@ -5,6 +5,7 @@ from models.views.story import Story
 from models.widget import Widget
 from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
+from models.app import app
     
 
 class Note(Widget):
@@ -28,6 +29,7 @@ class Note(Widget):
             self,   # Pass in our own data so the function can see the actual data we loaded
             {
                 'tag': "note",             # Tag to identify what type of object this is
+                'color': app.settings.data.get('default_note_color'),
                 'pin_location': "right" if data is None else data.get('pin_location', "right"),   # Default pin location for notes
                 'character_count': int,
                 'created_at': str,

@@ -10,6 +10,7 @@ from models.widget import Widget
 from models.views.story import Story
 from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
+from models.app import app
 
 
 
@@ -34,6 +35,7 @@ class Character(Widget):
             required_data={
                 'tag': "character",
                 'pin_location': "left" if data is None else data.get('pin_location', "left"),     # Start our characters on the left pin
+                'color': app.settings.data.get('default_character_color'),
 
                 'narrator': bool, # Whether this character is a narrator -- check box in edit view
                 'role': "uncategorized",   # Importance of character in the story. main, side, background, uncategorized
