@@ -303,9 +303,11 @@ class Timeline(Widget):
     async def hover_timeline_canvas(self, e: ft.HoverEvent):
         ''' Sets our coordinated for opening the menu when right clicking and updates our alignment we want to pass in '''
 
+        # Set coordinates for menu
         self.story.mouse_x = e.global_x
         self.story.mouse_y = e.global_y
 
+        # Calculate our x alignment
         w = max(int(self.timeline_width or 0), 1)
         x = float(e.local_x)
         raw = (2.0 * x / w) - 1.0
@@ -373,26 +375,43 @@ class Timeline(Widget):
         
         self.timeline_width = int(e.width)
         self.timeline_height = int(e.height)
-
-        padding = 6
-
-
+        
         # draw a horizontal line across the middle using a proper Color and Paint
         self.timeline_canvas.shapes = [
             cv.Path(
                 elements=[
-                    cv.Path.MoveTo(padding, self.timeline_height // 2 + 25),
-                    cv.Path.LineTo(padding, self.timeline_height // 2 - 25),
+                    # Left vertical end marker
+                    cv.Path.MoveTo(0, self.timeline_height // 2 + 25),
+                    cv.Path.LineTo(0, self.timeline_height // 2 - 25),
 
-                    cv.Path.MoveTo(padding, self.timeline_height // 2),
-                    cv.Path.LineTo(self.timeline_width - padding, self.timeline_height // 2),
+                    # Horizontal line
+                    cv.Path.MoveTo(0, self.timeline_height // 2),
+                    cv.Path.LineTo(self.timeline_width, self.timeline_height // 2),
 
-                    cv.Path.MoveTo(self.timeline_width - padding, self.timeline_height // 2 + 25),
-                    cv.Path.LineTo(self.timeline_width - padding, self.timeline_height // 2 - 25),
+                    # Right vertical end marker
+                    cv.Path.MoveTo(self.timeline_width, self.timeline_height // 2 + 25),
+                    cv.Path.LineTo(self.timeline_width, self.timeline_height // 2 - 25),
                 ],
-                paint=ft.Paint(stroke_width=2, style="stroke", color=ft.Colors.PRIMARY)
+                paint=ft.Paint(stroke_width=4, style="stroke", color=self.data.get('color', "primary"))
             ),
         ]
+
+        num_divisions = self.data.get('divisions', 10)
+        division_width = self.timeline_width / num_divisions if num_divisions > 0 else 0
+
+        div_path = cv.Path(
+            elements=[],
+            paint=ft.Paint(stroke_width=2, style="stroke", color=self.data.get('color', "primary"))
+        )
+
+        # Add vertical markers for each division
+        for i in range(num_divisions + 1):
+            x = int(i * division_width)
+            div_path.elements.append(cv.Path.MoveTo(x, self.timeline_height // 2 + 10))
+            div_path.elements.append(cv.Path.LineTo(x, self.timeline_height // 2 - 10))  
+            
+        self.timeline_canvas.shapes.append(div_path)
+
         self.timeline_canvas.update()
     
 
