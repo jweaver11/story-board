@@ -131,6 +131,8 @@ class Arc(MiniWidget):
 
         # Makes sure we stay highlighted if our information mini widget is open
         if self.visible:
+            self.slider.visible = False
+            self.p.update()
             return
         
         self.timeline_arc.border=ft.border.only(
@@ -140,6 +142,7 @@ class Arc(MiniWidget):
         )
         self.slider.visible = False
         self.p.update()
+        print("Slider should be hidden")
 
 
     def toggle_visibility(self, e=None, value: bool = None):
@@ -164,7 +167,7 @@ class Arc(MiniWidget):
             super().toggle_visibility(value=value)
 
         else:
-            super().toggle_visibility(self.slider.visible)
+            super().toggle_visibility()
 
 
     # Called at the end of dragging our point on the slider to update it
@@ -264,16 +267,17 @@ class Arc(MiniWidget):
         else:
             self.p.update()
 
+    # Called when hovering over the slider
     async def enter(self, e=None):
         ''' Called when we enter this mini widget '''
         self.slider.visible = True
         self.p.update()
 
+    # Called when exiting hover over the slider
     async def exit(self, e=None):
         ''' Called when we exit this mini widget '''
         self.slider.visible = False
         self.p.update()
-
 
     # Called whenever we need to rebuild our slider, such as on construction or when our x position changes
     def reload_slider(self):
@@ -287,9 +291,7 @@ class Arc(MiniWidget):
                 ft.Container(expand=True, ignore_interactions=True),        # Make sure our stack is always expanded to full size
                 ft.GestureDetector(                                             # GD so we can detect right clicks on our slider
                     on_secondary_tap=lambda e: self.owner.story.open_menu(self.owner.get_menu_options()),  # Open our parent timeline menu options
-                    on_enter=self.enter,     # Highlight the timeline on hover
-                    on_exit=self.exit,       # Remove highlight when not hovering
-                    height=50,
+                    height=50, on_enter=self.enter, on_exit=self.exit,       # Change slider visibility on hover and exit
                     content=ft.RangeSlider(
                         min=-100, max=100,                                  # Min and max values on each end of slider
                         start_value=self.data.get('x_alignment_start', 0) * 100,        # Where we start on the slider
@@ -301,7 +303,6 @@ class Arc(MiniWidget):
                         overlay_color=ft.Colors.with_opacity(.5, self.data.get('color', "secondary")),    # Color of plot point when hovering over it or dragging    
                         on_change=self.change_x_positions,       # Update our data with new x position as we drag
                         on_change_end=self.finished_dragging,                     # Save the new position, but don't write it yet    
-                        #on_change_start=self.on_start_hover,                  
                     ),
                 ),
                 
@@ -338,7 +339,7 @@ class Arc(MiniWidget):
         self.spacing_left = spacing_left
         self.spacing_right = spacing_right
 
-        self.gd.content = ft.Container(content=ft.Text(self.title), expand=True, alignment=ft.Alignment(0,0))
+        self.gd.content = ft.Container(content=ft.Text(self.title, selectable=True), alignment=ft.alignment.top_center)
 
         self.timeline_arc = ft.Container(
             offset=ft.Offset(0, -0.5),
@@ -358,11 +359,11 @@ class Arc(MiniWidget):
         self.timeline_row = ft.Row(
             expand=True, spacing=0,
             controls=[
-                ft.Container(width=24),
+                ft.Container(width=24, ignore_interactions=True),
                 self.spacing_left,
                 self.timeline_arc,
                 self.spacing_right,
-                ft.Container(width=24),
+                ft.Container(width=24, ignore_interactions=True),
             ]
         )
 
@@ -453,7 +454,7 @@ class Arc(MiniWidget):
         else:
             footer_row.alignment = ft.MainAxisAlignment.START
 
-        self.content =ft.Column(      
+        self.content = ft.Column(      
             expand=True,
             controls=[
                 ft.Column(

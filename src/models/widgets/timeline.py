@@ -13,7 +13,7 @@ from models.mini_widgets.timelines.arc import Arc
 from utils.verify_data import verify_data
 import flet.canvas as cv
 from models.app import app
-import math
+import asyncio
 
 
 class Timeline(Widget):
@@ -45,10 +45,12 @@ class Timeline(Widget):
                 },        
                 'information_display_visibility': True,
                     
-                'time_label': str,                          # Label for the time axis (any str they want)
+                'time_label': "years",                          # Label for the time axis (any str they want)
                 'left_label': "0",                          # Start label
                 'right_label': "10",                          # Start and end date of the branch, for timeline view
                 'divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
+                'hide_division_labels': bool,              # If the division labels are hidden on the timeline
+                'division_labels_direction': "top",               # If the division labels are on top of the timeline instead of below
 
                 # Our rail dropdown states
                 'dropdown_is_expanded': True,               # If the branch dropdown is expanded on the rail
@@ -108,7 +110,7 @@ class Timeline(Widget):
                 on_exit=self.on_exit, 
                 on_hover=self.hover_timeline_canvas,
                 on_tap=lambda e: self.information_display.toggle_visibility(value=True),
-                hover_interval=20,
+                hover_interval=10,
             )
         )
 
@@ -167,7 +169,6 @@ class Timeline(Widget):
             )
             self.mini_widgets.append(self.plot_points[key])  # Plot points need to be in the owners mini widgets list to show up in the UI
         
-    
     # Called when creating a new arc
     def create_arc(self, title: str):
         ''' Creates a new arc inside of our timeline object, and updates the data to match '''
@@ -247,6 +248,22 @@ class Timeline(Widget):
 
         # Color, rename, delete
         return [
+             MenuOptionStyle(
+                content=ft.PopupMenuButton(
+                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    tooltip="New", menu_padding=0,
+                    items=[
+                        ft.PopupMenuItem(
+                            text="Plot Point", icon=ft.Icons.ADD_LOCATION_OUTLINED,
+                            on_click=self.new_item_clicked, data="plot_point"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Arc", icon=ft.Icons.CIRCLE_OUTLINED,
+                            on_click=self.new_item_clicked, data="arc"
+                        ),
+                    ]
+                ),
+            ),
             # Delete button
             MenuOptionStyle(
                 on_click=self.rename_clicked,
@@ -270,27 +287,18 @@ class Timeline(Widget):
                         controls=[
                             ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
                             ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
-                            ft.Icon(ft.Icons.ARROW_DROP_DOWN_OUTLINED, color=ft.Colors.ON_SURFACE, size=16),
                         ]
                     ),
                     items=self._get_color_options()
                 )
             ),
+            # Delete button
             MenuOptionStyle(
-                on_click=self.new_item_clicked,
-                data="arc",
+                #on_click=lambda e: self._delete_clicked(e),
                 content=ft.Row([
-                    ft.Icon(ft.Icons.CIRCLE_OUTLINED),
-                    ft.Text("Arc", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ])
-            ),
-            MenuOptionStyle(
-                on_click=self.new_item_clicked,
-                data="plot_point",
-                content=ft.Row([
-                    ft.Icon(ft.Icons.ADD_LOCATION_OUTLINED),
-                    ft.Text("Plot Point", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ])
+                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED),
+                    ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
+                ]),
             ),
         ]
     
@@ -340,18 +348,12 @@ class Timeline(Widget):
         self.story.open_menu(self.get_menu_options())
 
     async def new_item_clicked(self, e):
-        ''' Called when new arc is clicked from timeline context menu '''
-        #self.create_arc("New Arc")
-        #self.new_item_container.visible = True
+        ''' Called when new plot point or arc is clicked from timeline context menu '''
+        
+        await asyncio.sleep(.3)
         await self.story.close_menu()
 
         tag = e.control.data
-
-        #self.story.open_new_item_input(self.new_item_container)
-        #self.p.update()
-
-        # Show our textfield to enter the name of the new item, giving it default based name on length of those num items
-        # On submit runs its rename function to create the new item
 
         if tag is not None:
             if tag == "arc":
@@ -437,14 +439,15 @@ class Timeline(Widget):
             divisions_path.elements.append(cv.Path.LineTo(x, self.timeline_height // 2 - 10))  
 
             # Add the text label for each division
-            self.timeline_canvas.shapes.append(
-                cv.Text(
-                    x - 5, self.timeline_height // 2 - 40, 
-                    str(self.data.get('divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
-                    ft.TextStyle(14, weight=ft.FontWeight.BOLD),
-                    alignment=ft.alignment.center
+            if not self.data.get('hide_division_labels', False):
+                self.timeline_canvas.shapes.append(
+                    cv.Text(
+                        x, self.timeline_height // 2 - 40 if self.data.get('division_labels_direction', "top") == "top" else self.timeline_height // 2 + 40,
+                        str(self.data.get('divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
+                        ft.TextStyle(14, weight=ft.FontWeight.BOLD),
+                        alignment=ft.alignment.center
+                    )
                 )
-            )
             
         # Add our divisions path to the canvas
         self.timeline_canvas.shapes.append(divisions_path)
@@ -455,6 +458,7 @@ class Timeline(Widget):
         left_label = left_label.split('.', 1)[0] if '.' in left_label else left_label
         right_label = str(self.data.get('right_label', '10'))
         right_label = right_label.split('.', 1)[0] if '.' in right_label else right_label
+        time_label = str(self.data.get('time_label', 'years')).capitalize()
 
         # Set the text width, and align it in center, make sure it wraps
 
@@ -467,6 +471,10 @@ class Timeline(Widget):
         self.timeline_canvas.shapes.append(cv.Text(
             self.timeline_width - 5, self.timeline_height // 2 - 60, right_label, 
             ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center
+        ))
+        self.timeline_canvas.shapes.append(cv.Text(
+            self.timeline_width // 2, self.timeline_height // 2 + 80, time_label, 
+            ft.TextStyle(20, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center
         ))
 
 
