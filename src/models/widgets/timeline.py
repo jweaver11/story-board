@@ -46,8 +46,9 @@ class Timeline(Widget):
                 'information_display_visibility': True,
                     
                 'time_label': str,                          # Label for the time axis (any str they want)
-                'start_date': str,                          # Start and end date of the branch, for timeline view
-                'end_date': str,                            # Start and end date of the branch, for timeline view
+                'left_label': "0",                          # Start label
+                'right_label': "10",                          # Start and end date of the branch, for timeline view
+                'divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
 
                 # Our rail dropdown states
                 'dropdown_is_expanded': True,               # If the branch dropdown is expanded on the rail
@@ -70,8 +71,6 @@ class Timeline(Widget):
                 'involved_characters': list,
                 'related_locations': list,
                 'related_items': list,
-
-                'divisions': 10,                            # Number of divisions on the timeline
 
                 'left_edge_label': float,                   # Label for the left edge of the timeline
                 'right_edge_label': float,                  # Label for the right edge of the timeline
@@ -102,7 +101,7 @@ class Timeline(Widget):
 
         # Our timeline canvas that draws our timeline line and markers
         self.timeline_canvas = cv.Canvas(
-            on_resize=self.timeline_resized, resize_interval=20, expand=True, 
+            on_resize=self.rebuild_timeline_canvas, resize_interval=20, expand=True, 
             opacity=0.7,
             content=ft.GestureDetector(
                 expand=True, on_secondary_tap=self.on_secondary_tap,
@@ -244,6 +243,8 @@ class Timeline(Widget):
     # Called when right clicking our controls for either timeline or an arc
     def get_menu_options(self) -> list[ft.Control]:
 
+        #TODO: Should be New, show information display, renamde, color, delete
+
         # Color, rename, delete
         return [
             # Delete button
@@ -311,7 +312,7 @@ class Timeline(Widget):
 
 
         # Check if we're over the timeline line itself and give visual feedback
-        if abs(e.local_y - (self.timeline_height / 2)) <= 50:
+        if abs(e.local_y - (self.timeline_height / 2)) <= 25:
             self.timeline_canvas.page = self.p      # refresh page reference
             self.timeline_canvas.opacity = 1        # Full opacity to highlight
             self.timeline_canvas.content.mouse_cursor=ft.MouseCursor.CLICK      # Change cursor to pointer
@@ -375,44 +376,51 @@ class Timeline(Widget):
         # Focus the title control for renaming
         self.information_display.title_control.focus()
 
-
-    async def timeline_resized(self, e: cv.CanvasResizeEvent):
+    # Called for any size changes to our timeline canvas
+    async def rebuild_timeline_canvas(self, e: cv.CanvasResizeEvent=None):
         ''' Redraws our timeline on the canvas when it is resized. Does it on startup as well '''
 
-        # Check if we have a new height. If not, don't update the arcs
-        if self.timeline_height == int(e.height):
+        # Check if we just called this to redraw without an event. If we did, skip the size updates
+        if e is None:
             update_arcs = False
+    
         else:
-            update_arcs = True
+            
+            # Check if we have a new height. If not, don't update the arcs
+            if self.timeline_height == int(e.height):
+                update_arcs = False
+            else:
+                update_arcs = True
 
-        # Update our page reference and size
-        self.timeline_canvas.page = self.p
-        self.timeline_width = int(e.width)
-        self.timeline_height = int(e.height)
+            # Update our page reference and size
+            self.timeline_canvas.page = self.p
+            self.timeline_width = int(e.width)
+            self.timeline_height = int(e.height)
         
-        # Re-draw our timeline and end markers
+        # Draw our timeline on the canvas with its two end markers ------------------------------------------------
         self.timeline_canvas.shapes = [
             cv.Path(
                 elements=[
                     # Left vertical end marker
-                    cv.Path.MoveTo(0, self.timeline_height // 2 + 25),
-                    cv.Path.LineTo(0, self.timeline_height // 2 - 25),
+                    cv.Path.MoveTo(5, self.timeline_height // 2 + 25),
+                    cv.Path.LineTo(5, self.timeline_height // 2 - 25),
 
                     # Horizontal line
-                    cv.Path.MoveTo(0, self.timeline_height // 2),
-                    cv.Path.LineTo(self.timeline_width, self.timeline_height // 2),
+                    cv.Path.MoveTo(5, self.timeline_height // 2),
+                    cv.Path.LineTo(self.timeline_width - 5, self.timeline_height // 2),
 
                     # Right vertical end marker
-                    cv.Path.MoveTo(self.timeline_width, self.timeline_height // 2 + 25),
-                    cv.Path.LineTo(self.timeline_width, self.timeline_height // 2 - 25),
+                    cv.Path.MoveTo(self.timeline_width - 5, self.timeline_height // 2 + 25),
+                    cv.Path.LineTo(self.timeline_width - 5, self.timeline_height // 2 - 25),
                 ],
                 paint=ft.Paint(stroke_width=4, style="stroke", color=self.data.get('color', "primary"))
             ),
         ]
 
-        # Get number of divisions and the width between each division
-        num_divisions = self.data.get('divisions', 10)
-        division_width = self.timeline_width / num_divisions if num_divisions > 0 else 0
+        # Draw our divisions on the timeline -----------------------------------------------------------------
+        num_divisions = len(self.data.get('divisions', 9))  # Get number of divisions and the width between each division
+        div_width = self.timeline_width / num_divisions if num_divisions > 0 else 0 
+        division_width = (self.timeline_width - div_width - 10) / num_divisions if num_divisions > 0 else 0      # Division width starting after first division plus padding
 
         # Create a path for our divisions
         divisions_path = cv.Path(
@@ -421,13 +429,45 @@ class Timeline(Widget):
         )
 
         # Go through our number of divisions and add markers to the path
-        for i in range(num_divisions + 1):
-            x = int(i * division_width)
+        for i in range(num_divisions):
+            
+            # Add the vertical marker for each label
+            x = int(i * division_width) + division_width
             divisions_path.elements.append(cv.Path.MoveTo(x, self.timeline_height // 2 + 10))
             divisions_path.elements.append(cv.Path.LineTo(x, self.timeline_height // 2 - 10))  
+
+            # Add the text label for each division
+            self.timeline_canvas.shapes.append(
+                cv.Text(
+                    x - 5, self.timeline_height // 2 - 40, 
+                    str(self.data.get('divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
+                    ft.TextStyle(14, weight=ft.FontWeight.BOLD),
+                    alignment=ft.alignment.center
+                )
+            )
             
         # Add our divisions path to the canvas
         self.timeline_canvas.shapes.append(divisions_path)
+
+
+        # Add our text end labels ---------------------------------------------------------------------------
+        left_label = str(self.data.get('left_label', '0'))
+        left_label = left_label.split('.', 1)[0] if '.' in left_label else left_label
+        right_label = str(self.data.get('right_label', '10'))
+        right_label = right_label.split('.', 1)[0] if '.' in right_label else right_label
+
+        # Set the text width, and align it in center, make sure it wraps
+
+
+        self.timeline_canvas.shapes.append(cv.Text(
+            5, self.timeline_height // 2 - 60, left_label, 
+            ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center,
+            max_width=55,   # Prevent overflow left
+        ))
+        self.timeline_canvas.shapes.append(cv.Text(
+            self.timeline_width - 5, self.timeline_height // 2 - 60, right_label, 
+            ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center
+        ))
 
 
         # Go through our arcs and update their size

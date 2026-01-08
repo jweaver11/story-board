@@ -148,16 +148,22 @@ class Arc(MiniWidget):
         if value is not None:
 
             if value == True:
-                self.timeline_arc.border = ft.border.all(4, self.data.get('color', "secondary"))
+                self.timeline_arc.border=ft.border.only(
+                    left=ft.BorderSide(2, self.data.get('color', "secondary")),
+                    right=ft.BorderSide(2, self.data.get('color', "secondary")),
+                    top=ft.BorderSide(2, self.data.get('color', "secondary")),
+                )
 
             else:
-                self.timeline_arc.border = ft.border.all(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary")))
+                self.timeline_arc.border = self.timeline_arc.border=ft.border.only(
+                    left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
+                    right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
+                    top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
+                )
             
-            self.slider.visible = value
             super().toggle_visibility(value=value)
 
         else:
-            self.slider.visible = not self.slider.visible
             super().toggle_visibility(self.slider.visible)
 
 
@@ -212,10 +218,9 @@ class Arc(MiniWidget):
         self.timeline_arc.height = new_h
 
         # Update visuals
-        if self.timeline_row is not None:
-            self.timeline_row.update()
-        else:
-            self.timeline_arc.update()
+        self.timeline_row.page = self.p
+        self.timeline_row.update()
+        
 
     # Called when we finish dragging our slider thumb to save our new position
     def finished_dragging(self, e):

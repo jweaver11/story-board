@@ -327,7 +327,7 @@ class PlotPoint(MiniWidget):
             controls=[
                 ft.Container(expand=True, ignore_interactions=True),        # Make sure our stack is always expanded to full size
                 self.timeline_point,                                        # Our plot point on the timeline
-                self.timeline_point_label,
+                #self.timeline_point_label,
                 self.slider,                                                # Our slider that appears when we hover over the plot point
             ]
         ) 
