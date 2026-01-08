@@ -10,6 +10,7 @@ from models.app import app
 from models.views.story import Story
 import json
 from styles.colors import dark_gradient
+from styles.snack_bar import SnackBar
 
 # Our workspace object that is stored in our story object
 class Workspace(ft.Container):
@@ -176,6 +177,7 @@ class Workspace(ft.Container):
 
         if widget is None:
             print("Error: Widget not found for drag accept")
+            self.p.open(SnackBar("Error: Widget not found for drag accept"))
             return
 
         old_pin_location = widget.data['pin_location']

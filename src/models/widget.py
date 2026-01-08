@@ -59,7 +59,6 @@ class Widget(ft.Container):
                 'index': int,                                   # Index of this widget in its pin location
                 'visible': True,                                # Whether this widget is visible in the workspace or not
                 'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
-                #'color': app.settings.data.get('default_character_color'),                             # Color of the icon on the rail and next to title on rail
                 'custom_fields': dict,                          # Dictionary for any custom fields the widget wants to store
             },
         )
@@ -399,7 +398,7 @@ class Widget(ft.Container):
         def _change_icon_color(color: str):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
-            self.change_data({'color': color})
+            self.change_data(**{'color': color})
             
             # Change our icon to match, apply the update
             self.story.active_rail.content.reload_rail()
@@ -431,8 +430,10 @@ class Widget(ft.Container):
         match tag:
             case "chapter": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
             case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
+            case "canvas_board": self.icon = ft.Icon(ft.Icons.DASHBOARD_OUTLINED)
             case "note": self.icon = ft.Icon(ft.Icons.COMMENT_OUTLINED)
             case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
+            case "family_tree": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
             case "timeline": self.icon = ft.Icon(ft.Icons.TIMELINE_ROUNDED)
             case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
             case "world_building": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
@@ -441,27 +442,19 @@ class Widget(ft.Container):
 
         # Set the color and size
         self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
-        #self.icon.scale = 0.8
 
         self.tab_text = ft.Text(
             weight=ft.FontWeight.BOLD, # Make the text bold
-            #color=ft.,   # Set our color to the tab color
             theme_style=ft.TextThemeStyle.TITLE_MEDIUM,     # Set to a built in theme (mostly for font size)
             value=self.title,   # Set the text to our title
-            
         )
 
         # Initialize our tabs control that will hold our tab. We only have one tab, but this is needed for it to render
         self.tabs = ft.Tabs(
-            selected_index=0,
-            animation_duration=0,
-            #divider_color=ft.Colors.TRANSPARENT,
-            padding=ft.padding.all(0),
-            label_padding=ft.padding.all(0),
-            mouse_cursor=ft.MouseCursor.BASIC,
-            #indicator_color = "transparent",
+            selected_index=0, animation_duration=0,
+            padding=ft.padding.all(0), label_padding=ft.padding.all(0),
+            mouse_cursor=ft.MouseCursor.BASIC, divider_color=ft.Colors.TRANSPARENT,
             indicator_color = ft.Colors.with_opacity(0.7, self.data.get('color', ft.Colors.PRIMARY)),
-            divider_color=ft.Colors.TRANSPARENT,
         )
 
         # Our icon button that will hide the widget when clicked in the workspace

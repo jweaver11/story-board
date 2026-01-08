@@ -13,6 +13,7 @@ from models.mini_widgets.timelines.arc import Arc
 from utils.verify_data import verify_data
 import flet.canvas as cv
 from models.app import app
+import math
 
 
 class Timeline(Widget):
@@ -56,6 +57,8 @@ class Timeline(Widget):
                 # Filter dropdown states
                 'arcs_filter_dropdown_expanded': bool,        # If the arcs filter dropdown is expanded
                 'plot_points_filter_dropdown_expanded': bool, # If the plot points filter dropdown is
+                'show_all_plot_points': True,              # If all plot points are shown regardless of individual settings
+                'show_all_arcs': True,                     # If all arcs are shown regardless of individual settings
                 
 
                 'plot_points': dict,                        # Dict of plot points in this branch
@@ -100,11 +103,10 @@ class Timeline(Widget):
         # Our timeline canvas that draws our timeline line and markers
         self.timeline_canvas = cv.Canvas(
             on_resize=self.timeline_resized, resize_interval=20, expand=True, 
-            height=50, opacity=0.7,
+            opacity=0.7,
             content=ft.GestureDetector(
-                mouse_cursor=ft.MouseCursor.CLICK,
                 expand=True, on_secondary_tap=self.on_secondary_tap,
-                on_exit=self.on_exit, on_enter=self.on_enter,
+                on_exit=self.on_exit, 
                 on_hover=self.hover_timeline_canvas,
                 on_tap=lambda e: self.information_display.toggle_visibility(value=True),
                 hover_interval=20,
@@ -270,7 +272,7 @@ class Timeline(Widget):
                             ft.Icon(ft.Icons.ARROW_DROP_DOWN_OUTLINED, color=ft.Colors.ON_SURFACE, size=16),
                         ]
                     ),
-                    items=self.get_color_options()
+                    items=self._get_color_options()
                 )
             ),
             MenuOptionStyle(
@@ -291,13 +293,6 @@ class Timeline(Widget):
             ),
         ]
     
-    # Called when mouse enters our timeline on the canvas
-    async def on_enter(self, e: ft.HoverEvent = None):
-        ''' Highlights our timeline control for visual feedback '''
-
-        self.timeline_canvas.page = self.p
-        self.timeline_canvas.opacity = 1
-        self.timeline_canvas.update()
 
     # Called when hovering over our timeline on the canvas
     async def hover_timeline_canvas(self, e: ft.HoverEvent):
@@ -307,12 +302,26 @@ class Timeline(Widget):
         self.story.mouse_x = e.global_x
         self.story.mouse_y = e.global_y
 
-        # Calculate our x alignment
+        # Calculate and set our x alignment
         w = max(int(self.timeline_width or 0), 1)
         x = float(e.local_x)
         raw = (2.0 * x / w) - 1.0
         raw = max(-1.0, min(1.0, raw))
-        self.x_alignment = round(raw, 2)
+        self.x_alignment = round(raw, 2)    # Save new x_alignment
+
+
+        # Check if we're over the timeline line itself and give visual feedback
+        if abs(e.local_y - (self.timeline_height / 2)) <= 50:
+            self.timeline_canvas.page = self.p      # refresh page reference
+            self.timeline_canvas.opacity = 1        # Full opacity to highlight
+            self.timeline_canvas.content.mouse_cursor=ft.MouseCursor.CLICK      # Change cursor to pointer
+            self.timeline_canvas.update()       # Apply changes
+        else:
+            self.timeline_canvas.page = self.p
+            self.timeline_canvas.opacity = .7
+            self.timeline_canvas.content.mouse_cursor=None
+            self.timeline_canvas.update()
+        
         
 
     # Called when mouse exits our timeline area
@@ -370,13 +379,18 @@ class Timeline(Widget):
     async def timeline_resized(self, e: cv.CanvasResizeEvent):
         ''' Redraws our timeline on the canvas when it is resized. Does it on startup as well '''
 
+        # Check if we have a new height. If not, don't update the arcs
+        if self.timeline_height == int(e.height):
+            update_arcs = False
+        else:
+            update_arcs = True
+
         # Update our page reference and size
         self.timeline_canvas.page = self.p
-        
         self.timeline_width = int(e.width)
         self.timeline_height = int(e.height)
         
-        # draw a horizontal line across the middle using a proper Color and Paint
+        # Re-draw our timeline and end markers
         self.timeline_canvas.shapes = [
             cv.Path(
                 elements=[
@@ -396,23 +410,68 @@ class Timeline(Widget):
             ),
         ]
 
+        # Get number of divisions and the width between each division
         num_divisions = self.data.get('divisions', 10)
         division_width = self.timeline_width / num_divisions if num_divisions > 0 else 0
 
-        div_path = cv.Path(
+        # Create a path for our divisions
+        divisions_path = cv.Path(
             elements=[],
             paint=ft.Paint(stroke_width=2, style="stroke", color=self.data.get('color', "primary"))
         )
 
-        # Add vertical markers for each division
+        # Go through our number of divisions and add markers to the path
         for i in range(num_divisions + 1):
             x = int(i * division_width)
-            div_path.elements.append(cv.Path.MoveTo(x, self.timeline_height // 2 + 10))
-            div_path.elements.append(cv.Path.LineTo(x, self.timeline_height // 2 - 10))  
+            divisions_path.elements.append(cv.Path.MoveTo(x, self.timeline_height // 2 + 10))
+            divisions_path.elements.append(cv.Path.LineTo(x, self.timeline_height // 2 - 10))  
             
-        self.timeline_canvas.shapes.append(div_path)
+        # Add our divisions path to the canvas
+        self.timeline_canvas.shapes.append(divisions_path)
 
-        self.timeline_canvas.update()
+
+        # Go through our arcs and update their size
+        if update_arcs:
+            for arc in self.arcs.values():
+                # ---- 1) & 2) Reposition + mid expansion via expand ratios (base 1000) ----
+                # Clamp defensively (RangeSlider should keep ordering, but keep it safe)
+                start_a = max(-1.0, min(1.0, float(arc.data.get('x_alignment_start', -0.2))))
+                end_a = max(-1.0, min(1.0, float(arc.data.get('x_alignment_end', 0.2))))
+                if end_a < start_a:
+                    start_a, end_a = end_a, start_a
+
+                left_ratio = (start_a + 1.0) / 2.0          # [-1..1] -> [0..1]
+                right_ratio = (1.0 - end_a) / 2.0           # [-1..1] -> [0..1]
+
+                left_expand = int(left_ratio * 1000)
+                right_expand = int(right_ratio * 1000)
+                mid_expand = max(0, 1000 - left_expand - right_expand)
+
+                # Update expands in-place
+                if arc.spacing_left is not None:
+                    arc.spacing_left.expand = left_expand
+                if arc.spacing_right is not None:
+                    arc.spacing_right.expand = right_expand
+                if arc.timeline_arc is not None:
+                    arc.timeline_arc.expand = mid_expand
+
+                # ---- 3) Height follows arc width (pixel-based) ----
+                # Use the actual available width (timeline width minus the fixed 24px padding on each side)
+                available_w = max(int(getattr(self, "timeline_width", 0)) - 48, 1)
+                width_px = int(((end_a - start_a) / 2.0) * available_w)  # because mapping [-1..1] to [0..W]
+                max_h = max(int((getattr(self, "timeline_height", 0) / 2) - 20), 0)
+
+                # Semicircle-ish: height ~= width/2, but capped
+                new_h = min(max_h, max(0, int(width_px / 2)))
+                arc.timeline_arc.height = new_h
+
+            self.p.update()
+
+        # If we didn't rebuild our arcs, just update the canvas
+        else:
+            self.timeline_canvas.update()
+
+        
     
 
     # Called when we need to rebuild out timeline UI
@@ -433,8 +492,7 @@ class Timeline(Widget):
             expand=True, 
             alignment=ft.Alignment(0, 0),
             controls=[
-                ft.Container(expand=True, ignore_interactions=True),    # Make sure we're expanded
-                self.timeline_canvas        # Add our canvas which has our visual timeline
+                ft.Container(self.timeline_canvas, ft.padding.only(left=16, right=16), expand=True)      # Add our canvas which has our visual timeline
             ]
         )
 
@@ -461,7 +519,7 @@ class Timeline(Widget):
         
         def _get_plot_points_filter_options() -> list[ft.Control]:
             # List for our colors when formatted
-            plot_point_checkboxes = [] 
+            plot_point_checkboxes = [ft.Checkbox(label="Show All", value=self.data.get('show_all_plot_points'), expand=True, adaptive=True)] 
 
             # Create our controls for our color options
             for plot_point in self.plot_points.values():
@@ -471,8 +529,8 @@ class Timeline(Widget):
                         value=plot_point.data.get('is_shown_on_widget'), 
                         expand=True, adaptive=True,
                         on_change=lambda e, pp=plot_point: pp.toggle_timeline_control(e.control.value),
+                    )
                 )
-            )
 
             return plot_point_checkboxes
         
@@ -480,7 +538,7 @@ class Timeline(Widget):
         def _get_arcs_filter_options() -> list[ft.Control]:
 
             # List for our colors when formatted
-            arc_checkboxes = [] 
+            arc_checkboxes = [ft.Checkbox(label="Show All", value=self.data.get('show_all_arcs', True), expand=True, adaptive=True)] 
 
             # Create our controls for our color options
             for arc in self.arcs.values():
@@ -490,8 +548,8 @@ class Timeline(Widget):
                         value=arc.data.get('is_shown_on_widget'), 
                         expand=True, adaptive=True,
                         on_change=lambda e, a=arc: a.toggle_timeline_control(e.control.value),
-                )
-            ) 
+                    )
+                ) 
                 
             return arc_checkboxes
 
@@ -499,21 +557,18 @@ class Timeline(Widget):
 
         plot_points_filters = ft.Container(
             padding=None,
-            #expand=True,
             width=170,
             border=ft.border.all(1, ft.Colors.OUTLINE),
             border_radius=ft.border_radius.all(6),
             content=ft.ExpansionTile(
-                expand=True,
-                on_change=lambda e: self.change_data(**{'plot_points_filter_dropdown_expanded': e.control.expand}),
+                expand=True, dense=True,
+                on_change=lambda e: self.change_data(**{'plot_points_filter_dropdown_expanded': not self.data.get('plot_points_filter_dropdown_expanded', True)}),
                 title=ft.Text("Plot Point Filters", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), 
-                dense=True,
                 initially_expanded=self.data.get('plot_points_filter_dropdown_expanded', True),
                 visual_density=ft.VisualDensity.COMPACT,
                 tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
-                maintain_state=True,
+                maintain_state=True, adaptive=True,
                 expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
-                adaptive=True,
                 shape=ft.RoundedRectangleBorder(),
                 controls=_get_plot_points_filter_options()
             )
@@ -521,21 +576,18 @@ class Timeline(Widget):
 
         arcs_filters = ft.Container(
             padding=None,
-            #expand=True,
             width=170,
             border=ft.border.all(1, ft.Colors.OUTLINE),
             border_radius=ft.border_radius.all(6),
             content=ft.ExpansionTile(
-                expand=True,
-                on_change=lambda e: self.change_data(**{'arcs_filter_dropdown_expanded': e.control.expand}),
+                expand=True, dense=True,
+                on_change=lambda e: self.change_data(**{'arcs_filter_dropdown_expanded': not self.data.get('arcs_filter_dropdown_expanded', True)}),
                 title=ft.Text("Arcs Filters", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), 
-                dense=True,
                 initially_expanded=self.data.get('arcs_filter_dropdown_expanded', True),
                 visual_density=ft.VisualDensity.COMPACT,
                 tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
-                maintain_state=True,
+                maintain_state=True, adaptive=True,
                 expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
-                adaptive=True,
                 shape=ft.RoundedRectangleBorder(),
                 controls=_get_arcs_filter_options()
             )
@@ -550,7 +602,7 @@ class Timeline(Widget):
         )
         
 
-        self._render_widget(header=header)
+        self._render_widget(header=header)# 
 
 
 

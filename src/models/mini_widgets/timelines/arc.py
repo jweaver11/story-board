@@ -44,7 +44,6 @@ class Arc(MiniWidget):
             {   
                 'tag': "arc",                               # Tag to identify what type of object this is
                 'is_timeskip': bool,                        # If this arc is a time skip (skips ahead in time on the timeline)   
-                'branch_direction': "top",                  # Direction the arc branches off (top or bottom) from the timeline
                 'start_date': str,                          # Start and end date of the branch, for timeline view
                 'end_date': str,                            # Start and end date of the branch, for timeline view
                 'x_alignment_start': -.2,                   # Start position on the timeline
@@ -77,12 +76,16 @@ class Arc(MiniWidget):
         self.x_alignment_end = ft.Alignment(self.data.get('x_alignment_end', 0), 0)
 
 
-
         # UI elements
-        self.timeline_control: ft.Stack = None      # Stack that holds our timeline arc and slider
-        self.timeline_arc: ft.Container = None     # Container with rounded border to draw our arc on the timeline
-        self.gd: ft.GestureDetector = None          # Gesture detector to handle clicks and hovers on the timeline_arc.
-        self.slider: ft.RangeSlider = None          # Slider to drag our start and end points for the arc on the timeline
+        self.timeline_control: ft.Stack = None
+        self.timeline_arc: ft.Container = None
+        self.gd: ft.GestureDetector = None
+        self.slider: ft.RangeSlider = None
+
+        # Keep references so we can update expands without rebuilding controls every drag tick
+        self.spacing_left: ft.Container = None
+        self.spacing_right: ft.Container = None
+        self.timeline_row: ft.Row = None
 
         # Build the gesture detector for our timeline arc. It doesn't need to be rebuilt, so we just do it once in constructor
         self.gd = ft.GestureDetector(
@@ -97,6 +100,8 @@ class Arc(MiniWidget):
 
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our arc slider
+
+        self.is_first_launch: bool = True        # If this is the first time launching the arc, to protect from not initialized parents
       
         # Loads our mini widget
         self.reload_mini_widget()
@@ -108,22 +113,32 @@ class Arc(MiniWidget):
 
 
     # Called when we hover over our arc on the timeline
-    def on_start_hover(self, e: ft.HoverEvent):
+    async def on_start_hover(self, e: ft.HoverEvent):
         ''' Focuses the arc control '''
 
         # Change its border opacity and update the page
-        self.timeline_arc.border = ft.border.all(4, self.data.get('color', "secondary"))
+        self.timeline_arc.border=ft.border.only(
+            left=ft.BorderSide(2, self.data.get('color', "secondary")),
+            right=ft.BorderSide(2, self.data.get('color', "secondary")),
+            top=ft.BorderSide(2, self.data.get('color', "secondary")),
+        )
+        self.slider.visible = True
         self.p.update()
 
     # Called when we stop hovering over our arc on the timeline
-    def on_stop_hover(self, e: ft.HoverEvent):
+    async def on_stop_hover(self, e: ft.HoverEvent):
         ''' Changes the arc control to unfocused '''
 
         # Makes sure we stay highlighted if our information mini widget is open
         if self.visible:
             return
         
-        self.timeline_arc.border = ft.border.all(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary")))
+        self.timeline_arc.border=ft.border.only(
+            left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
+            right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
+            top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
+        )
+        self.slider.visible = False
         self.p.update()
 
 
@@ -142,7 +157,6 @@ class Arc(MiniWidget):
             super().toggle_visibility(value=value)
 
         else:
-            print("Else called")
             self.slider.visible = not self.slider.visible
             super().toggle_visibility(self.slider.visible)
 
@@ -151,7 +165,7 @@ class Arc(MiniWidget):
     def change_x_positions(self, e: ft.DragUpdateEvent):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
 
-        self.is_dragging = True                 # We are actively dragging
+        self.is_dragging = True
 
         # Grab our new positions as floats of whatever number division we're on (-100 -> 100)
         new_start_position = float(e.control.start_value)
@@ -161,12 +175,47 @@ class Arc(MiniWidget):
         nsp = new_start_position / 100
         nep = new_end_position / 100
 
-        # Save the new position to data, but don't needlessly write to file until we stop dragging
+        # Save the new position to data (don't write to disk until change_end)
         self.data['x_alignment_start'] = nsp
         self.data['x_alignment_end'] = nep
 
-        self.is_dragging = True
+        # ---- 1) & 2) Reposition + mid expansion via expand ratios (base 1000) ----
+        # Clamp defensively (RangeSlider should keep ordering, but keep it safe)
+        start_a = max(-1.0, min(1.0, float(self.data.get('x_alignment_start', -0.2))))
+        end_a = max(-1.0, min(1.0, float(self.data.get('x_alignment_end', 0.2))))
+        if end_a < start_a:
+            start_a, end_a = end_a, start_a
 
+        left_ratio = (start_a + 1.0) / 2.0          # [-1..1] -> [0..1]
+        right_ratio = (1.0 - end_a) / 2.0           # [-1..1] -> [0..1]
+
+        left_expand = int(left_ratio * 1000)
+        right_expand = int(right_ratio * 1000)
+        mid_expand = max(0, 1000 - left_expand - right_expand)
+
+        # Update expands in-place
+        if self.spacing_left is not None:
+            self.spacing_left.expand = left_expand
+        if self.spacing_right is not None:
+            self.spacing_right.expand = right_expand
+        if self.timeline_arc is not None:
+            self.timeline_arc.expand = mid_expand
+
+        # ---- 3) Height follows arc width (pixel-based) ----
+        # Use the actual available width (timeline width minus the fixed 24px padding on each side)
+        available_w = max(int(getattr(self.owner, "timeline_width", 0)) - 48, 1)
+        width_px = int(((end_a - start_a) / 2.0) * available_w)  # because mapping [-1..1] to [0..W]
+        max_h = max(int((getattr(self.owner, "timeline_height", 0) / 2) - 20), 0)
+
+        # Semicircle-ish: height ~= width/2, but capped
+        new_h = min(max_h, max(0, int(width_px / 2)))
+        self.timeline_arc.height = new_h
+
+        # Update visuals
+        if self.timeline_row is not None:
+            self.timeline_row.update()
+        else:
+            self.timeline_arc.update()
 
     # Called when we finish dragging our slider thumb to save our new position
     def finished_dragging(self, e):
@@ -209,6 +258,16 @@ class Arc(MiniWidget):
         else:
             self.p.update()
 
+    async def enter(self, e=None):
+        ''' Called when we enter this mini widget '''
+        self.slider.visible = True
+        self.p.update()
+
+    async def exit(self, e=None):
+        ''' Called when we exit this mini widget '''
+        self.slider.visible = False
+        self.p.update()
+
 
     # Called whenever we need to rebuild our slider, such as on construction or when our x position changes
     def reload_slider(self):
@@ -216,15 +275,15 @@ class Arc(MiniWidget):
         # Rebuild our slider
         self.slider = ft.Stack(
             alignment=ft.Alignment(0,0),
-            expand=True,
+            expand=True, #height=20,
             visible=self.visible,
             controls=[
                 ft.Container(expand=True, ignore_interactions=True),        # Make sure our stack is always expanded to full size
                 ft.GestureDetector(                                             # GD so we can detect right clicks on our slider
                     on_secondary_tap=lambda e: self.owner.story.open_menu(self.owner.get_menu_options()),  # Open our parent timeline menu options
-                    on_enter=lambda e: self.owner.on_enter(e=None),     # Highlight the timeline on hover
-                    on_exit=lambda e: self.owner.on_exit(e=None),       # Remove highlight when not hovering
-                    height=100,
+                    on_enter=self.enter,     # Highlight the timeline on hover
+                    on_exit=self.exit,       # Remove highlight when not hovering
+                    height=50,
                     content=ft.RangeSlider(
                         min=-100, max=100,                                  # Min and max values on each end of slider
                         start_value=self.data.get('x_alignment_start', 0) * 100,        # Where we start on the slider
@@ -235,9 +294,11 @@ class Arc(MiniWidget):
                         inactive_color=ft.Colors.TRANSPARENT,               # Get rid of the background colors
                         overlay_color=ft.Colors.with_opacity(.5, self.data.get('color', "secondary")),    # Color of plot point when hovering over it or dragging    
                         on_change=self.change_x_positions,       # Update our data with new x position as we drag
-                        on_change_end=self.finished_dragging,                     # Save the new position, but don't write it yet                      
+                        on_change_end=self.finished_dragging,                     # Save the new position, but don't write it yet    
+                        #on_change_start=self.on_start_hover,                  
                     ),
                 ),
+                
             ]
         )
                   
@@ -264,65 +325,47 @@ class Arc(MiniWidget):
 
         mid_ratio = 1000 - right_ratio - left_ratio
 
-        spacing_left = ft.Container(
-            expand=left_ratio, 
-            ignore_interactions=True,
-            #bgcolor=ft.Colors.with_opacity(0.3, "red")
-        )
-        spacing_right = ft.Container(
-            expand=right_ratio, 
-            ignore_interactions=True,
-            #bgcolor=ft.Colors.with_opacity(0.3, "red")
-        )
+        spacing_left = ft.Container(expand=left_ratio, ignore_interactions=True)
+        spacing_right = ft.Container(expand=right_ratio, ignore_interactions=True)
 
-        self.gd.content = ft.Column(alignment=ft.MainAxisAlignment.CENTER, controls=[ft.Row(alignment=ft.MainAxisAlignment.CENTER, controls=[ft.Text(self.title)])])
+        # Store for live updates during dragging
+        self.spacing_left = spacing_left
+        self.spacing_right = spacing_right
+
+        self.gd.content = ft.Container(content=ft.Text(self.title), expand=True, alignment=ft.Alignment(0,0))
 
         self.timeline_arc = ft.Container(
-            #bgcolor=ft.Colors.with_opacity(0.2, "yellow"),    # Testing
-            offset=ft.Offset(0, -0.5) if self.data['branch_direction'] == "top" else ft.Offset(0, .5),          # Moves it up or down slightly to center on timeline
+            offset=ft.Offset(0, -0.5),
             expand=mid_ratio,
-            height=mid_ratio,
-            padding=ft.Padding(2,2,2,2),
-
-            #height=None/proportions of width
-            border=ft.border.all(3, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
-            
-            #border=ft.border.only(
-                #top=ft.BorderSide(0, ft.Colors.TRANSPARENT),
-                #left=ft.BorderSide(2, self.data.get('color', "primary")),
-                #right=ft.BorderSide(2, self.data.get('color', "primary")),
-                #bottom=ft.BorderSide(0, ft.Colors.TRANSPARENT),
-            #),
+            height=0 if self.is_first_launch else None,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            border_radius=ft.BorderRadius(
-                top_left=1000,      
-                top_right=1000,     
-                bottom_left=0,   
-                bottom_right=0
+            border=ft.border.only(
+                left=ft.BorderSide(2, self.data.get('color', "secondary")),
+                right=ft.BorderSide(2, self.data.get('color', "secondary")),
+                top=ft.BorderSide(2, self.data.get('color', "secondary")),
             ),
-            content=self.gd,        # Set the content to our gesture detector so we can handle clicks and hovers
+            border_radius=ft.border_radius.only(top_left=1000, top_right=1000, bottom_left=0, bottom_right=0),
+            content=self.gd,
         )
+        self.is_first_launch = False
 
-        # Row for our spacing containers, and rebuilt timeline_arc
-        row = ft.Row(
-            expand=True,
-            spacing=0,
+        self.timeline_row = ft.Row(
+            expand=True, spacing=0,
             controls=[
-                ft.Container(width=24),     # Padding to match Timeline padding left
-                spacing_left,
+                ft.Container(width=24),
+                self.spacing_left,
                 self.timeline_arc,
-                spacing_right,
-                ft.Container(width=24),     # Padding to match Timeline padding right
+                self.spacing_right,
+                ft.Container(width=24),
             ]
         )
-    
 
         self.timeline_control = ft.Stack(
-            expand=True,            # Make sure it fills the whole timeline width
+            expand=True,
             controls=[
-                ft.Container(expand=True, ignore_interactions=True),        # Make sure our stack is always expanded to full size
-                row,
-                self.slider,                                                # Our slider that appears when we hover over the plot point
+                ft.Container(expand=True, ignore_interactions=True),
+                self.timeline_row,
+                self.slider,
             ]
         ) 
         
@@ -429,4 +472,4 @@ class Arc(MiniWidget):
 
         self.p.update()
 
-    
+

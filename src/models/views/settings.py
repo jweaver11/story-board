@@ -262,12 +262,12 @@ class Settings(ft.View):
         self.light_theme_button = ft.Container(
             content=ft.Icon(ft.Icons.LIGHT_MODE, color=ft.Colors.YELLOW_700), height=100, width=100, border_radius=10, data="light",
             border=ft.border.all(2, ft.Colors.ON_SURFACE_VARIANT) if self.data['theme_mode'] == "dark" else ft.border.all(2, ft.Colors.PRIMARY), 
-            bgcolor=ft.Colors.WHITE, on_click=_toggle_theme, tooltip="Set light mode"
+            bgcolor=ft.Colors.WHITE, on_click=_toggle_theme, tooltip="Set light mode", ink=True
         )
         self.dark_theme_button = ft.Container(
             content=ft.Icon(ft.Icons.DARK_MODE, color=ft.Colors.WHITE), height=100, width=100, border_radius=10, data="dark",
             border=ft.border.all(2, ft.Colors.ON_SURFACE_VARIANT) if self.data['theme_mode'] == "light" else ft.border.all(2, ft.Colors.PRIMARY), 
-            bgcolor=ft.Colors.GREY_900, on_click=_toggle_theme, tooltip="Set dark mode"
+            bgcolor=ft.Colors.GREY_900, on_click=_toggle_theme, tooltip="Set dark mode", ink=True
         )
         
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
