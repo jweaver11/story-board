@@ -309,11 +309,7 @@ class Widget(ft.Container):
     async def enter_tab(self, e):
         ''' Changes the hide icon button color slightly for more interactivity '''
         self.hide_tab_icon_button.icon_color = ft.Colors.ON_SURFACE
-        try:
-            self.page = self.p
-            self.update()
-        except:
-            self.p.update()
+        self.p.update()
 
     # Called when mouse hovers over the tab part of the widget
     async def hover_tab(self, e):
@@ -325,8 +321,7 @@ class Widget(ft.Container):
     async def stop_hover_tab(self, e):
         ''' Reverts the color change of the hide icon button '''
         self.hide_tab_icon_button.icon_color = ft.Colors.OUTLINE
-        self.page = self.p
-        self.update()
+        self.p.update()
         
 
     # Called when app clicks the hide icon in the tab
@@ -597,9 +592,5 @@ class Widget(ft.Container):
 
         self.content = self.tabs
 
-        # First launch is less effecient since page isnt assigned yet
-        try:
-            self.page = self.p
-            self.update()
-        except:
-            self.p.update()
+        
+        self.p.update()
