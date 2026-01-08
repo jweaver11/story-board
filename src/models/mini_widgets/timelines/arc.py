@@ -239,7 +239,8 @@ class Arc(MiniWidget):
         self.save_dict()
 
         # Apply the UI changes
-        self.reload_mini_widget()
+        #self.reload_mini_widget()
+        self._render_mini_widget()
         self.owner.reload_widget()
 
     # Called when toggling whether this plot point is shown on the timeline in the timeline filters
