@@ -453,7 +453,7 @@ class Timeline(Widget):
         self.timeline_canvas.shapes.append(divisions_path)
 
 
-        # Add our text end labels ---------------------------------------------------------------------------
+        # Add our timeline ends labels ---------------------------------------------------------------------------
         left_label = str(self.data.get('left_label', '0'))
         left_label = left_label.split('.', 1)[0] if '.' in left_label else left_label
         right_label = str(self.data.get('right_label', '10'))
@@ -461,8 +461,6 @@ class Timeline(Widget):
         time_label = str(self.data.get('time_label', 'years')).capitalize()
 
         # Set the text width, and align it in center, make sure it wraps
-
-
         self.timeline_canvas.shapes.append(cv.Text(
             5, self.timeline_height // 2 - 60, left_label, 
             ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center,
@@ -477,8 +475,63 @@ class Timeline(Widget):
             ft.TextStyle(20, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center
         ))
 
+        
+        # Add our plot points labels above or below their dot on the timeline ------------------------------------------------
+        line_direction = "top"  # Line direction either going above or below the timeline that flips evert timeline
+        line_height = "small"    # Line height that cycles between small, medium, and large after each plot point
 
-        # Go through our arcs and update their size
+
+        for plot_point in self.plot_points.values():
+            if plot_point.data.get('is_shown_on_widget', False):
+                # Calculate x position
+                x_alignment = max(-1.0, min(1.0, float(plot_point.data.get('x_alignment', 0.0))))
+                x_pos = int(((x_alignment + 1.0) / 2.0) * (self.timeline_width - 10)) + 5    # because mapping [-1..1] to [0..W], plus 5px padding
+                #print("Plot Point:", plot_point.title, "X Pos:", x_pos)
+
+
+                label_path = cv.Path(
+                    elements=[
+                        cv.Path.MoveTo(x_pos, self.timeline_height // 2 - 20 if line_direction == "top" else self.timeline_height // 2 + 20),
+                        cv.Path.LineTo(
+                            x_pos, 
+                            (self.timeline_height // 2 + 60 if line_direction == "top" else self.timeline_height // 2 - 60) - 
+                            (20 if (line_direction == "top" and line_height == "small") or (line_direction == "bottom" and line_height == "small") else
+                             40 if (line_direction == "top" and line_height == "medium") or (line_direction == "bottom" and line_height == "medium") else
+                             60)
+                        ),
+                    ],
+                    paint=ft.Paint(stroke_width=2, style="stroke", color=plot_point.data.get('color', self.data.get('color', "primary")))
+                )
+
+                # Add the text label for the plot point
+                #plot_point.timeline_label.content.shapes = [label_path]
+
+                if line_direction == "top":
+                    line_direction = "bottom"
+                else:
+                    line_direction = "top"
+                    if line_height == "small":
+                        line_height = "medium"
+                    elif line_height == "medium":
+                        line_height = "large"   
+                    else:
+                        line_height = "small"
+
+                #plot_point.timeline_label.content.shapes = [
+                    #cv.Text(
+                        #x_pos, 
+                        #(self.timeline_height // 2 - 40),
+                        #plot_point.title, 
+                        #" ",
+                        #ft.TextStyle(14, weight=ft.FontWeight.BOLD),
+                        #alignment=ft.alignment.center,
+                        #max_width=100,
+                    #)
+                #]
+
+
+
+        # Go through our arcs and update their size --------------------------------------------------
         if update_arcs:
             for arc in self.arcs.values():
                 # ---- 1) & 2) Reposition + mid expansion via expand ratios (base 1000) ----

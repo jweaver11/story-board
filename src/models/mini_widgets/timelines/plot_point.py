@@ -4,7 +4,7 @@ from models.widget import Widget
 from utils.verify_data import verify_data
 import math
 from styles.text_styles import text_style
-
+import flet.canvas as cv
 
 # Plotpoint mini widget object that appear on timelines and arcs
 class PlotPoint(MiniWidget):
@@ -60,7 +60,7 @@ class PlotPoint(MiniWidget):
 
         # UI elements
         self.timeline_point: ft.Container = None    # Circle container to show our plot point on the timeline
-        self.timeline_point_label: ft.Container = None  # Text label below our plot point on the timeline
+        self.timeline_label: ft.Container = None  # Text label below our plot point on the timeline
         self.slider: ft.Column = None               # Slider to drag our plot point along the timeline
         self.timeline_control: ft.Stack = None      # Stack that holds our timeline point and slider
 
@@ -116,10 +116,10 @@ class PlotPoint(MiniWidget):
 
         for plot_point in self.owner.plot_points.values():
             if plot_point != self:
-                plot_point.timeline_point_label.visible = False
+                plot_point.timeline_label.visible = False
 
         self.timeline_point.visible = False
-        self.timeline_point_label.visible = False
+        self.timeline_label.visible = False
 
         self.p.update()
 
@@ -140,7 +140,7 @@ class PlotPoint(MiniWidget):
 
         # Show all other plot point labels again
         for plot_point in self.owner.plot_points.values():
-            plot_point.timeline_point_label.visible = True
+            plot_point.timeline_label.visible = True
 
         # Update our alignment based on our correct data. This is updated when dragging, so no need to set it here
         self.x_alignment = ft.Alignment(self.data.get('x_alignment', 0), 0)
@@ -291,13 +291,15 @@ class PlotPoint(MiniWidget):
         )   
 
         # Build our label each time
-        self.timeline_point_label = ft.Container(
-            width=20,
-            expand=True,
+        self.timeline_label = ft.Container(
+            width=200,
+            expand=True, alignment=self.x_alignment,
+            border=ft.border.all(1, "red"),
             margin=ft.Margin(16,0,16,0), 
             ignore_interactions=True,
             content=ft.Column(
                 expand=False,
+                #alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
                     ft.Container(expand=8, ignore_interactions=True),   # Spacer to push text down
                     ft.Container(expand=3, alignment=ft.Alignment(0,0), content=ft.VerticalDivider(thickness=2, color=self.data.get('color', "secondary"))),  # Line above text
@@ -306,17 +308,29 @@ class PlotPoint(MiniWidget):
                         alignment=ft.alignment.center,  # Center the text in its container
                         content=ft.Text(
                             value=self.title,
-                            expand=True,
-                            overflow=ft.TextOverflow.VISIBLE,
-                            no_wrap=True,
-                            #rotate=ft.Rotate(angle=0.5 * math.pi, alignment=ft.alignment.center),  # Add alignment to rotate
-                            style=text_style
-                        )
+                            expand=True, overflow=ft.TextOverflow.VISIBLE,
+                            no_wrap=True, text_align=ft.TextAlign.CENTER,
+                            #style=text_style
+                            #width=200,
+                        ), 
                     ),    
                     ft.Container(expand=3, ignore_interactions=True)   
                 ]
             )
         )
+
+        self.timeline_label = ft.Container(
+            expand=True,    
+            border=ft.border.all(1, "red"),
+            margin=ft.Margin(16,0,16,0), ignore_interactions=True,
+            content=cv.Canvas(
+                content=ft.Container(expand=True), #width=200,
+                shapes=[
+
+                ]
+            )
+        )
+
                 
 
         # Rebuild our stack to hold our timeline point and slider
@@ -327,7 +341,7 @@ class PlotPoint(MiniWidget):
             controls=[
                 ft.Container(expand=True, ignore_interactions=True),        # Make sure our stack is always expanded to full size
                 self.timeline_point,                                        # Our plot point on the timeline
-                #self.timeline_point_label,
+                self.timeline_label,
                 self.slider,                                                # Our slider that appears when we hover over the plot point
             ]
         ) 

@@ -142,7 +142,7 @@ class Arc(MiniWidget):
         )
         self.slider.visible = False
         self.p.update()
-        print("Slider should be hidden")
+        #print("Slider should be hidden")
 
 
     def toggle_visibility(self, e=None, value: bool = None):
