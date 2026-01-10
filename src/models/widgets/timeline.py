@@ -480,54 +480,74 @@ class Timeline(Widget):
         line_direction = "top"  # Line direction either going above or below the timeline that flips evert timeline
         line_height = "small"    # Line height that cycles between small, medium, and large after each plot point
 
+        sorted_plot_points = dict(sorted(self.plot_points.items(), key=lambda item: item[1].data.get('x_alignment', 0.0)))
 
-        for plot_point in self.plot_points.values():
+        for plot_point in sorted_plot_points.values():
             if plot_point.data.get('is_shown_on_widget', False):
                 # Calculate x position
                 x_alignment = max(-1.0, min(1.0, float(plot_point.data.get('x_alignment', 0.0))))
                 x_pos = int(((x_alignment + 1.0) / 2.0) * (self.timeline_width - 10)) + 5    # because mapping [-1..1] to [0..W], plus 5px padding
-                #print("Plot Point:", plot_point.title, "X Pos:", x_pos)
+
+                # Adjust based on offset from the margin the plot points use
+                offset_x = 5 * x_alignment
+                x_pos = x_pos - offset_x
+
+                if line_direction == "top":
+                    moveTo = cv.Path.MoveTo(x_pos, self.timeline_height // 2 - 30)
+                    # Set our line height
+                    match line_height:
+                        case "small":
+                            y_pos = int(self.timeline_height // 3)
+                        case "medium":
+                            y_pos = int(self.timeline_height // 4)
+                        case "large":
+                            y_pos = int(self.timeline_height // 6)
+                        case _:
+                            y_pos = int(self.timeline_height // 6)
+
+                    line_direction = "bottom"
+                    
+                else:
+                    moveTo = cv.Path.MoveTo(x_pos, self.timeline_height // 2 + 30)
+                    match line_height:
+                        case "small":
+                            y_pos = int(self.timeline_height - (self.timeline_height // 3))
+                            line_height = "medium"
+                        case "medium":
+                            y_pos = int(self.timeline_height - (self.timeline_height // 4))
+                            line_height = "large"
+                        case "large":
+                            y_pos = int(self.timeline_height - (self.timeline_height // 6))
+                            line_height = "small"
+                        case _:
+                            y_pos = int(self.timeline_height - (self.timeline_height // 6))
+
+                    line_direction = "top"
 
 
+                
                 label_path = cv.Path(
                     elements=[
-                        cv.Path.MoveTo(x_pos, self.timeline_height // 2 - 20 if line_direction == "top" else self.timeline_height // 2 + 20),
-                        cv.Path.LineTo(
-                            x_pos, 
-                            (self.timeline_height // 2 + 60 if line_direction == "top" else self.timeline_height // 2 - 60) - 
-                            (20 if (line_direction == "top" and line_height == "small") or (line_direction == "bottom" and line_height == "small") else
-                             40 if (line_direction == "top" and line_height == "medium") or (line_direction == "bottom" and line_height == "medium") else
-                             60)
-                        ),
+                        moveTo,
+                        cv.Path.LineTo(x_pos, y_pos),
                     ],
                     paint=ft.Paint(stroke_width=2, style="stroke", color=plot_point.data.get('color', self.data.get('color', "primary")))
                 )
 
                 # Add the text label for the plot point
-                #plot_point.timeline_label.content.shapes = [label_path]
+                self.timeline_canvas.shapes.append(label_path)
 
-                if line_direction == "top":
-                    line_direction = "bottom"
-                else:
-                    line_direction = "top"
-                    if line_height == "small":
-                        line_height = "medium"
-                    elif line_height == "medium":
-                        line_height = "large"   
-                    else:
-                        line_height = "small"
-
-                #plot_point.timeline_label.content.shapes = [
-                    #cv.Text(
-                        #x_pos, 
-                        #(self.timeline_height // 2 - 40),
-                        #plot_point.title, 
+                self.timeline_canvas.shapes.append(
+                    cv.Text(
+                        x_pos, 
+                        y_pos - 20 if line_direction == "bottom" else y_pos + 20,
+                        plot_point.title, 
                         #" ",
-                        #ft.TextStyle(14, weight=ft.FontWeight.BOLD),
-                        #alignment=ft.alignment.center,
-                        #max_width=100,
-                    #)
-                #]
+                        ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=plot_point.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
+                        alignment=ft.alignment.center,
+                        max_width=100,
+                    )
+                )
 
 
 

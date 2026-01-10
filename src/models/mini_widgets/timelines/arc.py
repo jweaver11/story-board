@@ -122,6 +122,7 @@ class Arc(MiniWidget):
             right=ft.BorderSide(2, self.data.get('color', "secondary")),
             top=ft.BorderSide(2, self.data.get('color', "secondary")),
         )
+        self.gd.content.opacity = 1.0
         self.slider.visible = True
         self.p.update()
 
@@ -140,6 +141,7 @@ class Arc(MiniWidget):
             right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
             top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
         )
+        self.gd.content.opacity = .7
         self.slider.visible = False
         self.p.update()
         #print("Slider should be hidden")
@@ -339,7 +341,10 @@ class Arc(MiniWidget):
         self.spacing_left = spacing_left
         self.spacing_right = spacing_right
 
-        self.gd.content = ft.Container(content=ft.Text(self.title, selectable=True), alignment=ft.alignment.top_center)
+        self.gd.content = ft.Container(
+            ft.Text(self.title, selectable=True, style=ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=self.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS)), 
+            alignment=ft.alignment.top_center, opacity=.7
+        )
 
         self.timeline_arc = ft.Container(
             offset=ft.Offset(0, -0.5),

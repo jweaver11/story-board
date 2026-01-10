@@ -271,65 +271,80 @@ class PlotPoint(MiniWidget):
 
     # Called from reload_mini_widget
     def reload_timeline_control(self):
-        ''' Rebuilds our timeline control that holds our plot point and slider '''
+        """ Rebuilds our timeline control that holds our plot point and slider """
 
-        # Reload our slider 
+        # Reload our slider
         self.reload_slider()
 
         # Our container that is our plot point on the timeline, and contains our gesture detector for hovering and right clicking
         self.timeline_point = ft.Container(
-            margin=ft.Margin(16,0,16,0),        # Magic margin to match the margin on slider so they line up
-            expand=False,         
+            margin=ft.Margin(16, 0, 16, 0),
+            expand=False,
             bgcolor=self.data.get('color', "secondary"),
-            width=20, height=20, shape=ft.BoxShape.CIRCLE,           # 
-            content=ft.GestureDetector(         # GD so we can detect hovers and right clicks
+            width=20,
+            height=20,
+            shape=ft.BoxShape.CIRCLE,
+            content=ft.GestureDetector(
                 expand=True,
-                on_enter=self.show_slider,               # Show the slider when we hover over our plot point. This also hides timeline_point
-                on_secondary_tap=lambda e: print("Right click on plot point"),  # Pop open our menu options when right clicking
+                on_enter=self.show_slider,
+                on_secondary_tap=lambda e: print("Right click on plot point"),
                 on_tap_down=self.show_slider,
-            )
-        )   
+            ),
+        )
 
-        # Build our label each time
+        # --- center the 100px label under the 20px point for any x_alignment ---
+        x = float(self.data.get("x_alignment", 0) or 0.0)
+
+        label_w = 100.0
+        point_w = 20.0
+
+        # Flet offset is fractional of *label width*
+        offset_x = x * (label_w - point_w) / (2.0 * label_w)  # == 0.4 * x for 100/20
+
+        # Optional safety clamp (prevents extreme translations if sizes change)
+        offset_x = max(-0.5, min(0.5, offset_x))
+
+        #print("Offset x for label:", offset_x, "for", self.title)
+
         self.timeline_label = ft.Container(
-            width=200,
-            expand=True, alignment=self.x_alignment,
+            width=int(label_w),
+            offset=ft.Offset(offset_x, 0),
+            expand=True,
             border=ft.border.all(1, "red"),
-            margin=ft.Margin(16,0,16,0), 
+            margin=ft.Margin(16, 0, 16, 0),
             ignore_interactions=True,
             content=ft.Column(
                 expand=False,
-                #alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
-                    ft.Container(expand=8, ignore_interactions=True),   # Spacer to push text down
-                    ft.Container(expand=3, alignment=ft.Alignment(0,0), content=ft.VerticalDivider(thickness=2, color=self.data.get('color', "secondary"))),  # Line above text
+                    ft.Container(expand=8, ignore_interactions=True),
+                    ft.Container(
+                        expand=3,
+                        alignment=ft.Alignment(0, 0),
+                        content=ft.VerticalDivider(
+                            thickness=2,
+                            color=self.data.get("color", "secondary"),
+                        ),
+                    ),
                     ft.Container(
                         expand=1,
-                        alignment=ft.alignment.center,  # Center the text in its container
+                        alignment=ft.alignment.center,
                         content=ft.Text(
                             value=self.title,
-                            expand=True, overflow=ft.TextOverflow.VISIBLE,
-                            no_wrap=True, text_align=ft.TextAlign.CENTER,
-                            #style=text_style
-                            #width=200,
-                        ), 
-                    ),    
-                    ft.Container(expand=3, ignore_interactions=True)   
-                ]
-            )
+                            color=self.data.get("color", "secondary"),
+                            expand=True,
+                            overflow=ft.TextOverflow.ELLIPSIS,
+                            no_wrap=True,
+                            text_align=ft.TextAlign.CENTER,
+                        ),
+                    ),
+                    ft.Container(expand=3, ignore_interactions=True),
+                ],
+            ),
         )
 
-        self.timeline_label = ft.Container(
-            expand=True,    
-            border=ft.border.all(1, "red"),
-            margin=ft.Margin(16,0,16,0), ignore_interactions=True,
-            content=cv.Canvas(
-                content=ft.Container(expand=True), #width=200,
-                shapes=[
+     
 
-                ]
-            )
-        )
+        
 
                 
 
@@ -341,7 +356,7 @@ class PlotPoint(MiniWidget):
             controls=[
                 ft.Container(expand=True, ignore_interactions=True),        # Make sure our stack is always expanded to full size
                 self.timeline_point,                                        # Our plot point on the timeline
-                self.timeline_label,
+                #self.timeline_label,
                 self.slider,                                                # Our slider that appears when we hover over the plot point
             ]
         ) 
