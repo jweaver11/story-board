@@ -352,9 +352,6 @@ class Timeline(Widget):
     async def new_item_clicked(self, e):
         ''' Called when new plot point or arc is clicked from timeline context menu '''
         
-        await asyncio.sleep(.3)
-        await self.story.close_menu()
-
         tag = e.control.data
 
         if tag is not None:
@@ -364,6 +361,9 @@ class Timeline(Widget):
                 self.create_plot_point(f"Plot Point {len(self.plot_points) + 1}")
         else:
             print("Error: No tag found for new item creation")
+
+        await asyncio.sleep(.3)
+        await self.story.close_menu()
 
 
     # Called when rename button is clicked

@@ -124,14 +124,16 @@ class TimelineItem(ft.GestureDetector):
 
 
     # Called when hovering mouse over a tree view item
-    def on_hover(self, e):
+    async def on_hover(self, e):
         self.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.WHITE)
-        self.mini_widget.p.update()
+        #self.mini_widget.p.update()
+        self.update()
 
     # Called when stopping hover over a tree view item
-    def on_stop_hover(self, e):
+    async def on_stop_hover(self, e):
         self.content.bgcolor = ft.Colors.TRANSPARENT
-        self.mini_widget.p.update()
+        #self.mini_widget.p.update()
+        self.update()
 
     # Called when rename button is clicked
     def rename_clicked(self, e):

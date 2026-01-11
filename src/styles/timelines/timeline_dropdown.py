@@ -195,7 +195,7 @@ class TimelineDropdown(ft.GestureDetector):
             self.content.controls[1].new_item_clicked(tag="arc")
 
         # Close the menu, which will also update the page
-        self.story.close_menu()
+        self.story.close_menu_instant()
 
     # Called when our new item textfield changes
     def new_item_check(self, e):
@@ -393,7 +393,7 @@ class TimelineDropdown(ft.GestureDetector):
         self.expansion_tile.title = text_field
 
         # Clears our popup menu button and applies to the UI
-        self.story.close_menu()
+        self.story.close_menu_instant()
 
     def get_color_options(self) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
