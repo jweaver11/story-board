@@ -312,6 +312,10 @@ class WorkspacesRail(ft.Container):
             ]), 
         )
 
-        self.p.update() # Update the page to show our changes
+        try: 
+            self.update()
+        except Exception as e:
+            pass
+            #self.p.update() # Update the page to show our changes
         
         

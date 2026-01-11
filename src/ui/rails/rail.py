@@ -96,7 +96,15 @@ class Rail(ft.Container):
             return
 
         # Call the move file using the new directory path
-        widget.move_file(new_directory=new_directory)
+
+        if widget.move_file(new_directory=new_directory):
+            return
+        
+        else:
+
+            # Update the background color
+            e.control.content.bgcolor = ft.Colors.with_opacity(0.0, ft.Colors.ON_SURFACE)
+            e.control.content.update()
 
 
     # Called when new category button or menu option is clicked

@@ -175,7 +175,7 @@ class Widget(ft.Container):
             return False
         
     # Called when moving widget files
-    def move_file(self, new_directory: str):
+    def move_file(self, new_directory: str) -> bool:
         ''' Deletes our old file and updates our directory, then saves the new file there '''
 
         if new_directory == self.data.get('directory_path', ''):
@@ -208,6 +208,9 @@ class Widget(ft.Container):
 
             # Reload the rail to apply changes
             self.story.active_rail.content.reload_rail()
+            return True
+        else:
+            return False
 
 
     # Called when renaming a widget
