@@ -171,12 +171,28 @@ class Arc(MiniWidget):
         else:
             super().toggle_visibility()
 
+    def start_dragging(self, e):
+        ''' Called when we start dragging our slider thumb '''
+
+        self.is_dragging = True
+
+        for arc in self.owner.arcs.values():
+            if arc != self:
+                arc.is_dragging = False
+                arc.timeline_control.visible = False
+        
+        for pp in self.owner.plot_points.values():
+            pp.is_dragging = False
+            pp.timeline_control.visible = False
+
+        self.p.update()
+
 
     # Called at the end of dragging our point on the slider to update it
     def change_x_positions(self, e: ft.DragUpdateEvent):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
 
-        self.is_dragging = True
+        #self.is_dragging = True
 
         # Grab our new positions as floats of whatever number division we're on (-100 -> 100)
         new_start_position = float(e.control.start_value)
@@ -244,6 +260,15 @@ class Arc(MiniWidget):
             self.data['side_location'] = "right"
         else:
             self.data['side_location'] = "left"
+
+        for arc in self.owner.arcs.values():
+            if arc != self:
+                if arc.data.get('is_shown_on_widget', True):
+                    arc.timeline_control.visible = True
+
+        for pp in self.owner.plot_points.values():
+            if pp.data.get('is_shown_on_widget', True):
+                pp.timeline_control.visible = True
             
         # Save our new positions to file
         self.save_dict()
@@ -305,6 +330,7 @@ class Arc(MiniWidget):
                         overlay_color=ft.Colors.with_opacity(.5, self.data.get('color', "secondary")),    # Color of plot point when hovering over it or dragging    
                         on_change=self.change_x_positions,       # Update our data with new x position as we drag
                         on_change_end=self.finished_dragging,                     # Save the new position, but don't write it yet    
+                        on_change_start=self.start_dragging,
                     ),
                 ),
                 

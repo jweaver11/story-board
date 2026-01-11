@@ -493,7 +493,7 @@ class Timeline(Widget):
                 x_pos = x_pos - offset_x
 
                 if line_direction == "top":
-                    moveTo = cv.Path.MoveTo(x_pos, self.timeline_height // 2 - 30)
+                    moveTo = cv.Path.MoveTo(x_pos, self.timeline_height // 2 - 20)
                     # Set our line height
                     match line_height:
                         case "small":
@@ -508,7 +508,7 @@ class Timeline(Widget):
                     line_direction = "bottom"
                     
                 else:
-                    moveTo = cv.Path.MoveTo(x_pos, self.timeline_height // 2 + 30)
+                    moveTo = cv.Path.MoveTo(x_pos, self.timeline_height // 2 + 20)
                     match line_height:
                         case "small":
                             y_pos = int(self.timeline_height - (self.timeline_height // 3))
@@ -619,6 +619,7 @@ class Timeline(Widget):
 
         # Order arcs by from longest to shortest, so longer arcs are in back (temp)
         sorted_arcs = dict(sorted(self.arcs.items(), key=lambda item: item[1].data['x_alignment_end'] - item[1].data['x_alignment_start'], reverse=True))
+
 
         # Handler for timeline resize events
         for arc in sorted_arcs.values():
