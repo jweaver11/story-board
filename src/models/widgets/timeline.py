@@ -170,7 +170,7 @@ class Timeline(Widget):
             self.mini_widgets.append(self.plot_points[key])  # Plot points need to be in the owners mini widgets list to show up in the UI
         
     # Called when creating a new arc
-    def create_arc(self, title: str):
+    async def create_arc(self, title: str):
         ''' Creates a new arc inside of our timeline object, and updates the data to match '''
         from models.mini_widgets.timelines.arc import Arc
 
@@ -191,7 +191,9 @@ class Timeline(Widget):
 
         # Apply our changes in the UI
         self.story.active_rail.content.reload_rail()
+        await self.rebuild_timeline_canvas()
         self.reload_widget()
+       
         
     # Called when creating a new plotpoint
     def create_plot_point(self, title: str):
@@ -357,7 +359,7 @@ class Timeline(Widget):
 
         if tag is not None:
             if tag == "arc":
-                self.create_arc(f"Arc {len(self.arcs) + 1}")
+                await self.create_arc(f"Arc {len(self.arcs) + 1}")
             elif tag == "plot_point":
                 self.create_plot_point(f"Plot Point {len(self.plot_points) + 1}")
         else:
@@ -548,8 +550,6 @@ class Timeline(Widget):
                         max_width=100,
                     )
                 )
-
-
 
         # Go through our arcs and update their size --------------------------------------------------
         if update_arcs:

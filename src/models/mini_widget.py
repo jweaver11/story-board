@@ -229,7 +229,8 @@ class MiniWidget(ft.Container):
         self.save_dict()
 
         #self.update()
-        self.p.update()
+        #self.p.update()
+        self.reload_mini_widget()
         
 
     # Called whenever we hover over our mini widget on the right as a psuedo focus

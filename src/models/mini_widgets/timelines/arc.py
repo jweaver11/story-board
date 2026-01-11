@@ -171,16 +171,13 @@ class Arc(MiniWidget):
         else:
             super().toggle_visibility()
 
+    # Called at the start of dragging our point on the slider
     def start_dragging(self, e):
         ''' Called when we start dragging our slider thumb '''
 
         self.is_dragging = True
 
-        for arc in self.owner.arcs.values():
-            if arc != self:
-                arc.is_dragging = False
-                arc.timeline_control.visible = False
-        
+        # Hide all other plot points while dragging
         for pp in self.owner.plot_points.values():
             pp.is_dragging = False
             pp.timeline_control.visible = False
@@ -261,11 +258,7 @@ class Arc(MiniWidget):
         else:
             self.data['side_location'] = "left"
 
-        for arc in self.owner.arcs.values():
-            if arc != self:
-                if arc.data.get('is_shown_on_widget', True):
-                    arc.timeline_control.visible = True
-
+        # Make all other plot points visible again
         for pp in self.owner.plot_points.values():
             if pp.data.get('is_shown_on_widget', True):
                 pp.timeline_control.visible = True
@@ -369,13 +362,29 @@ class Arc(MiniWidget):
 
         self.gd.content = ft.Container(
             ft.Text(self.title, selectable=True, style=ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=self.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS)), 
-            alignment=ft.alignment.top_center, opacity=.7
+            alignment=ft.alignment.top_center, opacity=.7, padding=ft.padding.only(top=10)
         )
+
+
+        # ---- 1) & 2) Reposition + mid expansion via expand ratios (base 1000) ----
+        # Clamp defensively (RangeSlider should keep ordering, but keep it safe)
+        start_a = max(-1.0, min(1.0, float(self.data.get('x_alignment_start', -0.2))))
+        end_a = max(-1.0, min(1.0, float(self.data.get('x_alignment_end', 0.2))))
+        if end_a < start_a:
+            start_a, end_a = end_a, start_a
+
+
+        available_w = max(int(getattr(self.owner, "timeline_width", 0)) - 48, 1)
+        width_px = int(((end_a - start_a) / 2.0) * available_w)  # because mapping [-1..1] to [0..W]
+        max_h = max(int((getattr(self.owner, "timeline_height", 0) / 2) - 20), 0)
+
+        # Semicircle-ish: height ~= width/2, but capped
+        new_h = min(max_h, max(0, int(width_px / 2)))
 
         self.timeline_arc = ft.Container(
             offset=ft.Offset(0, -0.5),
             expand=mid_ratio,
-            height=0 if self.is_first_launch else None,
+            height=new_h,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             border=ft.border.only(
                 left=ft.BorderSide(2, self.data.get('color', "secondary")),
