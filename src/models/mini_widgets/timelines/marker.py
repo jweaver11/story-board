@@ -2,3 +2,4 @@
 # Essentially, very simple plot points
 
 # TODO: Add Breaks to timelines, like end book 1, end book 2, etc.
+# Can be used for character deaths

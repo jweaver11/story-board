@@ -55,7 +55,7 @@ class Settings(ft.View):
 
                 # Settings the user can change in the settings view
                 # Appearance settings
-                'theme_mode': "system",       # the apps theme mode, dark or light
+                'theme_mode': "dark",       # the apps theme mode, dark or light
                 'theme_color': "blue",   # the color scheme of the app. Defaults to blue
                 'change_name_colors_based_on_morality': True,   # If characters names change colors in char based on morality
                 'workspaces_rail_order': [      # Order of the workspace rail
@@ -66,9 +66,6 @@ class Settings(ft.View):
                     "canvas",
                     "planning",
                 ],
-                
-
-
                 
                 # App settings
                 'confirm_item_delete': True,   # If we should confirm before deleting items
@@ -83,6 +80,7 @@ class Settings(ft.View):
                 'default_planning_color': "primary",
                 'default_family_tree_color': "primary", 
                 'default_world_building_color': "primary",
+                'default_category_color': "primary",    # Categories thrown in here
 
                 'default_chapter_pin_location': "main",   # Default pin location for new chapters
                 'default_canvas_pin_location': "main",
@@ -93,12 +91,13 @@ class Settings(ft.View):
                 'default_planning_pin_location': "main",
                 'default_family_tree_pin_location': "main",
                 'default_world_building_pin_location': "left",
+
+                'character_templates': {},   # Holds our character templates
+                'active_character_template': str,    # Which template is being used for new characters for new stories - they default to this
+                'show_empty_character_fields': bool,   # If we show empty character fields in character widget or not
             },
         )
         
-
-        
-
 
     # Called whenever there are changes in our data
     def save_dict(self):
@@ -156,28 +155,28 @@ class Settings(ft.View):
             return
         
     def _get_color_options(e=None, is_theme_dropdown: bool=False):
-            ''' Adds our choices to the color scheme dropdown control'''
-            # Create a list to hold our dropdown options
-            options = []
-            
+        ''' Adds our choices to the color scheme dropdown control'''
+        # Create a list to hold our dropdown options
+        options = []
+        
 
-            # Runs through our colors above and adds them to the dropdown
-            for color in colors:
-                if is_theme_dropdown:
-                    if color in ["white", "grey", "black", "primary"]:
-                        continue   # Skip these colors for theme dropdown, as they are not supported
-                
-                options.append(
-                    ft.DropdownOption(
-                        key=color.capitalize(),
-                        content=ft.Text(
-                            value=color.capitalize(),
-                            color=color,
-                        ),
-                    )
+        # Runs through our colors above and adds them to the dropdown
+        for color in colors:
+            if is_theme_dropdown:
+                if color in ["white", "grey", "black", "primary"]:
+                    continue   # Skip these colors for theme dropdown, as they are not supported
+            
+            options.append(
+                ft.DropdownOption(
+                    key=color.capitalize(),
+                    content=ft.Text(
+                        value=color.capitalize(),
+                        color=color,
+                    ),
                 )
-            return options
-    
+            )
+        return options
+
     
         
     # Called when we select a new category of settings in our settings view
@@ -296,7 +295,7 @@ class Settings(ft.View):
 
         return content
     
-    def _load_app_settings(self):
+    def _load_app_settings(self) -> ft.Container:
         ''' Loads our app settings view '''
 
 
@@ -323,7 +322,7 @@ class Settings(ft.View):
     
     # TOP HIDDEN FOLDER NOT HIDING
     
-    def _load_widgets_settings(self):
+    def _load_widgets_settings(self) -> ft.Container:
         ''' Loads our account settings view '''
 
         def _set_default_widget_color(e):
@@ -351,11 +350,32 @@ class Settings(ft.View):
                     self.data['default_family_tree_color'] = new_color
                 case "world_building":
                     self.data['default_world_building_color'] = new_color
+                case "category":
+                    self.data['default_category_color'] = new_color
 
             # Save our updated settings
             self.save_dict()
             e.control.color = new_color   # Changes the dropdown text color to match the selected color
             e.control.update()
+
+        def _toggle_show_empty_character_fields(e):
+            ''' Toggles if we show empty character fields in character widget or not '''
+            from models.app import app
+
+            new_value = e.control.value   # Grabs the new value of the checkbox
+
+            self.data['show_empty_character_fields'] = new_value
+
+            # Save our updated settings
+            self.save_dict()
+            e.control.update()
+
+            for story in app.stories.values():
+                if story.route == self.data.get('active_story', ""):
+                    for character in story.characters.values():
+                        print("Reload character: ", character.title, "inside of story: ", story.title)
+                        character.reload_widget()   # Reloads the character widget to show/hide empty fields
+                    break
 
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
         content=ft.Column([
@@ -572,14 +592,30 @@ class Settings(ft.View):
                     on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
                 )
             ]),
-
-           
-            
-        ])
+            ft.Row([
+                ft.Text("Categories", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
+                ft.Dropdown(
+                    label="Color", tooltip="Default color for new categories",
+                    capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
+                    options=self._get_color_options(), on_change=_set_default_widget_color,
+                    value=self.data.get('default_category_color', "primary"),
+                    text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    color=self.data.get('default_category_color', "primary"),
+                    dense=True, data="category",
+                ),
+            ]),
+            ft.Divider(),
+            ft.Text("Character Settings", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),     # Headling for theme colors
+            ft.Checkbox(
+                label="Show Empty Character Fields", value=self.data.get('show_empty_character_fields', True),
+                on_change=_toggle_show_empty_character_fields,
+                tooltip="If enabled, empty fields for characterss will be shown. When disabled, characters provide a simpler view and only shows information that has been filled out.",
+            ),
+        ], scroll="auto")
 
         return content
     
-    def _load_story_settings(self):
+    def _load_story_settings(self) -> ft.Container:
         ''' Loads our story settings view '''
 
         # Type - novel vs comic. Effects how new content is created

@@ -60,6 +60,7 @@ class Story(ft.View):
 
                 'settings': {
                     'type': self.type,             # Novel or comic. Affects templates and default data for new content
+                    'active_character_template': str,    # Which template is being used for new characters
                     'multi_planetary': bool,       # Whether the story will take place on multiple planets
                     'multi_timelines': bool,       # Whether the story will have multiple timelines (regression, multiverse, etc.)
                     'character_rail_sort_by': {
@@ -277,7 +278,7 @@ class Story(ft.View):
     # Called when a new folder/category is created.
     def create_folder(self, directory_path: str, name: str):
         ''' Creates a new category inside of our story structure for content organization '''
-        #print("Creating folder at path:", directory_path)
+        from models.app import app
 
         try:
 
@@ -291,7 +292,7 @@ class Story(ft.View):
             # Make the folder in our storage if it doesn't already exist
             os.makedirs(folder_path, exist_ok=True) 
             # Add this folder to our folders data so we can save stuff like colors
-            self.data['folders'].update({folder_path: {'name': name, 'color': "primary", 'is_expanded': True}})
+            self.data['folders'].update({folder_path: {'name': name, 'color': app.settings.data.get('default_category_color', "primary"), 'is_expanded': True}})
             self.save_dict()
 
             self.active_rail.content.reload_rail()

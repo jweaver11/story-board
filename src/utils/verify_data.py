@@ -2,12 +2,22 @@
 # Called when an object (Widget or Mini Widget) is loaded or created. 
 def verify_data(object, required_data: dict) -> bool:
     ''' 
-    Verifys an object's data has all required fields passed in. 
+    Verifys an object's data has all required keys and sub keys passed in. Accepts default values or types.
+    So long as the key exists, it will not override it or do type checking, else it will set it to the default value passed in
     Objects MUST have a save_dict() method, and a data attribute thats a dict.
+
+    example: _verify_data(
+        object=object, 
+        required_data = {
+            key1, "value1", 
+            key2: int, 
+            key3: {subkey1: str, subkey2: [1, 2, 3]}
+        }
+    )
     '''
 
     # Internal recursive function to handle nested dicts, typing, and values all in one
-    def _verify_data(current_data: dict, required_data: dict):
+    def _verify_data(current_data: dict, required_data: dict = {}):
         ''' Internal recursive function to verify nested dicts '''
         
         # Run through each key in the required data we passed in
@@ -19,12 +29,8 @@ def verify_data(object, required_data: dict) -> bool:
                 # Make sure the key doesn't already exist so we don't override it
                 if key not in current_data:
                     current_data[key] = value()
-
-                # OLD
-                #if key not in current_data or not isinstance(current_data[key], value):
-                   #current_data[key] = value()
             
-            # If its a dict, make sure our key our key is a dict too, then recurse through this function
+            # If its a dict, make sure our key is a dict too, then recurse through this function
             elif isinstance(value, dict):
 
                 # Make sure the key doesn't already exist so we don't override it
@@ -41,16 +47,12 @@ def verify_data(object, required_data: dict) -> bool:
                 if key not in current_data:
                     current_data[key] = value
                 
-                # Special case for overwriting defaults 'tag' key to always set the value
-                elif key == 'tag':
+                # Special cases where we overwrite certain values regardless of existing data
+                elif key == 'tag':      # So widgets can differentiate between themselves
                     current_data[key] = value
-
-                # Special case for overwriting 'pin_location' key to always set the value
-                elif key == 'pin_location':
+                elif key == 'pin_location':     # Where widgets are pinned in the workspace
                     current_data[key] = value
-
-                # Special case for overwriting 'directory_path' key to always set the value (in case user moves files outside of app)
-                elif key == 'directory_path':
+                elif key == 'directory_path':   # If the directory path changes, we need to update it
                     current_data[key] = value
         
 

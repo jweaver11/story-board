@@ -44,6 +44,8 @@ class FamilyTree(Widget):
 
         # TODO: Show filters at top for our characters to show
         # PURPOSE: To show a family tree view of our characters and their connections to one another
+        # HAS Family view
+        # Has primary user, and all connections to them, and option to expand and show secondary connections (connections of their connections)
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
