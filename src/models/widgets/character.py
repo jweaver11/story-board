@@ -189,14 +189,16 @@ class Character(Widget):
 
     
     # Called when a field is changed in edit mode
-    def _update_character_data(self, is_custom_field: bool=False, **kwargs):
-        '''Called when a custom field is modified'''
+    def _update_character_data(self, sub_key: str="", **kwargs):
+        ''' Updates the character data dict or up to one sub dict '''
+
         for key, value in kwargs.items():
-            print("Updating field:", key, "to value:", value)
-            if is_custom_field:
-                self.data['character_data']['Custom Fields'][key] = value
+            #print("Updating field:", key, "to value:", value)
+            if sub_key != "":
+                self.data['character_data'][sub_key][key] = value
             else:
                 self.data['character_data'][key] = value
+                
         self.save_dict()
 
     def _delete_custom_field_clicked(self, field_name: str):
@@ -279,6 +281,8 @@ class Character(Widget):
     def _edit_mode_view(self):
         ''' Returns our character data with input capabilities '''
 
+        # Column we will append to for the bot of our view. Has our icon, and exit edit mode button
+        # TODO: Foreground decoration when hovering adds the ("upload image" button)
         body = ft.Column([
             ft.Row([
                 self.icon,
@@ -353,11 +357,21 @@ class Character(Widget):
         )
 
 
-        body.controls.append(ft.TextField(
-            self.data.get('character_data', {}).get('Goals', ""), label="Goals", dense=True, multiline=True,
-            capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-            on_blur=lambda e: self._update_character_data(**{"Goals": e.control.value}),
-        ))
+        
+        for index, value in enumerate(self.data.get('character_data', {}).get('Goals', [])):
+            body.controls.append(
+                ft.Row([
+                    ft.TextField(
+                        value, label=f"Goal {index + 1}", dense=True, multiline=True,
+                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                        on_blur=lambda e, i=index: self._update_character_data(**{"Goals": self.data['character_data']['Goals'][:i] + [e.control.value] + self.data['character_data']['Goals'][i+1:]}),
+                    ),
+                    ft.IconButton(
+                        tooltip="Delete Goal", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
+                        on_click=lambda e, i=index: self._update_character_data(**{"Goals": self.data['character_data']['Goals'][:i] + self.data['character_data']['Goals'][i+1:]})
+                    )
+                ])
+            )
 
 
         body.controls.append(ft.Divider())
@@ -375,7 +389,7 @@ class Character(Widget):
                     ft.TextField(
                         value, label=key, dense=True, multiline=True, expand=True,
                         capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                        on_blur=lambda e, k=key: self._update_character_data(is_custom_field=True, **{k: e.control.value}),
+                        on_blur=lambda e, k=key: self._update_character_data("Custom Fields", **{k: e.control.value}),
                     ),
                     ft.IconButton(
                         tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
