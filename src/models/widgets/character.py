@@ -11,6 +11,7 @@ from models.views.story import Story
 from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 from models.app import app
+from utils.safe_string_checker import return_safe_name
 
 
 
@@ -37,17 +38,19 @@ class Character(Widget):
                 'tag': "character",
                 'pin_location': "left" if data is None else data.get('pin_location', "left"),     # Start our characters on the left pin
                 'color': app.settings.data.get('default_character_color'),
-                'edit_mode': bool,  # Whether we are in edit mode or not
+                'edit_mode': True,  # Whether we are in edit mode or not
 
 
                 # Character specific data
                 'character_data': {
-                    'Prefix': str, # Prefix for their name (sir, mr, etc.)
+                    'Summary': str,  # Short summary of the character. Optional
                     'Role': "None",   # Importance of character in the story. main, side, background, uncategorized
                     'Morality': str,  # Lawful, netural, chaotic all have good, neutral, evil (9 alignments)
                     'Age': str, # Age of the character
+                    'Prefix': str, # Prefix for their name (sir, mr, etc.)
                     'Nationality': str, # Where character is from
-
+                    'Occupation': str, # What the character does for a living
+                    'Goals': list,
                     'Physical Description': {
                         'Species': str,
                         'Sex': str,     # Biology of the character. Has add option
@@ -69,22 +72,21 @@ class Character(Widget):
                         'Children': str,
                         'Ancestors': str,
                     },   
-                    'origin': {     
-                        'birth_date': str,   
-                        'hometown': str,     
-                        'education': str,        
+                    'Origin': {     
+                        'Birth Date': str,   
+                        'Hometown': str,     
+                        'Education': str,        
                     },
-                    'strengths': list,
-                    'weaknesses': list,
-                    'occupation': str,
-                    'goals': str,
-                    'personality': str,
-                    'abilities': list,
-                    'deceased': bool,    # Defaults to false
-                    'connections': {
+                    'Strengths': list,
+                    'Weaknesses': list,
+                    
+                    'Personality': str,
+                    'Abilities': list,
+                    'Deceased': bool,    # Defaults to false
+                    'Connections': {
                         #TODO list of other characters and relationship types
                     },
-                    'custom_fields': dict       # Anything the user wants to add on their own
+                    'Custom Fields': dict       # Anything the user wants to add on their own
                     # custom fields {key: {label: str, value: str}, key2: {label: str, value: str} ... }
                 }
             },
@@ -99,42 +101,37 @@ class Character(Widget):
 
 
     # Called when user wants to create a new text field in character
-    def new_custom_textfield_clicked(self, e):
+    def _new_custom_textfield_clicked(self, e):
         ''' Handles prompting user for custom textfield name and creating it '''
-
-        def close_dialog(e):
-            '''Close the dialog'''
-            dlg.open = False
-            self.p.update()
 
         def create_field(e): #show in edit view
             '''Called when user confirms the field name'''
             try:
-                field_name = field_name_input.value.strip()
+                field_name = return_safe_name(field_name_input.value)
+
+                print("Safe field name: ", field_name)
                 
                 if not field_name:
-                    close_dialog(None)
+                    self.p.close(dlg)
                     return  # Don't create if empty
                 
                 # Add the field to data if it doesn't exist
-                if field_name not in self.data['custom_fields']:
-                    self.data['custom_fields'][field_name] = ""
+                if field_name not in self.data['character_data']['Custom Fields']:
+                    self.data['character_data']['Custom Fields'][field_name] = ""
                 
                 # Save and reload
                 self.save_dict()
-                self.reload_widget()
-                
-                # Close dialog
                 self.p.close(dlg)
+                self.reload_widget()
+                                
             except Exception as ex:
                 print(f"Error creating custom field: {ex}")
-                close_dialog(None)
+                self.p.close(dlg)
 
         # Create a dialog to ask for the field name
         field_name_input = ft.TextField(
-            label="Field Name",
-            hint_text="e.g., Notes, Hobbies, etc.",
-            autofocus=True,
+            label="Field Name", hint_text="e.g., Notes, Hobbies, etc.",
+            autofocus=True, capitalization=ft.TextCapitalization.SENTENCES,
             on_submit=create_field,     # Closes the overlay when submitting
         )
         
@@ -142,7 +139,7 @@ class Character(Widget):
             title=ft.Text("Create New Custom Field"),
             content=field_name_input,
             actions=[
-                ft.TextButton("Cancel", on_click=close_dialog),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg)),
                 ft.TextButton("Create", on_click=create_field),
             ],
         )
@@ -191,21 +188,30 @@ class Character(Widget):
     
 
     
-    
-    def _on_custom_field_change(self, field_name: str, value: str):
+    # Called when a field is changed in edit mode
+    def _update_character_data(self, is_custom_field: bool=False, **kwargs):
         '''Called when a custom field is modified'''
-        self.data['custom_fields'][field_name] = value
+        for key, value in kwargs.items():
+            print("Updating field:", key, "to value:", value)
+            if is_custom_field:
+                self.data['character_data']['Custom Fields'][key] = value
+            else:
+                self.data['character_data'][key] = value
         self.save_dict()
+
+    def _delete_custom_field_clicked(self, field_name: str):
+        ''' Handles deleting a custom text field from character '''
+
+        try:
+            if field_name in self.data['character_data']['Custom Fields']:
+                del self.data['character_data']['Custom Fields'][field_name]
+                self.save_dict()
+                self.reload_widget()
+        except Exception as e:
+            print(f"Error deleting custom field: {e}")
+
     
-    def _on_field_change(self, field_name: str, value: str):
-        '''Generic handler for any field change - saves to data and persists'''
-        self.data[field_name] = value
-        self.save_dict()
     
-    def _on_race_change(self, field_name: str, value: str):
-        '''Handler for race field which is nested in physical_description'''
-        self.data['physical_description']['Race'] = value
-        self.save_dict()
 
     def _ensure_connections_list(self):
         '''Normalize connections into a list stored at self.data['connections'].'''
@@ -262,8 +268,6 @@ class Character(Widget):
     def _edit_mode_clicked(self, e=None):
         ''' Switches between edit mode and not for the character '''
 
-        #print("Switching to edit mode for character:", self.title)
-
         # Change our edit mode data flag, and save it to file
         self.data['edit_mode'] = not self.data['edit_mode']
         self.save_dict()
@@ -281,81 +285,148 @@ class Character(Widget):
                 ft.IconButton(tooltip="Exit Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, on_click=self._edit_mode_clicked),
                 ft.Divider(color="transparent"),    # Used as new line
             ], wrap=True),
-        ])
+        ], scroll="auto", expand=True)
 
-        data_row = ft.Row(wrap=True)
+        body.controls.append(ft.TextField(
+            self.data.get('character_data', {}).get('Summary', ""), label="Summary", dense=True, multiline=True,
+            capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+            on_blur=lambda e: self._update_character_data(**{"Summary": e.control.value}),
+        ))
+
+        body.controls.append(
+            ft.Row([
+                ft.Dropdown(
+                    label="Role", dense=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    options=[
+                        ft.dropdown.Option("Main"), ft.dropdown.Option("Side"),
+                        ft.dropdown.Option("Background"), ft.dropdown.Option("None"),
+                    ],
+                    value=self.data.get('character_data', {}).get('Role', "None"),
+                    on_change=lambda e: self._update_character_data(**{"Role": e.control.value}),
+                ),
+                ft.Dropdown(
+                    label="Morality", dense=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    options=[
+                        ft.dropdown.Option("Lawful Good"),
+                        ft.dropdown.Option("Lawful Neutral"),
+                        ft.dropdown.Option("Lawful Evil"),
+                        ft.dropdown.Option("Neutral Good"),
+                        ft.dropdown.Option("Neutral Evil"),
+                        ft.dropdown.Option("Chaotic Good"),
+                        ft.dropdown.Option("Chaotic Neutral"),
+                        ft.dropdown.Option("Chaotic Evil"),
+                    ],
+                    value=self.data.get('character_data', {}).get('Morality', ""),
+                    on_change=lambda e: self._update_character_data(**{"Morality": e.control.value}),
+                )
+            ], wrap=True)
+        )
+
+        body.controls.append(
+            ft.Row([
+                ft.TextField(
+                    self.data.get('character_data', {}).get('Age', "").capitalize(), label="Age", dense=True, multiline=True, expand=True,
+                    capitalization=ft.TextCapitalization.WORDS, adaptive=True, input_filter=ft.NumbersOnlyInputFilter(),
+                    on_blur=lambda e: self._update_character_data(**{"Age": str(e.control.value)}), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                ),
+                ft.TextField(
+                    self.data.get('character_data', {}).get('Prefix', "").capitalize(), label="Prefix", dense=True, multiline=True,
+                    capitalization=ft.TextCapitalization.WORDS, adaptive=True, expand=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    on_blur=lambda e: self._update_character_data(**{"Prefix": e.control.value}),
+                ),
+            ])
+        )
+
+        body.controls.append(
+            ft.Row([
+                ft.TextField(
+                    self.data.get('character_data', {}).get('Nationality', "").capitalize(), label="Nationality", dense=True, 
+                    capitalization=ft.TextCapitalization.WORDS, adaptive=True, expand=True, multiline=True,
+                    on_blur=lambda e: self._update_character_data(**{"Nationality": e.control.value}), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                ),
+                ft.TextField(
+                    self.data.get('character_data', {}).get('Occupation', "").capitalize(), label="Occupation", dense=True, multiline=True,
+                    capitalization=ft.TextCapitalization.WORDS, adaptive=True, expand=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                    on_blur=lambda e: self._update_character_data(**{"Occupation": e.control.value}),
+                ),
+            ])
+        )
+
+
+        body.controls.append(ft.TextField(
+            self.data.get('character_data', {}).get('Goals', ""), label="Goals", dense=True, multiline=True,
+            capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+            on_blur=lambda e: self._update_character_data(**{"Goals": e.control.value}),
+        ))
+
+
+        body.controls.append(ft.Divider())
+
+        body.controls.append(
+            ft.Row([
+                ft.Text("Custom Fields:", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), text_align=ft.TextAlign.CENTER),
+                ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=self._new_custom_textfield_clicked),
+            ])
+        )
+
+        for key, value in self.data.get('character_data', {}).get('Custom Fields', {}).items():
+            body.controls.append(
+                ft.Row([
+                    ft.TextField(
+                        value, label=key, dense=True, multiline=True, expand=True,
+                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                        on_blur=lambda e, k=key: self._update_character_data(is_custom_field=True, **{k: e.control.value}),
+                    ),
+                    ft.IconButton(
+                        tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
+                        on_click=lambda e, k=key: self._delete_custom_field_clicked(k)
+                    ),
+                ])
+            )
+                
+
+
+        
+
+
+        # Role ^
+        # Morality ^
+        # Age ^
+        # Prefix ^
+        # Nationality ^ 
+        # Nationality ^
+        # Occupation ^
+        # Goals
+        # Physical Description {}
+        # Family {}
+        # Origin {}
+        # Strengths []
+        # Weaknesses [
+        # Personality
+        # Abilities
+        # Connections {}
+        # Custom fields {}
+                
+        
 
         # Run through all our data and add it to the widget
-        for key, value in self.data['character_data'].items():
-
-            if key == "prefix":
-                data_row.controls.append(
-                    ft.TextField(
-                        value.capitalize(), label="Prefix", dense=True, multiline=False,
-                        capitalization=ft.TextCapitalization.WORDS, adaptive=True, width=70,
-                        on_change=lambda e, k=key: self._on_field_change(k, e.control.value),
-                    )
-                )
-
-            # Fields we want to manage ourselfs
-            elif key == "role":
-                data_row.controls.append(
-                    ft.Dropdown(
-                        label="Role", dense=True,
-                        options=[
-                            ft.dropdown.Option("main", "Main"),
-                            ft.dropdown.Option("side", "Side"),
-                            ft.dropdown.Option("background", "Background"),
-                            ft.dropdown.Option("none", "None"),
-                        ],
-                        value=value,
-                        on_change=lambda e, k=key: self._on_field_change(k, e.control.value),
-                    )
-                )
-
-            elif key == "morality":
-                data_row.controls.append(
-                    ft.Dropdown(
-                        label="Morality", dense=True,
-                        options=[
-                            ft.dropdown.Option("Lawful Good", content=ft.Text("Lawful Good", color="green")),
-                            ft.dropdown.Option("Lawful Neutral", "Lawful Neutral"),
-                            ft.dropdown.Option("Lawful Evil", content=ft.Text("Lawful Evil", color="red")),
-                            ft.dropdown.Option("Neutral Good", content=ft.Text("Neutral Good", color="green")),
-                            ft.dropdown.Option("Neutral Evil", content=ft.Text("Neutral Evil", color="red")),
-                            ft.dropdown.Option("Chaotic Good", content=ft.Text("Chaotic Good", color="green")),
-                            ft.dropdown.Option("Chaotic Neutral", "Chaotic Neutral"),
-                            ft.dropdown.Option("Chaotic Evil", content=ft.Text("Chaotic Evil", color="red")),
-                        ],
-                        value=value,
-                        on_change=lambda e, k=key: self._on_field_change(k, e.control.value),
-                    )
-                )
-
-            elif key == "age":
-                data_row.controls.append(
-                    ft.TextField(
-                        value.capitalize(), label="Age", dense=True, multiline=False,
-                        capitalization=ft.TextCapitalization.WORDS, adaptive=True, width=70,
-                        on_change=lambda e, k=key: self._on_field_change(k, e.control.value),
-                    )
-                )
+        for key, value in self.data.get('character_data', {}).get('custom_fields', {}).items():
 
             # All other fields that can be auto added to the widget
-            elif isinstance(value, str):
+            if isinstance(value, str):
                 #data_row.controls.append(ft.Row([ft.Text(f"{key.capitalize()}: ", weight=ft.FontWeight.BOLD), ft.Text(value)], wrap=True))
-                data_row.controls.append(
+                body.controls.append(
                     ft.TextField(
                         value.capitalize(), label=key.capitalize(), dense=True, multiline=True,
                         capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, width=200,
-                        on_change=lambda e, k=key: self._on_field_change(k, e.control.value),
+                        on_change=lambda e, k=key: self._update_character_data(k, e.control.value),
                     )
                 )
                 
             elif isinstance(value, int) and value:
-                data_row.controls.append(ft.Row([ft.Text(f"{key.capitalize()}: ", weight=ft.FontWeight.BOLD), ft.Text(str(value))], wrap=True))
+                body.controls.append(ft.Row([ft.Text(f"{key.capitalize()}: ", weight=ft.FontWeight.BOLD), ft.Text(str(value))], wrap=True))
 
-        body.controls.append(data_row)
+        #body.controls.append(data_row)
 
         self.body_container.content = body
 
