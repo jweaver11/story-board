@@ -244,13 +244,17 @@ class Character(Widget):
             ], wrap=True),
         ], scroll="auto", expand=True)
 
+        # Proceduarally go through all character_data that is not custom fields and add them to edit view
+        
+            
+
         body.controls.append(ft.TextField(
             self.data.get('character_data', {}).get('Summary', ""), label="Summary", dense=True, multiline=True,
             capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
             on_blur=lambda e: self._update_character_data(**{"Summary": e.control.value}),
         ))
 
-        # Proceduarally go through all character_data that is not custom fields and add them to edit view
+        
 
         body.controls.append(
             ft.Row([
@@ -266,6 +270,9 @@ class Character(Widget):
                 ft.Dropdown(
                     label="Morality", dense=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                     options=[
+                        ft.dropdown.Option("Good"),
+                        ft.dropdown.Option("Neutral"),
+                        ft.dropdown.Option("Evil"),
                         ft.dropdown.Option("Lawful Good"),
                         ft.dropdown.Option("Lawful Neutral"),
                         ft.dropdown.Option("Lawful Evil"),
@@ -274,12 +281,23 @@ class Character(Widget):
                         ft.dropdown.Option("Chaotic Good"),
                         ft.dropdown.Option("Chaotic Neutral"),
                         ft.dropdown.Option("Chaotic Evil"),
+                        ft.dropdown.Option("None"),
                     ],
                     value=self.data.get('character_data', {}).get('Morality', ""),
                     on_change=lambda e: self._update_character_data(**{"Morality": e.control.value}),
                 )
             ], wrap=True)
         )
+
+        # Add our template data here if we have any. Can only be key: string value for now
+        for key, value in self.data.get('character_data', {}).get('template_data', {}).items():
+            body.controls.append(
+                ft.TextField(
+                    value, label=key.capitalize(), dense=True, multiline=True,
+                    capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                    on_blur=lambda e, k=key: self._update_character_data(**{k: e.control.value}),
+                )
+            )
 
         body.controls.append(
             ft.Row([
@@ -315,7 +333,7 @@ class Character(Widget):
         goals = ft.ExpansionTile(
             ft.Text("Goals", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)), 
             shape=ft.RoundedRectangleBorder(), initially_expanded=True, dense=True,
-            controls_padding=ft.padding.only(left=10,top=6), controls=[ft.Column(spacing=4)]
+            controls_padding=ft.padding.only(left=20,top=6,right=20), controls=[ft.Column(spacing=4)]
         )
 
         # Called when submitting a new goal via the button or submitting textfield

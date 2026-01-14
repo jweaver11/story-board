@@ -33,7 +33,8 @@ class WorldBuilding(Widget):
             self,   # Pass in our own data so the function can see the actual data we loaded
             {
                 'tag': "world_building",     
-                'color': app.settings.data.get('default_world_building_color'),       
+                'color': app.settings.data.get('default_world_building_color'),   
+                'summary': str,     # Summary of the world
 
                 'sub_categories': {                     # List of different categories for organizing our world maps on the rail. (Psuedo folders)
                     'category_name': {

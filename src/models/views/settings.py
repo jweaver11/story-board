@@ -14,7 +14,6 @@ import json
 from styles.colors import dark_gradient
 from ui.menu_bar import create_menu_bar
 from ui.workspaces_rail import WorkspacesRail
-from models.dataclasses.character_template import default_character_template_data_dict
 
  
 class Settings(ft.View):
@@ -97,11 +96,14 @@ class Settings(ft.View):
                 'default_timeline_pin_location': "main",
                 'default_world_building_pin_location': "left",
 
-                'character_templates': {
-                    'shonen': default_character_template_data_dict() | {'title': "Shonen", 'Abilities': ["Super Strength", "Enhanced Healing"]},
-                },   # Holds our character templates
                 'active_character_template': "None",    # Which template is being used for new characters for new stories - they default to this
                 'show_empty_character_fields': bool,   # If we show empty character fields in character widget or not
+
+                'character_templates': {    # Templates can only add string data for now. Might change in future
+                    'Shonen': {'title': "Shonen", 'template_data': {'Abilities': "Super Strength, Enhanced Healing"}},
+                },   # Holds our character templates
+
+
             },
         )
         
@@ -138,6 +140,22 @@ class Settings(ft.View):
         # Handle errors
         except Exception as e:
             print(f"Error changing data {key}:{value} in widget {self.title}: {e}")
+
+
+    def create_character_template(self, template_name: str, data: dict):
+        ''' Creates a new character template with the given name '''
+        from utils.safe_string_checker import return_safe_name
+
+        print("Creating new character template: ", template_name, " with data: ", data)
+
+        safe_key = return_safe_name(template_name)
+
+        self.data['character_templates'][safe_key] = {
+            'title': template_name,
+            'template_data': data,
+        }
+        self.save_dict()
+        
 
     # Called when the page is resized
     def _page_resized(self, e=None):
@@ -390,20 +408,16 @@ class Settings(ft.View):
         # Called to add our templates to our dropdown
         def _load_character_templates() -> list[ft.DropdownOption]:
             ''' Loads our character templates into the expansion tile '''
-            from models.app import app
 
             options = []
             for key, template_data in self.data.get('character_templates', {}).items():
                 template_name = template_data.get('title', "Unnamed Template")
-                options.append(
-                    ft.DropdownOption(template_name)
-                )
+                options.append(ft.DropdownOption(template_name))
 
             options.append(
                 ft.DropdownOption(
                     key="Create New Template",
                     content=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE, tooltip="Create new character template"),
-                    #on_click=lambda e: self.p.open(new_character_template_alert_dlg(self.p, self.story)),
                 )
             )
             
@@ -413,7 +427,7 @@ class Settings(ft.View):
 
         def _new_character_template_selected(e):
             if e.control.value == "Create New Template":
-                self.p.open(new_character_template_alert_dlg(self.p, self.story))
+                self.p.open(new_character_template_alert_dlg(self.p))
                 e.control.value = self.data.get('active_character_template')    # Resets the dropdown so we can select this again later
                 e.control.update()
 

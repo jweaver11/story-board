@@ -521,6 +521,7 @@ class Story(ft.View):
         from models.widgets.map import Map
         from models.widgets.character_connection_map import CharacterConnectionMap
         from models.widgets.world_building import WorldBuilding
+        from models.app import app
 
         if directory_path is None:
             directory_path = self.data.get('content_directory_path',  '')
@@ -546,6 +547,9 @@ class Story(ft.View):
                 self.widgets.append(self.canvases[key])
 
             case "character":
+                if app.settings.data.get('active_character_template', "None") != "None":
+                    data = app.settings.data['character_templates'].get(app.settings.data['active_character_template'], {}).copy()
+                    data = {'character_data': data}
                 widget = Character(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
                 self.characters[key] = widget
