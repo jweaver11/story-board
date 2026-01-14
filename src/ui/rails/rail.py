@@ -119,8 +119,8 @@ class Rail(ft.Container):
         self.new_item_textfield.data = tag
 
         match tag:
-            case "family_tree":
-                self.new_item_textfield.hint_text = "Family Tree Name"
+            case "character_connection_map":
+                self.new_item_textfield.hint_text = "Character Connection Map Title"
             case "world_building":
                 self.new_item_textfield.hint_text = "World Building Name"
             case "plot_point": 

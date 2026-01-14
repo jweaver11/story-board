@@ -34,8 +34,8 @@ class CharactersRail(Rail):
                         on_click=self.new_item_clicked, data="character"
                     ),
                     ft.PopupMenuItem(
-                        text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
-                        on_click=self.new_item_clicked, data="family_tree"
+                        text="Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                        on_click=self.new_item_clicked, data="character_connection_map"
                     ),
                 ]
             ),
@@ -63,8 +63,8 @@ class CharactersRail(Rail):
                             on_click=self.new_item_clicked, data="character"
                         ),  
                         ft.PopupMenuItem(
-                            text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
-                            on_click=self.new_item_clicked, data="family_tree"
+                            text="Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                            on_click=self.new_item_clicked, data="character_connection_map"
                         ),
                     ]
                 ),

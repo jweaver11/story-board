@@ -120,7 +120,7 @@ class Story(ft.View):
         self.characters: dict = dict()      # Characters in the story
         self.timelines: dict = dict()       # Timelines for our story
         self.maps: dict = dict()            # Maps created inside of world building
-        self.family_trees: dict = dict()   # Family tree views for tracking character relationships
+        self.character_connection_maps: dict = dict()   # Family tree views for tracking character relationships
         self.world_buildings: dict = dict()     # World building widget that contains our maps, lore, governments, history, etc
 
         # Store all our widgets above in a master list for easier rendering in the UI
@@ -389,8 +389,8 @@ class Story(ft.View):
                     del self.maps[widget.data.get('key', '')]
                 case "world_building":
                     del self.world_buildings[widget.data.get('key', '')]
-                case "family_tree":
-                    del self.family_trees[widget.data.get('key', '')]
+                case "character_connection_map":
+                    del self.character_connection_maps[widget.data.get('key', '')]
 
                 case _:
                     self.p.open(SnackBar(f"Error deleting widget: Unknown tag {tag}"))
@@ -419,7 +419,7 @@ class Story(ft.View):
         from models.widgets.timeline import Timeline   
         from models.widgets.map import Map
         from models.widgets.world_building import WorldBuilding
-        from models.widgets.family_tree import FamilyTree
+        from models.widgets.character_connection_map import CharacterConnectionMap
 
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder
         if not os.path.exists(self.data['content_directory_path']):
@@ -465,8 +465,8 @@ class Story(ft.View):
                                 self.maps[key] = Map(title, self.p, dirpath, self, widget_data)
                             case "world_building":
                                 self.world_buildings[key] = WorldBuilding(title, self.p, dirpath, self, widget_data)
-                            case "family_tree":
-                                self.family_trees[key] = FamilyTree(title, self.p, dirpath, self, widget_data)
+                            case "character_connection_map":
+                                self.character_connection_maps[key] = CharacterConnectionMap(title, self.p, dirpath, self, widget_data)
                             case _:
                                 print("content tag not valid. Tag: ", tag)
                             
@@ -505,7 +505,7 @@ class Story(ft.View):
         for wb in self.world_buildings.values():        # World Building
             if wb not in self.widgets:
                 self.widgets.append(wb)
-        for ft in self.family_trees.values():           # Family Trees
+        for ft in self.character_connection_maps.values():           # Family Trees
             if ft not in self.widgets:
                 self.widgets.append(ft)
 
@@ -519,7 +519,7 @@ class Story(ft.View):
         from models.widgets.character import Character
         from models.widgets.timeline import Timeline
         from models.widgets.map import Map
-        from models.widgets.family_tree import FamilyTree
+        from models.widgets.character_connection_map import CharacterConnectionMap
         from models.widgets.world_building import WorldBuilding
 
         if directory_path is None:
@@ -563,11 +563,11 @@ class Story(ft.View):
                 self.maps[key] = widget
                 self.widgets.append(self.maps[key])
 
-            case "family_tree":
-                widget = FamilyTree(title, self.p, directory_path, self)
+            case "character_connection_map":
+                widget = CharacterConnectionMap(title, self.p, directory_path, self)
                 key = widget.data.get('key', '')
-                self.family_trees[key] = widget
-                self.widgets.append(self.family_trees[key])
+                self.character_connection_maps[key] = widget
+                self.widgets.append(self.character_connection_maps[key])
 
             case "world_building":
                 widget = WorldBuilding(title, self.p, directory_path, self)

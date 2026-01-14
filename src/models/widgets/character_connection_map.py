@@ -1,5 +1,5 @@
 '''
-Class for showing all our characters laidd out in a family tree view.
+Class for showing all our characters laid out in a family tree view.
 '''
 
 import flet as ft
@@ -8,8 +8,8 @@ from models.views.story import Story
 from utils.verify_data import verify_data
 from models.app import app
 
-
-class FamilyTree(Widget):
+# TODO: Should allow user to pick primary character(s) that will build the map around
+class CharacterConnectionMap(Widget):
     # Constructor
     def __init__(self, name: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):
 
@@ -26,8 +26,8 @@ class FamilyTree(Widget):
         verify_data(
             object=self,   # Pass in our own data so the function can see the actual data we loaded
             required_data={
-                'tag': "family_tree",
-                'color': app.settings.data.get('default_family_tree_color'),
+                'tag': "character_connection_map",
+                'color': app.settings.data.get('default_character_connection_map_color'),
                 
             },
         )

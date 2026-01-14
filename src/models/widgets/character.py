@@ -130,7 +130,7 @@ class Character(Widget):
 
         # Create a dialog to ask for the field name
         field_name_input = ft.TextField(
-            label="Field Name", hint_text="e.g., Notes, Hobbies, etc.",
+            label="Field Name", hint_text="Notes, Hobbies, Pets, etc.",
             autofocus=True, capitalization=ft.TextCapitalization.SENTENCES,
             on_submit=create_field,     # Closes the overlay when submitting
         )
@@ -213,8 +213,6 @@ class Character(Widget):
             print(f"Error deleting custom field: {e}")
 
     
-    
-
     def _ensure_connections_list(self):
         '''Normalize connections into a list stored at self.data['connections'].'''
         try:
@@ -356,26 +354,66 @@ class Character(Widget):
             ])
         )
 
+        # Goals Expansion Tile
+        goals = ft.ExpansionTile(
+            ft.Text("Goals", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)), 
+            shape=ft.RoundedRectangleBorder(), initially_expanded=True, dense=True,
+            controls_padding=ft.padding.only(left=10,top=6), controls=[ft.Column(spacing=4)]
+        )
 
-        
+        # Called when submitting a new goal via the button or submitting textfield
+        def _submit_new_goal(e=None):
+            '''Handles adding a new goal when user submits the new goal text field.'''
+            new_goal = new_goal_textfield.value.strip()
+            if not new_goal:
+                return
+            current_goals = self.data.get('character_data', {}).get('Goals', [])
+            updated_goals = current_goals + [new_goal]
+            self._update_character_data(**{"Goals": updated_goals})
+            self.reload_widget()
+
+        # Called when deleting goal by clicking the delete button to right of it
+        def _delete_goal(i: int):
+            '''Handles deleting a goal at index i.'''
+            current_goals = self.data.get('character_data', {}).get('Goals', [])
+            if 0 <= i < len(current_goals):
+                updated_goals = current_goals[:i] + current_goals[i+1:]
+                self._update_character_data(**{"Goals": updated_goals})
+                self.reload_widget()
+
+        # Go through our goals and create textfields for each one
         for index, value in enumerate(self.data.get('character_data', {}).get('Goals', [])):
-            body.controls.append(
+            goals.controls[0].controls.append(
                 ft.Row([
                     ft.TextField(
-                        value, label=f"Goal {index + 1}", dense=True, multiline=True,
+                        value, dense=True, multiline=True, expand=True,
                         capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
                         on_blur=lambda e, i=index: self._update_character_data(**{"Goals": self.data['character_data']['Goals'][:i] + [e.control.value] + self.data['character_data']['Goals'][i+1:]}),
                     ),
                     ft.IconButton(
                         tooltip="Delete Goal", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
-                        on_click=lambda e, i=index: self._update_character_data(**{"Goals": self.data['character_data']['Goals'][:i] + self.data['character_data']['Goals'][i+1:]})
+                        on_click=lambda e, i=index: _delete_goal(i)
                     )
                 ])
             )
 
+        # Create a new textfield and add button for adding new goals
+        new_goal_textfield = ft.TextField(
+            label="New Goal", dense=True, expand=True, 
+            adaptive=True, capitalization=ft.TextCapitalization.SENTENCES, on_submit=_submit_new_goal
+        )
+        goals.controls[0].controls.append(
+            ft.Row([
+                new_goal_textfield,
+                ft.IconButton(ft.Icons.ADD_CIRCLE_OUTLINE, tooltip="Add Goal", on_click=_submit_new_goal),
+            ])
+        )
 
+        # Add our goals
+        body.controls.append(goals)
+
+        # Give us a divider before custom fields and add a label
         body.controls.append(ft.Divider())
-
         body.controls.append(
             ft.Row([
                 ft.Text("Custom Fields:", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), text_align=ft.TextAlign.CENTER),
@@ -410,14 +448,14 @@ class Character(Widget):
         # Nationality ^ 
         # Nationality ^
         # Occupation ^
-        # Goals
+        # Goals ^
+        # Abilities - Add to Shonen template
         # Physical Description {}
         # Family {}
         # Origin {}
         # Strengths []
-        # Weaknesses [
+        # Weaknesses []
         # Personality
-        # Abilities
         # Connections {}
         # Custom fields {}
                 

@@ -54,8 +54,8 @@ class ContentRail(Rail):
                         on_click=self.new_item_clicked, data="character"
                     ),  
                     ft.PopupMenuItem(
-                        text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
-                        on_click=self.new_item_clicked, data="family_tree"
+                        text="Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                        on_click=self.new_item_clicked, data="character_connection_map"
                     ),
                     ft.PopupMenuItem(
                         text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
@@ -153,7 +153,7 @@ class ContentRail(Rail):
                         ),  
                         ft.PopupMenuItem(
                             text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
-                            on_click=self.new_item_clicked, data="family_tree"
+                            on_click=self.new_item_clicked, data="character_connection_map"
                         ),
                         ft.PopupMenuItem(
                             text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
@@ -221,7 +221,7 @@ class ContentRail(Rail):
             story=self.story,
             directory=self.directory_path,
             rail=self,
-            tags=["chapter", "canvas", "note", "character", "timeline", "map", "world_building", "family_tree_view"],
+            tags=["chapter", "canvas", "note", "character", "timeline", "map", "world_building", "character_connection_map"],
             column=content,
             #additional_directory_menu_options=self.get_menu_options()
         )

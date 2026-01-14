@@ -78,7 +78,7 @@ class Settings(ft.View):
                 'default_timeline_color': "primary",
                 'default_map_color': "primary",
                 'default_planning_color': "primary",
-                'default_family_tree_color': "primary", 
+                'default_character_connection_map_color': "primary", 
                 'default_world_building_color': "primary",
                 'default_category_color': "primary",    # Categories thrown in here
 
@@ -89,7 +89,7 @@ class Settings(ft.View):
                 'default_timeline_pin_location': "main",
                 'default_map_pin_location': "main",
                 'default_planning_pin_location': "main",
-                'default_family_tree_pin_location': "main",
+                'default_character_connection_map_pin_location': "main",
                 'default_world_building_pin_location': "left",
 
                 'character_templates': {},   # Holds our character templates
@@ -346,8 +346,8 @@ class Settings(ft.View):
                     self.data['default_map_color'] = new_color
                 case "planning":
                     self.data['default_planning_color'] = new_color
-                case "family_tree":
-                    self.data['default_family_tree_color'] = new_color
+                case "character_connection_map":
+                    self.data['default_character_connection_map_color'] = new_color
                 case "world_building":
                     self.data['default_world_building_color'] = new_color
                 case "category":
@@ -555,16 +555,16 @@ class Settings(ft.View):
                     label="Color", tooltip="Default color for new family trees",
                     capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
                     options=self._get_color_options(), on_change=_set_default_widget_color,
-                    value=self.data.get('default_family_tree_color', "primary"),
+                    value=self.data.get('default_character_connection_map_color', "primary"),
                     text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                    color=self.data.get('default_family_tree_color', "primary"),
-                    dense=True, data="family_tree",
+                    color=self.data.get('default_character_connection_map_color', "primary"),
+                    dense=True, data="character_connection_map",
                 ),
                 ft.Dropdown(
                     label="Pin Location", tooltip="Default pin location for new family trees",
                     capitalization= ft.TextCapitalization.SENTENCES,
                     options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
-                    value=self.data.get('default_family_tree_pin_location', "main").capitalize(),
+                    value=self.data.get('default_character_connection_map_pin_location', "main").capitalize(),
                     text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                     dense=True,
                     on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
