@@ -20,7 +20,7 @@ from models.widget import Widget
 from models.views.story import Story
 from utils.verify_data import verify_data
 from styles.snack_bar import SnackBar
-from models.state import State
+from models.dataclasses.state import State
 import flet.canvas as cv
 from threading import Thread
 import math

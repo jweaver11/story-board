@@ -528,13 +528,13 @@ class Story(ft.View):
 
         match tag:
             case "chapter":
-                widget = Chapter(title, self.p, directory_path, self)
+                widget = Chapter(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
                 self.chapters[key] = widget
                 self.widgets.append(self.chapters[key])
 
             case "note":
-                widget = Note(title, self.p, directory_path, self)
+                widget = Note(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
                 self.notes[key] = widget
                 self.widgets.append(self.notes[key])
@@ -546,31 +546,31 @@ class Story(ft.View):
                 self.widgets.append(self.canvases[key])
 
             case "character":
-                widget = Character(title, self.p, directory_path, self)
+                widget = Character(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
                 self.characters[key] = widget
                 self.widgets.append(self.characters[key])
 
             case "timeline":
-                widget = Timeline(title, self.p, directory_path, self)
+                widget = Timeline(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
                 self.timelines[key] = widget
                 self.widgets.append(self.timelines[key])
 
             case "map":
-                widget = Map(title, self.p, directory_path, self)
+                widget = Map(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
                 self.maps[key] = widget
                 self.widgets.append(self.maps[key])
 
             case "character_connection_map":
-                widget = CharacterConnectionMap(title, self.p, directory_path, self)
+                widget = CharacterConnectionMap(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
                 self.character_connection_maps[key] = widget
                 self.widgets.append(self.character_connection_maps[key])
 
             case "world_building":
-                widget = WorldBuilding(title, self.p, directory_path, self)
+                widget = WorldBuilding(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
                 self.world_buildings[key] = widget
                 self.widgets.append(self.world_buildings[key])

@@ -12,6 +12,7 @@ from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 from models.app import app
 from utils.safe_string_checker import return_safe_name
+from models.dataclasses.character_template import default_character_template_data_dict
 
 
 
@@ -19,7 +20,7 @@ from utils.safe_string_checker import return_safe_name
 # Widget requires a title, tag, page reference, and a pin location
 class Character(Widget):
     # Constructor
-    def __init__(self, name: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):
+    def __init__(self, name: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, ):
 
         # Parent class constructor
         super().__init__(
@@ -41,54 +42,8 @@ class Character(Widget):
                 'edit_mode': True,  # Whether we are in edit mode or not
 
 
-                # Character specific data
-                'character_data': {
-                    'Summary': str,  # Short summary of the character. Optional
-                    'Role': "None",   # Importance of character in the story. main, side, background, uncategorized
-                    'Morality': str,  # Lawful, netural, chaotic all have good, neutral, evil (9 alignments)
-                    'Age': str, # Age of the character
-                    'Prefix': str, # Prefix for their name (sir, mr, etc.)
-                    'Nationality': str, # Where character is from
-                    'Occupation': str, # What the character does for a living
-                    'Goals': list,
-                    'Physical Description': {
-                        'Species': str,
-                        'Sex': str,     # Biology of the character. Has add option
-                        'Race': str,    # Race of the character. Has add option
-                        'Skin Color': str,
-                        'Hair Color': str,   
-                        'Eye Color': str,    
-                        'Height': str,   
-                        'Weight': str,   
-                        'Build': str,    
-                        'Distinguishing Features': str,  
-                    },
-                    
-                    'Family':  { #TODO "connections" dropdown+tree/detective view?
-                        'Love Interest': str,    
-                        'Father': str,   
-                        'Mother': str,    
-                        'Siblings': str,
-                        'Children': str,
-                        'Ancestors': str,
-                    },   
-                    'Origin': {     
-                        'Birth Date': str,   
-                        'Hometown': str,     
-                        'Education': str,        
-                    },
-                    'Strengths': list,
-                    'Weaknesses': list,
-                    
-                    'Personality': str,
-                    'Abilities': list,
-                    'Deceased': bool,    # Defaults to false
-                    'Connections': {
-                        #TODO list of other characters and relationship types
-                    },
-                    'Custom Fields': dict       # Anything the user wants to add on their own
-                    # custom fields {key: {label: str, value: str}, key2: {label: str, value: str} ... }
-                }
+                # Character specific data. If we're using a template, this will already be passed in with our data
+                'character_data': default_character_template_data_dict()
             },
         )
         
@@ -294,6 +249,8 @@ class Character(Widget):
             capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
             on_blur=lambda e: self._update_character_data(**{"Summary": e.control.value}),
         ))
+
+        # Proceduarally go through all character_data that is not custom fields and add them to edit view
 
         body.controls.append(
             ft.Row([

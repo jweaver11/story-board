@@ -20,7 +20,7 @@ from models.mini_widgets.world_building.map_information_display import MapInform
 from models.views.story import Story
 from utils.verify_data import verify_data
 from styles.snack_bar import SnackBar
-from models.state import State
+from models.dataclasses.state import State
 import flet.canvas as cv
 from threading import Thread
 from models.app import app
