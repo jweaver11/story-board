@@ -132,7 +132,8 @@ class Rail(ft.Container):
         
 
         # Close the menu (if ones is open)
-        await asyncio.sleep(.3)     # Wait for popupmenu's animations to close of we have issues
+      
+        await asyncio.sleep(.3)     # Wait for popupmenu's animations to close if we have issues
         await self.story.close_menu()
         
 

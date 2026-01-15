@@ -5,13 +5,10 @@ the create 'character button' at the bottom.
 '''
 
 import flet as ft
-from models.widgets.character import Character
 from styles.menu_option_style import MenuOptionStyle
 from ui.rails.rail import Rail
 from models.views.story import Story
-from utils.tree_view import load_directory_data
-from styles.tree_view.tree_view_directory import TreeViewDirectory
-from models.app import app
+
 
 class CharactersRail(Rail):
     def __init__(self, page: ft.Page, story: Story):
@@ -44,6 +41,19 @@ class CharactersRail(Rail):
                 tooltip="Upload Character",
             ),
         ]
+
+        # Sort buttons right after the top row
+        self.sort_button = ft.Dropdown(
+            f"Sorting by: {self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")}", 
+            label="Sort method", leading_icon=ft.Icons.SORT_ROUNDED, dense=True,
+            tooltip="Sort Characters By", on_change=self._new_sort_method_selected,
+            options=[
+                ft.DropdownOption("Age"), ft.DropdownOption("Alphabetical"), ft.DropdownOption("Morality"),
+                ft.DropdownOption("Nationality"), ft.DropdownOption("Occupation"), ft.DropdownOption("Role"),
+            ],
+        )
+        self.sort_button.value = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
+        
 
         # Reload the rail on start
         self.reload_rail() 
@@ -85,68 +95,38 @@ class CharactersRail(Rail):
             )
         ]
     
-    def get_directory_menu_options(self) -> list[ft.Control]:
-        return [
-            MenuOptionStyle(
-                data="character",
-                content=ft.Row([
-                    ft.Icon(ft.Icons.PERSON_ADD_ALT_OUTLINED),
-                    ft.Text("Character", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ])
-            ),
-        ]
     
-    def _default_char_list(self) -> list[ft.Control]:
-        direction = self.story.data.get('settings', {}).get('character_rail_sort_by', {}).get('direction', 'descending')
-        char_list = [char for char in self.story.characters.values()]
-
-        controls = []
-        for char in char_list:
-            controls.append(ft.Text(char.title))
-
-        return controls
-    
-    def _role_char_list(self) -> list[ft.Control]:
-        
-        main_chars = [char for char in self.story.characters.values() if char.data.get('role', 'background') == 'main']
-        side_chars = [char for char in self.story.characters.values() if char.data.get('role', 'background') == 'side']
-        background_chars = [char for char in self.story.characters.values() if char.data.get('role', 'background') == 'background']
-
-        direction = self.story.data.get('settings', {}).get('character_rail_sort_by', {}).get('direction', 'descending')
-
-        controls = []
-
-        if len(main_chars) > 0:
-            controls.append(ft.Text("Main Characters", weight=ft.FontWeight.BOLD))
-            for char in main_chars:
-                controls.append(ft.Text(char.title))
-            controls.append(ft.Container(height=10))
-
-        if len(side_chars) > 0:
-            controls.append(ft.Text("Side Characters", weight=ft.FontWeight.BOLD))
-            for char in side_chars:
-                controls.append(ft.Text(char.title))
-            controls.append(ft.Container(height=10))
-
-        if len(background_chars) > 0:
-            controls.append(ft.Text("Background Characters", weight=ft.FontWeight.BOLD))
-            for char in background_chars:
-                controls.append(ft.Text(char.title))
-            controls.append(ft.Container(height=10))
-
-        return controls
+    # Called when our sort method dropdown is changed
+    def _new_sort_method_selected(self, e=None):
+        ''' Changes our sort method based on the selected menu item '''
+        self.story.data['settings']['character_rail_sort_by'] = self.sort_button.value
+        self.story.save_dict()
+        self.reload_rail()
 
 
     # Called on startup and when we have changes to the rail that have to be reloaded 
     def reload_rail(self):
 
         # TODO: Character rail should load from story.characters and organize them by main, side, background, etc. and have filter options to organize them that way.
+        
         # IT should not load from the content directory like other rails.
+        # Label non-specified 
+
+        # Sort button - clicking new sort should show little loading icon while it reloads the rail. only sort by string data fields
+        # Dropdowns for our filters. Can drag and drop to change their dropdown filter
+        # Add non-specified
 
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER,
             controls=self.top_row_buttons
+        )
+        
+
+        header_2 = ft.Row(
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            alignment=ft.MainAxisAlignment.CENTER,
+            controls=[self.sort_button]
         )
         
                  
@@ -160,13 +140,38 @@ class CharactersRail(Rail):
 
 
         
+        # Grab our sort method for readability
+        sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
 
-        sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', {}).get('method', 'none')
-        if sort_method is None:
-            content.controls = self._default_char_list
-        elif sort_method == "role":
-            content.controls = self._role_char_list()
-                    
+        # Intialize our lists
+        characters_list = list(self.story.characters.values())
+        non_specified_list = []
+        added_characters = set()
+
+        if sort_method == "Age":
+
+            def get_age(character):
+                age = character.data.get('character_data', {}).get('Age', None)
+                if age is None or age == "":
+                    non_specified_list.append(character)
+                return age
+            characters_list.sort(key=get_age)   # Returns not set values, then youngest -> oldest
+
+            for character in characters_list:
+                if character not in non_specified_list:
+              
+                    content.controls.append(ft.Text(f"{character.data.get('title', 'Unnamed Character')}"))
+            
+            content.controls.append(ft.Text("---- Non-specified Age ----"))
+            for character in non_specified_list:
+                content.controls.append(ft.Text(f"{character.data.get('title', 'Unnamed Character')}"))
+
+        elif sort_method == "Alphabetical":
+            characters_list.sort(key=lambda c: c.data.get('title', '').lower())
+            for character in characters_list:
+                content.controls.append(ft.Text(character.data.get('title', 'Unnamed Character')))
+
+        
 
         content.controls.append(ft.Container(height=6))
         # Append our hidden textfield for creating new items
@@ -198,6 +203,8 @@ class CharactersRail(Rail):
             controls=[
                 header,
                 ft.Divider(),
+                ft.Container(height=6),
+                header_2,
                 menu_gesture_detector
             ]
         )

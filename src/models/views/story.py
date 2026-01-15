@@ -63,10 +63,7 @@ class Story(ft.View):
                     'active_character_template': str,    # Which template is being used for new characters
                     'multi_planetary': bool,       # Whether the story will take place on multiple planets
                     'multi_timelines': bool,       # Whether the story will have multiple timelines (regression, multiverse, etc.)
-                    'character_rail_sort_by': {
-                        'method': "role",          # None, alphabeticaly, role, morality, age
-                        'direction': "descending",       # ascending (top start low) or descending (top start high)
-                    },
+                    'character_rail_sort_by': "Role",
                 },
                 
                 # Dict of all our categories INSIDE of basic story structure (content, characters, timelines)
