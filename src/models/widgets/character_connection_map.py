@@ -9,6 +9,8 @@ from utils.verify_data import verify_data
 from models.app import app
 
 # TODO: Should allow user to pick primary character(s) that will build the map around
+# Edit view or not. Show characters on the map as nodes that can add connection to other characters
+# Add label to the connection type. Allow changable symbols, colors, styles, etc
 class CharacterConnectionMap(Widget):
     # Constructor
     def __init__(self, name: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):

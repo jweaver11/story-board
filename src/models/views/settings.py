@@ -14,6 +14,7 @@ import json
 from styles.colors import dark_gradient
 from ui.menu_bar import create_menu_bar
 from ui.workspaces_rail import WorkspacesRail
+from models.dataclasses.character_template import default_character_template_data_dict
 
  
 class Settings(ft.View):
@@ -96,14 +97,15 @@ class Settings(ft.View):
                 'default_timeline_pin_location': "main",
                 'default_world_building_pin_location': "left",
 
-                'active_character_template': "None",    # Which template is being used for new characters for new stories - they default to this
+                'active_character_template': "Default",    # Which template is being used for new characters for new stories - they default to this
                 'show_empty_character_fields': bool,   # If we show empty character fields in character widget or not
 
                 'character_templates': {    # Templates can only add string data for now. Might change in future
+                    'Default': default_character_template_data_dict(),
+                    'Detailed': default_character_template_data_dict() | {'title': "Detailed", 'template_data': {'Strengths': list, 'Weaknesses': list, 'Deceased': bool}},
                     'Shonen': {'title': "Shonen", 'template_data': {'Abilities': "Super Strength, Enhanced Healing"}},
+                    'Alien': {'title': "Alien", 'template_data': {'Species': "Unknown", 'Home Planet': "Unknown"}},
                 },   # Holds our character templates
-
-
             },
         )
         
@@ -401,7 +403,6 @@ class Settings(ft.View):
             for story in app.stories.values():
                 if story.route == self.data.get('active_story', ""):
                     for character in story.characters.values():
-                        print("Reload character: ", character.title, "inside of story: ", story.title)
                         character.reload_widget()   # Reloads the character widget to show/hide empty fields
                     break
 
@@ -416,8 +417,8 @@ class Settings(ft.View):
 
             options.append(
                 ft.DropdownOption(
-                    key="Create New Template",
-                    content=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE, tooltip="Create new character template"),
+                    key="Create New Template", disabled=True, 
+                    content=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE, tooltip="Create new character template (Coming Soon!)"),
                 )
             )
             
@@ -742,14 +743,17 @@ class Settings(ft.View):
                     ft.Container(width=10),    # Spacer
                     ft.Text("Character Templates", theme_style=ft.TextThemeStyle.LABEL_LARGE),
                     ft.Dropdown(
-                        label="Active Template", width=300,
-                        value=self.data.get('active_character_template', "None"),
-                        options=_load_character_templates(), 
+                        label="Active Template", width=200,
+                        #value=self.data.get('active_character_template', "None"),
+                        value="Default",
+                        #options=_load_character_templates(), 
+                        options=[ft.DropdownOption("Default")],
                         on_change=_new_character_template_selected,
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True, tooltip="Select a character template to use when creating new characters",
                         capitalization= ft.TextCapitalization.SENTENCES,
                     ),
+                    ft.IconButton(ft.Icons.MANAGE_SEARCH_OUTLINED, tooltip="Manage Character Templates (Coming Soon!)", disabled=True)
                 ]),
                 
                 

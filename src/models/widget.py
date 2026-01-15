@@ -350,7 +350,7 @@ class Widget(ft.Container):
             self.story.workspace.reload_workspace()
 
     # Called when right clicking our tab
-    def get_menu_options(self) -> list[ft.Control]:
+    def _get_menu_options(self) -> list[ft.Control]:
 
         # Color, rename
         return [
@@ -497,7 +497,7 @@ class Widget(ft.Container):
                     on_enter=self.enter_tab,
                     on_hover=self.hover_tab,
                     on_exit=self.stop_hover_tab,
-                    on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
+                    on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
 
                     # Content of the gesture detector. This has our actual title and hide icon
                     content=ft.Row([

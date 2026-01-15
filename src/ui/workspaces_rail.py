@@ -46,9 +46,7 @@ class WorkspacesRail(ft.Container):
         # Handle when there is no active story (shouldn't happen)
         else:
             print("No active story, cannot change active rail")
-            #story.active_rail.content = ft.Text("No active rail")
 
-        self.p.update()
 
     # Called by clicking button on bottom right of rail
     def toggle_collapse_rail(self, e, story: Story):
@@ -312,10 +310,10 @@ class WorkspacesRail(ft.Container):
             ]), 
         )
 
+        # Can fail when changing views. It only fails tho when it doesnt need to update
         try: 
             self.update()
         except Exception as e:
             pass
-            #self.p.update() # Update the page to show our changes
         
         

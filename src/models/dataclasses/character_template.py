@@ -24,20 +24,19 @@ def default_character_template_data_dict() -> dict:
         'Role': "None",   # Importance of character in the story. main, side, background, uncategorized
         'Morality': str,  # Lawful, netural, chaotic all have good, neutral, evil (9 alignments)
         'Age': str, # Age of the character
-        'Prefix': str, # Prefix for their name (sir, mr, etc.)
         'Nationality': str, # Where character is from
         'Occupation': str, # What the character does for a living
-        'Goals': list,
+        'Goals': list,          # List of characters goals/motivations
+        'Personality': str,  # Description of the character's personality
         'Physical Description': {
-            'Species': str,
             'Sex': str,     # Biology of the character. Has add option
+            'Build': str,   # Sumarrized build of character 
             'Race': str,    # Race of the character. Has add option
-            'Skin Color': str,
+            'Skin Color': str,  
             'Hair Color': str,   
             'Eye Color': str,    
             'Height': str,   
             'Weight': str,   
-            'Build': str,    
             'Distinguishing Features': str,  
         },
         
@@ -48,17 +47,13 @@ def default_character_template_data_dict() -> dict:
             'Siblings': str,
             'Children': str,
             'Ancestors': str,
+            'Other': str,
         },   
         'Origin': {     
             'Birth Date': str,   
             'Hometown': str,     
             'Education': str,        
-        },
-        'Strengths': list,
-        'Weaknesses': list,
-        
-        'Personality': str,
-        'Deceased': bool,    # Defaults to false
+        },  
         'Connections': {
             #TODO list of other characters and relationship types
         },
