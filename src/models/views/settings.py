@@ -821,6 +821,8 @@ class Settings(ft.View):
     def _load_resources_settings(self):
         ''' Loads our resources settings view '''
 
+        # Has resources to help writers, can re-run the tutorial view, examples, discord link, planned features
+
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
         content=ft.Column([
             ft.Row([
