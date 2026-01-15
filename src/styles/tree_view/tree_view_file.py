@@ -203,10 +203,8 @@ class TreeViewFile(ft.GestureDetector):
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
             value=self.widget.title,
-            expand=True,
-            autofocus=True,
-            adaptive=True,
-            text_size=14,
+            expand=True, dense=True,
+            autofocus=True, adaptive=True,
             data=self.widget.data.get('tag', ''),
             text_style=self.text_style,
             on_submit=_submit_name,

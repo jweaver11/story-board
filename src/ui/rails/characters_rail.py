@@ -8,6 +8,8 @@ import flet as ft
 from styles.menu_option_style import MenuOptionStyle
 from ui.rails.rail import Rail
 from models.views.story import Story
+from styles.tree_view.tree_view_file import TreeViewFile
+import json
 
 
 class CharactersRail(Rail):
@@ -49,14 +51,12 @@ class CharactersRail(Rail):
             tooltip="Sort Characters By", on_change=self._new_sort_method_selected,
             options=[
                 ft.DropdownOption("Age"), ft.DropdownOption("Alphabetical"), ft.DropdownOption("Morality"),
-                ft.DropdownOption("Nationality"), ft.DropdownOption("Occupation"), ft.DropdownOption("Role"),
+                ft.DropdownOption("Nationality"), ft.DropdownOption("Occupation"), ft.DropdownOption("Role"), 
+                ft.DropdownOption("None"),
             ],
         )
         self.sort_button.value = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
         
-
-        # Reload the rail on start
-        self.reload_rail() 
 
     # Called to return our list of menu options for the content rail
     def get_menu_options(self) -> list[ft.Control]:
@@ -103,11 +103,37 @@ class CharactersRail(Rail):
         self.story.save_dict()
         self.reload_rail()
 
+    def _on_drag_accept(self, e):
+        # Update whatever piece of character data to empty string and reload the rail
+        # Load our data (draggables can't just pass in simple data for some reason)
+        event_data = json.loads(e.data)
+        
+        # Grab our draggable from the event
+        draggable = e.page.get_control(event_data.get("src_id"))
+            
+        # Grab our key and set the widget
+        widget_key = draggable.data
+
+        widget = None
+
+        for w in self.story.widgets:
+            if w.data.get('key', "") == widget_key:
+                widget = w
+                break
+
+        if widget is None:
+            print("Error: Widget not found for drag accept")
+            return
+        
+        # Set our sort method
+        sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
+
+        # However we are sorting, lets set that field to an empty string for this character
+        pass
+
 
     # Called on startup and when we have changes to the rail that have to be reloaded 
     def reload_rail(self):
-
-        # TODO: Character rail should load from story.characters and organize them by main, side, background, etc. and have filter options to organize them that way.
         
         # IT should not load from the content directory like other rails.
         # Label non-specified 
@@ -126,7 +152,7 @@ class CharactersRail(Rail):
         header_2 = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER,
-            controls=[self.sort_button]
+            controls=[self.sort_button, ft.IconButton(icon=ft.Icons.REFRESH_OUTLINED, tooltip="Refresh Rail", on_click=lambda e: self.reload_rail())]
         )
         
                  
@@ -160,17 +186,21 @@ class CharactersRail(Rail):
             for character in characters_list:
                 if character not in non_specified_list:
               
-                    content.controls.append(ft.Text(f"{character.data.get('title', 'Unnamed Character')}"))
+                    content.controls.append(TreeViewFile(character))
             
             content.controls.append(ft.Text("---- Non-specified Age ----"))
             for character in non_specified_list:
-                content.controls.append(ft.Text(f"{character.data.get('title', 'Unnamed Character')}"))
+                content.controls.append(TreeViewFile(character))
 
         elif sort_method == "Alphabetical":
             characters_list.sort(key=lambda c: c.data.get('title', '').lower())
             for character in characters_list:
-                content.controls.append(ft.Text(character.data.get('title', 'Unnamed Character')))
+                content.controls.append(TreeViewFile(character))
 
+        # Otherwise just add them however they were loaded 
+        else:
+            for character in characters_list:
+                content.controls.append(TreeViewFile(character))
         
 
         content.controls.append(ft.Container(height=6))
@@ -186,7 +216,6 @@ class CharactersRail(Rail):
             content=content,     # Our content is the content we built above
             on_accept=lambda e: self.on_drag_accept(e, self.directory_path)
         )
-
 
         menu_gesture_detector = ft.GestureDetector(
             content=dt,
@@ -205,6 +234,7 @@ class CharactersRail(Rail):
                 ft.Divider(),
                 ft.Container(height=6),
                 header_2,
+                ft.Container(height=6),
                 menu_gesture_detector
             ]
         )

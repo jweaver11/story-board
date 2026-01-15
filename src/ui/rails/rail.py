@@ -59,8 +59,6 @@ class Rail(ft.Container):
         self.item_is_unique = True          # If the new category, chapter, note, etc. title is unique within its directory
         self.are_submitting = False         # If we are currently submitting this item
 
-        # Calling initial rail to reload. Child override this one
-        #self.reload_rail() 
 
     def get_menu_options(self) -> list[ft.Control]:
         ''' Returns a list of menu options when right clicking child rail '''

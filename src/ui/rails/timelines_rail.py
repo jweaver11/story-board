@@ -52,8 +52,6 @@ class TimelinesRail(Rail):
             ),
         ]
  
-        # Reload our rail to show timelines
-        self.reload_rail()
         
 
     # Called to return our list of menu options when right clicking on the timeline rail

@@ -222,7 +222,7 @@ class Widget(ft.Container):
 
         # Save our old file path for renaming later
         old_file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json")  
-        old_key = f"{self.directory_path}\\{self.title}"  
+        old_key = f"{self.directory_path}\\{self.title}_{self.data.get('tag', '')}"  
                                                  
         # Update our live title, and associated data
         self.title = title.capitalize()                              

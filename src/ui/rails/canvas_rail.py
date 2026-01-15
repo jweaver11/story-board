@@ -84,8 +84,6 @@ class CanvasRail(Rail):
             #on_click= Open pattern adjustment dialog/button to adjust length and gap, and add more segments. Make reorderable and deletable
         )
 
-        # Reload the rail on start
-        self.reload_rail()
 
     # Called when color picker is closed
     def _set_color(self, e):
