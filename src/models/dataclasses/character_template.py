@@ -20,7 +20,7 @@ Default data dict for character data templates
 
 def default_character_template_data_dict() -> dict:
     return {
-        'Template Data': dict,  # Data for the template itself (like selected image path, color, etc)
+        #'Template Data': dict,  # This is how templates store their data
         'Basic Info': {
             'Summary': str,  # Short summary of the character. Optional
             'Nickname': str,  # Nickname or Alias of the character

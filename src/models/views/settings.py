@@ -100,12 +100,13 @@ class Settings(ft.View):
                 'active_character_template': "Default",    # Which template is being used for new characters for new stories - they default to this
                 'show_empty_character_fields': bool,   # If we show empty character fields in character widget or not
 
-                'character_templates': {    # Templates can only add string data for now. Might change in future
+                # Hold our default character templates
+                'character_templates': {    
                     'Default': default_character_template_data_dict(),
-                    'Detailed': default_character_template_data_dict() | {'title': "Detailed", 'template_data': {'Strengths': list, 'Weaknesses': list, 'Deceased': bool}},
-                    'Shonen': {'title': "Shonen", 'template_data': {'Abilities': "Super Strength, Enhanced Healing"}},
-                    'Alien': {'title': "Alien", 'template_data': {'Species': "Unknown", 'Home Planet': "Unknown"}},
-                },   # Holds our character templates
+                    'Detailed': default_character_template_data_dict() | {'Template Data': {'title': "Detailed", 'Strengths': list, 'Weaknesses': list, 'Deceased': bool}},
+                    'Shonen': default_character_template_data_dict() | {'Template Data': {'title': "Shonen", 'Abilities': "Super Strength, Enhanced Healing"}},
+                    'Alien': default_character_template_data_dict() | {'Template Data': {'title': "Alien", 'Species': "Unknown", 'Home Planet': "Unknown"}},
+                },   
             },
         )
         
