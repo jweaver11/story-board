@@ -127,10 +127,11 @@ class Rail(ft.Container):
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
             case _:
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
-        
 
+        # Open the textfield early since we have to wait for async close menu
+        self.update()
+        
         # Close the menu (if ones is open)
-      
         await asyncio.sleep(.3)     # Wait for popupmenu's animations to close if we have issues
         await self.story.close_menu()
         

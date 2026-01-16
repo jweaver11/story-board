@@ -50,9 +50,9 @@ class CharactersRail(Rail):
             label="Sort method", leading_icon=ft.Icons.SORT_ROUNDED, dense=True,
             tooltip="Sort Characters By", on_change=self._new_sort_method_selected,
             options=[
-                ft.DropdownOption("Age"), ft.DropdownOption("Alphabetical"), ft.DropdownOption("Morality"),
-                ft.DropdownOption("Nationality"), ft.DropdownOption("Occupation"), ft.DropdownOption("Role"), 
-                ft.DropdownOption("None"),
+                ft.DropdownOption("Age"), ft.DropdownOption("Alphabetical"), ft.DropdownOption("Morality", disabled=True),
+                ft.DropdownOption("Nationality", disabled=True), ft.DropdownOption("Occupation", disabled=True), ft.DropdownOption("Role"), 
+                ft.DropdownOption("Tag", disabled=True), ft.DropdownOption("None"),
             ],
         )
         self.sort_button.value = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
@@ -128,19 +128,22 @@ class CharactersRail(Rail):
         # Set our sort method
         sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
 
+        match sort_method:
+            case "Role":
+                widget.data['character_data']['Role'] = "None"
+                widget.save_dict()
+                widget.reload_widget()
+                self.reload_rail()
+            case _:
+                pass
+
         # However we are sorting, lets set that field to an empty string for this character
         pass
 
 
     # Called on startup and when we have changes to the rail that have to be reloaded 
     def reload_rail(self):
-        
-        # IT should not load from the content directory like other rails.
-        # Label non-specified 
-
-        # Sort button - clicking new sort should show little loading icon while it reloads the rail. only sort by string data fields
-        # Dropdowns for our filters. Can drag and drop to change their dropdown filter
-        # Add non-specified
+        ''' Builds or rebuilds the character rail content '''
 
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -152,7 +155,7 @@ class CharactersRail(Rail):
         header_2 = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER,
-            controls=[self.sort_button, ft.IconButton(icon=ft.Icons.REFRESH_OUTLINED, tooltip="Refresh Rail", on_click=lambda e: self.reload_rail())]
+            controls=[self.sort_button]
         )
         
                  
@@ -172,35 +175,70 @@ class CharactersRail(Rail):
         # Intialize our lists
         characters_list = list(self.story.characters.values())
         non_specified_list = []
-        added_characters = set()
 
-        if sort_method == "Age":
+        # Build our rail depending on our sort method
+        match sort_method:
+            case "Age":
+                # For sorting our list, sort by age. If no age specified, add to the non-specified list
+                def get_age(character):
+                    age = character.data.get('character_data', {}).get('Age', None)
+                    if age is None or age == "":
+                        non_specified_list.append(character)
+                    return age
+                characters_list.sort(key=get_age)   # Returns not set values, then youngest -> oldest
 
-            def get_age(character):
-                age = character.data.get('character_data', {}).get('Age', None)
-                if age is None or age == "":
-                    non_specified_list.append(character)
-                return age
-            characters_list.sort(key=get_age)   # Returns not set values, then youngest -> oldest
-
-            for character in characters_list:
-                if character not in non_specified_list:
-              
+                for character in characters_list:
+                    if character not in non_specified_list:
+                        content.controls.append(TreeViewFile(character))
+                
+                content.controls.append(ft.Text("---- Non-specified Age ----"))
+                for character in non_specified_list:
                     content.controls.append(TreeViewFile(character))
+
+            case "Alphabetical":
+                characters_list.sort(key=lambda c: c.data.get('title', '').lower())
+                for character in characters_list:
+                    content.controls.append(TreeViewFile(character))
+
+
+            case "Role":
+                different_roles = set()
+                def get_role(character):
+                    role = character.data.get('character_data', {}).get('Role', None)
+                    if role is None or role == "" or role == "None":
+                        non_specified_list.append(character)
+                    else:
+                        different_roles.add(role)
+                    return role
             
-            content.controls.append(ft.Text("---- Non-specified Age ----"))
-            for character in non_specified_list:
-                content.controls.append(TreeViewFile(character))
+                characters_list.sort(key=get_role)   # Returns not set values, then alphabetically by role
 
-        elif sort_method == "Alphabetical":
-            characters_list.sort(key=lambda c: c.data.get('title', '').lower())
-            for character in characters_list:
-                content.controls.append(TreeViewFile(character))
+                #for role in sorted(different_roles):   # Future implimentation use custom roles. For now we just have 3 so we will hardcode it
 
-        # Otherwise just add them however they were loaded 
-        else:
-            for character in characters_list:
-                content.controls.append(TreeViewFile(character))
+                content.controls.append(ft.Text("---- Main Characters ----"))
+                for character in characters_list:
+                    if character not in non_specified_list and character.data.get('character_data', {}).get('Role', "") == "Main":
+                        content.controls.append(TreeViewFile(character))
+
+                content.controls.append(ft.Text("---- Side Characters ----"))
+                for character in characters_list:
+                    if character not in non_specified_list and character.data.get('character_data', {}).get('Role', "") == "Side":
+                        content.controls.append(TreeViewFile(character))
+
+                content.controls.append(ft.Text("---- Background Characters ----"))
+                for character in characters_list:
+                    if character not in non_specified_list and character.data.get('character_data', {}).get('Role', "") == "Background":
+                        content.controls.append(TreeViewFile(character))
+
+                content.controls.append(ft.Text("---- Non-specified Role ----"))
+                for character in non_specified_list:
+                    content.controls.append(TreeViewFile(character))
+
+
+            # Otherwise just add them however they were loaded 
+            case _:
+                for character in characters_list:
+                    content.controls.append(TreeViewFile(character))
         
 
         content.controls.append(ft.Container(height=6))
@@ -214,7 +252,7 @@ class CharactersRail(Rail):
         dt = ft.DragTarget(
             group="widgets",
             content=content,     # Our content is the content we built above
-            on_accept=lambda e: self.on_drag_accept(e, self.directory_path)
+            on_accept=self._on_drag_accept
         )
 
         menu_gesture_detector = ft.GestureDetector(

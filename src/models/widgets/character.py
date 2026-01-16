@@ -218,6 +218,11 @@ class Character(Widget):
                 
         self.save_dict()
 
+        # Check if we're sorting by the updated key, and if characters rail is selected. If it is, reload the rail
+        sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
+        if sort_method == key and self.story.data.get('selected_rail', "") == "characters":
+            self.story.active_rail.content.reload_rail()
+
     def _delete_custom_field_clicked(self, field_name: str):
         ''' Handles deleting a custom text field from character '''
 
