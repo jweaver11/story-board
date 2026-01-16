@@ -31,6 +31,9 @@ class Character(Widget):
             data = data,    
         )
 
+        # Update our padding to be none on the right to handle scrollbars better
+        self.padding = ft.padding.only(top=0, bottom=8, left=8, right=0)
+
         # Verifies this object has the required data fields, and creates them if not
         verify_data(
             object=self,   # Pass in our own data so the function can see the actual data we loaded
@@ -256,15 +259,15 @@ class Character(Widget):
             ft.Row([
                 self.icon,
                 ft.IconButton(tooltip="Exit Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, on_click=self._edit_mode_clicked),
-                ft.Divider(color="transparent"),    # Used as new line
+                #ft.Divider(color="transparent"),    # Used as new line
             ], wrap=True),
         ], scroll="auto", expand=True)
 
         # Add our summary
         body.controls.append(ft.TextField(
-            self.data.get('character_data', {}).get('Summary', ""), label="Summary", dense=True, multiline=True,
+            self.data.get('character_data', {}).get('Basic Info', {}).get('Summary', ""), label="Summary", dense=True, multiline=True,
             capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-            on_blur=lambda e: self._update_character_data(**{"Summary": e.control.value}),
+            on_blur=lambda e: self._update_character_data("Basic Info", **{"Summary": e.control.value}),
         ))
 
         
@@ -540,14 +543,39 @@ class Character(Widget):
     # Called after any changes happen to the data that need to be reflected in the UI
     def reload_widget(self): #this is the edit view currently
         ''' Reloads/Rebuilds our widget based on current data '''
+
+        def _load_dict_data(dict: dict, container: ft.Container):
+            ''' Loads data from a dict into a given container '''
+            for key, value in dict.items():
+                if isinstance(value, str):
+                    text_control = ft.Text(
+                            expand=True, selectable=True, spans=[
+                                ft.TextSpan(f"{key.capitalize()}: ", ft.TextStyle(weight=ft.FontWeight.BOLD)),   # Key is bold with formatting
+                                ft.TextSpan(value)     # Rest of the value
+                            ]
+                        )
+                    
+                    if value or app.settings.data.get('show_empty_character_fields', True):
+                        container.content.controls.append(text_control)
+                    else:
+                        continue
+                    
+                elif isinstance(value, list):
+                    text_control = ft.Text(
+                        expand=True, selectable=True, spans=[
+                        ft.TextSpan(f"{key.capitalize()}:", ft.TextStyle(weight=ft.FontWeight.BOLD)),
+                    ])
+                    for val in value:
+                            text_control.spans.append(ft.TextSpan(f"\n\t\u2022\t{val}", ft.TextStyle()))
+                        
+                    if text_control.spans.__len__() > 1 or app.settings.data.get('show_empty_character_fields', True):
+                        container.content.controls.append(text_control)
         
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        if self.data['is_active_tab']:
-            self.icon = ft.Icon(ft.Icons.PERSON, size=100, color=self.data.get('color', "primary"), expand=False)
-        else:
-            self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
+        
+        self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
         
 
         # Check if we're in edit mode or not. If yes, build the edit view like this
@@ -563,44 +591,139 @@ class Character(Widget):
                 ft.Row([
                     self.icon,
                     ft.IconButton(tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, on_click=self._edit_mode_clicked),
-                    ft.Divider(color="transparent"),    # Used as new line
                 ], wrap=True),
-            ])
+            ], scroll="auto", expand=True)
 
-            data_row = ft.Row(wrap=True)
+            # Create a container for our dicts that we have data in and load them. 
+            template_data_container = ft.Container(         # For template data
+                padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
+                border=ft.border.all(1, ft.Colors.OUTLINE), bgcolor=ft.Colors.with_opacity(0.05, ft.Colors.ON_SURFACE_VARIANT),
+                content=ft.Column([]),
+            )
+        
+            basic_info_container = ft.Container(            # For basic info
+                padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
+                border=ft.border.all(1, ft.Colors.OUTLINE), bgcolor=ft.Colors.with_opacity(0.05, ft.Colors.ON_SURFACE_VARIANT),
+                content=ft.Column([]),
+            )
 
-            # Run through all our data and add it to the widget
-            for key, value in self.data['character_data'].items():
+            physical_description_container = ft.Container(  # For physical description
+                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+                border=ft.border.all(1, ft.Colors.OUTLINE), bgcolor=ft.Colors.with_opacity(0.05, ft.Colors.ON_SURFACE_VARIANT),
+                content=ft.Column([]),
+            )   
 
-                # All other fields that can be auto added to the widget. Check to make sure not empty
-                if isinstance(value, str) or isinstance(value, int):
-                    if app.settings.data.get('show_empty_character_fields', True):
-                        data_row.controls.append(ft.Row([ft.Text(f"{key.capitalize()}: ", weight=ft.FontWeight.BOLD), ft.Text(str(value))], wrap=True))
-                    elif not value:
-                        continue
-                      
-                elif isinstance(value, bool):
-                    data_row.controls.append(ft.Row([ft.Text(f"{key.capitalize()}: ", weight=ft.FontWeight.BOLD), ft.Text("Yes" if value else "No")], wrap=True))
+            family_container = ft.Container(                # For family
+                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+                border=ft.border.all(1, ft.Colors.OUTLINE), bgcolor=ft.Colors.with_opacity(0.05, ft.Colors.ON_SURFACE_VARIANT),
+                content=ft.Column([]),
+            )
 
-                # Role
-                # Morality
-                # Sex 
-                # age
-                # Nationality
-                # Physical Description {}
-                # Family {}
-                # Origin {}
-                # Strengths []
-                # Weaknesses []
-                # Occupation
-                # Goals
-                # Personality
-                # Abilities
-                # is dead
-                # Connections {}
-                # Custom fields {}
+            origin_container = ft.Container(                # For origin 
+                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+                border=ft.border.all(1, ft.Colors.OUTLINE), bgcolor=ft.Colors.with_opacity(0.05, ft.Colors.ON_SURFACE_VARIANT),
+                content=ft.Column([]), 
+            )
 
-            body.controls.append(data_row)
+            connections_container = ft.Container(           # For connections
+                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+                border=ft.border.all(1, ft.Colors.OUTLINE), bgcolor=ft.Colors.with_opacity(0.05, ft.Colors.ON_SURFACE_VARIANT),
+                content=ft.Column([]), 
+            )
+
+            custom_fields_container = ft.Container(        # For custom fields
+                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+                border=ft.border.all(1, ft.Colors.OUTLINE), bgcolor=ft.Colors.with_opacity(0.05, ft.Colors.ON_SURFACE_VARIANT),
+                content=ft.Column([]), 
+            )
+
+            # Load the data from each section into each container
+            _load_dict_data(self.data.get('character_data', {}).get('Template Data', {}), template_data_container)
+            _load_dict_data(self.data.get('character_data', {}).get('Basic Info', {}), basic_info_container)
+            _load_dict_data(self.data.get('character_data', {}).get('Physical Description', {}), physical_description_container)
+            _load_dict_data(self.data.get('character_data', {}).get('Family', {}), family_container)
+            _load_dict_data(self.data.get('character_data', {}).get('Origin', {}), origin_container)
+            _load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container)
+            _load_dict_data(self.data.get('character_data', {}).get('Custom Fields', {}), custom_fields_container)
+
+            row1 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+            row2 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+            row3 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+
+
+            # If we have temlpate data, this will add it to the page
+            if template_data_container.content.controls:
+                template_title = self.data.get('character_data', {}).get('Template Data', {}).get('Template Name', 'Template Data')
+                row1.controls.append(
+                    ft.Column([
+                        ft.Row([
+                            ft.Container(width=6), 
+                            ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), selectable=True, expand=True)
+                        ], spacing=0),
+                        ft.Row([template_data_container])
+                    ], expand=True, spacing=4)
+                )
+    
+            # If we have basic info, this will add it to the page. Protects against custom templates getting rid of certain sections
+            if basic_info_container.content.controls:
+                row1.controls.append(
+                    ft.Column([
+                        ft.Row([
+                            ft.Container(width=6), 
+                            ft.Text("Basic Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), selectable=True, expand=True)
+                        ], spacing=0),
+                        ft.Row([basic_info_container])
+                    ], expand=True, spacing=4)
+                )
+            if physical_description_container.content.controls:
+                row2.controls.append(
+                    ft.Column([
+                        ft.Row([
+                            ft.Container(width=6), 
+                            ft.Text("Physical Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), selectable=True, expand=True)
+                        ], spacing=0),
+                        ft.Row([physical_description_container])
+                    ], expand=True, spacing=4)
+                )
+            if family_container.content.controls:
+                row2.controls.append(
+                    ft.Column([
+                        ft.Row([
+                            ft.Container(width=6), 
+                            ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), selectable=True, expand=True)
+                        ], spacing=0),
+                        ft.Row([family_container])
+                    ], expand=True, spacing=4)
+                )
+            if origin_container.content.controls:
+                row3.controls.append(
+                    ft.Column([
+                        ft.Row([
+                            ft.Container(width=6), 
+                            ft.Text("Origin", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), selectable=True, expand=True)
+                        ], spacing=0),
+                        ft.Row([origin_container])
+                    ], expand=True, spacing=4)
+                )
+            if app.settings.data.get('show_empty_character_fields', True):
+                row3.controls.append(
+                    ft.Column([
+                        ft.Row([
+                            ft.Container(width=6), 
+                            ft.Text("Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), selectable=True, expand=True)
+                        ], spacing=0),
+                        ft.Row([connections_container])
+                    ], expand=True, spacing=4)
+                )
+
+
+
+
+
+            # Custom fields
+            
+
+            body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([row1, row2, row3], spacing=16)))
         
             self.body_container.content = body
 

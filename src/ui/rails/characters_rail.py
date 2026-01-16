@@ -239,6 +239,10 @@ class CharactersRail(Rail):
             case _:
                 for character in characters_list:
                     content.controls.append(TreeViewFile(character))
+
+        content.controls.append(ft.Text("---- Character Connection Maps ----"))
+        for connection_map in self.story.character_connection_maps.values():
+            content.controls.append(TreeViewFile(connection_map))
         
 
         content.controls.append(ft.Container(height=6))
