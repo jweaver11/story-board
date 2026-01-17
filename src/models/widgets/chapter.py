@@ -32,6 +32,7 @@ class Chapter(Widget):
                 'temp': str,
                 'test': str,
                 'comments': dict,
+                'chapter_text': list,       # The actual text content of the chapter
             }
         )
 
@@ -99,6 +100,11 @@ class Chapter(Widget):
         ]
 
 
+    def _save_chapter(self, text_data: list):
+        ''' Saves our chapter text data to our data dictionary '''
+        self.data['chapter_text'] = text_data
+        self.save_dict()
+
 
 
     # Called after any changes happen to the data that need to be reflected in the UI
@@ -109,25 +115,27 @@ class Chapter(Widget):
         self.reload_tab()
         
         # BUILDING BODY - the inside the body container of our widget
-        
         self.body_container.content = ft.Column(
             expand=True,
             controls=[
                 FletQuill(
-                    file_path=f"{self.directory_path}/{self.title}_text.json",
+                    text_data=self.data['chapter_text'],
+                    save_method=self._save_chapter,
+                    #file_path=f"{self.directory_path}/{self.title}_text.json",
 
-                    #border_visible=True,
-                    #border_width=1.0,       # Defaults to 1.0
+                    border_visible=True,
+                    border_width=1.0,       # Defaults to 1.0
 
                     # Set paddings around the editor. Defaults to 10.0
-                    #padding_left=72.0,
-                    #padding_top=72.0,
-                    #padding_right=72.0,
-                    #padding_bottom=72.0,
+                    padding_left=72.0,
+                    padding_top=72.0,
+                    padding_right=72.0,
+                    padding_bottom=72.0,
 
-                    #aspect_ratio=8.5/11.0,  # paper-like ratio
+                    aspect_ratio=8.5/11.0,  # paper-like ratio
 
-                    #show_toolbar_divider=False,  # Show divider below toolbar
+                    show_toolbar_divider=False,  # Show divider below toolbar
+                    placeholder_text=f"{self.title} begins here"
                 )
             ]
         )
