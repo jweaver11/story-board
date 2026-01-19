@@ -318,7 +318,10 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                 ft.Container(expand=True),  # empty space in middle of menubar
                 # Fix broken widgets button
 
-                ft.Text("Beta", color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD, tooltip="Storyboard is currently in beta. More features coming soon!"),  # Feedback button
+                ft.Text(
+                    "Beta", color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD, 
+                    tooltip="Storyboard is currently in beta. More features coming soon! \nCheck out Settings -> Resources for a list of planned features and known issues. \nJoin the Discord to suggest your features and report bugs."
+                ),  # Feedback button
                 ft.IconButton(icon=ft.Icons.SETTINGS_OUTLINED, on_click=settings_clicked),   # Settings button
             ]
         )

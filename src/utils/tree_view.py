@@ -19,10 +19,8 @@ def load_directory_data(
     rail: ft.Control,                                     # The rail this tree view is in
     dir_dropdown: TreeViewDirectory = None,             # Optional parent expansion tile for when recursively called
     column: ft.Column = None,                             # Optional parent column to add elements too when not starting inside a tile
-    tags: list[str] = None,                                 # Only load widgets with specific tags for this directory
     additional_directory_menu_options: list[ft.Control] = None,      # Additional menu options passed in from parent rail to be used for directories
     additional_file_menu_options: list[ft.Control] = None   
-    # Only dir_dropdown OR column should be provided, but one is required
 ) -> ft.Control:
     
     def _canon_path(p: str) -> str:
@@ -84,7 +82,6 @@ def load_directory_data(
                 directory=full_path,                                      # Our new directory to load
                 dir_dropdown=new_expansion_tile,                          # Our new parent expansion tile
                 rail=rail,
-                tags=tags,                                                # Any tags to filter by
                 additional_directory_menu_options=additional_directory_menu_options,           # Any additional menu options to pass down
                 additional_file_menu_options=additional_file_menu_options
             )
@@ -106,8 +103,6 @@ def load_directory_data(
 
                 key = file_data.get('key', None)
 
-                
-
                 for widget in story.widgets:
                     if widget.data.get('key', None) == key:
                         widget = widget
@@ -120,25 +115,22 @@ def load_directory_data(
             
             if widget is not None:
 
-                for tag in (tags if tags is not None else []):
-                    if widget.data.get('tag', None) == tag:
-                        # Create the file item
-                        item = TreeViewFile(
-                            widget,
-                            father=dir_dropdown if dir_dropdown is not None else None,
-                            additional_menu_options=additional_file_menu_options
-                        )        
+                # Create the file item
+                item = TreeViewFile(
+                    widget,
+                    father=dir_dropdown if dir_dropdown is not None else None,
+                    additional_menu_options=additional_file_menu_options
+                )        
 
-                        # Add them to parent expansion tile if one exists, otherwise just add it to the column
-                        if dir_dropdown is not None:
-                            dir_dropdown.content.content.controls.append(item)
-                        else: 
-                            column.controls.append(item)
-                        pass
+                # Add them to parent expansion tile if one exists, otherwise just add it to the column
+                if dir_dropdown is not None:
+                    dir_dropdown.content.content.controls.append(item)
+                else: 
+                    column.controls.append(item)
+                pass
 
-                        break
-                    else:
-                        continue
+            else:
+                continue
 
         # Return the parent expansion tile or column depending on what was provided
         return dir_dropdown if dir_dropdown is not None else column

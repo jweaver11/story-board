@@ -35,8 +35,8 @@ class TreeViewFile(ft.GestureDetector):
         elif tag == "character": self.icon = ft.Icons.PERSON_OUTLINED
         elif tag == "timeline": self.icon = ft.Icons.TIMELINE_OUTLINED
         elif tag == "map": self.icon = ft.Icons.MAP_OUTLINED
-        elif tag == "world_building": self.icon = ft.Icons.PUBLIC_OUTLINED
-        elif tag == "family_tree_view": self.icon = ft.Icons.PEOPLE_OUTLINE_OUTLINED
+        elif tag == "world": self.icon = ft.Icons.PUBLIC_OUTLINED
+        elif tag == "character_connection_map": self.icon = ft.Icons.PEOPLE_OUTLINE_OUTLINED
         else: self.icon = ft.Icons.ERROR_OUTLINE            
 
         # Set our text style

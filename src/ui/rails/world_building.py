@@ -155,7 +155,6 @@ class WorldBuildingRail(Rail):
             directory=self.directory_path,
             column=content,
             rail=self,
-            #tags=["map", "world"],
             additional_directory_menu_options=self.get_directory_menu_options(),
             additional_file_menu_options=self.get_file_menu_options()
         )

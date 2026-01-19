@@ -460,7 +460,7 @@ class Story(ft.View):
                                 self.timelines[key] = Timeline(title, self.p, dirpath, self, widget_data)
                             case "map":
                                 self.maps[key] = Map(title, self.p, dirpath, self, widget_data)
-                            case "world_building":
+                            case "world":
                                 self.worlds[key] = World(title, self.p, dirpath, self, widget_data)
                             case "character_connection_map":
                                 self.character_connection_maps[key] = CharacterConnectionMap(title, self.p, dirpath, self, widget_data)

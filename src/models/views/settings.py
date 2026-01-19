@@ -82,7 +82,7 @@ class Settings(ft.View):
                 'default_note_color': "primary",
                 'default_planning_color': "primary",
                 'default_timeline_color': "primary",
-                'default_world_building_color': "primary",
+                'default_world_color': "primary",
 
                 'default_category_color': "primary",    # Categories thrown in here
 
@@ -95,7 +95,7 @@ class Settings(ft.View):
                 'default_note_pin_location': "right",
                 'default_planning_pin_location': "main",
                 'default_timeline_pin_location': "main",
-                'default_world_building_pin_location': "left",
+                'default_world_pin_location': "left",
 
                 'active_character_template': "Default",    # Which template is being used for new characters for new stories - they default to this
                 'show_empty_character_fields': True,   # If we show empty character fields in character widget or not
@@ -381,8 +381,8 @@ class Settings(ft.View):
                     self.data['default_planning_color'] = new_color
                 case "character_connection_map":
                     self.data['default_character_connection_map_color'] = new_color
-                case "world_building":
-                    self.data['default_world_building_color'] = new_color
+                case "world":
+                    self.data['default_world_color'] = new_color
 
             # Save our updated settings
             self.save_dict()
@@ -690,7 +690,7 @@ class Settings(ft.View):
                     ft.Container(width=10),   # Spacer
                     ft.Text("Worlds", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
                     ft.Dropdown(
-                        label="Color", tooltip="Default color for new world building widgets",
+                        label="Color", tooltip="Default color for new World widgets",
                         capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
                         options=self._get_color_options(), on_change=_set_default_widget_color,
                         value=self.data.get('default_world_color', "primary"),
@@ -699,10 +699,10 @@ class Settings(ft.View):
                         dense=True, data="world",
                     ),
                     ft.Dropdown(
-                        label="Pin Location", tooltip="Default pin location for new world building widgets",
+                        label="Pin Location", tooltip="Default pin location for new World widgets",
                         capitalization= ft.TextCapitalization.SENTENCES,
                         options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
-                        value=self.data.get('default_world_building_pin_location', "main").capitalize(),
+                        value=self.data.get('default_world_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), dense=True,
                         on_change=lambda e: self.change_data(default_world_location=e.control.value.lower()),
                     ),

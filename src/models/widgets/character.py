@@ -145,64 +145,6 @@ class Character(Widget):
         except Exception as ex:
             print(f"Error opening dialog: {ex}") 
 
-    # Called when user wants to create a new text field in character
-    def _new_connection_clicked(self, e):
-        ''' Handles prompting user for custom textfield name and creating it '''
-
-        def _create_field(e): #show in edit view
-            '''Called when user confirms the field name'''
-            try:
-                field_name = return_safe_name(field_name_input.value)
-                
-                if not field_name:
-                    self.p.close(dlg)
-                    return  # Don't create if empty
-                
-                # Add the field to data if it doesn't exist
-                if field_name not in self.data['character_data']['Connections']:
-                    self.data['character_data']['Connections'][field_name] = ""
-                
-                # Save and reload
-                self.save_dict()
-                self.p.close(dlg)
-                self.reload_widget()
-                                
-            except Exception as ex:
-                print(f"Error creating custom field: {ex}")
-                self.p.close(dlg)
-
-
-        def _character_options() -> list[ft.dropdown.Option]:
-            '''Generate dropdown options for connections excluding already connected characters.'''
-            options = []
-            existing_connections = set(self.data.get('character_data', {}).get('Connections', {}).values())
-            for story in app.stories.values():
-                for character in story.characters.values():
-                    if character.title != self.title and character.title not in existing_connections:
-                        options.append(ft.dropdown.Option(character.title))
-            return options
-
-        # Create a dialog to ask for the field name
-        field_name_input = ft.Dropdown(
-            value="Selected Character", hint_text="Character Name",
-            options=_character_options(), expand=True
-        )
-        
-        dlg = ft.AlertDialog(
-            title=ft.Text(f"Create a New Connection to {self.title}"),
-            content=field_name_input,
-            actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg)),
-                ft.TextButton("Create", on_click=_create_field),
-            ],
-        )
-        
-        try:
-            dlg.open = True
-            self.p.open(dlg)
-
-        except Exception as ex:
-            print(f"Error opening dialog: {ex}") 
     
 
     
