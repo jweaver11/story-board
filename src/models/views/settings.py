@@ -98,7 +98,7 @@ class Settings(ft.View):
                 'default_world_building_pin_location': "left",
 
                 'active_character_template': "Default",    # Which template is being used for new characters for new stories - they default to this
-                'show_empty_character_fields': bool,   # If we show empty character fields in character widget or not
+                'show_empty_character_fields': True,   # If we show empty character fields in character widget or not
 
                 # Hold our default character templates
                 'character_templates': {    

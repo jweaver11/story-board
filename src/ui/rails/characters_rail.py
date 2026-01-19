@@ -181,7 +181,7 @@ class CharactersRail(Rail):
             case "Age":
                 # For sorting our list, sort by age. If no age specified, add to the non-specified list
                 def get_age(character):
-                    age = character.data.get('character_data', {}).get('Age', None)
+                    age = character.data.get('character_data', {}).get('Basic Info', {}).get('Age', None)
                     if age is None or age == "":
                         non_specified_list.append(character)
                     return age

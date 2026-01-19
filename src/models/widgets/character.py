@@ -104,8 +104,6 @@ class Character(Widget):
             '''Called when user confirms the field name'''
             try:
                 field_name = return_safe_name(field_name_input.value)
-
-                print("Safe field name: ", field_name)
                 
                 if not field_name:
                     self.p.close(dlg)
@@ -155,8 +153,6 @@ class Character(Widget):
             '''Called when user confirms the field name'''
             try:
                 field_name = return_safe_name(field_name_input.value)
-
-                print("Safe field name: ", field_name)
                 
                 if not field_name:
                     self.p.close(dlg)
@@ -228,16 +224,24 @@ class Character(Widget):
         if sort_method == key and self.story.data.get('selected_rail', "") == "characters":
             self.story.active_rail.content.reload_rail()
 
-    def _delete_custom_field_clicked(self, field_name: str):
-        ''' Handles deleting a custom text field from character '''
+    def _delete_character_data(self, sub_key: str="", **kwargs):
+        ''' Deletes fields from the character data dict or up to one sub dict '''
 
-        try:
-            if field_name in self.data['character_data']['Custom Fields']:
-                del self.data['character_data']['Custom Fields'][field_name]
-                self.save_dict()
-                self.reload_widget()
-        except Exception as e:
-            print(f"Error deleting custom field: {e}")
+        for key in kwargs.keys():
+            if sub_key != "":
+                if key in self.data['character_data'][sub_key]:
+                    del self.data['character_data'][sub_key][key]
+            else:
+                if key in self.data['character_data']:
+                    del self.data['character_data'][key]
+                
+        self.save_dict()
+        self.reload_widget()
+
+        # Check if we're sorting by the updated key, and if characters rail is selected. If it is, reload the rail
+        sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
+        if sort_method == key and self.story.data.get('selected_rail', "") == "characters":
+            self.story.active_rail.content.reload_rail()
 
 
     # Called when clicking the edit mode button
@@ -255,6 +259,47 @@ class Character(Widget):
     def _edit_mode_view(self):
         ''' Returns our character data with input capabilities '''
 
+        def _get_help_text(key: str="") -> str:
+            ''' Returns help text for certain fields '''
+            match key:
+                
+                case "Morality":
+                    return "Good, Evil, Neutral..."
+                case "Role":
+                    return "Main, Supporting, Background... "
+                case "Tag":
+                    return "Protagonist, Antagonist, etc..."
+                case "Goals":
+                    return "Separate goals with new lines or ,"
+                
+                case _:
+                    return None
+
+
+        def _load_dict_data(dict: dict, container: ft.Container, sub_key: str=""):
+            ''' Loads data from a dict into a given container '''
+            for key, value in dict.items():
+                if isinstance(value, str):
+                    text_control = ft.TextField(
+                        expand=True, label=key.capitalize(), value=value, dense=True, multiline=True, hint_text=_get_help_text(key),
+                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                        on_blur=lambda e, k=key: self._update_character_data(sub_key, **{k: e.control.value})
+                    )
+
+                    if sub_key == "Custom Fields":
+                        container.content.controls.append(
+                            ft.Row([
+                                text_control,
+                                ft.IconButton(
+                                    tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
+                                    on_click=lambda e, k=key: self._delete_character_data(sub_key=sub_key, **{k: None})
+                                ),
+                            ])
+                        )
+                    else:
+                        container.content.controls.append(text_control)
+                    
+
         # Column we will append to for the bot of our view. Has our icon, and exit edit mode button
         # TODO: Foreground decoration when hovering adds the ("upload image" button)
         body = ft.Column([
@@ -265,280 +310,129 @@ class Character(Widget):
             ], wrap=True),
         ], scroll="auto", expand=True)
 
-        # Add our summary
-        body.controls.append(ft.TextField(
-            self.data.get('character_data', {}).get('Basic Info', {}).get('Summary', ""), label="Summary", dense=True, multiline=True,
-            capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-            on_blur=lambda e: self._update_character_data("Basic Info", **{"Summary": e.control.value}),
-        ))
 
-        
-        # Add our Role and morality dropdowns
-        body.controls.append(
-            ft.Row([
-                ft.Dropdown(
-                    label="Role", dense=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                    options=[
-                        ft.dropdown.Option("Main"), ft.dropdown.Option("Side"),
-                        ft.dropdown.Option("Background"), ft.dropdown.Option("None"),
-                    ],
-                    value=self.data.get('character_data', {}).get('Role', "None"),
-                    on_change=lambda e: self._update_character_data(**{"Role": e.control.value}),
-                ),
-                ft.Dropdown(
-                    label="Morality", dense=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                    options=[
-                        ft.dropdown.Option("Good"),
-                        ft.dropdown.Option("Neutral"),
-                        ft.dropdown.Option("Evil"),
-                        ft.dropdown.Option("Lawful Good"),
-                        ft.dropdown.Option("Lawful Neutral"),
-                        ft.dropdown.Option("Lawful Evil"),
-                        ft.dropdown.Option("Neutral Good"),
-                        ft.dropdown.Option("Neutral Evil"),
-                        ft.dropdown.Option("Chaotic Good"),
-                        ft.dropdown.Option("Chaotic Neutral"),
-                        ft.dropdown.Option("Chaotic Evil"),
-                        ft.dropdown.Option("None"),
-                    ],
-                    value=self.data.get('character_data', {}).get('Morality', ""),
-                    on_change=lambda e: self._update_character_data(**{"Morality": e.control.value}),
-                )
-            ], wrap=True)
+        # Create a container for our dicts that we have data in and load them. 
+        basic_info_container = ft.Container(            # For basic info
+            padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
+            border=ft.border.all(2, ft.Colors.OUTLINE), 
+            content=ft.Column([]), 
+        )
+        template_data_container = ft.Container(         # For template data
+            padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
+            border=ft.border.all(2, ft.Colors.OUTLINE), 
+            content=ft.Column([]), 
+        )
+        physical_description_container = ft.Container(  # For physical description
+            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+            border=ft.border.all(2, ft.Colors.OUTLINE),
+            content=ft.Column([]), 
+        )   
+        family_container = ft.Container(                # For family
+            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+            border=ft.border.all(2, ft.Colors.OUTLINE),
+            content=ft.Column([]), 
+        )
+        origin_container = ft.Container(                # For origin 
+            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+            border=ft.border.all(2, ft.Colors.OUTLINE), 
+            content=ft.Column([]),
+        )
+        connections_container = ft.Container(           # For connections
+            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+            border=ft.border.all(2, ft.Colors.OUTLINE),
+            content=ft.Column([]), 
+        )
+        custom_fields_container = ft.Container(        # For custom fields
+            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+            border=ft.border.all(2, ft.Colors.OUTLINE),
+            content=ft.Column([]), 
         )
 
-        # Age 
-        body.controls.append(
-            ft.TextField(
-                self.data.get('character_data', {}).get('Age', "").capitalize(), label="Age", dense=True, multiline=True, expand=True,
-                capitalization=ft.TextCapitalization.WORDS, adaptive=True, input_filter=ft.NumbersOnlyInputFilter(),
-                on_blur=lambda e: self._update_character_data(**{"Age": str(e.control.value)}), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-            ) 
-        )
+        # Load the dicts into controls
+        _load_dict_data(self.data.get('character_data', {}).get('Basic Info', {}), basic_info_container, "Basic Info")
+        _load_dict_data(self.data.get('character_data', {}).get('Template Data', {}), template_data_container, "Template Data")
+        _load_dict_data(self.data.get('character_data', {}).get('Physical Description', {}), physical_description_container, "Physical Description")
+        _load_dict_data(self.data.get('character_data', {}).get('Family', {}), family_container, "Family")
+        _load_dict_data(self.data.get('character_data', {}).get('Origin', {}), origin_container, "Origin")
+        _load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container, "Connections")
+        _load_dict_data(self.data.get('character_data', {}).get('Custom Fields', {}), custom_fields_container, "Custom Fields")
 
-        # Nationality and Occupation
-        body.controls.append(
-            ft.Row([
-                ft.TextField(
-                    self.data.get('character_data', {}).get('Nationality', "").capitalize(), label="Nationality", dense=True, 
-                    capitalization=ft.TextCapitalization.WORDS, adaptive=True, expand=True, multiline=True,
-                    on_blur=lambda e: self._update_character_data(**{"Nationality": e.control.value}), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                ),
-                ft.TextField(
-                    self.data.get('character_data', {}).get('Occupation', "").capitalize(), label="Occupation", dense=True, multiline=True,
-                    capitalization=ft.TextCapitalization.WORDS, adaptive=True, expand=True, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                    on_blur=lambda e: self._update_character_data(**{"Occupation": e.control.value}),
-                ),
-            ])
-        )
 
-        # Goals Expansion Tile
-        goals = ft.ExpansionTile(
-            ft.Text("Goals", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)), 
-            shape=ft.RoundedRectangleBorder(), initially_expanded=True, dense=True,
-            controls_padding=ft.padding.only(left=20,top=6,right=20), controls=[ft.Column(spacing=4)]
-        )
+        # Create rows for each section
+        row1 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+        row2 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+        row3 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+        row4 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+        row5 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+        row6 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
 
-        # Called when submitting a new goal via the button or submitting textfield
-        def _submit_new_goal(e=None):
-            '''Handles adding a new goal when user submits the new goal text field.'''
-            new_goal = new_goal_textfield.value.strip()
-            if not new_goal:
-                return
-            current_goals = self.data.get('character_data', {}).get('Goals', [])
-            updated_goals = current_goals + [new_goal]
-            self._update_character_data(**{"Goals": updated_goals})
-            self.reload_widget()
 
-        # Called when deleting goal by clicking the delete button to right of it
-        def _delete_goal(i: int):
-            '''Handles deleting a goal at index i.'''
-            current_goals = self.data.get('character_data', {}).get('Goals', [])
-            if 0 <= i < len(current_goals):
-                updated_goals = current_goals[:i] + current_goals[i+1:]
-                self._update_character_data(**{"Goals": updated_goals})
-                self.reload_widget()
-
-        # Go through our goals and create textfields for each one
-        for index, value in enumerate(self.data.get('character_data', {}).get('Goals', [])):
-            goals.controls[0].controls.append(
+        # Add the labels and containers that have the data controls into the rows for formatting
+        row1.controls.append(
+            ft.Column([
                 ft.Row([
-                    ft.TextField(
-                        value, dense=True, multiline=True, expand=True,
-                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                        on_blur=lambda e, i=index: self._update_character_data(**{"Goals": self.data['character_data']['Goals'][:i] + [e.control.value] + self.data['character_data']['Goals'][i+1:]}),
-                    ),
-                    ft.IconButton(
-                        tooltip="Delete Goal", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
-                        on_click=lambda e, i=index: _delete_goal(i)
-                    )
-                ])
+                    ft.Container(width=6), 
+                    ft.Text("Basic Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                ], spacing=0),
+                ft.Row([basic_info_container])
+            ], expand=True, spacing=4)
+        )
+        # If we have temlpate data, this will add it to the page
+        if 'Template Data' not in self.data.get('character_data', {}):
+            pass
+        else:
+            
+            template_title = self.data.get('character_data', {}).get('Template Data', {}).get('Template Name', 'Template Data')
+            row2.controls.append(
+                ft.Column([
+                    ft.Row([
+                        ft.Container(width=6), 
+                        ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
+                    ft.Row([template_data_container])
+                ], expand=True, spacing=4)
             )
 
-        # Create a new textfield and add button for adding new goals
-        new_goal_textfield = ft.TextField(
-            label="New Goal", dense=True, expand=True, 
-            adaptive=True, capitalization=ft.TextCapitalization.SENTENCES, on_submit=_submit_new_goal
-        )
-        goals.controls[0].controls.append(
-            ft.Row([
-                new_goal_textfield,
-                ft.IconButton(ft.Icons.ADD_CIRCLE_OUTLINE, tooltip="Add Goal", on_click=_submit_new_goal),
-            ])
-        )
-
-        # Add our goals
-        body.controls.append(goals)
-
-
-        # Physical Description Expansion Tile
-        physical_description = ft.ExpansionTile(
-            ft.Text("Physical Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)), 
-            shape=ft.RoundedRectangleBorder(), initially_expanded=True, dense=True,
-            controls_padding=ft.padding.only(left=20,top=6,right=20), controls=[ft.Column(spacing=4)]
-        )
-
-        for key, value in self.data.get('character_data', {}).get('Physical Description', {}).items():
-            physical_description.controls[0].controls.append(
-                ft.TextField(
-                    value, label=key, dense=True, multiline=True, expand=True,
-                    capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                    on_blur=lambda e, k=key: self._update_character_data("Physical Description", **{k: e.control.value}),
-                )
-            )
-
-        body.controls.append(physical_description)
-
-        # Family Expansion Tile
-        family = ft.ExpansionTile(
-            ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)), 
-            shape=ft.RoundedRectangleBorder(), initially_expanded=True, dense=True,
-            controls_padding=ft.padding.only(left=20,top=6,right=20), controls=[ft.Column(spacing=4)]
-        )
-
-        for key, value in self.data.get('character_data', {}).get('Family', {}).items():
-            family.controls[0].controls.append(
-                ft.TextField(
-                    value, label=key, dense=True, multiline=True, expand=True,
-                    capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                    on_blur=lambda e, k=key: self._update_character_data("Family", **{k: e.control.value}),
-                )
-            )
-
-        body.controls.append(family)
-
-        # Origin Expansion Tile
-        origin = ft.ExpansionTile(
-            ft.Text("Origin", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-            shape=ft.RoundedRectangleBorder(), initially_expanded=True, dense=True,
-            controls_padding=ft.padding.only(left=20,top=6,right=20), controls=[ft.Column(spacing=4)]
-        )
-        for key, value in self.data.get('character_data', {}).get('Origin', {}).items():
-            origin.controls[0].controls.append(
-                ft.TextField(
-                    value, label=key, dense=True, multiline=True, expand=True,
-                    capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                    on_blur=lambda e, k=key: self._update_character_data("Origin", **{k: e.control.value}),
-                )
-            )
-        body.controls.append(origin)
-
-
-        connections = ft.ExpansionTile(
-            ft.Text("Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)), 
-            shape=ft.RoundedRectangleBorder(), initially_expanded=True, dense=True,
-            controls_padding=ft.padding.only(left=20,top=6,right=20), 
-            controls=[ft.Column(spacing=4, controls=[])]
-        )
-
-        
-        
-        for key, value in self.data.get('character_data', {}).get('Connections', {}).items():
-            connections.controls[0].controls.append(
-                ft.Dropdown(
-                    value, label=key, dense=True, expand=True, 
-                    on_change=lambda e, k=key: self._update_character_data("Connections", **{k: e.control.value}),
-                    options=[
-                        ft.DropdownOption("Spouse"),
-                        ft.DropdownOption("Child"),
-                        ft.DropdownOption("Parent"),
-                        ft.DropdownOption("Sibling"),
-                        ft.DropdownOption("Friend"),
-                        ft.DropdownOption("Rival"),
-                        ft.DropdownOption("Other")
-                    ]
-                )
-            )
-        connections.controls.append(ft.IconButton(tooltip="Add Connection", icon=ft.Icons.ADD_CIRCLE_OUTLINE, on_click=self._new_connection_clicked))
-
-
-        body.controls.append(connections)
-
-
-
-        # Give us a divider before custom fields and add a label
-        body.controls.append(ft.Divider())
-        body.controls.append(
-            ft.Row([
-                ft.Text("Custom Fields:", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), text_align=ft.TextAlign.CENTER),
-                ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=self._new_custom_field_clicked),
-            ])
-        )
-
-        # Any custom fields we have
-        for key, value in self.data.get('character_data', {}).get('Custom Fields', {}).items():
-            body.controls.append(
+        row3.controls.append(
+            ft.Column([
                 ft.Row([
-                    ft.TextField(
-                        value, label=key, dense=True, multiline=True, expand=True,
-                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                        on_blur=lambda e, k=key: self._update_character_data("Custom Fields", **{k: e.control.value}),
-                    ),
-                    ft.IconButton(
-                        tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
-                        on_click=lambda e, k=key: self._delete_custom_field_clicked(k)
-                    ),
-                ])
-            )
-                
+                    ft.Container(width=6), 
+                    ft.Text("Physical Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                ], spacing=0),
+                ft.Row([physical_description_container])
+            ], expand=True, spacing=4)
+        )
+        row4.controls.append(
+            ft.Column([
+                ft.Row([
+                    ft.Container(width=6), 
+                    ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                ], spacing=0),
+                ft.Row([family_container])
+            ], expand=True, spacing=4)
+        )
+        row5.controls.append(
+            ft.Column([
+                ft.Row([
+                    ft.Container(width=6), 
+                    ft.Text("Origin", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                ], spacing=0),
+                ft.Row([origin_container])
+            ], expand=True, spacing=4)
+        )
 
+        row6.controls.append(
+            ft.Column([
+                ft.Row([
+                    ft.Container(width=6), 
+                    ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=self._new_custom_field_clicked, icon_color=self.data.get('color', None)),
+                ], spacing=0),
+                ft.Row([custom_fields_container])
+            ], expand=True, spacing=4)
+        )
 
-        
-
-
-        # Role ^
-        # Morality ^
-        # Age ^
-        # Personality
-        # Nationality ^ 
-        # Occupation ^
-        # Goals ^
-        # Physical Description {} ^
-        # Family {} ^
-        # Origin {} ^
-        # Connections {}
-        # Custom fields {}
-                
-        
-
-        # Run through all our data and add it to the widget
-        for key, value in self.data.get('character_data', {}).get('custom_fields', {}).items():
-
-            # All other fields that can be auto added to the widget
-            if isinstance(value, str):
-                #data_row.controls.append(ft.Row([ft.Text(f"{key.capitalize()}: ", weight=ft.FontWeight.BOLD), ft.Text(value)], wrap=True))
-                body.controls.append(
-                    ft.TextField(
-                        value.capitalize(), label=key.capitalize(), dense=True, multiline=True,
-                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, width=200,
-                        on_change=lambda e, k=key: self._update_character_data(k, e.control.value),
-                    )
-                )
-                
-            elif isinstance(value, int) and value:
-                body.controls.append(ft.Row([ft.Text(f"{key.capitalize()}: ", weight=ft.FontWeight.BOLD), ft.Text(str(value))], wrap=True))
-
-        #body.controls.append(data_row)
+        body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([row1, row2, row3, row4, row5, row6], spacing=16)))
 
         self.body_container.content = body
 
@@ -550,13 +444,27 @@ class Character(Widget):
             ''' Loads data from a dict into a given container '''
             for key, value in dict.items():
                 if isinstance(value, str):
-                    text_control = ft.Text(
+                    # Treat Goals as a list for display purposes
+                    if key == "Goals":  
+                        text_control = ft.Text(
+                            expand=True, selectable=True, 
+                            spans=[ft.TextSpan(f"{key.capitalize()}: ", ft.TextStyle(weight=ft.FontWeight.BOLD))]   # Key is bold with formatting
+                        )
+                        # Treat string as a list and split by new lines or commas
+                        values = [v.strip() for v in value.replace('\n', ',').split(',') if v.strip()]
+                        for val in values:
+                            text_control.spans.append(ft.TextSpan(f"\n\t\u2022\t{val}"))
+
+                    # Everything else just gets simple display
+                    else:
+                        text_control = ft.Text(
                             expand=True, selectable=True, spans=[
                                 ft.TextSpan(f"{key.capitalize()}: ", ft.TextStyle(weight=ft.FontWeight.BOLD)),   # Key is bold with formatting
                                 ft.TextSpan(value)     # Rest of the value
                             ]
                         )
                     
+                    # Only show the item if it has a value or if we are set to show empty fields
                     if value or app.settings.data.get('show_empty_character_fields', True):
                         container.content.controls.append(text_control)
                     else:
@@ -568,7 +476,7 @@ class Character(Widget):
                         ft.TextSpan(f"{key.capitalize()}:", ft.TextStyle(weight=ft.FontWeight.BOLD)),
                     ])
                     for val in value:
-                            text_control.spans.append(ft.TextSpan(f"\n\t\u2022\t{val}", ft.TextStyle()))
+                        text_control.spans.append(ft.TextSpan(f"\n\t\u2022\t{val}"))
                         
                     if text_control.spans.__len__() > 1 or app.settings.data.get('show_empty_character_fields', True):
                         container.content.controls.append(text_control)
@@ -597,46 +505,39 @@ class Character(Widget):
             ], scroll="auto", expand=True)
 
             # Create a container for our dicts that we have data in and load them. 
-            template_data_container = ft.Container(         # For template data
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE), #bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE_VARIANT),
-                content=ft.Column([]), 
-            )
-        
             basic_info_container = ft.Container(            # For basic info
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE), #bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE_VARIANT),
+                border=ft.border.all(2, ft.Colors.OUTLINE), 
                 content=ft.Column([]), 
-                
             )
-
+            template_data_container = ft.Container(         # For template data
+                padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
+                border=ft.border.all(2, ft.Colors.OUTLINE), 
+                content=ft.Column([]), 
+            )
             physical_description_container = ft.Container(  # For physical description
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE), #bgcolor=ft.Colors.with_opacity(.1, ft.Colors.ON_SURFACE_VARIANT),
+                border=ft.border.all(2, ft.Colors.OUTLINE),
                 content=ft.Column([]), 
             )   
-
             family_container = ft.Container(                # For family
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE), #bgcolor=ft.Colors.with_opacity(.1, ft.Colors.ON_SURFACE_VARIANT),
+                border=ft.border.all(2, ft.Colors.OUTLINE),
                 content=ft.Column([]), 
             )
-
             origin_container = ft.Container(                # For origin 
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE), #bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE_VARIANT),
+                border=ft.border.all(2, ft.Colors.OUTLINE), 
                 content=ft.Column([]),
             )
-
             connections_container = ft.Container(           # For connections
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE), #bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE_VARIANT),
+                border=ft.border.all(2, ft.Colors.OUTLINE),
                 content=ft.Column([]), 
             )
-
             custom_fields_container = ft.Container(        # For custom fields
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE), #bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE_VARIANT),
+                border=ft.border.all(2, ft.Colors.OUTLINE),
                 content=ft.Column([]), 
             )
 

@@ -1,22 +1,6 @@
 ''' 
 Default data dict for character data templates 
 '''
-# Role ^
-# Morality ^
-# Age ^
-# Prefix ^
-# Nationality ^ 
-# Nationality ^
-# Occupation ^
-# Goals ^
-# Physical Description {}
-# Family {}
-# Origin {}
-# Strengths []
-# Weaknesses []
-# Personality
-# Connections {}
-# Custom fields {}
 
 def default_character_template_data_dict() -> dict:
     return {
@@ -30,8 +14,8 @@ def default_character_template_data_dict() -> dict:
             'Age': str, # Age of the character
             'Nationality': str, # Where character is from
             'Occupation': str, # What the character does for a living
-            'Goals': list,          # List of characters goals/motivations
             'Personality': str,  # Description of the character's personality
+            'Goals': str,          # List of characters goals/motivations
         },
         'Physical Description': {
             'Sex': str,     # Biology of the character. Has add option
