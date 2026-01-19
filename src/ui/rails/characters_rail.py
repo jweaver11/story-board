@@ -50,9 +50,14 @@ class CharactersRail(Rail):
             label="Sort method", leading_icon=ft.Icons.SORT_ROUNDED, dense=True,
             tooltip="Sort Characters By", on_change=self._new_sort_method_selected,
             options=[
-                ft.DropdownOption("Age"), ft.DropdownOption("Alphabetical"), ft.DropdownOption("Morality", disabled=True),
-                ft.DropdownOption("Nationality", disabled=True), ft.DropdownOption("Occupation", disabled=True), ft.DropdownOption("Role"), 
-                ft.DropdownOption("Tag", disabled=True), ft.DropdownOption("None"),
+                ft.DropdownOption("Age"), 
+                ft.DropdownOption("Alphabetical"), 
+                ft.DropdownOption("Morality", disabled=True),
+                ft.DropdownOption("Nationality", disabled=True), 
+                ft.DropdownOption("Occupation", disabled=True), 
+                ft.DropdownOption("Role"), 
+                ft.DropdownOption("Tag", disabled=True), 
+                ft.DropdownOption("None"),
             ],
         )
         self.sort_button.value = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
@@ -204,7 +209,7 @@ class CharactersRail(Rail):
             case "Role":
                 different_roles = set()
                 def get_role(character):
-                    role = character.data.get('character_data', {}).get('Role', None)
+                    role = character.data.get('character_data', {}).get('Basic Info', {}).get('Role', None)
                     if role is None or role == "" or role == "None":
                         non_specified_list.append(character)
                     else:
@@ -213,24 +218,15 @@ class CharactersRail(Rail):
             
                 characters_list.sort(key=get_role)   # Returns not set values, then alphabetically by role
 
-                #for role in sorted(different_roles):   # Future implimentation use custom roles. For now we just have 3 so we will hardcode it
+                for role in sorted(different_roles):   # Future implimentation use custom roles. For now we just have 3 so we will hardcode it
+                    content.controls.append(ft.Text(f"{role}:", theme_style=ft.TextThemeStyle.LABEL_LARGE))
+                    for character in characters_list:
+                        if role == character.data.get('character_data', {}).get('Basic Info', {}).get('Role', None):
+                            content.controls.append(TreeViewFile(character))
 
-                content.controls.append(ft.Text("---- Main Characters ----"))
-                for character in characters_list:
-                    if character not in non_specified_list and character.data.get('character_data', {}).get('Role', "") == "Main":
-                        content.controls.append(TreeViewFile(character))
+                
 
-                content.controls.append(ft.Text("---- Side Characters ----"))
-                for character in characters_list:
-                    if character not in non_specified_list and character.data.get('character_data', {}).get('Role', "") == "Side":
-                        content.controls.append(TreeViewFile(character))
-
-                content.controls.append(ft.Text("---- Background Characters ----"))
-                for character in characters_list:
-                    if character not in non_specified_list and character.data.get('character_data', {}).get('Role', "") == "Background":
-                        content.controls.append(TreeViewFile(character))
-
-                content.controls.append(ft.Text("---- Non-specified Role ----"))
+                content.controls.append(ft.Text("Non-specified Role:", theme_style=ft.TextThemeStyle.LABEL_LARGE))
                 for character in non_specified_list:
                     content.controls.append(TreeViewFile(character))
 
@@ -260,11 +256,8 @@ class CharactersRail(Rail):
         )
 
         menu_gesture_detector = ft.GestureDetector(
-            content=dt,
-            expand=True,
-            on_hover=self.on_hovers,
-            on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
-            hover_interval=20,
+            content=dt, expand=True, on_hover=self.on_hovers,
+            on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()), hover_interval=20,
         )
 
         # Set our content to be a column
