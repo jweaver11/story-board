@@ -60,13 +60,20 @@ class MapInformationDisplay(MiniWidget):
 
 
     # Called when toggling our visibility
-    def toggle_visibility(self, e):
+    def toggle_visibility(self, e=None, value: bool = None):
         ''' Custom toggles our visibility for our information display '''
 
-        # Update our visibility (stored in owners data)
-        self.owner.data['information_display_visibility'] = not self.owner.data['information_display_visibility']
-        self.visible = self.owner.data['information_display_visibility']
-        self.owner.save_dict()
+        if value is not None:
+            self.visible = value
+            self.owner.data['information_display_visibility'] = value
+            self.owner.save_dict()
+        else:
+        
+
+            # Update our visibility (stored in owners data)
+            self.owner.data['information_display_visibility'] = not self.owner.data['information_display_visibility']
+            self.visible = self.owner.data['information_display_visibility']
+            self.owner.save_dict()
 
         # Apply the update
         self.p.update()

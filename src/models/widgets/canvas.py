@@ -607,14 +607,12 @@ class Canvas(Widget):
         self.reload_tab()
 
         self.canvas_container.content = self.canvas
-        
 
         self.canvas_container.image = ft.DecorationImage(self.data.get('canvas_meta', {}).get('bgimage_path', ""), fit=ft.ImageFit.COVER) if self.data['canvas_meta'].get('bgimage_path', "") != "" else None
 
         self.body_container.alignment = ft.alignment.center
 
-
-        self.body_container.content = ft.Column([self.header, ft.Divider(thickness=2, height=2), self.interactive_viewer], spacing=0)
+        self.body_container.content = ft.Column([self.header, ft.Divider(thickness=2, height=8), self.interactive_viewer], spacing=0)
 
         self._render_widget()
 

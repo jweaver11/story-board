@@ -692,7 +692,7 @@ class Story(ft.View):
             app.settings.data['active_rail_width'] = self.active_rail.width
             app.settings.save_dict()
 
-            print("Active rail width: " + str(self.active_rail.width))
+            #print("Active rail width: " + str(self.active_rail.width))
 
         # The actual resizer for the active rail (gesture detector)
         active_rail_resizer = ft.GestureDetector(

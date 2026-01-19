@@ -434,7 +434,7 @@ class Widget(ft.Container):
             case "family_tree": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
             case "timeline": self.icon = ft.Icon(ft.Icons.TIMELINE_ROUNDED)
             case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
-            case "world_building": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
+            case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
             case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
 
 
@@ -541,7 +541,7 @@ class Widget(ft.Container):
 
         # Set ratio for our body container and mini widgets
         self.body_container.expand = True
-        #self.body_container.border_radius = ft.border_radius.all(10)
+        self.body_container.border_radius = ft.border_radius.all(10)
         self.body_container.padding = ft.padding.all(6)
 
 
