@@ -453,7 +453,7 @@ class Character(Widget):
                         # Treat string as a list and split by new lines or commas
                         values = [v.strip() for v in value.replace('\n', ',').split(',') if v.strip()]
                         for val in values:
-                            text_control.spans.append(ft.TextSpan(f"\n\t\u2022\t{val}"))
+                            text_control.spans.append(ft.TextSpan(f"\n\t\u2022\t{val.capitalize()}"))
 
                     # Everything else just gets simple display
                     else:
@@ -470,16 +470,7 @@ class Character(Widget):
                     else:
                         continue
                     
-                elif isinstance(value, list):
-                    text_control = ft.Text(
-                        expand=True, selectable=True, spans=[
-                        ft.TextSpan(f"{key.capitalize()}:", ft.TextStyle(weight=ft.FontWeight.BOLD)),
-                    ])
-                    for val in value:
-                        text_control.spans.append(ft.TextSpan(f"\n\t\u2022\t{val}"))
-                        
-                    if text_control.spans.__len__() > 1 or app.settings.data.get('show_empty_character_fields', True):
-                        container.content.controls.append(text_control)
+                
         
         # Rebuild out tab to reflect any changes
         self.reload_tab()

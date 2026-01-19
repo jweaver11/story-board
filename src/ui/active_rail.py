@@ -10,7 +10,7 @@ from models.views.story import Story
 from ui.rails.characters_rail import CharactersRail  
 from ui.rails.content_rail import ContentRail
 from ui.rails.timelines_rail import TimelinesRail
-from ui.rails.maps_rail import MapsRail
+from ui.rails.world_building import WorldBuildingRail
 from ui.rails.canvas_rail import CanvasRail
 from ui.rails.planning_rail import PlanningRail  
 
@@ -36,7 +36,7 @@ class Active_Rail(ft.Container):
         self.content_rail = ContentRail(page, story)
         self.characters_rail = CharactersRail(page, story)
         self.timelines_rail = TimelinesRail(page, story)
-        self.world_building_rail = MapsRail(page, story)
+        self.world_building_rail = WorldBuildingRail(page, story)
         self.canvas_rail = CanvasRail(page, story)
         self.planning_rail = PlanningRail(page, story)
 
@@ -62,7 +62,7 @@ class Active_Rail(ft.Container):
                 if len(self.story.timelines) == 1:
                     for tl in self.story.timelines.values():
                         tl.toggle_visibility(value=True)
-            case "maps":
+            case "world_building":
                 self.content = self.world_building_rail
             case "canvas":
                 self.content = self.canvas_rail

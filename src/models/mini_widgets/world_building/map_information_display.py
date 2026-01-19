@@ -44,7 +44,7 @@ class MapInformationDisplay(MiniWidget):
         ) 
 
         # Set our visibility based on our owners data
-        self.visible = self.owner.data['information_display']['visibility']
+        self.visible = self.owner.data.get('information_display_visibility', True)
 
 
         # Reloads the information display of the map
@@ -64,8 +64,8 @@ class MapInformationDisplay(MiniWidget):
         ''' Custom toggles our visibility for our information display '''
 
         # Update our visibility (stored in owners data)
-        self.owner.data['information_display']['visibility'] = not self.owner.data['information_display']['visibility']
-        self.visible = self.owner.data['information_display']['visibility']
+        self.owner.data['information_display_visibility'] = not self.owner.data['information_display_visibility']
+        self.visible = self.owner.data['information_display_visibility']
         self.owner.save_dict()
 
         # Apply the update

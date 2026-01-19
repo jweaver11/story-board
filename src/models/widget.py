@@ -540,15 +540,10 @@ class Widget(ft.Container):
         
 
         # Set ratio for our body container and mini widgets
-        self.body_container.expand = 6
-        self.body_container.border_radius = ft.border_radius.all(10)
+        self.body_container.expand = True
+        #self.body_container.border_radius = ft.border_radius.all(10)
         self.body_container.padding = ft.padding.all(6)
 
-
-        
-
-        # Put our mini widgets on the right side
-       # row = ft.Row(expand=True, spacing=0, controls=[self.body_container])
 
         self.master_stack.controls = [self.body_container]
 

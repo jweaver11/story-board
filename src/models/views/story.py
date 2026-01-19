@@ -118,7 +118,7 @@ class Story(ft.View):
         self.timelines: dict = dict()       # Timelines for our story
         self.maps: dict = dict()            # Maps created inside of world building
         self.character_connection_maps: dict = dict()   # Family tree views for tracking character relationships
-        self.world_buildings: dict = dict()     # World building widget that contains our maps, lore, governments, history, etc
+        self.worlds: dict = dict()     # World building widget that contains our maps, lore, governments, history, etc
 
         # Store all our widgets above in a master list for easier rendering in the UI
         self.widgets: list = []    
@@ -415,7 +415,7 @@ class Story(ft.View):
         from models.widgets.character import Character
         from models.widgets.timeline import Timeline   
         from models.widgets.map import Map
-        from models.widgets.world_building import WorldBuilding
+        from models.widgets.world import World
         from models.widgets.character_connection_map import CharacterConnectionMap
 
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder
@@ -461,7 +461,7 @@ class Story(ft.View):
                             case "map":
                                 self.maps[key] = Map(title, self.p, dirpath, self, widget_data)
                             case "world_building":
-                                self.world_buildings[key] = WorldBuilding(title, self.p, dirpath, self, widget_data)
+                                self.worlds[key] = World(title, self.p, dirpath, self, widget_data)
                             case "character_connection_map":
                                 self.character_connection_maps[key] = CharacterConnectionMap(title, self.p, dirpath, self, widget_data)
                             case _:
@@ -499,9 +499,9 @@ class Story(ft.View):
         for map in self.maps.values():      # Maps
             if map not in self.widgets:
                 self.widgets.append(map)
-        for wb in self.world_buildings.values():        # World Building
-            if wb not in self.widgets:
-                self.widgets.append(wb)
+        for world in self.worlds.values():        # World Building
+            if world not in self.widgets:
+                self.widgets.append(world)
         for ft in self.character_connection_maps.values():           # Family Trees
             if ft not in self.widgets:
                 self.widgets.append(ft)
@@ -517,7 +517,7 @@ class Story(ft.View):
         from models.widgets.timeline import Timeline
         from models.widgets.map import Map
         from models.widgets.character_connection_map import CharacterConnectionMap
-        from models.widgets.world_building import WorldBuilding
+        from models.widgets.world import World
         from models.app import app
 
         if directory_path is None:
@@ -570,11 +570,11 @@ class Story(ft.View):
                 self.character_connection_maps[key] = widget
                 self.widgets.append(self.character_connection_maps[key])
 
-            case "world_building":
-                widget = WorldBuilding(title, self.p, directory_path, self, data)
+            case "world":
+                widget = World(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.world_buildings[key] = widget
-                self.widgets.append(self.world_buildings[key])
+                self.worlds[key] = widget
+                self.widgets.append(self.worlds[key])
      
             case _:
                 print("Widget tag not valid. Tag:", tag)

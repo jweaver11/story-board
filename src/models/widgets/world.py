@@ -1,9 +1,6 @@
 ''' 
-Our widget class that displays our world building and lore information.
-Our stories have one world building widget, that displays whichever map is selected
-This widget stores 'WorldMaps', which stores sub 'Maps' for its continents, oceans, countries, dungeons etc.
-Maps (sub maps) can store other sub maps infinitely, so a continent can store countries, which can store cities, etc, but don't need to be
-Nested in any particular way. WorldMaps CANNOT store each other or be nested.
+Our widget class that displays our world and lore information. Essentially, all information not displayed visually on the maps goes here
+Maps can tie into one owner 'world' widget
 '''
 
 import os
@@ -14,7 +11,7 @@ from utils.verify_data import verify_data
 from models.app import app
 
 
-class WorldBuilding(Widget):
+class World(Widget):
 
     # Constructor
     def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):
@@ -34,45 +31,15 @@ class WorldBuilding(Widget):
             {
                 'tag': "world_building",     
                 'color': app.settings.data.get('default_world_building_color'),   
-                'summary': str,     # Summary of the world
-
-                'sub_categories': {                     # List of different categories for organizing our world maps on the rail. (Psuedo folders)
-                    'category_name': {
-                        'title': str,               # Title of the category
-                        'is_expanded': bool,        # Whether the category is expanded or collapsed
-                    },
-                    'continents': {
-                        'title': str,
-                        'is_expanded': bool,
-                    },
-                    'oceans': {
-                        'title': str,
-                        'is_expanded': bool,
-                    },
-                    'regions': {
-                        'title': str,
-                        'is_expanded': bool,
-                    },
-                    'countries': {
-                        'title': str,
-                        'is_expanded': bool,
-                    },
-                    'cities': {
-                        'title': str,
-                        'is_expanded': bool,
-                    },
-                    # TODO: Have the story type add categories here
-                },           
-                 
-
+                
+                'summary': str,                     # Summary of the world 
+                'maps': dict,                       # Dict of different maps in the world
                 'lores': dict,                      # Dict of any world lore, myths, legends, etc
                 'history': dict,                    # History of the world
                 'power_systems': dict,              # Power systems of the world
                 'social_systems': dict,             # Social systems of the world
-                'geography': dict,                  # Geography of the world
                 'technology': dict,                 # Technology of the world
                 'governments': dict,                # Governments of the world
-                'content': str,
             }
         )
 

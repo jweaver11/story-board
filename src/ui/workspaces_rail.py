@@ -160,17 +160,18 @@ class WorkspacesRail(ft.Container):
             ],
         )
         # World building workspace rail
-        maps_rail = ft.NavigationRail(
+        world_building_rail = ft.NavigationRail(
             height=70,  
             bgcolor=ft.Colors.TRANSPARENT,
             selected_index=None,
             on_change=lambda e: self.on_workspace_change(e, story),    
             destinations=[
                 ft.NavigationRailDestination(
-                    icon=ft.Icon(ft.Icons.MAP_OUTLINED), 
-                    selected_icon=ft.Icon(ft.Icons.MAP, color=ft.Colors.PRIMARY),
+                    #icon=ft.Icon(ft.Icons.MAP_OUTLINED), selected_icon=ft.Icon(ft.Icons.MAP, color=ft.Colors.PRIMARY),
+                    icon=ft.Icon(ft.Icons.PUBLIC_OUTLINED),
+                    selected_icon=ft.Icon(ft.Icons.PUBLIC, color=ft.Colors.PRIMARY),
                     padding=ft.padding.only(top=10, bottom=10),
-                    data="maps", label_content=ft.Text("Maps", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                    data="world_building", label_content=ft.Text("World Building", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
                 ),
             ],
         )
@@ -213,8 +214,8 @@ class WorkspacesRail(ft.Container):
             characters_rail.selected_index = 0
         elif selected_rail == "timelines":
             timelines_rail.selected_index = 0
-        elif selected_rail == "maps":
-            maps_rail.selected_index = 0
+        elif selected_rail == "world_building":
+            world_building_rail.selected_index = 0
         elif selected_rail == "canvas":
             canvas_rail.selected_index = 0
         elif selected_rail == "planning":
@@ -230,8 +231,8 @@ class WorkspacesRail(ft.Container):
                 workspaces_rail.append(characters_rail)    
             elif workspace == "timelines":
                 workspaces_rail.append(timelines_rail)
-            elif workspace == "maps":
-                workspaces_rail.append(maps_rail)
+            elif workspace == "world_building":
+                workspaces_rail.append(world_building_rail)
             elif workspace == "canvas":
                 workspaces_rail.append(canvas_rail)
             elif workspace == "planning":
@@ -247,7 +248,7 @@ class WorkspacesRail(ft.Container):
             content_rail.destinations[0].label_content = None
             characters_rail.destinations[0].label_content = None
             timelines_rail.destinations[0].label_content = None
-            maps_rail.destinations[0].label_content = None
+            world_building_rail.destinations[0].label_content = None
             canvas_rail.destinations[0].label_content = None
             planning_rail.destinations[0].label_content = None
 

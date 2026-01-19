@@ -7,7 +7,7 @@ from styles.menu_option_style import MenuOptionStyle
 from utils.tree_view import load_directory_data
 
 
-class MapsRail(Rail):
+class WorldBuildingRail(Rail):
 
     # Constructor
     def __init__(self, page: ft.Page, story: Story):
@@ -29,8 +29,8 @@ class MapsRail(Rail):
                         on_click=self.new_item_clicked, data="map"
                     ),
                     ft.PopupMenuItem(
-                        text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,
-                        on_click=self.new_item_clicked, data="world_building"
+                        text="World", icon=ft.Icons.PUBLIC_OUTLINED,
+                        on_click=self.new_item_clicked, data="world"
                     ),
                 ]
             ),
@@ -43,8 +43,8 @@ class MapsRail(Rail):
                         on_click=self.new_item_clicked, data="map"
                     ),
                     ft.PopupMenuItem(
-                        text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,
-                        on_click=self.new_item_clicked, data="world_building"
+                        text="World", icon=ft.Icons.PUBLIC_OUTLINED,
+                        on_click=self.new_item_clicked, data="world"
                     ),
                 ]
             ),
@@ -87,8 +87,8 @@ class MapsRail(Rail):
                             on_click=self.new_item_clicked, data="map"
                         ),
                         ft.PopupMenuItem(
-                            text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,
-                            on_click=self.new_item_clicked, data="world_building"
+                            text="World", icon=ft.Icons.PUBLIC_OUTLINED,
+                            on_click=self.new_item_clicked, data="world"
                         ),
                     ]
                 ),
@@ -128,12 +128,6 @@ class MapsRail(Rail):
                 ])
             ),
         ]
-    
-    def show_world_building_widget(self):
-        ''' Shows the world building widget '''
-
-        if self.story.world_building is not None:
-            self.story.world_building.toggle_visibility()
 
 
     # Called on startup and when we have changes to the rail that have to be reloaded 
@@ -161,7 +155,7 @@ class MapsRail(Rail):
             directory=self.directory_path,
             column=content,
             rail=self,
-            tags=["map", "world_building"],
+            #tags=["map", "world"],
             additional_directory_menu_options=self.get_directory_menu_options(),
             additional_file_menu_options=self.get_file_menu_options()
         )

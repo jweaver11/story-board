@@ -45,7 +45,7 @@ def default_character_template_data_dict() -> dict:
             'Trauma': str,
         },  
 
-        'Connections': dict,
+        'Connections': dict,    # {character_key: str, type: str}   Exp: {character_key: "Joe_Key", type: "Friend"...}
         'Custom Fields': dict       # Anything the user wants to add on their own
         # custom fields {key: {label: str, value: str}, key2: {label: str, value: str} ... }
     }

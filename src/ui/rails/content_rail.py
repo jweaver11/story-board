@@ -66,8 +66,8 @@ class ContentRail(Rail):
                         on_click=self.new_item_clicked, data="map"
                     ),
                     ft.PopupMenuItem(
-                        text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,
-                        on_click=self.new_item_clicked, data="world_building"
+                        text="World", icon=ft.Icons.PUBLIC_OUTLINED,
+                        on_click=self.new_item_clicked, data="world"
                     ),
                 ]
             ),
@@ -75,15 +75,15 @@ class ContentRail(Rail):
                 icon=ft.Icons.FILE_UPLOAD_OUTLINED,
                 tooltip="Upload", menu_padding=0,
                 items=[
-                    ft.PopupMenuItem(text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED),
-                    ft.PopupMenuItem(text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED),
                     ft.PopupMenuItem(text="Canvas", icon=ft.Icons.BRUSH_OUTLINED),
-                    ft.PopupMenuItem(text="Note", icon=ft.Icons.NOTE_ALT_OUTLINED),
+                    ft.PopupMenuItem(text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED),
                     ft.PopupMenuItem(text="Character", icon=ft.Icons.PERSON_OUTLINED),
-                    ft.PopupMenuItem(text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED),
+                    ft.PopupMenuItem(text="Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED),
+                    ft.PopupMenuItem(text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED),
                     ft.PopupMenuItem(text="Map", icon=ft.Icons.MAP_OUTLINED),
-                    ft.PopupMenuItem(text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED),
-                    ft.PopupMenuItem(text="World Building", icon=ft.Icons.PUBLIC_OUTLINED),
+                    ft.PopupMenuItem(text="Note", icon=ft.Icons.NOTE_ALT_OUTLINED),
+                    ft.PopupMenuItem(text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED),
+                    ft.PopupMenuItem(text="World", icon=ft.Icons.PUBLIC_OUTLINED),
                 ]
             ),
         ]

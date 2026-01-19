@@ -64,7 +64,7 @@ class Settings(ft.View):
                     "content",
                     "characters",
                     "timelines",
-                    "maps",
+                    "world_building",
                     "canvas",
                     "planning",
                 ],
@@ -502,7 +502,7 @@ class Settings(ft.View):
                         value=self.data.get('default_canvas_board_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                        on_change=lambda e: self.change_data(default_canvas_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -552,7 +552,7 @@ class Settings(ft.View):
                         value=self.data.get('default_character_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                        on_change=lambda e: self.change_data(default_character_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -577,7 +577,7 @@ class Settings(ft.View):
                         value=self.data.get('default_character_connection_map_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                        on_change=lambda e: self.change_data(default_character_connection_map_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -603,7 +603,7 @@ class Settings(ft.View):
                         value=self.data.get('default_map_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                        on_change=lambda e: self.change_data(default_map_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -628,7 +628,7 @@ class Settings(ft.View):
                         value=self.data.get('default_note_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()), 
+                        on_change=lambda e: self.change_data(default_note_pin_location=e.control.value.lower()), 
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -653,7 +653,7 @@ class Settings(ft.View):
                         value=self.data.get('default_planning_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                        on_change=lambda e: self.change_data(default_planning_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -680,7 +680,7 @@ class Settings(ft.View):
                         value=self.data.get('default_timeline_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                        on_change=lambda e: self.change_data(default_timeline_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -688,24 +688,23 @@ class Settings(ft.View):
 
                 ft.Row([
                     ft.Container(width=10),   # Spacer
-                    ft.Text("World Building", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
+                    ft.Text("Worlds", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
                     ft.Dropdown(
                         label="Color", tooltip="Default color for new world building widgets",
                         capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
                         options=self._get_color_options(), on_change=_set_default_widget_color,
-                        value=self.data.get('default_world_building_color', "primary"),
+                        value=self.data.get('default_world_color', "primary"),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        color=self.data.get('default_world_building_color', "primary"),
-                        dense=True, data="world_building",
+                        color=self.data.get('default_world_color', "primary"),
+                        dense=True, data="world",
                     ),
                     ft.Dropdown(
                         label="Pin Location", tooltip="Default pin location for new world building widgets",
                         capitalization= ft.TextCapitalization.SENTENCES,
                         options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
                         value=self.data.get('default_world_building_pin_location', "main").capitalize(),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        dense=True,
-                        on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), dense=True,
+                        on_change=lambda e: self.change_data(default_world_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -782,6 +781,11 @@ class Settings(ft.View):
                 ft.Divider(),
 
                 ft.Text("Timelines", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
+                ft.Container(height=10),    # Spacer
+
+                ft.Divider(),
+
+                ft.Text("Worlds", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
                 ft.Container(height=10),    # Spacer
                 
                 ft.Container(expand=True, height=500)

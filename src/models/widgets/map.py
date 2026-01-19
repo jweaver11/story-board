@@ -1,9 +1,9 @@
 '''
 The map class for all maps inside our story
-Maps are widgets that have their own drawing canvas, and info display. they can contain nested sub maps as well.
+Maps are widgets that have their own drawing canvas, background image, information display, and markers/locations
 '''
 
-#TODO: 
+# TODO: 
 # BLANK NO TEMPLATE MAPS EXIST AS WELL
 # ADD DUPLICATE OPTION AS WELL
 # Users can choose to create their image or use some default ones, or upload their own
@@ -39,9 +39,7 @@ class Map(Widget):
         data: dict = None
     ):
         
-        # Supported categories: World map, continent, region, ocean, country, city, dungeon, room, none.
-        
-        
+                
         # Parent constructor
         super().__init__(
             title=title,           
@@ -58,27 +56,21 @@ class Map(Widget):
             {
                 'tag': "map", 
                 'color': app.settings.data.get('default_map_color'),
-                'information_display': {'visibility': True},   # Info display mini widget visibility
-                'is_displayed': True,           # Whether the map is visible in the world building widget or not
-                'sub_maps': list,               # Sub maps contained within this map
-                'markers': dict,                # Markers placed on the map
-                'locations': dict,
-                'geography': dict,              # Geography of the world
-                'rooms': dict,                  
-                'notes': str,
 
-                'position': {               # Our position on our parent map when parent map is not in edit mode
-                    'x': 0,                    
-                    'y': 0,                     
-                },
+                'information_display_visibility': True,   # Info display mini widget visibility
+                              
+                'summary': str,
+                'in_drawing_mode': bool,         # Whether we are in drawing mode or not
 
-                'sub_categories': {                     # Categories for organizing our sub maps on the rail
-                    'category_name': {
-                        'title': str,                   # Title of the category
-                        'is_expanded': bool,            # Whether the category is expanded or collapsed
-                    },
-                },
-            },
+                'markers': dict,        # Our markers on this map
+
+                # WIP - parent maps and child maps connected to this one
+                'world': str,       # The world this map belongs to
+                'parent_maps': dict,        # Any parent map this map belongs too
+                'child_maps': dict,         # Any child/sub maps this map has
+                'alignment': {'x': 0, 'y': 0},   # Our alignment on our parent map. Both values between -1 and 1
+      
+            },  
         )
 
         # UI Elements
@@ -101,19 +93,6 @@ class Map(Widget):
         self.maps: list = []
         self.details = {}
 
-        # The Visual Canvas map for drawing
-        self.map = cv.Canvas(
-            content=ft.GestureDetector(
-                #on_pan_start=self.start_drawing,
-                #on_pan_update=self.is_drawing,
-                #on_pan_end=lambda e: self.save_canvas(),
-                on_double_tap=lambda e: print("Double tap detected"),
-                #drag_interval=10,
-            ),
-            expand=True
-        )
-
-        self.brush = ft.Paint(stroke_width=3)
 
         # The display container for our map
         self.canvas: ft.InteractiveViewer = None
@@ -125,6 +104,15 @@ class Map(Widget):
             page=self.p,
             key="information_display",
             data=None
+        )
+
+        self.map_gd = ft.GestureDetector(
+            content=ft.Stack(),     # Stack to add our 
+            on_secondary_tap=lambda e: print("Open menu to add marker or sub map"),
+            on_tap=lambda e: print("Open Information Display"),
+            on_enter=lambda e: print("Show hover effects"),
+            on_exit=lambda e: print("Hide hover effects"),
+            on_hover=lambda e: print("Update our alignment/offset so new items know where to go")
         )
 
         self.mini_widgets.append(self.information_display)
@@ -171,49 +159,37 @@ class Map(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        #
-
+        
         # Make it so that maps 'mini widget' shows inside of the map...
-        # Multiple mini widgets able to be shown at same time
         # We render our map and all the markers, then go through our 'sub maps', find their data, and render them on top as well
         # - Sub maps only have the title still, we don't save their data
         # -- Recursively go through rendering sub maps on top of parent map
 
-        # Adds like 1000 gd's on top of the map for right clicking and placing marks/content. The mini widget that is placed is then the...
-        # Content of one of those 1000 gd's. 
 
-        # canvas of our map (Gesture detector)
-        canvas = ft.Column([
-            self.map,
-            ft.Row(
-                expand=True,
-                controls=[
-                    ft.ElevatedButton("Save Drawing", on_click=lambda e: self.save_canvas()),
-                    ft.ElevatedButton("Load Drawing", on_click=lambda e: self.load_canvas())
-                ]
-            )
-        ])
-
+        
+        # Create our stack that will hold our background image, canvas, and map elements
         stack = ft.Stack(
             expand=True,
             controls=[
-                ft.Image(
-                    src="map_background.png",
-                    fit=ft.ImageFit.COVER,
-                    expand=True
+                ft.Container(
+                    expand=True, ignore_interactions=True,
+                    image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
                 ),
-                canvas,
+                
+                
+                ft.Container(bgcolor="red", height=50, width=50, shape=ft.BoxShape.CIRCLE),
+                
             ]
         )
 
-        canvas_container = ft.Container(
-            content=stack,
-            expand=True,
-        )
 
-        self.canvas = canvas_container
 
-        self.body_container.content = self.canvas
+
+
+        #stack.controls.append(self.canvas)
+
+        self.body_container.content = stack
+
 
         self._render_widget()
     
