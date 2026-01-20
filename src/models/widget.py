@@ -428,7 +428,7 @@ class Widget(ft.Container):
         match tag:
             case "chapter": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
             case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
-            case "canvas_board": self.icon = ft.Icon(ft.Icons.DASHBOARD_OUTLINED)
+            case "canvas_board": self.icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
             case "note": self.icon = ft.Icon(ft.Icons.COMMENT_OUTLINED)
             case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
             case "family_tree": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)

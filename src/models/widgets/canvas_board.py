@@ -26,8 +26,8 @@ class CanvasBoard(Widget):
         verify_data(
             object=self,   # Pass in our own data so the function can see the actual data we loaded
             required_data={
-                'tag': "family_tree",
-                'color': app.settings.data.get('default_family_tree_color'),
+                'tag': "canvas_board",
+                'color': app.settings.data.get('default_canvas_board_color'),
                 
             },
         )

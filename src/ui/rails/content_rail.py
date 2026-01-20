@@ -76,6 +76,7 @@ class ContentRail(Rail):
                 tooltip="Upload", menu_padding=0,
                 items=[
                     ft.PopupMenuItem(text="Canvas", icon=ft.Icons.BRUSH_OUTLINED),
+                    ft.PopupMenuItem(text="Canvas Board", icon=ft.Icons.SPACE_DASHBOARD_OUTLINED),
                     ft.PopupMenuItem(text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED),
                     ft.PopupMenuItem(text="Character", icon=ft.Icons.PERSON_OUTLINED),
                     ft.PopupMenuItem(text="Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED),
@@ -120,6 +121,10 @@ class ContentRail(Rail):
                         ft.PopupMenuItem(
                             text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
                             on_click=self.new_item_clicked, data="canvas"
+                        ),
+                        ft.PopupMenuItem(
+                            "Canvas Board", icon=ft.Icons.SPACE_DASHBOARD_OUTLINED,
+                            on_click=self.new_item_clicked, data="canvas_board"
                         ),
                         ft.PopupMenuItem(
                             "Note", ft.Icons.NOTE_ALT_OUTLINED,

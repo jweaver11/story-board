@@ -114,6 +114,7 @@ class Story(ft.View):
         self.chapters: dict = dict()        # Text based chapeters only
         self.notes: dict = dict()           # Notes stored in our story
         self.canvases: dict = dict()        # canvases by the user for comic chapters, or to store images (as backgrounds)
+        self.canvas_boards: dict = dict()   # Canvas boards that store multiple canvases inside of them 
         self.characters: dict = dict()      # Characters in the story
         self.plotlines: dict = dict()       # plotlines for our story
         self.maps: dict = dict()            # Maps created inside of world building
@@ -417,6 +418,7 @@ class Story(ft.View):
         from models.widgets.map import Map
         from models.widgets.world import World
         from models.widgets.character_connection_map import CharacterConnectionMap
+        from models.widgets.canvas_board import CanvasBoard
 
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder
         if not os.path.exists(self.data['content_directory_path']):
@@ -452,6 +454,8 @@ class Story(ft.View):
                                 self.chapters[key] = Chapter(title, self.p, dirpath, self, widget_data)
                             case "canvas":
                                 self.canvases[key] = Canvas(title, self.p, dirpath, self, widget_data)
+                            case "canvas_board":
+                                self.canvas_boards[key] = CanvasBoard(title, self.p, dirpath, self, widget_data)
                             case "note":
                                 self.notes[key] = Note(title, self.p, dirpath, self, widget_data)
                             case "character":
@@ -487,6 +491,9 @@ class Story(ft.View):
         for canvas in self.canvases.values():    # Canvases
             if canvas not in self.widgets:
                 self.widgets.append(canvas)
+        for canvas_board in self.canvas_boards.values():    # Canvas Boards
+            if canvas_board not in self.widgets:
+                self.widgets.append(canvas_board)
         for note in self.notes.values():        # Notes
             if note not in self.widgets:
                 self.widgets.append(note)
@@ -502,9 +509,9 @@ class Story(ft.View):
         for world in self.worlds.values():        # World Building
             if world not in self.widgets:
                 self.widgets.append(world)
-        for ft in self.character_connection_maps.values():           # Family Trees
-            if ft not in self.widgets:
-                self.widgets.append(ft)
+        for ccm in self.character_connection_maps.values():           # Family Trees
+            if ccm not in self.widgets:
+                self.widgets.append(ccm)
 
         
     # Called to create a new widget based on tag (chapter, note, character, etc)
@@ -513,6 +520,7 @@ class Story(ft.View):
         from models.widgets.chapter import Chapter
         from models.widgets.note import Note
         from models.widgets.canvas import Canvas
+        from models.widgets.canvas_board import CanvasBoard
         from models.widgets.character import Character
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
@@ -575,6 +583,13 @@ class Story(ft.View):
                 key = widget.data.get('key', '')
                 self.worlds[key] = widget
                 self.widgets.append(self.worlds[key])
+
+            case "canvas_board":
+                widget = CanvasBoard(title, self.p, directory_path, self, data)
+                key = widget.data.get('key', '')
+                self.canvas_boards[key] = widget
+                self.widgets.append(self.canvas_boards[key])
+
      
             case _:
                 print("Widget tag not valid. Tag:", tag)

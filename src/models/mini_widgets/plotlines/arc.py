@@ -33,18 +33,15 @@ class Arc(MiniWidget):
             data=data,         
         ) 
 
-
+        # Set either left or right on start
         if x_alignment is not None:
             x_alignment_start = x_alignment -.2 if x_alignment > -0.8 else -1
             x_alignment_end = x_alignment + .2 if x_alignment < 0.8 else 1
-            #print("X alignment passed in was: ", x_alignment)
             side_location = "left" if x_alignment > 0 else "right"
         else:
             x_alignment_start = -0.2
             x_alignment_end = 0.2
             side_location = "right"
-
-        print("Side location set to: ", side_location)
 
         # Verifies this object has the required data fields, and creates them if not
         verify_data(

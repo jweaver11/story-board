@@ -125,6 +125,8 @@ class Rail(ft.Container):
                 self.new_item_textfield.hint_text = "Plot Point Title"
             case "character" | "category" :
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
+            case "canvas_board":
+                self.new_item_textfield.hint_text = "Canvas Board Title"
             case _:
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
 
