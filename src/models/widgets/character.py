@@ -50,7 +50,7 @@ class Character(Widget):
                 'character_data': app.settings.data.get('character_templates', {}).get(app.settings.get('active_character_template', ""), default_character_template_data_dict()) if
                     data is None or 'character_data' not in data else data['character_data'],
             },
-        )
+        ) 
                 
         self.custom_field_controls = {}  # Store references to custom field TextFields
 
@@ -94,44 +94,47 @@ class Character(Widget):
             ),
         ]
     
-    # Called when user wants to create a new text field in character
-    def _new_custom_field_clicked(self, e):
-        ''' Handles prompting user for custom textfield name and creating it '''
+    def _new_field_clicked(self, sub_key: str, category: str=""):
+        ''' Called when the new field button is clicked '''
+
+        if 'character_data' not in self.data:
+            self.data['character_data'] = {}
+
+        if sub_key not in self.data['character_data']:
+            self.data['character_data'][sub_key] = {}
 
         def create_field(e): #show in edit view
             '''Called when user confirms the field name'''
-            try:
-                field_name = return_safe_name(field_name_input.value)
-                
-                if not field_name:
-                    self.p.close(dlg)
-                    return  # Don't create if empty
-                
-                # Add the field to data if it doesn't exist
-                if field_name not in self.data['character_data']['Custom Fields']:
-                    self.data['character_data']['Custom Fields'][field_name] = ""
-                
-                # Save and reload
-                self.save_dict()
+            
+            field_name = return_safe_name(field_name_input.value)
+            
+            if not field_name:
                 self.p.close(dlg)
-                self.reload_widget()
+                return  # Don't create if empty
+            
+            # Add the field to data if it doesn't exist
+            if field_name not in self.data['character_data'][sub_key]:
+                self.data['character_data'][sub_key][field_name] = ""
+            
+            # Save and reload
+            self.save_dict()
+            self.p.close(dlg)
+            self.reload_widget()
                                 
-            except Exception as ex:
-                print(f"Error creating custom field: {ex}")
-                self.p.close(dlg)
+            
 
         # Create a dialog to ask for the field name
         field_name_input = ft.TextField(
-            label="Field Name", hint_text="Notes, Hobbies, Pets, etc.",
+            label="Field Name", hint_text=f"New {category} Name",
             autofocus=True, capitalization=ft.TextCapitalization.SENTENCES,
             on_submit=create_field,     # Closes the overlay when submitting
         )
         
         dlg = ft.AlertDialog(
-            title=ft.Text("Create New Custom Field"),
+            title=ft.Text(f"Create New {category} Field"),
             content=field_name_input,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg)),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
                 ft.TextButton("Create", on_click=create_field),
             ],
         )
@@ -150,18 +153,20 @@ class Character(Widget):
     def _update_character_data(self, sub_key: str="", **kwargs):
         ''' Updates the character data dict or up to one sub dict '''
 
-        for key, value in kwargs.items():
-            #print("Updating field:", key, "to value:", value)
-            if sub_key != "":
-                self.data['character_data'][sub_key][key] = value
-            else:
-                self.data['character_data'][key] = value
-                
+        will_reload_rail = False
+    
+        sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
+
+        for k, value in kwargs.items():
+            self.data['world_data'][sub_key][k] = value
+            if sort_method == k and self.story.data.get('selected_rail', "") == "characters":
+                will_reload_rail = True
+
+        
         self.save_dict()
 
-        # Check if we're sorting by the updated key, and if characters rail is selected. If it is, reload the rail
-        sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
-        if sort_method == key and self.story.data.get('selected_rail', "") == "characters":
+        
+        if will_reload_rail:
             self.story.active_rail.content.reload_rail()
 
     def _delete_character_data(self, sub_key: str="", **kwargs):
@@ -347,7 +352,9 @@ class Character(Widget):
             ft.Column([
                 ft.Row([
                     ft.Container(width=6), 
-                    ft.Text("Basic Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ft.Text("Basic Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Basic Info", "Basic Info"), icon_color=self.data.get('color', None)),
+
                 ], spacing=0),
                 ft.Row([basic_info_container])
             ], expand=True, spacing=4)
@@ -362,7 +369,9 @@ class Character(Widget):
                 ft.Column([
                     ft.Row([
                         ft.Container(width=6), 
-                        ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.data.get('color', None), selectable=True, expand=True)
+                        ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.data.get('color', None), selectable=True),
+                        ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Template Data", "Template Data"), icon_color=self.data.get('color', None)),
+
                     ], spacing=0),
                     ft.Row([template_data_container])
                 ], expand=True, spacing=4)
@@ -373,6 +382,8 @@ class Character(Widget):
                 ft.Row([
                     ft.Container(width=6), 
                     ft.Text("Physical Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Physical Description", "Physical Description"), icon_color=self.data.get('color', None)),
+
                 ], spacing=0),
                 ft.Row([physical_description_container])
             ], expand=True, spacing=4)
@@ -382,6 +393,8 @@ class Character(Widget):
                 ft.Row([
                     ft.Container(width=6), 
                     ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Family", "Family"), icon_color=self.data.get('color', None)),
+
                 ], spacing=0),
                 ft.Row([family_container])
             ], expand=True, spacing=4)
@@ -391,6 +404,8 @@ class Character(Widget):
                 ft.Row([
                     ft.Container(width=6), 
                     ft.Text("Origin", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Origin", "Origin"), icon_color=self.data.get('color', None)),
+
                 ], spacing=0),
                 ft.Row([origin_container])
             ], expand=True, spacing=4)
@@ -401,7 +416,7 @@ class Character(Widget):
                 ft.Row([
                     ft.Container(width=6), 
                     ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=self._new_custom_field_clicked, icon_color=self.data.get('color', None)),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields", "Custom"), icon_color=self.data.get('color', None)),
                 ], spacing=0),
                 ft.Row([custom_fields_container])
             ], expand=True, spacing=4)

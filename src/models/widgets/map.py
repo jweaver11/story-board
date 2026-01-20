@@ -62,6 +62,8 @@ class Map(Widget):
                 'summary': str,
                 'in_drawing_mode': bool,         # Whether we are in drawing mode or not
 
+                'image_base64': str,  # Saves our icon as img64 string
+
                 'markers': dict,        # Our markers on this map
 
                 # WIP - parent maps and child maps connected to this one

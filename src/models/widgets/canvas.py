@@ -54,6 +54,8 @@ class Canvas(Widget):
             {
                 "tag": "canvas",
                 'color': app.settings.data.get('default_canvas_color'),
+
+                'image_base64': str,  # Saves our icon as img64 string
                 
                 "canvas_meta": {        # Set canvas data here
                     "width": int,
@@ -115,7 +117,7 @@ class Canvas(Widget):
         self.header = ft.Row([
             # Undo and redo buttons
             ft.PopupMenuButton(
-                icon=ft.Icons.IMAGE_ASPECT_RATIO_OUTLINED, tooltip="Set the background of your canvas. If one is set, it will be exported with the canvas",
+                icon=ft.Icons.IMAGE_OUTLINED, tooltip="Set the background of your canvas. If one is set, it will be exported with the canvas",
                 menu_padding=ft.padding.all(0), 
                 #on_cancel=self._set_color,
                 items=[
@@ -124,6 +126,10 @@ class Canvas(Widget):
                     ft.PopupMenuItem("Image", on_click=self._set_canvas_background, tooltip="Set an image as the background"),
                 ]
             ),
+            ft.IconButton(
+                icon=ft.Icons.FILE_DOWNLOAD_OUTLINED,
+                tooltip="Export Canvas"
+            )
             # Show Notes/comments toggle
         ])
 

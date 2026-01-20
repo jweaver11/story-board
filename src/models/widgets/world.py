@@ -50,52 +50,11 @@ class World(Widget):
                 },
             }
         )
-
-        # Dict of different worlds and their maps stored
-        #self.maps = {}
-
-        self.locations = {}
-        self.lore = {}
-        self.power_systems = {}         # Tie to any
-        self.social_systems = {}        # Tie to countries, tribes, continents, etc
-        self.geography = {}             # Tie to any
-        self.technology = {}            # Tie to any
-        self.history = {}               # Tie to any
-        self.governments = {}           # Tie to countries, tribes, etc
-
-        # Load our live objects from our data
-        #self.load_maps() 
-        self.load_lore()
-        self.load_power_systems()
-        self.load_social_systems()
-        self.load_geography()
-        self.load_technology()
-        self.load_history()
-
-        self.reload_tab()
+      
         self.reload_widget()
     
 
-    def load_lore(self):
-        pass
-
-    def load_power_systems(self):
-        pass
-
-    def load_social_systems(self):
-        pass
-
-    def load_geography(self):
-        pass
-
-    def load_technology(self):
-        pass
-
-    def load_history(self): 
-        pass
-
-    def load_governments(self):
-        pass
+    
 
     def _update_world_data(self, key: str, **kwargs):
         ''' Updates our world data field with a new value '''
@@ -105,7 +64,6 @@ class World(Widget):
 
         
         self.save_dict()
-        #self.reload_widget()
 
     def _delete_world_data(self, sub_key: str="", **kwargs):
         ''' Deletes fields from the character data dict or up to one sub dict '''
@@ -122,7 +80,7 @@ class World(Widget):
         self.reload_widget()
 
     def _new_field_clicked(self, sub_key: str, category: str=""):
-        ''' Called when the new custom field button is clicked '''
+        ''' Called when the new field button is clicked '''
 
         if 'world_data' not in self.data:
             self.data['world_data'] = {}
