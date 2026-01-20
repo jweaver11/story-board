@@ -63,7 +63,7 @@ class Settings(ft.View):
                 'workspaces_rail_order': [      # Order of the workspace rail
                     "content",
                     "characters",
-                    "timelines",
+                    "plotlines",
                     "world_building",
                     "canvas",
                     "planning",
@@ -81,7 +81,7 @@ class Settings(ft.View):
                 'default_map_color': "primary",
                 'default_note_color': "primary",
                 'default_planning_color': "primary",
-                'default_timeline_color': "primary",
+                'default_plotline_color': "primary",
                 'default_world_color': "primary",
 
                 'default_category_color': "primary",    # Categories thrown in here
@@ -94,7 +94,7 @@ class Settings(ft.View):
                 'default_map_pin_location': "main",
                 'default_note_pin_location': "right",
                 'default_planning_pin_location': "main",
-                'default_timeline_pin_location': "main",
+                'default_plotline_pin_location': "main",
                 'default_world_pin_location': "left",
 
                 'active_character_template': "Default",    # Which template is being used for new characters for new stories - they default to this
@@ -373,8 +373,8 @@ class Settings(ft.View):
                     self.data['default_note_color'] = new_color
                 case "character":
                     self.data['default_character_color'] = new_color
-                case "timeline":
-                    self.data['default_timeline_color'] = new_color
+                case "plotline":
+                    self.data['default_plotline_color'] = new_color
                 case "map":
                     self.data['default_map_color'] = new_color
                 case "planning":
@@ -663,24 +663,24 @@ class Settings(ft.View):
 
                 ft.Row([
                     ft.Container(width=10),   # Spacer
-                    ft.Text("Timelines", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
+                    ft.Text("Plotlines", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
                     ft.Dropdown(
-                        label="Color", tooltip="Default color for new timelines",
+                        label="Color", tooltip="Default color for new plotlines",
                         capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
                         options=self._get_color_options(), on_change=_set_default_widget_color,
-                        value=self.data.get('default_timeline_color', "primary"),
+                        value=self.data.get('default_plotline_color', "primary"),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        color=self.data.get('default_timeline_color', "primary"),
-                        dense=True, data="timeline",
+                        color=self.data.get('default_plotline_color', "primary"),
+                        dense=True, data="plotline",
                     ),
                     ft.Dropdown(
-                        label="Pin Location", tooltip="Default pin location for new timelines",
+                        label="Pin Location", tooltip="Default pin location for new plotlines",
                         capitalization= ft.TextCapitalization.SENTENCES,
                         options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
-                        value=self.data.get('default_timeline_pin_location', "main").capitalize(),
+                        value=self.data.get('default_plotline_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_timeline_pin_location=e.control.value.lower()),
+                        on_change=lambda e: self.change_data(default_plotline_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -780,7 +780,7 @@ class Settings(ft.View):
                 
                 ft.Divider(),
 
-                ft.Text("Timelines", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
+                ft.Text("Plotlines", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
                 ft.Container(height=10),    # Spacer
 
                 ft.Divider(),

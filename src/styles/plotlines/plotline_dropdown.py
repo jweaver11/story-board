@@ -5,16 +5,16 @@ Extended flet controls that implement the same styling for easy access
 import flet as ft
 from styles.menu_option_style import MenuOptionStyle
 from models.views.story import Story
-from models.widgets.timeline import Timeline
+from models.widgets.plotline import Plotline
 import os
 from styles.colors import colors
 
 
-# TODO: When clicking and expanding, make sure to set the active_timeline to this timeline, 
-# so we can use the buttons at top of rail when there are multiple timelines
+# TODO: When clicking and expanding, make sure to set the active_plotline to this plotline, 
+# so we can use the buttons at top of rail when there are multiple plotlines
 
-# Expansion tiles used for timelines (when more than 1), plotpoints labels, and arcs labels
-class TimelineDropdown(ft.GestureDetector):
+# Expansion tiles used for plotlines (when more than 1), plotpoints labels, and arcs labels
+class PlotlineDropdown(ft.GestureDetector):
 
     # Constructor
     def __init__(
@@ -22,21 +22,21 @@ class TimelineDropdown(ft.GestureDetector):
         title: str,                                              # Title of this folder
         story: Story,                                            # Story reference for mouse positions and other logic
         additional_menu_options: list[ft.Control],               # Additional menu options when right clicking a category, depending on the rail
-        timeline: Timeline,                                      # Reference to the timeline this dropdown represents 
+        plotline: Plotline,                                      # Reference to the plotline this dropdown represents 
         rail,     
     ):
 
         # Set our parameters
         self.title = title
         self.story = story
-        self.timeline = timeline
+        self.plotline = plotline
         self.additional_menu_options = additional_menu_options
         self.rail = rail
 
 
         # Set other variables
-        self.color = self.timeline.data.get("color", "primary")
-        self.is_expanded = self.timeline.data.get("dropdown_is_expanded", True)
+        self.color = self.plotline.data.get("color", "primary")
+        self.is_expanded = self.plotline.data.get("dropdown_is_expanded", True)
 
         # State tracking variables
         self.are_submitting = False
@@ -144,12 +144,12 @@ class TimelineDropdown(ft.GestureDetector):
 
         self.is_expanded = not self.is_expanded
 
-        self.timeline.data["dropdown_is_expanded"] = self.is_expanded
-        self.timeline.save_dict()
+        self.plotline.data["dropdown_is_expanded"] = self.is_expanded
+        self.plotline.save_dict()
 
-        # Make the timeline widget visible if its not
-        if not self.timeline.visible:
-            self.timeline.toggle_visibility()
+        # Make the plotline widget visible if its not
+        if not self.plotline.visible:
+            self.plotline.toggle_visibility()
 
         #print("Active dropdown before:", self.rail.active_dropdown)
         if self.rail.active_dropdown is not None:
@@ -159,8 +159,8 @@ class TimelineDropdown(ft.GestureDetector):
                 self.rail.active_dropdown.refresh_expansion_tile()
             
             else:
-                self.rail.active_dropdown.timeline_dropdown.is_focused = False
-                self.rail.active_dropdown.timeline_dropdown.refresh_expansion_tile()
+                self.rail.active_dropdown.plotline_dropdown.is_focused = False
+                self.rail.active_dropdown.plotline_dropdown.refresh_expansion_tile()
 
         self.rail.active_dropdown = self
         self.rail.refresh_buttons()
@@ -199,7 +199,7 @@ class TimelineDropdown(ft.GestureDetector):
 
     # Called when our new item textfield changes
     def new_item_check(self, e):
-        ''' Checks if our new item is unique in our timeline's dicts '''
+        ''' Checks if our new item is unique in our plotline's dicts '''
 
         # Get our name and check if its unique
         title = e.control.value
@@ -210,8 +210,8 @@ class TimelineDropdown(ft.GestureDetector):
         # Check for plot points
         if type == "plot_point":
 
-            # Run through our timeline timeline/arcs plot points to see if the name exists
-            if title in self.timeline.plot_points.keys():
+            # Run through our plotline plotline/arcs plot points to see if the name exists
+            if title in self.plotline.plot_points.keys():
                 self.item_is_unique = False
                 e.control.error_text = "Title must be unique"
             else:
@@ -220,7 +220,7 @@ class TimelineDropdown(ft.GestureDetector):
 
         # Check for arcs
         elif type == "arc":
-            if title in self.timeline.arcs.keys():
+            if title in self.plotline.arcs.keys():
                 self.item_is_unique = False
                 e.control.error_text = "Title must be unique"
             else:
@@ -277,11 +277,11 @@ class TimelineDropdown(ft.GestureDetector):
 
             # Plot points
             if type == "plot_point":
-                self.timeline.create_plot_point(title=title)
+                self.plotline.create_plot_point(title=title)
 
             # Arcs
             elif type == "arc":
-                self.timeline.create_arc(title=title)
+                self.plotline.create_arc(title=title)
             
         # Otherwise make sure we show our error
         else:
@@ -327,25 +327,25 @@ class TimelineDropdown(ft.GestureDetector):
             self.is_unique = True
         
 
-            for timeline in self.story.timelines.values():
+            for plotline in self.story.plotlines.values():
 
                 # If there is no change, skip the checks
                 if new_name.capitalize() == self.title:
                     break
 
-                elif new_name.capitalize() == timeline.title:
+                elif new_name.capitalize() == plotline.title:
                     self.is_unique = False
                     break
            
 
             # Give us our error text if not unique
             if not self.is_unique:
-                e.control.error_text = "Timeline already exists"
+                e.control.error_text = "plotline already exists"
             else:
                 e.control.error_text = None
 
             # Apply the update
-            self.timeline.p.update()
+            self.plotline.p.update()
 
         # Called when submitting our textfield.
         def _submit_name(e):
@@ -364,7 +364,7 @@ class TimelineDropdown(ft.GestureDetector):
 
                 #new_path = self.full_path[:self.full_path.rfind("\\")+1] + new_name
 
-                self.timeline.rename(new_name)
+                self.plotline.rename(new_name)
 
                 self.story.active_rail.content.reload_rail()
                 
@@ -373,7 +373,7 @@ class TimelineDropdown(ft.GestureDetector):
             else:
                 text_field.error_text = "Name already exists"
                 text_field.focus()                                  # Auto focus the textfield
-                self.timeline.p.update()
+                self.plotline.p.update()
                 
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
@@ -403,8 +403,8 @@ class TimelineDropdown(ft.GestureDetector):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
             # Change the data
-            self.timeline.data['color'] = color
-            self.timeline.save_dict()
+            self.plotline.data['color'] = color
+            self.plotline.save_dict()
 
             self.color = color
 
@@ -412,7 +412,7 @@ class TimelineDropdown(ft.GestureDetector):
             
             # Change our icon to match, apply the update
             #self.story.active_rail.content.reload_rail()
-            self.timeline.reload_widget()
+            self.plotline.reload_widget()
             #self.close_menu(None)      # Auto closing menu works, but has a grey screen bug
 
         # List for our colors when formatted
@@ -436,22 +436,22 @@ class TimelineDropdown(ft.GestureDetector):
         def _delete_confirmed(e):
             ''' Deletes the widget after confirmation '''
 
-            self.timeline.p.close(dlg)
-            self.timeline.story.delete_widget(self.timeline)
+            self.plotline.p.close(dlg)
+            self.plotline.story.delete_widget(self.plotline)
             
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Are you sure you want to delete {self.timeline.title} forever?", weight=ft.FontWeight.BOLD),
+            title=ft.Text(f"Are you sure you want to delete {self.plotline.title} forever?", weight=ft.FontWeight.BOLD),
             alignment=ft.alignment.center,
             title_padding=ft.padding.all(25),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.timeline.p.close(dlg)),
+                ft.TextButton("Cancel", on_click=lambda e: self.plotline.p.close(dlg)),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
             ]
         )
 
-        self.timeline.p.open(dlg)
+        self.plotline.p.open(dlg)
 
 
     def refresh_expansion_tile(self):
@@ -462,7 +462,7 @@ class TimelineDropdown(ft.GestureDetector):
             self.expansion_tile.bgcolor = ft.Colors.TRANSPARENT
             self.expansion_tile.collapsed_bgcolor = ft.Colors.TRANSPARENT
 
-        self.timeline.p.update()
+        self.plotline.p.update()
 
 
     # Called when we need to reload this directory tile
@@ -500,4 +500,4 @@ class TimelineDropdown(ft.GestureDetector):
 
         self.refresh_expansion_tile()
 
-        self.timeline.p.update()
+        self.plotline.p.update()

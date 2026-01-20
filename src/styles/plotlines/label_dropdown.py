@@ -1,12 +1,12 @@
-# Class used for our Plot Points and Arcs dropdowns in the timeline rail, that sit inside of the timeline dropdowns
+# Class used for our Plot Points and Arcs dropdowns in the Plotline rail, that sit inside of the Plotline dropdowns
 
 
 import flet as ft
 from styles.menu_option_style import MenuOptionStyle
 from models.views.story import Story
-from models.widgets.timeline import Timeline
+from models.widgets.plotline import Plotline
 
-# Expansion tiles used for timelines (when more than 1), plotpoints labels, and arcs labels
+# Expansion tiles used for Plotlines (when more than 1), plotpoints labels, and arcs labels
 class LabelDropdown(ft.GestureDetector):
 
     # Constructor
@@ -15,23 +15,23 @@ class LabelDropdown(ft.GestureDetector):
         title: str,                                              # Title of this folder
         story: Story,                                            # Story reference for mouse positions and other logic
         additional_menu_options: list[ft.Control],               # Additional menu options when right clicking a category, depending on the rail
-        timeline: Timeline,                                      # Reference to the timeline this dropdown represents
+        plotline: Plotline,                                      # Reference to the Plotline this dropdown represents
         rail,                    
-        timeline_dropdown,
+        plotline_dropdown,
     ):
 
         # Set our parameters
         self.title = title.title()
         self.story = story
-        self.timeline = timeline
+        self.plotline = Plotline
         self.additional_menu_options = additional_menu_options
         self.rail = rail
-        self.timeline_dropdown = timeline_dropdown
+        self.plotline_dropdown = plotline_dropdown
 
 
         # Set other variables
         self.color = ft.Colors.PRIMARY
-        self.is_expanded = self.timeline.data.get("plot_points_dropdown_expanded", True) if self.title == "Plot Points" else self.timeline.data.get("arcs_dropdown_expanded", True)
+        self.is_expanded = self.plotline.data.get("plot_points_dropdown_expanded", True) if self.title == "Plot Points" else self.plotline.data.get("arcs_dropdown_expanded", True)
 
         # State tracking variables
         self.are_submitting = False
@@ -94,34 +94,34 @@ class LabelDropdown(ft.GestureDetector):
 
         # Update our expanded state and data to match, and save it to file
         self.is_expanded = not self.is_expanded
-        self.timeline.data["plot_points_dropdown_expanded" if self.title == "Plot Points" else "arcs_dropdown_expanded"] = self.is_expanded
-        self.timeline.save_dict()
+        self.plotline.data["plot_points_dropdown_expanded" if self.title == "Plot Points" else "arcs_dropdown_expanded"] = self.is_expanded
+        self.plotline.save_dict()
 
 
-        # If a different timeline is active, we unfocus it and focuse our parent instead
+        # If a different Plotline is active, we unfocus it and focuse our parent instead
         if self.rail.active_dropdown is not None:
 
-            # Check that its a timeline dropdown
+            # Check that its a Plotline dropdown
             if hasattr(self.rail.active_dropdown, "is_focused"):
                 
                 # Unfocus it and apply the changes
                 self.rail.active_dropdown.is_focused = False
                 self.rail.active_dropdown.refresh_expansion_tile()
             
-            # If not a timeline dropdown, it must be a label dropdown, so we grab its parent timeline dropdown
+            # If not a Plotline dropdown, it must be a label dropdown, so we grab its parent Plotline dropdown
             else:
 
-                # Unfocus its parent timeline dropdown and apply the changes
-                self.rail.active_dropdown.timeline_dropdown.is_focused = False
-                self.rail.active_dropdown.timeline_dropdown.refresh_expansion_tile()
+                # Unfocus its parent Plotline dropdown and apply the changes
+                self.rail.active_dropdown.plotline_dropdown.is_focused = False
+                self.rail.active_dropdown.plotline_dropdown.refresh_expansion_tile()
 
         # Set ourselves as the active dropdown and refresh the rail buttons
         self.rail.active_dropdown = self
         self.rail.refresh_buttons()
 
-        # Focus our timeline dropdown parent as well
-        self.timeline_dropdown.is_focused = True
-        self.timeline_dropdown.refresh_expansion_tile()
+        # Focus our Plotline dropdown parent as well
+        self.plotline_dropdown.is_focused = True
+        self.plotline_dropdown.refresh_expansion_tile()
         
 
     # Called when creating new category or when additional menu items are clicked
@@ -160,7 +160,7 @@ class LabelDropdown(ft.GestureDetector):
 
 
     def new_item_check(self, e):
-        ''' Checks if our new item is unique in our timeline's dicts '''
+        ''' Checks if our new item is unique in our Plotline's dicts '''
 
         # Get our name and check if its unique
         title = e.control.value
@@ -173,8 +173,8 @@ class LabelDropdown(ft.GestureDetector):
         # Check for plot points
         if type == "plot_point":
 
-            # Run through our timeline timeline/arcs plot points to see if the name exists
-            if title in self.timeline.plot_points.keys():
+            # Run through our Plotline Plotline/arcs plot points to see if the name exists
+            if title in self.plotline.plot_points.keys():
                 self.item_is_unique = False
                 e.control.error_text = "Title must be unique"
             else:
@@ -183,7 +183,7 @@ class LabelDropdown(ft.GestureDetector):
 
         # Check for arcs
         elif type == "arc":
-            if title in self.timeline.arcs.keys():
+            if title in self.plotline.arcs.keys():
                 self.item_is_unique = False
                 e.control.error_text = "Title must be unique"
             else:
@@ -239,11 +239,11 @@ class LabelDropdown(ft.GestureDetector):
 
             # Plot points
             if type == "plot_point":
-                self.timeline.create_plot_point(title=title)
+                self.plotline.create_plot_point(title=title)
 
             # Arcs
             elif type == "arc":
-                self.timeline.create_arc(title=title)
+                self.plotline.create_arc(title=title)
             
         # Otherwise make sure we show our error
         else:
@@ -254,7 +254,7 @@ class LabelDropdown(ft.GestureDetector):
     def reload(self):
         
 
-        # Set our icon to a timeline unless we are labeld for Plot Points or Arcs dropdown
+        # Set our icon to a Plotline unless we are labeld for Plot Points or Arcs dropdown
         if self.title == "Plot Points":
             icon = ft.Icon(ft.Icons.LOCATION_PIN, color=self.color)
         elif self.title == "Arcs":

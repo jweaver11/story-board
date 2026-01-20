@@ -33,7 +33,7 @@ class TreeViewFile(ft.GestureDetector):
         elif tag == "canvas": self.icon = ft.Icons.BRUSH_OUTLINED
         elif tag == "note": self.icon = ft.Icons.NOTE_ALT_OUTLINED
         elif tag == "character": self.icon = ft.Icons.PERSON_OUTLINED
-        elif tag == "timeline": self.icon = ft.Icons.TIMELINE_OUTLINED
+        elif tag == "plotline": self.icon = ft.Icons.TIMELINE_OUTLINED
         elif tag == "map": self.icon = ft.Icons.MAP_OUTLINED
         elif tag == "world": self.icon = ft.Icons.PUBLIC_OUTLINED
         elif tag == "character_connection_map": self.icon = ft.Icons.PEOPLE_OUTLINE_OUTLINED

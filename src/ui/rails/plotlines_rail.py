@@ -3,14 +3,14 @@
 import flet as ft
 from models.views.story import Story
 from ui.rails.rail import Rail
-from styles.timelines.timeline_dropdown import TimelineDropdown
-from styles.timelines.label_dropdown import LabelDropdown
-from styles.timelines.timeline_item import TimelineItem
+from styles.plotlines.plotline_dropdown import PlotlineDropdown
+from styles.plotlines.label_dropdown import LabelDropdown
+from styles.plotlines.plotline_item import PlotlineItem
 from styles.menu_option_style import MenuOptionStyle
 
 
 # Class is created in main on program startup
-class TimelinesRail(Rail):
+class PlotlinesRail(Rail):
 
     # Constructor
     def __init__(self, page: ft.Page, story: Story):
@@ -23,7 +23,7 @@ class TimelinesRail(Rail):
         )
 
         # Drop down we reference when adding new items to that dropdown
-        self.active_dropdown: TimelineDropdown = None
+        self.active_dropdown: PlotlineDropdown = None
 
         # UI elements
         self.top_row_buttons = [
@@ -32,8 +32,8 @@ class TimelinesRail(Rail):
                 tooltip="New", menu_padding=0,
                 items=[
                     ft.PopupMenuItem(
-                        text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
-                        on_click=self.new_item_clicked, data="timeline"
+                        text="plotline", icon=ft.Icons.TIMELINE_OUTLINED,
+                        on_click=self.new_item_clicked, data="plotline"
                     ),
                     ft.PopupMenuItem(
                         text="Plot Point", icon=ft.Icons.MAP_OUTLINED,
@@ -47,18 +47,18 @@ class TimelinesRail(Rail):
             ),
             ft.IconButton(
                 icon=ft.Icons.FILE_UPLOAD_OUTLINED,
-                tooltip="Upload Timeline", disabled=False,
+                tooltip="Upload Plotline", disabled=False,
                 on_click=lambda e: print(""),
             ),
         ]
  
         
 
-    # Called to return our list of menu options when right clicking on the timeline rail
+    # Called to return our list of menu options when right clicking on the plotline rail
     def get_menu_options(self) -> list[ft.Control]:
-        ''' Returns our menu options for the timelines rail. In this case just timelines '''
+        ''' Returns our menu options for the plotlines rail. In this case just plotlines '''
 
-        if len(self.story.timelines) == 1:
+        if len(self.story.plotlines) == 1:
             return [
                 MenuOptionStyle(
                     content=ft.PopupMenuButton(
@@ -66,8 +66,8 @@ class TimelinesRail(Rail):
                         tooltip="New", menu_padding=0,
                         items=[
                             ft.PopupMenuItem(
-                                text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
-                                on_click=self.new_item_clicked, data="timeline"
+                                text="plotline", icon=ft.Icons.TIMELINE_OUTLINED,
+                                on_click=self.new_item_clicked, data="plotline"
                             ),  
                             ft.PopupMenuItem(
                                 text="Plot Point", icon=ft.Icons.ADD_LOCATION_OUTLINED,
@@ -84,7 +84,7 @@ class TimelinesRail(Rail):
                     content=ft.PopupMenuButton(
                         content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
                         tooltip="Upload", menu_padding=0,
-                        items=[ft.PopupMenuItem(text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,)]
+                        items=[ft.PopupMenuItem(text="Plotline", icon=ft.Icons.TIMELINE_OUTLINED,)]
                     ),
                 )
             ]
@@ -97,8 +97,8 @@ class TimelinesRail(Rail):
                         tooltip="New", menu_padding=0,
                         items=[
                             ft.PopupMenuItem(
-                                text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
-                                on_click=self.new_item_clicked, data="timeline"
+                                text="Plotline", icon=ft.Icons.TIMELINE_OUTLINED,
+                                on_click=self.new_item_clicked, data="plotline"
                             ),  
                         ]
                     ),
@@ -107,12 +107,12 @@ class TimelinesRail(Rail):
                     content=ft.PopupMenuButton(
                         content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
                         tooltip="Upload", menu_padding=0,
-                        items=[ft.PopupMenuItem(text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,)]
+                        items=[ft.PopupMenuItem(text="Plotline", icon=ft.Icons.TIMELINE_OUTLINED,)]
                     ),
                 )
             ]
     
-    # Called when right clicking a timeline, arc, or the arc/plot point drop downs
+    # Called when right clicking a plotline, arc, or the arc/plot point drop downs
     def get_sub_menu_options(self, tag: str=None, is_label: bool=False) -> list[ft.Control]:
         ''' Returns the menu options for our sub items based on its tag '''
 
@@ -169,22 +169,22 @@ class TimelinesRail(Rail):
     
     # Refreshes our top row buttons based on our active dropdown
     def refresh_buttons(self, no_active_dropdown: bool=False):
-        ''' Refreshes the top row buttons based on our active dropdown/timeline to update our colors and disabled states '''
+        ''' Refreshes the top row buttons based on our active dropdown/plotline to update our colors and disabled states '''
 
         # When clicking on the rail, get rid of our active dropdown
-        if no_active_dropdown and len(self.story.timelines) != 1:
+        if no_active_dropdown and len(self.story.plotlines) != 1:
             self.active_dropdown = None
 
-        # Next, see if our dropdown is just a label. If it is, make the timeline_dropdown it sits inside as our active dropdown
+        # Next, see if our dropdown is just a label. If it is, make the plotline_dropdown it sits inside as our active dropdown
         # We do this so we can add plot points and arcs even from the opposite label dropdown
         if self.active_dropdown is not None:
             if isinstance(self.active_dropdown, LabelDropdown):
-                self.active_dropdown = self.active_dropdown.timeline_dropdown
+                self.active_dropdown = self.active_dropdown.plotline_dropdown
 
         # Go through each button and update their color, disabled state, and on click function
         for i, button in enumerate(self.top_row_buttons):
 
-            # Skip the timelines button, its always active and needs no changes
+            # Skip the plotlines button, its always active and needs no changes
             if i == 0:
                 continue
 
@@ -193,8 +193,8 @@ class TimelinesRail(Rail):
                 # Color is primary if we have an active dropdown, otherwise its grey-ish
                 button.icon_color = ft.Colors.PRIMARY if self.active_dropdown is not None else ft.Colors.ON_SURFACE_VARIANT
 
-                # Button is disabled if no active dropdown and more than one timeline
-                button.disabled = self.active_dropdown is None and len(self.story.timelines) != 1
+                # Button is disabled if no active dropdown and more than one plotline
+                button.disabled = self.active_dropdown is None and len(self.story.plotlines) != 1
 
                 # On click function goes to active dropdown logic if we have one, otherwise goes to rail logic
                 button.on_click = self.active_dropdown.new_item_clicked if self.active_dropdown is not None else self.new_item_clicked
@@ -206,9 +206,9 @@ class TimelinesRail(Rail):
 
     # Reload the rail whenever we need
     def reload_rail(self) -> ft.Control:
-        ''' Reloads the plot and timeline rail, useful when switching stories '''
+        ''' Reloads the plot and plotline rail, useful when switching stories '''
 
-        # WHEN CREATING NEW PP OR ARC, ADD IT DEFAULT TO MIDDLE OF TIMELINE AND BE ABLE TO BE DRAGGED AROUND
+        # WHEN CREATING NEW PP OR ARC, ADD IT DEFAULT TO MIDDLE OF plotline AND BE ABLE TO BE DRAGGED AROUND
 
         self.refresh_buttons()
 
@@ -226,83 +226,80 @@ class TimelinesRail(Rail):
             controls=[]
         )
 
-        # Run through each timeline in the story
-        for timeline in self.story.timelines.values():
+        # Run through each plotline in the story
+        for plotline in self.story.plotlines.values():
 
-            # Create an expansion tile for our timeline that we need in order to load its data
-            timeline.timeline_dropdown = TimelineDropdown(
-                title=timeline.title, 
+            # Create an expansion tile for our plotline that we need in order to load its data
+            plotline.plotline_dropdown = PlotlineDropdown(
+                title=plotline.title, 
                 story=self.story, 
-                timeline=timeline, 
+                plotline=plotline, 
                 additional_menu_options=self.get_sub_menu_options(),
                 rail=self
             )
 
-            # Create our timeline dropdowns here in 
+            # Create our plotline dropdowns here in 
 
-            # Load our timeline data
+            # Load our plotline data
             # New drop down for our plotpoints
             plot_points_dropdown = LabelDropdown(
                 title="Plot Points",
                 story=self.story,
                 additional_menu_options=self.get_sub_menu_options(tag="plot_points_label", is_label=True),
-                timeline=timeline,
+                plotline=plotline,
                 rail=self,
-                timeline_dropdown=timeline.timeline_dropdown
+                plotline_dropdown=plotline.plotline_dropdown
             )
 
         
-            # Go through our plotpoints from our timeline, and add each item
-            for plot_point in timeline.plot_points.values():
+            # Go through our plotpoints from our plotline, and add each item
+            for plot_point in plotline.plot_points.values():
                 plot_points_dropdown.content.controls.append(
-                    TimelineItem(title=plot_point.title, mini_widget=plot_point)
+                    PlotlineItem(title=plot_point.title, mini_widget=plot_point)
                 )
 
             plot_points_dropdown.content.controls.append(plot_points_dropdown.new_item_textfield)
 
-            # Add our plot points dropdown to the timeline dropdown
-            timeline.timeline_dropdown.content.controls.append(plot_points_dropdown)
+            # Add our plot points dropdown to the plotline dropdown
+            plotline.plotline_dropdown.content.controls.append(plot_points_dropdown)
 
             # New drop down for our arcs
             arcs_dropdown = LabelDropdown(
                 title="Arcs",
                 story=self.story,
                 additional_menu_options=self.get_sub_menu_options(tag="arcs_label", is_label=True),
-                timeline=timeline,
+                plotline=plotline,
                 rail=self,
-                timeline_dropdown=timeline.timeline_dropdown
+                plotline_dropdown=plotline.plotline_dropdown
             )
             
 
-            # Go through all the arcs/sub arcs held in our parent arc or timeline
-            for arc in timeline.arcs.values():
+            # Go through all the arcs/sub arcs held in our parent arc or plotline
+            for arc in plotline.arcs.values():
 
                 arcs_dropdown.content.controls.append(
-                    TimelineItem(title=arc.title, mini_widget=arc)
+                    PlotlineItem(title=arc.title, mini_widget=arc)
                 )
 
             arcs_dropdown.content.controls.append(arcs_dropdown.new_item_textfield)
 
 
-            # Add our arcs dropdown to the timeline dropdown
-            timeline.timeline_dropdown.content.controls.append(arcs_dropdown)
+            # Add our arcs dropdown to the plotline dropdown
+            plotline.plotline_dropdown.content.controls.append(arcs_dropdown)
 
 
-            # Add some padding under it between timelines
-            #timeline.timeline_dropdown.content.controls.append(ft.Container(height=10))
+            # If theres only one plotline, no need to add the parent expansion to the page.
+            if len(self.story.plotlines) == 1:
 
-            # If theres only one timeline, no need to add the parent expansion to the page.
-            if len(self.story.timelines) == 1:
-
-                # If only one timeline, just add its content directly to the rail rather than making it a dropdown
-                content.controls.extend(timeline.timeline_dropdown.content.controls)
+                # If only one plotline, just add its content directly to the rail rather than making it a dropdown
+                content.controls.extend(plotline.plotline_dropdown.content.controls)
 
                 # Set our active_dropdown if we only have one
-                self.active_dropdown = timeline.timeline_dropdown
+                self.active_dropdown = plotline.plotline_dropdown
 
             # Otherwise, add the full expansion panel
             else:
-                content.controls.append(timeline.timeline_dropdown)
+                content.controls.append(plotline.plotline_dropdown)
     
         content.controls.append(ft.Container(height=6))
 

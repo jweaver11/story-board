@@ -109,8 +109,8 @@ class TreeViewDirectory(ft.GestureDetector):
                             on_click=self.new_item_clicked, data="family_tree"
                         ),
                         ft.PopupMenuItem(
-                            text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
-                            on_click=self.new_item_clicked, data="timeline"
+                            text="Plotline", icon=ft.Icons.TIMELINE_OUTLINED,
+                            on_click=self.new_item_clicked, data="plotline"
                         ),
                         ft.PopupMenuItem(
                             text="Map", icon=ft.Icons.MAP_OUTLINED,
@@ -134,7 +134,7 @@ class TreeViewDirectory(ft.GestureDetector):
                         ft.PopupMenuItem(text="Note", icon=ft.Icons.NOTE_ALT_OUTLINED,),
                         ft.PopupMenuItem(text="Character", icon=ft.Icons.PERSON_OUTLINED,),
                         ft.PopupMenuItem(text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED),
-                        ft.PopupMenuItem(text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,),
+                        ft.PopupMenuItem(text="Plotline", icon=ft.Icons.TIMELINE_OUTLINED,),
                         ft.PopupMenuItem(text="Map", icon=ft.Icons.MAP_OUTLINED,),
                         ft.PopupMenuItem(text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,),
                     ]
@@ -315,7 +315,7 @@ class TreeViewDirectory(ft.GestureDetector):
             match tag:
                 case "category":
                     self.story.create_folder(directory_path=self.full_path, name=title)
-                case "chapter" | "canvas" | "note" | "character" | "timeline" | "map":
+                case "chapter" | "canvas" | "note" | "character" | "plotline" | "map":
                     self.story.create_widget(directory_path=self.full_path, title=title, tag=tag)
                 
                 case _:

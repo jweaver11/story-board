@@ -254,9 +254,9 @@ class Widget(ft.Container):
         elif tag == "map":
             self.story.maps.pop(old_key, None)
             self.story.maps[self.data['key']] = self  
-        elif tag == "timeline":
-            self.story.timelines.pop(old_key, None)
-            self.story.timelines[self.data['key']] = self
+        elif tag == "plotline":
+            self.story.plotlines.pop(old_key, None)
+            self.story.plotlines[self.data['key']] = self
 
 
         # Re-applies visibility to what it was before rename
@@ -432,7 +432,7 @@ class Widget(ft.Container):
             case "note": self.icon = ft.Icon(ft.Icons.COMMENT_OUTLINED)
             case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
             case "family_tree": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
-            case "timeline": self.icon = ft.Icon(ft.Icons.TIMELINE_ROUNDED)
+            case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE_ROUNDED)
             case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
             case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
             case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)

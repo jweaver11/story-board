@@ -62,11 +62,11 @@ class Story(ft.View):
                     'type': self.type,             # Novel or comic. Affects templates and default data for new content
                     'active_character_template': str,    # Which template is being used for new characters
                     'multi_planetary': bool,       # Whether the story will take place on multiple planets
-                    'multi_timelines': bool,       # Whether the story will have multiple timelines (regression, multiverse, etc.)
+                    'multi_plotlines': bool,       # Whether the story will have multiple plotlines (regression, multiverse, etc.)
                     'character_rail_sort_by': "Role",
                 },
                 
-                # Dict of all our categories INSIDE of basic story structure (content, characters, timelines)
+                # Dict of all our categories INSIDE of basic story structure (content, characters, plotlines)
                 'folders': {
                     'path': {                   # Path to the category folder (used as the key, since all will be unique)
                         'name': str,            # Name of category just in case
@@ -115,7 +115,7 @@ class Story(ft.View):
         self.notes: dict = dict()           # Notes stored in our story
         self.canvases: dict = dict()        # canvases by the user for comic chapters, or to store images (as backgrounds)
         self.characters: dict = dict()      # Characters in the story
-        self.timelines: dict = dict()       # Timelines for our story
+        self.plotlines: dict = dict()       # plotlines for our story
         self.maps: dict = dict()            # Maps created inside of world building
         self.character_connection_maps: dict = dict()   # Family tree views for tracking character relationships
         self.worlds: dict = dict()     # World building widget that contains our maps, lore, governments, history, etc
@@ -380,8 +380,8 @@ class Story(ft.View):
                     del self.notes[widget.data.get('key', '')]
                 case "character":
                     del self.characters[widget.data.get('key', '')]
-                case "timeline":
-                    del self.timelines[widget.data.get('key', '')]
+                case "plotline":
+                    del self.plotlines[widget.data.get('key', '')]
                 case "map":
                     del self.maps[widget.data.get('key', '')]
                 case "world_building":
@@ -413,7 +413,7 @@ class Story(ft.View):
         from models.widgets.chapter import Chapter
         from models.widgets.canvas import Canvas
         from models.widgets.character import Character
-        from models.widgets.timeline import Timeline   
+        from models.widgets.plotline import Plotline   
         from models.widgets.map import Map
         from models.widgets.world import World
         from models.widgets.character_connection_map import CharacterConnectionMap
@@ -456,8 +456,8 @@ class Story(ft.View):
                                 self.notes[key] = Note(title, self.p, dirpath, self, widget_data)
                             case "character":
                                 self.characters[key] = Character(title, self.p, dirpath, self, widget_data)
-                            case "timeline":
-                                self.timelines[key] = Timeline(title, self.p, dirpath, self, widget_data)
+                            case "plotline":
+                                self.plotlines[key] = Plotline(title, self.p, dirpath, self, widget_data)
                             case "map":
                                 self.maps[key] = Map(title, self.p, dirpath, self, widget_data)
                             case "world":
@@ -493,9 +493,9 @@ class Story(ft.View):
         for character in self.characters.values():      # Characters
             if character not in self.widgets:
                 self.widgets.append(character)
-        for timeline in self.timelines.values():        # Timelines
-            if timeline not in self.widgets:
-                self.widgets.append(timeline)
+        for plotline in self.plotlines.values():        # plotlines
+            if plotline not in self.widgets:
+                self.widgets.append(plotline)
         for map in self.maps.values():      # Maps
             if map not in self.widgets:
                 self.widgets.append(map)
@@ -514,7 +514,7 @@ class Story(ft.View):
         from models.widgets.note import Note
         from models.widgets.canvas import Canvas
         from models.widgets.character import Character
-        from models.widgets.timeline import Timeline
+        from models.widgets.plotline import Plotline
         from models.widgets.map import Map
         from models.widgets.character_connection_map import CharacterConnectionMap
         from models.widgets.world import World
@@ -552,11 +552,11 @@ class Story(ft.View):
                 self.characters[key] = widget
                 self.widgets.append(self.characters[key])
 
-            case "timeline":
-                widget = Timeline(title, self.p, directory_path, self, data)
+            case "plotline":
+                widget = Plotline(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.timelines[key] = widget
-                self.widgets.append(self.timelines[key])
+                self.plotlines[key] = widget
+                self.widgets.append(self.plotlines[key])
 
             case "map":
                 widget = Map(title, self.p, directory_path, self, data)

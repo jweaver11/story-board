@@ -605,7 +605,7 @@ class Canvas(Widget):
         self.page.open(SnackBar(f"Canvas exported to {filename} at {desired_width}x{desired_height}"))
         self.page.update()
 
-    # Called when we need to rebuild out timeline UI
+    # Called when we need to rebuild out plotline UI
     def reload_widget(self):       
         ''' Rebuilds/reloads our map UI '''
 

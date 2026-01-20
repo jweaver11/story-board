@@ -1,6 +1,6 @@
 '''
-Our timeline object that stores plot points, arcs, and time skips.
-These objects is displayed in the timelines widget, and store our mini widgets plot points, arcs, and time skips.
+Our plotline object that stores plot points, arcs, and time skips.
+These objects is displayed in the plotlines widget, and store our mini widgets plot points, arcs, and time skips.
 '''
 
 import json
@@ -9,14 +9,14 @@ import flet as ft
 from styles.menu_option_style import MenuOptionStyle
 from models.views.story import Story
 from models.widget import Widget
-from models.mini_widgets.timelines.arc import Arc
+from models.mini_widgets.plotlines.arc import Arc
 from utils.verify_data import verify_data
 import flet.canvas as cv
 from models.app import app
 import asyncio
 
 
-class Timeline(Widget):
+class Plotline(Widget):
 
     # Constructor. Requires title, owner widget, page reference, and optional data dictionary
     def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):
@@ -35,8 +35,8 @@ class Timeline(Widget):
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
             {
-                'tag': "timeline",
-                'color': app.settings.data.get('default_timeline_color'),
+                'tag': "plotline",
+                'color': app.settings.data.get('default_plotline_color'),
 
                 'filters': {   
                     'show_timeskips': True,
@@ -47,10 +47,10 @@ class Timeline(Widget):
                     
                 'time_label': "years",                          # Label for the time axis (any str they want)
                 'left_label': "0",                          # Start label
-                'right_label': "10",                          # Start and end date of the branch, for timeline view
+                'right_label': "10",                          # Start and end date of the branch, for plotline view
                 'divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
-                'hide_division_labels': bool,              # If the division labels are hidden on the timeline
-                'division_labels_direction': "top",               # If the division labels are on top of the timeline instead of below
+                'hide_division_labels': bool,              # If the division labels are hidden on the plotline
+                'division_labels_direction': "top",               # If the division labels are on top of the plotline instead of below
 
                 # Our rail dropdown states
                 'dropdown_is_expanded': True,               # If the branch dropdown is expanded on the rail
@@ -74,14 +74,14 @@ class Timeline(Widget):
                 'related_locations': list,
                 'related_items': list,
 
-                'left_edge_label': float,                   # Label for the left edge of the timeline
-                'right_edge_label': float,                  # Label for the right edge of the timeline
+                'left_edge_label': float,                   # Label for the left edge of the plotline
+                'right_edge_label': float,                  # Label for the right edge of the plotline
             },
         ) 
 
         
 
-        # Declare and create our information display, which is our timelines mini widget 
+        # Declare and create our information display, which is our plotlines mini widget 
         self.information_display: ft.Container = None
         self.create_information_display()
         
@@ -98,34 +98,34 @@ class Timeline(Widget):
         
         # State elements
         self.x_alignment: float = 0.00      # Alignment to pass into new plot points and arcs
-        self.timeline_width: int = int()    # Width of our timeline canvas. Just used in calculations, not applied
-        self.timeline_height: int = int()   # Height of our timeline canvas Just used in calculations, not applied
+        self.plotline_width: int = int()    # Width of our plotline canvas. Just used in calculations, not applied
+        self.plotline_height: int = int()   # Height of our plotline canvas Just used in calculations, not applied
 
-        # Our timeline canvas that draws our timeline line and markers
-        self.timeline_canvas = cv.Canvas(
-            on_resize=self.rebuild_timeline_canvas, resize_interval=20, expand=True, 
+        # Our plotline canvas that draws our plotline line and markers
+        self.plotline_canvas = cv.Canvas(
+            on_resize=self.rebuild_plotline_canvas, resize_interval=20, expand=True, 
             opacity=0.7,
             content=ft.GestureDetector(
                 expand=True, on_secondary_tap=self.on_secondary_tap,
                 on_exit=self.on_exit, 
-                on_hover=self.hover_timeline_canvas,
+                on_hover=self.hover_plotline_canvas,
                 on_tap=lambda e: self.information_display.toggle_visibility(value=True),
                 hover_interval=10,
             )
         )
 
         # Dropdown on the rail. We don't use it here, let the rail handle it
-        self.timeline_dropdown = None      # 'Timeline_Dropdown'
+        self.plotline_dropdown = None      # 'Plotline_Dropdown'
 
-        # Builds/reloads our timeline UI
+        # Builds/reloads our plotline UI
         self.reload_widget()
 
     # Called in the constructor
     def create_information_display(self):
-        ''' Creates our timeline information display mini widget '''
-        from models.mini_widgets.timelines.timeline_information_display import TimelineInformationDisplay
+        ''' Creates our plotline information display mini widget '''
+        from models.mini_widgets.plotlines.plotline_information_display import PlotlineInformationDisplay
         
-        self.information_display = TimelineInformationDisplay(
+        self.information_display = PlotlineInformationDisplay(
             title=self.title,
             owner=self,
             father=self,
@@ -155,7 +155,7 @@ class Timeline(Widget):
     # Called in the constructor
     def load_plot_points(self):
         ''' Loads plotpoints from data into self.plotpoints  '''
-        from models.mini_widgets.timelines.plot_point import PlotPoint
+        from models.mini_widgets.plotlines.plot_point import PlotPoint
 
         # Looks up our plotpoints in our data, then passes in that data to create a live object
         for key, data in self.data['plot_points'].items():
@@ -171,8 +171,8 @@ class Timeline(Widget):
         
     # Called when creating a new arc
     async def create_arc(self, title: str):
-        ''' Creates a new arc inside of our timeline object, and updates the data to match '''
-        from models.mini_widgets.timelines.arc import Arc
+        ''' Creates a new arc inside of our plotline object, and updates the data to match '''
+        from models.mini_widgets.plotlines.arc import Arc
 
         new_arc = Arc(
             title=title, 
@@ -191,14 +191,14 @@ class Timeline(Widget):
 
         # Apply our changes in the UI
         self.story.active_rail.content.reload_rail()
-        await self.rebuild_timeline_canvas()
+        await self.rebuild_plotline_canvas()
         self.reload_widget()
        
         
     # Called when creating a new plotpoint
     def create_plot_point(self, title: str):
-        ''' Creates a new plotpoint inside of our timeline object, and updates the data to match '''
-        from models.mini_widgets.timelines.plot_point import PlotPoint
+        ''' Creates a new plotpoint inside of our plotline object, and updates the data to match '''
+        from models.mini_widgets.plotlines.plot_point import PlotPoint
 
         new_plot_point = PlotPoint(
             title=title, 
@@ -220,7 +220,7 @@ class Timeline(Widget):
 
 
     def delete_plot_point(self, plot_point):
-        ''' Deletes a plot point from our timeline '''
+        ''' Deletes a plot point from our plotline '''
         
         # Remove from our dict
         if plot_point.title in self.plot_points:
@@ -232,7 +232,7 @@ class Timeline(Widget):
         self.reload_widget()
 
     def delete_arc(self, arc):
-        ''' Deletes an arc from our timeline '''
+        ''' Deletes an arc from our plotline '''
         
         # Remove from our dict
         if arc.title in self.arcs:
@@ -243,7 +243,7 @@ class Timeline(Widget):
         # Apply changes
         self.reload_widget()
 
-    # Called when right clicking our controls for either timeline or an arc
+    # Called when right clicking our controls for either plotline or an arc
     def get_menu_options(self) -> list[ft.Control]:
 
         #TODO: Should be New, show information display, renamde, color, delete
@@ -305,8 +305,8 @@ class Timeline(Widget):
         ]
     
 
-    # Called when hovering over our timeline on the canvas
-    async def hover_timeline_canvas(self, e: ft.HoverEvent):
+    # Called when hovering over our plotline on the canvas
+    async def hover_plotline_canvas(self, e: ft.HoverEvent):
         ''' Sets our coordinated for opening the menu when right clicking and updates our alignment we want to pass in '''
 
         # Set coordinates for menu
@@ -314,43 +314,43 @@ class Timeline(Widget):
         self.story.mouse_y = e.global_y
 
         # Calculate and set our x alignment
-        w = max(int(self.timeline_width or 0), 1)
+        w = max(int(self.plotline_width or 0), 1)
         x = float(e.local_x)
         raw = (2.0 * x / w) - 1.0
         raw = max(-1.0, min(1.0, raw))
         self.x_alignment = round(raw, 2)    # Save new x_alignment
 
 
-        # Check if we're over the timeline line itself and give visual feedback
-        if abs(e.local_y - (self.timeline_height / 2)) <= 25:
-            self.timeline_canvas.page = self.p      # refresh page reference
-            self.timeline_canvas.opacity = 1        # Full opacity to highlight
-            self.timeline_canvas.content.mouse_cursor=ft.MouseCursor.CLICK      # Change cursor to pointer
-            self.timeline_canvas.update()       # Apply changes
+        # Check if we're over the plotline line itself and give visual feedback
+        if abs(e.local_y - (self.plotline_height / 2)) <= 25:
+            self.plotline_canvas.page = self.p      # refresh page reference
+            self.plotline_canvas.opacity = 1        # Full opacity to highlight
+            self.plotline_canvas.content.mouse_cursor=ft.MouseCursor.CLICK      # Change cursor to pointer
+            self.plotline_canvas.update()       # Apply changes
         else:
-            self.timeline_canvas.page = self.p
-            self.timeline_canvas.opacity = .7
-            self.timeline_canvas.content.mouse_cursor=None
-            self.timeline_canvas.update()
+            self.plotline_canvas.page = self.p
+            self.plotline_canvas.opacity = .7
+            self.plotline_canvas.content.mouse_cursor=None
+            self.plotline_canvas.update()
         
         
 
-    # Called when mouse exits our timeline area
+    # Called when mouse exits our plotline area
     async def on_exit(self, e: ft.HoverEvent):
-        ''' Un-highlights our timeline control for visual feedback '''
+        ''' Un-highlights our plotline control for visual feedback '''
         
-        self.timeline_canvas.page = self.p
-        self.timeline_canvas.opacity = .7
-        self.timeline_canvas.update()
+        self.plotline_canvas.page = self.p
+        self.plotline_canvas.opacity = .7
+        self.plotline_canvas.update()
 
-    # Called when right clicking our timeline on the canvas
+    # Called when right clicking our plotline on the canvas
     async def on_secondary_tap(self, e):
-        ''' Opens our menu for the options of our related timeline '''
+        ''' Opens our menu for the options of our related plotline '''
 
         self.story.open_menu(self.get_menu_options())
 
     async def new_item_clicked(self, e):
-        ''' Called when new plot point or arc is clicked from timeline context menu '''
+        ''' Called when new plot point or arc is clicked from plotline context menu '''
         
         tag = e.control.data
 
@@ -380,9 +380,9 @@ class Timeline(Widget):
         # Focus the title control for renaming
         self.information_display.title_control.focus()
 
-    # Called for any size changes to our timeline canvas
-    async def rebuild_timeline_canvas(self, e: cv.CanvasResizeEvent=None):
-        ''' Redraws our timeline on the canvas when it is resized. Does it on startup as well '''
+    # Called for any size changes to our plotline canvas
+    async def rebuild_plotline_canvas(self, e: cv.CanvasResizeEvent=None):
+        ''' Redraws our plotline on the canvas when it is resized. Does it on startup as well '''
 
         # Check if we just called this to redraw without an event. If we did, skip the size updates
         if e is None:
@@ -391,40 +391,40 @@ class Timeline(Widget):
         else:
             
             # Check if we have a new height. If not, don't update the arcs
-            if self.timeline_height == int(e.height):
+            if self.plotline_height == int(e.height):
                 update_arcs = False
             else:
                 update_arcs = True
 
             # Update our page reference and size
-            self.timeline_canvas.page = self.p
-            self.timeline_width = int(e.width)
-            self.timeline_height = int(e.height)
+            self.plotline_canvas.page = self.p
+            self.plotline_width = int(e.width)
+            self.plotline_height = int(e.height)
         
-        # Draw our timeline on the canvas with its two end markers ------------------------------------------------
-        self.timeline_canvas.shapes = [
+        # Draw our plotline on the canvas with its two end markers ------------------------------------------------
+        self.plotline_canvas.shapes = [
             cv.Path(
                 elements=[
                     # Left vertical end marker
-                    cv.Path.MoveTo(5, self.timeline_height // 2 + 25),
-                    cv.Path.LineTo(5, self.timeline_height // 2 - 25),
+                    cv.Path.MoveTo(5, self.plotline_height // 2 + 25),
+                    cv.Path.LineTo(5, self.plotline_height // 2 - 25),
 
                     # Horizontal line
-                    cv.Path.MoveTo(5, self.timeline_height // 2),
-                    cv.Path.LineTo(self.timeline_width - 5, self.timeline_height // 2),
+                    cv.Path.MoveTo(5, self.plotline_height // 2),
+                    cv.Path.LineTo(self.plotline_width - 5, self.plotline_height // 2),
 
                     # Right vertical end marker
-                    cv.Path.MoveTo(self.timeline_width - 5, self.timeline_height // 2 + 25),
-                    cv.Path.LineTo(self.timeline_width - 5, self.timeline_height // 2 - 25),
+                    cv.Path.MoveTo(self.plotline_width - 5, self.plotline_height // 2 + 25),
+                    cv.Path.LineTo(self.plotline_width - 5, self.plotline_height // 2 - 25),
                 ],
                 paint=ft.Paint(stroke_width=4, style="stroke", color=self.data.get('color', "primary"))
             ),
         ]
 
-        # Draw our divisions on the timeline -----------------------------------------------------------------
+        # Draw our divisions on the plotline -----------------------------------------------------------------
         num_divisions = len(self.data.get('divisions', 9))  # Get number of divisions and the width between each division
-        div_width = self.timeline_width / num_divisions if num_divisions > 0 else 0 
-        division_width = (self.timeline_width - div_width - 10) / num_divisions if num_divisions > 0 else 0      # Division width starting after first division plus padding
+        div_width = self.plotline_width / num_divisions if num_divisions > 0 else 0 
+        division_width = (self.plotline_width - div_width - 10) / num_divisions if num_divisions > 0 else 0      # Division width starting after first division plus padding
 
         # Create a path for our divisions
         divisions_path = cv.Path(
@@ -437,14 +437,14 @@ class Timeline(Widget):
             
             # Add the vertical marker for each label
             x = int(i * division_width) + division_width
-            divisions_path.elements.append(cv.Path.MoveTo(x, self.timeline_height // 2 + 10))
-            divisions_path.elements.append(cv.Path.LineTo(x, self.timeline_height // 2 - 10))  
+            divisions_path.elements.append(cv.Path.MoveTo(x, self.plotline_height // 2 + 10))
+            divisions_path.elements.append(cv.Path.LineTo(x, self.plotline_height // 2 - 10))  
 
             # Add the text label for each division
             if not self.data.get('hide_division_labels', False):
-                self.timeline_canvas.shapes.append(
+                self.plotline_canvas.shapes.append(
                     cv.Text(
-                        x, self.timeline_height // 2 - 40 if self.data.get('division_labels_direction', "top") == "top" else self.timeline_height // 2 + 40,
+                        x, self.plotline_height // 2 - 40 if self.data.get('division_labels_direction', "top") == "top" else self.plotline_height // 2 + 40,
                         str(self.data.get('divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
                         ft.TextStyle(14, weight=ft.FontWeight.BOLD),
                         alignment=ft.alignment.center
@@ -452,10 +452,10 @@ class Timeline(Widget):
                 )
             
         # Add our divisions path to the canvas
-        self.timeline_canvas.shapes.append(divisions_path)
+        self.plotline_canvas.shapes.append(divisions_path)
 
 
-        # Add our timeline ends labels ---------------------------------------------------------------------------
+        # Add our plotline ends labels ---------------------------------------------------------------------------
         left_label = str(self.data.get('left_label', '0'))
         left_label = left_label.split('.', 1)[0] if '.' in left_label else left_label
         right_label = str(self.data.get('right_label', '10'))
@@ -463,23 +463,23 @@ class Timeline(Widget):
         time_label = str(self.data.get('time_label', 'years')).capitalize()
 
         # Set the text width, and align it in center, make sure it wraps
-        self.timeline_canvas.shapes.append(cv.Text(
-            5, self.timeline_height // 2 - 60, left_label, 
+        self.plotline_canvas.shapes.append(cv.Text(
+            5, self.plotline_height // 2 - 60, left_label, 
             ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center,
             max_width=55,   # Prevent overflow left
         ))
-        self.timeline_canvas.shapes.append(cv.Text(
-            self.timeline_width - 5, self.timeline_height // 2 - 60, right_label, 
+        self.plotline_canvas.shapes.append(cv.Text(
+            self.plotline_width - 5, self.plotline_height // 2 - 60, right_label, 
             ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center
         ))
-        self.timeline_canvas.shapes.append(cv.Text(
-            self.timeline_width // 2, self.timeline_height // 2 + 80, time_label, 
+        self.plotline_canvas.shapes.append(cv.Text(
+            self.plotline_width // 2, self.plotline_height // 2 + 80, time_label, 
             ft.TextStyle(20, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center
         ))
 
         
-        # Add our plot points labels above or below their dot on the timeline ------------------------------------------------
-        line_direction = "top"  # Line direction either going above or below the timeline that flips evert timeline
+        # Add our plot points labels above or below their dot on the plotline ------------------------------------------------
+        line_direction = "top"  # Line direction either going above or below the plotline that flips evert plotline
         line_height = "small"    # Line height that cycles between small, medium, and large after each plot point
 
         sorted_plot_points = dict(sorted(self.plot_points.items(), key=lambda item: item[1].data.get('x_alignment', 0.0)))
@@ -488,41 +488,41 @@ class Timeline(Widget):
             if plot_point.data.get('is_shown_on_widget', False):
                 # Calculate x position
                 x_alignment = max(-1.0, min(1.0, float(plot_point.data.get('x_alignment', 0.0))))
-                x_pos = int(((x_alignment + 1.0) / 2.0) * (self.timeline_width - 10)) + 5    # because mapping [-1..1] to [0..W], plus 5px padding
+                x_pos = int(((x_alignment + 1.0) / 2.0) * (self.plotline_width - 10)) + 5    # because mapping [-1..1] to [0..W], plus 5px padding
 
                 # Adjust based on offset from the margin the plot points use
                 offset_x = 5 * x_alignment
                 x_pos = x_pos - offset_x
 
                 if line_direction == "top":
-                    moveTo = cv.Path.MoveTo(x_pos, self.timeline_height // 2 - 20)
+                    moveTo = cv.Path.MoveTo(x_pos, self.plotline_height // 2 - 20)
                     # Set our line height
                     match line_height:
                         case "small":
-                            y_pos = int(self.timeline_height // 3)
+                            y_pos = int(self.plotline_height // 3)
                         case "medium":
-                            y_pos = int(self.timeline_height // 4)
+                            y_pos = int(self.plotline_height // 4)
                         case "large":
-                            y_pos = int(self.timeline_height // 6)
+                            y_pos = int(self.plotline_height // 6)
                         case _:
-                            y_pos = int(self.timeline_height // 6)
+                            y_pos = int(self.plotline_height // 6)
 
                     line_direction = "bottom"
                     
                 else:
-                    moveTo = cv.Path.MoveTo(x_pos, self.timeline_height // 2 + 20)
+                    moveTo = cv.Path.MoveTo(x_pos, self.plotline_height // 2 + 20)
                     match line_height:
                         case "small":
-                            y_pos = int(self.timeline_height - (self.timeline_height // 3))
+                            y_pos = int(self.plotline_height - (self.plotline_height // 3))
                             line_height = "medium"
                         case "medium":
-                            y_pos = int(self.timeline_height - (self.timeline_height // 4))
+                            y_pos = int(self.plotline_height - (self.plotline_height // 4))
                             line_height = "large"
                         case "large":
-                            y_pos = int(self.timeline_height - (self.timeline_height // 6))
+                            y_pos = int(self.plotline_height - (self.plotline_height // 6))
                             line_height = "small"
                         case _:
-                            y_pos = int(self.timeline_height - (self.timeline_height // 6))
+                            y_pos = int(self.plotline_height - (self.plotline_height // 6))
 
                     line_direction = "top"
 
@@ -537,9 +537,9 @@ class Timeline(Widget):
                 )
 
                 # Add the text label for the plot point
-                self.timeline_canvas.shapes.append(label_path)
+                self.plotline_canvas.shapes.append(label_path)
 
-                self.timeline_canvas.shapes.append(
+                self.plotline_canvas.shapes.append(
                     cv.Text(
                         x_pos, 
                         y_pos - 20 if line_direction == "bottom" else y_pos + 20,
@@ -573,47 +573,47 @@ class Timeline(Widget):
                     arc.spacing_left.expand = left_expand
                 if arc.spacing_right is not None:
                     arc.spacing_right.expand = right_expand
-                if arc.timeline_arc is not None:
-                    arc.timeline_arc.expand = mid_expand
+                if arc.plotline_arc is not None:
+                    arc.plotline_arc.expand = mid_expand
 
                 # ---- 3) Height follows arc width (pixel-based) ----
-                # Use the actual available width (timeline width minus the fixed 24px padding on each side)
-                available_w = max(int(getattr(self, "timeline_width", 0)) - 48, 1)
+                # Use the actual available width (plotline width minus the fixed 24px padding on each side)
+                available_w = max(int(getattr(self, "plotline_width", 0)) - 48, 1)
                 width_px = int(((end_a - start_a) / 2.0) * available_w)  # because mapping [-1..1] to [0..W]
-                max_h = max(int((getattr(self, "timeline_height", 0) / 2) - 20), 0)
+                max_h = max(int((getattr(self, "plotline_height", 0) / 2) - 20), 0)
 
                 # Semicircle-ish: height ~= width/2, but capped
                 new_h = min(max_h, max(0, int(width_px / 2)))
-                arc.timeline_arc.height = new_h
+                arc.plotline_arc.height = new_h
 
             self.p.update()
 
         # If we didn't rebuild our arcs, just update the canvas
         else:
-            self.timeline_canvas.update()
+            self.plotline_canvas.update()
 
         
     
 
-    # Called when we need to rebuild out timeline UI
+    # Called when we need to rebuild out plotline UI
     def reload_widget(self):
 
         # Rebuild our tab to reflect any changes
         self.reload_tab()
         
         # TODO:
-        # Clicking brings up a mini-menu in the timelines widget to show details and allow editing
-        # Timeline object and all its children are gesture detectors
+        # Clicking brings up a mini-menu in the plotlines widget to show details and allow editing
+        # Plotline object and all its children are gesture detectors
         # If event (pp, arc, etc.) is clicked on left side of screen bring mini widgets on right side, and vise versa
-        # Time label is optional. Label vertial markers along the timeline with int and label if user provided
+        # Time label is optional. Label vertial markers along the plotline with int and label if user provided
 
         
-        # Create a stack so we can sit our plotpoints and arcs on our timeline
-        timeline_stack = ft.Stack(
+        # Create a stack so we can sit our plotpoints and arcs on our plotline
+        plotline_stack = ft.Stack(
             expand=True, 
             alignment=ft.Alignment(0, 0),
             controls=[
-                ft.Container(self.timeline_canvas, ft.padding.only(left=16, right=16), expand=True)      # Add our canvas which has our visual timeline
+                ft.Container(self.plotline_canvas, ft.padding.only(left=16, right=16), expand=True)      # Add our canvas which has our visual plotline
             ]
         )
 
@@ -621,18 +621,18 @@ class Timeline(Widget):
         sorted_arcs = dict(sorted(self.arcs.items(), key=lambda item: item[1].data['x_alignment_end'] - item[1].data['x_alignment_start'], reverse=True))
 
 
-        # Handler for timeline resize events
+        # Handler for plotline resize events
         for arc in sorted_arcs.values():
-            # Add the arc control to the timeline stack
-            timeline_stack.controls.append(arc.timeline_control)
+            # Add the arc control to the plotline stack
+            plotline_stack.controls.append(arc.plotline_control)
 
-        # Add our plot points to the timeline (They position themselves)
+        # Add our plot points to the plotline (They position themselves)
         for plot_point in self.plot_points.values():    
-            # Add the plot point control to the timeline stack
-            timeline_stack.controls.append(plot_point.timeline_control)
+            # Add the plot point control to the plotline stack
+            plotline_stack.controls.append(plot_point.plotline_control)
 
 
-        self.body_container.content = timeline_stack
+        self.body_container.content = plotline_stack
 
 
         ''' Start building our header with filter dropdowns ------------------------'''
@@ -650,7 +650,7 @@ class Timeline(Widget):
                         label=plot_point.title, 
                         value=plot_point.data.get('is_shown_on_widget'), 
                         expand=True, adaptive=True,
-                        on_change=lambda e, pp=plot_point: pp.toggle_timeline_control(e.control.value),
+                        on_change=lambda e, pp=plot_point: pp.toggle_plotline_control(e.control.value),
                     )
                 )
 
@@ -669,7 +669,7 @@ class Timeline(Widget):
                         label=arc.title, 
                         value=arc.data.get('is_shown_on_widget'), 
                         expand=True, adaptive=True,
-                        on_change=lambda e, a=arc: a.toggle_timeline_control(e.control.value),
+                        on_change=lambda e, a=arc: a.toggle_plotline_control(e.control.value),
                     )
                 ) 
                 

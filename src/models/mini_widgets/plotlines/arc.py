@@ -6,8 +6,7 @@ import flet.canvas as cv
 import math
 from models.app import app
 
-# Class for arcs (essentially sub-timelines that are connected) on a timeline. 
-# Arcs split off from the main timeline and can merge back in later. Exp: Characters going on different journeys that rejoin later
+
 class Arc(MiniWidget):
 
     # Constructor.
@@ -19,7 +18,7 @@ class Arc(MiniWidget):
         page: ft.Page, 
         key: str, 
         size: str = None,
-        x_alignment: float = None,          # Position of plot point on timeline if we pass one in (between -1 and 1)
+        x_alignment: float = None,          # Position of plot point on plotline if we pass one in (between -1 and 1)
         data: dict = None
     ):
         
@@ -27,8 +26,8 @@ class Arc(MiniWidget):
         # Parent constructor
         super().__init__(
             title=title,        
-            owner=owner,                    # Top most timeline this arc belongs too
-            father=father,                  # Immediate parent timeline or arc that thisarc belongs too
+            owner=owner,                    # Top most plotline this arc belongs too
+            father=father,                  # Immediate parent plotline or arc that thisarc belongs too
             page=page,          
             key=key,  
             data=data,         
@@ -43,16 +42,16 @@ class Arc(MiniWidget):
             self,   # Pass in our own data so the function can see the actual data we loaded
             {   
                 'tag': "arc",                               # Tag to identify what type of object this is
-                'is_timeskip': bool,                        # If this arc is a time skip (skips ahead in time on the timeline)   
-                'start_date': str,                          # Start and end date of the branch, for timeline view
-                'end_date': str,                            # Start and end date of the branch, for timeline view
-                'x_alignment_start': -.2,                   # Start position on the timeline
-                'x_alignment_end': .2,                      # End position on the timeline 
-                'color': "secondary",                         # Color of the arc in the timeline
+                'is_timeskip': bool,                        # If this arc is a time skip (skips ahead in time on the plotline)   
+                'start_date': str,                          # Start and end date of the branch, for plotline view
+                'end_date': str,                            # Start and end date of the branch, for plotline view
+                'x_alignment_start': -.2,                   # Start position on the plotline
+                'x_alignment_end': .2,                      # End position on the plotline 
+                'color': "secondary",                         # Color of the arc in the plotline
                 'dropdown_is_expanded': True,               # If the arc dropdown is expanded on the rail
                 'plot_points_are_expanded': True,           # If the plotpoints section is expanded
                 'arcs_are_expanded': True,                  # If the arcs section is expanded
-                'size': size,                               # Size of the arc on the timeline. Can be Small, Medium, Large, or X-Large
+                'size': size,                               # Size of the arc on the plotline. Can be Small, Medium, Large, or X-Large
                 'is_focused': bool,                         # If this arc is currently focused/selected. True when mini widget visible, or mouse hovering over arc
                 
 
@@ -77,17 +76,17 @@ class Arc(MiniWidget):
 
 
         # UI elements
-        self.timeline_control: ft.Stack = None
-        self.timeline_arc: ft.Container = None
+        self.plotline_control: ft.Stack = None
+        self.plotline_arc: ft.Container = None
         self.gd: ft.GestureDetector = None
         self.slider: ft.RangeSlider = None
 
         # Keep references so we can update expands without rebuilding controls every drag tick
         self.spacing_left: ft.Container = None
         self.spacing_right: ft.Container = None
-        self.timeline_row: ft.Row = None
+        self.plotline_row: ft.Row = None
 
-        # Build the gesture detector for our timeline arc. It doesn't need to be rebuilt, so we just do it once in constructor
+        # Build the gesture detector for our plotline arc. It doesn't need to be rebuilt, so we just do it once in constructor
         self.gd = ft.GestureDetector(
             mouse_cursor=ft.MouseCursor.CLICK,
             expand=True,
@@ -112,12 +111,12 @@ class Arc(MiniWidget):
         super().delete_dict()
 
 
-    # Called when we hover over our arc on the timeline
+    # Called when we hover over our arc on the plotline
     async def on_start_hover(self, e: ft.HoverEvent):
         ''' Focuses the arc control '''
 
         # Change its border opacity and update the page
-        self.timeline_arc.border=ft.border.only(
+        self.plotline_arc.border=ft.border.only(
             left=ft.BorderSide(2, self.data.get('color', "secondary")),
             right=ft.BorderSide(2, self.data.get('color', "secondary")),
             top=ft.BorderSide(2, self.data.get('color', "secondary")),
@@ -126,7 +125,7 @@ class Arc(MiniWidget):
         self.slider.visible = True
         self.p.update()
 
-    # Called when we stop hovering over our arc on the timeline
+    # Called when we stop hovering over our arc on the plotline
     async def on_stop_hover(self, e: ft.HoverEvent):
         ''' Changes the arc control to unfocused '''
 
@@ -136,7 +135,7 @@ class Arc(MiniWidget):
             self.p.update()
             return
         
-        self.timeline_arc.border=ft.border.only(
+        self.plotline_arc.border=ft.border.only(
             left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
             right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
             top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
@@ -148,19 +147,19 @@ class Arc(MiniWidget):
 
 
     def toggle_visibility(self, e=None, value: bool = None):
-        ''' Toggles the visibility of our timeline_point '''
+        ''' Toggles the visibility of our plotline_point '''
 
         if value is not None:
 
             if value == True:
-                self.timeline_arc.border=ft.border.only(
+                self.plotline_arc.border=ft.border.only(
                     left=ft.BorderSide(2, self.data.get('color', "secondary")),
                     right=ft.BorderSide(2, self.data.get('color', "secondary")),
                     top=ft.BorderSide(2, self.data.get('color', "secondary")),
                 )
 
             else:
-                self.timeline_arc.border = self.timeline_arc.border=ft.border.only(
+                self.plotline_arc.border = self.plotline_arc.border=ft.border.only(
                     left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
                     right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
                     top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
@@ -180,7 +179,7 @@ class Arc(MiniWidget):
         # Hide all other plot points while dragging
         for pp in self.owner.plot_points.values():
             pp.is_dragging = False
-            pp.timeline_control.visible = False
+            pp.plotline_control.visible = False
 
         self.p.update()
 
@@ -222,22 +221,22 @@ class Arc(MiniWidget):
             self.spacing_left.expand = left_expand
         if self.spacing_right is not None:
             self.spacing_right.expand = right_expand
-        if self.timeline_arc is not None:
-            self.timeline_arc.expand = mid_expand
+        if self.plotline_arc is not None:
+            self.plotline_arc.expand = mid_expand
 
         # ---- 3) Height follows arc width (pixel-based) ----
-        # Use the actual available width (timeline width minus the fixed 24px padding on each side)
-        available_w = max(int(getattr(self.owner, "timeline_width", 0)) - 48, 1)
+        # Use the actual available width (plotline width minus the fixed 24px padding on each side)
+        available_w = max(int(getattr(self.owner, "plotline_width", 0)) - 48, 1)
         width_px = int(((end_a - start_a) / 2.0) * available_w)  # because mapping [-1..1] to [0..W]
-        max_h = max(int((getattr(self.owner, "timeline_height", 0) / 2) - 20), 0)
+        max_h = max(int((getattr(self.owner, "plotline_height", 0) / 2) - 20), 0)
 
         # Semicircle-ish: height ~= width/2, but capped
         new_h = min(max_h, max(0, int(width_px / 2)))
-        self.timeline_arc.height = new_h
+        self.plotline_arc.height = new_h
 
         # Update visuals
-        self.timeline_row.page = self.p
-        self.timeline_row.update()
+        self.plotline_row.page = self.p
+        self.plotline_row.update()
         
 
     # Called when we finish dragging our slider thumb to save our new position
@@ -251,7 +250,7 @@ class Arc(MiniWidget):
         self.x_alignment_start = ft.Alignment(self.data.get('x_alignment_start', -.2), 0)
         self.x_alignment_end = ft.Alignment(self.data.get('x_alignment_end', .2), 0)
 
-        # Determine which side of the timeline we're on for our mini widget
+        # Determine which side of the plotline we're on for our mini widget
         mid_value = e.control.start_value + ((e.control.end_value - e.control.start_value) / 2)
         if mid_value <= 0:
             self.data['side_location'] = "right"
@@ -261,7 +260,7 @@ class Arc(MiniWidget):
         # Make all other plot points visible again
         for pp in self.owner.plot_points.values():
             if pp.data.get('is_shown_on_widget', True):
-                pp.timeline_control.visible = True
+                pp.plotline_control.visible = True
             
         # Save our new positions to file
         self.save_dict()
@@ -271,12 +270,12 @@ class Arc(MiniWidget):
         self._render_mini_widget()
         self.owner.reload_widget()
 
-    # Called when toggling whether this plot point is shown on the timeline in the timeline filters
-    def toggle_timeline_control(self, value: bool):
-        ''' Toggles whether this plot point is shown on the timeline '''
+    # Called when toggling whether this plot point is shown on the plotline in the plotline filters
+    def toggle_plotline_control(self, value: bool):
+        ''' Toggles whether this plot point is shown on the plotline '''
 
         # Change the control visibility, data, and save it
-        self.timeline_control.visible = value
+        self.plotline_control.visible = value
         self.data['is_shown_on_widget'] = value
         self.save_dict()
         
@@ -310,7 +309,7 @@ class Arc(MiniWidget):
             controls=[
                 ft.Container(expand=True, ignore_interactions=True),        # Make sure our stack is always expanded to full size
                 ft.GestureDetector(                                             # GD so we can detect right clicks on our slider
-                    on_secondary_tap=lambda e: self.owner.story.open_menu(self.owner.get_menu_options()),  # Open our parent timeline menu options
+                    on_secondary_tap=lambda e: self.owner.story.open_menu(self.owner.get_menu_options()),  # Open our parent plotline menu options
                     height=50, on_enter=self.enter, on_exit=self.exit,       # Change slider visibility on hover and exit
                     content=ft.RangeSlider(
                         min=-100, max=100,                                  # Min and max values on each end of slider
@@ -332,9 +331,9 @@ class Arc(MiniWidget):
                   
         
 
-    # Called from reload mini widget to update our timeline control
-    def reload_timeline_control(self):
-        ''' Reloads our arc drawing on the timeline based on current/updated data, including page size '''
+    # Called from reload mini widget to update our plotline control
+    def reload_plotline_control(self):
+        ''' Reloads our arc drawing on the plotline based on current/updated data, including page size '''
 
         # Reload our slider
         self.reload_slider()
@@ -374,14 +373,14 @@ class Arc(MiniWidget):
             start_a, end_a = end_a, start_a
 
 
-        available_w = max(int(getattr(self.owner, "timeline_width", 0)) - 48, 1)
+        available_w = max(int(getattr(self.owner, "plotline_width", 0)) - 48, 1)
         width_px = int(((end_a - start_a) / 2.0) * available_w)  # because mapping [-1..1] to [0..W]
-        max_h = max(int((getattr(self.owner, "timeline_height", 0) / 2) - 20), 0)
+        max_h = max(int((getattr(self.owner, "plotline_height", 0) / 2) - 20), 0)
 
         # Semicircle-ish: height ~= width/2, but capped
         new_h = min(max_h, max(0, int(width_px / 2)))
 
-        self.timeline_arc = ft.Container(
+        self.plotline_arc = ft.Container(
             offset=ft.Offset(0, -0.5),
             expand=mid_ratio,
             height=new_h,
@@ -396,22 +395,22 @@ class Arc(MiniWidget):
         )
         self.is_first_launch = False
 
-        self.timeline_row = ft.Row(
+        self.plotline_row = ft.Row(
             expand=True, spacing=0,
             controls=[
                 ft.Container(width=24, ignore_interactions=True),
                 self.spacing_left,
-                self.timeline_arc,
+                self.plotline_arc,
                 self.spacing_right,
                 ft.Container(width=24, ignore_interactions=True),
             ]
         )
 
-        self.timeline_control = ft.Stack(
+        self.plotline_control = ft.Stack(
             expand=True,
             controls=[
                 ft.Container(expand=True, ignore_interactions=True),
-                self.timeline_row,
+                self.plotline_row,
                 self.slider,
             ]
         ) 
@@ -420,8 +419,8 @@ class Arc(MiniWidget):
     # Called to reload our mini widget content
     def reload_mini_widget(self):
 
-        # Reload our timeline control and all associated components 
-        self.reload_timeline_control()
+        # Reload our plotline control and all associated components 
+        self.reload_plotline_control()
 
         # Reset our height depnding if we're collapsed or not
         self.height = None

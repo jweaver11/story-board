@@ -58,8 +58,8 @@ class ContentRail(Rail):
                         on_click=self.new_item_clicked, data="character_connection_map"
                     ),
                     ft.PopupMenuItem(
-                        text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
-                        on_click=self.new_item_clicked, data="timeline"
+                        text="Plotline", icon=ft.Icons.TIMELINE_OUTLINED,
+                        on_click=self.new_item_clicked, data="plotline"
                     ),
                     ft.PopupMenuItem(
                         text="Map", icon=ft.Icons.MAP_OUTLINED,
@@ -82,7 +82,7 @@ class ContentRail(Rail):
                     ft.PopupMenuItem(text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED),
                     ft.PopupMenuItem(text="Map", icon=ft.Icons.MAP_OUTLINED),
                     ft.PopupMenuItem(text="Note", icon=ft.Icons.NOTE_ALT_OUTLINED),
-                    ft.PopupMenuItem(text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED),
+                    ft.PopupMenuItem(text="Plotline", icon=ft.Icons.TIMELINE_OUTLINED),
                     ft.PopupMenuItem(text="World", icon=ft.Icons.PUBLIC_OUTLINED),
                 ]
             ),
@@ -134,8 +134,8 @@ class ContentRail(Rail):
                             on_click=self.new_item_clicked, data="character_connection_map"
                         ),
                         ft.PopupMenuItem(
-                            text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,
-                            on_click=self.new_item_clicked, data="timeline"
+                            text="Plotline", icon=ft.Icons.TIMELINE_OUTLINED,
+                            on_click=self.new_item_clicked, data="plotline"
                         ),
                         ft.PopupMenuItem(
                             text="Map", icon=ft.Icons.MAP_OUTLINED,
@@ -159,7 +159,7 @@ class ContentRail(Rail):
                         ft.PopupMenuItem(text="Note", icon=ft.Icons.NOTE_ALT_OUTLINED,),
                         ft.PopupMenuItem(text="Character", icon=ft.Icons.PERSON_OUTLINED,),
                         ft.PopupMenuItem(text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED),
-                        ft.PopupMenuItem(text="Timeline", icon=ft.Icons.TIMELINE_OUTLINED,),
+                        ft.PopupMenuItem(text="Plotline", icon=ft.Icons.TIMELINE_OUTLINED,),
                         ft.PopupMenuItem(text="Map", icon=ft.Icons.MAP_OUTLINED,),
                         ft.PopupMenuItem(text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,),
                     ]

@@ -1,13 +1,12 @@
 import flet as ft
-from styles.timelines.timeline_dropdown import TimelineDropdown
 from models.mini_widget import MiniWidget
 from styles.menu_option_style import MenuOptionStyle
-from models.mini_widgets.timelines.plot_point import PlotPoint
+from models.mini_widgets.plotlines.plot_point import PlotPoint
 from styles.colors import colors
 
 
 # RAIL ITEMS FOR PLOTPOINTS AND ARCS
-class TimelineItem(ft.GestureDetector):
+class PlotlineItem(ft.GestureDetector):
     
     # Constructor
     def __init__(
@@ -15,8 +14,6 @@ class TimelineItem(ft.GestureDetector):
         mini_widget: MiniWidget, 
         title: str,
         icon: ft.Icon = None,
-        #father: Timeline = None,
-        dir_dropdown: TimelineDropdown = None,
         additional_menu_options: list[ft.Control] = None
     ):
         
@@ -60,7 +57,7 @@ class TimelineItem(ft.GestureDetector):
             on_enter = self.on_hover,
             on_exit = self.on_stop_hover,
             on_secondary_tap = lambda e: self.mini_widget.owner.story.open_menu(self.get_menu_options()),
-            on_tap = lambda e: self.mini_widget.toggle_visibility(value=True),    # Open up timeline if not opened, focus our mini widget
+            on_tap = lambda e: self.mini_widget.toggle_visibility(value=True),    # Open up plotline if not opened, focus our mini widget
             mouse_cursor = ft.MouseCursor.CLICK,
         )
 

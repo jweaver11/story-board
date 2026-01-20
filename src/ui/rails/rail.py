@@ -6,7 +6,7 @@ import flet as ft
 import os
 import json
 from models.views.story import Story
-from models.widgets.timeline import Timeline
+from models.widgets.plotline import Plotline
 from styles.tree_view.tree_view_directory import TreeViewDirectory
 from utils.check_widget_unique import check_widget_unique
 from utils.new_canvas_alert_dlg import new_canvas_alert_dlg
@@ -20,7 +20,7 @@ class Rail(ft.Container):
         page: ft.Page,                  # Page reference
         story: Story,                   # Story reference
         directory_path: str,            # Root path that loads this rails content
-        timeline: Timeline = None,      # Timeline reference for creating plot points and arcs on timeline rail
+        plotline: Plotline = None,      # plotline reference for creating plot points and arcs on plotline rail
     ):
         
         # Initialize the parent Container class first
@@ -32,7 +32,7 @@ class Rail(ft.Container):
         self.p = page
         self.story = story
         self.directory_path = directory_path
-        self.timeline = timeline
+        self.plotline = plotline
 
         # Text style for our textfields
         self.text_style = ft.TextStyle(
@@ -163,9 +163,9 @@ class Rail(ft.Container):
                     break
 
         # Some mini widgets that have their own uniquess checks
-        elif tag == "plot_point" and self.timeline is not None:
+        elif tag == "plot_point" and self.plotline is not None:
             pass
-        elif tag == "arc" and self.timeline is not None:
+        elif tag == "arc" and self.plotline is not None:
             pass
 
         # Not a category, so we check the widget
@@ -216,7 +216,7 @@ class Rail(ft.Container):
 
     # Called whenever we submit a new item (Chapter, note, category, etc.) via enter key
     def submit_item(self, e):
-        ''' Sets our state to submitting, and creates new item if unique. Father is either timeline or arc for creating mini widgets '''
+        ''' Sets our state to submitting, and creates new item if unique. Father is either Plotline or arc for creating mini widgets '''
 
         # Change our submitting state
         self.are_submitting = True
@@ -239,17 +239,17 @@ class Rail(ft.Container):
                 # Create our new category
                 self.story.create_folder(directory_path=self.directory_path, name=title)
 
-            # New plot points and arcs on timelines or arcs
+            # New plot points and arcs on Plotlines or arcs
             elif tag == "plot_point":
-                if self.timeline is not None:
+                if self.plotline is not None:
                     print("Creating plot point:", title)
-                    self.timeline.create_plot_point(title)
+                    self.plotline.create_plot_point(title)
 
-            # New arcs on timelines
+            # New arcs on plotlines
             elif tag == "arc":
-                if self.timeline is not None:
+                if self.plotline is not None:
                     print("Creating arc:", title)
-                    self.timeline.create_arc(title)
+                    self.plotline.create_arc(title)
                  
             # New widgets
             else:

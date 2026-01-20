@@ -9,7 +9,7 @@ from models.app import app
 from models.views.story import Story
 from ui.rails.characters_rail import CharactersRail  
 from ui.rails.content_rail import ContentRail
-from ui.rails.timelines_rail import TimelinesRail
+from ui.rails.plotlines_rail import PlotlinesRail
 from ui.rails.world_building import WorldBuildingRail
 from ui.rails.canvas_rail import CanvasRail
 from ui.rails.planning_rail import PlanningRail  
@@ -35,7 +35,7 @@ class Active_Rail(ft.Container):
         # Add our 6 rails here first so they maintain consitent styling and don't have to be rebuilt on switches
         self.content_rail = ContentRail(page, story)
         self.characters_rail = CharactersRail(page, story)
-        self.timelines_rail = TimelinesRail(page, story)
+        self.plotlines_rail = PlotlinesRail(page, story)
         self.world_building_rail = WorldBuildingRail(page, story)
         self.canvas_rail = CanvasRail(page, story)
         self.planning_rail = PlanningRail(page, story)
@@ -56,11 +56,11 @@ class Active_Rail(ft.Container):
                 self.content = self.content_rail
             case "characters":
                 self.content = self.characters_rail
-            case "timelines":
-                self.content = self.timelines_rail
-                # Make sure our timeline is shown if there is only one
-                if len(self.story.timelines) == 1:
-                    for tl in self.story.timelines.values():
+            case "plotlines":
+                self.content = self.plotlines_rail
+                # Make sure our plotline is shown if there is only one
+                if len(self.story.plotlines) == 1:
+                    for tl in self.story.plotlines.values():
                         tl.toggle_visibility(value=True)
             case "world_building":
                 self.content = self.world_building_rail
