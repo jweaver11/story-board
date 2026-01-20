@@ -286,6 +286,8 @@ class TreeViewFile(ft.GestureDetector):
         self.content = ft.Container(
             expand=True, 
             padding=ft.Padding(0, 2, 5, 2),
+            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            border_radius=ft.border_radius.all(6),
             content=ft.Draggable(
                 group="widgets",
                 data=self.widget.data['key'],

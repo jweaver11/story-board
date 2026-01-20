@@ -125,14 +125,12 @@ class TimelineItem(ft.GestureDetector):
 
     # Called when hovering mouse over a tree view item
     async def on_hover(self, e):
-        self.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.WHITE)
-        #self.mini_widget.p.update()
+        self.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
         self.update()
 
     # Called when stopping hover over a tree view item
     async def on_stop_hover(self, e):
         self.content.bgcolor = ft.Colors.TRANSPARENT
-        #self.mini_widget.p.update()
         self.update()
 
     # Called when rename button is clicked
@@ -309,7 +307,7 @@ class TimelineItem(ft.GestureDetector):
             alignment=ft.alignment.center,
             title_padding=ft.padding.all(25),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.mini_widget.p.close(dlg)),
+                ft.TextButton("Cancel", on_click=lambda e: self.mini_widget.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
             ]
         )
@@ -323,19 +321,17 @@ class TimelineItem(ft.GestureDetector):
         self.content = ft.Container(
             expand=True, 
             padding=ft.Padding(0, 2, 5, 2),
-            
+            border_radius=ft.border_radius.all(6),
+            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             content=ft.GestureDetector(
                 mouse_cursor=ft.MouseCursor.CLICK,
                 content=ft.Row(
                     expand=True,
                     controls=[
                         ft.Icon(self.icon, color=self.color, size=20), 
-                        #ft.Container(width=20),
                         ft.Text(value=self.title, style=self.text_style),
                     ],
                 ),
             )
         )
         
-
-        #self.p.update()

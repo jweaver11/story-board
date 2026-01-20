@@ -212,7 +212,7 @@ class Character(Widget):
                 case "Tag":
                     return "Protagonist, Antagonist, etc..."
                 case "Goals":
-                    return "Separate goals with new lines or ,"
+                    return "Separate Goals with new lines"
                 
                 case _:
                     return None
@@ -228,18 +228,17 @@ class Character(Widget):
                         on_blur=lambda e, k=key: self._update_character_data(sub_key, **{k: e.control.value})
                     )
 
-                    if sub_key == "Custom Fields":
-                        container.content.controls.append(
-                            ft.Row([
-                                text_control,
-                                ft.IconButton(
-                                    tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
-                                    on_click=lambda e, k=key: self._delete_character_data(sub_key=sub_key, **{k: None})
-                                ),
-                            ])
-                        )
-                    else:
-                        container.content.controls.append(text_control)
+                    
+                    container.content.controls.append(
+                        ft.Row([
+                            text_control,
+                            ft.IconButton(
+                                tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
+                                on_click=lambda e, k=key: self._delete_character_data(sub_key=sub_key, **{k: None})
+                            ),
+                        ])
+                    )
+                    
                     
 
         # Column we will append to for the bot of our view. Has our icon, and exit edit mode button
@@ -387,7 +386,7 @@ class Character(Widget):
             for key, value in dict.items():
                 if isinstance(value, str):
                     # Treat Goals as a list for display purposes
-                    if key == "Goals":  
+                    if "\n" in value:  
                         text_control = ft.Text(
                             expand=True, selectable=True, 
                             spans=[ft.TextSpan(f"{key.capitalize()}: ", ft.TextStyle(weight=ft.FontWeight.BOLD))]   # Key is bold with formatting

@@ -97,15 +97,15 @@ class World(Widget):
     def load_governments(self):
         pass
 
-    def _update_world_data(self, key: str, value: str):
+    def _update_world_data(self, key: str, **kwargs):
         ''' Updates our world data field with a new value '''
 
-        if 'world_data' not in self.data:
-            self.data['world_data'] = {}
+        for k, value in kwargs.items():
+            self.data['world_data'][key][k] = value
 
-        self.data['world_data'][key] = value
+        
         self.save_dict()
-        self.reload_widget()
+        #self.reload_widget()
 
     def _delete_world_data(self, sub_key: str="", **kwargs):
         ''' Deletes fields from the character data dict or up to one sub dict '''
@@ -140,8 +140,8 @@ class World(Widget):
                 return  # Don't create if empty
             
             # Add the field to data if it doesn't exist
-            if field_name not in self.data['world_data']['Custom Fields']:
-                self.data['world_data']['Custom Fields'][field_name] = ""
+            if field_name not in self.data['world_data'][sub_key]:
+                self.data['world_data'][sub_key][field_name] = ""
             
             # Save and reload
             self.save_dict()
@@ -161,7 +161,7 @@ class World(Widget):
             title=ft.Text(f"Create New {category} Field"),
             content=field_name_input,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg)),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
                 ft.TextButton("Create", on_click=create_field),
             ],
         )
@@ -203,23 +203,21 @@ class World(Widget):
             for key, value in dict.items():
                 if isinstance(value, str):
                     text_control = ft.TextField(
-                        expand=True,  value=value, dense=True, multiline=True, hint_text=_get_help_text(key),
-                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, #label=key.capitalize(),
-                        on_blur=lambda e, k=key: self._update_world_data(sub_key, **{k: e.control.value})
+                        expand=True, value=value, dense=True, multiline=True, hint_text=_get_help_text(key),
+                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, label=key.capitalize(),
+                        on_blur=lambda e, k=key: self._update_world_data(key=sub_key, **{k: e.control.value})
                     )
 
-                    if sub_key == "Custom Fields":
-                        container.content.controls.append(
-                            ft.Row([
-                                text_control,
-                                ft.IconButton(
-                                    tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
-                                    on_click=lambda e, k=key: self._delete_world_data(sub_key=sub_key, **{k: None})
-                                ),
-                            ])
-                        )
-                    else:
-                        container.content.controls.append(text_control)
+                    container.content.controls.append(
+                        ft.Row([
+                            text_control,
+                            ft.IconButton(
+                                tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
+                                on_click=lambda e, k=key: self._delete_world_data(sub_key=sub_key, **{k: None})
+                            ),
+                        ])
+                    )
+                    
                     
 
         # Column we will append to for the bot of our view. Has our icon, and exit edit mode button
@@ -243,9 +241,10 @@ class World(Widget):
             padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
             border=ft.border.all(2, ft.Colors.OUTLINE), 
             content=ft.TextField(
-                expand=True, label="Summary", value=self.data.get('world_data', {}).get('Summary', ""), dense=True, multiline=True,
+                expand=True, value=self.data.get('world_data', {}).get('Summary', ""), dense=True, multiline=True,
                 capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                on_blur=lambda e: self._update_world_data('Summary', e.control.value)
+                on_blur=lambda e: self._update_world_data('Summary', e.control.value),
+                border=ft.InputBorder.NONE,                  
             ),
         )
         locations_container = ft.Container(  # For physical description
@@ -295,15 +294,16 @@ class World(Widget):
         )
 
         
-        _load_dict_data(self.data.get('world_data', {}).get('Template Data', {}), template_data_container)
-        _load_dict_data(self.data.get('world_data', {}).get('Locations', {}), locations_container)
-        _load_dict_data(self.data.get('world_data', {}).get('Lore', {}), lore_container)
-        _load_dict_data(self.data.get('world_data', {}).get('Power Systems', {}), power_systems_container)
-        _load_dict_data(self.data.get('world_data', {}).get('Social Systems', {}), social_systems_container)
-        _load_dict_data(self.data.get('world_data', {}).get('Geography', {}), geography_container)
-        _load_dict_data(self.data.get('world_data', {}).get('Technology', {}), technology_container)
-        _load_dict_data(self.data.get('world_data', {}).get('History', {}), history_container)
-        _load_dict_data(self.data.get('world_data', {}).get('Custom Fields', {}), custom_fields_container)
+        _load_dict_data(self.data.get('world_data', {}).get('Template Data', {}), template_data_container, "Template Data")
+        _load_dict_data(self.data.get('world_data', {}).get('Locations', {}), locations_container, "Locations")
+        _load_dict_data(self.data.get('world_data', {}).get('Lore', {}), lore_container, "Lore")
+        _load_dict_data(self.data.get('world_data', {}).get('Power Systems', {}), power_systems_container, "Power Systems")
+        _load_dict_data(self.data.get('world_data', {}).get('Social Systems', {}), social_systems_container, "Social Systems")
+        _load_dict_data(self.data.get('world_data', {}).get('Geography', {}), geography_container, "Geography")
+        _load_dict_data(self.data.get('world_data', {}).get('Technology', {}), technology_container, "Technology")
+        _load_dict_data(self.data.get('world_data', {}).get('History', {}), history_container, "History")
+        _load_dict_data(self.data.get('world_data', {}).get('Governments', {}), governments_container, "Governments")
+        _load_dict_data(self.data.get('world_data', {}).get('Custom Fields', {}), custom_fields_container, "Custom Fields")
 
 
         # Create rows for each section
@@ -335,7 +335,7 @@ class World(Widget):
                     ft.Row([
                         ft.Container(width=6), 
                         ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.data.get('color', None), selectable=True, expand=True),
-                        ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields"), icon_color=self.data.get('color', None)),
+                        ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Template Data", "Template"), icon_color=self.data.get('color', None)),
 
                     ], spacing=0),
                     ft.Row([template_data_container])
@@ -346,7 +346,7 @@ class World(Widget):
                 ft.Row([
                     ft.Container(width=6),
                     ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields"), icon_color=self.data.get('color', None)),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Locations", "Location"), icon_color=self.data.get('color', None)),
 
                 ], spacing=0),
                 ft.Row([locations_container])
@@ -357,7 +357,7 @@ class World(Widget):
                 ft.Row([
                     ft.Container(width=6),
                     ft.Text("Lore", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields"), icon_color=self.data.get('color', None)),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Lore", "Lore"), icon_color=self.data.get('color', None)),
 
                 ], spacing=0),
                 ft.Row([lore_container])
@@ -368,7 +368,7 @@ class World(Widget):
                 ft.Row([
                     ft.Container(width=6),
                     ft.Text("Social Systems", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields"), icon_color=self.data.get('color', None)),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Social Systems", "Social System"), icon_color=self.data.get('color', None)),
 
                 ], spacing=0),
                 ft.Row([social_systems_container])
@@ -379,7 +379,7 @@ class World(Widget):
                 ft.Row([
                     ft.Container(width=6),
                     ft.Text("Power Systems", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields"), icon_color=self.data.get('color', None)),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Power Systems", "Power System"), icon_color=self.data.get('color', None)),
 
                 ], spacing=0),
                 ft.Row([power_systems_container])
@@ -390,7 +390,7 @@ class World(Widget):
                 ft.Row([
                     ft.Container(width=6),
                     ft.Text("Geography", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields"), icon_color=self.data.get('color', None)),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Geography", "Geography"), icon_color=self.data.get('color', None)),
 
                 ], spacing=0),
                 ft.Row([geography_container])
@@ -401,7 +401,7 @@ class World(Widget):
                 ft.Row([
                     ft.Container(width=6),
                     ft.Text("Technology", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields"), icon_color=self.data.get('color', None)),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Technology", "Technology"), icon_color=self.data.get('color', None)),
 
                 ], spacing=0),
                 ft.Row([technology_container])
@@ -412,7 +412,7 @@ class World(Widget):
                 ft.Row([
                     ft.Container(width=6),
                     ft.Text("History", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields"), icon_color=self.data.get('color', None)),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("History", "History"), icon_color=self.data.get('color', None)),
 
                 ], spacing=0),
                 ft.Row([history_container])
@@ -423,7 +423,7 @@ class World(Widget):
                 ft.Row([
                     ft.Container(width=6),
                     ft.Text("Governments", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields"), icon_color=self.data.get('color', None)),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Governments", "Government"), icon_color=self.data.get('color', None)),
 
                 ], spacing=0),
                 ft.Row([governments_container])
@@ -434,7 +434,7 @@ class World(Widget):
                 ft.Row([
                     ft.Container(width=6),
                     ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields"), icon_color=self.data.get('color', None)),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields", "Custom"), icon_color=self.data.get('color', None)),
 
                 ], spacing=0),
                 ft.Row([custom_fields_container])
@@ -459,7 +459,7 @@ class World(Widget):
             for key, value in dict.items():
                 if isinstance(value, str):
                     # Treat Goals as a list for display purposes
-                    if key == "Goals":  
+                    if "\n" in value:  
                         text_control = ft.Text(
                             expand=True, selectable=True, 
                             spans=[ft.TextSpan(f"{key.capitalize()}: ", ft.TextStyle(weight=ft.FontWeight.BOLD))]   # Key is bold with formatting
@@ -469,6 +469,16 @@ class World(Widget):
                         for val in values:
                             text_control.spans.append(ft.TextSpan(f"\n\t\u2022\t{val.capitalize()}"))
 
+                        container.content.controls.append(text_control)
+
+                    else:
+                        text_control = ft.Text(
+                            expand=True, selectable=True, 
+                            spans=[
+                                ft.TextSpan(f"{key.capitalize()}: ", ft.TextStyle(weight=ft.FontWeight.BOLD)),   # Key is bold with formatting
+                                ft.TextSpan(f"{value.capitalize()}")    # Value normal
+                            ]
+                        )
                         container.content.controls.append(text_control)
                     
 
@@ -500,7 +510,10 @@ class World(Widget):
             summary_container = ft.Container(            # For basic info
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE), 
-                content=ft.Column([]), 
+                content=ft.Text(
+                    self.data.get('world_data', {}).get('Summary', ""),
+                    expand=True, selectable=True, 
+                )
             )
             locations_container = ft.Container(  # For physical description
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
