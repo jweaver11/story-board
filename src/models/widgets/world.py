@@ -34,6 +34,8 @@ class World(Widget):
                 'color': app.settings.data.get('default_world_color'),   
                 'edit_mode': bool,              # Whether we are in edit mode or not
 
+                'image_base64': str,  # Saves our icon as img64 string
+
                 'world_data': {
                     'Summary': str,
                     'Locations': dict,
@@ -69,8 +71,6 @@ class World(Widget):
         self.load_geography()
         self.load_technology()
         self.load_history()
-
-        self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED, size=100, color=self.data.get('color', "primary"), expand=False)
 
         self.reload_tab()
         self.reload_widget()
@@ -172,6 +172,26 @@ class World(Widget):
 
         except Exception as ex:
             print(f"Error opening dialog: {ex}") 
+
+    async def _files_uploaded(self, e: ft.FilePickerResultEvent):
+
+        if e.files:
+            file_path = e.files[0].path
+            #print("File path:", file_path)
+
+            try:
+                import base64
+
+                with open(file_path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                    # Save to our data
+                    self.data['image_base64'] = f"{encoded_string}"
+                    self.save_dict()
+                    self.reload_widget()
+                    print("Success")
+
+            except Exception as ex:
+                print(f"Error uploading file: {ex}")
     
     # Called when clicking the edit mode button
     def _edit_mode_clicked(self, e=None):
@@ -218,15 +238,30 @@ class World(Widget):
                         ])
                     )
                     
-                    
+        if self.data.get('image_base64', ""):
+            img = ft.Container(
+                ft.Image(
+                    src_base64=self.data.get('image_base64', ""),
+                    width=100,
+                    height=100,
+                    fit=ft.ImageFit.FILL,
+                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+            )
+        else:
+            img = ft.Icon(ft.Icons.PUBLIC_OUTLINED, size=100, color=self.data.get('color', "primary"), expand=False)
+
+        fp = ft.FilePicker(on_result=self._files_uploaded)
 
         # Column we will append to for the bot of our view. Has our icon, and exit edit mode button
         # TODO: Foreground decoration when hovering adds the ("upload image" button)
         body = ft.Column([
             ft.Row([
-                self.icon,
+                ft.IconButton(
+                    content=img, tooltip="Upload Image", on_click=lambda e: fp.pick_files(
+                    allow_multiple=False, allowed_extensions=["png", "jpg", "jpeg", "webp"])
+                ),
                 ft.IconButton(tooltip="Exit Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, icon_color=self.data.get('color', None), on_click=self._edit_mode_clicked),
-                #ft.Divider(color="transparent"),    # Used as new line
+                fp
             ], wrap=True),
         ], scroll="auto", expand=True)
 
@@ -319,7 +354,7 @@ class World(Widget):
             ft.Column([
                 ft.Row([
                     ft.Container(width=6), 
-                    ft.Text("Summary", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ft.Text("Summary", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True),
                 ], spacing=0),
                 ft.Row([summary_container])
             ], expand=True, spacing=4)
@@ -447,8 +482,6 @@ class World(Widget):
         self.body_container.content = body
 
 
-        self._render_widget()
-
     # Called to reload our widget UI
     def reload_widget(self):
         ''' Reloads our world building widget '''
@@ -493,10 +526,28 @@ class World(Widget):
         # If NOT in edit mode, build our normal view
         else:
 
+            if self.data.get('image_base64', ""):
+                img = ft.Container(
+                    ft.Image(
+                        src_base64=self.data.get('image_base64', ""),
+                        width=100,
+                        height=100,
+                        fit=ft.ImageFit.FILL,
+                    ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                )
+            else:
+                img = ft.Icon(ft.Icons.PUBLIC_OUTLINED, size=100, color=self.data.get('color', "primary"), expand=False)
+
+            fp = ft.FilePicker(on_result=self._files_uploaded)
+
             body = ft.Column([
                 ft.Row([
-                    self.icon,
+                    ft.IconButton(
+                        content=img, tooltip="Upload Image", on_click=lambda e: fp.pick_files(
+                        allow_multiple=False, allowed_extensions=["png", "jpg", "jpeg", "webp"])
+                    ),
                     ft.IconButton(tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), on_click=self._edit_mode_clicked),
+                    fp
                 ], wrap=True),
             ], scroll="auto", expand=True)
 
@@ -691,7 +742,6 @@ class World(Widget):
             body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([row1, row2, row3, row4, row5, row6], spacing=16)))
 
             self.body_container.content = body
-
 
             self._render_widget()
 

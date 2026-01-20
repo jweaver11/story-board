@@ -13,7 +13,6 @@ from styles.menu_option_style import MenuOptionStyle
 from models.app import app
 from utils.safe_string_checker import return_safe_name
 from models.dataclasses.character_template import default_character_template_data_dict
-from styles.colors import dark_gradient
 
 
 
@@ -46,14 +45,13 @@ class Character(Widget):
                 'color': app.settings.data.get('default_character_color'),
                 'edit_mode': True,  # Whether we are in edit mode or not
 
+                'image_base64': str,  # Saves our icon as img64 string
                 # If this dict doesn't exist, create it with our active template data. Otherwise
                 'character_data': app.settings.data.get('character_templates', {}).get(app.settings.get('active_character_template', ""), default_character_template_data_dict()) if
                     data is None or 'character_data' not in data else data['character_data'],
             },
         )
-        
-        self.icon = ft.Icon(ft.Icons.PERSON, size=100, expand=False),
-        
+                
         self.custom_field_controls = {}  # Store references to custom field TextFields
 
         # Build our widget on start, but just reloads it later
@@ -185,6 +183,25 @@ class Character(Widget):
         if sort_method == key and self.story.data.get('selected_rail', "") == "characters":
             self.story.active_rail.content.reload_rail()
 
+    async def _files_uploaded(self, e: ft.FilePickerResultEvent):
+
+        if e.files:
+            file_path = e.files[0].path
+            #print("File path:", file_path)
+
+            try:
+                import base64
+
+                with open(file_path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                    # Save to our data
+                    self.data['image_base64'] = f"{encoded_string}"
+                    self.save_dict()
+                    self.reload_widget()
+                    print("Success")
+
+            except Exception as ex:
+                print(f"Error uploading file: {ex}")
 
     # Called when clicking the edit mode button
     def _edit_mode_clicked(self, e=None):
@@ -238,16 +255,33 @@ class Character(Widget):
                             ),
                         ])
                     )
-                    
-                    
 
+
+        
+        if self.data.get('image_base64', ""):
+            img = ft.Container(
+                ft.Image(
+                    src_base64=self.data.get('image_base64', ""),
+                    width=100,
+                    height=100,
+                    fit=ft.ImageFit.FILL,
+                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+            )
+        else:
+            img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
+
+        fp = ft.FilePicker(on_result=self._files_uploaded)
+            
         # Column we will append to for the bot of our view. Has our icon, and exit edit mode button
         # TODO: Foreground decoration when hovering adds the ("upload image" button)
         body = ft.Column([
             ft.Row([
-                self.icon,
+                ft.IconButton(
+                    content=img, tooltip="Upload Image", on_click=lambda e: fp.pick_files(
+                    allow_multiple=False, allowed_extensions=["png", "jpg", "jpeg", "webp"])
+                ),
                 ft.IconButton(tooltip="Exit Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, icon_color=self.data.get('color', None), on_click=self._edit_mode_clicked),
-                #ft.Divider(color="transparent"),    # Used as new line
+                fp, 
             ], wrap=True),
         ], scroll="auto", expand=True)
 
@@ -416,9 +450,6 @@ class Character(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        
-        self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
-        
 
         # Check if we're in edit mode or not. If yes, build the edit view like this
         if self.data.get('edit_mode', False):
@@ -429,10 +460,28 @@ class Character(Widget):
         # If NOT in edit mode, build our normal view
         else:
 
+            if self.data.get('image_base64', ""):
+                img = ft.Container(
+                    ft.Image(
+                        src_base64=self.data.get('image_base64', ""),
+                        width=100,
+                        height=100,
+                        fit=ft.ImageFit.FILL,
+                    ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                )
+            else:
+                img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
+
+            fp = ft.FilePicker(on_result=self._files_uploaded)
+
             body = ft.Column([
                 ft.Row([
-                    self.icon,
+                    ft.IconButton(
+                        content=img, tooltip="Upload Image", on_click=lambda e: fp.pick_files(
+                        allow_multiple=False, allowed_extensions=["png", "jpg", "jpeg", "webp"])
+                    ),
                     ft.IconButton(tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), on_click=self._edit_mode_clicked),
+                    fp
                 ], wrap=True),
             ], scroll="auto", expand=True)
 
