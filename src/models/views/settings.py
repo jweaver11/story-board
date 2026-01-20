@@ -74,7 +74,7 @@ class Settings(ft.View):
 
                 # Widget settings
                 'default_canvas_color': "primary",
-                'default_canvas_board_color': "primary",
+                'default_canvas_board_color': "orange",
                 'default_chapter_color': "primary",   # Default colors for new widgets
                 'default_character_color': "primary",
                 'default_character_connection_map_color': "primary", 

@@ -312,7 +312,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
         
 
         content=ft.Row(
-            spacing=None,
+            spacing=0,
             controls=[
                 menubar,    # Menubar on left
                 ft.Container(expand=True),  # empty space in middle of menubar
@@ -322,6 +322,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                     "Beta", color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD, 
                     tooltip="Storyboard is currently in beta. More features coming soon! \nCheck out Settings -> Resources for a list of planned features and known issues. \nJoin the Discord to suggest your features and report bugs."
                 ),  # Feedback button
+                ft.Icon(ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, tooltip="Storyboard is currently in beta. More features coming soon! \nCheck out Settings -> Resources for a list of planned features and known issues. \nJoin the Discord to suggest your features and report bugs."),
                 ft.IconButton(icon=ft.Icons.SETTINGS_OUTLINED, on_click=settings_clicked),   # Settings button
             ]
         )
