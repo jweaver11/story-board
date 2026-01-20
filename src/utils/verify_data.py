@@ -54,6 +54,8 @@ def verify_data(object, required_data: dict) -> bool:
                     current_data[key] = value
                 elif key == 'directory_path':   # If the directory path changes, we need to update it
                     current_data[key] = value
+                elif key == 'side_location':    # To ensure side location is always correct
+                    current_data[key] = value
         
 
     # Main block to run our internal function above

@@ -23,7 +23,7 @@ class LabelDropdown(ft.GestureDetector):
         # Set our parameters
         self.title = title.title()
         self.story = story
-        self.plotline = Plotline
+        self.plotline = plotline
         self.additional_menu_options = additional_menu_options
         self.rail = rail
         self.plotline_dropdown = plotline_dropdown

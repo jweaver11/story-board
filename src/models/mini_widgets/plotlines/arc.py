@@ -34,8 +34,17 @@ class Arc(MiniWidget):
         ) 
 
 
-        # TODO:
-        # Type of arcs?? timeskips, normal, character arcs
+        if x_alignment is not None:
+            x_alignment_start = x_alignment -.2 if x_alignment > -0.8 else -1
+            x_alignment_end = x_alignment + .2 if x_alignment < 0.8 else 1
+            #print("X alignment passed in was: ", x_alignment)
+            side_location = "left" if x_alignment > 0 else "right"
+        else:
+            x_alignment_start = -0.2
+            x_alignment_end = 0.2
+            side_location = "right"
+
+        print("Side location set to: ", side_location)
 
         # Verifies this object has the required data fields, and creates them if not
         verify_data(
@@ -45,8 +54,8 @@ class Arc(MiniWidget):
                 'is_timeskip': bool,                        # If this arc is a time skip (skips ahead in time on the plotline)   
                 'start_date': str,                          # Start and end date of the branch, for plotline view
                 'end_date': str,                            # Start and end date of the branch, for plotline view
-                'x_alignment_start': -.2,                   # Start position on the plotline
-                'x_alignment_end': .2,                      # End position on the plotline 
+                'x_alignment_start': x_alignment_start,                   # Start position on the plotline
+                'x_alignment_end': x_alignment_end,                      # End position on the plotline 
                 'color': "secondary",                         # Color of the arc in the plotline
                 'dropdown_is_expanded': True,               # If the arc dropdown is expanded on the rail
                 'plot_points_are_expanded': True,           # If the plotpoints section is expanded
@@ -54,7 +63,7 @@ class Arc(MiniWidget):
                 'size': size,                               # Size of the arc on the plotline. Can be Small, Medium, Large, or X-Large
                 'is_focused': bool,                         # If this arc is currently focused/selected. True when mini widget visible, or mouse hovering over arc
                 
-
+                'side_location': side_location,             # Which side of the plotline this arc is on (left or right)
                 'connections': dict,                        # Connect points, arcs, branch, etc.???
                 'rail_dropdown_is_expanded': True,          # If the rail dropdown is expanded  
                 'content': str,
@@ -234,9 +243,7 @@ class Arc(MiniWidget):
         new_h = min(max_h, max(0, int(width_px / 2)))
         self.plotline_arc.height = new_h
 
-        # Update visuals
-        self.plotline_row.page = self.p
-        self.plotline_row.update()
+        self.p.update()
         
 
     # Called when we finish dragging our slider thumb to save our new position

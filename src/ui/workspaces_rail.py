@@ -144,8 +144,8 @@ class WorkspacesRail(ft.Container):
                 ),
             ],
         )
-        # Plot and timeline workspace rail
-        timelines_rail = ft.NavigationRail(
+        # Plot and plotline workspace rail
+        plotlines_rail = ft.NavigationRail(
             height=70,  
             bgcolor=ft.Colors.TRANSPARENT,
             selected_index=None,
@@ -155,7 +155,7 @@ class WorkspacesRail(ft.Container):
                     icon=ft.Icon(ft.Icons.TIMELINE_ROUNDED, scale=1.2), 
                     selected_icon=ft.Icon(ft.Icons.TIMELINE_OUTLINED, color=ft.Colors.PRIMARY, scale=1.2),
                     padding=ft.padding.only(top=10, bottom=10),
-                    data="timelines", label_content=ft.Text("Timelines", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                    data="plotlines", label_content=ft.Text("Plotlines", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
                 ),
             ],
         )
@@ -212,8 +212,8 @@ class WorkspacesRail(ft.Container):
             content_rail.selected_index = 0    # Selects first destination in destination list (cuz there is only one)
         elif selected_rail == "characters":
             characters_rail.selected_index = 0
-        elif selected_rail == "timelines":
-            timelines_rail.selected_index = 0
+        elif selected_rail == "plotlines":
+            plotlines_rail.selected_index = 0
         elif selected_rail == "world_building":
             world_building_rail.selected_index = 0
         elif selected_rail == "canvas":
@@ -229,8 +229,8 @@ class WorkspacesRail(ft.Container):
                 workspaces_rail.append(content_rail)   # Add our corresponding workspace selector rail to the list
             elif workspace == "characters":
                 workspaces_rail.append(characters_rail)    
-            elif workspace == "timelines":
-                workspaces_rail.append(timelines_rail)
+            elif workspace == "plotlines":
+                workspaces_rail.append(plotlines_rail)
             elif workspace == "world_building":
                 workspaces_rail.append(world_building_rail)
             elif workspace == "canvas":
@@ -247,7 +247,7 @@ class WorkspacesRail(ft.Container):
             # Remove our labels below the icons
             content_rail.destinations[0].label_content = None
             characters_rail.destinations[0].label_content = None
-            timelines_rail.destinations[0].label_content = None
+            plotlines_rail.destinations[0].label_content = None
             world_building_rail.destinations[0].label_content = None
             canvas_rail.destinations[0].label_content = None
             planning_rail.destinations[0].label_content = None
