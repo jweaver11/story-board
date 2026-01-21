@@ -637,7 +637,6 @@ class CanvasBoard(Widget):
                         ], 
                     )
                     
-                    print("Matrix labels length: ", len(self.data['matrix_labels']))
                     sub_row = ft.Row(
                         alignment=ft.MainAxisAlignment.SPACE_AROUND, expand=True, spacing=0,
                         controls=[]
@@ -645,8 +644,6 @@ class CanvasBoard(Widget):
 
                     # Add delete buttons under each column that is custom (not preview, sketch, or concept)
                     if len(self.data['matrix_labels']) > 3:
-                        #print("Adding extra delete buttons")
-                        print("Added this many labels", len(self.data['matrix_labels']) - 3)
                         
                         for i in range(len(self.data['matrix_labels']) - 2):
                             if i == 0:

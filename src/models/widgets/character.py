@@ -13,6 +13,7 @@ from styles.menu_option_style import MenuOptionStyle
 from models.app import app
 from utils.safe_string_checker import return_safe_name
 from models.dataclasses.character_template import default_character_template_data_dict
+from utils.character_connection import new_character_connection_clicked
 
 
 
@@ -142,6 +143,8 @@ class Character(Widget):
         
         dlg.open = True
         self.p.open(dlg)
+
+
 
        
 
@@ -344,6 +347,7 @@ class Character(Widget):
         row4 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
         row5 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
         row6 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+        row7 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
 
 
         # Add the labels and containers that have the data controls into the rows for formatting
@@ -388,17 +392,7 @@ class Character(Widget):
             ], expand=True, spacing=4)
         )
         row4.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6), 
-                    ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Family", "Family"), icon_color=self.data.get('color', None)),
-
-                ], spacing=0),
-                ft.Row([family_container])
-            ], expand=True, spacing=4)
-        )
-        row5.controls.append(
+            
             ft.Column([
                 ft.Row([
                     ft.Container(width=6), 
@@ -409,8 +403,29 @@ class Character(Widget):
                 ft.Row([origin_container])
             ], expand=True, spacing=4)
         )
+        row5.controls.append(
+            ft.Column([
+                ft.Row([
+                    ft.Container(width=6), 
+                    ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Family", "Family"), icon_color=self.data.get('color', None)),
 
+                ], spacing=0),
+                ft.Row([family_container])
+            ], expand=True, spacing=4)
+        )
         row6.controls.append(
+            ft.Column([
+                ft.Row([
+                    ft.Container(width=6), 
+                    ft.Text("Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: new_character_connection_clicked(self), icon_color=self.data.get('color', None)),
+                ], spacing=0),
+                ft.Row([connections_container])
+            ], expand=True, spacing=4)  
+        )
+
+        row7.controls.append(
             ft.Column([
                 ft.Row([
                     ft.Container(width=6), 
@@ -421,7 +436,7 @@ class Character(Widget):
             ], expand=True, spacing=4)
         )
 
-        body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([row1, row2, row3, row4, row5, row6], spacing=16)))
+        body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([row1, row2, row3, row4, row5, row6, row7], spacing=16)))
 
         self.body_container.content = body
 
@@ -544,25 +559,24 @@ class Character(Widget):
             _load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container)
             _load_dict_data(self.data.get('character_data', {}).get('Custom Fields', {}), custom_fields_container)
 
-            row1 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-            row2 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-            row3 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-            row4 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+            
 
-
+            column1 = ft.Column([], expand=True, spacing=4, alignment=ft.MainAxisAlignment.START)
+            column2 = ft.Column([], expand=True, spacing=4, alignment=ft.MainAxisAlignment.START)
             
     
             # If we have basic info, this will add it to the page. Protects against custom templates getting rid of certain sections
             if basic_info_container.content.controls:
-                row1.controls.append(
-                    ft.Column([
-                        ft.Row([
+                
+                column1.controls.append(
+                    ft.Row([
                             ft.Container(width=6), 
                             ft.Text("Basic Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
                         ], spacing=0),
-                        ft.Row([basic_info_container])
-                    ], expand=True, spacing=4)
-                )
+                    )
+                column1.controls.append(ft.Row([basic_info_container]))
+                column1.controls.append(ft.Container(height=16))  # Spacer
+
             # If we have temlpate data, this will add it to the page
             if 'Template Data' not in self.data.get('character_data', {}):
                 pass
@@ -570,67 +584,76 @@ class Character(Widget):
                 
                 if app.settings.data.get('show_empty_character_fields', True) or template_data_container.content.controls:
                     template_title = self.data.get('character_data', {}).get('Template Data', {}).get('Template Name', 'Template Data')
-                    row1.controls.append(
-                        ft.Column([
-                            ft.Row([
-                                ft.Container(width=6), 
-                                ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.data.get('color', None), selectable=True, expand=True)
-                            ], spacing=0),
-                            ft.Row([template_data_container])
-                        ], expand=True, spacing=4)
-                    )
-            if physical_description_container.content.controls:
-                row2.controls.append(
-                    ft.Column([
+                    
+                    column2.controls.append(
                         ft.Row([
+                                ft.Container(width=6), 
+                                ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                            ], spacing=0),
+                        )
+                    column2.controls.append(ft.Row([template_data_container]))
+                    column2.controls.append(ft.Container(height=16))  # Spacer
+
+            if physical_description_container.content.controls:
+                
+                column2.controls.append(
+                    ft.Row([
                             ft.Container(width=6), 
                             ft.Text("Physical Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
                         ], spacing=0),
-                        ft.Row([physical_description_container])
-                    ], expand=True, spacing=4)
-                )
+                        
+                    )
+                column2.controls.append(ft.Row([physical_description_container]))
+                column2.controls.append(ft.Container(height=16))  # Spacer
+
             if family_container.content.controls:
-                row2.controls.append(
-                    ft.Column([
-                        ft.Row([
+                
+                column2.controls.append(
+                    ft.Row([
                             ft.Container(width=6), 
                             ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
                         ], spacing=0),
-                        ft.Row([family_container])
-                    ], expand=True, spacing=4)
-                )
+                        
+                    )
+                column2.controls.append(ft.Row([family_container]))
             if origin_container.content.controls:
-                row3.controls.append(
-                    ft.Column([
-                        ft.Row([
+                
+                column1.controls.append(
+                    ft.Row([
                             ft.Container(width=6), 
                             ft.Text("Origin", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
                         ], spacing=0),
-                        ft.Row([origin_container])
-                    ], expand=True, spacing=4)
+                        
                 )
+                column1.controls.append(ft.Row([origin_container]))
+                column1.controls.append(ft.Container(height=16))  # Spacer
             if app.settings.data.get('show_empty_character_fields', True):
-                row3.controls.append(
-                    ft.Column([
-                        ft.Row([
-                            ft.Container(width=6), 
-                            ft.Text("Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                        ], spacing=0),
-                        ft.Row([connections_container])
-                    ], expand=True, spacing=4)
+                
+                column1.controls.append(
+                    ft.Row([
+                        
+                        ft.Container(width=6),
+                        ft.Text("Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
+                        
                 )
+                column1.controls.append(ft.Row([connections_container]))
+                column1.controls.append(ft.Container(height=16))  # Spacer
+
             if custom_fields_container.content.controls:
-                row4.controls.append(
-                    ft.Column([
-                        ft.Row([
+
+                column1.controls.append(
+                    ft.Row([
                             ft.Container(width=6), 
                             ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
                         ], spacing=0),
-                        ft.Row([custom_fields_container])
-                    ], expand=True, spacing=4)
-                )
+                        
+                    )
+                column1.controls.append(ft.Row([custom_fields_container]))
+                column1.controls.append(ft.Container(height=16))  # Spacer
 
-            body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([row1, row2, row3, row4], spacing=16)))
+
+            body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([ft.Row([column1, column2], vertical_alignment=ft.CrossAxisAlignment.START)], spacing=16)))
         
             self.body_container.content = body
 
