@@ -117,21 +117,29 @@ class Workspace(ft.Container):
         # If no visible in the top pin
         if len(visible_top_pin_controls) == 0:
             self.top_pin_drag_target.content.height = self.minimum_pin_height
+        else:
+            self.top_pin_drag_target.content.height = self.story.data.get('top_pin_height', int(self.p.height/5))
 
         visible_left_pin_controls = [control for control in self.left_pin.controls if getattr(control, 'visible', True)]
         # If no visible in the left pin
         if len(visible_left_pin_controls) == 0:
             self.left_pin_drag_target.content.width = self.minimum_pin_width
+        else:
+            self.left_pin_drag_target.content.width = self.story.data.get('left_pin_width', int(self.p.width/10))
 
         visible_right_pin_controls = [control for control in self.right_pin.controls if getattr(control, 'visible', True)]
         # If no visible in the right pin
         if len(visible_right_pin_controls) == 0:
             self.right_pin_drag_target.content.width = self.minimum_pin_width
+        else:
+            self.right_pin_drag_target.content.width = self.story.data.get('right_pin_width', int(self.p.width/10))
 
         visible_bottom_pin_controls = [control for control in self.bottom_pin.controls if getattr(control, 'visible', True)]
         # If no visible in the bottom pin
         if len(visible_bottom_pin_controls) == 0:
             self.bottom_pin_drag_target.content.height = self.minimum_pin_height
+        else:
+            self.bottom_pin_drag_target.content.height = self.story.data.get('bottom_pin_height', int(self.p.height/5))
         
         self.p.update()
 
