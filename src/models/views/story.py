@@ -698,7 +698,8 @@ class Story(ft.View):
             if (e.delta_x > 0 and self.active_rail.width < page.width/2) or (e.delta_x < 0 and self.active_rail.width > 100):
                 self.active_rail.width += int(e.delta_x)    # Apply the change to our rail
                 
-            page.update()   # Apply our changes to the rest of the page
+            self.active_rail.update()
+            #page.update()   # Apply our changes to the rest of the page
 
         # Called when app stops dragging the resizer to resize the active rail
         def save_active_rail_width(e: ft.DragEndEvent):

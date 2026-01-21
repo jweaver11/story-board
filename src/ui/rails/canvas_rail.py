@@ -103,7 +103,6 @@ class CanvasRail(Rail):
         self.color_picker_button.icon_color = selected_color
         self.color_picker_button.icon_color = selected_color
         self.update()
-        #self.p.update()
 
    
     def _set_blend_mode_label(self) -> str:
@@ -188,7 +187,6 @@ class CanvasRail(Rail):
             
             self.story.data['paint_settings']['style'] = new_style      # Update the data
             self.story.save_dict()
-            #self.p.update()     # Update the page
             self.update()
 
         # Called when changing paint erase mode
@@ -205,7 +203,6 @@ class CanvasRail(Rail):
                 self.story.data['paint_settings']['stroke_dash_pattern'] = None
                 self.paint_adjust_dashed_lines_button.visible = False
             self.story.save_dict()
-            #self.p.update()
             self.update()
             
 
@@ -225,7 +222,6 @@ class CanvasRail(Rail):
                 e.control.parent.content = ft.Icon(ft.Icons.SQUARE_OUTLINED)
             self.story.data['paint_settings']['stroke_cap'] = new_stroke_cap
             self.story.save_dict()
-            #self.p.update()
             self.update()
 
         def _paint_stroke_join_changed(e):
@@ -239,7 +235,6 @@ class CanvasRail(Rail):
                 e.control.parent.content = ft.Icon(ft.Icons.SQUARE_OUTLINED)
             self.story.data['paint_settings']['stroke_join'] = new_stroke_join
             self.story.save_dict()
-            #self.p.update()
             self.update()
 
         # Called when changing paint stroke blur
@@ -265,7 +260,6 @@ class CanvasRail(Rail):
             self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
 
             self.story.save_dict()
-            #self.p.update()
             self.update()
 
         # Our header at the top of the rail

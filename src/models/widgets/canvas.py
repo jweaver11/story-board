@@ -13,8 +13,6 @@ Maps are widgets that have their own drawing canvas, and info display. they can 
 # Fill tool??
 
 from flet_contrib.color_picker import ColorPicker
-import os
-import json
 import flet as ft
 from models.widget import Widget
 from models.views.story import Story
@@ -22,7 +20,6 @@ from utils.verify_data import verify_data
 from styles.snack_bar import SnackBar
 from models.dataclasses.state import State
 import flet.canvas as cv
-from threading import Thread
 import math
 from models.app import app
 

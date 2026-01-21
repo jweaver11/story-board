@@ -7,6 +7,10 @@ from models.widget import Widget
 from models.views.story import Story
 from utils.verify_data import verify_data
 from models.app import app
+import flet.canvas as cv
+from models.dataclasses.state import State
+import math
+from styles.snack_bar import SnackBar
 
 
 class CanvasBoard(Widget):
@@ -33,14 +37,31 @@ class CanvasBoard(Widget):
 
                 # Labels on the top part of our grid. Users can add onto these as needed
                 'matrix_labels': ["Preview", "Sketch", "Concept"],   # Preview -> Ties to a specific Canvas and shows a preview of that Canvas in real time
-                # Sketch provides a simple canvas for rough sketches/thumbnails. Conecpt is text descriptions of the idea
 
                 'matrix': [
-                    ["1", "2", "3"],      # 1 will be a key to a specific canvas, 2 is a sketch canvas shapes data, 3 is a str
-                    ["4", "5", "6"]
+                    [
+                        "1", 
+                        {
+                            'paths': [],      # All our shapes, lines, dashed lines, curves, etc.
+                            'shadow_paths': [],   # All paths but with shadows
+                            'points': [],     # All our points
+                        }, 
+                        "3"
+                    ],      # 1 will be a key to a specific canvas, 2 is a sketch canvas shapes data, 3 is a str
+                    [
+                        "4", 
+                        {
+                            'paths': [],            # All our shapes, lines, dashed lines, curves, etc.
+                            'shadow_paths': [],     # All paths but with shadows
+                            'points': [],           # All our points
+                        }, 
+                        "6"
+                    ]
                 ]
             },
         )
+
+        self.state: State = State()
         
         self.icon = ft.Icon(ft.Icons.PERSON, size=100, expand=False)    # Icon of character
 
@@ -55,8 +76,341 @@ class CanvasBoard(Widget):
         if isinstance(value, str):
             self.data['matrix'][row][column] = value
             self.save_dict()
-    
 
+    # Called on launch to load our drawing from data into our canvas
+    def _load_canvas(self, row: int, column: int) -> list:
+        """Loads our drawing from our saved map drawing file."""
+
+        # Clear our canvas, and load our shapes stored in data
+        shapes = []
+        
+        
+
+        #print("Data to load: ", self.data['matrix'][row][column])
+
+        # Loading points
+        for point in self.data['matrix'][row][column].get('points', []):
+            px, py, point_mode, paint_settings = point
+            shapes.append(
+                cv.Points(
+                    points=[(px, py)],
+                    point_mode=point_mode,
+                    paint=ft.Paint(**paint_settings),
+                )
+            )
+
+        # Loading our paths, which most of the drawing
+        for path in self.data['matrix'][row][column].get('paths', []):
+            
+            elements = path.get('elements', [])         # List of the elements in this path
+            paint_settings = path.get('paint', {})      # Paint settings for this path
+
+            # Grab our style for simple logic
+            style = path.get('paint', {}).get('style', 'stroke')
+
+            # Make a copy of our paint settings to modify for drawing
+            safe_paint_settings = path.get('paint', {}).copy()
+
+            # If in erase mode, we have to set blur_image to 0 and
+            if safe_paint_settings.get('blend_mode', 'src_over') == 'clear':
+                safe_paint_settings['blur_image'] = 0
+
+            # Set stroke or fill based on custom styles
+            safe_stroke = 'fill' if style.endswith('fill') else 'stroke'
+            safe_paint_settings['style'] = safe_stroke
+
+            new_path = cv.Path(elements=[], paint=ft.Paint(**safe_paint_settings))   # Set a new path for this path with our paint settings
+
+            # Iterate through each element for its type, and create a new path element based on that
+            for element in elements:
+
+                # MoveTo just has x and y
+                if element['type'] == 'moveto':
+                    new_path.elements.append(cv.Path.MoveTo(element['x'], element['y']))
+
+                # Lineto jjust has x and y
+                elif element['type'] == 'lineto':
+                    new_path.elements.append(cv.Path.LineTo(element['x'], element['y']))
+
+                elif element['type'] == 'arc':
+                    new_path.elements.append(
+                        cv.Path.Arc(
+                            width=element['width'],
+                            height=element['height'],
+                            x=element['x'],
+                            y=element['y'],
+                            start_angle=element['start_angle'],
+                            sweep_angle=element['sweep_angle'],
+                        )
+                    )
+                        
+
+                # QuadraticTo has cp1x, cp1y, x, y, w
+                elif element['type'] == 'arcto':
+                    new_path.elements.append(
+                        cv.Path.ArcTo(
+                            radius=element['radius'],
+                            rotation=element['rotation'],
+                            large_arc=element['large_arc'],
+                            x=element['x'],
+                            y=element['y'],
+                        )
+                    )
+
+                
+                else:
+                    print("Unknown path element type while loading: ", element)
+                    self.p.open(SnackBar(f"Error loading {self.title}"))
+
+            shapes.append(new_path)
+
+        return shapes
+
+
+        # Called when we click the canvas and don't initiate a drag
+    def add_point(self, row: int, column: int, e: ft.TapEvent):
+        ''' Adds a point to the canvas if we just clicked and didn't initiate a drag '''
+
+        # Create the point using our paint settings and point mode
+        point = cv.Points(
+            points=[(e.local_x, e.local_y)],
+            paint=ft.Paint(**self.story.data.get('paint_settings', {})),
+        )
+        
+        # Add point to the canvas and our state data
+        e.control.parent.shapes.append(point)
+        self.state.points.append((e.local_x, e.local_y, point.point_mode, point.paint.__dict__))
+
+        # After dragging canvas widget, it loses page reference and can't update
+        try:
+            e.control.parent.update()
+            
+        except Exception as ex:
+            print("Failed to update e.control")
+            self.p.update()
+            
+            
+        # Save our canvas data
+        self.save_canvas(row, column)
+        
+    # Called when we start drawing on the canvas
+    async def start_drawing(self, e: ft.DragStartEvent):
+        ''' Set our initial starting x and y coordinates for the element we're drawing '''
+
+        # Grab our style so we can compare it
+        style = str(self.story.data.get('paint_settings', {}).get('style', 'stroke'))
+
+        # Make a copy of our paint settings to modify it, since some of the styles are not built in
+        safe_paint_settings = self.story.data.get('paint_settings', {}).copy()
+
+        # Copy of our paint settings for our state tracking and data storage (only erase mode needs this)
+        state_paint_settings = self.story.data.get('paint_settings', {}).copy()
+
+        # Set either stroke or fill based on custom styles
+        safe_stroke = 'fill' if style.endswith('fill') else 'stroke'
+        safe_paint_settings['style'] = safe_stroke
+
+        # Check if we're in erase mode or not. If we are, set blend mode to clear and blur image to 0
+        if self.story.data.get('canvas_settings', {}).get('erase_mode', False):
+            safe_paint_settings['blend_mode'] = "clear"
+            safe_paint_settings['blur_image'] = 0
+            state_paint_settings['blend_mode'] = "clear"
+            state_paint_settings['blur_image'] = 0
+        
+
+        # Update state x and y coordinates
+        self.state.x, self.state.y = e.local_x, e.local_y
+
+        # Clear and set our current path and state to match it
+        self.current_path = cv.Path(elements=[], paint=ft.Paint(**safe_paint_settings))
+        self.state.paths.clear()
+        self.state.paths.append({'elements': list(), 'paint': state_paint_settings})
+
+        # Set move to element at our starting position that the mouse is at for the path to start from
+        move_to_element = cv.Path.MoveTo(e.local_x, e.local_y)
+
+        # Add that element to current paths elements and our state paths
+        self.current_path.elements.append(move_to_element)
+        self.state.paths[0]['elements'].append((move_to_element.__dict__))
+
+        #print(f"Starting drawing with style {style}")
+
+        # If we're using lineto (straight lines), add that element to the current path and state right away
+        if style == "lineto":
+            line_element = cv.Path.LineTo(e.local_x, e.local_y)
+            self.current_path.elements.append(line_element)
+            self.state.paths[0]['elements'].append((line_element.__dict__))
+
+        elif style == "arc":
+            arc_element = cv.Path.Arc(
+                width=20,
+                height=20,
+                
+                x=e.local_x,
+                y=e.local_y,
+                start_angle=math.pi,
+                sweep_angle=-math.pi,
+            )
+            self.current_path.elements.append(arc_element)
+            self.state.paths[0]['elements'].append((arc_element.__dict__))
+
+        # Else if we're using arcto, add that element to the current path and state right away
+        elif style == 'arcto' or style == 'arctofill':
+            arc_element = cv.Path.ArcTo(
+                radius=12,
+                rotation=0,
+                large_arc=False,
+                x=e.local_x,
+                y=e.local_y,
+                clockwise=True,
+            )
+            self.current_path.elements.append(arc_element)
+            self.state.paths[0]['elements'].append((arc_element.__dict__))
+
+        # Add the path to the canvas so we can see it
+        e.control.parent.shapes.append(self.current_path)
+
+
+        
+    # Called when actively drawing on the canvas
+    async def is_drawing(self, e: ft.DragUpdateEvent):
+        ''' Creates our line to add to the canvas as we draw, and saves that paths data to self.state '''
+
+        # Grab our style so we can compare it
+        style = str(self.story.data.get('paint_settings', {}).get('style', 'stroke'))
+
+
+        # Handle lineto (Straight lines). Grab the element we created on start drawing, update its data
+        if style == "lineto":
+            
+            # Set the element and its data
+            line_element = self.current_path.elements[-1]
+            line_dict = line_element.__dict__
+
+            # Update the elements position
+            line_element.x = e.local_x
+            line_element.y = e.local_y
+
+            # Update the dict to match
+            line_dict['x'] = line_element.x
+            line_dict['y'] = line_element.y
+
+            # Update the page and return early
+            try:
+                # Page reference gets lost after dragging widget to new canvas, so we reset it and update
+                e.control.parent.update()
+            except Exception as ex:
+                print("Failed to update e.control")
+                self.p.update()
+            return
+        
+        if style == "arc" or style == "arcfill":
+            
+            # Set the element and its data
+            arc_element = self.current_path.elements[-1]
+            arc_dict = arc_element.__dict__
+
+        
+
+            # Swap directions of arc depending if we drag up or down from starting point
+            if e.local_y - self.state.y >= 0:   # Dragging down
+                arc_element.sweep_angle = -math.pi
+                arc_element.height = abs(self.state.y - e.local_y)
+                arc_element.y = self.state.y - (arc_element.height / 2)
+                
+            else:       # Dragging up
+                
+                arc_element.sweep_angle = math.pi
+                arc_element.height = abs(e.local_y - self.state.y)
+                arc_element.y = abs(self.state.y - (arc_element.height / 2))
+
+            print("arc element y adjustment: ", arc_element.height / 2)
+            print("arc height: ", arc_element.height)
+
+
+            arc_element.width = abs(e.local_x - self.state.x) 
+        
+
+
+            # Update the page and return early
+            try:
+                # Page reference gets lost after dragging widget to new canvas, so we reset it and update
+                e.control.parent.update()   
+            except Exception as ex:
+                print("Failed to update e.control")
+                self.p.update()
+
+
+            return
+        
+        # Handle arcs
+        if style == 'arcto' or style == 'arctofill':
+            
+            arc_element = self.current_path.elements[-1]
+            arc_dict = arc_element.__dict__
+
+            arc_element.x = e.local_x
+            arc_element.y = e.local_y
+        
+
+            arc_dict['x'] = arc_element.x
+            arc_dict['y'] = arc_element.y
+
+            # Update the page and return early
+            try:
+                # Page reference gets lost after dragging widget to new canvas, so we reset it and update
+                e.control.parent.update()
+            except Exception as ex:
+                print("Failed to update e.control")
+                self.p.update()
+            return
+        
+        
+        # If its not one of our custom styles, use free-draw stroke, which is constantly adding line_to segements
+        else:
+
+            #TODO: Add check here to reduce num of lines based on previous start and edn
+            # Set the path element based on what kind of path we're adding, add it to our current path and our state paths
+            path_element = cv.Path.LineTo(e.local_x, e.local_y)
+
+            # Add the declared element to our current path and state paths
+            self.current_path.elements.append(path_element)
+            self.state.paths[0]['elements'].append((path_element.__dict__))  
+
+            # After dragging canvas widget, it loses page reference and can't update
+            try:
+                # Page reference gets lost after dragging widget to new canvas, so we reset it and update
+                e.control.parent.update()
+            except Exception as ex:
+                print("Failed to update e.control")
+                self.p.update()
+            
+
+            # Update our state x and y for the next segment
+            self.state.x, self.state.y = e.local_x, e.local_y
+
+    def _on_canvas_resize(self, e: cv.CanvasResizeEvent):
+        ''' Called when our canvas resizes '''
+
+        print("Canvas resized to: ", e.width, e.height)
+        
+
+    # Called when we release the mouse to stop drawing a line
+    def save_canvas(self, row: int, column: int):
+        """ Saves our paths to our canvas data for storage """
+
+        # Save our paths annd points to the correct cell in our matrix
+        canvas_data = self.data['matrix'][row][column]
+        canvas_data['paths'].extend(self.state.paths)
+        canvas_data['points'].extend(self.state.points)
+
+        self.save_dict()
+
+        # Clear the current state, otherwise it constantly grows and lags the program
+        self.state.paths.clear()
+        self.state.points.clear()
+
+    
     
 
     # Called after any changes happen to the data that need to be reflected in the UI
@@ -80,17 +434,20 @@ class CanvasBoard(Widget):
             ),
         )
 
-        
-
         def _get_label_controls() -> list[ft.Control]:
             ''' Formats our labels insto text controls above our grid '''
             controls = []
             controls.append(ft.Container(width=6))
-            for label in self.data['matrix_labels']:
+            for idx, label in enumerate(self.data['matrix_labels']):
                 controls.append(
                     ft.Container(
-                        ft.Text(label, style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")), selectable=True),
-                        padding=5, alignment=ft.alignment.center, expand=True
+                        ft.Text(
+                            label, style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")), selectable=True,
+                            tooltip="Connect to one of your canvases and show a live preview of your progress!" if label == "Preview" else None,
+                        ),
+                        padding=5, alignment=ft.alignment.center, 
+                        width=216 if idx <=1 else None,
+                        expand=True if idx > 1 else False,
                     )
                 )
 
@@ -103,45 +460,14 @@ class CanvasBoard(Widget):
 
             controls = []
             for idx, row in enumerate(self.data['matrix']):
+                
 
-                # Build our border, and remove sides we don't need on edges
-                border = ft.border.only(
-                    left=ft.BorderSide(1, ft.Colors.OUTLINE),
-                    right=ft.BorderSide(1, ft.Colors.OUTLINE),
-                    top=ft.BorderSide(1, ft.Colors.OUTLINE),
-                    bottom=ft.BorderSide(1, ft.Colors.OUTLINE),
-                )
-                no_top_border = False
-                no_bottom_border = False    
+                # Establish a row control we will add our cells to
+                row_control = ft.Row(spacing=0, expand=True, controls=[], height=200)
 
-                # Check our index for on the edge or not
-                if idx == 0:
-                    no_top_border = True
-                elif idx == len(self.data['matrix']) - 1:
-                    no_bottom_border = True
-  
-                row_control = ft.Row(spacing=0, expand=True, controls=[])
+
 
                 for sub_idx, cell in enumerate(row):
-
-                    # Check our index for on the edge or not
-                    if sub_idx == 0:
-                        border = ft.border.only(
-                            right=ft.BorderSide(1, ft.Colors.OUTLINE),
-                            top=ft.BorderSide(0 if no_top_border else 1, ft.Colors.OUTLINE),
-                            bottom=ft.BorderSide(0 if no_bottom_border else 1, ft.Colors.OUTLINE),
-                        )
-
-                    elif sub_idx == len(row) - 1:
-                        border = ft.border.only(
-                            left=ft.BorderSide(1, ft.Colors.OUTLINE),
-                            top=ft.BorderSide(0 if no_top_border else 1, ft.Colors.OUTLINE),
-                            bottom=ft.BorderSide(0 if no_bottom_border else 1, ft.Colors.OUTLINE),
-                        )
-
-                    else:
-                        # All borders
-                        border = ft.border.all(1, ft.Colors.OUTLINE)
 
                     # Check our index against our label
                     label = self.data['matrix_labels'][sub_idx]
@@ -149,46 +475,68 @@ class CanvasBoard(Widget):
                     # Depending on our label, the content of our container will be differnt.
                     # Either image with preview of canvas, sketch canvas, or text area for concept
                     match label:
-                        case "Preview":
-                            pass
-                        case "Sketch":
-                            pass
-                        case "Concept":
-                            pass
-                        case _:
-                            pass
-
-                    if isinstance(cell, str):
-
-                        row_control.controls.append(
-                            ft.Container(
-                                ft.TextField(
-                                    str(cell),
-                                    dense=True, multiline=True, border=ft.InputBorder.NONE,
-                                    capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                                    on_blur=lambda e, r=idx, c=sub_idx: self._update_matrix_cell(r, c, e.control.value)
-                                ), 
-                                expand=True, border=border,
-                                padding=5, alignment=ft.alignment.top_center,
+                        case "Preview":     # Preview of the canvas we're tied too
+                            row_control.controls.append(
+                                ft.Container(
+                                    ft.Text("Coming Soon!"),
+                                    width=200,
+                                    padding=5, alignment=ft.alignment.top_center,
+                                )
                             )
-                        )
-
-                    else:
-                        row_control.controls.append(
-                            ft.Container(
-                                ft.TextField(
-                                    str(cell),
-                                    dense=True, multiline=True, border=ft.InputBorder.NONE,
-                                    capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                                    #on_blur
-                                ), 
-                                expand=True,
-                                border=ft.border.all(1, ft.Colors.ON_SURFACE),
-                                padding=5, alignment=ft.alignment.top_center,
+                        case "Sketch":      # Sketch canvas for rough thumbnails
+                            canvas = cv.Canvas(
+                                content=ft.GestureDetector(
+                                    mouse_cursor=ft.MouseCursor.PRECISE,
+                                    on_pan_start=self.start_drawing,
+                                    on_pan_update=self.is_drawing,
+                                    on_pan_end=lambda e, r=idx, c=sub_idx: self.save_canvas(r, c),
+                                    on_tap_up=lambda e, r=idx, c=sub_idx: self.add_point(r, c, e),      # Handles so we can add points
+                                    drag_interval=10, expand=True
+                                ),
+                                expand=True, width=200,
+                                resize_interval=100,
+                                shapes=[], on_resize=self._on_canvas_resize, 
                             )
-                        )
+                            row_control.controls.append(
+                                ft.Container(
+                                    canvas, margin=ft.margin.all(12), #border=ft.border.all(1, ft.Colors.OUTLINE),
+                                    bgcolor="surface", border_radius=ft.border_radius.all(6),
+                                    alignment=ft.alignment.top_center, 
+                                )
+                            )
+                            canvas.shapes.extend(self._load_canvas(idx, sub_idx))   # Load our saved canvas data into the canvas
 
+                        case "Concept" | _:     # Text description of the idea and any custom fields they added
+                            row_control.controls.append(
+                                ft.Container(
+                                    ft.TextField(
+                                        str(cell), focused_border_color=self.data.get('color', None), cursor_color=self.data.get('color', None),
+                                        dense=True, multiline=True, expand=True, #border=ft.InputBorder.NONE,
+                                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, smart_dashes_type=True,
+                                        on_blur=lambda e, r=idx, c=sub_idx: self._update_matrix_cell(r, c, e.control.value)
+                                    ), 
+                                    expand=True, padding=5, alignment=ft.alignment.top_center,
+                                )
+                            )
+                        
+                    # Add a divider between columns except for last one
+                    if sub_idx != len(row) - 1:
+                        row_control.controls.append(ft.VerticalDivider(width=1, thickness=1, color=ft.Colors.OUTLINE))
+                   
+                # Add our row control
                 controls.append(row_control)
+
+                # Add a divider between rows except for last one, we add the 'add row' button
+                if idx != len(self.data.get('matrix', [])) - 1: 
+                    controls.append(ft.Divider(height=1, thickness=1, color=ft.Colors.OUTLINE))
+                else:
+                    controls.append(
+                        ft.Row([
+                            ft.Container(expand=True), 
+                            ft.IconButton(icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, on_click=lambda e: None), 
+                            ft.Container(expand=True)
+                        ])
+                    )
 
             return controls
 
@@ -199,7 +547,7 @@ class CanvasBoard(Widget):
             expand=True,               
             padding=6,                 
             content=ft.Column(
-                spacing=0, expand=True, #scroll="auto", 
+                spacing=0, expand=True, scroll="auto", 
                 controls=[                 
                 
                     ft.Row([
@@ -211,15 +559,12 @@ class CanvasBoard(Widget):
                     ft.Row([description_container]),
                     ft.Container(height=10),
 
-            
-                    ft.Row(_get_label_controls(), spacing=0),
-
+                    ft.Row(_get_label_controls(), expand=True, spacing=0)
             ])
         )    
 
-        body.content.controls.extend(_get_grid_controls())
 
-        
+        body.content.controls.extend(_get_grid_controls())
 
         
         # Set our content to the body_container (from Widget class) as the body we just built
