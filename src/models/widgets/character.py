@@ -139,12 +139,11 @@ class Character(Widget):
             ],
         )
         
-        try:
-            dlg.open = True
-            self.p.open(dlg)
+        
+        dlg.open = True
+        self.p.open(dlg)
 
-        except Exception as ex:
-            print(f"Error opening dialog: {ex}") 
+       
 
     
 

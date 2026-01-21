@@ -324,14 +324,8 @@ class CanvasBoard(Widget):
                 arc_element.height = abs(e.local_y - self.state.y)
                 arc_element.y = abs(self.state.y - (arc_element.height / 2))
 
-            print("arc element y adjustment: ", arc_element.height / 2)
-            print("arc height: ", arc_element.height)
-
-
             arc_element.width = abs(e.local_x - self.state.x) 
         
-
-
             # Update the page and return early
             try:
                 # Page reference gets lost after dragging widget to new canvas, so we reset it and update
@@ -392,7 +386,7 @@ class CanvasBoard(Widget):
     def _on_canvas_resize(self, e: cv.CanvasResizeEvent):
         ''' Called when our canvas resizes '''
 
-        print("Canvas resized to: ", e.width, e.height)
+        #print("Canvas resized to: ", e.width, e.height)
         
 
     # Called when we release the mouse to stop drawing a line
@@ -410,7 +404,90 @@ class CanvasBoard(Widget):
         self.state.paths.clear()
         self.state.points.clear()
 
-    
+    # Called when we click to add a new row at the bottom of our matrix
+    def _new_row_clicked(self, e=None):
+        ''' Adds an empty new row to our matrix data and reloads the widget '''
+
+        # Create a new row with default values for each column
+        new_row = []
+        for label in self.data['matrix_labels']:
+            match label:
+                case "Preview":
+                    new_row.append("")    # Empty string for canvas key
+                case "Sketch":
+                    new_row.append({
+                        'paths': [],
+                        'shadow_paths': [],
+                        'points': [],
+                    })
+                case "Concept" | _:
+                    new_row.append("")
+
+        # Add the new row to our matrix data
+        self.data['matrix'].append(new_row)
+        self.save_dict()
+
+        # Reload our widget to reflect changes
+        self.reload_widget()
+
+    def _delete_row_clicked(self, row: int):
+        ''' Deletes a specific row from our matrix data and reloads the widget '''
+
+        if 0 <= row < len(self.data['matrix']):
+            del self.data['matrix'][row]
+            self.save_dict()
+            self.reload_widget()
+
+    def _new_column_clicked(self, e=None):  
+        ''' Adds a new column to our matrix data and reloads the widget '''
+
+        def _create_field(e): #show in edit view
+            '''Called when user confirms the field name'''
+            
+            if field_name_input.value:
+                self.data['matrix_labels'].append(field_name_input.value)
+            
+            for row in self.data['matrix']:
+                row.append("")   # Default empty string for new column
+            
+            # Save and reload
+            self.save_dict()
+            self.p.close(dlg)
+            self.reload_widget()
+        
+        # Create a dialog to ask for the field name
+        field_name_input = ft.TextField(
+            label="Field Name", hint_text=f"New Column Label",
+            autofocus=True, capitalization=ft.TextCapitalization.SENTENCES,
+            on_submit=_create_field,     # Closes the overlay when submitting
+        )
+        
+        dlg = ft.AlertDialog(
+            title=ft.Text(f"Create New Column"),
+            content=field_name_input,
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Create", on_click=_create_field),
+            ],
+        )
+        
+        dlg.open = True
+        self.p.open(dlg)
+
+    def _delete_column_clicked(self, column: int):
+        ''' Deletes a specific column from our matrix data and reloads the widget '''
+
+        if 0 <= column < len(self.data['matrix_labels']):
+            # Remove the label
+            del self.data['matrix_labels'][column]
+
+            # Remove the column from each row
+            for row in self.data['matrix']:
+                if 0 <= column < len(row):
+                    del row[column]
+
+            self.save_dict()
+            self.reload_widget()
     
 
     # Called after any changes happen to the data that need to be reflected in the UI
@@ -425,7 +502,7 @@ class CanvasBoard(Widget):
 
         description_container = ft.Container(            # For Summary
             padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE), 
+            border=ft.border.all(2, ft.Colors.OUTLINE), margin=ft.margin.only(right=19),
             content=ft.TextField(
                 expand=True, value=self.data.get('description', ""), dense=True, multiline=True,
                 capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
@@ -436,8 +513,8 @@ class CanvasBoard(Widget):
 
         def _get_label_controls() -> list[ft.Control]:
             ''' Formats our labels insto text controls above our grid '''
-            controls = []
-            controls.append(ft.Container(width=6))
+            controls = [ft.Container(width=38)]
+
             for idx, label in enumerate(self.data['matrix_labels']):
                 controls.append(
                     ft.Container(
@@ -445,13 +522,22 @@ class CanvasBoard(Widget):
                             label, style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")), selectable=True,
                             tooltip="Connect to one of your canvases and show a live preview of your progress!" if label == "Preview" else None,
                         ),
-                        padding=5, alignment=ft.alignment.center, 
-                        width=216 if idx <=1 else None,
+                        alignment=ft.alignment.center, margin=ft.margin.symmetric(horizontal=12),    
+                        width=201 if idx <=1 else None,
                         expand=True if idx > 1 else False,
                     )
                 )
 
-            controls.append(ft.Container(width=6))
+                if idx == len(self.data['matrix_labels']) - 1:
+                    controls.append(
+                        ft.IconButton(
+                            ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
+                            on_click=self._new_column_clicked,
+                            tooltip="Add new column",
+                        )
+                    )
+                    controls.append(ft.Container(width=12))
+                    
             return controls
         
 
@@ -461,11 +547,8 @@ class CanvasBoard(Widget):
             controls = []
             for idx, row in enumerate(self.data['matrix']):
                 
-
                 # Establish a row control we will add our cells to
-                row_control = ft.Row(spacing=0, expand=True, controls=[], height=200)
-
-
+                row_control = ft.Row(spacing=0, expand=True, controls=[ft.Container(width=38)], height=200)
 
                 for sub_idx, cell in enumerate(row):
 
@@ -479,8 +562,8 @@ class CanvasBoard(Widget):
                             row_control.controls.append(
                                 ft.Container(
                                     ft.Text("Coming Soon!"),
-                                    width=200,
-                                    padding=5, alignment=ft.alignment.top_center,
+                                    width=200, margin=ft.margin.all(12),
+                                    alignment=ft.alignment.top_center, border_radius=ft.border_radius.all(6),
                                 )
                             )
                         case "Sketch":      # Sketch canvas for rough thumbnails
@@ -515,28 +598,82 @@ class CanvasBoard(Widget):
                                         capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, smart_dashes_type=True,
                                         on_blur=lambda e, r=idx, c=sub_idx: self._update_matrix_cell(r, c, e.control.value)
                                     ), 
-                                    expand=True, padding=5, alignment=ft.alignment.top_center,
+                                    expand=True, margin=ft.margin.all(12), alignment=ft.alignment.top_center,
                                 )
                             )
                         
                     # Add a divider between columns except for last one
                     if sub_idx != len(row) - 1:
                         row_control.controls.append(ft.VerticalDivider(width=1, thickness=1, color=ft.Colors.OUTLINE))
+                    else:
+                        row_control.controls.append(
+                            ft.IconButton(
+                                icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,
+                                tooltip="Delete row",
+                                on_click=lambda e, r=idx: self._delete_row_clicked(r),
+                            )
+                        )
+                        row_control.controls.append(ft.Container(width=12))  # Spacing at end
                    
                 # Add our row control
                 controls.append(row_control)
 
                 # Add a divider between rows except for last one, we add the 'add row' button
                 if idx != len(self.data.get('matrix', [])) - 1: 
-                    controls.append(ft.Divider(height=1, thickness=1, color=ft.Colors.OUTLINE))
+                    controls.append(ft.Divider(height=1, thickness=1, leading_indent=50, trailing_indent=50, color=ft.Colors.OUTLINE))
                 else:
-                    controls.append(
-                        ft.Row([
-                            ft.Container(expand=True), 
-                            ft.IconButton(icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, on_click=lambda e: None), 
-                            ft.Container(expand=True)
-                        ])
+
+                    # Declare a row for our add and delete buttons
+                    row = ft.Row(
+                        spacing=0, expand=True,
+                        controls=[
+                            ft.IconButton(
+                                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
+                                on_click=self._new_row_clicked,
+                                tooltip="Add new row",
+                            ), 
+                            ft.Container(width=448),     # Spacer over the first two columns, so we don't delete them
+                          
+                        ], 
                     )
+                    
+                    print("Matrix labels length: ", len(self.data['matrix_labels']))
+                    sub_row = ft.Row(
+                        alignment=ft.MainAxisAlignment.SPACE_AROUND, expand=True, spacing=0,
+                        controls=[]
+                    )
+
+                    # Add delete buttons under each column that is custom (not preview, sketch, or concept)
+                    if len(self.data['matrix_labels']) > 3:
+                        #print("Adding extra delete buttons")
+                        print("Added this many labels", len(self.data['matrix_labels']) - 3)
+                        
+                        for i in range(len(self.data['matrix_labels']) - 2):
+                            if i == 0:
+                                sub_row.controls.append(ft.Container(width=38))
+                            
+                            else:
+                                sub_row.controls.append(
+                                ft.IconButton(
+                                    ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,
+                                    tooltip="Delete column", expand=False, width=38,
+                                    on_click=lambda e, c=(i + 2): self._delete_column_clicked(c),
+                                )
+                            )
+
+                            
+                    else:
+                        sub_row.controls.append(ft.Container(expand=True))
+
+                    row.controls.append(sub_row)
+                    # Spacing at the end
+                    row.controls.append(ft.Container(width=50))
+                    
+
+                    # Add our row to the bottom
+                    controls.append(row)
+
+                    
 
             return controls
 
@@ -566,8 +703,6 @@ class CanvasBoard(Widget):
 
         body.content.controls.extend(_get_grid_controls())
 
-        
-        # Set our content to the body_container (from Widget class) as the body we just built
         self.body_container.content = body
 
         # Call render widget (from Widget class) to update the UI
