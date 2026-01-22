@@ -40,13 +40,12 @@ class PlotlineInformationDisplay(MiniWidget):
         ''' Toggles our visibility and updates our owners data accordingly '''
 
         # Update our visibility
-        self.data['information_display_visibility'] = not self.visible if value is None else value
-        self.visible = self.data.get('information_display_visibility', True)
+        self.owner.data['information_display_visibility'] = not self.visible if value is None else value
+        self.visible = self.owner.data.get('information_display_visibility', True)
 
         # IF we hit that we are visible, and not special exclusive, hide all other exclusive mini widgets on the same side
         if self.visible:
             for mini_widget in self.owner.mini_widgets:
-                
                 if mini_widget.visible and mini_widget != self and mini_widget.data.get('side_location', 'right') == self.data.get('side_location', 'right'):
                     mini_widget.toggle_visibility(value=False)
 
@@ -58,15 +57,46 @@ class PlotlineInformationDisplay(MiniWidget):
     # Called when reloading our mini widget UI
     def reload_mini_widget(self):
 
+        self.title_control = ft.Row([
+            ft.Text(self.data['title'], weight=ft.FontWeight.BOLD),
+            ft.Container(expand=True),
+            ft.IconButton(
+                icon=ft.Icons.CLOSE,
+                tooltip=f"Close {self.title}",
+                on_click=lambda e: self.toggle_visibility(value=False),
+            ),
+        ])
+        
+
+        # Rebuild our information display
+        self.content_control = ft.TextField(
+            hint_text="plot point",
+            #on_submit=self.change_x_position,
+            expand=True,
+        )
+
+
+
+        # TODO: Add 'Events', which shows in order of plot points, arcs, and markers on the plotline
+
+        # SUmmary
+        # Events
+        # Plot points
+        # arcs
+        # Markers
+        # LEft and right edge label, time label, divisions
+
         self.content = ft.Column(
             [
                 self.title_control,
+                ft.Divider(height=2, thickness=2),
+                ft.Container(expand=True, height=10),
                 self.content_control,
-                ft.Container(expand=True),
+                #ft.Container(expand=True),
 
                 ft.TextButton(f"Close {self.title}", on_click=self.toggle_visibility),
             ],
-            expand=True, tight=True,
+            expand=True, tight=True, spacing=0, scroll="auto"
         )
 
         self.p.update()

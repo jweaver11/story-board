@@ -393,7 +393,7 @@ class PlotPoint(MiniWidget):
 
         # Format our mini widget content
         self.content = ft.Column(
-            spacing=0,
+            expand=True, tight=True, spacing=0, scroll="auto",
             controls=[
                 self.title_control,
                 ft.Divider(height=2, thickness=2),

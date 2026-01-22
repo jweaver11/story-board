@@ -39,23 +39,20 @@ class Plotline(Widget):
                 'color': app.settings.data.get('default_plotline_color'),
 
                 'filters': {   
-                    'show_timeskips': True,
                     'show_plot_points': True,
                     'show_arcs': True,
+                    'show_markers': True,
                 },        
                 'information_display_visibility': True,
-                    
-                'time_label': "years",                          # Label for the time axis (any str they want)
-                'left_label': "0",                          # Start label
-                'right_label': "10",                          # Start and end date of the branch, for plotline view
-                'divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
                 'hide_division_labels': bool,              # If the division labels are hidden on the plotline
                 'division_labels_direction': "top",               # If the division labels are on top of the plotline instead of below
-
+                
                 # Our rail dropdown states
                 'dropdown_is_expanded': True,               # If the branch dropdown is expanded on the rail
                 'plot_points_dropdown_expanded': True,      # If the plotpoints section is expanded
                 'arcs_dropdown_expanded': True,             # If the arcs section is expanded
+                'markers_dropdown_expanded': True,          # If the markers section is expanded
+                'rail_dropdown_is_expanded': True,          # If the rail dropdown is expanded  
 
                 # Filter dropdown states
                 'arcs_filter_dropdown_expanded': bool,        # If the arcs filter dropdown is expanded
@@ -63,20 +60,18 @@ class Plotline(Widget):
                 'show_all_plot_points': True,              # If all plot points are shown regardless of individual settings
                 'show_all_arcs': True,                     # If all arcs are shown regardless of individual settings
                 
-
+                # Mini Widgets Data
                 'plot_points': dict,                        # Dict of plot points in this branch
                 'arcs': dict,                               # Dict of arcs in this branch
                 'markers': dict,                            # Simple markers with a title
 
-                'rail_dropdown_is_expanded': True,          # If the rail dropdown is expanded  
-                'description': str,
-                'events': list,                             # Step by step of plot events through the arc. Call plot point??
-                'involved_characters': list,
-                'related_locations': list,
-                'related_items': list,
-
-                'left_edge_label': str,                   # Label for the left edge of the plotline
-                'right_edge_label': str,                  # Label for the right edge of the plotline
+                # Rest of the data
+                'summary': str,
+                'time_label': "years",                          # Label for the time axis (any str they want)
+                'left_label': "0",                          # Start label
+                'right_label': "10",                          # Start and end date of the branch, for plotline view
+                'divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
+                
             },
         ) 
 
@@ -110,7 +105,7 @@ class Plotline(Widget):
                 expand=True, on_secondary_tap=self.on_secondary_tap,
                 on_exit=self.on_exit, 
                 on_hover=self.hover_plotline_canvas,
-                on_tap=lambda e: self.information_display.toggle_visibility(value=True),
+                on_tap=self._on_tap,
                 hover_interval=10,
             )
         )
@@ -184,6 +179,14 @@ class Plotline(Widget):
                 data=data
             )
             self.mini_widgets.append(self.markers[key])  # Markers need to be in the owners mini widgets list to show up in the UI
+
+    # Called when clicking on our canvas
+    async def _on_tap(self, e=None):
+        ''' Makes sure our information display is visible '''
+       
+        if self.can_open_menu:
+            if not self.information_display.visible:
+                self.information_display.toggle_visibility(value=True)
 
         
     # Called when creating a new arc
@@ -634,12 +637,6 @@ class Plotline(Widget):
         # Rebuild our tab to reflect any changes
         self.reload_tab()
         
-        # TODO:
-        # Clicking brings up a mini-menu in the plotlines widget to show details and allow editing
-        # Plotline object and all its children are gesture detectors
-        # If event (pp, arc, etc.) is clicked on left side of screen bring mini widgets on right side, and vise versa
-        # Time label is optional. Label vertial markers along the plotline with int and label if user provided
-
         
         # Create a stack so we can sit our plotpoints and arcs on our plotline
         plotline_stack = ft.Stack(
@@ -706,6 +703,25 @@ class Plotline(Widget):
             column = ft.Column(arc_checkboxes, scroll="auto", height=self.h // 4)
                 
             return [column]
+        
+        def _get_markers_filter_options() -> list[ft.Control]:
+            # List for our colors when formatted
+            marker_checkboxes = [ft.Checkbox(label="Show All", value=self.data.get('show_all_markers'), expand=True, adaptive=True)] 
+
+            # Create our controls for our color options
+            for marker in self.markers.values():
+                marker_checkboxes.append(
+                    ft.Checkbox(
+                        label=marker.title, 
+                        value=marker.data.get('is_shown_on_widget'), 
+                        expand=True, adaptive=True,
+                        on_change=lambda e, m=marker: m.toggle_plotline_control(e.control.value),
+                    )
+                )
+
+            column = ft.Column(marker_checkboxes, scroll="auto", height=self.h // 4)
+
+            return [column]
 
         
 
@@ -747,13 +763,32 @@ class Plotline(Widget):
                 controls=_get_arcs_filter_options()
             )
         )
+
+        markers_filters = ft.Container(
+            padding=None,
+            width=170, shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=4, blur_style=ft.ShadowBlurStyle.OUTER),
+            border=ft.border.all(1, ft.Colors.OUTLINE),
+            border_radius=ft.border_radius.all(6),
+            content=ft.ExpansionTile(
+                expand=True, dense=True,
+                on_change=lambda e: self.change_data(**{'markers_filter_dropdown_expanded': not self.data.get('markers_filter_dropdown_expanded', True)}),
+                title=ft.Text("Markers Filters", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), 
+                initially_expanded=self.data.get('markers_filter_dropdown_expanded', True),
+                visual_density=ft.VisualDensity.COMPACT,
+                tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
+                maintain_state=True, adaptive=True,
+                expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
+                shape=ft.RoundedRectangleBorder(),
+                controls=_get_markers_filter_options()
+            )
+        )
         
     
 
         self.header = ft.Row(
             alignment=ft.MainAxisAlignment.CENTER,
             vertical_alignment=ft.CrossAxisAlignment.START,
-            controls=[plot_points_filters, arcs_filters],
+            controls=[plot_points_filters, arcs_filters, markers_filters],
         )
         
 

@@ -577,9 +577,6 @@ class Widget(ft.Container):
         self.master_stack.controls = [self.sizing_canvas, self.body_container]
 
         
-
-        
-
         # If we show our mini widgets overtop the content, build them here. Otherwise, 
         # That widget will handle adding them in its reload_widget function
         # Widgets that display overtop: Plotline, Map, Canvas, Character Connection Map, ...
@@ -607,13 +604,10 @@ class Widget(ft.Container):
             
             
             if len(left_mini_widgets) > 0:
-                #print("Added left mini widget column to stack\n")
                 self.master_stack.controls.append(left_column)
 
             if len(right_mini_widgets) > 0:
-
                 self.master_stack.controls.append(right_column) 
-                #print("Added right mini widget column to stack\n")
 
 
         # If we have a header, add it to the stack. Headers are be immune to scrolling
