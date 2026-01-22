@@ -160,7 +160,7 @@ class Character(Widget):
         sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
 
         for k, value in kwargs.items():
-            self.data['world_data'][sub_key][k] = value
+            self.data['character_data'][sub_key][k] = value
             if sort_method == k and self.story.data.get('selected_rail', "") == "characters":
                 will_reload_rail = True
 
@@ -457,7 +457,7 @@ class Character(Widget):
                         # Treat string as a list and split by new lines or commas
                         values = [v.strip() for v in value.replace('\n', ',').split(',') if v.strip()]
                         for val in values:
-                            text_control.spans.append(ft.TextSpan(f"\n\t\u2022\t{val.capitalize()}"))
+                            text_control.spans.append(ft.TextSpan(f"\n\t\u2022\t{val.capitalize()}"))   # Bullet point for each item
 
                     # Everything else just gets simple display
                     else:
