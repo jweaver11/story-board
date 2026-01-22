@@ -406,4 +406,5 @@ class PlotPoint(MiniWidget):
         )
             
 
-        self._render_mini_widget(no_update=True)
+        #self._render_mini_widget(no_update=True)
+        self._render_mini_widget()

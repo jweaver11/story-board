@@ -13,7 +13,7 @@ from models.mini_widgets.plotlines.arc import Arc
 from utils.verify_data import verify_data
 import flet.canvas as cv
 from models.app import app
-import asyncio
+import asyncio 
 
 
 class Plotline(Widget):
@@ -66,7 +66,8 @@ class Plotline(Widget):
 
                 'plot_points': dict,                        # Dict of plot points in this branch
                 'arcs': dict,                               # Dict of arcs in this branch
-                'connections': dict,                        # Connect points, arcs, branch, etc.???
+                'markers': dict,                            # Simple markers with a title
+
                 'rail_dropdown_is_expanded': True,          # If the rail dropdown is expanded  
                 'description': str,
                 'events': list,                             # Step by step of plot events through the arc. Call plot point??
@@ -88,13 +89,13 @@ class Plotline(Widget):
         # Declare dicts of our data types   
         self.arcs: dict = {}       
         self.plot_points: dict = {} 
-        self.time_skips: dict = {}
-        self.connections: dict = {}  # Needed????
+        self.markers: dict = {}
 
 
         # Loads our three mini widgets into their dicts
-        self.load_arcs()
-        self.load_plot_points()
+        self._load_arcs()
+        self._load_plot_points()
+        self._load_markers()
         
         # State elements
         self.x_alignment: float = 0.00      # Alignment to pass into new plot points and arcs
@@ -137,7 +138,7 @@ class Plotline(Widget):
         self.mini_widgets.append(self.information_display)
 
     # Called in the constructor
-    def load_arcs(self):
+    def _load_arcs(self):
         ''' Loads branches from data into self.branches  '''
 
         # Looks up our branches in our data, then passes in that data to create a live object
@@ -153,7 +154,7 @@ class Plotline(Widget):
             self.mini_widgets.append(self.arcs[key])  # Branches need to be in the owners mini widgets list to show up in the UI
     
     # Called in the constructor
-    def load_plot_points(self):
+    def _load_plot_points(self):
         ''' Loads plotpoints from data into self.plotpoints  '''
         from models.mini_widgets.plotlines.plot_point import PlotPoint
 
@@ -168,6 +169,22 @@ class Plotline(Widget):
                 data=data
             )
             self.mini_widgets.append(self.plot_points[key])  # Plot points need to be in the owners mini widgets list to show up in the UI
+
+    def _load_markers(self):
+        from models.mini_widgets.plotlines.marker import Marker
+        ''' Loads markers from data into self.markers  '''
+        # Looks up our markers in our data, then passes in that data to create a live object
+        for key, data in self.data['markers'].items():
+            self.markers[key] = Marker(
+                title=key, 
+                owner=self, 
+                father=self,
+                page=self.p, 
+                key="markers", 
+                data=data
+            )
+            self.mini_widgets.append(self.markers[key])  # Markers need to be in the owners mini widgets list to show up in the UI
+
         
     # Called when creating a new arc
     async def create_arc(self, title: str):
