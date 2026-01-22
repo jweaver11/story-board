@@ -24,7 +24,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
         # Set our visibility based on our owners data
         self.visible = self.owner.data.get('information_display_visibility', True)
-        self.visible = False
+        #self.visible = False
 
         self.reload_mini_widget()
 
@@ -35,6 +35,14 @@ class PlotlineInformationDisplay(MiniWidget):
             self.owner.save_dict()
         except Exception as e:
             print(f"Error saving Plotline information display data to {self.owner.title}: {e}")
+
+    def toggle_visibility(self, e=None, value = None):
+        ''' Toggles our visibility and updates our owners data accordingly '''
+        self.visible = not self.visible if value is None else value
+        self.owner.data['information_display_visibility'] = self.visible
+        self.owner.save_dict()
+        self.reload_mini_widget()
+        self.owner.reload_widget()
         
 
     # Called when reloading our mini widget UI
@@ -44,10 +52,11 @@ class PlotlineInformationDisplay(MiniWidget):
             [
                 self.title_control,
                 self.content_control,
+                ft.Container(expand=True),
 
                 ft.TextButton(f"Close {self.title}", on_click=self.toggle_visibility),
             ],
-            expand=True,
+            expand=True, tight=True,
         )
 
         self.p.update()

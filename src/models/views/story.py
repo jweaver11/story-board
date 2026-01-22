@@ -638,7 +638,7 @@ class Story(ft.View):
             #padding=ft.padding.all(6),
             bgcolor=ft.Colors.with_opacity(.65, ft.Colors.ON_INVERSE_SURFACE),
             width=120, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
-            shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=2, blur_style=ft.ShadowBlurStyle.NORMAL,),
+            shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=2, blur_style=ft.ShadowBlurStyle.NORMAL),
             content=ft.Column(
                 spacing=0,
                 horizontal_alignment=ft.CrossAxisAlignment.STRETCH,

@@ -75,8 +75,8 @@ class Plotline(Widget):
                 'related_locations': list,
                 'related_items': list,
 
-                'left_edge_label': float,                   # Label for the left edge of the plotline
-                'right_edge_label': float,                  # Label for the right edge of the plotline
+                'left_edge_label': str,                   # Label for the left edge of the plotline
+                'right_edge_label': str,                  # Label for the right edge of the plotline
             },
         ) 
 
@@ -603,11 +603,13 @@ class Plotline(Widget):
                 new_h = min(max_h, max(0, int(width_px / 2)))
                 arc.plotline_arc.height = new_h
 
-            self.p.update()
+            #self.p.update()
+            self._render_widget()
 
         # If we didn't rebuild our arcs, just update the canvas
         else:
-            self.plotline_canvas.update()
+            #self.plotline_canvas.update()
+            self._render_widget()
 
         
     
@@ -651,11 +653,6 @@ class Plotline(Widget):
 
         self.body_container.content = plotline_stack
 
-
-        ''' Start building our header with filter dropdowns ------------------------'''
-
-        
-        
         def _get_plot_points_filter_options() -> list[ft.Control]:
             # List for our colors when formatted
             plot_point_checkboxes = [ft.Checkbox(label="Show All", value=self.data.get('show_all_plot_points'), expand=True, adaptive=True)] 
@@ -671,7 +668,9 @@ class Plotline(Widget):
                     )
                 )
 
-            return plot_point_checkboxes
+            column = ft.Column(plot_point_checkboxes, scroll="auto", height=self.h // 4)
+
+            return [column]
         
 
         def _get_arcs_filter_options() -> list[ft.Control]:
@@ -689,14 +688,16 @@ class Plotline(Widget):
                         on_change=lambda e, a=arc: a.toggle_plotline_control(e.control.value),
                     )
                 ) 
+
+            column = ft.Column(arc_checkboxes, scroll="auto", height=self.h // 4)
                 
-            return arc_checkboxes
+            return [column]
 
         
 
         plot_points_filters = ft.Container(
             padding=None,
-            width=170,
+            width=170, shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=4, blur_style=ft.ShadowBlurStyle.OUTER),
             border=ft.border.all(1, ft.Colors.OUTLINE),
             border_radius=ft.border_radius.all(6),
             content=ft.ExpansionTile(
@@ -713,9 +714,10 @@ class Plotline(Widget):
             )
         )
 
+
         arcs_filters = ft.Container(
             padding=None,
-            width=170,
+            width=170, shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=4, blur_style=ft.ShadowBlurStyle.OUTER),
             border=ft.border.all(1, ft.Colors.OUTLINE),
             border_radius=ft.border_radius.all(6),
             content=ft.ExpansionTile(
@@ -734,14 +736,15 @@ class Plotline(Widget):
         
     
 
-        header =ft.Row(
+        self.header = ft.Row(
             alignment=ft.MainAxisAlignment.CENTER,
             vertical_alignment=ft.CrossAxisAlignment.START,
             controls=[plot_points_filters, arcs_filters],
         )
         
 
-        self._render_widget(header=header)# 
+        self._render_widget() 
+
 
 
 

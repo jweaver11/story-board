@@ -15,6 +15,7 @@ from styles.colors import dark_gradient
 from styles.colors import colors
 from styles.snack_bar import SnackBar
 from styles.menu_option_style import MenuOptionStyle
+import flet.canvas as cv
 
 
 
@@ -59,6 +60,8 @@ class Widget(ft.Container):
                 'index': int,                                   # Index of this widget in its pin location
                 'visible': True,                                # Whether this widget is visible in the workspace or not
                 'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
+                #'color': str,                                   # Color of the icon and tab divider for this widget  
+                'mini_widgets_displayed_overtop': True,         # Whether mini widgets are displayed overtop the content, or fit within it in the body
                 'custom_fields': dict,                          # Dictionary for any custom fields the widget wants to store
             },
         )
@@ -69,6 +72,11 @@ class Widget(ft.Container):
 
         # Tracks variable to see if we should outline the widget where it is displayed
         self.focused = False
+
+        # Canvas and state trackers for sizing our widget
+        self.sizing_canvas = cv.Canvas(on_resize=self._get_size, resize_interval=100, expand=True, content=ft.Container(expand=True, ignore_interactions=True))
+        self.w: int = 0
+        self.h: int = 0
 
         # UI ELEMENTS - Tab
         self.tabs: ft.Tabs = ft.Tabs() # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
@@ -84,9 +92,11 @@ class Widget(ft.Container):
         self.active_mini_widget: ft.Control = None
 
         # Column for displaying our mini widgets on the left, right, or both sides of our body
-        self.mini_widgets_row: ft.Row = ft.Column(spacing=4)  
+        self.mini_widgets_row: ft.Column = ft.Column(spacing=4)  
+        self.header: ft.Control = None  # Optional header control to display above our body and mini widgets
         
-        self.body_container: ft.Container = ft.Container(expand=True)  # Stack to hold our body content, with mini widgets overlaid on top
+        self.body_container: ft.Container = ft.Container(expand=True, border_radius=ft.border_radius.all(10), padding=ft.padding.all(6)) 
+       
 
         self.master_stack: ft.Stack = ft.Stack(expand=True)
 
@@ -212,6 +222,15 @@ class Widget(ft.Container):
         else:
             return False
 
+    # Called when our canvas resizes
+    def _get_size(self, e: cv.CanvasResizeEvent):
+        ''' Updates our w and h variables when sizing canvas resizes '''
+        self.w = e.width
+        self.h = e.height
+        
+        self._render_widget()
+        #print(f"Widget {self.title} resized to: {self.w}x{self.h}")
+        
 
     # Called when renaming a widget
     def rename(self, title: str):
@@ -238,26 +257,37 @@ class Widget(ft.Container):
         # Remove from our live dict wherever we are stored
         tag = self.data['tag']
 
-        # Delete our old live saved object, and add the new one
-        if tag == "chapter":
-            self.story.chapters.pop(old_key, None)
-            self.story.chapters[self.data['key']] = self
-        elif tag == "canvas":
-            self.story.canvases.pop(old_key, None)
-            self.story.canvases[self.data['key']] = self
-        elif tag == "note":
-            self.story.notes.pop(old_key, None)
-            self.story.notes[self.data['key']] = self
-        elif tag == "character":
-            self.story.characters.pop(old_key, None)
-            self.story.characters[self.data['key']] = self
-        elif tag == "map":
-            self.story.maps.pop(old_key, None)
-            self.story.maps[self.data['key']] = self  
-        elif tag == "plotline":
-            self.story.plotlines.pop(old_key, None)
-            self.story.plotlines[self.data['key']] = self
+        match tag:
+            case "chapter":
+                self.story.chapters.pop(old_key, None)
+                self.story.chapters[self.data['key']] = self
+            case "canvas":
+                self.story.canvases.pop(old_key, None)
+                self.story.canvases[self.data['key']] = self
+            case "note":
+                self.story.notes.pop(old_key, None)
+                self.story.notes[self.data['key']] = self
+            case "character":
+                self.story.characters.pop(old_key, None)
+                self.story.characters[self.data['key']] = self
+            case "map":
+                self.story.maps.pop(old_key, None)
+                self.story.maps[self.data['key']] = self
+            case "plotline":
+                self.story.plotlines.pop(old_key, None)
+                self.story.plotlines[self.data['key']] = self
+            case "world":
+                self.story.worlds.pop(old_key, None)
+                self.story.worlds[self.data['key']] = self
+            case "canvas_board":
+                self.story.canvas_boards.pop(old_key, None)
+                self.story.canvas_boards[self.data['key']] = self
+            case "character_connection_map":
+                self.story.character_connection_maps.pop(old_key, None)
+                self.story.character_connection_maps[self.data['key']] = self
 
+            case _:
+                print(f"Unknown tag {tag} when renaming widget {self.title}")
 
         # Re-applies visibility to what it was before rename
         self.toggle_visibility()                
@@ -531,64 +561,61 @@ class Widget(ft.Container):
         self._render_widget()
 
     # Called when changes inside the widget require a reload to be reflected in the UI, like when adding mini widgets
-    def _render_widget(self, header: ft.Control = None):
+    def _render_widget(self):
         ''' 
-        Takes the 'reload_widget' content and builds the full UI with mini widgets and tab around it 
-        header parameter is any part of the body of the widget to be above mini widgets or info displays
+        Takes our built widget content and adds it where it needs to go in the overall widget structure.
+        Also adds our header and any mini widgets we may have to the sides
         '''
 
-        
+        # Clear out our master stack controls, then add our sizing canvas and body container we bulit in reload_widget
+        self.master_stack.controls.clear()
+        self.master_stack.controls = [self.sizing_canvas, self.body_container]
 
-        # Set ratio for our body container and mini widgets
-        self.body_container.expand = True
-        self.body_container.border_radius = ft.border_radius.all(10)
-        self.body_container.padding = ft.padding.all(6)
+        # If we have a header, add it to the stack. Headers are be immune to scrolling
+        self.master_stack.controls.append(self.header) if self.header is not None else None
 
+        # If we show our mini widgets overtop the content, build them here. Otherwise, 
+        # That widget will handle adding them in its reload_widget function
+        # Widgets that display overtop: Plotline, Map, Canvas, Character Connection Map, ...
+        if self.data.get('mini_widgets_displayed_overtop', False):
 
-        self.master_stack.controls = [self.body_container]
+            left_mini_widgets = []
+            right_mini_widgets = []
 
-        for mini_widget in self.mini_widgets:
-
-            # Spacing on either left or right of mini widget
-            spacing_container = ft.Container(
-                ignore_interactions=True,
-                expand=6,
-            )
-
-            # Row to put our mini widget into
-            row = ft.Row(
-                spacing=0,
-                expand=True,
-                tight=False,
-                vertical_alignment=ft.CrossAxisAlignment.START,
-                controls=[
-                    spacing_container,
-                    #mini_widget,
-                ]
-            )
-
-            # Depending if we should be rendered on left or right side
-            if mini_widget.data.get('side_location', 'right') == 'right':
-                row.controls.append(mini_widget)
-            else:
-                row.controls.insert(0, mini_widget)
-
-            self.master_stack.controls.append(row)     
-
-        header_container = ft.Container(padding=ft.padding.all(6), content=header) if header is not None else ft.Container(height=0)
-        col = ft.Column([
-            header_container,
-            self.master_stack
-        ])   
+            for mw in self.mini_widgets:
+                if mw.data.get('side_location', 'right') == 'left' and mw.data.get('visible', True) != False:
+                    left_mini_widgets.append(mw)
+                elif mw.data.get('side_location', 'right') == 'right' and mw.data.get('visible', True) != False:
+                    right_mini_widgets.append(mw)
             
-        
-        # BUILD OUR TAB CONTENT - Our tab content holds the row of our body and mini widgets containers
-        self.tab.content = col  # We add this in combo with our 'tabs' later
+
+
+            # Format a column to hold them
+            left_column = ft.Column(
+                left_mini_widgets, spacing=4, tight=True, width=self.w * .4, left=0, bottom=0, expand=True,
+                #height=self.h - (self.header.height if self.header is not None else 0)
+            )
+            right_column = ft.Column(
+                right_mini_widgets, spacing=4, tight=True, width=self.w * .4, right=0, bottom=0, expand=True, top=50,
+                #height=self.h - 50,
+                #top=self.header.height if self.header is not None else 0,
+            )
+            
+            if len(left_mini_widgets) > 0:
+                #print("Added left mini widget column to stack\n")
+                self.master_stack.controls.append(left_column)
+
+            if len(right_mini_widgets) > 0:
+
+                self.master_stack.controls.append(right_column) 
+                #print("Added right mini widget column to stack\n")
+
+        # Set the tab content
+        self.tab.content = self.master_stack  
         
         # Add our tab to our tabs control so it will render. Set our widgets content to our tabs control and update the page
         self.tabs.tabs = [self.tab]
 
         self.content = self.tabs
 
-        
         self.p.update()

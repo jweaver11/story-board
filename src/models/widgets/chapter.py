@@ -27,6 +27,7 @@ class Chapter(Widget):
             required_data={
                 'tag': "chapter",
                 'color': app.settings.data.get('default_canvas_color'),
+                'mini_widgets_displayed_overtop': False,  
                 'summary': str,     # Summary of what will happen in the chapter
                 'content': str,
                 'temp': str,

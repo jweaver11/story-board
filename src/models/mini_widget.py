@@ -29,7 +29,7 @@ class MiniWidget(ft.Container):
 
         # Parent constructor
         super().__init__(
-            expand=4,
+            expand=True,
             border_radius=ft.border_radius.all(10),
             border=ft.border.all(2, ft.Colors.SECONDARY_CONTAINER),
             padding=ft.padding.all(8),
@@ -67,7 +67,7 @@ class MiniWidget(ft.Container):
         # Control for our title
         self.title_control = ft.TextField(
             value=self.title,
-            label=None,
+            label=None, expand=True,
         )
 
         # Control for our content/body

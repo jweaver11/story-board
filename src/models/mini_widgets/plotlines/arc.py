@@ -82,8 +82,8 @@ class Arc(MiniWidget):
 
 
         # UI elements
-        self.plotline_control: ft.Stack = None
-        self.plotline_arc: ft.Container = None
+        self.plotline_control: ft.Stack = None      # Physical slider control that goes on the plotline
+        self.plotline_arc: ft.Container = None      # The actual arc container that draws the arc on the plotline
         self.gd: ft.GestureDetector = None
         self.slider: ft.RangeSlider = None
 

@@ -56,6 +56,9 @@ def verify_data(object, required_data: dict) -> bool:
                     current_data[key] = value
                 elif key == 'side_location':    # To ensure side location is always correct
                     current_data[key] = value
+                elif key =='mini_widgets_displayed_overtop': 
+                    current_data[key] = value  
+               
         
 
     # Main block to run our internal function above
