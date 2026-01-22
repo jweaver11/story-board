@@ -338,19 +338,31 @@ class Plotline(Widget):
         self.x_alignment = round(raw, 2)    # Save new x_alignment
 
 
-        # Check if we're over the plotline line itself and give visual feedback
+        # Check if we're over the plotline line itself and give visual feedback and allow us to right click 
         if abs(e.local_y - (self.plotline_height / 2)) <= 25:
-            self.can_open_menu = True
+            
+            self.can_open_menu = True       # State we can open the menu
+
+            # Long horizontal timeline
             self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
-            self.plotline_canvas.content.mouse_cursor=ft.MouseCursor.CLICK      # Change cursor to pointer
+
+            # Divisions on the timeline
+            self.plotline_canvas.shapes[len(self.data.get('divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
+            self.plotline_canvas.content.mouse_cursor = ft.MouseCursor.CLICK      # Change cursor to pointer
+
+            self.plotline_canvas.page = self.p      # refresh page reference
+            self.plotline_canvas.update()
+
+        # If not, disable right clicking and remove visual feedback
         else:
             self.can_open_menu = False
             self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
-            self.plotline_canvas.content.mouse_cursor=None
-            
+            self.plotline_canvas.shapes[len(self.data.get('divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
+            self.plotline_canvas.content.mouse_cursor = None
 
-        self.plotline_canvas.page = self.p      # refresh page reference
-        self.plotline_canvas.update()
+            self.plotline_canvas.page = self.p      # refresh page reference
+            self.plotline_canvas.update()
+
         
         
 
@@ -448,7 +460,7 @@ class Plotline(Widget):
         # Create a path for our divisions
         divisions_path = cv.Path(
             elements=[],
-            paint=ft.Paint(stroke_width=2, style="stroke", color=self.data.get('color', "primary"))
+            paint=ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', "primary")},.7")
         )
 
         # Go through our number of divisions and add markers to the path
