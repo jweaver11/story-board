@@ -16,6 +16,7 @@ from styles.colors import colors
 from styles.snack_bar import SnackBar
 from styles.menu_option_style import MenuOptionStyle
 import flet.canvas as cv
+import asyncio
 
 
 
@@ -223,7 +224,7 @@ class Widget(ft.Container):
             return False
 
     # Called when our canvas resizes
-    def _get_size(self, e: cv.CanvasResizeEvent):
+    async def _get_size(self, e: cv.CanvasResizeEvent):
         ''' Updates our w and h variables when sizing canvas resizes '''
         self.w = e.width
         self.h = e.height
@@ -410,7 +411,7 @@ class Widget(ft.Container):
                 ),
             ),
             MenuOptionStyle(
-                #on_click=_self.delete_clicked,
+                on_click=self._delete_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED),
                     ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
@@ -446,6 +447,10 @@ class Widget(ft.Container):
             )
 
         return color_controls
+    
+    def _delete_clicked(self, e):
+        ''' Deletes this widget from the story after confirmation '''
+        
     
     # Called at end of constructor
     def reload_tab(self):
@@ -571,8 +576,9 @@ class Widget(ft.Container):
         self.master_stack.controls.clear()
         self.master_stack.controls = [self.sizing_canvas, self.body_container]
 
-        # If we have a header, add it to the stack. Headers are be immune to scrolling
-        self.master_stack.controls.append(self.header) if self.header is not None else None
+        
+
+        
 
         # If we show our mini widgets overtop the content, build them here. Otherwise, 
         # That widget will handle adding them in its reload_widget function
@@ -589,17 +595,16 @@ class Widget(ft.Container):
                     right_mini_widgets.append(mw)
             
 
-
             # Format a column to hold them
             left_column = ft.Column(
-                left_mini_widgets, spacing=4, tight=True, width=self.w * .4, left=0, bottom=0, expand=True,
-                #height=self.h - (self.header.height if self.header is not None else 0)
+                left_mini_widgets, spacing=4, tight=True, width=self.w * .4, left=0, bottom=0, expand=True, 
+                top=50 if self.header is not None else 0,
             )
             right_column = ft.Column(
-                right_mini_widgets, spacing=4, tight=True, width=self.w * .4, right=0, bottom=0, expand=True, top=50,
-                #height=self.h - 50,
-                #top=self.header.height if self.header is not None else 0,
-            )
+                right_mini_widgets, spacing=4, tight=True, width=self.w * .4, right=0, bottom=0, expand=True, 
+                top=50 if self.header is not None else 0,
+                )
+            
             
             if len(left_mini_widgets) > 0:
                 #print("Added left mini widget column to stack\n")
@@ -610,6 +615,10 @@ class Widget(ft.Container):
                 self.master_stack.controls.append(right_column) 
                 #print("Added right mini widget column to stack\n")
 
+
+        # If we have a header, add it to the stack. Headers are be immune to scrolling
+        self.master_stack.controls.append(self.header) if self.header is not None else None
+
         # Set the tab content
         self.tab.content = self.master_stack  
         
@@ -619,3 +628,5 @@ class Widget(ft.Container):
         self.content = self.tabs
 
         self.p.update()
+
+       

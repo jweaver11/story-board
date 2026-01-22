@@ -203,34 +203,21 @@ class MiniWidget(ft.Container):
     def toggle_visibility(self, e=None, value: bool=None):
         ''' Shows or hides our mini widget, depending on current state '''
 
-        # If we passed in a value, use it
-        if value is not None:
-
-            self.data['visible'] = value
-            self.visible = value
-
-        # Otherwise, toggle our current state
-        else:
-            self.data['visible'] = not self.data['visible']
-            self.visible = self.data['visible']
+        # Update our visibility
+        self.data['visible'] = not self.visible if value is None else value
+        self.visible = self.data.get('visible', True)
 
 
-        # If we are now visible, hide all other mini widgets
+        # IF we hit that we are visible, and not special exclusive, hide all other exclusive mini widgets on the same side
         if self.visible:
-            
             for mini_widget in self.owner.mini_widgets:
                 
-                if mini_widget.visible and mini_widget != self:
+                if mini_widget.visible and mini_widget != self and mini_widget.data.get('side_location', 'right') == self.data.get('side_location', 'right'):
                     mini_widget.toggle_visibility(value=False)
-                    break
-
-        print(f"Mini widget {self.title} visibility set to {self.visible}")
-        # Save switch to file
+                    
         self.save_dict()
-
-        #self.update()
-        #self.p.update()
         self.reload_mini_widget()
+        self.owner.reload_widget()
         
 
     # Called whenever we hover over our mini widget on the right as a psuedo focus

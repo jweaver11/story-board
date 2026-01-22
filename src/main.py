@@ -31,8 +31,6 @@ def main(page: ft.Page):
         
         page.views.append(create_home_view(page))   # Simple view so we just use a function, not a class
         page.update()
-    
-
 
 # Runs the app
 ft.app(main)

@@ -101,11 +101,11 @@ class Plotline(Widget):
         self.x_alignment: float = 0.00      # Alignment to pass into new plot points and arcs
         self.plotline_width: int = int()    # Width of our plotline canvas. Just used in calculations, not applied
         self.plotline_height: int = int()   # Height of our plotline canvas Just used in calculations, not applied
+        self.can_open_menu: bool = False    # If we can open the menu when right clicking
 
         # Our plotline canvas that draws our plotline line and markers
         self.plotline_canvas = cv.Canvas(
             on_resize=self.rebuild_plotline_canvas, resize_interval=20, expand=True, 
-            opacity=0.7,
             content=ft.GestureDetector(
                 expand=True, on_secondary_tap=self.on_secondary_tap,
                 on_exit=self.on_exit, 
@@ -340,15 +340,17 @@ class Plotline(Widget):
 
         # Check if we're over the plotline line itself and give visual feedback
         if abs(e.local_y - (self.plotline_height / 2)) <= 25:
-            self.plotline_canvas.page = self.p      # refresh page reference
-            self.plotline_canvas.opacity = 1        # Full opacity to highlight
+            self.can_open_menu = True
+            self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
             self.plotline_canvas.content.mouse_cursor=ft.MouseCursor.CLICK      # Change cursor to pointer
-            self.plotline_canvas.update()       # Apply changes
         else:
-            self.plotline_canvas.page = self.p
-            self.plotline_canvas.opacity = .7
+            self.can_open_menu = False
+            self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
             self.plotline_canvas.content.mouse_cursor=None
-            self.plotline_canvas.update()
+            
+
+        self.plotline_canvas.page = self.p      # refresh page reference
+        self.plotline_canvas.update()
         
         
 
@@ -363,8 +365,8 @@ class Plotline(Widget):
     # Called when right clicking our plotline on the canvas
     async def on_secondary_tap(self, e):
         ''' Opens our menu for the options of our related plotline '''
-
-        self.story.open_menu(self.get_menu_options())
+        if self.can_open_menu:
+            self.story.open_menu(self.get_menu_options())
 
     async def new_item_clicked(self, e):
         ''' Called when new plot point or arc is clicked from plotline context menu '''
@@ -434,7 +436,7 @@ class Plotline(Widget):
                     cv.Path.MoveTo(self.plotline_width - 5, self.plotline_height // 2 + 25),
                     cv.Path.LineTo(self.plotline_width - 5, self.plotline_height // 2 - 25),
                 ],
-                paint=ft.Paint(stroke_width=4, style="stroke", color=self.data.get('color', "primary"))
+                paint=ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', "primary")},.7")
             ),
         ]
 
@@ -707,7 +709,7 @@ class Plotline(Widget):
                 initially_expanded=self.data.get('plot_points_filter_dropdown_expanded', True),
                 visual_density=ft.VisualDensity.COMPACT,
                 tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
-                maintain_state=True, adaptive=True,
+                maintain_state=True, adaptive=True, bgcolor=ft.Colors.SURFACE,
                 expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
                 shape=ft.RoundedRectangleBorder(),
                 controls=_get_plot_points_filter_options()

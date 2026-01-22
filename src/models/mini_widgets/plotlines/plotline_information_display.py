@@ -36,11 +36,21 @@ class PlotlineInformationDisplay(MiniWidget):
         except Exception as e:
             print(f"Error saving Plotline information display data to {self.owner.title}: {e}")
 
-    def toggle_visibility(self, e=None, value = None):
+    def toggle_visibility(self, e=None, value: bool=None):
         ''' Toggles our visibility and updates our owners data accordingly '''
-        self.visible = not self.visible if value is None else value
-        self.owner.data['information_display_visibility'] = self.visible
-        self.owner.save_dict()
+
+        # Update our visibility
+        self.data['information_display_visibility'] = not self.visible if value is None else value
+        self.visible = self.data.get('information_display_visibility', True)
+
+        # IF we hit that we are visible, and not special exclusive, hide all other exclusive mini widgets on the same side
+        if self.visible:
+            for mini_widget in self.owner.mini_widgets:
+                
+                if mini_widget.visible and mini_widget != self and mini_widget.data.get('side_location', 'right') == self.data.get('side_location', 'right'):
+                    mini_widget.toggle_visibility(value=False)
+
+        self.save_dict()
         self.reload_mini_widget()
         self.owner.reload_widget()
         
