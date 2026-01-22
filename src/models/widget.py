@@ -554,13 +554,14 @@ class Widget(ft.Container):
     def reload_widget(self):
         ''' Children build their own content of the widget in their own reload_widget functions '''
 
-        # TODO Have option in the mini_widget column to show on mini widgets on right vs left side of widget
-
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        # Set the body container.content to whatever control you build in the child
+        # Set the body_container content to the body of our widget
         self.body_container.content = ft.Container(expand=True, content=ft.Text(f"hello from: {self.title}"))
+
+        # Setting a header at the top of the page
+        self.header = ft.Row(height=50, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[ft.Text("This is a header")])
             
         # Call Render widget to handle the rest of the heavy lifting
         self._render_widget()
