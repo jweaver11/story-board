@@ -48,7 +48,7 @@ def return_folder_content(directory: str, story: Story, expansion_tile: ft.Expan
         color = folders_meta.get(_canon_path(full_path), {}).get('color', "primary")
 
         new_expansion_tile = ft.ExpansionTile(
-            title=ft.Text(capital_dir_path, color=color), 
+            title=ft.Text(capital_dir_path, color=color, weight=ft.FontWeight.BOLD), 
             leading=ft.Icon(ft.Icons.FOLDER, color=color),
             controls_padding=ft.Padding(15, 5, 0, 5), dense=True,
             tile_padding=ft.Padding(5, 0, 0, 0), shape=ft.RoundedRectangleBorder(),
@@ -72,17 +72,18 @@ def return_folder_content(directory: str, story: Story, expansion_tile: ft.Expan
 
         title = file_data.get('title', None)
         tag = file_data.get('tag', [])
+        color = file_data.get('color', ft.Colors.PRIMARY)
 
         # Set our icon based on what type of widget we are using tag
         match tag:
-            case "chapter": icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
-            case "canvas": icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
-            case "note": icon = ft.Icon(ft.Icons.COMMENT_OUTLINED)
-            case "character": icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
-            case "timeline": icon = ft.Icon(ft.Icons.TIMELINE_ROUNDED)
-            case "map": icon = ft.Icon(ft.Icons.MAP_OUTLINED)
-            case "world_building": icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
-            case _: icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
+            case "chapter": icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, color)
+            case "canvas": icon = ft.Icon(ft.Icons.BRUSH_OUTLINED, color)
+            case "note": icon = ft.Icon(ft.Icons.COMMENT_OUTLINED, color)
+            case "character": icon = ft.Icon(ft.Icons.PERSON_OUTLINE, color)
+            case "plotline": icon = ft.Icon(ft.Icons.TIMELINE, color)
+            case "map": icon = ft.Icon(ft.Icons.MAP_OUTLINED, color)
+            case "world": icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED, color)
+            case _: icon = ft.Icon(ft.Icons.ERROR_OUTLINE, color)
 
         expansion_tile.controls.append(ft.Row([icon, ft.Text(f"{title}", weight=ft.FontWeight.BOLD)]))
 

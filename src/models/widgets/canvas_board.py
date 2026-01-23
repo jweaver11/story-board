@@ -40,22 +40,22 @@ class CanvasBoard(Widget):
 
                 'matrix': [
                     [
-                        "1", 
+                        "", 
                         {
                             'paths': [],      # All our shapes, lines, dashed lines, curves, etc.
                             'shadow_paths': [],   # All paths but with shadows
                             'points': [],     # All our points
                         }, 
-                        "3"
+                        ""
                     ],      # 1 will be a key to a specific canvas, 2 is a sketch canvas shapes data, 3 is a str
                     [
-                        "4", 
+                        "", 
                         {
                             'paths': [],            # All our shapes, lines, dashed lines, curves, etc.
                             'shadow_paths': [],     # All paths but with shadows
                             'points': [],           # All our points
                         }, 
-                        "6"
+                        ""
                     ]
                 ]
             },

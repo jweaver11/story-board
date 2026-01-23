@@ -465,7 +465,7 @@ class Widget(ft.Container):
 
             # If we are NOT unique, show our error text
             if not is_unique:
-                e.control.error_text = error_text
+                self.p.open(SnackBar(error_text))
 
             # Otherwise remove our error text
             else:
@@ -501,7 +501,7 @@ class Widget(ft.Container):
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
             value=self.title, #width=40,
-            dense=True, #expand=True,
+            dense=True,
             focus_color=self.data.get('color', ft.Colors.PRIMARY),
             border_color=self.data.get('color', ft.Colors.PRIMARY),
             autofocus=True, adaptive=True,

@@ -8,9 +8,9 @@ def check_widget_unique(story: Story, new_key: str) -> tuple[str, bool]:
     """
 
     for w in story.widgets:
-        print(
-            f"{return_safe_name(w.data.get('key', '')).lower()} \n{return_safe_name(new_key).lower()}\n\n\n"
-        )
+        #print(
+            #f"{return_safe_name(w.data.get('key', '')).lower()} \n{return_safe_name(new_key).lower()}\n\n\n"
+        #)
     
         if return_safe_name(w.data.get('key', '')).lower() == return_safe_name(new_key).lower():
             return f"Title must be unique.", False
