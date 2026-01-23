@@ -44,6 +44,7 @@ class Plotline(Widget):
                     'show_markers': True,
                 },        
                 'information_display_visibility': True,
+                'edit_mode': True,                    # If we are in edit mode for the plotline
                 'hide_division_labels': bool,              # If the division labels are hidden on the plotline
                 'division_labels_direction': "top",               # If the division labels are on top of the plotline instead of below
                 

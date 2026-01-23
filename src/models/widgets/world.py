@@ -175,8 +175,15 @@ class World(Widget):
             ''' Returns help text for certain fields '''
             match key:
                 
-                
-                
+                case "Locations":
+                    return "Detail the key locations within the world, including cities, landmarks, and significant sites."
+                case "Lore":
+                    return "Detail the myths, legends, and historical narratives that shape the world's culture and identity."
+                case "Power Systems":
+                    return "Magic systems, supernatural abilities, or other extraordinary powers."
+                case "Social Systems":
+                    return "Describe the social structures, hierarchies, and interactions within the world."
+            
                 case _:
                     return None
 
@@ -186,8 +193,8 @@ class World(Widget):
             for key, value in dict.items():
                 if isinstance(value, str):
                     text_control = ft.TextField(
-                        expand=True, value=value, dense=True, multiline=True, hint_text=_get_help_text(key),
-                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, label=key.capitalize(),
+                        expand=True, label=key.capitalize(), value=value, dense=True, multiline=True, hint_text=_get_help_text(key),
+                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, 
                         on_blur=lambda e, k=key: self._update_world_data(key=sub_key, **{k: e.control.value})
                     )
 
