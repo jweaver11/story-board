@@ -295,12 +295,12 @@ class Character(Widget):
 
         # Create a container for our dicts that we have data in and load them. 
         basic_info_container = ft.Container(            # For basic info
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
+            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
             border=ft.border.all(2, ft.Colors.OUTLINE), 
             content=ft.Column([]), 
         )
         template_data_container = ft.Container(         # For template data
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
+            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
             border=ft.border.all(2, ft.Colors.OUTLINE), 
             content=ft.Column([]), 
         )
@@ -463,6 +463,8 @@ class Character(Widget):
                         for val in values:
                             spans.append(ft.TextSpan(f"\t\u2022\t{val.capitalize()}\n"))
 
+                        spans.append(ft.TextSpan("\n"))  # Extra new line at end
+
                     # Everything else just gets simple display
                     else:
                         
@@ -525,12 +527,12 @@ class Character(Widget):
 
             # Create a container for our dicts that we have data in and load them. 
             basic_info_container = ft.Container(            # For basic info
-                padding=ft.padding.all(6), border_radius=ft.border_radius.all(5), expand=True,
+                padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE), 
                 content=ft.Text(expand=True, selectable=True, spans=[]), 
             )
             template_data_container = ft.Container(         # For template data
-                padding=ft.padding.all(6), border_radius=ft.border_radius.all(5), expand=True,
+                padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE), 
                 content=ft.Text(expand=True, selectable=True, spans=[]), 
             )
@@ -568,21 +570,19 @@ class Character(Widget):
             _load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container)
             _load_dict_data(self.data.get('character_data', {}).get('Custom Fields', {}), custom_fields_container)
 
-            
-
+            # Set our columns to hold our data sections
             column1 = ft.Column([], expand=True, spacing=4, alignment=ft.MainAxisAlignment.START)
             column2 = ft.Column([], expand=True, spacing=4, alignment=ft.MainAxisAlignment.START)
             
-    
             # If we have basic info, this will add it to the page. Protects against custom templates getting rid of certain sections
             if basic_info_container.content.spans:
                 
                 column1.controls.append(
                     ft.Row([
-                            ft.Container(width=6), 
-                            ft.Text("Basic Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                        ], spacing=0),
-                    )
+                        ft.Container(width=6), 
+                        ft.Text("Basic Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
+                )
                 column1.controls.append(ft.Row([basic_info_container]))
                 column1.controls.append(ft.Container(height=16))  # Spacer
 
@@ -593,73 +593,63 @@ class Character(Widget):
                 
                 if app.settings.data.get('show_empty_character_fields', True) or template_data_container.content.spans:
                     template_title = self.data.get('character_data', {}).get('Template Data', {}).get('Template Name', 'Template Data')
-                    
+        
                     column2.controls.append(
                         ft.Row([
-                                ft.Container(width=6), 
-                                ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                            ], spacing=0),
-                        )
+                            ft.Container(width=6), 
+                            ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                        ], spacing=0),
+                    )
                     column2.controls.append(ft.Row([template_data_container]))
                     column2.controls.append(ft.Container(height=16))  # Spacer
 
             if physical_description_container.content.spans:
-                
                 column2.controls.append(
                     ft.Row([
-                            ft.Container(width=6), 
-                            ft.Text("Physical Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                        ], spacing=0),
-                        
-                    )
+                        ft.Container(width=6), 
+                        ft.Text("Physical Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0), 
+                )
                 column2.controls.append(ft.Row([physical_description_container]))
                 column2.controls.append(ft.Container(height=16))  # Spacer
 
             if family_container.content.spans:
-                
                 column2.controls.append(
                     ft.Row([
-                            ft.Container(width=6), 
-                            ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                        ], spacing=0),
-                        
-                    )
+                        ft.Container(width=6), 
+                        ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
+                )
                 column2.controls.append(ft.Row([family_container]))
+                column2.controls.append(ft.Container(height=16))  # Spacer
             if origin_container.content.spans:
-                
                 column1.controls.append(
                     ft.Row([
-                            ft.Container(width=6), 
-                            ft.Text("Origin", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                        ], spacing=0),
-                        
+                        ft.Container(width=6), 
+                        ft.Text("Origin", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
                 )
                 column1.controls.append(ft.Row([origin_container]))
                 column1.controls.append(ft.Container(height=16))  # Spacer
             if app.settings.data.get('show_empty_character_fields', True):
-                
                 column1.controls.append(
                     ft.Row([
-                        
                         ft.Container(width=6),
                         ft.Text("Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0),
-                        
+                    ], spacing=0),    
                 )
                 column1.controls.append(ft.Row([connections_container]))
                 column1.controls.append(ft.Container(height=16))  # Spacer
 
             if custom_fields_container.content.spans:
-
-                column1.controls.append(
+                column2.controls.append(
                     ft.Row([
-                            ft.Container(width=6), 
-                            ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                        ], spacing=0),
-                        
-                    )
-                column1.controls.append(ft.Row([custom_fields_container]))
-                column1.controls.append(ft.Container(height=16))  # Spacer
+                        ft.Container(width=6), 
+                        ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
+                )
+                column2.controls.append(ft.Row([custom_fields_container]))
+                column2.controls.append(ft.Container(height=16))  # Spacer
 
 
             body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([ft.Row([column1, column2], vertical_alignment=ft.CrossAxisAlignment.START)], spacing=16)))

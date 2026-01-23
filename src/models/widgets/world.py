@@ -231,12 +231,12 @@ class World(Widget):
 
         # Create a container for our dicts that we have data in and load them. 
         template_data_container = ft.Container(            # For basic info
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
+            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
             border=ft.border.all(2, ft.Colors.OUTLINE), 
             content=ft.Column([]), 
         )
         summary_container = ft.Container(            # For basic info
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
+            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
             border=ft.border.all(2, ft.Colors.OUTLINE), 
             content=ft.TextField(
                 expand=True, value=self.data.get('world_data', {}).get('Summary', ""), dense=True, multiline=True,
@@ -311,6 +311,10 @@ class World(Widget):
         row4 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
         row5 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
         row6 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+        row7 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+        row8 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+        row9 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+        row10 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
 
 
         row1.controls.append(
@@ -323,22 +327,7 @@ class World(Widget):
             ], expand=True, spacing=4)
         )
         
-        if 'Template Data' not in self.data.get('world_data', {}):
-                pass
-        else:
-            
-            template_title = self.data.get('character_data', {}).get('Template Data', {}).get('Template Name', 'Template Data')
-            row1.controls.append(
-                ft.Column([
-                    ft.Row([
-                        ft.Container(width=6), 
-                        ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.data.get('color', None), selectable=True, expand=True),
-                        ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Template Data", "Template"), icon_color=self.data.get('color', None)),
-
-                    ], spacing=0),
-                    ft.Row([template_data_container])
-                ], expand=True, spacing=4)
-            )
+        
         row2.controls.append(
             ft.Column([
                 ft.Row([
@@ -350,7 +339,7 @@ class World(Widget):
                 ft.Row([locations_container])
             ], expand=True, spacing=4)
         )
-        row2.controls.append(
+        row3.controls.append(
             ft.Column([
                 ft.Row([
                     ft.Container(width=6),
@@ -361,7 +350,7 @@ class World(Widget):
                 ft.Row([lore_container])
             ], expand=True, spacing=4)
         )
-        row3.controls.append(
+        row4.controls.append(
             ft.Column([
                 ft.Row([
                     ft.Container(width=6),
@@ -372,7 +361,7 @@ class World(Widget):
                 ft.Row([social_systems_container])
             ], expand=True, spacing=4)
         )
-        row3.controls.append(
+        row5.controls.append(
             ft.Column([
                 ft.Row([
                     ft.Container(width=6),
@@ -383,7 +372,7 @@ class World(Widget):
                 ft.Row([power_systems_container])
             ], expand=True, spacing=4)
         )
-        row4.controls.append(
+        row6.controls.append(
             ft.Column([
                 ft.Row([
                     ft.Container(width=6),
@@ -394,7 +383,7 @@ class World(Widget):
                 ft.Row([geography_container])
             ], expand=True, spacing=4)
         )
-        row4.controls.append(
+        row7.controls.append(
             ft.Column([
                 ft.Row([
                     ft.Container(width=6),
@@ -405,7 +394,7 @@ class World(Widget):
                 ft.Row([technology_container])
             ], expand=True, spacing=4)
         )
-        row5.controls.append(
+        row8.controls.append(
             ft.Column([
                 ft.Row([
                     ft.Container(width=6),
@@ -416,7 +405,7 @@ class World(Widget):
                 ft.Row([history_container])
             ], expand=True, spacing=4)
         )
-        row5.controls.append(
+        row9.controls.append(
             ft.Column([
                 ft.Row([
                     ft.Container(width=6),
@@ -427,7 +416,7 @@ class World(Widget):
                 ft.Row([governments_container])
             ], expand=True, spacing=4)
         )
-        row6.controls.append(
+        row10.controls.append(
             ft.Column([
                 ft.Row([
                     ft.Container(width=6),
@@ -440,7 +429,7 @@ class World(Widget):
         )
         
 
-        body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([row1, row2, row3, row4, row5, row6], spacing=16)))
+        body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([row1, row2, row3, row4, row5, row6, row7, row8, row9, row10], spacing=16)))
 
         self.body_container.content = body
 
@@ -467,6 +456,7 @@ class World(Widget):
                         values = [v.strip() for v in value.replace('\n', ',').split(',') if v.strip()]
                         for val in values:
                             spans.append(ft.TextSpan(f"\t\u2022\t{val.capitalize()}\n"))
+                        spans.append(ft.TextSpan("\n"))  # Extra new line at end
 
                     # Everything else just gets simple display
                     else:
@@ -526,12 +516,12 @@ class World(Widget):
 
             # Create a container for our dicts that we have data in and load them. 
             template_data_container = ft.Container(            # For basic info
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
+                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE), 
                 content=ft.Text(expand=True, selectable=True, spans=[]), 
             )
             summary_container = ft.Container(            # For basic info
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
+                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE), 
                 content=ft.Text(
                     self.data.get('world_data', {}).get('Summary', ""),
@@ -594,124 +584,113 @@ class World(Widget):
             _load_dict_data(self.data.get('world_data', {}).get('History', {}), history_container)
             _load_dict_data(self.data.get('world_data', {}).get('Custom Fields', {}), custom_fields_container)
 
-            row1 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-            row2 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-            row3 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-            row4 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-            row5 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-            row6 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-
-            
-                
-            row1.controls.append(
-                ft.Column([
+            # Set our columns to hold our data sections
+            column1 = ft.Column([], expand=True, spacing=4, alignment=ft.MainAxisAlignment.START)
+            column2 = ft.Column([], expand=True, spacing=4, alignment=ft.MainAxisAlignment.START)
+  
+            if locations_container.content.spans:
+                column2.controls.append(
                     ft.Row([
                         ft.Container(width=6), 
-                        ft.Text("Summary", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0),
-                    ft.Row([summary_container])
-                ], expand=True, spacing=4)
-            )
-            
-            if 'Template Data' not in self.data.get('world_data', {}):
-                    pass
-            else:
-                
-                if app.settings.data.get('show_empty_character_fields', True) or template_data_container.content.controls:
-                    template_title = self.data.get('character_data', {}).get('Template Data', {}).get('Template Name', 'Template Data')
-                    row1.controls.append(
-                        ft.Column([
-                            ft.Row([
-                                ft.Container(width=6), 
-                                ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.data.get('color', None), selectable=True, expand=True)
-                            ], spacing=0),
-                            ft.Row([template_data_container])
-                        ], expand=True, spacing=4)
-                    )
-            row2.controls.append(
-                ft.Column([
-                    ft.Row([
-                        ft.Container(width=6),
-                        ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ], spacing=0),
-                    ft.Row([locations_container])
-                ], expand=True, spacing=4)
-            )
-            row2.controls.append(
-                ft.Column([
-                    ft.Row([
-                        ft.Container(width=6),
-                        ft.Text("Lore", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ], spacing=0),
-                    ft.Row([lore_container])
-                ], expand=True, spacing=4)
-            )
-            row3.controls.append(
-                ft.Column([
-                    ft.Row([
-                        ft.Container(width=6),
-                        ft.Text("Social Systems", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ], spacing=0),
-                    ft.Row([social_systems_container])
-                ], expand=True, spacing=4)
-            )
-            row3.controls.append(
-                ft.Column([
-                    ft.Row([
-                        ft.Container(width=6),
-                        ft.Text("Power Systems", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ], spacing=0),
-                    ft.Row([power_systems_container])
-                ], expand=True, spacing=4)
-            )
-            row4.controls.append(
-                ft.Column([
-                    ft.Row([
-                        ft.Container(width=6),
-                        ft.Text("Geography", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ], spacing=0),
-                    ft.Row([geography_container])
-                ], expand=True, spacing=4)
-            )
-            row4.controls.append(
-                ft.Column([
-                    ft.Row([
-                        ft.Container(width=6),
-                        ft.Text("Technology", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ], spacing=0),
-                    ft.Row([technology_container])
-                ], expand=True, spacing=4)
-            )
-            row5.controls.append(
-                ft.Column([
-                    ft.Row([
-                        ft.Container(width=6),
-                        ft.Text("History", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ], spacing=0),
-                    ft.Row([history_container])
-                ], expand=True, spacing=4)
-            )
-            row5.controls.append(
-                ft.Column([
-                    ft.Row([
-                        ft.Container(width=6),
-                        ft.Text("Governments", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ], spacing=0),
-                    ft.Row([governments_container])
-                ], expand=True, spacing=4)
-            )
-            row6.controls.append(
-                ft.Column([
-                    ft.Row([
-                        ft.Container(width=6),
-                        ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ], spacing=0),
-                    ft.Row([custom_fields_container])
-                ], expand=True, spacing=4)
-            )
-            
+                        ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0), 
+                )
+                column2.controls.append(ft.Row([locations_container]))
+                column2.controls.append(ft.Container(height=16))  # Spacer
 
-            body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([row1, row2, row3, row4, row5, row6], spacing=16)))
+            if lore_container.content.spans:
+                column1.controls.append(
+                    ft.Row([
+                        ft.Container(width=6), 
+                        ft.Text("Lore", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
+                )
+                column1.controls.append(ft.Row([lore_container]))
+                column1.controls.append(ft.Container(height=16))  # Spacer
+            if power_systems_container.content.spans:
+                column2.controls.append(
+                    ft.Row([
+                        ft.Container(width=6), 
+                        ft.Text("Power Systems", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
+                )
+                column2.controls.append(ft.Row([power_systems_container]))
+                column2.controls.append(ft.Container(height=16))  # Spacer
+
+            if social_systems_container.content.spans:
+                column1.controls.append(
+                    ft.Row([
+                        ft.Container(width=6), 
+                        ft.Text("Social Systems", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
+                )
+                column1.controls.append(ft.Row([social_systems_container]))
+                column1.controls.append(ft.Container(height=16))  # Spacer
+
+            if geography_container.content.spans:
+                column2.controls.append(
+                    ft.Row([
+                        ft.Container(width=6), 
+                        ft.Text("Geography", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
+                )
+                column2.controls.append(ft.Row([geography_container]))
+                column2.controls.append(ft.Container(height=16))  # Spacer
+
+            if governments_container.content.spans:
+                column1.controls.append(
+                    ft.Row([
+                        ft.Container(width=6), 
+                        ft.Text("Governments", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
+                )
+                column1.controls.append(ft.Row([governments_container]))
+                column1.controls.append(ft.Container(height=16))  # Spacer
+
+            if technology_container.content.spans:
+                column1.controls.append(
+                    ft.Row([
+                        ft.Container(width=6), 
+                        ft.Text("Technology", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
+                )
+                column1.controls.append(ft.Row([technology_container]))
+                column1.controls.append(ft.Container(height=16))  # Spacer
+
+            if history_container.content.spans:
+                column1.controls.append(
+                    ft.Row([
+                        ft.Container(width=6), 
+                        ft.Text("History", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
+                )
+                column1.controls.append(ft.Row([history_container]))
+                column1.controls.append(ft.Container(height=16))  # Spacer
+            
+            if custom_fields_container.content.spans:
+                column2.controls.append(
+                    ft.Row([
+                        ft.Container(width=6), 
+                        ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                    ], spacing=0),
+                )
+                column2.controls.append(ft.Row([custom_fields_container]))
+                column2.controls.append(ft.Container(height=16))  # Spacer
+        
+            body.controls.append(
+                ft.Container(
+                    padding=ft.padding.only(right=8), 
+                    content=ft.Column([
+                        ft.Row([
+                            ft.Container(width=6), 
+                            ft.Text("Summary", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                        ], spacing=0), 
+                        ft.Row([summary_container]),
+                        ft.Container(height=16),  # Spacer  
+                        ft.Row([column1, column2], vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
+                    ], spacing=0)
+                )
+            )
 
             self.body_container.content = body
 
