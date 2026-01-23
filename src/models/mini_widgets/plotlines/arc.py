@@ -121,6 +121,11 @@ class Arc(MiniWidget):
     async def on_start_hover(self, e: ft.HoverEvent):
         ''' Focuses the arc control '''
 
+        for arc in self.owner.arcs.values():
+            if arc != self and arc.is_dragging:
+                return
+
+
         # Change its border opacity and update the page
         self.plotline_arc.border=ft.border.only(
             left=ft.BorderSide(2, self.data.get('color', "secondary")),

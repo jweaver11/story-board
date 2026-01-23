@@ -62,7 +62,12 @@ class World(Widget):
         for k, value in kwargs.items():
             self.data['world_data'][key][k] = value
 
-        
+        self.save_dict()
+
+    def _update_summary(self, value: str):
+        ''' Updates our world summary field with a new value '''
+
+        self.data['world_data']['Summary'] = value
         self.save_dict()
 
     def _delete_world_data(self, sub_key: str="", **kwargs):
@@ -236,7 +241,7 @@ class World(Widget):
             content=ft.TextField(
                 expand=True, value=self.data.get('world_data', {}).get('Summary', ""), dense=True, multiline=True,
                 capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                on_blur=lambda e: self._update_world_data('Summary', e.control.value),
+                on_blur=lambda e: self._update_summary(e.control.value),
                 border=ft.InputBorder.NONE,                  
             ),
         )
@@ -447,30 +452,39 @@ class World(Widget):
 
         def _load_dict_data(dict: dict, container: ft.Container):
             ''' Loads data from a dict into a given container '''
-            for key, value in dict.items():
+            span_list = []
+            dict_length = len(dict)
+            idx = 0
+
+            for key, value in dict.items():    
+                
                 if isinstance(value, str):
                     # Treat Goals as a list for display purposes
                     if "\n" in value:  
-                        text_control = ft.Text(
-                            expand=True, selectable=True, 
-                            spans=[ft.TextSpan(f"{key.capitalize()}: ", ft.TextStyle(weight=ft.FontWeight.BOLD))]   # Key is bold with formatting
-                        )
+                        spans = [ft.TextSpan(f"{key.capitalize()}:\n", ft.TextStyle(weight=ft.FontWeight.BOLD))]  # Key is bold with formatting
+
                         # Treat string as a list and split by new lines or commas
                         values = [v.strip() for v in value.replace('\n', ',').split(',') if v.strip()]
                         for val in values:
-                            text_control.spans.append(ft.TextSpan(f"\n\t\u2022\t{val.capitalize()}"))
+                            spans.append(ft.TextSpan(f"\t\u2022\t{val.capitalize()}\n"))
 
-                        container.content.controls.append(text_control)
-
+                    # Everything else just gets simple display
                     else:
-                        text_control = ft.Text(
-                            expand=True, selectable=True, 
-                            spans=[
-                                ft.TextSpan(f"{key.capitalize()}: ", ft.TextStyle(weight=ft.FontWeight.BOLD)),   # Key is bold with formatting
-                                ft.TextSpan(f"{value.capitalize()}")    # Value normal
-                            ]
-                        )
-                        container.content.controls.append(text_control)
+                        
+                        spans = [ft.TextSpan(f"{key.capitalize()}: ", ft.TextStyle(weight=ft.FontWeight.BOLD))]   # Key is bold with formatting
+
+                        if idx == dict_length - 1:  # Last item, no new line
+                            spans.append(ft.TextSpan(f"{value}"))     # Last item, no new line
+                        else:
+                            spans.append(ft.TextSpan(f"{value}\n\n"))     # Rest of the value
+
+                    # Only show the item if it has a value or if we are set to show empty fields
+                    if value or app.settings.data.get('show_empty_character_fields', True):
+                        span_list.extend(spans)
+
+                idx += 1
+
+            container.content.spans = span_list
                     
 
         self.reload_tab()
@@ -514,7 +528,7 @@ class World(Widget):
             template_data_container = ft.Container(            # For basic info
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE), 
-                content=ft.Column([]), 
+                content=ft.Text(expand=True, selectable=True, spans=[]), 
             )
             summary_container = ft.Container(            # For basic info
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
@@ -527,47 +541,47 @@ class World(Widget):
             locations_container = ft.Container(  # For physical description
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Column([]), 
+                content=ft.Text(expand=True, selectable=True, spans=[]),
             )   
             lore_container = ft.Container(                # For family
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Column([]), 
+                content=ft.Text(expand=True, selectable=True, spans=[]),
             )
             power_systems_container = ft.Container(                # For origin 
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE), 
-                content=ft.Column([]),
+                content=ft.Text(expand=True, selectable=True, spans=[]),
             )
             social_systems_container = ft.Container(           # For connections
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Column([]), 
+                content=ft.Text(expand=True, selectable=True, spans=[]),
             )
             geography_container = ft.Container(           # For connections
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Column([]), 
+                content=ft.Text(expand=True, selectable=True, spans=[]),
             )
             technology_container = ft.Container(           # For connections
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Column([]),
+                content=ft.Text(expand=True, selectable=True, spans=[]),
             )
             history_container = ft.Container(           # For connections
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Column([]),
+                content=ft.Text(expand=True, selectable=True, spans=[]),
             )
             governments_container = ft.Container(           # For connections
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Column([]),
+                content=ft.Text(expand=True, selectable=True, spans=[]),
             )
             custom_fields_container = ft.Container(        # For custom fields
                 padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Column([]), 
+                content=ft.Text(expand=True, selectable=True, spans=[]),
             )
 
             _load_dict_data(self.data.get('world_data', {}).get('Template Data', {}), template_data_container)
