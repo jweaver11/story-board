@@ -53,47 +53,10 @@ class Character(Widget):
             },
         ) 
                 
-        self.custom_field_controls = {}  # Store references to custom field TextFields
 
         # Build our widget on start, but just reloads it later
         self.reload_widget()
 
-
-    
-
-    def _get_menu_options(self) -> list[ft.Control]:
-
-        # Color, rename, delete
-        return [
-            MenuOptionStyle(
-                #on_click=self.rename_clicked,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
-                    ft.Text(
-                        "Rename", 
-                        weight=ft.FontWeight.BOLD, 
-                        color=ft.Colors.ON_SURFACE
-                    ), 
-                ]),
-            ),
-            # Color changing popup menu
-            MenuOptionStyle(
-                content=ft.PopupMenuButton(
-                    expand=True,
-                    tooltip="",
-                    padding=None,
-                    content=ft.Row(
-                        expand=True,
-                        controls=[
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
-                            ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
-                            ft.Icon(ft.Icons.ARROW_DROP_DOWN_OUTLINED, color=ft.Colors.ON_SURFACE, size=16),
-                        ]
-                    ),
-                    items=self.get_color_options()
-                )
-            ),
-        ]
     
     def _new_field_clicked(self, sub_key: str, category: str=""):
         ''' Called when the new field button is clicked '''

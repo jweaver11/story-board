@@ -107,8 +107,8 @@ class ContentRail(Rail):
         return [
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
-                    tooltip="New", menu_padding=0,
+                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)], expand=True),
+                    tooltip="New", menu_padding=0, expand=True, padding=ft.padding.all(0),
                     items=[
                         ft.PopupMenuItem(
                             text="Category", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,

@@ -20,6 +20,7 @@ import asyncio
 
 
 
+
 class Widget(ft.Container):
     
     # Constructor. All widgets require a title,  page reference, directory path, and story reference
@@ -42,8 +43,7 @@ class Widget(ft.Container):
             padding=ft.padding.only(top=0, bottom=8, left=8, right=8),
         )
 
-    
-        # Set our parameters
+        # Set our parameters we passed in (data set in super())
         self.title: str = title                     
         self.p: ft.Page = page                               
         self.directory_path: str = directory_path        
@@ -61,45 +61,34 @@ class Widget(ft.Container):
                 'index': int,                                   # Index of this widget in its pin location
                 'visible': True,                                # Whether this widget is visible in the workspace or not
                 'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
-                #'color': str,                                   # Color of the icon and tab divider for this widget  
+                #'color': str,                                  # Color of the icon and tab divider for this widget. Child classes set this on creation  
                 'mini_widgets_displayed_overtop': True,         # Whether mini widgets are displayed overtop the content, or fit within it in the body
                 'custom_fields': dict,                          # Dictionary for any custom fields the widget wants to store
             },
         )
 
-
         # Apply our visibility
         self.visible = self.data['visible'] 
 
-        # Tracks variable to see if we should outline the widget where it is displayed
-        self.focused = False
-
         # Canvas and state trackers for sizing our widget
         self.sizing_canvas = cv.Canvas(on_resize=self._get_size, resize_interval=100, expand=True, content=ft.Container(expand=True, ignore_interactions=True))
-        self.w: int = 0
-        self.h: int = 0
+        self.w: int = 0                     # Width of our widget
+        self.h: int = 0                     # Height of our widget
+        self.is_renaming: bool = False      # Whether we are currently renaming this widget or not
 
         # UI ELEMENTS - Tab
         self.tabs: ft.Tabs = ft.Tabs() # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
         self.tab: ft.Tab = ft.Tab()  # Tab that holds our title and hide icon. Nests inside of a ft.Tabs control
         self.icon: ft.Icon = ft.Icon()
-        self.tab_text: ft.Text = ft.Text()
         self.hide_tab_icon_button: ft.IconButton = ft.IconButton()    # 'X' icon button to hide widget from workspace'
 
-        # UI ELEMENTS - Body                   
-        self.mini_widgets: list = []   
-
-        # Currently active mini widget being focused on
-        self.active_mini_widget: ft.Control = None
-
-        # Column for displaying our mini widgets on the left, right, or both sides of our body
-        self.mini_widgets_row: ft.Column = ft.Column(spacing=4)  
-        self.header: ft.Control = None  # Optional header control to display above our body and mini widgets
-        
-        self.body_container: ft.Container = ft.Container(expand=True, border_radius=ft.border_radius.all(10), padding=ft.padding.all(6)) 
-       
-
-        self.master_stack: ft.Stack = ft.Stack(expand=True)
+        # UI ELEMENTS - Body                     
+        self.header: ft.Control = None              # Optional header control to display above our body and mini widgets
+        self.body_container = ft.Container(         # Container that holds our main body content. Gets built in reload_widget of child classes
+            expand=True, border_radius=ft.border_radius.all(10), padding=ft.padding.all(6)
+        ) 
+        self.master_stack: ft.Stack = ft.Stack(expand=True)     # Holds our sizing canvas, body container, header, and mini widgets all under the tab
+        self.mini_widgets = []                      # List of mini widgets that belong to this widget
 
         # Called at end of constructor for all child widgets to build their view (not here tho since we're not on page yet)
         #self.reload_widget()
@@ -343,7 +332,8 @@ class Widget(ft.Container):
     async def enter_tab(self, e):
         ''' Changes the hide icon button color slightly for more interactivity '''
         self.hide_tab_icon_button.icon_color = ft.Colors.ON_SURFACE
-        self.p.update()
+        self.hide_tab_icon_button.page = self.p
+        self.hide_tab_icon_button.update()
 
     # Called when mouse hovers over the tab part of the widget
     async def hover_tab(self, e):
@@ -355,7 +345,8 @@ class Widget(ft.Container):
     async def stop_hover_tab(self, e):
         ''' Reverts the color change of the hide icon button '''
         self.hide_tab_icon_button.icon_color = ft.Colors.OUTLINE
-        self.p.update()
+        self.hide_tab_icon_button.page = self.p
+        self.hide_tab_icon_button.update()
         
 
     # Called when app clicks the hide icon in the tab
@@ -386,7 +377,7 @@ class Widget(ft.Container):
         # Color, rename
         return [
             MenuOptionStyle(
-                #on_click=self._rename_clicked,
+                on_click=self._rename_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
                     ft.Text(
@@ -419,6 +410,119 @@ class Widget(ft.Container):
             )
         ]
     
+    def _rename_clicked(self, e):
+        ''' Replaces our widget title with a text field to rename it '''
+        from utils.check_widget_unique import check_widget_unique
+
+        # Track if our name is unique for checks, and if we're submitting or not
+        is_unique = True
+        submitting = False
+
+        # Grab our current name for comparison
+        current_name = self.title.lower()
+
+        # Called when clicking outside the input field to cancel renaming
+        def _cancel_rename(e):
+            ''' Puts our name back to static and unalterable '''
+
+            # Grab our submitting state
+            nonlocal submitting
+
+            # Since this auto calls on submit, we need to check. If it is cuz of a submit, do nothing
+            if submitting:
+                submitting = not submitting     # Change submit status to False so we can de-select the textbox
+                return
+            
+            # Otherwise we're not submitting (just clicking off the textbox), so we cancel the rename
+            else:
+
+                self.reload_widget()
+                self.p.update()
+
+        # Called everytime a change in textbox occurs
+        def _name_check(e):
+            ''' Checks if the name is unique within its type of widget '''
+
+
+            # Nonlocal variables
+            nonlocal is_unique
+            nonlocal submitting
+
+            # Set submitting to false, and unique to True
+            submitting = False
+            is_unique = True
+
+            # Grab out title and tag from the textfield, and set our new key to compare
+            title = e.control.value
+            if title.lower() == current_name:
+                return
+
+            # Generate our new key to compare. Requires normalization
+            nk = self.directory_path + "\\" + title + "_" + e.control.data
+            new_key = os.path.normpath(nk)
+
+            error_text, is_unique = check_widget_unique(self.story, new_key)
+
+            # If we are NOT unique, show our error text
+            if not is_unique:
+                e.control.error_text = error_text
+
+            # Otherwise remove our error text
+            else:
+                e.control.error_text = None
+                
+            self.p.update()
+
+        # Called when submitting our textfield.
+        def _submit_name(e):
+            ''' Checks that we're unique and renames the widget if so. on_blur is auto called after this, so we handle that as well '''
+
+            # Get our name and check if its unique
+            name = e.control.value
+
+            # Non local variables
+            nonlocal is_unique
+            nonlocal text_field
+            nonlocal submitting
+
+            # Set submitting to True
+            submitting = True
+
+            # If it is, call the rename function. It will do everything else
+            if is_unique:
+                self.rename(name)
+                
+            # Otherwise make sure we show our error
+            else:
+                text_field.error_text = "Name already exists"
+                text_field.focus()                                  # Auto focus the textfield
+                self.p.update()
+                
+        # Our text field that our functions use for renaming and referencing
+        text_field = ft.TextField(
+            value=self.title, #width=40,
+            dense=True, #expand=True,
+            focus_color=self.data.get('color', ft.Colors.PRIMARY),
+            border_color=self.data.get('color', ft.Colors.PRIMARY),
+            autofocus=True, adaptive=True,
+            data=self.data.get('tag', ''),
+            text_style=ft.TextStyle(
+                color=ft.Colors.ON_SURFACE,
+                weight=ft.FontWeight.BOLD,
+                overflow=ft.TextOverflow.ELLIPSIS,
+            ),
+            on_submit=_submit_name,
+            on_change=_name_check,
+            on_blur=_cancel_rename,
+        )
+
+        # Replaces our name text with a text field for renaming
+        self.tab.tab_content.content.content.controls[1] = text_field
+
+        # Clears our popup menu button and applies to the UI
+        self.p.overlay.clear()
+        self.p.update()
+    
     # Called when color button is clicked
     def _get_color_options(self) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
@@ -448,8 +552,36 @@ class Widget(ft.Container):
 
         return color_controls
     
+    # Called when the delete button is clicked in the menu options
     def _delete_clicked(self, e):
-        ''' Deletes this widget from the story after confirmation '''
+        ''' Deletes this file from the story '''
+        from models.app import app
+
+        def _delete_confirmed(e=None):
+            ''' Deletes the widget after confirmation '''
+
+            #self.widget.story.close_menu_instant()
+            self.p.close(dlg)
+            self.story.delete_widget(self) 
+            self.story.workspace.reload_workspace()
+
+        # Append an overlay to confirm the deletion
+        dlg = ft.AlertDialog(
+            title=ft.Text(f"Are you sure you want to delete {self.title} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
+            alignment=ft.alignment.center,
+            title_padding=ft.padding.all(25),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg)),
+                ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+            ]
+        )
+
+        self.story.close_menu_instant()
+
+        if app.settings.data.get('confirm_item_delete', False):
+            self.p.open(dlg)
+        else:
+            _delete_confirmed()
         
     
     # Called at end of constructor
@@ -476,11 +608,7 @@ class Widget(ft.Container):
         # Set the color and size
         self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
 
-        self.tab_text = ft.Text(
-            weight=ft.FontWeight.BOLD, # Make the text bold
-            theme_style=ft.TextThemeStyle.TITLE_MEDIUM,     # Set to a built in theme (mostly for font size)
-            value=self.title,   # Set the text to our title
-        )
+        tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
 
         # Initialize our tabs control that will hold our tab. We only have one tab, but this is needed for it to render
         self.tabs = ft.Tabs(
@@ -499,16 +627,10 @@ class Widget(ft.Container):
             tooltip="Hide",
         )
 
-        self.tab_title_color = ft.Colors.PRIMARY  # The color of the title in our tab and the divider under it
 
         # Tab that holds our widget title and 'body'.
         # Since this is a ft.Tab, it needs to be nested in a ft.Tabs control or it wont render.
-        # We do this so we can use tabs in the main pin area, but still show as a container in other pin areas
         self.tab = ft.Tab(
-
-            # Initialize the content. This will be our content of the body of the widget
-            #content=ft.Stack(), 
-            
 
             # Content of the tab itself. Has widgets name and hide widget icon, and functionality for dragging
             tab_content=ft.Draggable(   # Draggable is the control so we can drag and drop to different pin locations
@@ -523,28 +645,13 @@ class Widget(ft.Container):
 
                 # The content of our draggable. We use a gesture detector so we have more events
                 content=ft.GestureDetector(
-
-                    # Change mouse cursor to the selector cursor when hovering over the tab
+                    ft.Row([self.icon, tab_text, self.hide_tab_icon_button]),
                     mouse_cursor=ft.MouseCursor.CLICK,
-
-                    # Event utils for hovering and stop hovering over tab
-                    
+                    hover_interval=20,
                     on_enter=self.enter_tab,
                     on_hover=self.hover_tab,
                     on_exit=self.stop_hover_tab,
                     on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
-
-                    # Content of the gesture detector. This has our actual title and hide icon
-                    content=ft.Row([
-        
-                        self.icon,
-
-                        # The text control that holds our title of the object
-                        self.tab_text,
-
-                        # Our icon button that hides the widget when clicked
-                        self.hide_tab_icon_button, 
-                    ])
                 )
             )                    
         )
@@ -601,7 +708,7 @@ class Widget(ft.Container):
             right_column = ft.Column(
                 right_mini_widgets, spacing=4, tight=True, width=self.w * .4, right=0, bottom=0, expand=True, 
                 top=50 if self.header is not None else 0,
-                )
+            )
             
             
             if len(left_mini_widgets) > 0:

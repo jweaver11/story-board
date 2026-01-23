@@ -95,7 +95,7 @@ class Settings(ft.View):
                 'default_note_pin_location': "right",
                 'default_planning_pin_location': "main",
                 'default_plotline_pin_location': "main",
-                'default_world_pin_location': "left",
+                'default_world_pin_location': "right",
 
                 'active_character_template': "Default",    # Which template is being used for new characters for new stories - they default to this
                 'show_empty_character_fields': True,   # If we show empty character fields in character widget or not

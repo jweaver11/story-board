@@ -635,7 +635,6 @@ class Story(ft.View):
         menu = ft.Container(
             left=self.mouse_x,  top=self.mouse_y,   # Positions the menu at the mouse location
             border_radius=ft.border_radius.all(4),
-            #padding=ft.padding.all(6),
             bgcolor=ft.Colors.with_opacity(.65, ft.Colors.ON_INVERSE_SURFACE),
             width=120, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
             shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=2, blur_style=ft.ShadowBlurStyle.NORMAL),
