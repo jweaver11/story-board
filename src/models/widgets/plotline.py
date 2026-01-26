@@ -82,7 +82,7 @@ class Plotline(Widget):
 
         # Declare and create our information display, which is our plotlines mini widget 
         self.information_display: ft.Container = None
-        self.create_information_display()
+        
         
         # Declare dicts of our data types   
         self.arcs: dict = {}       
@@ -106,7 +106,6 @@ class Plotline(Widget):
             on_resize=self.rebuild_plotline_canvas, resize_interval=20, expand=True, 
             content=ft.GestureDetector(
                 expand=True, on_secondary_tap=self.on_secondary_tap,
-                on_exit=self.on_exit, 
                 on_hover=self.hover_plotline_canvas,
                 on_tap=self._on_tap,
                 hover_interval=10,
@@ -115,6 +114,8 @@ class Plotline(Widget):
 
         # Dropdown on the rail. We don't use it here, let the rail handle it
         self.plotline_dropdown = None      # 'Plotline_Dropdown'
+
+        self.create_information_display()
 
         # Builds/reloads our plotline UI
         self.reload_widget()
@@ -386,16 +387,6 @@ class Plotline(Widget):
             self.plotline_canvas.page = self.p      # refresh page reference
             self.plotline_canvas.update()
 
-        
-        
-
-    # Called when mouse exits our plotline area
-    async def on_exit(self, e: ft.HoverEvent):
-        ''' Un-highlights our plotline control for visual feedback '''
-        
-        self.plotline_canvas.page = self.p
-        self.plotline_canvas.opacity = .7
-        self.plotline_canvas.update()
 
     # Called when right clicking our plotline on the canvas
     async def on_secondary_tap(self, e):
@@ -647,14 +638,17 @@ class Plotline(Widget):
                 arc.plotline_arc.height = new_h
 
             if no_update:
+                self.p.update()
                 return
             self._render_widget()
 
         # If we didn't rebuild our arcs, just update the canvas
         else:
             if no_update:
+                self.p.update()
                 return
             self._render_widget()
+            
 
         
     

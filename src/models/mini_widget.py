@@ -209,7 +209,7 @@ class MiniWidget(ft.Container):
         self.visible = self.data.get('visible', True)
 
 
-        # IF we hit that we are visible, and not special exclusive, hide all other exclusive mini widgets on the same side
+        # If we are visible, hide all other exclusive mini widgets on the same side
         if self.visible:
             for mini_widget in self.owner.mini_widgets:
                 

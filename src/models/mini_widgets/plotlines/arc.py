@@ -95,7 +95,7 @@ class Arc(MiniWidget):
         # Build the gesture detector for our plotline arc. It doesn't need to be rebuilt, so we just do it once in constructor
         self.gd = ft.GestureDetector(
             mouse_cursor=ft.MouseCursor.CLICK,
-            expand=True,
+            expand=True, on_hover=self.on_hovers, hover_interval=20,
             on_tap=lambda e: self.toggle_visibility(value=True),    # Focus this mini widget when clicked
             on_secondary_tap=lambda e: print("Right clicked arc"), 
             on_enter=self.on_start_hover,      # Highlight container
@@ -105,7 +105,7 @@ class Arc(MiniWidget):
 
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our arc slider
-
+        self.can_open: bool = False                 # If we can open our mini widget. Used for handling when mouse over plotline and arc control, give PL priority
         self.is_first_launch: bool = True        # If this is the first time launching the arc, to protect from not initialized parents
       
         # Loads our mini widget
@@ -120,6 +120,7 @@ class Arc(MiniWidget):
     # Called when we hover over our arc on the plotline
     async def on_start_hover(self, e: ft.HoverEvent):
         ''' Focuses the arc control '''
+        self.can_open = True
 
         # Change its border opacity and update the page
         self.plotline_arc.border=ft.border.only( 
@@ -130,10 +131,17 @@ class Arc(MiniWidget):
         self.gd.content.opacity = 1.0
         self.p.update()
 
+    async def on_hovers(self, e: ft.HoverEvent):
+        if self.plotline_arc.height is not None:
+            if self.plotline_arc.height - e.local_y <= 25:
+                self.can_open = False
+            else:
+                self.can_open = True
+
     # Called when we stop hovering over our arc on the plotline
     async def on_stop_hover(self, e: ft.HoverEvent):
         ''' Changes the arc control to unfocused '''
-
+        self.can_open = True
         
         self.plotline_arc.border=ft.border.only(
             left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
@@ -144,9 +152,13 @@ class Arc(MiniWidget):
         self.p.update()
 
 
-    def toggle_visibility(self, e=None, value: bool = None, ignore_control: bool = False):
+    def toggle_visibility(self, e=None, value: bool = None):
         ''' Toggles the visibility of our plotline_point '''
-        print(f"Toggling visibility of arc {self.title} to {value}")
+
+        if not self.can_open:
+            print("Cannot open arc mini widget, plotline has priority")
+            self.owner.information_display.toggle_visibility(value=True)
+            return
 
         if value is not None:
 
@@ -255,6 +267,7 @@ class Arc(MiniWidget):
         # Make sure our alignment are correct
         self.x_alignment_start = ft.Alignment(self.data.get('x_alignment_start', -.2), 0)
         self.x_alignment_end = ft.Alignment(self.data.get('x_alignment_end', .2), 0)
+        self.data['x_alignment'] = (self.data.get('x_alignment_end', 0) + self.data.get('x_alignment_start', 0)) / 2
 
         # Determine which side of the plotline we're on for our mini widget
         mid_value = e.control.start_value + ((e.control.end_value - e.control.start_value) / 2)
@@ -370,7 +383,7 @@ class Arc(MiniWidget):
 
         available_w = max(int(getattr(self.owner, "plotline_width", 0)) - 48, 1)
         width_px = int(((end_a - start_a) / 2.0) * available_w)  # because mapping [-1..1] to [0..W]
-        max_h = max(int((getattr(self.owner, "plotline_height", 0) / 2) - 20), 0)
+        max_h = max(int((getattr(self.owner, "plotline_height", 0) / 2) - 50), 0)
 
         # Semicircle-ish: height ~= width/2, but capped
         new_h = min(max_h, max(0, int(width_px / 2)))
@@ -442,7 +455,6 @@ class Arc(MiniWidget):
         # Rebuild our information display
         self.content_control = ft.TextField(
             hint_text="Arc",
-            on_submit=lambda e: self.change_custom_field(**{'new_key': e.control.value}),
             expand=True,
         )
 

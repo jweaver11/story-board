@@ -3,6 +3,7 @@ from models.mini_widget import MiniWidget
 from models.widget import Widget
 from models.widgets.plotline import Plotline
 import asyncio
+from models.dataclasses.events import Event
 
 
 # Display that makes Plotlines share much uniformaty in their information display like arcs do
@@ -56,41 +57,36 @@ class PlotlineInformationDisplay(MiniWidget):
         self.reload_mini_widget()
         self.owner.reload_widget()
 
-   
+    # Called when changing our owners data from some event
     async def _change_owner_data(self, e):
-        ''' Changes our owners data based on some event '''
+        ''' Sorts what data to change and how, and if we need to rebuild or just update the page '''
 
         if isinstance(e.control.data, list):
             key = e.control.data[0]
             idx = e.control.data[1]
             delete_idx = e.control.data[2] if len(e.control.data) > 2 else False
 
-            
             # If we're deleting from a list, we'll need a reload
             if delete_idx:
                 self.owner.data.get(key, []).pop(idx)
                 self.owner.save_dict()
                 self.reload_mini_widget()
-                await self.owner.rebuild_plotline_canvas()
+                await self.owner.rebuild_plotline_canvas(no_update=True)
 
             else:
-                
                 self.owner.data.get(key, [])[idx] = e.control.value
                 self.owner.save_dict()
-
-                #self.reload_mini_widget()
                 await self.owner.rebuild_plotline_canvas(no_update=True)
                 
-
         else:
             key = e.control.data
             value = e.control.value
-            await self.owner.change_data(**{key: value})
+            self._change_owner_data_instant(key, value)
+            await self.owner.rebuild_plotline_canvas(no_update=True)
 
+    
     def _change_owner_data_instant(self, key, value):
         ''' Changes our owners data instantly '''
-
-        
         self.owner.data[key] = value
         self.owner.save_dict()
 
@@ -159,7 +155,6 @@ class PlotlineInformationDisplay(MiniWidget):
                 on_blur=self._change_owner_data,
                 data='summary', 
                 focus_color=self.owner.data.get('color', None),
-                #border_color=ft.Colors.OUTLINE, 
                 cursor_color=self.owner.data.get('color', None),
                 focused_border_color=self.owner.data.get('color', None),
                 label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
@@ -172,35 +167,32 @@ class PlotlineInformationDisplay(MiniWidget):
         content.controls.append(
             ft.Row([
                 ft.TextField(
-                    expand=True, label="Left Label", value=self.owner.data.get('left_label', ""), dense=True, multiline=True,
+                    expand=True, label="Left Label", value=self.owner.data.get('left_label', ""), dense=True, 
                     capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
                     on_blur=self._change_owner_data,
                     data='left_label',
                     focus_color=self.owner.data.get('color', None),
-                    #border_color=ft.Colors.OUTLINE, 
                     cursor_color=self.owner.data.get('color', None),
                     focused_border_color=self.owner.data.get('color', None),
                     label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
                 ),
                 ft.TextField(
-                    expand=True, label="Time Label", value=self.owner.data.get('time_label', ""), dense=True, multiline=True,
+                    expand=True, label="Time Label", value=self.owner.data.get('time_label', ""), dense=True,
                     capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
                     on_blur=self._change_owner_data,
                     data='time_label',
                     
                     focus_color=self.owner.data.get('color', None),
-                    #border_color=ft.Colors.OUTLINE, 
                     cursor_color=self.owner.data.get('color', None),
                     focused_border_color=self.owner.data.get('color', None),
                     label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
                 ),
                 ft.TextField(
-                    expand=True, label="Right Label", value=self.owner.data.get('right_label', ""), dense=True, multiline=True,
+                    expand=True, label="Right Label", value=self.owner.data.get('right_label', ""), dense=True, 
                     capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
                     on_blur=self._change_owner_data,
                     data='right_label',
                     focus_color=self.owner.data.get('color', None),
-                    #border_color=ft.Colors.OUTLINE, 
                     cursor_color=self.owner.data.get('color', None),
                     focused_border_color=self.owner.data.get('color', None),
                     label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
@@ -209,11 +201,67 @@ class PlotlineInformationDisplay(MiniWidget):
         )
         content.controls.append(ft.Container(height=10))  # Spacing
 
+
+      
+        events_list = []
+
+
+        for pp in self.owner.plot_points.values():
+            events_list.append(Event(tag='plot_point', x_alignment=pp.data.get('x_alignment', 0), title=pp.title, color=pp.data.get('color', 'secondary')))
+
+        for arc in self.owner.arcs.values():
+            events_list.append(Event(tag='arc_start', x_alignment=arc.data.get('x_alignment_start', 0), title=arc.title, color=arc.data.get('color', 'secondary')))
+            events_list.append(Event(tag='arc_end', x_alignment=arc.data.get('x_alignment_end', 0), title=arc.title, color=arc.data.get('color', 'secondary')))
+
+        for marker in self.owner.markers.values():
+            events_list.append(Event(tag='marker', x_alignment=marker.data.get('x_alignment', 0), title=marker.title, color=marker.data.get('color', 'secondary')))
+
+    
+        el = sorted(events_list, key=lambda e: e.x_alignment)
+
+        for item in el:
+            print(item.title, item.x_alignment)
+
+            
+        events_spans = []
+
+        for event in events_list:
+            
+            if event.tag == 'arc_start':
+                events_spans.append(ft.TextSpan(f"{event.title} Begins\t->\t"))
+            elif event.tag == 'arc_end':
+                events_spans.append(ft.TextSpan(f"{event.title} Ends\t->\t"))
+            else:
+                events_spans.append(ft.TextSpan(f"{event.title}\t->\t"))
+
+
+        events_text = ft.Text(
+            spans=events_spans, selectable=True
+        )
+
+        events_container = ft.Container(                # For origin 
+            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+            border=ft.border.all(2, ft.Colors.OUTLINE), 
+            content=events_text,
+        )
+
+        content.controls.append(
+            ft.Row([
+                ft.Container(width=6), 
+                ft.Text("Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), tooltip="The order of events that occur in this plotline"),
+
+            ], spacing=0)
+        )
+        content.controls.append(ft.Container(height=6))  # Spacing
+
+        content.controls.append(events_container)
+        content.controls.append(ft.Container(height=10))  # Spacing
+
         divisions_expansion_tile = ft.ExpansionTile(
-            ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True,),
+            ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True, tooltip="Simple evenly spaced division markers on the plotline",),
             controls=[], initially_expanded=self.owner.data.get('divisions_are_expanded', True), 
             collapsed_icon_color=self.owner.data.get('color', None),
-            icon_color=self.owner.data.get('color', None),
+            icon_color=self.owner.data.get('color', None), shape=ft.RoundedRectangleBorder(),
             on_change=lambda e: self._change_owner_data_instant('divisions_are_expanded', not self.owner.data.get('divisions_are_expanded', True))
         )
         
@@ -251,14 +299,6 @@ class PlotlineInformationDisplay(MiniWidget):
 
         content.controls.append(divisions_expansion_tile)
         content.controls.append(ft.Container(height=10))  # Spacing
-        
-
-        # TODO: Add 'Events', which shows in order of plot points, arcs, and markers on the plotlin
-        
-        # Events
-        # Plot points
-        # arcs
-        # Markers
 
         row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0)
     

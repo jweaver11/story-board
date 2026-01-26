@@ -312,44 +312,7 @@ class Marker(MiniWidget):
         # Optional safety clamp (prevents extreme translations if sizes change)
         offset_x = max(-0.5, min(0.5, offset_x))
 
-        #print("Offset x for label:", offset_x, "for", self.title)
-
-        self.plotline_label = ft.Container(
-            width=int(label_w),
-            offset=ft.Offset(offset_x, 0),
-            expand=True,
-            border=ft.border.all(1, "red"),
-            margin=ft.Margin(16, 0, 16, 0),
-            ignore_interactions=True,
-            content=ft.Column(
-                expand=False,
-                controls=[
-                    ft.Container(expand=8, ignore_interactions=True),
-                    ft.Container(
-                        expand=3,
-                        alignment=ft.Alignment(0, 0),
-                        content=ft.VerticalDivider(
-                            thickness=2,
-                            color=self.data.get("color", "secondary"),
-                        ),
-                    ),
-                    ft.Container(
-                        expand=1,
-                        alignment=ft.alignment.center,
-                        content=ft.Text(
-                            value=self.title,
-                            color=self.data.get("color", "secondary"),
-                            expand=True,
-                            overflow=ft.TextOverflow.ELLIPSIS,
-                            no_wrap=True,
-                            text_align=ft.TextAlign.CENTER,
-                        ),
-                    ),
-                    ft.Container(expand=3, ignore_interactions=True),
-                ],
-            ),
-        )
-
+        
      
 
         
