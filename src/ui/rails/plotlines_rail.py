@@ -36,7 +36,7 @@ class PlotlinesRail(Rail):
                         on_click=self.new_item_clicked, data="plotline"
                     ),
                     ft.PopupMenuItem(
-                        text="Plot Point", icon=ft.Icons.MAP_OUTLINED,
+                        text="Plot Point", icon=ft.Icons.ADD_LOCATION_OUTLINED,
                         on_click=self.new_item_clicked, data="plot_point"
                     ),
                     ft.PopupMenuItem(

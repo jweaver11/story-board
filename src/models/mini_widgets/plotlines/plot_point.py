@@ -60,7 +60,6 @@ class PlotPoint(MiniWidget):
 
         # UI elements
         self.plotline_point: ft.Container = None    # Circle container to show our plot point on the plotline
-        self.plotline_label: ft.Container = None  # Text label below our plot point on the plotline
         self.slider: ft.Column = None               # Slider to drag our plot point along the plotline
         self.plotline_control: ft.Stack = None      # Stack that holds our plotline point and slider
 
@@ -114,12 +113,8 @@ class PlotPoint(MiniWidget):
     async def start_dragging(self, e=None):
         ''' Hides the labels of all the other plot points when we are dragging ours '''
 
-        for plot_point in self.owner.plot_points.values():
-            if plot_point != self:
-                plot_point.plotline_label.visible = False
 
         self.plotline_point.visible = False
-        self.plotline_label.visible = False
 
         self.p.update()
 
@@ -138,9 +133,6 @@ class PlotPoint(MiniWidget):
         self.plotline_point.visible = True      # Set our point to visible again
         self.is_dragging = False                # No longer dragging
 
-        # Show all other plot point labels again
-        for plot_point in self.owner.plot_points.values():
-            plot_point.plotline_label.visible = True
 
         # Update our alignment based on our correct data. This is updated when dragging, so no need to set it here
         self.x_alignment = ft.Alignment(self.data.get('x_alignment', 0), 0)
@@ -281,10 +273,9 @@ class PlotPoint(MiniWidget):
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
         self.plotline_point = ft.Container(
             margin=ft.Margin(16, 0, 16, 0),
-            expand=False,
+            expand=False, 
             bgcolor=self.data.get('color', "secondary"),
-            width=20,
-            height=20,
+            width=20, height=20,
             shape=ft.BoxShape.CIRCLE,
             content=ft.GestureDetector(
                 expand=True,
@@ -293,60 +284,6 @@ class PlotPoint(MiniWidget):
                 on_tap_down=self.show_slider,
             ),
         )
-
-        # --- center the 100px label under the 20px point for any x_alignment ---
-        x = float(self.data.get("x_alignment", 0) or 0.0)
-
-        label_w = 100.0
-        point_w = 20.0
-
-        # Flet offset is fractional of *label width*
-        offset_x = x * (label_w - point_w) / (2.0 * label_w)  # == 0.4 * x for 100/20
-
-        # Optional safety clamp (prevents extreme translations if sizes change)
-        offset_x = max(-0.5, min(0.5, offset_x))
-
-        #print("Offset x for label:", offset_x, "for", self.title)
-
-        self.plotline_label = ft.Container(
-            width=int(label_w),
-            offset=ft.Offset(offset_x, 0),
-            expand=True,
-            border=ft.border.all(1, "red"),
-            margin=ft.Margin(16, 0, 16, 0),
-            ignore_interactions=True,
-            content=ft.Column(
-                expand=False,
-                controls=[
-                    ft.Container(expand=8, ignore_interactions=True),
-                    ft.Container(
-                        expand=3,
-                        alignment=ft.Alignment(0, 0),
-                        content=ft.VerticalDivider(
-                            thickness=2,
-                            color=self.data.get("color", "secondary"),
-                        ),
-                    ),
-                    ft.Container(
-                        expand=1,
-                        alignment=ft.alignment.center,
-                        content=ft.Text(
-                            value=self.title,
-                            color=self.data.get("color", "secondary"),
-                            expand=True,
-                            overflow=ft.TextOverflow.ELLIPSIS,
-                            no_wrap=True,
-                            text_align=ft.TextAlign.CENTER,
-                        ),
-                    ),
-                    ft.Container(expand=3, ignore_interactions=True),
-                ],
-            ),
-        )
-
-     
-
-        
 
                 
 
@@ -358,7 +295,6 @@ class PlotPoint(MiniWidget):
             controls=[
                 ft.Container(expand=True, ignore_interactions=True),        # Make sure our stack is always expanded to full size
                 self.plotline_point,                                        # Our plot point on the plotline
-                #self.plotline_label,
                 self.slider,                                                # Our slider that appears when we hover over the plot point
             ]
         ) 

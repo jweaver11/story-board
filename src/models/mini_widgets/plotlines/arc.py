@@ -121,30 +121,19 @@ class Arc(MiniWidget):
     async def on_start_hover(self, e: ft.HoverEvent):
         ''' Focuses the arc control '''
 
-        for arc in self.owner.arcs.values():
-            if arc != self and arc.is_dragging:
-                return
-
-
         # Change its border opacity and update the page
-        self.plotline_arc.border=ft.border.only(
+        self.plotline_arc.border=ft.border.only( 
             left=ft.BorderSide(2, self.data.get('color', "secondary")),
             right=ft.BorderSide(2, self.data.get('color', "secondary")),
             top=ft.BorderSide(2, self.data.get('color', "secondary")),
         )
         self.gd.content.opacity = 1.0
-        self.slider.visible = True
         self.p.update()
 
     # Called when we stop hovering over our arc on the plotline
     async def on_stop_hover(self, e: ft.HoverEvent):
         ''' Changes the arc control to unfocused '''
 
-        # Makes sure we stay highlighted if our information mini widget is open
-        if self.visible:
-            self.slider.visible = False
-            self.p.update()
-            return
         
         self.plotline_arc.border=ft.border.only(
             left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
@@ -152,17 +141,19 @@ class Arc(MiniWidget):
             top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
         )
         self.gd.content.opacity = .7
-        self.slider.visible = False
         self.p.update()
-        #print("Slider should be hidden")
 
 
-    def toggle_visibility(self, e=None, value: bool = None):
+    def toggle_visibility(self, e=None, value: bool = None, ignore_control: bool = False):
         ''' Toggles the visibility of our plotline_point '''
+        print(f"Toggling visibility of arc {self.title} to {value}")
 
         if value is not None:
 
             if value == True:
+                # Make sure to reset our ignore interactions and opacity
+                self.opacity = 1
+                self.ignore_interactions = False
                 self.plotline_arc.border=ft.border.only(
                     left=ft.BorderSide(2, self.data.get('color', "secondary")),
                     right=ft.BorderSide(2, self.data.get('color', "secondary")),
@@ -170,7 +161,7 @@ class Arc(MiniWidget):
                 )
 
             else:
-                self.plotline_arc.border = self.plotline_arc.border=ft.border.only(
+                self.plotline_arc.border = ft.border.only(
                     left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
                     right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
                     top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
@@ -189,8 +180,8 @@ class Arc(MiniWidget):
 
         # Hide all other plot points while dragging
         for pp in self.owner.plot_points.values():
-            pp.is_dragging = False
             pp.plotline_control.visible = False
+            self.visible = False
 
         self.p.update()
 
@@ -198,8 +189,6 @@ class Arc(MiniWidget):
     # Called at the end of dragging our point on the slider to update it
     def change_x_positions(self, e: ft.DragUpdateEvent):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
-
-        #self.is_dragging = True
 
         # Grab our new positions as floats of whatever number division we're on (-100 -> 100)
         new_start_position = float(e.control.start_value)
@@ -273,6 +262,7 @@ class Arc(MiniWidget):
             
         # Save our new positions to file
         self.save_dict()
+        self.visible = True
 
         # Apply the UI changes
         #self.reload_mini_widget()
@@ -295,18 +285,6 @@ class Arc(MiniWidget):
         else:
             self.p.update()
 
-    # Called when hovering over the slider
-    async def enter(self, e=None):
-        ''' Called when we enter this mini widget '''
-        self.slider.visible = True
-        self.p.update()
-
-    # Called when exiting hover over the slider
-    async def exit(self, e=None):
-        ''' Called when we exit this mini widget '''
-        self.slider.visible = False
-        self.p.update()
-
     # Called whenever we need to rebuild our slider, such as on construction or when our x position changes
     def reload_slider(self):
 
@@ -319,7 +297,7 @@ class Arc(MiniWidget):
                 ft.Container(expand=True, ignore_interactions=True),        # Make sure our stack is always expanded to full size
                 ft.GestureDetector(                                             # GD so we can detect right clicks on our slider
                     on_secondary_tap=lambda e: self.owner.story.open_menu(self.owner.get_menu_options()),  # Open our parent plotline menu options
-                    height=50, on_enter=self.enter, on_exit=self.exit,       # Change slider visibility on hover and exit
+                    height=50,       # Change slider visibility on hover and exit
                     content=ft.RangeSlider(
                         min=-100, max=100,                                  # Min and max values on each end of slider
                         start_value=self.data.get('x_alignment_start', 0) * 100,        # Where we start on the slider
@@ -369,7 +347,7 @@ class Arc(MiniWidget):
         self.spacing_right = spacing_right
 
         self.gd.content = ft.Container(
-            ft.Text(self.title, selectable=True, style=ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=self.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS)), 
+            ft.Text(self.title, style=ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=self.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS)), 
             alignment=ft.alignment.top_center, opacity=.7, padding=ft.padding.only(top=10)
         )
 
@@ -395,9 +373,9 @@ class Arc(MiniWidget):
             height=new_h,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             border=ft.border.only(
-                left=ft.BorderSide(2, self.data.get('color', "secondary")),
-                right=ft.BorderSide(2, self.data.get('color', "secondary")),
-                top=ft.BorderSide(2, self.data.get('color', "secondary")),
+                left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
+                right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
+                top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
             ),
             border_radius=ft.border_radius.only(top_left=1000, top_right=1000, bottom_left=0, bottom_right=0),
             content=self.gd,
@@ -431,12 +409,23 @@ class Arc(MiniWidget):
         # Reload our plotline control and all associated components 
         self.reload_plotline_control()
 
-        # Reset our height depnding if we're collapsed or not
-        self.height = None
+        # Add collapse button for dragging
+        def _hide_mode(e):
+           
+            self.opacity = 0 if self.opacity == 1 else 1
+            self.ignore_interactions = True if self.ignore_interactions == False else False
+                
+            self.p.update()
+
 
         self.title_control = ft.Row([
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD),
             ft.Container(expand=True),
+            ft.IconButton(
+                tooltip="Hide", 
+                icon=ft.Icons.MINIMIZE_OUTLINED,
+                on_click=_hide_mode # Pass in whatever branch it is (just self for now)
+            ),
             ft.IconButton(
                 icon=ft.Icons.CLOSE,
                 tooltip=f"Close {self.title}",
@@ -455,75 +444,19 @@ class Arc(MiniWidget):
             expand=True,
         )
 
-        # Add collapse button for dragging
-        def _collapse_mode(e):
-           
-            # Limit our height when collapsed
-            self.height = 120
-                
-            # Row to add our collapse button so its on the correct side
-            footer_row = ft.Row([
-                ft.IconButton(
-                    tooltip="Expand", 
-                    icon=ft.Icons.KEYBOARD_DOUBLE_ARROW_DOWN_OUTLINED,
-                    on_click=lambda e: self.reload_mini_widget() # Pass in whatever branch it is (just self for now)
-                )
-            ])
-
-            # Align the collapse button to the correct side
-            if self.data.get('side_location', "left") == "left":
-                footer_row.alignment = ft.MainAxisAlignment.END
-            else:
-                footer_row.alignment = ft.MainAxisAlignment.START
-
-            self.content = ft.Column(
-                scroll=ft.ScrollMode.AUTO,
-                expand=True,
-                controls=[
-                    self.title_control,
-                    ft.Container(expand=True, ignore_interactions=True),   # Pushes content to top
-                    footer_row
-                ],
-            )
-            self.p.update()
         
-        # Row to add our collapse button so its on the correct side
-        footer_row = ft.Row([
-            ft.IconButton(
-                tooltip="Collapse", 
-                icon=ft.Icons.KEYBOARD_DOUBLE_ARROW_UP_OUTLINED,
-                on_click=_collapse_mode # Pass in whatever branch it is (just self for now)
-            )
-        ])
-
-        # Align the collapse button to the correct side
-        if self.data.get('side_location', "left") == "left":
-            footer_row.alignment = ft.MainAxisAlignment.END
-        else:
-            footer_row.alignment = ft.MainAxisAlignment.START
-
-        self.content = ft.Column(      
+        self.content = ft.Column(
+            scroll=ft.ScrollMode.AUTO,
+            alignment=ft.MainAxisAlignment.START,
             expand=True,
             controls=[
-                ft.Column(
-                    scroll=ft.ScrollMode.AUTO,
-                    alignment=ft.MainAxisAlignment.START,
-                    expand=True,
-                    controls=[
-                        self.title_control,
-                        self.content_control,
-                        ft.Container(expand=True, ignore_interactions=True),   # Spacing
-                    
-                    ],
-                ),
-                ft.Container(expand=True, ignore_interactions=True),   # Makes sure collapse button is at the bottom
-                footer_row,
-            ]
+                self.title_control,
+                self.content_control,
+                ft.Container(expand=True, ignore_interactions=True),   # Spacing
+            
+            ],
         )
-
-        
-
-        
+    
 
         self.p.update()
 
