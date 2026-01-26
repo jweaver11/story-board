@@ -115,6 +115,7 @@ class PlotPoint(MiniWidget):
 
 
         self.plotline_point.visible = False
+        self.visible = False
 
         self.p.update()
 
@@ -129,6 +130,7 @@ class PlotPoint(MiniWidget):
             return
     
         # Hide slider
+        self.visible = True
         self.slider.visible = False
         self.plotline_point.visible = True      # Set our point to visible again
         self.is_dragging = False                # No longer dragging

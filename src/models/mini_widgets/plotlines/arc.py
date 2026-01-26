@@ -166,10 +166,18 @@ class Arc(MiniWidget):
                     right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
                     top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
                 )
+
+            for arc in self.owner.arcs.values():
+                if arc != self:
+                    arc.slider.visible = False
+                    arc.data['visible'] = False
+                    arc.save_dict()
+                    arc.visible = False
             
             super().toggle_visibility(value=value)
 
         else:
+            
             super().toggle_visibility()
 
     # Called at the start of dragging our point on the slider
@@ -228,7 +236,7 @@ class Arc(MiniWidget):
         # Use the actual available width (plotline width minus the fixed 24px padding on each side)
         available_w = max(int(getattr(self.owner, "plotline_width", 0)) - 48, 1)
         width_px = int(((end_a - start_a) / 2.0) * available_w)  # because mapping [-1..1] to [0..W]
-        max_h = max(int((getattr(self.owner, "plotline_height", 0) / 2) - 20), 0)
+        max_h = max(int((getattr(self.owner, "plotline_height", 0) / 2) - 50), 0)
 
         # Semicircle-ish: height ~= width/2, but capped
         new_h = min(max_h, max(0, int(width_px / 2)))
@@ -409,12 +417,11 @@ class Arc(MiniWidget):
         # Reload our plotline control and all associated components 
         self.reload_plotline_control()
 
-        # Add collapse button for dragging
+        # Add hide mode so we can drag without Info Display taking up the screen
         def _hide_mode(e):
            
             self.opacity = 0 if self.opacity == 1 else 1
             self.ignore_interactions = True if self.ignore_interactions == False else False
-                
             self.p.update()
 
 
@@ -422,19 +429,14 @@ class Arc(MiniWidget):
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD),
             ft.Container(expand=True),
             ft.IconButton(
-                tooltip="Hide", 
-                icon=ft.Icons.MINIMIZE_OUTLINED,
-                on_click=_hide_mode # Pass in whatever branch it is (just self for now)
+                ft.Icons.MINIMIZE_OUTLINED, ft.Colors.ON_SURFACE_VARIANT,
+                tooltip="Hide", on_click=_hide_mode
             ),
             ft.IconButton(
-                icon=ft.Icons.CLOSE,
-                tooltip=f"Close {self.title}",
-                on_click=lambda e: self.toggle_visibility(value=False),
+                ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
+                tooltip=f"Close {self.title}", on_click=lambda e: self.toggle_visibility(value=False),
             ),
-        ])
-
-
-        
+        ], spacing=0)
 
         
         # Rebuild our information display
@@ -452,7 +454,7 @@ class Arc(MiniWidget):
             controls=[
                 self.title_control,
                 self.content_control,
-                ft.Container(expand=True, ignore_interactions=True),   # Spacing
+                ft.Container(expand=True, ignore_interactions=True),   # Make sure we push everything to top
             
             ],
         )

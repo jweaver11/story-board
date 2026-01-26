@@ -615,7 +615,7 @@ class Plotline(Widget):
                 # Use the actual available width (plotline width minus the fixed 24px padding on each side)
                 available_w = max(int(getattr(self, "plotline_width", 0)) - 48, 1)
                 width_px = int(((end_a - start_a) / 2.0) * available_w)  # because mapping [-1..1] to [0..W]
-                max_h = max(int((getattr(self, "plotline_height", 0) / 2) - 20), 0)
+                max_h = max(int((getattr(self, "plotline_height", 0) / 2) - 50), 0)
 
                 # Semicircle-ish: height ~= width/2, but capped
                 new_h = min(max_h, max(0, int(width_px / 2)))
