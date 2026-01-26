@@ -2,6 +2,7 @@ import flet as ft
 from models.mini_widget import MiniWidget
 from models.widget import Widget
 from models.widgets.plotline import Plotline
+import asyncio
 
 
 # Display that makes Plotlines share much uniformaty in their information display like arcs do
@@ -55,95 +56,88 @@ class PlotlineInformationDisplay(MiniWidget):
         self.reload_mini_widget()
         self.owner.reload_widget()
 
-    # Called when clicking the edit mode button
-    def _edit_mode_clicked(self, e=None):
-        ''' Switches between edit mode and not for the character '''
+   
+    async def _change_owner_data(self, e):
+        ''' Changes our owners data based on some event '''
 
-        # Change our edit mode data flag, and save it to file
-        self.owner.data['edit_mode'] = not self.owner.data['edit_mode']
-        self.save_dict()
+        if isinstance(e.control.data, list):
+            key = e.control.data[0]
+            idx = e.control.data[1]
+            delete_idx = e.control.data[2] if len(e.control.data) > 2 else False
 
-        # Reload the widget. The reload widget should load differently depending on if we're in edit mode or not
-        self.reload_mini_widget()
-        self.owner._render_widget()
-    
-    # Called if our widget is in edit view. 
-    def _edit_mode_view(self):
-        ''' Returns our character data with input capabilities '''
-
-        def _get_help_text(key: str="") -> str:
-            ''' Returns help text for certain fields '''
-            match key:
-                
-                
-                
-                case _:
-                    return None
-
-
-        def _load_dict_data(dict: dict, container: ft.Container, sub_key: str=""):
-            ''' Loads data from a dict into a given container '''
-            for key, value in dict.items():
-                if isinstance(value, str):
-                    text_control = ft.TextField(
-                        expand=True, value=value, dense=True, multiline=True, hint_text=_get_help_text(key),
-                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, label=key.capitalize(),
-                        on_blur=lambda e, k=key: self._update_world_data(key=sub_key, **{k: e.control.value})
-                    )
-
-                    container.content.controls.append(
-                        ft.Row([
-                            text_control,
-                            ft.IconButton(
-                                tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
-                                on_click=lambda e, k=key: self._delete_world_data(sub_key=sub_key, **{k: None})
-                            ),
-                        ])
-                    )
-
-        self.title_control = ft.Row([
-            ft.Icon(ft.Icons.TIMELINE_ROUNDED, self.owner.data.get('color', None)),
-            ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE),
-            ft.IconButton(tooltip="Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, icon_color=self.owner.data.get('color', None), on_click=self._edit_mode_clicked),
-            ft.Container(expand=True),
-            ft.IconButton(
-                icon=ft.Icons.CLOSE,
-                tooltip=f"Close {self.title}",
-                on_click=lambda e: self.toggle_visibility(value=False),
-            ),
-        ])
-
-        content = ft.Column([
-            self.title_control,
-            ft.Divider(height=2, thickness=2),
-            ft.Container(expand=True, height=10),
-        ], expand=True, tight=True, spacing=0, scroll="auto")
-
-        content.controls.append(
-            ft.Row([
-                ft.Container(width=6), 
-                ft.Text("Summary", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True),
-            ], spacing=0),
             
-        )
-        self.content = content
+            # If we're deleting from a list, we'll need a reload
+            if delete_idx:
+                self.owner.data.get(key, []).pop(idx)
+                self.owner.save_dict()
+                self.reload_mini_widget()
+                await self.owner.rebuild_plotline_canvas()
+
+            else:
+                
+                self.owner.data.get(key, [])[idx] = e.control.value
+                self.owner.save_dict()
+
+                #self.reload_mini_widget()
+                await self.owner.rebuild_plotline_canvas(no_update=True)
+                
+
+        else:
+            key = e.control.data
+            value = e.control.value
+            await self.owner.change_data(**{key: value})
+
+    def _change_owner_data_instant(self, key, value):
+        ''' Changes our owners data instantly '''
+
+        
+        self.owner.data[key] = value
+        self.owner.save_dict()
+
         
 
     # Called when reloading our mini widget UI
     def reload_mini_widget(self):
 
-        if self.owner.data.get('edit_mode', False):
-            self._edit_mode_view()
-            self._render_mini_widget()
-            return
+        async def _new_divisions_clicked(e):
+            ''' Called to add a new division to the bottom of the divisions list '''
+            text_control = ft.TextField(
+                expand=True, value=len(self.owner.data.get('divisions', [])) + 1, dense=True, 
+                capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                on_blur=self._change_owner_data,
+                data=['divisions', len(self.owner.data.get('divisions', [])), False],
+                focus_color=self.owner.data.get('color', None),
+                cursor_color=self.owner.data.get('color', None),
+                focused_border_color=self.owner.data.get('color', None),
+            )
 
+            divisions_expansion_tile.controls.insert(
+                len(divisions_expansion_tile.controls) - 1,
+                ft.Row([
+                    text_control,
+                    ft.IconButton(
+                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                        tooltip="Delete Division", 
+                        on_click=self._change_owner_data,
+                        data=['divisions', len(self.owner.data.get('divisions', [])), True],
+                    ),
+                ])
+            )
+
+            current_divisions = self.owner.data.get('divisions', [])
+            current_divisions.append(str(len(current_divisions) + 1))
+
+            await self.owner.change_data(divisions=current_divisions)
+            
+            self.p.update()
+            #text_control.focus()       # Broken and forces focus forever
+            
         self.title_control = ft.Row([
-            ft.Icon(ft.Icons.TIMELINE_ROUNDED, self.owner.data.get('color', None)),
+            ft.Icon(ft.Icons.TIMELINE, self.owner.data.get('color', None)),
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE),
-            ft.IconButton(tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.owner.data.get('color', None), on_click=self._edit_mode_clicked),
             ft.Container(expand=True),
             ft.IconButton(
-                icon=ft.Icons.CLOSE,
+                ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
                 tooltip=f"Close {self.title}",
                 on_click=lambda e: self.toggle_visibility(value=False),
             ),
@@ -153,45 +147,125 @@ class PlotlineInformationDisplay(MiniWidget):
         content = ft.Column([
             self.title_control,
             ft.Divider(height=2, thickness=2),
-            ft.Container(expand=True, height=10),
-        ], expand=True, tight=True, spacing=0, scroll="auto")
+            ft.Container(height=10)  # Spacing 
+        ], expand=True, tight=True, spacing=0)
 
-        summary_container = ft.Container(            # For basic info
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE), 
-            content=ft.TextField(
-                expand=True, value=self.owner.data.get('summary', ""), dense=True, multiline=True,
-                capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                on_blur=lambda e: self.owner.change_data(**{'summary': e.control.value}),
-                border=ft.InputBorder.NONE,                  
-            ),
-        )
 
+        # Summary
         content.controls.append(
-            ft.Row([
-                ft.Container(width=6), 
-                ft.Text("Summary", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True),
-            ], spacing=0),
-            
+            ft.TextField(
+                expand=True, label="Summary", value=self.owner.data.get('summary', ""), dense=True, multiline=True,
+                capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                on_blur=self._change_owner_data,
+                data='summary', 
+                focus_color=self.owner.data.get('color', None),
+                #border_color=ft.Colors.OUTLINE, 
+                cursor_color=self.owner.data.get('color', None),
+                focused_border_color=self.owner.data.get('color', None),
+                label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+            )
         )
-
-        content.controls.append(ft.Row([summary_container]))
+        content.controls.append(ft.Container(height=10))  # Spacing 
 
         
 
+        content.controls.append(
+            ft.Row([
+                ft.TextField(
+                    expand=True, label="Left Label", value=self.owner.data.get('left_label', ""), dense=True, multiline=True,
+                    capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                    on_blur=self._change_owner_data,
+                    data='left_label',
+                    focus_color=self.owner.data.get('color', None),
+                    #border_color=ft.Colors.OUTLINE, 
+                    cursor_color=self.owner.data.get('color', None),
+                    focused_border_color=self.owner.data.get('color', None),
+                    label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+                ),
+                ft.TextField(
+                    expand=True, label="Time Label", value=self.owner.data.get('time_label', ""), dense=True, multiline=True,
+                    capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                    on_blur=self._change_owner_data,
+                    data='time_label',
+                    
+                    focus_color=self.owner.data.get('color', None),
+                    #border_color=ft.Colors.OUTLINE, 
+                    cursor_color=self.owner.data.get('color', None),
+                    focused_border_color=self.owner.data.get('color', None),
+                    label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+                ),
+                ft.TextField(
+                    expand=True, label="Right Label", value=self.owner.data.get('right_label', ""), dense=True, multiline=True,
+                    capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                    on_blur=self._change_owner_data,
+                    data='right_label',
+                    focus_color=self.owner.data.get('color', None),
+                    #border_color=ft.Colors.OUTLINE, 
+                    cursor_color=self.owner.data.get('color', None),
+                    focused_border_color=self.owner.data.get('color', None),
+                    label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+                )
+            ])
+        )
+        content.controls.append(ft.Container(height=10))  # Spacing
 
+        divisions_expansion_tile = ft.ExpansionTile(
+            ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True,),
+            controls=[], initially_expanded=self.owner.data.get('divisions_are_expanded', True), 
+            collapsed_icon_color=self.owner.data.get('color', None),
+            icon_color=self.owner.data.get('color', None),
+            on_change=lambda e: self._change_owner_data_instant('divisions_are_expanded', not self.owner.data.get('divisions_are_expanded', True))
+        )
+        
 
-        # TODO: Add 'Events', which shows in order of plot points, arcs, and markers on the plotline
+        for idx, division in enumerate(self.owner.data.get('divisions', [])):
+            text_control = ft.TextField(
+                expand=True,  value=division, dense=True, 
+                capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                on_blur=self._change_owner_data,
+                data=['divisions', idx, False],
+                focus_color=self.owner.data.get('color', None),
+                cursor_color=self.owner.data.get('color', None),
+                focused_border_color=self.owner.data.get('color', None),
+            )
 
-        # SUmmary
+            divisions_expansion_tile.controls.append(
+                ft.Row([
+                    text_control,
+                    ft.IconButton(
+                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                        tooltip="Delete Division", 
+                        on_click=self._change_owner_data,
+                        data=['divisions', idx, True],
+                    ),
+                ])
+            )
+
+        # Add division button
+        divisions_expansion_tile.controls.append(
+            ft.IconButton(
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                tooltip="Add Division", on_click=_new_divisions_clicked
+            )
+        )
+
+        content.controls.append(divisions_expansion_tile)
+        content.controls.append(ft.Container(height=10))  # Spacing
+        
+
+        # TODO: Add 'Events', which shows in order of plot points, arcs, and markers on the plotlin
+        
         # Events
         # Plot points
         # arcs
         # Markers
-        # LEft and right edge label, time label, divisions
 
+        row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0)
+    
+        column = ft.Column([
+            row
+        ], expand=True, scroll="auto", tight=True)
         
-
-        self.content = content
+        self.content = column
 
         #self.p.update()

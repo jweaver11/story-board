@@ -313,7 +313,7 @@ class PlotPoint(MiniWidget):
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD),
             ft.Container(expand=True),
             ft.IconButton(
-                icon=ft.Icons.CLOSE,
+                ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,   
                 tooltip=f"Close {self.title}",
                 on_click=lambda e: self.toggle_visibility(value=False),
             ),

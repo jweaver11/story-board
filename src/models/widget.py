@@ -599,7 +599,7 @@ class Widget(ft.Container):
             case "note": self.icon = ft.Icon(ft.Icons.COMMENT_OUTLINED)
             case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
             case "family_tree": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
-            case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE_ROUNDED)
+            case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)
             case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
             case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
             case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)

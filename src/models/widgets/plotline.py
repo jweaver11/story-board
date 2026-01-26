@@ -44,9 +44,8 @@ class Plotline(Widget):
                     'show_markers': True,
                 },        
                 'information_display_visibility': True,
-                'edit_mode': True,                    # If we are in edit mode for the plotline
-                'hide_division_labels': bool,              # If the division labels are hidden on the plotline
-                'division_labels_direction': "top",               # If the division labels are on top of the plotline instead of below
+                'hide_division_labels': bool,                       # If the division labels are hidden on the plotline
+                'division_labels_direction': "top",                 # If the division labels are on top of the plotline instead of below
                 
                 # Our rail dropdown states
                 'dropdown_is_expanded': True,               # If the branch dropdown is expanded on the rail
@@ -54,12 +53,15 @@ class Plotline(Widget):
                 'arcs_dropdown_expanded': True,             # If the arcs section is expanded
                 'markers_dropdown_expanded': True,          # If the markers section is expanded
                 'rail_dropdown_is_expanded': True,          # If the rail dropdown is expanded  
+                'divisions_are_expanded': True,              # If the divisions section is expanded
 
                 # Filter dropdown states
-                'arcs_filter_dropdown_expanded': bool,        # If the arcs filter dropdown is expanded
-                'plot_points_filter_dropdown_expanded': bool, # If the plot points filter dropdown is
-                'show_all_plot_points': True,              # If all plot points are shown regardless of individual settings
-                'show_all_arcs': True,                     # If all arcs are shown regardless of individual settings
+                'arcs_filter_dropdown_expanded': bool,          # If the arcs filter dropdown is expanded
+                'plot_points_filter_dropdown_expanded': bool,   # If the plot points filter dropdown is
+                'markers_filter_dropdown_expanded': bool,       # If the markers filter dropdown is expanded
+                'show_all_plot_points': True,                   # If all plot points are shown regardless of individual settings
+                'show_all_arcs': True,                          # If all arcs are shown regardless of individual settings
+                'show_all_markers': True,                       # If all markers are shown regardless of individual settings
                 
                 # Mini Widgets Data
                 'plot_points': dict,                        # Dict of plot points in this branch
@@ -69,8 +71,8 @@ class Plotline(Widget):
                 # Rest of the data
                 'summary': str,
                 'time_label': "years",                          # Label for the time axis (any str they want)
-                'left_label': "0",                          # Start label
-                'right_label': "10",                          # Start and end date of the branch, for plotline view
+                'left_label': "0",                              # Start label
+                'right_label': "10",                            # Start and end date of the branch, for plotline view
                 'divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
                 
             },
@@ -116,6 +118,23 @@ class Plotline(Widget):
 
         # Builds/reloads our plotline UI
         self.reload_widget()
+
+    # Called for little data changes
+    async def change_data(self, **kwargs):
+        ''' Changes a key/value pair in our data and saves the json file '''
+        # Called by:
+        # widget.change_data(**{'key': value, 'key2': value2})
+
+        try:
+            for key, value in kwargs.items():
+                self.data.update({key: value})
+
+            self.save_dict()
+            await self.rebuild_plotline_canvas()
+
+        # Handle errors
+        except Exception as e:
+            print(f"Error changing data {key}:{value} in widget {self.title}: {e}")
 
     # Called in the constructor
     def create_information_display(self):
@@ -416,7 +435,7 @@ class Plotline(Widget):
         self.information_display.title_control.focus()
 
     # Called for any size changes to our plotline canvas
-    async def rebuild_plotline_canvas(self, e: cv.CanvasResizeEvent=None):
+    async def rebuild_plotline_canvas(self, e: cv.CanvasResizeEvent=None, no_update: bool=False):
         ''' Redraws our plotline on the canvas when it is resized. Does it on startup as well '''
 
         # Check if we just called this to redraw without an event. If we did, skip the size updates
@@ -457,9 +476,9 @@ class Plotline(Widget):
         ]
 
         # Draw our divisions on the plotline -----------------------------------------------------------------
-        num_divisions = len(self.data.get('divisions', 9))  # Get number of divisions and the width between each division
-        div_width = self.plotline_width / num_divisions if num_divisions > 0 else 0 
-        division_width = (self.plotline_width - div_width - 10) / num_divisions if num_divisions > 0 else 0      # Division width starting after first division plus padding
+        num_divisions = len(self.data.get('divisions', 9))  # Total number of divisions
+        div_width = (self.plotline_width - 10) / (num_divisions + 1) if num_divisions > 0 else 0   # Width between each division
+        division_width = (self.plotline_width - div_width - 10) / num_divisions  if num_divisions > 0 else 0      # Division width starting after first division plus padding
 
         # Create a path for our divisions
         divisions_path = cv.Path(
@@ -469,6 +488,12 @@ class Plotline(Widget):
 
         # Go through our number of divisions and add markers to the path
         for i in range(num_divisions):
+
+            
+
+
+            #x = int((self.plotline_width / (num_divisions + 2) * i))
+            
             
             # Add the vertical marker for each label
             x = int(i * division_width) + division_width
@@ -621,12 +646,14 @@ class Plotline(Widget):
                 new_h = min(max_h, max(0, int(width_px / 2)))
                 arc.plotline_arc.height = new_h
 
-            #self.p.update()
+            if no_update:
+                return
             self._render_widget()
 
         # If we didn't rebuild our arcs, just update the canvas
         else:
-            #self.plotline_canvas.update()
+            if no_update:
+                return
             self._render_widget()
 
         
