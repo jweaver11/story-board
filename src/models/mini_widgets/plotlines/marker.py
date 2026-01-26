@@ -47,7 +47,7 @@ class Marker(MiniWidget):
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
             {   
-                'tag': "plot_point",            # Tag to identify what type of object this is
+                'tag': "marker",            # Tag to identify what type of object this is
                 'description': str,
                 'events': list,                 # Numbered list of events that occur at this plot point
                 'x_alignment': x_alignment if x_alignment is not None else float,           # Float between -1 and 1 on x axis of plotline. 0 is center
@@ -66,7 +66,6 @@ class Marker(MiniWidget):
 
         # UI elements
         self.plotline_point: ft.Container = None    # Circle container to show our plot point on the plotline
-        self.plotline_label: ft.Container = None  # Text label below our plot point on the plotline
         self.slider: ft.Column = None               # Slider to drag our plot point along the plotline
         self.plotline_control: ft.Stack = None      # Stack that holds our plotline point and slider
 
@@ -120,12 +119,7 @@ class Marker(MiniWidget):
     async def start_dragging(self, e=None):
         ''' Hides the labels of all the other plot points when we are dragging ours '''
 
-        for plot_point in self.owner.plot_points.values():
-            if plot_point != self:
-                plot_point.plotline_label.visible = False
-
         self.plotline_point.visible = False
-        self.plotline_label.visible = False
 
         self.p.update()
 
@@ -143,10 +137,6 @@ class Marker(MiniWidget):
         self.slider.visible = False
         self.plotline_point.visible = True      # Set our point to visible again
         self.is_dragging = False                # No longer dragging
-
-        # Show all other plot point labels again
-        for plot_point in self.owner.plot_points.values():
-            plot_point.plotline_label.visible = True
 
         # Update our alignment based on our correct data. This is updated when dragging, so no need to set it here
         self.x_alignment = ft.Alignment(self.data.get('x_alignment', 0), 0)
@@ -327,7 +317,6 @@ class Marker(MiniWidget):
             controls=[
                 ft.Container(expand=True, ignore_interactions=True),        # Make sure our stack is always expanded to full size
                 self.plotline_point,                                        # Our plot point on the plotline
-                #self.plotline_label,
                 self.slider,                                                # Our slider that appears when we hover over the plot point
             ]
         ) 

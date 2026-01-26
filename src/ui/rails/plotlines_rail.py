@@ -43,6 +43,10 @@ class PlotlinesRail(Rail):
                         text="Arc", icon=ft.Icons.CIRCLE_OUTLINED,
                         on_click=self.new_item_clicked, data="arc"
                     ),
+                    ft.PopupMenuItem(
+                        text="Marker", icon=ft.Icons.FLAG_OUTLINED,
+                        on_click=self.new_item_clicked, data="marker"
+                    )
                 ]
             ),
             ft.IconButton(
@@ -77,6 +81,10 @@ class PlotlinesRail(Rail):
                                 text="Arc", icon=ft.Icons.CIRCLE_OUTLINED,
                                 on_click=self.new_item_clicked, data="arc"
                             ),
+                            ft.PopupMenuItem(
+                                text="Marker", icon=ft.Icons.FLAG_OUTLINED,
+                                on_click=self.new_item_clicked, data="marker"
+                            )
                         ]
                     ),
                 ),

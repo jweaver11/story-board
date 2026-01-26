@@ -163,7 +163,7 @@ class PlotlineInformationDisplay(MiniWidget):
         content.controls.append(ft.Container(height=10))  # Spacing 
 
         
-
+        # Our labels
         content.controls.append(
             ft.Row([
                 ft.TextField(
@@ -202,9 +202,8 @@ class PlotlineInformationDisplay(MiniWidget):
         content.controls.append(ft.Container(height=10))  # Spacing
 
 
-      
+        # Go through and list all our events in order
         events_list = []
-
 
         for pp in self.owner.plot_points.values():
             events_list.append(Event(tag='plot_point', x_alignment=pp.data.get('x_alignment', 0), title=pp.title, color=pp.data.get('color', 'secondary')))
@@ -216,17 +215,14 @@ class PlotlineInformationDisplay(MiniWidget):
         for marker in self.owner.markers.values():
             events_list.append(Event(tag='marker', x_alignment=marker.data.get('x_alignment', 0), title=marker.title, color=marker.data.get('color', 'secondary')))
 
-    
-        el = sorted(events_list, key=lambda e: e.x_alignment)
+        # Sort that list
+        events_list = sorted(events_list, key=lambda e: e.x_alignment)
 
-        for item in el:
-            print(item.title, item.x_alignment)
-
-            
+        # Hold our text spans
         events_spans = []
 
-        for event in events_list:
-            
+        for idx, event in enumerate(events_list):
+
             if event.tag == 'arc_start':
                 events_spans.append(ft.TextSpan(f"{event.title} Begins\t->\t"))
             elif event.tag == 'arc_end':
@@ -234,17 +230,22 @@ class PlotlineInformationDisplay(MiniWidget):
             else:
                 events_spans.append(ft.TextSpan(f"{event.title}\t->\t"))
 
+            # Remove the arrow for the last one
+            if idx == len(events_list) - 1:
+                # Last one, no arrow
+                events_spans[-1] = ft.TextSpan(events_spans[-1].text[:-4])
 
-        events_text = ft.Text(
-            spans=events_spans, selectable=True
-        )
+        # Make our text control with our built spans
+        events_text = ft.Text(spans=events_spans, selectable=True)
 
-        events_container = ft.Container(                # For origin 
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE), 
+        # Container to hold the text control for events
+        events_container = ft.Container(               
+            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
+            border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), 
             content=events_text,
         )
 
+        # Add the label and the events container
         content.controls.append(
             ft.Row([
                 ft.Container(width=6), 
@@ -257,6 +258,7 @@ class PlotlineInformationDisplay(MiniWidget):
         content.controls.append(events_container)
         content.controls.append(ft.Container(height=10))  # Spacing
 
+        # Create our divisions expansion tlie
         divisions_expansion_tile = ft.ExpansionTile(
             ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True, tooltip="Simple evenly spaced division markers on the plotline",),
             controls=[], initially_expanded=self.owner.data.get('divisions_are_expanded', True), 
@@ -265,8 +267,9 @@ class PlotlineInformationDisplay(MiniWidget):
             on_change=lambda e: self._change_owner_data_instant('divisions_are_expanded', not self.owner.data.get('divisions_are_expanded', True))
         )
         
-
+        # Add all our current divisions
         for idx, division in enumerate(self.owner.data.get('divisions', [])):
+            # Create text control for this division
             text_control = ft.TextField(
                 expand=True,  value=division, dense=True, 
                 capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
@@ -277,6 +280,7 @@ class PlotlineInformationDisplay(MiniWidget):
                 focused_border_color=self.owner.data.get('color', None),
             )
 
+            # Add to a row with delete button to remove divisions
             divisions_expansion_tile.controls.append(
                 ft.Row([
                     text_control,
@@ -298,8 +302,8 @@ class PlotlineInformationDisplay(MiniWidget):
         )
 
         content.controls.append(divisions_expansion_tile)
-        content.controls.append(ft.Container(height=10))  # Spacing
 
+        # Format our final layout so the scrollbar doesn't sit overtop the content
         row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0)
     
         column = ft.Column([

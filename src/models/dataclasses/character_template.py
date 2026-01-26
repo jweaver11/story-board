@@ -4,23 +4,23 @@ Default data dict for character data templates
 
 def default_character_template_data_dict() -> dict:
     return {
-        #'Template Data': dict,  # This is how templates store their data
+        #'Template Data': dict,     # This is how templates store their data
         'Basic Info': {
-            'Summary': str,  # Short summary of the character. Optional
-            'Nickname': str,  # Nickname or Alias of the character
-            'Role': str,   # Importance of character in the story. Main, Side, Background, None
-            'Tag': str,   # Tag for custom grouping of characters. Protagonist, Antagonist, Supporting, None
-            'Morality': str,  # Lawful, netural, chaotic all have good, neutral, evil (9 alignments)
-            'Age': str, # Age of the character
+            'Summary': str,     # Short summary of the character. Optional
+            'Nickname': str,    # Nickname or Alias of the character
+            'Role': str,        # Importance of character in the story. Main, Side, Background, None
+            'Tag': str,         # Tag for custom grouping of characters. Protagonist, Antagonist, Supporting, None
+            'Morality': str,    # Lawful, netural, chaotic all have good, neutral, evil (9 alignments)
+            'Age': str,         # Age of the character
             'Nationality': str, # Where character is from
-            'Occupation': str, # What the character does for a living
-            'Personality': str,  # Description of the character's personality
-            'Goals': str,          # List of characters goals/motivations
+            'Occupation': str,  # What the character does for a living
+            'Personality': str, # Description of the character's personality
+            'Goals': str,       # List of characters goals/motivations
         },
         'Physical Description': {
-            'Sex': str,     # Biology of the character. Has add option
-            'Build': str,   # Sumarrized build of character 
-            'Race': str,    # Race of the character. Has add option
+            'Sex': str, 
+            'Build': str,           # Sumarrized build of character 
+            'Race': str,  
             'Skin Color': str,  
             'Hair Color': str,   
             'Eye Color': str,    
@@ -29,7 +29,7 @@ def default_character_template_data_dict() -> dict:
             'Distinguishing Features': str,  
         },
         
-        'Family':  { #TODO "connections" dropdown+tree/detective view?
+        'Family':  {
             'Love Interest': str,    
             'Father': str,   
             'Mother': str,    

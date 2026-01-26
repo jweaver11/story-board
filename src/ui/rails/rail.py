@@ -169,6 +169,8 @@ class Rail(ft.Container):
             pass
         elif tag == "arc" and self.plotline is not None:
             pass
+        elif tag == "marker" and self.plotline is not None:
+            pass
 
         # Not a category, so we check the widget
         else:
@@ -253,6 +255,10 @@ class Rail(ft.Container):
                     print("Creating arc:", title)
                     self.plotline.create_arc(title)
                  
+            elif tag == "marker":
+                if self.plotline is not None:
+                    print("Creating marker:", title)
+                    self.plotline.create_marker(title)
             # New widgets
             else:
                 # Create the widget and reload all our rails

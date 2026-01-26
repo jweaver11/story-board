@@ -155,8 +155,8 @@ class Arc(MiniWidget):
     def toggle_visibility(self, e=None, value: bool = None):
         ''' Toggles the visibility of our plotline_point '''
 
+        # If we're too close to the timeline, just open that instead
         if not self.can_open:
-            print("Cannot open arc mini widget, plotline has priority")
             self.owner.information_display.toggle_visibility(value=True)
             return
 

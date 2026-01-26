@@ -237,7 +237,7 @@ class Plotline(Widget):
        
         
     # Called when creating a new plotpoint
-    def create_plot_point(self, title: str):
+    async def create_plot_point(self, title: str):
         ''' Creates a new plotpoint inside of our plotline object, and updates the data to match '''
         from models.mini_widgets.plotlines.plot_point import PlotPoint
 
@@ -254,6 +254,28 @@ class Plotline(Widget):
         self.plot_points[new_plot_point.title] = new_plot_point
         self.mini_widgets.append(new_plot_point)
         new_plot_point.toggle_visibility(value=True)
+
+        # Apply our changes in the UI
+        self.story.active_rail.content.reload_rail()
+        self.reload_widget()
+
+    async def create_marker(self, title: str):
+        ''' Creates a new marker inside of our plotline object, and updates the data to match '''
+        from models.mini_widgets.plotlines.marker import Marker
+
+        new_marker = Marker(
+            title=title, 
+            owner=self, 
+            father=self,
+            page=self.p, 
+            key="markers", 
+            x_alignment=self.x_alignment,
+            data=None
+        )
+        # Add our new Marker mini widget object to our markers dict, and to our owners mini widgets
+        self.markers[new_marker.title] = new_marker
+        self.mini_widgets.append(new_marker)
+        new_marker.toggle_visibility(value=True)
 
         # Apply our changes in the UI
         self.story.active_rail.content.reload_rail()
@@ -284,6 +306,18 @@ class Plotline(Widget):
         # Apply changes
         self.reload_widget()
 
+    def delete_marker(self, marker):
+        ''' Deletes a marker from our plotline '''
+        
+        # Remove from our dict
+        if marker.title in self.markers:
+            self.markers.pop(marker.title)
+            self.data['markers'].pop(marker.title, None)
+            self.save_dict()
+
+        # Apply changes
+        self.reload_widget()
+
     # Called when right clicking our controls for either plotline or an arc
     def get_menu_options(self) -> list[ft.Control]:
 
@@ -303,6 +337,10 @@ class Plotline(Widget):
                         ft.PopupMenuItem(
                             text="Arc", icon=ft.Icons.CIRCLE_OUTLINED,
                             on_click=self.new_item_clicked, data="arc"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Marker", icon=ft.Icons.FLAG_OUTLINED,
+                            on_click=self.new_item_clicked, data="marker"
                         ),
                     ]
                 ),
@@ -400,10 +438,13 @@ class Plotline(Widget):
         tag = e.control.data
 
         if tag is not None:
-            if tag == "arc":
-                await self.create_arc(f"Arc {len(self.arcs) + 1}")
-            elif tag == "plot_point":
-                self.create_plot_point(f"Plot Point {len(self.plot_points) + 1}")
+            match tag:
+                case 'arc':
+                    await self.create_arc(f"Arc {len(self.arcs) + 1}")
+                case "marker":
+                    await self.create_marker(f"Marker {len(self.markers) + 1}")
+                case 'plot_point':  
+                    self.create_plot_point(f"Plot Point {len(self.plot_points) + 1}")
         else:
             print("Error: No tag found for new item creation")
 
@@ -595,7 +636,43 @@ class Plotline(Widget):
                         x_pos, 
                         y_pos - 20 if line_direction == "bottom" else y_pos + 20,
                         plot_point.title, 
-                        #" ",
+                        ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=plot_point.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
+                        alignment=ft.alignment.center,
+                        max_width=100,
+                    )
+                )
+
+
+        for marker in self.markers.values():
+            if marker.data.get('is_shown_on_widget', False):
+                # Calculate x position
+                x_alignment = max(-1.0, min(1.0, float(marker.data.get('x_alignment', 0.0))))
+                x_pos = int(((x_alignment + 1.0) / 2.0) * (self.plotline_width - 10)) + 5    # because mapping [-1..1] to [0..W], plus 5px padding
+
+                # Adjust based on offset from the margin the plot points use
+                offset_x = 5 * x_alignment
+                x_pos = x_pos - offset_x
+
+                
+                y_pos = int(self.plotline_height // 6)
+                moveTo = cv.Path.MoveTo(x_pos, self.plotline_height // 2)
+            
+                label_path = cv.Path(
+                    elements=[
+                        moveTo,
+                        cv.Path.LineTo(x_pos, y_pos),
+                    ],
+                    paint=ft.Paint(stroke_width=2, style="stroke", color=marker.data.get('color', self.data.get('color', "primary")))
+                )
+
+                # Add the text label for the plot point
+                self.plotline_canvas.shapes.append(label_path)
+
+                self.plotline_canvas.shapes.append(
+                    cv.Text(
+                        x_pos, 
+                        y_pos - 20 if line_direction == "bottom" else y_pos + 20,
+                        marker.title, 
                         ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=plot_point.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
                         alignment=ft.alignment.center,
                         max_width=100,
@@ -779,7 +856,7 @@ class Plotline(Widget):
                 initially_expanded=self.data.get('arcs_filter_dropdown_expanded', True),
                 visual_density=ft.VisualDensity.COMPACT,
                 tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
-                maintain_state=True, adaptive=True,
+                maintain_state=True, adaptive=True, bgcolor=ft.Colors.SURFACE,
                 expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
                 shape=ft.RoundedRectangleBorder(),
                 controls=_get_arcs_filter_options()
@@ -798,7 +875,7 @@ class Plotline(Widget):
                 initially_expanded=self.data.get('markers_filter_dropdown_expanded', True),
                 visual_density=ft.VisualDensity.COMPACT,
                 tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
-                maintain_state=True, adaptive=True,
+                maintain_state=True, adaptive=True, bgcolor=ft.Colors.SURFACE,
                 expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
                 shape=ft.RoundedRectangleBorder(),
                 controls=_get_markers_filter_options()
