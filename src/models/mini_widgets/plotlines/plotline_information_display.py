@@ -201,6 +201,8 @@ class PlotlineInformationDisplay(MiniWidget):
         )
         content.controls.append(ft.Container(height=10))  # Spacing
 
+        
+
 
         # Go through and list all our events in order
         events_list = []
@@ -302,6 +304,9 @@ class PlotlineInformationDisplay(MiniWidget):
         )
 
         content.controls.append(divisions_expansion_tile)
+        content.controls.append(ft.Container(height=10))
+
+        # Markers, Plot Points, and Arcs
 
         # Format our final layout so the scrollbar doesn't sit overtop the content
         row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0)

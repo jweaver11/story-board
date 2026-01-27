@@ -63,7 +63,7 @@ class Workspace(ft.Container):
         self.bottom_pin_drag_target = ft.DragTarget(
             group="widgets", 
             content=ft.Container(expand=True, height=self.story.data.get('bottom_pin_height', int(self.p.height/5)), margin=ft.margin.only(left=8, right=8), bgcolor=ft.Colors.ON_SURFACE, opacity=0, border_radius=8),
-            on_accept=lambda e: self.pin_drag_accept(e, "bottom"), on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+            on_accept=lambda e: self.pin_drag_accept(e, "bottom"), on_will_accept=lambda e: self.p.run_task(self.on_hover_pin_drag_target, e), on_leave=self.on_stop_hover_drag_target,
         )
 
         # Weird flet rendering logic, this one needs a container around the drag target to work properly
