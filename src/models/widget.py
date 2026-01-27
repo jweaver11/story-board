@@ -702,11 +702,11 @@ class Widget(ft.Container):
 
             # Format a column to hold them
             left_column = ft.Column(
-                left_mini_widgets, spacing=4, tight=True, width=self.w * .4, left=0, bottom=0, expand=True, 
+                left_mini_widgets, spacing=4, tight=True, width=self.w * .3, left=0, bottom=0, expand=True, 
                 top=50 if self.header is not None else 0,
             )
             right_column = ft.Column(
-                right_mini_widgets, spacing=4, tight=True, width=self.w * .4, right=0, bottom=0, expand=True, 
+                right_mini_widgets, spacing=4, tight=True, width=self.w * .3, right=0, bottom=0, expand=True, 
                 top=50 if self.header is not None else 0,
             )
             

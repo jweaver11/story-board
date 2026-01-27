@@ -54,6 +54,7 @@ class MiniWidget(ft.Container):
                 'tag': "mini_widget",         # Default mini widget tag, but should be overwritten by child classes
                 'visible': True,              # If the widget is visible
                 'is_shown_on_widget': True,          # If the mini widget is shown on the parent widget. Some widgets can toggle this off
+                'is_pinned': False,           # If the mini widget is pinned open and will remain open
                 'side_location': side_location if side_location is not None else "right",     # Side of the widget the mini widget shows on
                 'custom_fields': dict,        # Dictionary for any custom fields the mini widget wants to store
             },
@@ -209,7 +210,7 @@ class MiniWidget(ft.Container):
         self.save_dict()
 
         for mw in self.owner.mini_widgets:
-            if mw != self:
+            if mw != self and mw.data.get('is_pinned', False) == False:
                 mw.hide_mini_widget()   
 
         self.reload_mini_widget(no_update=True)
@@ -217,12 +218,17 @@ class MiniWidget(ft.Container):
 
     def hide_mini_widget(self, e=None, update: bool=False):
         ''' Hides our mini widget '''
+        print("Hiding mini widget:", self.title)
         
         if not self.visible:
             return
         
         self.data['visible'] = False
         self.visible = False
+
+        if self.data.get('is_pinned', False):
+            self.data['is_pinned'] = False
+
         self.save_dict()
 
         if update:

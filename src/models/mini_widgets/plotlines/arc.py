@@ -106,9 +106,9 @@ class Arc(MiniWidget):
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our arc slider
         self.can_open: bool = False                 # If we can open our mini widget. Used for handling when mouse over plotline and arc control, give PL priority
-        self.is_first_launch: bool = True        # If this is the first time launching the arc, to protect from not initialized parents
-      
-        # Loads our mini widget
+        self.hidden = False                         # Track if we're in hidden mode for easier dragging
+
+        # Loads our arc
         self.reload_mini_widget()
 
     def delete_dict(self, e=None):
@@ -172,9 +172,19 @@ class Arc(MiniWidget):
             if arc != self:
                 arc.hide_mini_widget()
 
+        if not self.hidden:
+            super().show_mini_widget()
+        else:
+            self.data['visible'] = True
+            self.visible = True
+            self.save_dict()
 
+            for mw in self.owner.mini_widgets:
+                if mw != self and mw.data.get('is_pinned', False) == False:
+                    mw.hide_mini_widget()   
 
-        super().show_mini_widget()
+            self.reload_mini_widget(no_update=True)
+            self.owner.reload_widget()
     
 
     def hide_mini_widget(self, e=None, update: bool=False):
@@ -201,11 +211,13 @@ class Arc(MiniWidget):
 
         self.is_dragging = True
 
-        # Hide all other plot points while dragging
+        # Hide all other plot points while dragging for behavior and visual reasons
         for pp in self.owner.plot_points.values():
             pp.plotline_control.visible = False
 
-        self.visible = False
+        # Hide all other info displays while dragging
+        for mw in self.owner.mini_widgets:
+            mw.visible = False
 
         self.p.update()
 
@@ -287,7 +299,10 @@ class Arc(MiniWidget):
             
         # Save our new positions to file
         self.save_dict()
-        self.visible = True
+
+        for mw in self.owner.mini_widgets:
+            if mw.data.get('visible', True):
+                mw.visible = True
 
         # Apply the UI changes
         #self.reload_mini_widget()
@@ -404,7 +419,6 @@ class Arc(MiniWidget):
             border_radius=ft.border_radius.only(top_left=1000, top_right=1000, bottom_left=0, bottom_right=0),
             content=self.gd,
         )
-        self.is_first_launch = False
 
         self.plotline_row = ft.Row(
             expand=True, spacing=0,
@@ -430,20 +444,35 @@ class Arc(MiniWidget):
     # Called to reload our mini widget content
     def reload_mini_widget(self, no_update: bool=False):
 
+        async def _toggle_pin(e):
+            ''' Pins or unpins our information display '''
+            is_pinned = self.data.get('is_pinned', False)
+            self.data['is_pinned'] = not is_pinned
+            self.save_dict()
+            self.reload_mini_widget()
+            self.owner.reload_widget()
+            print("Toggling pin to:", not is_pinned)
+
         # Reload our plotline control and all associated components 
         self.reload_plotline_control()
 
         # Add hide mode so we can drag without Info Display taking up the screen
         def _hide_mode(e):
-            print("hide mode called")
-           
             self.opacity = 0 if self.opacity == 1 else 1
             self.ignore_interactions = True if self.ignore_interactions == False else False
+            self.hidden = True
             self.p.update()
 
 
         self.title_control = ft.Row([
+            ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.owner.data.get('color', None)),
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD),
+            ft.IconButton(
+                ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+                self.owner.data.get('color', None),
+                tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
+                on_click=_toggle_pin
+            ),
             ft.Container(expand=True),
             ft.IconButton(
                 ft.Icons.MINIMIZE_OUTLINED, ft.Colors.ON_SURFACE_VARIANT,
@@ -477,6 +506,5 @@ class Arc(MiniWidget):
             return
         else:
             self.p.update()
-            #self.update()
 
 

@@ -24,6 +24,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
         # Set our visibility based on our owners data
         self.visible = self.owner.data.get('information_display_visibility', True)
+        self.data['is_pinned'] = self.owner.data.get('information_display_is_pinned', False)
 
         self.reload_mini_widget()
 
@@ -47,7 +48,9 @@ class PlotlineInformationDisplay(MiniWidget):
         self.save_dict()
 
         for mw in self.owner.mini_widgets:
-            if mw != self:
+
+            if mw != self and mw.data.get('is_pinned', False) == False:
+                
                 mw.hide_mini_widget()  
 
         self.reload_mini_widget(no_update=True)
@@ -58,6 +61,9 @@ class PlotlineInformationDisplay(MiniWidget):
 
         self.owner.data['information_display_visibility'] = False
         self.visible = False
+        if self.data.get('is_pinned', False):
+            self.data['is_pinned'] = False
+            self.owner.data['information_display_is_pinned'] = False
         self.save_dict()
 
         if update:
@@ -134,10 +140,25 @@ class PlotlineInformationDisplay(MiniWidget):
             
             self.p.update()
             #text_control.focus()       # Broken and forces focus forever
+
+        async def _toggle_pin(e):
+            ''' Pins or unpins our information display '''
             
-        self.title_control = ft.Row([
+            self.owner.data['information_display_is_pinned'] = not self.owner.data['information_display_is_pinned']
+            self.data['is_pinned'] = self.owner.data['information_display_is_pinned']
+            self.save_dict()
+            self.reload_mini_widget()
+            self.owner.reload_widget()
+            
+        title_control = ft.Row([
             ft.Icon(ft.Icons.TIMELINE, self.owner.data.get('color', None)),
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE),
+            ft.IconButton(
+                ft.Icons.PUSH_PIN_OUTLINED if not self.owner.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+                self.owner.data.get('color', None),
+                tooltip="Pin Information Display" if not self.owner.data.get('information_display_is_pinned', False) else "Unpin Information Display",
+                on_click=_toggle_pin
+            ),
             ft.Container(expand=True),
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
@@ -148,7 +169,7 @@ class PlotlineInformationDisplay(MiniWidget):
         
 
         content = ft.Column([
-            self.title_control,
+            title_control,
             ft.Divider(height=2, thickness=2),
             ft.Container(height=10)  # Spacing 
         ], expand=True, tight=True, spacing=0)

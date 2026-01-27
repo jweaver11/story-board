@@ -75,7 +75,6 @@ class Map(Widget):
                 # Map data
                 'map_data': {
                     'Summary': str,
-                    
                 }
             },  
         )

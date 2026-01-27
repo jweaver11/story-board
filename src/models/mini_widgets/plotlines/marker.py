@@ -324,11 +324,27 @@ class Marker(MiniWidget):
     def reload_mini_widget(self, no_update: bool=False):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
+        async def _toggle_pin(e):
+            ''' Pins or unpins our information display '''
+            is_pinned = self.data.get('is_pinned', False)
+            self.data['is_pinned'] = not is_pinned
+            self.save_dict()
+            self.reload_mini_widget()
+            self.owner.reload_widget()
+            print("Toggling pin to:", not is_pinned)
+
         # Reload our plotline control
         self.reload_plotline_control()
 
         self.title_control = ft.Row([
+            ft.Icon(ft.Icons.FLAG_OUTLINED, self.owner.data.get('color', None)),
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD),
+            ft.IconButton(
+                ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+                self.owner.data.get('color', None),
+                tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
+                on_click=_toggle_pin
+            ),
             ft.Container(expand=True),
             ft.IconButton(
                 icon=ft.Icons.CLOSE,

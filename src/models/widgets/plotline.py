@@ -41,6 +41,7 @@ class Plotline(Widget):
 
                 # State and filter management   
                 'information_display_visibility': True,             # Visibility of our information display mini widget
+                'information_display_is_pinned': False,             # If our information display is pinned open
                 'hide_division_labels': bool,                       # If the division labels are hidden on the plotline
                 'division_labels_direction': "top",                 # If the division labels are on top of the plotline instead of below
                 

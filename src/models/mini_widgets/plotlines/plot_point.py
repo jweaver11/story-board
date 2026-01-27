@@ -110,10 +110,11 @@ class PlotPoint(MiniWidget):
     async def start_dragging(self, e=None):
         ''' Hides the labels of all the other plot points when we are dragging ours '''
 
+        # Hide all mini widgets while dragging (including our own)
+        for mw in self.owner.mini_widgets:
+            mw.visible = False
 
         self.plotline_point.visible = False
-        self.visible = False
-
         self.p.update()
  
 
@@ -131,6 +132,11 @@ class PlotPoint(MiniWidget):
         self.slider.visible = False
         self.plotline_point.visible = True      # Set our point to visible again
         self.is_dragging = False                # No longer dragging
+
+        # Show our mini widgets that we hid while dragging
+        for mw in self.owner.mini_widgets:
+            if mw.data.get('visible', False):
+                mw.visible = True
 
 
         # Update our alignment based on our correct data. This is updated when dragging, so no need to set it here
@@ -303,11 +309,27 @@ class PlotPoint(MiniWidget):
     def reload_mini_widget(self, no_update: bool=False):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
+        async def _toggle_pin(e):
+            ''' Pins or unpins our information display '''
+            is_pinned = self.data.get('is_pinned', False)
+            self.data['is_pinned'] = not is_pinned
+            self.save_dict()
+            self.reload_mini_widget()
+            self.owner.reload_widget()
+            print("Toggling pin to:", not is_pinned)
+
         # Reload our plotline control
         self.reload_plotline_control()
 
         self.title_control = ft.Row([
+            ft.Icon(ft.Icons.LOCATION_PIN, self.owner.data.get('color', None)),
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD),
+            ft.IconButton(
+                ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+                self.owner.data.get('color', None),
+                tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
+                on_click=_toggle_pin
+            ),
             ft.Container(expand=True),
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,   
