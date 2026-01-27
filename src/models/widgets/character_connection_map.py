@@ -28,9 +28,11 @@ class CharacterConnectionMap(Widget):
         verify_data(
             object=self,   # Pass in our own data so the function can see the actual data we loaded
             required_data={
+                # Widget data
                 'tag': "character_connection_map",
                 'color': app.settings.data.get('default_character_connection_map_color'),
                 
+                'primary_characters': list,    # List of primary characters to build the map around
             },
         )
         

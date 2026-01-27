@@ -14,15 +14,14 @@ from utils.verify_data import verify_data
 
 class MiniWidget(ft.Container):
 
-    # Constructor. All mini widgets require a title, owner widget, father (parent), page reference...
+    # Constructor. All mini widgets require a title, owner widget, page reference...
     # Dictionary path, and optional data dictionary
     def __init__(
         self, 
         title: str,                     # Title of the widget that will show up on its tab
         owner: Widget,                  # The widget that contains this mini widget.
-        father,                         # Immidiate parent widget or mini widget that holds us (Since some mini widget)
         page: ft.Page,                  # Grabs our original page for convenience and consistency
-        key: str,                       # Key to identify this mini widget (by title) within its fathers data
+        key: str,                       # Key to identify this mini widget (by title) within its owners data
         side_location: str = None,      # Side of the widget the mini widget shows on
         data: dict = None               # Data passed in for this mini widget
     ):
@@ -41,9 +40,8 @@ class MiniWidget(ft.Container):
 
         
         # Set our parameters
-        self.title: str = title.capitalize()                        
+        self.title: str = title                      
         self.owner: Widget = owner                          
-        self.father = father                        
         self.p: ft.Page = page                               
         self.key: str = key     
 
@@ -84,7 +82,7 @@ class MiniWidget(ft.Container):
 
         try:
         
-            # If our data is None (we just got deleted), we don't save ourselves to fathers data
+            # If our data is None (we just got deleted), we don't save ourselves to owners data
             if self.data is None:
                 pass
 
@@ -92,10 +90,10 @@ class MiniWidget(ft.Container):
             else:
 
                 # Our data is correct, so we update our immidiate parents data to match
-                self.father.data[self.key][self.title] = self.data
+                self.owner.data[self.key][self.title] = self.data
 
-            # Recursively updates the parents data until father=owner (widget), which saves to file
-            self.father.save_dict()
+            # Recursively updates the parents data until owner=owner (widget), which saves to file
+            self.owner.save_dict()
             
             # This keeps everyones data in sync so we can infinitely nest mini widgets if we want, like for arcs in timelines
 
@@ -117,8 +115,8 @@ class MiniWidget(ft.Container):
             # Remove our data
             self.data = None
 
-            # Remove the data of our father (parent) widget/mini widget to match
-            # By deleting the father data manually here, it will cascade up the chain when save_dict is called
+            # Remove the data of our owner (parent) widget/mini widget to match
+            # By deleting the owner data manually here, it will cascade up the chain when save_dict is called
             self.owner.data[self.key].pop(self.title, None)
             
             
@@ -183,8 +181,8 @@ class MiniWidget(ft.Container):
             self.title = new_name.capitalize()
             self.data['title'] = new_name
 
-            # Update our fathers data to match
-            self.father.data[self.key][new_name] = self.father.data[self.key].pop(old_name)
+            # Update our owners data to match
+            self.owner.data[self.key][new_name] = self.owner.data[self.key].pop(old_name)
 
             # Save the changes up the chain
             self.save_dict()
@@ -200,34 +198,40 @@ class MiniWidget(ft.Container):
             print(f"Error renaming mini widget {old_name} to {new_name}: {e}")
         
 
-    # Called when clicking x to hide the mini widget
-    def toggle_visibility(self, e=None, value: bool=None):
-        ''' Shows or hides our mini widget, depending on current state '''
+    def show_mini_widget(self, e=None):
+        ''' Shows our mini widget '''
 
-        # Update our visibility
-        self.data['visible'] = not self.visible if value is None else value
-        self.visible = self.data.get('visible', True)
-
-
-        # If we are visible, hide all other exclusive mini widgets on the same side
         if self.visible:
-            for mini_widget in self.owner.mini_widgets:
-                
-                if mini_widget.visible and mini_widget != self and mini_widget.data.get('side_location', 'right') == self.data.get('side_location', 'right'):
-                    mini_widget.toggle_visibility(value=False)
-                    
-        self.save_dict()
-        self.reload_mini_widget()
-        self.owner.reload_widget()
-        
+            return
 
-    # Called whenever we hover over our mini widget on the right as a psuedo focus
-    def on_hover(self, e: ft.HoverEvent):
-        print(e)
+        self.data['visible'] = True
+        self.visible = True
+        self.save_dict()
+
+        for mw in self.owner.mini_widgets:
+            if mw != self:
+                mw.hide_mini_widget()   
+
+        self.reload_mini_widget(no_update=True)
+        self.owner.reload_widget()
+
+    def hide_mini_widget(self, e=None, update: bool=False):
+        ''' Hides our mini widget '''
+        
+        if not self.visible:
+            return
+        
+        self.data['visible'] = False
+        self.visible = False
+        self.save_dict()
+
+        if update:
+            self.reload_mini_widget()
+            self.owner.reload_widget()
         
 
     # Called after any changes happen to the data that need to be reflected in the UI
-    def reload_mini_widget(self):
+    def reload_mini_widget(self, no_update: bool=False):
         ''' Reloads our mini widget UI based on our data '''
 
         # Add option to have the mini widget show on larger portion of screen, like an expand button at bottom left or right
@@ -242,20 +246,14 @@ class MiniWidget(ft.Container):
             expand=True,
         )
 
-        # Call render function
-        self._render_mini_widget()
-
-    def _render_mini_widget(self, no_update: bool=False):
-        ''' Renders our mini widget UI based on our data '''
-
-        # Give Uniform mini titles and styling
-
         if no_update:
             return
-        
         else:
-
             self.p.update()
+            self.update()
+            
+
+    
         
 
         

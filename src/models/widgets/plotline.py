@@ -35,15 +35,12 @@ class Plotline(Widget):
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
             {
+                # Widget Data
                 'tag': "plotline",
                 'color': app.settings.data.get('default_plotline_color'),
 
-                'filters': {   
-                    'show_plot_points': True,
-                    'show_arcs': True,
-                    'show_markers': True,
-                },        
-                'information_display_visibility': True,
+                # State and filter management   
+                'information_display_visibility': True,             # Visibility of our information display mini widget
                 'hide_division_labels': bool,                       # If the division labels are hidden on the plotline
                 'division_labels_direction': "top",                 # If the division labels are on top of the plotline instead of below
                 
@@ -62,19 +59,23 @@ class Plotline(Widget):
                 'show_all_plot_points': True,                   # If all plot points are shown regardless of individual settings
                 'show_all_arcs': True,                          # If all arcs are shown regardless of individual settings
                 'show_all_markers': True,                       # If all markers are shown regardless of individual settings
+                'plot_points_id_are_expanded': True,            # If the plot points dropdown in the information display are expanded
+                'arcs_id_are_expanded': True,                   # If the arcs IDs are expanded in the filter
+                'markers_id_are_expanded': True,                # If the markers IDs are expanded in the filter
                 
-                # Mini Widgets Data
+                # Mini Widgets Data. Keep it seperate and safe from regular Plotline data
                 'plot_points': dict,                        # Dict of plot points in this branch
                 'arcs': dict,                               # Dict of arcs in this branch
                 'markers': dict,                            # Simple markers with a title
 
-                # Rest of the data
-                'summary': str,
-                'time_label': "years",                          # Label for the time axis (any str they want)
-                'left_label': "0",                              # Start label
-                'right_label': "10",                            # Start and end date of the branch, for plotline view
-                'divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
-                
+                # Plotline data, outside of its mini widgets
+                'plotline_data': {
+                    'Summary': str,
+                    'Time Label': "years",                          # Label for the time axis (any str they want)
+                    'Left Label': "0",                              # Start label
+                    'Right Label': "10",                            # Start and end date of the branch, for plotline view
+                    'Divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
+                }
             },
         ) 
 
@@ -145,7 +146,6 @@ class Plotline(Widget):
         self.information_display = PlotlineInformationDisplay(
             title=self.title,
             owner=self,
-            father=self,
             page=self.p,
             key="none",     # Not used, but its required so just whatever works
             data=None,      # It uses our data, so we don't need to give it a copy that we would have to constantly maintain
@@ -162,7 +162,6 @@ class Plotline(Widget):
             self.arcs[key] = Arc(
                 title=key, 
                 owner=self, 
-                father=self,
                 page=self.p, 
                 key="arcs",
                 data=data
@@ -179,7 +178,6 @@ class Plotline(Widget):
             self.plot_points[key] = PlotPoint(
                 title=key, 
                 owner=self, 
-                father=self,
                 page=self.p, 
                 key="plot_points", 
                 data=data
@@ -194,7 +192,6 @@ class Plotline(Widget):
             self.markers[key] = Marker(
                 title=key, 
                 owner=self, 
-                father=self,
                 page=self.p, 
                 key="markers", 
                 data=data
@@ -207,7 +204,7 @@ class Plotline(Widget):
        
         if self.can_open_menu:
             if not self.information_display.visible:
-                self.information_display.toggle_visibility(value=True)
+                self.information_display.show_mini_widget()
 
         
     # Called when creating a new arc
@@ -218,7 +215,6 @@ class Plotline(Widget):
         new_arc = Arc(
             title=title, 
             owner=self, 
-            father=self,
             page=self.p, 
             key="arcs", 
             x_alignment=self.x_alignment,
@@ -228,7 +224,7 @@ class Plotline(Widget):
         # Add our new Arc mini widget object to our arcs dict, and to our owners mini widgets
         self.arcs[new_arc.title] = new_arc
         self.mini_widgets.append(new_arc)
-        new_arc.toggle_visibility(value=True)
+        new_arc.show_mini_widget()
 
         # Apply our changes in the UI
         self.story.active_rail.content.reload_rail()
@@ -244,7 +240,6 @@ class Plotline(Widget):
         new_plot_point = PlotPoint(
             title=title, 
             owner=self, 
-            father=self,
             page=self.p, 
             key="plot_points", 
             x_alignment=self.x_alignment,
@@ -253,7 +248,7 @@ class Plotline(Widget):
         # Add our new Plot Point mini widget object to our plot_points dict, and to our owners mini widgets
         self.plot_points[new_plot_point.title] = new_plot_point
         self.mini_widgets.append(new_plot_point)
-        new_plot_point.toggle_visibility(value=True)
+        new_plot_point.show_mini_widget()
 
         # Apply our changes in the UI
         self.story.active_rail.content.reload_rail()
@@ -266,7 +261,6 @@ class Plotline(Widget):
         new_marker = Marker(
             title=title, 
             owner=self, 
-            father=self,
             page=self.p, 
             key="markers", 
             x_alignment=self.x_alignment,
@@ -275,7 +269,7 @@ class Plotline(Widget):
         # Add our new Marker mini widget object to our markers dict, and to our owners mini widgets
         self.markers[new_marker.title] = new_marker
         self.mini_widgets.append(new_marker)
-        new_marker.toggle_visibility(value=True)
+        new_marker.show_mini_widget()
 
         # Apply our changes in the UI
         self.story.active_rail.content.reload_rail()
@@ -444,7 +438,7 @@ class Plotline(Widget):
                 case "marker":
                     await self.create_marker(f"Marker {len(self.markers) + 1}")
                 case 'plot_point':  
-                    self.create_plot_point(f"Plot Point {len(self.plot_points) + 1}")
+                    await self.create_plot_point(f"Plot Point {len(self.plot_points) + 1}")
         else:
             print("Error: No tag found for new item creation")
 
@@ -508,7 +502,7 @@ class Plotline(Widget):
         ]
 
         # Draw our divisions on the plotline -----------------------------------------------------------------
-        num_divisions = len(self.data.get('divisions', 9))  # Total number of divisions
+        num_divisions = len(self.data.get('plotline_data', {}).get('Divisions', []))  # Total number of divisions
         div_width = (self.plotline_width - 10) / (num_divisions + 1) if num_divisions > 0 else 0   # Width between each division
         division_width = (self.plotline_width - div_width - 10) / num_divisions  if num_divisions > 0 else 0      # Division width starting after first division plus padding
 
@@ -537,7 +531,7 @@ class Plotline(Widget):
                 self.plotline_canvas.shapes.append(
                     cv.Text(
                         x, self.plotline_height // 2 - 40 if self.data.get('division_labels_direction', "top") == "top" else self.plotline_height // 2 + 40,
-                        str(self.data.get('divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
+                        str(self.data.get('plotline_data', {}).get('divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
                         ft.TextStyle(14, weight=ft.FontWeight.BOLD),
                         alignment=ft.alignment.center
                     )
@@ -548,11 +542,11 @@ class Plotline(Widget):
 
 
         # Add our plotline ends labels ---------------------------------------------------------------------------
-        left_label = str(self.data.get('left_label', '0'))
+        left_label = str(self.data.get('plotline_data', {}).get('Left Label', '0'))
         left_label = left_label.split('.', 1)[0] if '.' in left_label else left_label
-        right_label = str(self.data.get('right_label', '10'))
+        right_label = str(self.data.get('plotline_data', {}).get('Right Label', '10'))
         right_label = right_label.split('.', 1)[0] if '.' in right_label else right_label
-        time_label = str(self.data.get('time_label', 'years')).capitalize()
+        time_label = str(self.data.get('plotline_data', {}).get('Time Label', 'years')).capitalize()
 
         # Set the text width, and align it in center, make sure it wraps
         self.plotline_canvas.shapes.append(cv.Text(
@@ -673,7 +667,7 @@ class Plotline(Widget):
                         x_pos, 
                         y_pos - 20 if line_direction == "bottom" else y_pos + 20,
                         marker.title, 
-                        ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=plot_point.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
+                        ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=marker.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
                         alignment=ft.alignment.center,
                         max_width=100,
                     )

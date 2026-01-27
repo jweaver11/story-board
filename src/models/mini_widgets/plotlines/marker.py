@@ -20,7 +20,6 @@ class Marker(MiniWidget):
         self, 
         title: str, 
         owner: Widget, 
-        father, 
         page: ft.Page, 
         key: str,                           # Key is plot_points for plotlines
         x_alignment: float = None,          # Position of plot point on plotline if we pass one in (between -1 and 1)
@@ -36,7 +35,6 @@ class Marker(MiniWidget):
         super().__init__(
             title=title,        
             owner=owner,        
-            father=father,      # In this case, father is always a plotline or another arc
             page=page,          
             key=key,  
             side_location=side_location,
@@ -130,7 +128,7 @@ class Marker(MiniWidget):
 
         # If we clicked the slider thumb but didnt move, make our mini widget visible
         if not self.is_dragging:
-            self.toggle_visibility(value=True)
+            self.show_mini_widget()
             return
     
         # Hide slider
@@ -183,7 +181,7 @@ class Marker(MiniWidget):
         
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:
-            self.toggle_visibility(value=value)
+            self.hide_mini_widget(update=True)
         # Otherwise, just update the page
         else:
             self.p.update()
@@ -323,7 +321,7 @@ class Marker(MiniWidget):
 
 
     # Called when reloading changes to our plot point and in constructor
-    def reload_mini_widget(self):
+    def reload_mini_widget(self, no_update: bool=False):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
         # Reload our plotline control
@@ -335,33 +333,29 @@ class Marker(MiniWidget):
             ft.IconButton(
                 icon=ft.Icons.CLOSE,
                 tooltip=f"Close {self.title}",
-                on_click=lambda e: self.toggle_visibility(value=False),
+                on_click=lambda e: self.hide_mini_widget(update=True),
             ),
         ])
         
+        content = ft.Column([
+            self.title_control,
+            ft.Divider(height=2, thickness=2),
+            ft.Container(height=10)  # Spacing 
+        ], expand=True, tight=True, spacing=0)
 
-        # Rebuild our information display
-        self.content_control = ft.TextField(
-            hint_text="plot point",
-            on_submit=self.change_x_position,
-            expand=True,
-        )
 
-        cont = ft.Container(margin=ft.Margin(0,10,0,10), content=self.content_control, expand=True)
-
-        # Format our mini widget content
-        self.content = ft.Column(
-            spacing=0,
-            controls=[
-                self.title_control,
-                ft.Divider(height=2, thickness=2),
-                cont,
-                ft.TextButton(
-                    "Delete ME", 
-                    on_click=lambda e: self.delete_dict()
-                ),
-            ],
-        )
+        # Format our final layout so the scrollbar doesn't sit overtop the content
+        row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0)
+    
+        column = ft.Column([
+            row
+        ], expand=True, scroll="auto", tight=True)
+        
+        self.content = column
             
 
-        self._render_mini_widget(no_update=True)
+        if no_update:
+            return
+        else:
+            self.p.update()
+            #self.update()

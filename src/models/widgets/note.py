@@ -28,12 +28,12 @@ class Note(Widget):
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
             {
+                # Widget data
                 'tag': "note",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('default_note_color'),
                 'pin_location': "right" if data is None else data.get('pin_location', "right"),   # Default pin location for notes
-                'character_count': int,
-                'created_at': str,
-                'last_modified': str,
+
+                # Note data
                 'content': str
             },
         )

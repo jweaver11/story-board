@@ -14,10 +14,8 @@ class Arc(MiniWidget):
         self, 
         title: str, 
         owner: Widget, 
-        father, 
         page: ft.Page, 
         key: str, 
-        size: str = None,
         x_alignment: float = None,          # Position of plot point on plotline if we pass one in (between -1 and 1)
         data: dict = None
     ):
@@ -27,7 +25,6 @@ class Arc(MiniWidget):
         super().__init__(
             title=title,        
             owner=owner,                    # Top most plotline this arc belongs too
-            father=father,                  # Immediate parent plotline or arc that thisarc belongs too
             page=page,          
             key=key,  
             data=data,         
@@ -47,28 +44,31 @@ class Arc(MiniWidget):
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
             {   
+                # Mini widget data
                 'tag': "arc",                               # Tag to identify what type of object this is
-                'is_timeskip': bool,                        # If this arc is a time skip (skips ahead in time on the plotline)   
-                'start_date': str,                          # Start and end date of the branch, for plotline view
-                'end_date': str,                            # Start and end date of the branch, for plotline view
-                'x_alignment_start': x_alignment_start,                   # Start position on the plotline
-                'x_alignment_end': x_alignment_end,                      # End position on the plotline 
-                'color': "secondary",                         # Color of the arc in the plotline
-                'dropdown_is_expanded': True,               # If the arc dropdown is expanded on the rail
-                'plot_points_are_expanded': True,           # If the plotpoints section is expanded
-                'arcs_are_expanded': True,                  # If the arcs section is expanded
-                'size': size,                               # Size of the arc on the plotline. Can be Small, Medium, Large, or X-Large
-                'is_focused': bool,                         # If this arc is currently focused/selected. True when mini widget visible, or mouse hovering over arc
+                'color': "secondary",                       # Color of the arc in the plotline
                 
-                'side_location': side_location,             # Which side of the plotline this arc is on (left or right)
-                'connections': dict,                        # Connect points, arcs, branch, etc.???
+                # Rail display data
+                'dropdown_is_expanded': True,               # If the arc dropdown is expanded on the rail
+                
+                # For rendering on plotline
+                'side_location': side_location, 
+                'on_top': True,                             # If the mini widget should appear on top of the plotline. If false, appears below      
                 'rail_dropdown_is_expanded': True,          # If the rail dropdown is expanded  
-                'content': str,
-                'description': str,
+                'is_shown_on_widget': True,                 # If this arcs plotline control is shown on the plotline widget
+                'x_alignment_start': x_alignment_start,     # Start position on the plotline
+                'x_alignment_end': x_alignment_end,         # End position on the plotline 
+                
+                # Arc Data
+
                 'summary': str,
+                'start_date': str,                          # Start and end date of the branch, for plotline view
+                'end_date': str, 
                 'involved_characters': list,
                 'related_locations': list,
                 'related_items': list,
+                'events': list,                             # List of events that occur during this arc
+
             },
         )
 
@@ -96,7 +96,7 @@ class Arc(MiniWidget):
         self.gd = ft.GestureDetector(
             mouse_cursor=ft.MouseCursor.CLICK,
             expand=True, on_hover=self.on_hovers, hover_interval=20,
-            on_tap=lambda e: self.toggle_visibility(value=True),    # Focus this mini widget when clicked
+            on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
             on_secondary_tap=lambda e: print("Right clicked arc"), 
             on_enter=self.on_start_hover,      # Highlight container
             on_exit=self.on_stop_hover,        # Stop highlight
@@ -143,57 +143,60 @@ class Arc(MiniWidget):
         ''' Changes the arc control to unfocused '''
         self.can_open = True
         
-        self.plotline_arc.border=ft.border.only(
+        # If our info display is not opened (we are not visible), lower the border opacity and update the page
+        if not self.visible:
+            self.plotline_arc.border=ft.border.only(
+                left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
+                right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
+                top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
+            )
+            self.gd.content.opacity = .7
+            self.p.update()
+
+    def show_mini_widget(self, e=None):
+
+        # If we're too close to the timeline, just open that instead
+        if not self.can_open:
+            self.owner.information_display.show_mini_widget()
+            return
+        
+        self.opacity = 1
+        self.ignore_interactions = False
+        self.plotline_arc.border = ft.border.only(
+            left=ft.BorderSide(2, self.data.get('color', "secondary")),
+            right=ft.BorderSide(2, self.data.get('color', "secondary")),
+            top=ft.BorderSide(2, self.data.get('color', "secondary")),
+        )
+
+        for arc in self.owner.arcs.values():
+            if arc != self:
+                arc.hide_mini_widget()
+
+
+
+        super().show_mini_widget()
+    
+
+    def hide_mini_widget(self, e=None, update: bool=False):
+        ''' Hides this arc '''
+
+        # Set the parts we need to hide in addition to the mini widget info display
+        self.opacity = 0
+        self.ignore_interactions = True
+        self.slider.visible = False
+
+        self.plotline_arc.border = ft.border.only(
             left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
             right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
             top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
         )
-        self.gd.content.opacity = .7
-        self.p.update()
+        
 
+        return super().hide_mini_widget(update=update)
 
-    def toggle_visibility(self, e=None, value: bool = None):
-        ''' Toggles the visibility of our plotline_point '''
-
-        # If we're too close to the timeline, just open that instead
-        if not self.can_open:
-            self.owner.information_display.toggle_visibility(value=True)
-            return
-
-        if value is not None:
-
-            if value == True:
-                # Make sure to reset our ignore interactions and opacity
-                self.opacity = 1
-                self.ignore_interactions = False
-                self.plotline_arc.border=ft.border.only(
-                    left=ft.BorderSide(2, self.data.get('color', "secondary")),
-                    right=ft.BorderSide(2, self.data.get('color', "secondary")),
-                    top=ft.BorderSide(2, self.data.get('color', "secondary")),
-                )
-
-            else:
-                self.plotline_arc.border = ft.border.only(
-                    left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
-                    right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
-                    top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
-                )
-
-            for arc in self.owner.arcs.values():
-                if arc != self:
-                    arc.slider.visible = False
-                    arc.data['visible'] = False
-                    arc.save_dict()
-                    arc.visible = False
-            
-            super().toggle_visibility(value=value)
-
-        else:
-            
-            super().toggle_visibility()
 
     # Called at the start of dragging our point on the slider
-    def start_dragging(self, e):
+    async def start_dragging(self, e):
         ''' Called when we start dragging our slider thumb '''
 
         self.is_dragging = True
@@ -201,7 +204,8 @@ class Arc(MiniWidget):
         # Hide all other plot points while dragging
         for pp in self.owner.plot_points.values():
             pp.plotline_control.visible = False
-            self.visible = False
+
+        self.visible = False
 
         self.p.update()
 
@@ -287,7 +291,6 @@ class Arc(MiniWidget):
 
         # Apply the UI changes
         #self.reload_mini_widget()
-        self._render_mini_widget()
         self.owner.reload_widget()
 
     # Called when toggling whether this plot point is shown on the plotline in the plotline filters
@@ -301,7 +304,7 @@ class Arc(MiniWidget):
         
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:
-            self.toggle_visibility(value=value)
+            self.hide_mini_widget(update=True)
         # Otherwise, just update the page
         else:
             self.p.update()
@@ -425,13 +428,14 @@ class Arc(MiniWidget):
         
 
     # Called to reload our mini widget content
-    def reload_mini_widget(self):
+    def reload_mini_widget(self, no_update: bool=False):
 
         # Reload our plotline control and all associated components 
         self.reload_plotline_control()
 
         # Add hide mode so we can drag without Info Display taking up the screen
         def _hide_mode(e):
+            print("hide mode called")
            
             self.opacity = 0 if self.opacity == 1 else 1
             self.ignore_interactions = True if self.ignore_interactions == False else False
@@ -447,31 +451,32 @@ class Arc(MiniWidget):
             ),
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
-                tooltip=f"Close {self.title}", on_click=lambda e: self.toggle_visibility(value=False),
+                tooltip=f"Close {self.title}", on_click=lambda e: self.hide_mini_widget(update=True),
             ),
         ], spacing=0)
 
         
-        # Rebuild our information display
-        self.content_control = ft.TextField(
-            hint_text="Arc",
-            expand=True,
-        )
+        content = ft.Column([
+            self.title_control,
+            ft.Divider(height=2, thickness=2),
+            ft.Container(height=10)  # Spacing 
+        ], expand=True, tight=True, spacing=0)
 
+
+        # Format our final layout so the scrollbar doesn't sit overtop the content
+        row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0)
+    
+        column = ft.Column([
+            row
+        ], expand=True, scroll="auto", tight=True)
         
-        self.content = ft.Column(
-            scroll=ft.ScrollMode.AUTO,
-            alignment=ft.MainAxisAlignment.START,
-            expand=True,
-            controls=[
-                self.title_control,
-                self.content_control,
-                ft.Container(expand=True, ignore_interactions=True),   # Make sure we push everything to top
-            
-            ],
-        )
+        self.content = column
     
 
-        self.p.update()
+        if no_update:
+            return
+        else:
+            self.p.update()
+            #self.update()
 
 

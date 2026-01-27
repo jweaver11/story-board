@@ -33,23 +33,24 @@ class CanvasBoard(Widget):
                 'tag': "canvas_board",
                 'color': app.settings.data.get('default_canvas_board_color'),
 
-                'description': str, # Description of this canvas board. Some could be for chapters (multiple canvas) or just one board
+                'summary': str, # Description of this canvas board. Some could be for chapters (multiple canvas) or just one board
 
                 # Labels on the top part of our grid. Users can add onto these as needed
                 'matrix_labels': ["Preview", "Sketch", "Concept"],   # Preview -> Ties to a specific Canvas and shows a preview of that Canvas in real time
 
+                # Our main data matrix for this canvas board
                 'matrix': [
-                    [
-                        "", 
-                        {
-                            'paths': [],      # All our shapes, lines, dashed lines, curves, etc.
-                            'shadow_paths': [],   # All paths but with shadows
-                            'points': [],     # All our points
+                    [           # First row
+                        "",         # Preview. This will key to a specific canvas later and show a live preview
+                        {           # Sketch canvas data
+                            'paths': [],            # All our shapes, lines, dashed lines, curves, etc.
+                            'shadow_paths': [],     # All paths but with shadows
+                            'points': [],           # All our points
                         }, 
-                        ""
-                    ],      # 1 will be a key to a specific canvas, 2 is a sketch canvas shapes data, 3 is a str
-                    [
-                        "", 
+                        ""           # Concept description text
+                    ],      
+                    [           # Second row
+                        "",         
                         {
                             'paths': [],            # All our shapes, lines, dashed lines, curves, etc.
                             'shadow_paths': [],     # All paths but with shadows
@@ -61,10 +62,9 @@ class CanvasBoard(Widget):
             },
         )
 
-        self.state: State = State()
-        
-        self.icon = ft.Icon(ft.Icons.PERSON, size=100, expand=False)    # Icon of character
 
+        self.state: State = State()     # State model from tracking our drawing state
+        
         # Build our widget on start, but just reloads it later
         self.reload_widget()
 

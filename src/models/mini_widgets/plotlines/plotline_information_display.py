@@ -1,6 +1,5 @@
 import flet as ft
 from models.mini_widget import MiniWidget
-from models.widget import Widget
 from models.widgets.plotline import Plotline
 import asyncio
 from models.dataclasses.events import Event
@@ -10,13 +9,12 @@ from models.dataclasses.events import Event
 class PlotlineInformationDisplay(MiniWidget):
 
     # Constructor. Requires title, owner widget, page reference, and optional data dictionary
-    def __init__(self, title: str, owner: Widget, father: Plotline, page: ft.Page, key: str, data: dict=None):
+    def __init__(self, title: str, owner: Plotline,  page: ft.Page, key: str, data: dict=None):
 
         # Parent constructor
         super().__init__(
             title=title,        
             owner=owner,                    
-            father=father,                  # In this case, father is always the Plotline or arc we belong to
             page=page,          
             key=key,  # Not used, but its required so just whatever works
             data=None,      # No data is used here, so NEVER reference it. Use self.owner.data instead
@@ -40,22 +38,31 @@ class PlotlineInformationDisplay(MiniWidget):
             print(f"Error saving Plotline information display data to {self.owner.title}: {e}")
 
     # Called to toggle our visibility
-    def toggle_visibility(self, e=None, value: bool=None):
+    def show_mini_widget(self, e=None):
         ''' Toggles our visibility and updates our owners data accordingly '''
 
         # Update our visibility
-        self.owner.data['information_display_visibility'] = not self.visible if value is None else value
+        self.owner.data['information_display_visibility'] = True
         self.visible = self.owner.data.get('information_display_visibility', True)
-
-        # IF we hit that we are visible, and not special exclusive, hide all other exclusive mini widgets on the same side
-        if self.visible:
-            for mini_widget in self.owner.mini_widgets:
-                if mini_widget.visible and mini_widget != self and mini_widget.data.get('side_location', 'right') == self.data.get('side_location', 'right'):
-                    mini_widget.toggle_visibility(value=False)
-
         self.save_dict()
-        self.reload_mini_widget()
+
+        for mw in self.owner.mini_widgets:
+            if mw != self:
+                mw.hide_mini_widget()  
+
+        self.reload_mini_widget(no_update=True)
         self.owner.reload_widget()
+
+    def hide_mini_widget(self, e=None, update: bool=False):
+        ''' Hides our mini widget '''
+
+        self.owner.data['information_display_visibility'] = False
+        self.visible = False
+        self.save_dict()
+
+        if update:
+            self.reload_mini_widget()
+            self.owner.reload_widget()
 
     # Called when changing our owners data from some event
     async def _change_owner_data(self, e):
@@ -93,7 +100,7 @@ class PlotlineInformationDisplay(MiniWidget):
         
 
     # Called when reloading our mini widget UI
-    def reload_mini_widget(self):
+    def reload_mini_widget(self, no_update: bool=False):
 
         async def _new_divisions_clicked(e):
             ''' Called to add a new division to the bottom of the divisions list '''
@@ -135,7 +142,7 @@ class PlotlineInformationDisplay(MiniWidget):
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
                 tooltip=f"Close {self.title}",
-                on_click=lambda e: self.toggle_visibility(value=False),
+                on_click=lambda e: self.hide_mini_widget(update=True),
             ),
         ])
         
@@ -307,6 +314,38 @@ class PlotlineInformationDisplay(MiniWidget):
         content.controls.append(ft.Container(height=10))
 
         # Markers, Plot Points, and Arcs
+        plot_points_expansion_tile = ft.ExpansionTile(
+            ft.Text("Plot Points", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True, tooltip="Events in your story that have a short duration",),
+            controls=[], initially_expanded=self.owner.data.get('plot_points_id_are_expanded', True), 
+            collapsed_icon_color=self.owner.data.get('color', None),
+            icon_color=self.owner.data.get('color', None), shape=ft.RoundedRectangleBorder(),
+            on_change=lambda e: self._change_owner_data_instant('plot_points_id_are_expanded', not self.owner.data.get('plot_points_id_are_expanded', True))
+        )
+
+        content.controls.append(plot_points_expansion_tile)
+        content.controls.append(ft.Container(height=10))
+
+        arcs_expansion_tile = ft.ExpansionTile(
+            ft.Text("Arcs", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True, tooltip="Longer story elements that span over a duration of time",),
+            controls=[], initially_expanded=self.owner.data.get('arcs_id_are_expanded', True), 
+            collapsed_icon_color=self.owner.data.get('color', None),
+            icon_color=self.owner.data.get('color', None), shape=ft.RoundedRectangleBorder(),
+            on_change=lambda e: self._change_owner_data_instant('arcs_id_are_expanded', not self.owner.data.get('arcs_id_are_expanded', True))
+        )
+
+        content.controls.append(arcs_expansion_tile)
+        content.controls.append(ft.Container(height=10))
+
+        markers_expansion_tile = ft.ExpansionTile(
+            ft.Text("Markers", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True, tooltip="Simple point of interest markers on the plotline",),
+            controls=[], initially_expanded=self.owner.data.get('markers_id_are_expanded', True), 
+            collapsed_icon_color=self.owner.data.get('color', None),
+            icon_color=self.owner.data.get('color', None), shape=ft.RoundedRectangleBorder(),
+            on_change=lambda e: self._change_owner_data_instant('markers_id_are_expanded', not self.owner.data.get('markers_id_are_expanded', True))
+        )
+
+        content.controls.append(markers_expansion_tile)
+
 
         # Format our final layout so the scrollbar doesn't sit overtop the content
         row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0)
@@ -317,4 +356,8 @@ class PlotlineInformationDisplay(MiniWidget):
         
         self.content = column
 
-        #self.p.update()
+        if no_update:
+            return
+        else:
+            self.p.update()
+            #self.update()

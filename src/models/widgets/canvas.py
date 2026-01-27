@@ -49,27 +49,29 @@ class Canvas(Widget):
         verify_data(
             self,
             {
+                # Widget data
                 "tag": "canvas",
                 'color': app.settings.data.get('default_canvas_color'),
 
-                'image_base64': str,  # Saves our icon as img64 string
-                
+                # Canvas meta data. Particularely useful for exporting and forcing aspect ratios
                 "canvas_meta": {        # Set canvas data here
                     "width": int,
                     "height": int,
                     "aspect_ratio": float,
-                    "bgcolor": "#000000,1.0",             # The color we're using for background of canvas. Ignored if bgimage_path is set. Start black
-                    "bgimage_path": str,        # Path to background image for canvas
+                    "bgcolor": "#000000,1.0",           
+                    "bgimage_path": str,                # Path to background image for canvas
                 },     
 
-                # Store our drawing data to load/save
+                # Canvas drawing data we save and load from
                 "canvas": {
-                    'paths': list,      # All our shapes, lines, dashed lines, curves, etc.
-                    'shadow_paths': list,   # All paths but with shadows
-                    'points': list,     # All our points
-                    'bgcolor': {        # Background color info
-                        'color': None,
-                        'blend_mode': "src_over",
+                    'paths': list,              # All our shapes, lines, dashed lines, curves, etc.
+                    'shadow_paths': list,       # All paths but with shadows
+                    'points': list,             # All our points
+
+                    'background': {                 # Background color info
+                        'color': str,               # If its a color
+                        'image_base64': str,        # If an image is used. Color ignored if this is set
+                        'blend_mode': "src_over",   # Blend mode for background. Starts default
                     },
                 },
             },

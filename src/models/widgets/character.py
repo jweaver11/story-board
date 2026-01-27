@@ -44,12 +44,15 @@ class Character(Widget):
                 'tag': "character",
                 'pin_location': "left" if data is None else data.get('pin_location', "left"),     # Start our characters on the left pin
                 'color': app.settings.data.get('default_character_color'),
-                'edit_mode': True,  # Whether we are in edit mode or not
 
-                'image_base64': str,  # Saves our icon as img64 string
-                # If this dict doesn't exist, create it with our active template data. Otherwise
-                'character_data': app.settings.data.get('character_templates', {}).get(app.settings.get('active_character_template', ""), default_character_template_data_dict()) if
-                    data is None or 'character_data' not in data else data['character_data'],
+                # State and view data
+                'edit_mode': True,      # Whether we are in edit mode or not
+                'image_base64': str,    # Saves our icon as img64 string 
+
+                # Character data
+                # If this dict doesn't exist, we create it with our active template data. If we fail to pull that, we use a default template (which has quite a lot)
+                'character_data': app.settings.data.get('character_templates', {}).get(app.settings.get('active_character_template', ""), default_character_template_data_dict()) 
+                if data is None or 'character_data' not in data else data['character_data'],
             },
         ) 
                 

@@ -54,16 +54,16 @@ class Map(Widget):
         verify_data(
             self,   
             {
+                # Widget data
                 'tag': "map", 
                 'color': app.settings.data.get('default_map_color'),
 
+                # State and view data
                 'information_display_visibility': True,   # Info display mini widget visibility
+                'in_drawing_mode': bool,         # Whether we are in drawing mode or not
+                'image_base64': str,  # Saves our icon as img64 string (Used a preview as well from other widgets)
                               
                 'summary': str,
-                'in_drawing_mode': bool,         # Whether we are in drawing mode or not
-
-                'image_base64': str,  # Saves our icon as img64 string
-
                 'markers': dict,        # Our markers on this map
 
                 # WIP - parent maps and child maps connected to this one
@@ -72,6 +72,11 @@ class Map(Widget):
                 'child_maps': dict,         # Any child/sub maps this map has
                 'alignment': {'x': 0, 'y': 0},   # Our alignment on our parent map. Both values between -1 and 1
       
+                # Map data
+                'map_data': {
+                    'Summary': str,
+                    
+                }
             },  
         )
 
@@ -108,14 +113,7 @@ class Map(Widget):
 
 
 
-        self.information_display = MapInformationDisplay(
-            title=self.title,
-            owner=self,                     # Our map is the owner of this mini widget
-            father=self,                    # Our map is also the father of this mini widget
-            page=self.p,
-            key="information_display",
-            data=None
-        )
+        
 
         self.map_gd = ft.GestureDetector(
             hover_interval=10,
@@ -131,7 +129,14 @@ class Map(Widget):
             ),
         )
 
-
+        self.information_display = MapInformationDisplay(
+            title=self.title,
+            owner=self,                     # Our map is the owner of this mini widget
+            father=self,                    # Our map is also the father of this mini widget
+            page=self.p,
+            key="information_display",
+            data=None
+        )
         self.mini_widgets.append(self.information_display)
         
 

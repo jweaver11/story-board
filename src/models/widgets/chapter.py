@@ -25,26 +25,29 @@ class Chapter(Widget):
         verify_data(
             object=self,   # Pass in our own data so the function can see the actual data we loaded
             required_data={
+                # Widget data
                 'tag': "chapter",
                 'color': app.settings.data.get('default_canvas_color'),
                 'mini_widgets_displayed_overtop': False,  
-                'summary': str,     # Summary of what will happen in the chapter
-                'content': str,
-                'temp': str,
-                'test': str,
-                'comments': dict,
-                'chapter_text': list,       # The actual text content of the chapter
+
+                # Comments displayed on the side of the chapter
+                'comments': {           
+                    'Summary': dict,      # Default comment for summaries.
+                },       
+
+                # The text as json list data that is loaded and saved
+                'chapter_text': list,       
             }
         )
 
-        self.mini_notes = {}
-        self.load_mini_notes()
+        self.comments: dict = {}
+        self.load_comments()
 
         # Load our widget UI on start after we have loaded our data
         self.reload_widget()
 
 
-    def load_mini_notes(self):
+    def load_comments(self):
         ''' Loads our mini notes from our data into live objects '''
         from models.mini_widgets.comment import Comment
 

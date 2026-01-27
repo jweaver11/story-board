@@ -30,12 +30,15 @@ class World(Widget):
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
             {
+                # Widget data
                 'tag': "world",     
                 'color': app.settings.data.get('default_world_color'),   
+
+                # State and view data
                 'edit_mode': bool,              # Whether we are in edit mode or not
+                'image_base64': str,            # Saves our image as img64 string
 
-                'image_base64': str,  # Saves our icon as img64 string
-
+                # World data
                 'world_data': {
                     'Summary': str,
                     'Locations': dict,
