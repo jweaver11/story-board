@@ -451,7 +451,6 @@ class Arc(MiniWidget):
             self.save_dict()
             self.reload_mini_widget()
             self.owner.reload_widget()
-            print("Toggling pin to:", not is_pinned)
 
         # Reload our plotline control and all associated components 
         self.reload_plotline_control()

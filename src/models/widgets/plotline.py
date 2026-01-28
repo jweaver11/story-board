@@ -51,7 +51,7 @@ class Plotline(Widget):
                 'arcs_dropdown_expanded': True,             # If the arcs section is expanded
                 'markers_dropdown_expanded': True,          # If the markers section is expanded
                 'rail_dropdown_is_expanded': True,          # If the rail dropdown is expanded  
-                'divisions_are_expanded': True,              # If the divisions section is expanded
+                'divisions_are_expanded': True,             # If the divisions section is expanded
 
                 # Filter dropdown states
                 'arcs_filter_dropdown_expanded': bool,          # If the arcs filter dropdown is expanded
@@ -60,11 +60,14 @@ class Plotline(Widget):
                 'show_all_plot_points': True,                   # If all plot points are shown regardless of individual settings
                 'show_all_arcs': True,                          # If all arcs are shown regardless of individual settings
                 'show_all_markers': True,                       # If all markers are shown regardless of individual settings
+                'hide_all_plot_points': False,                  # If all plot points are hidden regardless of individual settings
+                'hide_all_arcs': False,                         # If all arcs are hidden regardless of individual settings
+                'hide_all_markers': False,                      # If all markers are hidden regardless of individual settings
                 'plot_points_id_are_expanded': True,            # If the plot points dropdown in the information display are expanded
                 'arcs_id_are_expanded': True,                   # If the arcs IDs are expanded in the filter
                 'markers_id_are_expanded': True,                # If the markers IDs are expanded in the filter
                 
-                # Mini Widgets Data. Keep it seperate and safe from regular Plotline data
+                # Mini Widgets Data. Keep it seperate and safe from regular Plotline data below
                 'plot_points': dict,                        # Dict of plot points in this branch
                 'arcs': dict,                               # Dict of arcs in this branch
                 'markers': dict,                            # Simple markers with a title
@@ -79,18 +82,11 @@ class Plotline(Widget):
                 }
             },
         ) 
-
-        
-
-        # Declare and create our information display, which is our plotlines mini widget 
-        self.information_display: ft.Container = None
-        
-        
+                
         # Declare dicts of our data types   
         self.arcs: dict = {}       
         self.plot_points: dict = {} 
         self.markers: dict = {}
-
 
         # Loads our three mini widgets into their dicts
         self._load_arcs()
@@ -117,6 +113,8 @@ class Plotline(Widget):
         # Dropdown on the rail. We don't use it here, let the rail handle it
         self.plotline_dropdown = None      # 'Plotline_Dropdown'
 
+        # Declare and create our information display, which is our plotlines mini widget 
+        self.information_display: ft.Container = None
         self.create_information_display()
 
         # Builds/reloads our plotline UI
@@ -516,12 +514,6 @@ class Plotline(Widget):
         # Go through our number of divisions and add markers to the path
         for i in range(num_divisions):
 
-            
-
-
-            #x = int((self.plotline_width / (num_divisions + 2) * i))
-            
-            
             # Add the vertical marker for each label
             x = int(i * division_width) + division_width
             divisions_path.elements.append(cv.Path.MoveTo(x, self.plotline_height // 2 + 10))
@@ -531,7 +523,7 @@ class Plotline(Widget):
             if not self.data.get('hide_division_labels', False):
                 self.plotline_canvas.shapes.append(
                     cv.Text(
-                        x, self.plotline_height // 2 - 40 if self.data.get('division_labels_direction', "top") == "top" else self.plotline_height // 2 + 40,
+                        x, self.plotline_height // 2 + 30 if self.data.get('division_labels_direction', "top") == "top" else self.plotline_height // 2 + 40,
                         str(self.data.get('plotline_data', {}).get('divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
                         ft.TextStyle(14, weight=ft.FontWeight.BOLD),
                         alignment=ft.alignment.center
@@ -572,7 +564,11 @@ class Plotline(Widget):
         sorted_plot_points = dict(sorted(self.plot_points.items(), key=lambda item: item[1].data.get('x_alignment', 0.0)))
 
         for plot_point in sorted_plot_points.values():
-            if plot_point.data.get('is_shown_on_widget', False):
+            # If we're hiding all plot points, skip drawing them
+            if self.data.get('hide_all_plot_points', False):
+                break
+            
+            if self.data.get('show_all_plot_points', False) or plot_point.data.get('is_shown_on_widget', False):
                 # Calculate x position
                 x_alignment = max(-1.0, min(1.0, float(plot_point.data.get('x_alignment', 0.0))))
                 x_pos = int(((x_alignment + 1.0) / 2.0) * (self.plotline_width - 10)) + 5    # because mapping [-1..1] to [0..W], plus 5px padding
@@ -744,23 +740,140 @@ class Plotline(Widget):
         # Order arcs by from longest to shortest, so longer arcs are in back (temp)
         sorted_arcs = dict(sorted(self.arcs.items(), key=lambda item: item[1].data['x_alignment_end'] - item[1].data['x_alignment_start'], reverse=True))
 
-
         # Handler for plotline resize events
         for arc in sorted_arcs.values():
-            # Add the arc control to the plotline stack
-            plotline_stack.controls.append(arc.plotline_control)
+
+            if self.data.get('hide_all_arcs', False):
+                break
+            if self.data.get('show_all_arcs', False) or arc.data.get('is_shown_on_widget', False):
+                # Add the arc control to the plotline stack
+                plotline_stack.controls.append(arc.plotline_control)
 
         # Add our plot points to the plotline (They position themselves)
         for plot_point in self.plot_points.values():    
-            # Add the plot point control to the plotline stack
-            plotline_stack.controls.append(plot_point.plotline_control)
 
+            if self.data.get('hide_all_plot_points', False):
+                break
+            if self.data.get('show_all_plot_points', False) or plot_point.data.get('is_shown_on_widget', False):
 
+                # Add the plot point control to the plotline stack
+                plotline_stack.controls.append(plot_point.plotline_control)
+
+        # Add our markers to the plotline (They position themselves)
+        for marker in self.markers.values():    
+            if self.data.get('hide_all_markers', False):
+                break
+
+            if self.data.get('show_all_markers', False) or marker.data.get('is_shown_on_widget', False):
+                # Add the marker control to the plotline stack
+                plotline_stack.controls.append(marker.plotline_control)
+
+        # Set our content
         self.body_container.content = plotline_stack
 
+
+        # Prepare our header and create our filter dropdowns ----------------------------------------------------------------
+        def _mini_widget_filter_changed(value: bool, mini_widget=None, key: str=None):
+            ''' Called when a mini widget filter checkbox is changed. type is either plot_point, arc, or marker in case '''
+
+            # If we passed in a key, its a show/hide all option
+            if key is not None:
+
+                # If we're showing or hiding all, make sure the opposite is false
+                match key:
+                    case 'show_all_plot_points':
+                        if value == True:
+                            self.p.run_task(self.change_data, **{'hide_all_plot_points': False, key: value})
+                            for pp in self.plot_points.values():
+                                pp.toggle_plotline_control(True)
+
+                    case 'hide_all_plot_points':
+                        if value == True:
+                            self.p.run_task(self.change_data, **{'show_all_plot_points': False, key: value})
+                            for pp in self.plot_points.values():
+                                pp.toggle_plotline_control(False)
+
+                    case 'show_all_arcs':
+                        if value == True:
+                            self.p.run_task(self.change_data, **{'hide_all_arcs': False, key: value})
+                            for a in self.arcs.values():
+                                a.toggle_plotline_control(True)
+
+                    case 'hide_all_arcs':
+                        if value == True:
+                            self.p.run_task(self.change_data, **{'show_all_arcs': False, key: value})
+                            for a in self.arcs.values():
+                                a.toggle_plotline_control(False)
+
+                    case 'show_all_markers':
+                        if value == True:
+                            self.p.run_task(self.change_data, **{'hide_all_markers': False, key: value})
+                            for m in self.markers.values():
+                                m.toggle_plotline_control(True)
+
+
+                    case 'hide_all_markers':
+                        if value == True:
+                            self.p.run_task(self.change_data, **{'show_all_markers': False, key: value})
+                            for m in self.markers.values():
+                                print("Toggling off marker:", m.title)
+                                m.toggle_plotline_control(False)
+
+                self.reload_widget()
+                return
+
+            # Otherwise its a show or hide mini widget option
+            if mini_widget is not None:
+
+                # Set our tag
+                tag = mini_widget.data.get('tag', 'none')
+
+                # If hiding a mini widget, make sure our matching show_all is false
+                if value == False:
+                    match tag:
+                        case 'plot_point':
+                            self.p.run_task(self.change_data, **{'show_all_plot_points': False})
+                        case 'arc':
+                            self.p.run_task(self.change_data, **{'show_all_arcs': False})
+                        case 'marker':
+                            self.p.run_task(self.change_data, **{'show_all_markers': False})
+                    
+
+                # Otherwise we're showing a mini widget, make sure our matching hide_all is false
+                else:
+                    match tag:
+                        case 'plot_point':
+                            self.p.run_task(self.change_data, **{'hide_all_plot_points': False})
+                        case 'arc':
+                            self.p.run_task(self.change_data, **{'hide_all_arcs': False})
+                        case 'marker':
+                            self.p.run_task(self.change_data, **{'hide_all_markers': False})
+
+                
+                # Show or hide that mini widget on the plotline
+                mini_widget.toggle_plotline_control(value)
+                self.reload_widget()
+
+      
+            
+            
+
+
         def _get_plot_points_filter_options() -> list[ft.Control]:
+
+            if len(self.plot_points) == 0:
+                return [ft.Text("No Plot Points Created", color=ft.Colors.ON_SURFACE_VARIANT, italic=True)]
             # List for our colors when formatted
-            plot_point_checkboxes = [ft.Checkbox(label="Show All", value=self.data.get('show_all_plot_points'), expand=True, adaptive=True)] 
+            plot_point_checkboxes = [
+                ft.Checkbox(
+                    label="Show All", value=self.data.get('show_all_plot_points'), expand=True, adaptive=True,
+                    on_change=lambda e: _mini_widget_filter_changed(e.control.value, mini_widget=None, key='show_all_plot_points')
+                ),
+                ft.Checkbox(
+                    label="Hide all", value=self.data.get('hide_all_plot_points'), expand=True, adaptive=True,
+                    on_change=lambda e: _mini_widget_filter_changed(e.control.value, mini_widget=None, key='hide_all_plot_points')
+                )
+            ]
 
             # Create our controls for our color options
             for plot_point in self.plot_points.values():
@@ -769,19 +882,28 @@ class Plotline(Widget):
                         label=plot_point.title, 
                         value=plot_point.data.get('is_shown_on_widget'), 
                         expand=True, adaptive=True,
-                        on_change=lambda e, pp=plot_point: pp.toggle_plotline_control(e.control.value),
+                        on_change=lambda e, pp=plot_point: _mini_widget_filter_changed(e.control.value, pp)
                     )
                 )
 
-            column = ft.Column(plot_point_checkboxes, scroll="auto", height=self.h // 4)
-
-            return [column]
+            return plot_point_checkboxes
         
 
         def _get_arcs_filter_options() -> list[ft.Control]:
+            if len(self.arcs) == 0:
+                return [ft.Text("No Arcs Created", color=ft.Colors.ON_SURFACE_VARIANT, italic=True)]
 
             # List for our colors when formatted
-            arc_checkboxes = [ft.Checkbox(label="Show All", value=self.data.get('show_all_arcs', True), expand=True, adaptive=True)] 
+            arc_checkboxes = [
+                ft.Checkbox(
+                    label="Show All", value=self.data.get('show_all_arcs'), expand=True, adaptive=True,
+                    on_change=lambda e: _mini_widget_filter_changed(e.control.value, mini_widget=None, key='show_all_arcs')
+                ),
+                ft.Checkbox(
+                    label="Hide all", value=self.data.get('hide_all_arcs'), expand=True, adaptive=True,
+                    on_change=lambda e: _mini_widget_filter_changed(e.control.value, mini_widget=None, key='hide_all_arcs')
+                )
+            ]
 
             # Create our controls for our color options
             for arc in self.arcs.values():
@@ -790,17 +912,27 @@ class Plotline(Widget):
                         label=arc.title, 
                         value=arc.data.get('is_shown_on_widget'), 
                         expand=True, adaptive=True,
-                        on_change=lambda e, a=arc: a.toggle_plotline_control(e.control.value),
+                        on_change=lambda e, a=arc: _mini_widget_filter_changed(e.control.value, a),
                     )
                 ) 
-
-            column = ft.Column(arc_checkboxes, scroll="auto", height=self.h // 4)
                 
-            return [column]
+            return arc_checkboxes
         
         def _get_markers_filter_options() -> list[ft.Control]:
+            if len(self.markers) == 0:
+                return [ft.Text("No Markers Created", color=ft.Colors.ON_SURFACE_VARIANT, italic=True)]
+            
             # List for our colors when formatted
-            marker_checkboxes = [ft.Checkbox(label="Show All", value=self.data.get('show_all_markers'), expand=True, adaptive=True)] 
+            marker_checkboxes = [
+                ft.Checkbox(
+                    label="Show All", value=self.data.get('show_all_markers'), expand=True, adaptive=True,
+                    on_change=lambda e: _mini_widget_filter_changed(e.control.value, mini_widget=None, key='show_all_markers')
+                ),
+                ft.Checkbox(
+                    label="Hide all", value=self.data.get('hide_all_markers'), expand=True, adaptive=True,
+                    on_change=lambda e: _mini_widget_filter_changed(e.control.value, mini_widget=None, key='hide_all_markers')
+                )
+            ] 
 
             # Create our controls for our color options
             for marker in self.markers.values():
@@ -809,13 +941,11 @@ class Plotline(Widget):
                         label=marker.title, 
                         value=marker.data.get('is_shown_on_widget'), 
                         expand=True, adaptive=True,
-                        on_change=lambda e, m=marker: m.toggle_plotline_control(e.control.value),
+                        on_change=lambda e, m=marker: _mini_widget_filter_changed(e.control.value, m),
                     )
                 )
 
-            column = ft.Column(marker_checkboxes, scroll="auto", height=self.h // 4)
-
-            return [column]
+            return marker_checkboxes
 
         
 
@@ -826,10 +956,10 @@ class Plotline(Widget):
             border_radius=ft.border_radius.all(6),
             content=ft.ExpansionTile(
                 expand=True, dense=True,
-                on_change=lambda e: self.change_data(**{'plot_points_filter_dropdown_expanded': not self.data.get('plot_points_filter_dropdown_expanded', True)}),
+                on_change=lambda e: self.p.run_task(self.change_data, **{'plot_points_filter_dropdown_expanded': not self.data.get('plot_points_filter_dropdown_expanded', True)}),
                 title=ft.Text("Plot Point Filters", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), 
                 initially_expanded=self.data.get('plot_points_filter_dropdown_expanded', True),
-                visual_density=ft.VisualDensity.COMPACT,
+                visual_density=ft.VisualDensity.COMPACT, collapsed_bgcolor=ft.Colors.SURFACE,
                 tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
                 maintain_state=True, adaptive=True, bgcolor=ft.Colors.SURFACE,
                 expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
@@ -846,10 +976,10 @@ class Plotline(Widget):
             border_radius=ft.border_radius.all(6),
             content=ft.ExpansionTile(
                 expand=True, dense=True,
-                on_change=lambda e: self.change_data(**{'arcs_filter_dropdown_expanded': not self.data.get('arcs_filter_dropdown_expanded', True)}),
+                on_change=lambda e: self.p.run_task(self.change_data, **{'arcs_filter_dropdown_expanded': not self.data.get('arcs_filter_dropdown_expanded', True)}),
                 title=ft.Text("Arcs Filters", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), 
                 initially_expanded=self.data.get('arcs_filter_dropdown_expanded', True),
-                visual_density=ft.VisualDensity.COMPACT,
+                visual_density=ft.VisualDensity.COMPACT, collapsed_bgcolor=ft.Colors.SURFACE,
                 tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
                 maintain_state=True, adaptive=True, bgcolor=ft.Colors.SURFACE,
                 expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
@@ -865,10 +995,10 @@ class Plotline(Widget):
             border_radius=ft.border_radius.all(6),
             content=ft.ExpansionTile(
                 expand=True, dense=True,
-                on_change=lambda e: self.change_data(**{'markers_filter_dropdown_expanded': not self.data.get('markers_filter_dropdown_expanded', True)}),
+                on_change=lambda e: self.p.run_task(self.change_data, **{'markers_filter_dropdown_expanded': not self.data.get('markers_filter_dropdown_expanded', True)}),
                 title=ft.Text("Markers Filters", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), 
                 initially_expanded=self.data.get('markers_filter_dropdown_expanded', True),
-                visual_density=ft.VisualDensity.COMPACT,
+                visual_density=ft.VisualDensity.COMPACT, collapsed_bgcolor=ft.Colors.SURFACE,
                 tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
                 maintain_state=True, adaptive=True, bgcolor=ft.Colors.SURFACE,
                 expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,

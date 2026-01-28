@@ -389,6 +389,8 @@ class Story(ft.View):
                     del self.world_buildings[widget.data.get('key', '')]
                 case "character_connection_map":
                     del self.character_connection_maps[widget.data.get('key', '')]
+                case "canvas_board":
+                    del self.canvas_boards[widget.data.get('key', '')]
 
                 case _:
                     self.p.open(SnackBar(f"Error deleting widget: Unknown tag {tag}"))

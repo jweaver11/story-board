@@ -22,6 +22,9 @@ class PlotlineInformationDisplay(MiniWidget):
         
         # Since we only reference out owners data and not our own, we don't need to verify it here
 
+        # NOT USED, but plot points use it when dragging, so this needs a value
+        self.data['visible'] = False
+
         # Set our visibility based on our owners data
         self.visible = self.owner.data.get('information_display_visibility', True)
         self.data['is_pinned'] = self.owner.data.get('information_display_is_pinned', False)

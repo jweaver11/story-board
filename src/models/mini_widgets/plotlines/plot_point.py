@@ -137,6 +137,7 @@ class PlotPoint(MiniWidget):
         # Show our mini widgets that we hid while dragging
         for mw in self.owner.mini_widgets:
             if mw.data.get('visible', False):
+                print("Made mw visible from pp call")
                 mw.visible = True
 
 
@@ -185,10 +186,10 @@ class PlotPoint(MiniWidget):
         
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:
-            self.hide_mini_widget(update=True)
-        # Otherwise, just update the page
-        else:
-            self.p.update()
+            self.hide_mini_widget()
+        
+
+        self.owner.reload_widget()
           
 
     # Called whenever we need to rebuild our slider, such as on construction or when our x position changes
@@ -317,7 +318,6 @@ class PlotPoint(MiniWidget):
             self.save_dict()
             self.reload_mini_widget()
             self.owner.reload_widget()
-            print("Toggling pin to:", not is_pinned)
 
         # Reload our plotline control
         self.reload_plotline_control()
