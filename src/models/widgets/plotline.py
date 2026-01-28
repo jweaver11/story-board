@@ -276,6 +276,7 @@ class Plotline(Widget):
 
         # Apply our changes in the UI
         self.story.active_rail.content.reload_rail()
+        await self.rebuild_plotline_canvas(no_update=True)
         self.reload_widget()
 
 
@@ -650,26 +651,28 @@ class Plotline(Widget):
 
         for marker in self.markers.values():
 
-            ratio = marker.data.get('ratio', 0.0)
-            print("Ratio for marker ", marker.title, ": ", ratio)
+            ratio = marker.data.get('ratio', None)
+
+            # Protect from newly created markers without a ratio yet. We'll set it here
+            if ratio is None:
+                ratio = marker.data.get('x_alignment', 0.0) / (self.plotline_width - 10)
+                marker.data['ratio'] = ratio
+                #marker.save_dict()
             
 
-            new_x_pos = int(ratio * (self.plotline_width - 10)) + 5    # because mapping [0..1] to [0..W], plus 5px padding
-
-            print("Setting marker left to: ", new_x_pos)
+            new_x_pos = int(ratio * (self.plotline_width - 10))    
 
             marker.plotline_marker.left = new_x_pos
 
-            #print("Canvas resized set marker left to: ", x_pos)
-
-
             # Make sure the container takes up the whole space
             marker.plotline_marker.height = self.h
+
+            
             
             # Re-paint its shapes (dashed line)
             marker.plotline_marker.content.content.shapes = [
                 cv.Line(
-                    0, (self.h//5), 0, (self.h//2 - 6), 
+                    5, (self.h//5), 5, (self.h//2 - 6), 
                     paint=ft.Paint(
                         self.data.get('color', "secondary"),
                         stroke_dash_pattern=[10, 10],
@@ -677,6 +680,13 @@ class Plotline(Widget):
                     ) 
                 )
             ]
+
+            if marker.data.get('x_alignment', 0) <= (self.plotline_width - 10) / 2:
+                marker.data['side_location'] = "right"
+            else:
+                marker.data['side_location'] = "left"
+
+            marker.save_dict()
             continue
             if marker.data.get('is_shown_on_widget', False):
                 # Calculate x position
@@ -810,7 +820,7 @@ class Plotline(Widget):
 
             if self.data.get('show_all_markers', False) or marker.data.get('is_shown_on_widget', False):
                 # Add the marker control to the plotline stack
-                plotline_stack.controls.append(marker.plotline_control)
+                plotline_stack.controls.append(marker.plotline_marker)
 
         # Set our content
         self.body_container.content = plotline_stack
@@ -860,7 +870,6 @@ class Plotline(Widget):
                         if value == True:
                             self.p.run_task(self.change_data, **{'show_all_markers': False, key: value})
                             for m in self.markers.values():
-                                print("Toggling off marker:", m.title)
                                 m.toggle_plotline_control(False)
 
                 self.reload_widget()
