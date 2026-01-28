@@ -95,7 +95,7 @@ class Arc(MiniWidget):
         # Build the gesture detector for our plotline arc. It doesn't need to be rebuilt, so we just do it once in constructor
         self.gd = ft.GestureDetector(
             mouse_cursor=ft.MouseCursor.CLICK,
-            expand=True, on_hover=self.on_hovers, hover_interval=20,
+            expand=True, hover_interval=100,
             on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
             on_secondary_tap=lambda e: print("Right clicked arc"), 
             on_enter=self.on_start_hover,      # Highlight container
@@ -105,7 +105,6 @@ class Arc(MiniWidget):
 
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our arc slider
-        self.can_open: bool = False                 # If we can open our mini widget. Used for handling when mouse over plotline and arc control, give PL priority
         self.hidden = False                         # Track if we're in hidden mode for easier dragging
 
         # Loads our arc
@@ -120,7 +119,6 @@ class Arc(MiniWidget):
     # Called when we hover over our arc on the plotline
     async def on_start_hover(self, e: ft.HoverEvent):
         ''' Focuses the arc control '''
-        self.can_open = True
 
         # Change its border opacity and update the page
         self.plotline_arc.border=ft.border.only( 
@@ -131,17 +129,10 @@ class Arc(MiniWidget):
         self.gd.content.opacity = 1.0
         self.p.update()
 
-    async def on_hovers(self, e: ft.HoverEvent):
-        if self.plotline_arc.height is not None:
-            if self.plotline_arc.height - e.local_y <= 25:
-                self.can_open = False
-            else:
-                self.can_open = True
 
     # Called when we stop hovering over our arc on the plotline
     async def on_stop_hover(self, e: ft.HoverEvent):
         ''' Changes the arc control to unfocused '''
-        self.can_open = True
         
         # If our info display is not opened (we are not visible), lower the border opacity and update the page
         if not self.visible:
@@ -155,11 +146,7 @@ class Arc(MiniWidget):
 
     def show_mini_widget(self, e=None):
 
-        # If we're too close to the timeline, just open that instead
-        if not self.can_open:
-            self.owner.information_display.show_mini_widget()
-            return
-        
+    
         self.opacity = 1
         self.ignore_interactions = False
         self.plotline_arc.border = ft.border.only(

@@ -635,7 +635,7 @@ class Story(ft.View):
 
         # Our container that contains a column of our options. Need to use container for positioning
         menu = ft.Container(
-            left=self.mouse_x,  top=self.mouse_y,   # Positions the menu at the mouse location
+            left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
             border_radius=ft.border_radius.all(4),
             bgcolor=ft.Colors.with_opacity(.65, ft.Colors.ON_INVERSE_SURFACE),
             width=120, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
@@ -653,6 +653,7 @@ class Story(ft.View):
             on_tap=self.close_menu,
             on_secondary_tap=self.close_menu,
         )
+        
 
         # Overlay is a stack, so add the detector, then the menu container
         self.p.overlay.append(outside_detector)

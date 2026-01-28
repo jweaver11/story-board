@@ -48,7 +48,8 @@ class Marker(MiniWidget):
                 'tag': "marker",            # Tag to identify what type of object this is
                 'description': str,
                 'events': list,                 # Numbered list of events that occur at this plot point
-                'x_alignment': x_alignment if x_alignment is not None else float,           # Float between -1 and 1 on x axis of plotline. 0 is center
+                'x_alignment': x_alignment if x_alignment is not None else int,  # Integer between 0 and owner.plotline_width for absolute positioning
+                'ratio_position': float,      # Float between -1 and 1 for relative positioning on plotline. Just used for calculations, not rendering
                 'is_major': bool,               # If this plot point is a major event
                 'date': str,                    # Date of the plot point
                 'time': str,                    # Time of the plot point
@@ -60,10 +61,9 @@ class Marker(MiniWidget):
         )
 
         # Set our x alignment to position on our plotline. -1 is left, 0 is center, 1 is right. Default 0
-        self.x_alignment = ft.Alignment(self.data.get('x_alignment', 0), 0)
 
         # UI elements
-        self.plotline_point: ft.Container = None    # Circle container to show our plot point on the plotline
+        self.plotline_marker: ft.Container = None    # Circle container to show our plot point on the plotline
         self.slider: ft.Column = None               # Slider to drag our plot point along the plotline
         self.plotline_control: ft.Stack = None      # Stack that holds our plotline point and slider
 
@@ -79,37 +79,58 @@ class Marker(MiniWidget):
         super().delete_dict()
 
     # Called when actively dragging our slider thumb to change our x position
-    async def change_x_position(self, e):
+    async def change_x_position(self, e=None):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
 
-        # Grab our new position as a float of whatever number division we're on (-100 -> 100)
-        new_position = float(e.control.value)
-        np = new_position / 100         # Convert that float between -1 -> 1 for our alignment to work
+        if e is None:
+            delta_x = 0
+        else:
+            delta_x = e.delta_x
 
-        # Save the new position to data, but don't needlessly write to file until we stop dragging
-        self.data['x_alignment'] = np
-        self.is_dragging = True     # Update our dragging state. We do it here to see if we actually moved
+        if not isinstance(delta_x, (int, float)):
+            delta_x = 0
+        
+        
+        # Calculate our new absolute positioning based on our delta x from dragging
+        new_left = self.plotline_marker.left + delta_x
+
+        # Clamp sides and use timeline padding
+        if new_left < 5:
+            new_left = 5
+        elif new_left > self.owner.plotline_width - 5:
+            new_left = self.owner.plotline_width - 5
+        
+        # Set our new left position within our stack
+        self.plotline_marker.left = new_left
+
+        #new_alignment = min(1.0, ((new_left) / (self.owner.plotline_width - 5)) * 2 - 1, 2)   # Convert left position to -1 -> 1 alignment
+
+        
+        self.data['x_alignment'] = new_left
+
+        self.save_dict()
+        self.p.update()
+        return
+
+    def _drag_end(self, e=None):
+        #self.reload_mini_widget(no_update=True)
+        #self.owner.reload_widget()
+        print("New alignment: ", self.data.get('x_alignment', 0))
+
+        ratio = self.data.get('x_alignment', 0) / (self.owner.plotline_width - 10)
+        
+
+
+        self.data['ratio'] = ratio
+        self.save_dict()
+        
         
     # Called when hovering over our plot point to show the slider
-    async def show_slider(self, e=None):
-        ''' Shows our slider and hides our plotline_point. Makes sure all other sliders are hidden '''
+    async def highlight(self, e=None):
+        ''' Shows our slider and hides our plotline_marker. Makes sure all other sliders are hidden '''
 
-        # Check all other plot points
-        for pp in self.owner.plot_points.values():
+        self.plotline_marker.content.content.opacity = .7 if self.plotline_marker.content.content.opacity != .7 else 1
 
-            # If they are dragging, we don't wanna also start dragging ours, so return out
-            if pp.is_dragging and pp != self:
-                return
-            
-            # Also check if they have a slider visible. This matter for very close together plot points. Make sure only one is ready to drag at a time
-            elif pp.slider.visible and pp != self:
-                return
-            
-        
-        # If we didn't return out, show our slider and hide our plotline point
-        self.slider.visible = True
-        self.plotline_point.visible = False
-        
         # Apply it to the UI
         self.p.update()
 
@@ -117,7 +138,6 @@ class Marker(MiniWidget):
     async def start_dragging(self, e=None):
         ''' Hides the labels of all the other plot points when we are dragging ours '''
 
-        self.plotline_point.visible = False
 
         self.p.update()
 
@@ -133,11 +153,11 @@ class Marker(MiniWidget):
     
         # Hide slider
         self.slider.visible = False
-        self.plotline_point.visible = True      # Set our point to visible again
+        self.plotline_marker.visible = True      # Set our point to visible again
         self.is_dragging = False                # No longer dragging
 
         # Update our alignment based on our correct data. This is updated when dragging, so no need to set it here
-        self.x_alignment = ft.Alignment(self.data.get('x_alignment', 0), 0)
+        #self.x_alignment = ft.Alignment(self.data.get('x_alignment', 0), 0)
 
         if self.data.get('x_alignment', 0) <= 0:
             self.data['side_location'] = 'right'
@@ -164,7 +184,7 @@ class Marker(MiniWidget):
     
             # Hide slider
             self.slider.visible = False
-            self.plotline_point.visible = True      # Set our point to visible again
+            self.plotline_marker.visible = True      # Set our point to visible again
             self.is_dragging = False
 
             # Since no data changed, just update the page to apply changes
@@ -200,7 +220,7 @@ class Marker(MiniWidget):
         # state used during dragging
         self.slider = ft.Column(
             spacing=0,
-            visible=False,                                      # Start hidden until we hover over plot point
+            #visible=False,                                      # Start hidden until we hover over plot point
             controls=[
                 #ft.GestureDetector(on_enter=self.hide_slider,  expand=True),    # Invisible container to hide slider when going too far up
                 ft.Container(ignore_interactions=True, expand=True),    # Invisible container to hide slider when going too far up
@@ -218,9 +238,9 @@ class Marker(MiniWidget):
                             thumb_color=self.data.get('color', "secondary"),    # Color of our actual dot on the slider
                             overlay_color=ft.Colors.with_opacity(.5, self.data.get('color', "secondary")),    # Color of plot point when hovering over it or dragging      
                             on_change=self.change_x_position,      # Update our data with new x position as we drag
-                            on_change_end=self.hide_slider,                     # Save the new position, but don't write it yet
+                            #on_change_end=self.hide_slider,                     # Save the new position, but don't write it yet
                             on_change_start=self.start_dragging,      # Hide other plot point labels when we start dragging                      
-                            on_blur=self.hide_slider                            # Hide the slider if we click away from it
+                            #on_blur=self.hide_slider                            # Hide the slider if we click away from it
                         ),
                     ),
                     # Sitting overtop the slider, is a row with expand based on our proportions
@@ -230,7 +250,8 @@ class Marker(MiniWidget):
                         height=100,
                         controls=[
                             ft.GestureDetector(         # Catch our hovers to the left of the thumb
-                                on_hover=self.may_hide_slider,
+                                #on_hover=self.may_hide_slider,
+                                on_pan_end=lambda e: None,
                                 hover_interval=100,
                                 expand=left_ratio,
                                 content=ft.Container(expand=True)
@@ -241,7 +262,7 @@ class Marker(MiniWidget):
                                 controls=[
                                     
                                     # Catch above and below the thumb
-                                    ft.GestureDetector(expand=True, on_hover=self.may_hide_slider, data="line213", hover_interval=100),
+                                    ft.GestureDetector(expand=True, on_pan_update=lambda e: None, data="line213", hover_interval=100),
 
                                     # Reserve safe space for the thumb
                                     ft.Container(       # Safe area
@@ -249,11 +270,12 @@ class Marker(MiniWidget):
                                         shape=ft.BoxShape.CIRCLE,
                                         width=50, height=50, 
                                     ),
-                                    ft.GestureDetector(expand=True, on_hover=self.may_hide_slider, data="line221", hover_interval=100),
+                                    ft.GestureDetector(expand=True, on_pan_update=lambda e: None, data="line221", hover_interval=100),
                                 ]
                             ),
                             ft.GestureDetector(         # Catch our hovers to the right of the thumb
-                                on_hover=self.may_hide_slider,
+                                #on_hover=self.may_hide_slider,
+                                on_pan_end=lambda e: None,
                                 hover_interval=100,
                                 data="called from line 226 gd",
                                 expand=right_ratio,
@@ -269,55 +291,46 @@ class Marker(MiniWidget):
     def reload_plotline_control(self):
         """ Rebuilds our plotline control that holds our plot point and slider """
 
+        
+
         # Reload our slider
         self.reload_slider()
 
+        
+        #print("Setting marker height to owner height:", h)
+        #print("Marker height set to:", height)
+
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
-        self.plotline_point = ft.Container(
-            margin=ft.Margin(16, 0, 16, 0),
-            expand=False,
-            bgcolor=self.data.get('color', "secondary"),
-            width=20,
-            height=20,
-            shape=ft.BoxShape.CIRCLE,
+        self.plotline_marker = ft.Container(
+            margin=ft.Margin(16, 0, 16, 0), expand=False, #padding=ft.padding.only(left=5),
+            width=10, alignment=ft.alignment.center, clip_behavior=ft.ClipBehavior.HARD_EDGE,
+            left=self.data.get('x_alignment', 0),
+            #border=ft.border.all(2, "yellow"),
             content=ft.GestureDetector(
-                expand=True,
-                on_enter=self.show_slider,
-                on_secondary_tap=lambda e: print("Right click on plot point"),
-                on_tap_down=self.show_slider,
+                expand=True, width=10, mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
+                on_enter=self.highlight, on_exit=self.highlight,
+                on_pan_update=self.change_x_position, drag_interval=20, on_pan_end=self._drag_end,
+                on_secondary_tap=lambda e: print("Right click on Marker"),
+                on_tap=self.show_mini_widget,
+                content=cv.Canvas(
+                    width=10, height=10000, opacity=.7, expand=True, resize_interval=20,
+                    content=ft.Container(ignore_interactions=True, expand=True), #on_resize=_resize_plotline_canvas, 
+                ),
             ),
         )
 
-        # --- center the 100px label under the 20px point for any x_alignment ---
-        x = float(self.data.get("x_alignment", 0) or 0.0)
-
-        label_w = 100.0
-        point_w = 20.0
-
-        # Flet offset is fractional of *label width*
-        offset_x = x * (label_w - point_w) / (2.0 * label_w)  # == 0.4 * x for 100/20
-
-        # Optional safety clamp (prevents extreme translations if sizes change)
-        offset_x = max(-0.5, min(0.5, offset_x))
-
-        
-     
-
-        
-
-                
-
         # Rebuild our stack to hold our plotline point and slider
         self.plotline_control = ft.Stack(
-            alignment=self.x_alignment,
             visible=self.data.get('is_shown_on_widget', True),
             expand=True,            # Make sure it fills the whole plotline width
             controls=[
                 ft.Container(expand=True, ignore_interactions=True),        # Make sure our stack is always expanded to full size
-                self.plotline_point,                                        # Our plot point on the plotline
+                self.plotline_marker,                                        # Our plot point on the plotline
                 self.slider,                                                # Our slider that appears when we hover over the plot point
             ]
         ) 
+
+        self.plotline_control = self.plotline_marker
 
 
     # Called when reloading changes to our plot point and in constructor

@@ -43,7 +43,7 @@ class Plotline(Widget):
                 'information_display_visibility': True,             # Visibility of our information display mini widget
                 'information_display_is_pinned': False,             # If our information display is pinned open
                 'hide_division_labels': bool,                       # If the division labels are hidden on the plotline
-                'division_labels_direction': "top",                 # If the division labels are on top of the plotline instead of below
+                
                 
                 # Our rail dropdown states
                 'dropdown_is_expanded': True,               # If the branch dropdown is expanded on the rail
@@ -104,7 +104,8 @@ class Plotline(Widget):
             on_resize=self.rebuild_plotline_canvas, resize_interval=20, expand=True, 
             content=ft.GestureDetector(
                 expand=True, on_secondary_tap=self.on_secondary_tap,
-                on_hover=self.hover_plotline_canvas,
+                on_hover=self._hover_plotline_canvas,
+                on_exit=self._exit_canvas,
                 on_tap=self._on_tap,
                 hover_interval=10,
             )
@@ -257,12 +258,15 @@ class Plotline(Widget):
         ''' Creates a new marker inside of our plotline object, and updates the data to match '''
         from models.mini_widgets.plotlines.marker import Marker
 
+        left_pos = int((self.x_alignment + 1.0) / 2.0 * (self.plotline_width - 10)) + 5
+        print("Creating marker at left pos: ", left_pos)
+
         new_marker = Marker(
             title=title, 
             owner=self, 
             page=self.p, 
             key="markers", 
-            x_alignment=self.x_alignment,
+            x_alignment=left_pos,
             data=None
         )
         # Add our new Marker mini widget object to our markers dict, and to our owners mini widgets
@@ -378,7 +382,7 @@ class Plotline(Widget):
     
 
     # Called when hovering over our plotline on the canvas
-    async def hover_plotline_canvas(self, e: ft.HoverEvent):
+    async def _hover_plotline_canvas(self, e: ft.HoverEvent):
         ''' Sets our coordinated for opening the menu when right clicking and updates our alignment we want to pass in '''
 
         # Set coordinates for menu
@@ -417,6 +421,16 @@ class Plotline(Widget):
 
             self.plotline_canvas.page = self.p      # refresh page reference
             self.plotline_canvas.update()
+
+    async def _exit_canvas(self, e: ft.HoverEvent):
+        ''' Called when exiting our plotline canvas '''
+        self.can_open_menu = False
+        self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
+        self.plotline_canvas.shapes[len(self.data.get('divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
+        self.plotline_canvas.content.mouse_cursor = None
+
+        self.plotline_canvas.page = self.p      # refresh page reference
+        self.plotline_canvas.update()
 
 
     # Called when right clicking our plotline on the canvas
@@ -523,7 +537,7 @@ class Plotline(Widget):
             if not self.data.get('hide_division_labels', False):
                 self.plotline_canvas.shapes.append(
                     cv.Text(
-                        x, self.plotline_height // 2 + 30 if self.data.get('division_labels_direction', "top") == "top" else self.plotline_height // 2 + 40,
+                        x, self.plotline_height // 2 - 25 if app.settings.data.get('division_labels_direction', "top") == "top" else self.plotline_height // 2 + 25,
                         str(self.data.get('plotline_data', {}).get('divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
                         ft.TextStyle(14, weight=ft.FontWeight.BOLD),
                         alignment=ft.alignment.center
@@ -552,13 +566,13 @@ class Plotline(Widget):
             ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center
         ))
         self.plotline_canvas.shapes.append(cv.Text(
-            self.plotline_width // 2, self.plotline_height // 2 + 80, time_label, 
-            ft.TextStyle(20, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center
+            self.plotline_width // 2, self.plotline_height // 2 + 200, time_label, 
+            ft.TextStyle(24, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center
         ))
 
         
         # Add our plot points labels above or below their dot on the plotline ------------------------------------------------
-        line_direction = "top"  # Line direction either going above or below the plotline that flips evert plotline
+        line_direction = "bottom"  # Line direction either going above or below the plotline that flips evert plotline
         line_height = "small"    # Line height that cycles between small, medium, and large after each plot point
 
         sorted_plot_points = dict(sorted(self.plot_points.items(), key=lambda item: item[1].data.get('x_alignment', 0.0)))
@@ -582,13 +596,13 @@ class Plotline(Widget):
                     # Set our line height
                     match line_height:
                         case "small":
-                            y_pos = int(self.plotline_height // 3)
+                            y_pos = int(self.plotline_height // 2) - 50
                         case "medium":
-                            y_pos = int(self.plotline_height // 4)
+                            y_pos = int(self.plotline_height // 2) - 100
                         case "large":
-                            y_pos = int(self.plotline_height // 6)
+                            y_pos = int(self.plotline_height // 2) - 150
                         case _:
-                            y_pos = int(self.plotline_height // 6)
+                            y_pos = int(self.plotline_height // 2) - 150
 
                     line_direction = "bottom"
                     
@@ -596,18 +610,18 @@ class Plotline(Widget):
                     moveTo = cv.Path.MoveTo(x_pos, self.plotline_height // 2 + 20)
                     match line_height:
                         case "small":
-                            y_pos = int(self.plotline_height - (self.plotline_height // 3))
+                            y_pos = int(self.plotline_height - (self.plotline_height // 2) + 50)
                             line_height = "medium"
                         case "medium":
-                            y_pos = int(self.plotline_height - (self.plotline_height // 4))
+                            y_pos = int(self.plotline_height - (self.plotline_height // 2) + 100)
                             line_height = "large"
                         case "large":
-                            y_pos = int(self.plotline_height - (self.plotline_height // 6))
+                            y_pos = int(self.plotline_height - (self.plotline_height // 2) + 150)
                             line_height = "small"
                         case _:
-                            y_pos = int(self.plotline_height - (self.plotline_height // 6))
+                            y_pos = int(self.plotline_height - (self.plotline_height // 2) + 150)
 
-                    line_direction = "top"
+                    line_direction = "bottom"
 
 
                 
@@ -625,7 +639,7 @@ class Plotline(Widget):
                 self.plotline_canvas.shapes.append(
                     cv.Text(
                         x_pos, 
-                        y_pos - 20 if line_direction == "bottom" else y_pos + 20,
+                        y_pos + 20 if line_direction == "bottom" else y_pos - 20,
                         plot_point.title, 
                         ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=plot_point.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
                         alignment=ft.alignment.center,
@@ -635,6 +649,35 @@ class Plotline(Widget):
 
 
         for marker in self.markers.values():
+
+            ratio = marker.data.get('ratio', 0.0)
+            print("Ratio for marker ", marker.title, ": ", ratio)
+            
+
+            new_x_pos = int(ratio * (self.plotline_width - 10)) + 5    # because mapping [0..1] to [0..W], plus 5px padding
+
+            print("Setting marker left to: ", new_x_pos)
+
+            marker.plotline_marker.left = new_x_pos
+
+            #print("Canvas resized set marker left to: ", x_pos)
+
+
+            # Make sure the container takes up the whole space
+            marker.plotline_marker.height = self.h
+            
+            # Re-paint its shapes (dashed line)
+            marker.plotline_marker.content.content.shapes = [
+                cv.Line(
+                    0, (self.h//5), 0, (self.h//2 - 6), 
+                    paint=ft.Paint(
+                        self.data.get('color', "secondary"),
+                        stroke_dash_pattern=[10, 10],
+                        stroke_width=2
+                    ) 
+                )
+            ]
+            continue
             if marker.data.get('is_shown_on_widget', False):
                 # Calculate x position
                 x_alignment = max(-1.0, min(1.0, float(marker.data.get('x_alignment', 0.0))))
@@ -761,6 +804,7 @@ class Plotline(Widget):
 
         # Add our markers to the plotline (They position themselves)
         for marker in self.markers.values():    
+            #break
             if self.data.get('hide_all_markers', False):
                 break
 

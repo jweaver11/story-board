@@ -107,7 +107,6 @@ class MiniWidget(ft.Container):
         ''' Deletes our data from all live widget/mini widget objects that we nest in, and saves the owners file '''
 
         try:
-            print("Called mini widget delete dict")
 
             # Applies the UI changes by removing ourselves from the mini widgets list
             if self in self.owner.mini_widgets:
@@ -131,8 +130,6 @@ class MiniWidget(ft.Container):
             self.owner.story.active_rail.content.reload_rail() 
 
             self.data = None
-
-            print("Passed all checks")
 
         # Catch errors
         except Exception as e:
@@ -218,7 +215,6 @@ class MiniWidget(ft.Container):
 
     def hide_mini_widget(self, e=None, update: bool=False):
         ''' Hides our mini widget '''
-        print("Hiding mini widget:", self.title)
         
         if not self.visible:
             return
