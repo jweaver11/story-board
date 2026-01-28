@@ -2,10 +2,15 @@
 
 import flet as ft
 from models.views.story import Story
+import os
+from utils.check_widget_unique import check_widget_unique
 
 
 def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) -> ft.AlertDialog:
     ''' Creates a new alert dialog for the canvas '''
+
+    if directory_path is None:
+        directory_path = story.data.get('content_directory_path', "")
 
     def _size_text_field_changed(e):
         ''' Handles when the text field is changed '''
@@ -25,9 +30,6 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         # Otherwise, set the value
         else:
             value = int(e.control.value)
-
-
-       
 
         # Check if value is 0. If it is, set error text and disable create button
         if value is not None:
@@ -52,28 +54,6 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
 
         # Update page if we passed all checks so our create button will work
         page.update()
-            
-            
-            
-    # Called when user changes the title text field
-    def _title_text_field_changed(e):
-        ''' Checks to make sure the title is valid '''
-        title = e.control.value
-
-        # Check if the title is not empty and is unique
-        if title != "":
-            if _check_title():
-                e.control.error_text = None
-                create_button.disabled = False
-                page.update()
-            else:
-                e.control.error_text = "Title must be unique"
-                create_button.disabled = True
-                page.update()
-        else:
-            e.control.error_text = "Title cannot be empty"
-            create_button.disabled = True
-            page.update()
         
 
     def _new_template_selected(e):
@@ -106,25 +86,47 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
 
         page.update()
 
-    def _check_title() -> bool:
-        ''' Checks if the title is valid (not empty and not taken) '''
+    def _check_title(e=None):
+    
+        # Set submitting to false, and unique to True
+        nonlocal submitting, is_unique
+        submitting = False
+        is_unique = True
+
+        # Grab out title and tag from the textfield, and set our new key to compare
         title = title_textfield.value
+        
+        # Generate our new key to compare. Requires normalization
+        nk = directory_path + "\\" + title + "_" + "canvas"
+        new_key = os.path.normpath(nk)
 
-        if title == "":
-            title_textfield.error_text = "Please enter a title"
+        error_text, is_unique = check_widget_unique(story, new_key)
+
+        # If we are NOT unique, show our error text
+        if not is_unique:
+            title_textfield.error_text = error_text
+            create_button.disabled = True
+            page.update()
+            print("Check title failed")
             return False
+            
 
-        for canvas in story.canvases:
-            if canvas.title == title:
-                title_textfield.error_text = "Title must be unique"
-                return False
-
-        title_textfield.error_text = None
-        return True
-
+        # Otherwise remove our error text
+        else:
+            title_textfield.error_text = None
+            create_button.disabled = False
+            page.update()
+            print("Check title passed")
+            return True
+            
+      
     def _create_button_clicked(e):
         ''' Handles creating a new canvas when create is clicked '''
         nonlocal canvas_data
+        nonlocal submitting
+        nonlocal is_unique
+
+        submitting = True
 
         if not _check_title():
             title_textfield.focus()
@@ -148,10 +150,11 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         # Build the canvas here
         page.close(alert_dialog)
 
-
         page.update()
 
-
+    # Track if our name is unique for checks, and if we're submitting or not
+    is_unique = True
+    submitting = False
 
     canvas_data = {'width': None, 'height': None, 'aspect_ratio': None}       # Data we will pass set to pass in whenever a different template is selected
 
@@ -167,7 +170,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
     )  
     title_textfield = ft.TextField(
         label="Title", data="title", width=300, autofocus=True, on_submit=_create_button_clicked,
-        on_change=_title_text_field_changed, capitalization=ft.TextCapitalization.WORDS # Add check for other widgets with same names
+        on_change=_check_title, capitalization=ft.TextCapitalization.WORDS # Add check for other widgets with same names
     )
 
     title_textfield_container = ft.Container(title_textfield, margin=ft.margin.only(top=6))
