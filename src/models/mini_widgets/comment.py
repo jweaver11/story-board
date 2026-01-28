@@ -12,13 +12,12 @@ from utils.verify_data import verify_data
 class Comment(MiniWidget):
     
     # Constructor
-    def __init__(self, title: str, owner: Widget, father, page: ft.Page, key: str, data: dict=None):
+    def __init__(self, title: str, owner: Widget, page: ft.Page, key: str, data: dict=None):
 
         # Parent constructor
         super().__init__(
             title=title,        
             owner=owner,   
-            father=father,   
             page=page,          
             key=key,  
             data=data,          
@@ -57,7 +56,6 @@ class Comment(MiniWidget):
         # Our column that will display our header filters and body of our widget
         self.title_control = ft.TextButton(
             f"Hello from mini note: {self.title}",
-            on_click=self.toggle_visibility,
         )
 
         self.content_control = ft.TextField(

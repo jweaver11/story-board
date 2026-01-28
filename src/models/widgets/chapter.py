@@ -56,7 +56,6 @@ class Chapter(Widget):
             self.mini_widgets.append(Comment(
                 title=note_title,
                 owner=self,
-                father=self,
                 page=self.p,
                 key="comments",
                 data=note_data,
