@@ -112,7 +112,8 @@ class PlotPoint(MiniWidget):
 
         # Hide all mini widgets while dragging (including our own)
         for mw in self.owner.mini_widgets:
-            mw.visible = False
+            if mw != self and mw.data.get('is_pinned', False) == False:
+                mw.hide_mini_widget()  
 
         self.plotline_point.visible = False
         self.p.update()

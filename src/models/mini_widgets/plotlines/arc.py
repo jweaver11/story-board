@@ -169,7 +169,7 @@ class Arc(MiniWidget):
         )
 
         for arc in self.owner.arcs.values():
-            if arc != self:
+            if arc != self and arc.data.get('is_pinned', False) == False:
                 arc.hide_mini_widget()
 
         if not self.hidden:
