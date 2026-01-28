@@ -71,9 +71,9 @@ class Workspace(ft.Container):
             expand=True,
             padding=ft.padding.all(8),
             content=ft.DragTarget(
-            group="widgets", 
-            on_accept=lambda e: self.pin_drag_accept(e, "main"), on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
-            content=ft.Container(expand=True,  bgcolor=ft.Colors.ON_SURFACE, opacity=0, border_radius=8)
+                group="widgets", 
+                on_accept=lambda e: self.pin_drag_accept(e, "main"), on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+                content=ft.Container(expand=True,  bgcolor=ft.Colors.ON_SURFACE, opacity=0, border_radius=8)
             )
         )
 

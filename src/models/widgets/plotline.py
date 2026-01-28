@@ -259,7 +259,6 @@ class Plotline(Widget):
         from models.mini_widgets.plotlines.marker import Marker
 
         left_pos = int((self.x_alignment + 1.0) / 2.0 * (self.plotline_width - 10)) + 5
-        print("Creating marker at left pos: ", left_pos)
 
         new_marker = Marker(
             title=title, 

@@ -14,7 +14,7 @@ from utils.verify_data import verify_data
 from styles.snack_bar import SnackBar
 from utils.safe_string_checker import return_safe_name
 
-
+ 
 class Story(ft.View):
     
     # Constructor.
