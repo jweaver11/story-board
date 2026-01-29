@@ -665,21 +665,28 @@ class Plotline(Widget):
                 marker.plotline_marker.left = new_x_pos
 
                 # Make sure the container takes up the whole space
-                marker.plotline_marker.height = self.h
+                #marker.plotline_marker.height = self.h // 3
+                
+                
 
                 y_pos = int(self.h // 5)
+                if y_pos < 70: 
+                    y_pos = 70
+                marker_height = self.plotline_height // 2 - y_pos
+                marker.plotline_marker.height = marker_height
+                marker.plotline_marker.top = y_pos
     
                 # Re-paint its shapes (dashed line) if needed (Only first load)
-                if len(marker.plotline_marker.content.content.shapes) == 0:
-                    marker.plotline_marker.content.content.shapes = [
-                        cv.Line(
-                            5, y_pos, 5, (self.h//2 - 6), 
-                            paint=ft.Paint(
-                                self.data.get('color', "secondary"),
-                                stroke_dash_pattern=[10, 10],
-                                stroke_width=2
-                            ) 
-                        )
+                
+                marker.plotline_marker.content.content.shapes = [
+                    cv.Line(
+                        4, 0, 4, (marker_height), 
+                        paint=ft.Paint(
+                            self.data.get('color', "secondary"),
+                            stroke_dash_pattern=[10, 10],
+                            stroke_width=2
+                        ) 
+                    )
                     ]
             
                 label_path = cv.Text(
@@ -691,7 +698,6 @@ class Plotline(Widget):
                 )
             
                 
-
                 # Add the text label for the plot point
                 self.plotline_canvas.shapes.append(label_path)
 

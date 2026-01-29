@@ -108,10 +108,10 @@ class Marker(MiniWidget):
         #self.p.update()
         return
 
+    # Called when we finish dragging our plotline_marker to save our position
     async def _drag_end(self, e=None):
+        ''' Updates our alignment and side location, and applies the updadte to the canvas for our label '''
         
-        #print("New Left: ", self.data.get('left', 0))
-
         x_alignment = (self.data.get('left', 0) / (self.owner.plotline_width - 10)) * 2.0 - 1.0
 
         self.data['x_alignment'] = x_alignment
@@ -120,8 +120,6 @@ class Marker(MiniWidget):
             self.data['side_location'] = "right"
         else:
             self.data['side_location'] = "left"
-
-        print("New side location: ", self.data.get('side_location', 'right'))
 
         self.save_dict()
         await self.owner.rebuild_plotline_canvas(no_update=False)
@@ -160,17 +158,17 @@ class Marker(MiniWidget):
 
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
         self.plotline_marker = ft.Container(
-            margin=ft.Margin(16, 0, 16, 0), expand=False, #padding=ft.padding.only(left=5),
+            margin=ft.Margin(16, 0, 16, 0), expand=False, 
             width=10, alignment=ft.alignment.center, clip_behavior=ft.ClipBehavior.HARD_EDGE,
             left=self.data.get('left', 0),
             content=ft.GestureDetector(
-                expand=True, width=10, mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
+                width=10, mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
                 on_enter=self.highlight, on_exit=self.highlight,
                 on_pan_update=self.change_x_position, drag_interval=20, on_pan_end=self._drag_end,
                 on_secondary_tap=lambda e: print("Right click on Marker"),
                 on_tap=self.show_mini_widget,
                 content=cv.Canvas(
-                    width=10, height=10000, opacity=.7, expand=True, resize_interval=20,    
+                    width=10,  opacity=.7, resize_interval=20,    
                     content=ft.Container(ignore_interactions=True, expand=True), #on_resize=_resize_plotline_canvas, 
                     shapes=[],    # Set shapes empty so timeline knows to set its dashed line
                 ),
