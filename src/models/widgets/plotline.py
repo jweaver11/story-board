@@ -662,16 +662,15 @@ class Plotline(Widget):
                 
                 # Calculate x position and set the control to have it
                 new_x_pos = int(((x_alignment + 1) / 2) * (self.plotline_width - 10))  
-                marker.plotline_marker.left = new_x_pos
+                marker.plotline_marker.left = new_x_pos  
 
-                # Make sure the container takes up the whole space
-                #marker.plotline_marker.height = self.h // 3
-                
-                
-
+                # Set how high up we want to go
                 y_pos = int(self.h // 5)
+
+                # Guard against the header
                 if y_pos < 70: 
                     y_pos = 70
+
                 marker_height = self.plotline_height // 2 - y_pos
                 marker.plotline_marker.height = marker_height
                 marker.plotline_marker.top = y_pos

@@ -107,7 +107,6 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
             title_textfield.error_text = error_text
             create_button.disabled = True
             page.update()
-            print("Check title failed")
             return False
             
 
@@ -116,7 +115,6 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
             title_textfield.error_text = None
             create_button.disabled = False
             page.update()
-            print("Check title passed")
             return True
             
       
@@ -186,49 +184,49 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
             content=ft.Text("4k (3840x2160)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(5), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
             height=90, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=160,
-            data={'width': 3840, 'height': 2160, 'aspect_ratio': '16:9'}
+            data={'width': 3840, 'height': 2160, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("2k (2560x1440)",text_align=ft.TextAlign.CENTER), padding=ft.padding.all(5), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
             height=90, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=160,
-            data={'width': 2560, 'height': 1440, 'aspect_ratio': '16:9'}
+            data={'width': 2560, 'height': 1440, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("HD (1920x1080)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(5), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
             height=90, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=160,
-            data={'width': 1920, 'height': 1080, 'aspect_ratio': '16:9'}
+            data={'width': 1920, 'height': 1080, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("Banner (1500x500)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(5), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
             height=90, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=270,
-            data={'width': 1500, 'height': 500, 'aspect_ratio': '3:1'}
+            data={'width': 1500, 'height': 500, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("4k (2160x3840)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected, 
             height=160, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=90,
-            data={'width': 2160, 'height': 3840, 'aspect_ratio': '9:16'}
+            data={'width': 2160, 'height': 3840, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("2k (1440x2560)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
             height=160, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=90,
-            data={'width': 1440, 'height': 2560, 'aspect_ratio': '9:16'}
+            data={'width': 1440, 'height': 2560, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("HD (1080x1920)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected, 
             height=160, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=90,
-            data={'width': 1080, 'height': 1920, 'aspect_ratio': '9:16'}
+            data={'width': 1080, 'height': 1920, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("Banner (500x1500)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
             height=270, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=90,
-            data={'width': 500, 'height': 1500, 'aspect_ratio': '1:3'}
+            data={'width': 500, 'height': 1500, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("16:9", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,

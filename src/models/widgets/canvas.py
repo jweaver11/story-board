@@ -53,26 +53,25 @@ class Canvas(Widget):
                 "tag": "canvas",
                 'color': app.settings.data.get('default_canvas_color'),
 
-                # Canvas meta data. Particularely useful for exporting and forcing aspect ratios
-                "canvas_meta": {        # Set canvas data here
-                    "width": int,
-                    "height": int,
-                    "aspect_ratio": float,
-                    "bgcolor": "#000000,1.0",           
-                    "bgimage_path": str,                # Path to background image for canvas
-                },     
+                  
 
                 # Canvas drawing data we save and load from
                 "canvas": {
+                    # Drawing data
                     'paths': list,              # All our shapes, lines, dashed lines, curves, etc.
                     'shadow_paths': list,       # All paths but with shadows
                     'points': list,             # All our points
 
-                    'background': {                 # Background color info
-                        'color': str,               # If its a color
-                        'image_base64': str,        # If an image is used. Color ignored if this is set
-                        'blend_mode': "src_over",   # Blend mode for background. Starts default
-                    },
+                    # Sizing
+                    "width": int,
+                    "height": int,
+                    "aspect_ratio": float,      # Used over height and width if set
+
+                    # Background settings
+                    'bgcolor': str,               # If its a color
+                    'image_base64': str,        # If an image is used. Color ignored if this is set
+                    'bg_blend_mode': "src_over",   # Blend mode for background. Starts default
+                
                 },
             },
         )
@@ -100,11 +99,13 @@ class Canvas(Widget):
         self.canvases_list = [self.canvas]  # Not used, but may be for layering
 
         self.canvas_container = ft.Container(
-            width=2000, height=1000,
-            expand=True, clip_behavior=ft.ClipBehavior.HARD_EDGE,
-            bgcolor=ft.Colors.SURFACE,      # Just background to draw over. Not exported or used
-            border=ft.border.all(2, ft.Colors.OUTLINE_VARIANT),
-            #aspect_ratio=1/2,
+            width=self.data.get('canvas', {}).get('width', None),
+            height=self.data.get('canvas', {}).get('height', None),
+            clip_behavior=ft.ClipBehavior.HARD_EDGE,
+            #expand=True,
+            border_radius=ft.border_radius.all(2),
+            border=ft.border.all(1, ft.Colors.ON_SURFACE_VARIANT),
+            aspect_ratio=self.data.get('canvas', {}).get('aspect_ratio'),       # If set, ignores width and height
             #content=ft.Stack(self.canvases_list),
             content=self.canvas
             
@@ -133,7 +134,8 @@ class Canvas(Widget):
         ])
 
 
-        self.interactive_viewer = ft.InteractiveViewer(content=self.canvas_container)
+        self.interactive_viewer = ft.InteractiveViewer(content=self.canvas_container, scale_factor=700)
+
 
         self.current_path= cv.Path(elements=[], paint=ft.Paint(**self.story.data.get('paint_settings', {})))
        
@@ -156,10 +158,11 @@ class Canvas(Widget):
         # Load our background color if we have one
         bgcolor = self.data.get('canvas', {}).get('bgcolor', None)
         if bgcolor is not None:
+            blend_mode = self.data.get('canvas', {}).get('bg_blend_mode', 'src_over')
             self.canvas.shapes.append(
                 cv.Color(       # Can use effects here as well
-                    color=bgcolor.get('color', 'surface'),
-                    blend_mode=bgcolor.get('blend_mode', 'src_over'),
+                    color=bgcolor,
+                    blend_mode=blend_mode,
                 )
             )
 
@@ -613,11 +616,9 @@ class Canvas(Widget):
 
         self.canvas_container.content = self.canvas
 
-        self.canvas_container.image = ft.DecorationImage(self.data.get('canvas_meta', {}).get('bgimage_path', ""), fit=ft.ImageFit.COVER) if self.data['canvas_meta'].get('bgimage_path', "") != "" else None
-
         self.body_container.alignment = ft.alignment.center
 
-        self.body_container.content = ft.Column([self.header, ft.Divider(thickness=2, height=8), self.interactive_viewer], spacing=0)
+        self.body_container.content = self.interactive_viewer
 
         self._render_widget()
 

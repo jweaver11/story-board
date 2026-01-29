@@ -548,7 +548,8 @@ class Story(ft.View):
                 self.widgets.append(self.notes[key])
 
             case "canvas":
-                widget = Canvas(title, self.p, directory_path, self, data)
+                d = {'canvas': data} if data is not None else None
+                widget = Canvas(title, self.p, directory_path, self, d)
                 key = widget.data.get('key', '')
                 self.canvases[key] = widget
                 self.widgets.append(self.canvases[key])
