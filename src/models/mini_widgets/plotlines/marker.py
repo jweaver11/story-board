@@ -28,8 +28,12 @@ class Marker(MiniWidget):
         
         if x_alignment is not None:
             side_location = 'right' if x_alignment <= 0 else 'left'
+            left_pos = int((x_alignment + 1.0) / 2.0 * (owner.plotline_width - 10)) + 5
         else:
             side_location = None
+            left_pos = None
+
+    
 
         # Parent constructor
         super().__init__(
@@ -47,8 +51,8 @@ class Marker(MiniWidget):
             {   
                 'tag': "marker",            # Tag to identify what type of object this is
                 'title': str,
-                'x_alignment': x_alignment if x_alignment is not None else int,  # Integer between 0 and owner.plotline_width for absolute positioning
-                'ratio': None,      # Float between -1 and 1 for relative positioning on plotline. Just used for calculations, not rendering
+                'x_alignment': x_alignment if x_alignment is not None else float,  # Float between -1 and 1 for relative positioning on plotline. Just used for calculations, not rendering
+                'left': left_pos,                    # Integer Absolute left position on plotline
                 'color': "secondary",           # Color of the plot point on the plotline
             },
         )
@@ -96,21 +100,31 @@ class Marker(MiniWidget):
         # Set our new left position within our stack
         self.plotline_marker.left = new_left
 
-        self.data['x_alignment'] = new_left
+        self.data['left'] = new_left
 
         self.save_dict()
-        self.p.update()
+        self.plotline_marker.page = self.p
+        self.plotline_marker.update()
+        #self.p.update()
         return
 
-    def _drag_end(self, e=None):
-        #self.reload_mini_widget(no_update=True)
-        #self.owner.reload_widget()
-        print("New alignment: ", self.data.get('x_alignment', 0))
+    async def _drag_end(self, e=None):
+        
+        #print("New Left: ", self.data.get('left', 0))
 
-        ratio = self.data.get('x_alignment', 0) / (self.owner.plotline_width - 10)
+        x_alignment = (self.data.get('left', 0) / (self.owner.plotline_width - 10)) * 2.0 - 1.0
 
-        self.data['ratio'] = ratio
+        self.data['x_alignment'] = x_alignment
+
+        if self.data.get('x_alignment', 0) <= 0:
+            self.data['side_location'] = "right"
+        else:
+            self.data['side_location'] = "left"
+
+        print("New side location: ", self.data.get('side_location', 'right'))
+
         self.save_dict()
+        await self.owner.rebuild_plotline_canvas(no_update=False)
         
         
     # Called when hovering over our plot point to show the slider
@@ -148,7 +162,7 @@ class Marker(MiniWidget):
         self.plotline_marker = ft.Container(
             margin=ft.Margin(16, 0, 16, 0), expand=False, #padding=ft.padding.only(left=5),
             width=10, alignment=ft.alignment.center, clip_behavior=ft.ClipBehavior.HARD_EDGE,
-            left=self.data.get('x_alignment', 0),
+            left=self.data.get('left', 0),
             content=ft.GestureDetector(
                 expand=True, width=10, mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
                 on_enter=self.highlight, on_exit=self.highlight,
@@ -156,8 +170,9 @@ class Marker(MiniWidget):
                 on_secondary_tap=lambda e: print("Right click on Marker"),
                 on_tap=self.show_mini_widget,
                 content=cv.Canvas(
-                    width=10, height=10000, opacity=.7, expand=True, resize_interval=20,
+                    width=10, height=10000, opacity=.7, expand=True, resize_interval=20,    
                     content=ft.Container(ignore_interactions=True, expand=True), #on_resize=_resize_plotline_canvas, 
+                    shapes=[],    # Set shapes empty so timeline knows to set its dashed line
                 ),
             ),
         )

@@ -75,7 +75,7 @@ class Plotline(Widget):
                 # Plotline data, outside of its mini widgets
                 'plotline_data': {
                     'Summary': str,
-                    'Time Label': "years",                          # Label for the time axis (any str they want)
+                    'Time Label': "Years",                          # Label for the time axis (any str they want)
                     'Left Label': "0",                              # Start label
                     'Right Label': "10",                            # Start and end date of the branch, for plotline view
                     'Divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
@@ -260,12 +260,14 @@ class Plotline(Widget):
 
         left_pos = int((self.x_alignment + 1.0) / 2.0 * (self.plotline_width - 10)) + 5
 
+        print("Creating marker at left pos: ", left_pos)
+
         new_marker = Marker(
             title=title, 
             owner=self, 
             page=self.p, 
             key="markers", 
-            x_alignment=left_pos,
+            x_alignment=self.x_alignment,
             data=None
         )
         # Add our new Marker mini widget object to our markers dict, and to our owners mini widgets
@@ -647,80 +649,51 @@ class Plotline(Widget):
                     )
                 )
 
-
+        # Add our markers on the plotline ------------------------------------------------
         for marker in self.markers.values():
+            # If we're hiding all markers, skip drawing them
+            if self.data.get('hide_all_markers', False):
+                break
 
-            ratio = marker.data.get('ratio', None)
-
-            # Protect from newly created markers without a ratio yet. We'll set it here
-            if ratio is None:
-                ratio = marker.data.get('x_alignment', 0.0) / (self.plotline_width - 10)
-                marker.data['ratio'] = ratio
-                #marker.save_dict()
-            
-
-            new_x_pos = int(ratio * (self.plotline_width - 10))    
-
-            marker.plotline_marker.left = new_x_pos
-
-            # Make sure the container takes up the whole space
-            marker.plotline_marker.height = self.h
-
-            
-            
-            # Re-paint its shapes (dashed line)
-            marker.plotline_marker.content.content.shapes = [
-                cv.Line(
-                    5, (self.h//5), 5, (self.h//2 - 6), 
-                    paint=ft.Paint(
-                        self.data.get('color', "secondary"),
-                        stroke_dash_pattern=[10, 10],
-                        stroke_width=2
-                    ) 
-                )
-            ]
-
-            if marker.data.get('x_alignment', 0) <= (self.plotline_width - 10) / 2:
-                marker.data['side_location'] = "right"
-            else:
-                marker.data['side_location'] = "left"
-
-            marker.save_dict()
-            continue
             if marker.data.get('is_shown_on_widget', False):
-                # Calculate x position
+
+                # Since markers are positioned absolutely, we just need to update their left position based on their x_alignment value
                 x_alignment = max(-1.0, min(1.0, float(marker.data.get('x_alignment', 0.0))))
-                x_pos = int(((x_alignment + 1.0) / 2.0) * (self.plotline_width - 10)) + 5    # because mapping [-1..1] to [0..W], plus 5px padding
-
-                # Adjust based on offset from the margin the plot points use
-                offset_x = 5 * x_alignment
-                x_pos = x_pos - offset_x
-
                 
-                y_pos = int(self.plotline_height // 6)
-                moveTo = cv.Path.MoveTo(x_pos, self.plotline_height // 2)
+                # Calculate x position and set the control to have it
+                new_x_pos = int(((x_alignment + 1) / 2) * (self.plotline_width - 10))  
+                marker.plotline_marker.left = new_x_pos
+
+                # Make sure the container takes up the whole space
+                marker.plotline_marker.height = self.h
+
+                y_pos = int(self.h // 5)
+    
+                # Re-paint its shapes (dashed line) if needed (Only first load)
+                if len(marker.plotline_marker.content.content.shapes) == 0:
+                    marker.plotline_marker.content.content.shapes = [
+                        cv.Line(
+                            5, y_pos, 5, (self.h//2 - 6), 
+                            paint=ft.Paint(
+                                self.data.get('color', "secondary"),
+                                stroke_dash_pattern=[10, 10],
+                                stroke_width=2
+                            ) 
+                        )
+                    ]
             
-                label_path = cv.Path(
-                    elements=[
-                        moveTo,
-                        cv.Path.LineTo(x_pos, y_pos),
-                    ],
-                    paint=ft.Paint(stroke_width=2, style="stroke", color=marker.data.get('color', self.data.get('color', "primary")))
+                label_path = cv.Text(
+                    new_x_pos, y_pos - 20, 
+                    marker.title,
+                    ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=marker.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
+                    alignment=ft.alignment.center,
+                    max_width=100,
                 )
+            
+                
 
                 # Add the text label for the plot point
                 self.plotline_canvas.shapes.append(label_path)
-
-                self.plotline_canvas.shapes.append(
-                    cv.Text(
-                        x_pos, 
-                        y_pos - 20 if line_direction == "bottom" else y_pos + 20,
-                        marker.title, 
-                        ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=marker.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
-                        alignment=ft.alignment.center,
-                        max_width=100,
-                    )
-                )
 
         # Go through our arcs and update their size --------------------------------------------------
         if update_arcs:
@@ -758,14 +731,18 @@ class Plotline(Widget):
                 arc.plotline_arc.height = new_h
 
             if no_update:
-                self.p.update()
+                self.plotline_canvas.page = self.p
+                self.plotline_canvas.update()
+                #self.p.update()
                 return
             self._render_widget()
 
         # If we didn't rebuild our arcs, just update the canvas
         else:
             if no_update:
-                self.p.update()
+                self.plotline_canvas.page = self.p
+                self.plotline_canvas.update()
+                #self.p.update()
                 return
             self._render_widget()
             
