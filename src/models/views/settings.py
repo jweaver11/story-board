@@ -236,14 +236,20 @@ class Settings(ft.View):
     def _settings_category_changed(self, e):
         ''' Determines which category is now active and changes our body container to match '''
 
-        if e.control.selected_index == 0:   # Appearance settings
-            self.body_container.content = self._load_appearance_settings()
-        elif e.control.selected_index == 1:   # Widgets settings
-            self.body_container.content = self._load_widgets_settings()
-        elif e.control.selected_index == 2:   # Story settings
-            self.body_container.content = self._load_story_settings()
-        elif e.control.selected_index == 3:   # Resources
-            self.body_container.content = self._load_resources_settings()
+        idx = e.control.selected_index 
+
+        match idx:
+            case 0:
+                self.body_container.content = self._load_appearance_settings()
+            case 1:
+                self.body_container.content = self._load_widgets_settings()
+            case 2:
+                self.body_container.content = self._load_story_settings()
+            case 3:
+                self.body_container.content = self._load_template_settings()
+            case 4:
+                self.body_container.content = self._load_resources_settings()
+                
 
         self.p.update()
         
@@ -852,6 +858,32 @@ class Settings(ft.View):
 
         return content
     
+    def _load_template_settings(self):
+        ''' Loads our resources settings view '''
+
+        # Has resources to help writers, can re-run the tutorial view, examples, discord link, planned features
+
+        # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
+        content=ft.Column([
+            ft.Row([
+                ft.Text("Templates", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
+                ft.Container(expand=True),   # Spacer to push title to left
+                ft.IconButton(
+                    ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
+                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
+                )
+            ]),
+            ft.Text(f"Put Templates here", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
+
+            ft.Container(height=10),    # Spacer
+
+            ft.Divider(),
+            ft.Container(height=10),    # Spacer
+
+        ])
+
+        return content
+    
     def _load_resources_settings(self):
         ''' Loads our resources settings view '''
 
@@ -877,6 +909,8 @@ class Settings(ft.View):
         ])
 
         return content
+    
+    
 
         
     
@@ -924,6 +958,12 @@ class Settings(ft.View):
                             color=ft.Colors.OUTLINE if self.story is None else None
                         ),
                     )
+                ),
+                ft.NavigationRailDestination(
+                    icon=ft.Icons.FILE_PRESENT_OUTLINED,
+                    selected_icon=ft.Icon(ft.Icons.FILE_PRESENT, color=ft.Colors.PRIMARY),
+                    label="Templates",
+                    label_content=ft.Container(ft.Text("Templates", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
                 ),
                 ft.NavigationRailDestination(
                     icon=ft.Icons.INFO_OUTLINED,
