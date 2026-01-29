@@ -174,7 +174,7 @@ class CanvasBoard(Widget):
         # Create the point using our paint settings and point mode
         point = cv.Points(
             points=[(e.local_x, e.local_y)],
-            paint=ft.Paint(**self.story.data.get('paint_settings', {})),
+            paint=ft.Paint(**app.settings.data.get('paint_settings', {})),
         )
         
         # Add point to the canvas and our state data
@@ -198,13 +198,13 @@ class CanvasBoard(Widget):
         ''' Set our initial starting x and y coordinates for the element we're drawing '''
 
         # Grab our style so we can compare it
-        style = str(self.story.data.get('paint_settings', {}).get('style', 'stroke'))
+        style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
 
         # Make a copy of our paint settings to modify it, since some of the styles are not built in
-        safe_paint_settings = self.story.data.get('paint_settings', {}).copy()
+        safe_paint_settings = app.settings.data.get('paint_settings', {}).copy()
 
         # Copy of our paint settings for our state tracking and data storage (only erase mode needs this)
-        state_paint_settings = self.story.data.get('paint_settings', {}).copy()
+        state_paint_settings = app.settings.data.get('paint_settings', {}).copy()
 
         # Set either stroke or fill based on custom styles
         safe_stroke = 'fill' if style.endswith('fill') else 'stroke'
@@ -277,7 +277,7 @@ class CanvasBoard(Widget):
         ''' Creates our line to add to the canvas as we draw, and saves that paths data to self.state '''
 
         # Grab our style so we can compare it
-        style = str(self.story.data.get('paint_settings', {}).get('style', 'stroke'))
+        style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
 
 
         # Handle lineto (Straight lines). Grab the element we created on start drawing, update its data

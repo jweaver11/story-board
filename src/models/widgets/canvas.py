@@ -117,7 +117,7 @@ class Canvas(Widget):
         self.header = ft.Row([
             # Undo and redo buttons
             ft.PopupMenuButton(
-                icon=ft.Icons.IMAGE_OUTLINED, tooltip="Set the background of your canvas. If one is set, it will be exported with the canvas",
+                icon=ft.Icons.IMAGE_OUTLINED, tooltip="Set the background of your canvas",
                 menu_padding=ft.padding.all(0), 
                 #on_cancel=self._set_color,
                 items=[
@@ -130,14 +130,14 @@ class Canvas(Widget):
                 icon=ft.Icons.FILE_DOWNLOAD_OUTLINED,
                 tooltip="Export Canvas"
             )
-            # Show Notes/comments toggle
+            # Show comments toggle
         ])
 
 
         self.interactive_viewer = ft.InteractiveViewer(content=self.canvas_container, scale_factor=700)
 
 
-        self.current_path= cv.Path(elements=[], paint=ft.Paint(**self.story.data.get('paint_settings', {})))
+        self.current_path= cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
        
         # Load our drawing/display
         self.load_canvas()
@@ -158,13 +158,14 @@ class Canvas(Widget):
         # Load our background color if we have one
         bgcolor = self.data.get('canvas', {}).get('bgcolor', None)
         if bgcolor is not None:
-            blend_mode = self.data.get('canvas', {}).get('bg_blend_mode', 'src_over')
-            self.canvas.shapes.append(
-                cv.Color(       # Can use effects here as well
-                    color=bgcolor,
-                    blend_mode=blend_mode,
+            if bgcolor != "":
+                blend_mode = self.data.get('canvas', {}).get('bg_blend_mode', 'src_over')
+                self.canvas.shapes.append(
+                    cv.Color(       # Can use effects here as well
+                        color=bgcolor,
+                        blend_mode=blend_mode,
+                    )
                 )
-            )
 
         # Loading points
         for point in shapes.get('points', []):
@@ -250,7 +251,7 @@ class Canvas(Widget):
         # Create the point using our paint settings and point mode
         point = cv.Points(
             points=[(e.local_x, e.local_y)],
-            paint=ft.Paint(**self.story.data.get('paint_settings', {})),
+            paint=ft.Paint(**app.settings.data.get('paint_settings', {})),
         )
         
         # Add point to the canvas and our state data
@@ -274,13 +275,13 @@ class Canvas(Widget):
         ''' Set our initial starting x and y coordinates for the element we're drawing '''
 
         # Grab our style so we can compare it
-        style = str(self.story.data.get('paint_settings', {}).get('style', 'stroke'))
+        style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
 
         # Make a copy of our paint settings to modify it, since some of the styles are not built in
-        safe_paint_settings = self.story.data.get('paint_settings', {}).copy()
+        safe_paint_settings = app.settings.data.get('paint_settings', {}).copy()
 
         # Copy of our paint settings for our state tracking and data storage (only erase mode needs this)
-        state_paint_settings = self.story.data.get('paint_settings', {}).copy()
+        state_paint_settings = app.settings.data.get('paint_settings', {}).copy()
 
         # Set either stroke or fill based on custom styles
         safe_stroke = 'fill' if style.endswith('fill') else 'stroke'
@@ -359,7 +360,7 @@ class Canvas(Widget):
             return
         
         # Grab our style so we can compare it
-        style = str(self.story.data.get('paint_settings', {}).get('style', 'stroke'))
+        style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
 
 
         # Handle lineto (Straight lines). Grab the element we created on start drawing, update its data

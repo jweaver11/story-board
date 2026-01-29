@@ -76,29 +76,6 @@ class Story(ft.View):
                 },            
                 'is_new_story': True,      # Whether this story is newly created or loaded from storage
 
-                # Paint settings for our canvas drawings to use as default that they will then change
-                'paint_settings': {
-                    # Stroke styles
-                    'color': "#FFFFFF,1.0",     # Hex color folowed by opacity
-                    'stroke_width': 3,
-                    'style': "stroke",
-                    'stroke_cap': "round",
-                    'stroke_join': "round",
-                    'stroke_miter_limit': 10, 
-                    'stroke_dash_pattern': None,
-
-                    # Effects
-                    'anti_alias': True,
-                    'blur_image': int,
-                    'blend_mode': "src_over",
-                    
-                },
-
-                # Other canvas related settings that are not technically paint
-                'canvas_settings':{
-                    'erase_mode': False,               # Whether we're in erase mode or not
-                    'stroke_dash_pattern': [10, 15],
-                }
             },
         )
 

@@ -54,12 +54,12 @@ class CanvasRail(Rail):
         ]
 
         # Color picker for changing brush color
-        color_only = self.story.data.get('paint_settings', {}).get('color', "#000000").split(",", 1)[0]     # Set color without opacity for the color picker
+        color_only = app.settings.data.get('paint_settings', {}).get('color', "#000000").split(",", 1)[0]     # Set color without opacity for the color picker
         self.color_picker = ColorPicker(color=color_only)   # Set our color pickers color 
 
         self.color_picker_button = ft.PopupMenuButton(
             icon=ft.Icons.COLOR_LENS_OUTLINED, tooltip="The color of your brush strokes.",
-            icon_color=self.story.data.get('paint_settings', {}).get('color', ft.Colors.PRIMARY),
+            icon_color=app.settings.data.get('paint_settings', {}).get('color', ft.Colors.PRIMARY),
             menu_padding=ft.padding.all(0), size_constraints=ft.BoxConstraints(min_width=310),
             on_cancel=self._set_color,
             items=[
@@ -80,7 +80,7 @@ class CanvasRail(Rail):
         self.paint_adjust_dashed_lines_button = ft.IconButton(
             icon=ft.Icons.TUNE_OUTLINED,
             tooltip="Adjust the dash pattern for dashed lines.",
-            visible=self.story.data.get('paint_settings', {}).get('stroke_dash_pattern', None) is not None,
+            visible=app.settings.data.get('paint_settings', {}).get('stroke_dash_pattern', None) is not None,
             #on_click= Open pattern adjustment dialog/button to adjust length and gap, and add more segments. Make reorderable and deletable
         )
 
@@ -91,14 +91,14 @@ class CanvasRail(Rail):
         selected_color = self.color_picker.color    # Our new selected color
            
         # Our story data needs the opacity, but color picker can't have it
-        opacity = self.story.data.get('paint_settings', {}).get('color', "1.0").split(",", 1)[1].strip()
+        opacity = app.settings.data.get('paint_settings', {}).get('color', "1.0").split(",", 1)[1].strip()
         
         
         color_with_opacity = f"{selected_color},{opacity}"
         
-        self.story.data['paint_settings']['color'] = color_with_opacity
+        app.settings.data['paint_settings']['color'] = color_with_opacity
         
-        self.story.save_dict()
+        app.settings.save_dict()
 
         self.color_picker_button.icon_color = selected_color
         self.color_picker_button.icon_color = selected_color
@@ -108,7 +108,7 @@ class CanvasRail(Rail):
     def _set_blend_mode_label(self) -> str:
         ''' Returns the label for the current blend mode. '''
 
-        mode = self.story.data.get('paint_settings', {}).get('blend_mode', 'src_over')
+        mode = app.settings.data.get('paint_settings', {}).get('blend_mode', 'src_over')
         # 
         if mode is None:
             return "None"
@@ -151,24 +151,25 @@ class CanvasRail(Rail):
     def reload_rail(self):
         ''' Reloads the canvas rail with updated data and UI elements. '''
 
+
         # Called when changing paint width
         def _paint_width_changed(e):
             new_width = int(e.control.value)
             # Change the data directly
-            self.story.data['paint_settings']['stroke_width'] = new_width
-            self.story.save_dict()
+            app.settings.data['paint_settings']['stroke_width'] = new_width
+            app.settings.save_dict()
 
         # Called when changing paint opacity
         def _paint_opacity_changed(e):
             new_opacity = float(e.control.value)/100
 
             # Get our current color without opacity
-            current_color = self.story.data.get('paint_settings', {}).get('color', "#000000").split(",", 1)[0].strip()
+            current_color = app.settings.data.get('paint_settings', {}).get('color', "#000000").split(",", 1)[0].strip()
             color_with_opacity = f"{current_color},{new_opacity}"
 
             # Change the data directly
-            self.story.data['paint_settings']['color'] = color_with_opacity
-            self.story.save_dict()
+            app.settings.data['paint_settings']['color'] = color_with_opacity
+            app.settings.save_dict()
 
         # Called when changing paint style
         def _paint_style_changed(e):
@@ -185,32 +186,32 @@ class CanvasRail(Rail):
             elif new_style == "arcto":
                 e.control.parent.icon = ft.Icons.AUTORENEW_OUTLINED
             
-            self.story.data['paint_settings']['style'] = new_style      # Update the data
-            self.story.save_dict()
+            app.settings.data['paint_settings']['style'] = new_style      # Update the data
+            app.settings.save_dict()
             self.update()
 
         # Called when changing paint erase mode
         def _paint_erase_mode_changed(e):
-            self.story.data['canvas_settings']['erase_mode'] = e.control.value    # Update if we're in erase mode or not
-            self.story.save_dict()
+            app.settings.data['canvas_settings']['erase_mode'] = e.control.value    # Update if we're in erase mode or not
+            app.settings.save_dict()
 
         # Called when changing paint dash pattern usage
         def _paint_dash_pattern_changed(e):
             if e.control.value:   # If checked, set a default dash pattern
-                self.story.data['paint_settings']['stroke_dash_pattern'] = self.story.data['canvas_settings']['stroke_dash_pattern']  
+                app.settings.data['paint_settings']['stroke_dash_pattern'] = app.settings.data['canvas_settings']['stroke_dash_pattern']  
                 self.paint_adjust_dashed_lines_button.visible = True
             else:
-                self.story.data['paint_settings']['stroke_dash_pattern'] = None
+                app.settings.data['paint_settings']['stroke_dash_pattern'] = None
                 self.paint_adjust_dashed_lines_button.visible = False
-            self.story.save_dict()
+            app.settings.save_dict()
             self.update()
             
 
         # Called when changing paint anti-aliasing
         def _paint_anti_alias_changed(e):
             new_anti_alias = e.control.value
-            self.story.data['paint_settings']['anti_alias'] = new_anti_alias
-            self.story.save_dict()
+            app.settings.data['paint_settings']['anti_alias'] = new_anti_alias
+            app.settings.save_dict()
 
         def _paint_stroke_cap_changed(e):
             new_stroke_cap = e.control.text.lower()
@@ -220,8 +221,8 @@ class CanvasRail(Rail):
                 e.control.parent.content = ft.Icon(ft.Icons.CIRCLE_OUTLINED)
             else:
                 e.control.parent.content = ft.Icon(ft.Icons.SQUARE_OUTLINED)
-            self.story.data['paint_settings']['stroke_cap'] = new_stroke_cap
-            self.story.save_dict()
+            app.settings.data['paint_settings']['stroke_cap'] = new_stroke_cap
+            app.settings.save_dict()
             self.update()
 
         def _paint_stroke_join_changed(e):
@@ -233,19 +234,18 @@ class CanvasRail(Rail):
                 e.control.parent.content = ft.Icon(ft.Icons.CIRCLE_OUTLINED)
             else:
                 e.control.parent.content = ft.Icon(ft.Icons.SQUARE_OUTLINED)
-            self.story.data['paint_settings']['stroke_join'] = new_stroke_join
-            self.story.save_dict()
+            app.settings.data['paint_settings']['stroke_join'] = new_stroke_join
+            app.settings.save_dict()
             self.update()
 
         # Called when changing paint stroke blur
         def _paint_stroke_blur_changed(e):
-            self.story.data['paint_settings']['blur_image'] = int(e.control.value)
-            self.story.save_dict()
+            app.settings.data['paint_settings']['blur_image'] = int(e.control.value)
+            app.settings.save_dict()
             
 
         def _paint_blend_mode_changed(e):
             mode = e.control.data
-            print(mode)
 
             # Set the icon
             if mode is None:
@@ -256,10 +256,10 @@ class CanvasRail(Rail):
                 self.paint_blend_mode.icon = ft.Icons.BLUR_ON_OUTLINED
 
             # Set the new mode and label
-            self.story.data['paint_settings']['blend_mode'] = mode
+            app.settings.data['paint_settings']['blend_mode'] = mode
             self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
 
-            self.story.save_dict()
+            app.settings.save_dict()
             self.update()
 
         # Our header at the top of the rail
@@ -270,7 +270,7 @@ class CanvasRail(Rail):
         )
 
         # Opacity slider
-        opacity_value = float(self.story.data.get('paint_settings', {}).get('color', "1.0").split(",", 1)[1].strip()) * 100
+        opacity_value = float(app.settings.data.get('paint_settings', {}).get('color', "1.0").split(",", 1)[1].strip()) * 100
         paint_opacity = ft.Slider(
             min=0, max=100,  tooltip="The opacity of your brush strokes.",
             divisions=100, value=opacity_value, expand=True,
@@ -281,30 +281,30 @@ class CanvasRail(Rail):
         # Width/Size of brush
         paint_width = ft.Slider(
             min=1, max=50,  tooltip="The size of your brush strokes.", expand=True,
-            divisions=49, value=self.story.data.get('paint_settings', {}).get('stroke_width', 5),
+            divisions=49, value=app.settings.data.get('paint_settings', {}).get('stroke_width', 5),
             label="Brush Size: {value}px",
             on_change_end=_paint_width_changed
         )
 
         paint_erase_mode = ft.Checkbox(
-            on_change=_paint_erase_mode_changed, value=self.story.data.get('canvas_settings', {}).get('erase_mode', False)
+            on_change=_paint_erase_mode_changed, value=app.settings.data.get('canvas_settings', {}).get('erase_mode', False)
         )
 
         # Paint style (Stroke, dash, fill, etc.)
-        if self.story.data.get('paint_settings', {}).get('style', 'stroke') == 'stroke':
+        if app.settings.data.get('paint_settings', {}).get('style', 'stroke') == 'stroke':
             paint_style_icon = ft.Icons.BRUSH_OUTLINED
-        elif self.story.data.get('paint_settings', {}).get('style', 'stroke') == 'lineto':
+        elif app.settings.data.get('paint_settings', {}).get('style', 'stroke') == 'lineto':
             paint_style_icon = ft.Icons.HORIZONTAL_RULE
-        elif self.story.data.get('paint_settings', {}).get('style', 'stroke') == 'fill':
+        elif app.settings.data.get('paint_settings', {}).get('style', 'stroke') == 'fill':
             paint_style_icon = ft.Icons.GESTURE_OUTLINED
-        elif self.story.data.get('paint_settings', {}).get('style', 'stroke') == 'arcto':
+        elif app.settings.data.get('paint_settings', {}).get('style', 'stroke') == 'arcto':
             paint_style_icon = ft.Icons.AUTORENEW_OUTLINED
         
         else:
             paint_style_icon = ft.Icons.BRUSH_OUTLINED
 
         # If stroke dash pattern is set, we're using dashed stroke
-        if self.story.data.get('paint_settings', {}).get('stroke_dash_pattern', None):
+        if app.settings.data.get('paint_settings', {}).get('stroke_dash_pattern', None):
             paint_style_icon = ft.Icons.LINE_STYLE_OUTLINED
         paint_style = ft.PopupMenuButton(
             icon=paint_style_icon,
@@ -323,13 +323,13 @@ class CanvasRail(Rail):
         paint_anti_alias = ft.Checkbox(
             label="Anti-Aliasing", on_change=_paint_anti_alias_changed,
             label_position=ft.LabelPosition.LEFT,
-            value=self.story.data.get('paint_settings', {}).get('anti_alias', True)
+            value=app.settings.data.get('paint_settings', {}).get('anti_alias', True)
         )
 
         # Stroke cap shape
-        if self.story.data.get('paint_settings', {}).get('stroke_cap', 'butt') == 'round':
+        if app.settings.data.get('paint_settings', {}).get('stroke_cap', 'butt') == 'round':
             paint_stroke_icon = ft.Icon(ft.Icons.CIRCLE_OUTLINED)
-        elif self.story.data.get('paint_settings', {}).get('stroke_cap', 'butt') == 'square':
+        elif app.settings.data.get('paint_settings', {}).get('stroke_cap', 'butt') == 'square':
             paint_stroke_icon = ft.Icon(ft.Icons.SQUARE_OUTLINED)
         else:
             paint_stroke_icon = ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED)
@@ -344,9 +344,9 @@ class CanvasRail(Rail):
             ]
         )
 
-        if self.story.data.get('paint_settings', {}).get('stroke_join', 'miter') == 'round':
+        if app.settings.data.get('paint_settings', {}).get('stroke_join', 'miter') == 'round':
             stroke_cap_icon = ft.Icon(ft.Icons.CIRCLE_OUTLINED)
-        elif self.story.data.get('paint_settings', {}).get('stroke_join', 'miter') == 'bevel':
+        elif app.settings.data.get('paint_settings', {}).get('stroke_join', 'miter') == 'bevel':
             stroke_cap_icon = ft.Icon(ft.Icons.SQUARE_OUTLINED)
         else:
             stroke_cap_icon = ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED)
@@ -363,12 +363,12 @@ class CanvasRail(Rail):
 
         paint_stroke_blur = ft.Slider(
             min=0, max=50,  tooltip="The blur effect of your brush strokes.", expand=True,
-            divisions=50, value=self.story.data.get('paint_settings', {}).get('blur_image', 0),
+            divisions=50, value=app.settings.data.get('paint_settings', {}).get('blur_image', 0),
             label="Stroke Blur: {value}",  
             on_change_end=_paint_stroke_blur_changed  
         )
 
-        if self.story.data.get('paint_settings', {}).get('blend_mode', None) is None:
+        if app.settings.data.get('paint_settings', {}).get('blend_mode', None) is None:
             paint_blend_mode_icon = ft.Icons.BLUR_ON_OUTLINED
         else:
             paint_blend_mode_icon = ft.Icons.BLUR_OFF_OUTLINED
@@ -411,7 +411,7 @@ class CanvasRail(Rail):
         paint_use_dashed_lines = ft.Checkbox(
             label="Dashed Pattern", on_change=_paint_dash_pattern_changed,
             label_position=ft.LabelPosition.LEFT,
-            value=self.story.data.get('paint_settings', {}).get('stroke_dash_pattern', None) is not None,
+            value=app.settings.data.get('paint_settings', {}).get('stroke_dash_pattern', None) is not None,
         )
 
         
