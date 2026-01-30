@@ -35,8 +35,6 @@ class Settings(ft.View):
             spacing=0,                                                      # No spacing between menubar and rest of page
         )
 
-        self.title = "settings"   # Title of our settings widget
-
         self.p = page   # Grabs our original page, as sometimes the reference gets lost. with all the UI changes that happen. p.update() always works
         self.story = story
         self.file_path = file_path
@@ -110,9 +108,9 @@ class Settings(ft.View):
 
                 'default_category_color': "primary",    # Categories thrown in here
 
-                'default_canvas_pin_location': "main",
+                'default_canvas_pin_location': "main",      # Default pin locations for new widgets
                 'default_canvas_board_pin_location': "main",
-                'default_chapter_pin_location': "main",   # Default pin location for new chapters
+                'default_chapter_pin_location': "main",   
                 'default_character_pin_location': "left",
                 'default_character_connection_map_pin_location': "main",
                 'default_map_pin_location': "main",
@@ -131,7 +129,11 @@ class Settings(ft.View):
                     'Detailed': default_character_template_data_dict() | {'Template Data': {'title': "Detailed", 'Strengths': list, 'Weaknesses': list, 'Deceased': bool}},
                     'Shonen': default_character_template_data_dict() | {'Template Data': {'title': "Shonen", 'Abilities': "Super Strength, Enhanced Healing"}},
                     'Alien': default_character_template_data_dict() | {'Template Data': {'title': "Alien", 'Species': "Unknown", 'Home Planet': "Unknown"}},
+                    # Fantasy
                 },   
+                'world_templates': {    # TODO
+                    'Default': dict,
+                }
             },
         )
         
@@ -167,7 +169,7 @@ class Settings(ft.View):
 
         # Handle errors
         except Exception as e:
-            print(f"Error changing data {key}:{value} in widget {self.title}: {e}")
+            print(f"Error changing settings data: {e}")
 
 
     def create_character_template(self, template_name: str, data: dict):
