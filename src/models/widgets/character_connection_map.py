@@ -38,8 +38,9 @@ class CharacterConnectionMap(Widget):
         
         self.icon = ft.Icon(ft.Icons.PERSON, size=100, expand=False)    # Icon of character
 
+        # Build our widget on start, but just reloads it later
         if self.visible:
-            self.reload_widget()         # Build our widget if it's visible on init
+            self.reload_widget()
     
 
     # Called after any changes happen to the data that need to be reflected in the UI

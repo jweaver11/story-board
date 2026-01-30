@@ -102,14 +102,10 @@ class Canvas(Widget):
             width=self.data.get('canvas', {}).get('width', None),
             height=self.data.get('canvas', {}).get('height', None),
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
-            #expand=True,
             border_radius=ft.border_radius.all(2),
             border=ft.border.all(1, ft.Colors.ON_SURFACE_VARIANT),
             aspect_ratio=self.data.get('canvas', {}).get('aspect_ratio'),       # If set, ignores width and height
-            #content=ft.Stack(self.canvases_list),
             content=self.canvas
-            
-            # Sets bgcolor or image based on canvas settings, and aspect ratio
         )
 
 

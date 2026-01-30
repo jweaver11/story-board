@@ -1,6 +1,6 @@
 '''
-An extended flet container that is the parent class of all our story objects. A widget is essentially a tab
-Handles uniform UI, and has some functionality all objects need for easy data use.
+An extended flet Canvas that acts as a size aware container that is the parent class of all our story objects. 
+A widget is essentially a tab Handles uniform UI, and has some functionality all objects need for easy data use.
 Every widget has its own json file
 Only Widgets create mini widgets
 '''
@@ -72,9 +72,11 @@ class Widget(ft.Container):
 
         # Canvas and state trackers for sizing our widget
         self.sizing_canvas = cv.Canvas(on_resize=self._get_size, resize_interval=100, expand=True, content=ft.Container(expand=True, ignore_interactions=True))
+        self.use_sizing_canvas: bool = False    # Whether we use the sizing canvas or not. Some widgets dont need it
         self.w: int = 0                     # Width of our widget
         self.h: int = 0                     # Height of our widget
         self.is_renaming: bool = False      # Whether we are currently renaming this widget or not
+        self.protect_first_launch: bool = True   # Protects certain functions from running on first launch before everything is initialized
 
         # UI ELEMENTS - Tab
         self.tabs: ft.Tabs = ft.Tabs() # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
@@ -215,11 +217,11 @@ class Widget(ft.Container):
     # Called when our canvas resizes
     async def _get_size(self, e: cv.CanvasResizeEvent):
         ''' Updates our w and h variables when sizing canvas resizes '''
+        if e.width <= 0 or e.height <= 0:
+            return 
         self.w = e.width
         self.h = e.height
         
-        self._render_widget()
-        #print(f"Widget {self.title} resized to: {self.w}x{self.h}")
         
 
     # Called when renaming a widget
@@ -284,24 +286,8 @@ class Widget(ft.Container):
 
         # Reload our widget ui and rail to reflect changes 
         self.reload_widget()           
-        self.set_active_tab()              
         self.story.active_rail.content.reload_rail()   
 
-    # Called on many actions to make this the active tab if in the main pin
-    def set_active_tab(self):
-        ''' Sets this widgets tab as the active tab in the main pin'''
-
-        self.data['is_active_tab'] = True
-        self.save_dict()
-
-        # Deactivate all other widgets in main pin
-        for widget in self.story.widgets:
-            if widget != self and widget.data['pin_location'] == "main" and widget.visible:
-                widget.data['is_active_tab'] = False
-                widget.save_dict()
-
-        # Reload the workspace to reflect changes
-        self.story.workspace.reload_workspace()
 
 
     # Called when a new mini note is created inside a widget
@@ -324,25 +310,25 @@ class Widget(ft.Container):
 
 
     # Called when a draggable starts dragging.
-    async def start_drag(self, e: ft.DragStartEvent):
+    async def _start_drag(self, e: ft.DragStartEvent):
         ''' Shows our pin drag targets. Needs its own function or story is not initialized on first launch, causing crash '''
         self.story.workspace.show_pin_drag_targets()
         
     # Called when mouse enters the tab part of the widget
-    async def enter_tab(self, e):
+    async def _enter_tab(self, e):
         ''' Changes the hide icon button color slightly for more interactivity '''
         self.hide_tab_icon_button.icon_color = ft.Colors.ON_SURFACE
         self.hide_tab_icon_button.page = self.p
         self.hide_tab_icon_button.update()
 
     # Called when mouse hovers over the tab part of the widget
-    async def hover_tab(self, e):
+    async def _hover_tab(self, e):
         ''' Updates our mouse x/y state for opening menu at mouse position '''
         self.story.mouse_x = e.global_x
         self.story.mouse_y = e.global_y
 
     # Called when mouse stops hovering over the tab part of the widget
-    async def stop_hover_tab(self, e):
+    async def _exit_tab(self, e):
         ''' Reverts the color change of the hide icon button '''
         self.hide_tab_icon_button.icon_color = ft.Colors.OUTLINE
         self.hide_tab_icon_button.page = self.p
@@ -583,6 +569,17 @@ class Widget(ft.Container):
         else:
             _delete_confirmed()
         
+    async def _set_active_tab(self, e=None):
+        self.data['is_active_tab'] = True
+
+        for w in self.story.widgets:
+            if w != self:
+                w.data['is_active_tab'] = False
+                w.save_dict()
+
+        self.save_dict()
+
+        self.story.workspace.reload_workspace()
     
     # Called at end of constructor
     def reload_tab(self):
@@ -638,7 +635,7 @@ class Widget(ft.Container):
                 data=self.data['key'],  # Pass ourself through the data (of our tab, NOT our object) so we can move ourself around
 
                 # Drag event utils
-                on_drag_start=self.start_drag,    # Shows our pin targets when we start dragging
+                on_drag_start=self._start_drag,    # Shows our pin targets when we start dragging
 
                 # Content when we are dragging the follows the mouse
                 content_feedback=ft.TextButton(self.title), # Normal text won't restrict its own size, so we use a button
@@ -648,13 +645,15 @@ class Widget(ft.Container):
                     ft.Row([self.icon, tab_text, self.hide_tab_icon_button]),
                     mouse_cursor=ft.MouseCursor.CLICK,
                     hover_interval=20,
-                    on_enter=self.enter_tab,
-                    on_hover=self.hover_tab,
-                    on_exit=self.stop_hover_tab,
+                    on_enter=self._enter_tab,
+                    on_hover=self._hover_tab,
+                    on_exit=self._exit_tab,
                     on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
                 )
             )                    
         )
+                         
+    
 
 
     # Called by child classes at the end of their constructor, or when they need UI update to reflect changes
@@ -675,14 +674,13 @@ class Widget(ft.Container):
 
     # Called when changes inside the widget require a reload to be reflected in the UI, like when adding mini widgets
     def _render_widget(self):
-        ''' 
-        Takes our built widget content and adds it where it needs to go in the overall widget structure.
-        Also adds our header and any mini widgets we may have to the sides
-        '''
-
         # Clear out our master stack controls, then add our sizing canvas and body container we bulit in reload_widget
         self.master_stack.controls.clear()
-        self.master_stack.controls = [self.sizing_canvas, self.body_container]
+
+        if self.use_sizing_canvas:
+            self.master_stack.controls = [self.sizing_canvas, self.body_container]
+        else:
+            self.master_stack.controls = [self.body_container]
 
         
         # If we show our mini widgets overtop the content, build them here. Otherwise, 
@@ -730,5 +728,9 @@ class Widget(ft.Container):
         self.content = self.tabs
 
         self.p.update()
+            
+           
+        
+
 
        

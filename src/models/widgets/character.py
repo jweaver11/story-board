@@ -34,7 +34,8 @@ class Character(Widget):
         )
 
         # Update our padding to be none on the right to handle scrollbars better
-        self.padding = ft.padding.only(top=0, bottom=8, left=8, right=0)
+        #self.padding = ft.padding.only(top=0, bottom=8, left=8, right=0)
+        self.body_container.padding = ft.padding.only(top=8, bottom=8, left=8, right=0)
 
         # Verifies this object has the required data fields, and creates them if not
         verify_data(

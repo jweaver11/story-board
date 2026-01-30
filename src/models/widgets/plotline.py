@@ -98,10 +98,12 @@ class Plotline(Widget):
         self.plotline_width: int = int()    # Width of our plotline canvas. Just used in calculations, not applied
         self.plotline_height: int = int()   # Height of our plotline canvas Just used in calculations, not applied
         self.can_open_menu: bool = False    # If we can open the menu when right clicking
+        self.use_sizing_canvas = True
 
         # Our plotline canvas that draws our plotline line and markers
         self.plotline_canvas = cv.Canvas(
-            on_resize=self.rebuild_plotline_canvas, resize_interval=20, expand=True, 
+            on_resize=self.rebuild_plotline_canvas, 
+            resize_interval=20, expand=True, 
             content=ft.GestureDetector(
                 expand=True, on_secondary_tap=self.on_secondary_tap,
                 on_hover=self._hover_plotline_canvas,
@@ -567,7 +569,7 @@ class Plotline(Widget):
             ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center
         ))
         self.plotline_canvas.shapes.append(cv.Text(
-            self.plotline_width // 2, self.plotline_height // 2 + 200, time_label, 
+            self.plotline_width // 2, self.plotline_height - 50, time_label, 
             ft.TextStyle(24, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center
         ))
 

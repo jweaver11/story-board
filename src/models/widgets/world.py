@@ -25,6 +25,8 @@ class World(Widget):
             story = story,       
             data = data,    
         )
+
+        self.body_container.padding = ft.padding.only(top=8, bottom=8, left=8, right=0)
         
         # Verifies this object has the required data fields, and creates them if not
         verify_data(

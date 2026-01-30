@@ -30,18 +30,14 @@ class Workspace(ft.Container):
         self.minimum_pin_height = int(self.p.height / 5)
         self.minimum_pin_width = int(self.p.width / 10)
 
-        # Creates our 5 pin locations for our widgets inside our workspace
+        # Creates our 4 side pin locations for our widgets inside our workspace. These are placed directly on the page
         self.top_pin = ft.Row(spacing=10, height=story.data['top_pin_height'], controls=[])
         self.left_pin = ft.Column(spacing=10, width=story.data['left_pin_width'], controls=[])
-        self.main_pin = ft.Row(expand=True, spacing=10, controls=[])
         self.right_pin = ft.Column(spacing=10, width=story.data['right_pin_width'], controls=[])
         self.bottom_pin = ft.Row(spacing=10, height=story.data['bottom_pin_height'], controls=[])
 
-        # Add our settings to the main pin whenver a new story is loaded or created
-        self.main_pin.controls.append(app.settings)
-
-        # Our master row that holds all our widgets
-        self.widgets = ft.Row(spacing=0, expand=True, controls=[])
+        # Main pin is not rendered directly since it changes based on active tab when more than one widget is present
+        self.main_pin = []
 
         # Pin drag targets
         self.top_pin_drag_target = ft.DragTarget(
@@ -99,10 +95,11 @@ class Workspace(ft.Container):
             )
         )
 
+        # Our master row that holds all our widgets
+        self.master_widgets_row = ft.Row(spacing=0, expand=True, controls=[])
 
         # Master stack that holds our widgets ^ row, and drag targets overtop. TransparentPointer allows the targets to be physical but not block widgets underneath
-        self.master_stack = ft.Stack(expand=True, controls=[self.widgets, ft.TransparentPointer(self.pin_drag_targets)])
-
+        self.master_stack = ft.Stack(expand=True, controls=[self.master_widgets_row, ft.TransparentPointer(self.pin_drag_targets)])
 
 
         # We call this in the story build_view, since it errors out here if the object is not fully built yet
@@ -187,9 +184,11 @@ class Workspace(ft.Container):
         # If we were dragged from the main pin and we were the active tab, set the first tab to new active
         if old_pin_location == "main" and widget.data['is_active_tab'] == True:
 
+            widget.data['is_active_tab'] = False   # Deselect ourselves
+
             # If there are other widgets in the main pin, set the first one to active tab
-            self.story.workspace.main_pin.controls[0].data['is_active_tab'] = True
-            self.story.workspace.main_pin.controls[0].save_dict()
+            #self.self.main_pin[0].data['is_active_tab'] = True
+            #self.self.main_pin[0].save_dict()
                 
                 
 
@@ -198,25 +197,25 @@ class Workspace(ft.Container):
 
         # Even though we're not in the new pin location until we reload, we can just use the length to find our index
         if pin_location == "top":
-            widget.data['index'] = len(self.story.workspace.top_pin.controls)
+            widget.data['index'] = len(self.top_pin.controls)
         
         elif pin_location == "left":
-            widget.data['index'] = len(self.story.workspace.left_pin.controls)
+            widget.data['index'] = len(self.left_pin.controls)
         
         elif pin_location == "main":
-            widget.data['index'] = len(self.story.workspace.main_pin.controls)   
+            widget.data['index'] = len(self.main_pin)   
 
             # Set other tabs to inactive, and new one to active              
-            for w in self.story.workspace.main_pin.controls:
+            for w in self.main_pin:
                 w.data['is_active_tab'] = False        # Deselect all other main pin widgets
 
             widget.data['is_active_tab'] = True
 
         elif pin_location == "right":
-            widget.data['index'] = len(self.story.workspace.right_pin.controls)
+            widget.data['index'] = len(self.right_pin.controls)
 
         elif pin_location == "bottom":
-            widget.data['index'] = len(self.story.workspace.bottom_pin.controls)
+            widget.data['index'] = len(self.bottom_pin.controls)
 
 
         
@@ -234,102 +233,99 @@ class Workspace(ft.Container):
         
         #print(f"{pin_location} pin accepted")
 
+
     # Called when we drag a widget from one pin location to another
     def arrange_widgets(self):
         ''' Arranges our widgets to their correct pin locations after a change is made to their pin location.
         Also adds widgets to their correct pin locations if they are missing from any pin location '''
 
         story = self.story
-        
-        
-        
-        try:
 
-            # Clear all pin locations first
-            story.workspace.top_pin.controls.clear()
-            story.workspace.left_pin.controls.clear()
-            story.workspace.main_pin.controls.clear()
-            story.workspace.right_pin.controls.clear()
-            story.workspace.bottom_pin.controls.clear()
+        # Clear all pin locations first
+        self.top_pin.controls.clear()
+        self.left_pin.controls.clear()
+        self.main_pin.clear()
+        self.right_pin.controls.clear()
+        self.bottom_pin.controls.clear()
 
-            if len(story.widgets) == 0:
-                return
+        if len(story.widgets) == 0:
+            return
 
-            # Lets widgets keep their order between sessions
-            ordered_widgets = sorted(story.widgets, key=lambda w: w.data.get('index', 0))
+        # Lets widgets keep their order between sessions
+        ordered_widgets = sorted(story.widgets, key=lambda w: w.data.get('index', 0))
 
-            # Go through all our widgets in the story
-            for widget in ordered_widgets:
 
-                # Check if they are visible
-                if widget.visible == True:
+        # Go through all our widgets in the story
+        for widget in ordered_widgets:
 
-                    # Check if widget has data and pin_location
-                    if hasattr(widget, 'data') and widget.data and 'pin_location' in widget.data:
-                        pin_location = widget.data['pin_location']
-                        
-                        # Add widget to the correct pin based on its pin_location
-                        if pin_location == "top":
-                            story.workspace.top_pin.controls.append(widget)
-                            widget.data['index'] = story.workspace.top_pin.controls.index(widget)
-                        elif pin_location == "left":
-                            story.workspace.left_pin.controls.append(widget)
-                            widget.data['index'] = story.workspace.left_pin.controls.index(widget)
-                        elif pin_location == "main":
-                            story.workspace.main_pin.controls.append(widget)
-                            widget.data['index'] = story.workspace.main_pin.controls.index(widget)
-                        elif pin_location == "right":
-                            story.workspace.right_pin.controls.append(widget)
-                            widget.data['index'] = story.workspace.right_pin.controls.index(widget)
-                        elif pin_location == "bottom":
-                            story.workspace.bottom_pin.controls.append(widget)
-                            widget.data['index'] = story.workspace.bottom_pin.controls.index(widget)
-                            
-                    else:
-                        # If no valid pin_location, default to main pin
-                        if widget not in story.workspace.main_pin.controls:
-                            print("Invalid pin location, adding to main pin")
-                            story.workspace.main_pin.controls.append(widget)
-                            
-                # Skip non visible widgets
-                else:
-                    continue
+            # Check if they are visible
+            if widget.visible:
+    
+                # Check if widget has data and pin_location
+                pin_location = widget.data.get('pin_location', None)
 
-            # If main pin is empty, steal one from other pins so we are always fullscreen
-            if len(story.workspace.main_pin.controls) == 0:
-
-                # Steal from left first
-                if len(story.workspace.left_pin.controls) > 0:
-                    # Copy and delete last widget in left pin
-                    widget = story.workspace.left_pin.controls.pop()
-                    story.workspace.main_pin.controls.append(widget)
-                # Right pin
-                elif len(story.workspace.right_pin.controls) > 0:
-                    widget = story.workspace.right_pin.controls.pop()
-                    story.workspace.main_pin.controls.append(widget)
-                # Top pin
-                elif len(story.workspace.top_pin.controls) > 0:
-                    widget = story.workspace.top_pin.controls.pop()
-                    story.workspace.main_pin.controls.append(widget)
-                # Bottom pin
-                elif len(story.workspace.bottom_pin.controls) > 0:
-                    widget = story.workspace.bottom_pin.controls.pop()
-                    story.workspace.main_pin.controls.append(widget)
-                else:
-                    pass
-
-                # If we stole a widget, make its data match its new location
-                if widget is not None:
+                if pin_location is None:
+                    print("Widget has no pin_location data, defaulting to main pin")
                     widget.data['pin_location'] = "main"
                     widget.save_dict()
+                    self.main_pin.append(widget)
+                    continue
+                    
+                
+                # Add widget to the correct pin based on its pin_location
+                if pin_location == "top":
+                    self.top_pin.controls.append(widget)
+                    widget.data['index'] = self.top_pin.controls.index(widget)
+                elif pin_location == "left":
+                    self.left_pin.controls.append(widget)
+                    widget.data['index'] = self.left_pin.controls.index(widget)
+                elif pin_location == "main":
+                    self.main_pin.append(widget)
+                    widget.data['index'] = self.main_pin.index(widget)
+                elif pin_location == "right":
+                    self.right_pin.controls.append(widget)
+                    widget.data['index'] = self.right_pin.controls.index(widget)
+                elif pin_location == "bottom":
+                    self.bottom_pin.controls.append(widget)
+                    widget.data['index'] = self.bottom_pin.controls.index(widget)
 
-        except Exception as e:
-            print(f"Error arranging widgets: {e}")
+        # If main pin is empty, steal one from other pins so we are always fullscreen
+        if len(self.main_pin) == 0:
+            pass
+
+            # Steal from left first
+            if len(self.left_pin.controls) > 0:
+                # Copy and delete last widget in left pin
+                widget = self.left_pin.controls.pop()
+                self.main_pin.append(widget)
+            # Right pin
+            elif len(self.right_pin.controls) > 0:
+                widget = self.right_pin.controls.pop()
+                self.main_pin.append(widget)
+            # Top pin
+            elif len(self.top_pin.controls) > 0:
+                widget = self.top_pin.controls.pop()
+                self.main_pin.append(widget)
+            # Bottom pin
+            elif len(self.bottom_pin.controls) > 0:
+                widget = self.bottom_pin.controls.pop()
+                self.main_pin.append(widget)
+            else:
+                pass
+
+            # If we stole a widget, make its data match its new location
+            if widget is not None:
+                widget.data['pin_location'] = "main"
+                widget.save_dict()
+
+        
+        # TODO: ?? Go through each pin and set their index depending on position??
+
+
 
     # Called when we need to reload our workspace content, especially after pin drags
     def reload_workspace(self):
         ''' Reloads our workspace content by clearing and re-adding our 5 pin locations to the master row '''
-        from models.widget import Widget
 
         # Make sure our widgets are arranged correctly
         self.arrange_widgets()
@@ -343,158 +339,94 @@ class Workspace(ft.Container):
             e.control.update()
 
 
-        # Rendering adds dividers between each widget. So if we remove old ones here
-        self.top_pin.controls = [control for control in self.top_pin.controls if type(control) != ft.GestureDetector]
-        self.left_pin.controls = [control for control in self.left_pin.controls if type(control) != ft.GestureDetector]
-        self.right_pin.controls = [control for control in self.right_pin.controls if type(control) != ft.GestureDetector]
-        self.bottom_pin.controls = [control for control in self.bottom_pin.controls if type(control) != ft.GestureDetector]
-
-        
-
-        
-        
-
-
         # Method called when our divider (inside a gesture detector) is dragged
         # Updates the size of our pin in the story object
-        def move_top_pin_divider(e: ft.DragUpdateEvent):
-            #print("move top pin divider called")
+        async def move_top_pin_divider(e: ft.DragUpdateEvent):
+            # Set limits so we dont resize too small or too large
             if (e.delta_y > 0 and self.top_pin.height < self.p.height/2) or (e.delta_y < 0 and self.top_pin.height >= self.minimum_pin_height):
                 self.top_pin.height += e.delta_y
-                self.top_pin_drag_target.content.height = self.top_pin.height  # Update the drag target height to match the pin height
-            #formatted_top_pin.update()
-            #self.widgets.update() # Update the main pin, as it is affected by all pins resizing
-            #self.master_stack.update()
+            # Update the page
             self.p.update()
-        def save_top_pin_height(e: ft.DragEndEvent):
-            #print("save top pin height called")
+        async def save_top_pin_height(e: ft.DragEndEvent):
             self.story.data['top_pin_height'] = self.top_pin.height
             self.top_pin_drag_target.content.height = self.top_pin.height  # Update the drag target height to match the pin height
             self.story.save_dict()
-
-            # Reload each widget in the top pin to apply size changes if they need it
-            for widget in self.top_pin.controls:
-                if isinstance(widget, Widget):
-                    widget.reload_widget()   
-
-            # Also update the main pin widgets
-            for widget in self.main_pin.controls:
-                widget.reload_widget() 
             
-
         # The control that holds our divider, which we drag to resize the top pin
         top_pin_resizer = ft.GestureDetector(
             content=ft.Container(
                 height=10,
                 bgcolor=ft.Colors.TRANSPARENT,
                 padding=ft.padding.only(top=8),  # Push the 2px divider to the right side
-                #content=ft.Divider(thickness=2, height=2, color=ft.Colors.PRIMARY, opacity=.5)
             ),
             on_pan_update=move_top_pin_divider,
             on_pan_end=save_top_pin_height,
             on_hover=show_vertical_cursor,
-            drag_interval=10,
+            drag_interval=20,
         )
 
         # Left pin reisizer method and variable
-        def move_left_pin_divider(e: ft.DragUpdateEvent):
-            #print("move left pin divider called")
+        async def move_left_pin_divider(e: ft.DragUpdateEvent):
             if (e.delta_x > 0 and self.left_pin.width < self.p.width/2) or (e.delta_x < 0 and self.left_pin.width >= self.minimum_pin_width):
                 self.left_pin.width += e.delta_x
-            #formatted_left_pin.update()
-            #self.widgets.update()
-            #self.master_stack.update()
             self.p.update()
-        def save_left_pin_width(e: ft.DragEndEvent):
-            #print("save left pin width called")
+        async def save_left_pin_width(e: ft.DragEndEvent):
             self.story.data['left_pin_width'] = self.left_pin.width
             self.left_pin_drag_target.content.width = self.left_pin.width  # Update the drag target height to match the pin height
             self.story.save_dict()
-            # Reload each widget in the top pin to apply size changes if they need it
-            for widget in self.left_pin.controls:
-                if isinstance(widget, Widget):
-                    widget.reload_widget()     
-            for widget in self.main_pin.controls:
-                widget.reload_widget() 
         left_pin_resizer = ft.GestureDetector(
             content=ft.Container(
                 width=10,
                 bgcolor=ft.Colors.TRANSPARENT,
-                padding=ft.padding.only(left=8),  # Push the 2px divider to the right side
-                #content=ft.VerticalDivider(thickness=2, width=2, color=ft.Colors.PRIMARY, opacity=.5)
+                padding=ft.padding.only(left=8),
             ),
             on_pan_update=move_left_pin_divider,
             on_pan_end=save_left_pin_width,
             on_hover=show_horizontal_cursor,
-            drag_interval=10,
+            drag_interval=20,
         )
         
-        # No resizer for main pin, as it is always expanded and takes up the rest of the space
 
         # Right pin resizer method and variable
-        def move_right_pin_divider(e: ft.DragUpdateEvent):
-            #print("move right pin divider called")
+        async def move_right_pin_divider(e: ft.DragUpdateEvent):
             if (e.delta_x < 0 and self.right_pin.width < self.p.width/2) or (e.delta_x > 0 and self.right_pin.width >= self.minimum_pin_width):
                 self.right_pin.width -= e.delta_x
-            #formatted_right_pin.update()
-            #self.widgets.update()
-            #self.master_stack.update()
             self.p.update()
-        def save_right_pin_width(e: ft.DragEndEvent):
-            print("save right pin width called")    
+        async def save_right_pin_width(e: ft.DragEndEvent):
             self.story.data['right_pin_width'] = self.right_pin.width
             self.right_pin_drag_target.content.width = self.right_pin.width
             self.story.save_dict()
-            # Reload each widget in the top pin to apply size changes if they need it
-            for widget in self.right_pin.controls:
-                if isinstance(widget, Widget):
-                    widget.reload_widget()   
-            for widget in self.main_pin.controls:
-                widget.reload_widget() 
         right_pin_resizer = ft.GestureDetector(
             content=ft.Container(
                 width=10,
                 bgcolor=ft.Colors.TRANSPARENT,
                 padding=ft.padding.only(left=8),  # Push the 2px divider to the right side
-                #content=ft.VerticalDivider(thickness=2, width=2, color=ft.Colors.PRIMARY, opacity=.5)
             ),
             on_pan_update=move_right_pin_divider,
             on_pan_end=save_right_pin_width,
             on_hover=show_horizontal_cursor,
-            drag_interval=10,
+            drag_interval=20,
         )
 
         # Bottom pin resizer method and variable
-        def move_bottom_pin_divider(e: ft.DragUpdateEvent):
-            #print("move bottom pin divider called")
+        async def move_bottom_pin_divider(e: ft.DragUpdateEvent):
             if (e.delta_y < 0 and self.bottom_pin.height < self.p.height/2) or (e.delta_y > 0 and self.bottom_pin.height >= self.minimum_pin_height):
                 self.bottom_pin.height -= e.delta_y
-            #formatted_bottom_pin.update()
-            #self.widgets.update()
-            #self.master_stack.update()
             self.p.update()
-        def save_bottom_pin_height(e: ft.DragEndEvent):
-            print("save bottom pin height called")
+        async def save_bottom_pin_height(e: ft.DragEndEvent):
             self.story.data['bottom_pin_height'] = self.bottom_pin.height
             self.bottom_pin_drag_target.content.height = self.bottom_pin.height
             self.story.save_dict()
-            # Reload each widget in the top pin to apply size changes if they need it
-            for widget in self.bottom_pin.controls:
-                if isinstance(widget, Widget):
-                    widget.reload_widget()   
-            for widget in self.main_pin.controls:
-                widget.reload_widget() 
         bottom_pin_resizer = ft.GestureDetector(
             content=ft.Container(
                 height=10,
                 bgcolor=ft.Colors.TRANSPARENT,
                 padding=ft.padding.only(top=8),  # Push the 2px divider to the right side
-                #content=ft.Divider(thickness=2, height=2, color=ft.Colors.PRIMARY, opacity=.5)
             ),
             on_pan_update=move_bottom_pin_divider,
             on_pan_end=save_bottom_pin_height,
             on_hover=show_vertical_cursor,
-            drag_interval=10,
+            drag_interval=20,
         )
 
         # Called when selected new tab in the main pin
@@ -520,11 +452,10 @@ class Workspace(ft.Container):
 
 
         # Main pin is rendered as a tab control, so we won't use dividers and will use different logic
-        visible_main_controls = [control for control in self.main_pin.controls if getattr(control, 'visible', True)]
-        #print(f"Visible main pin controls: {len(visible_main_controls)}")
+        visible_main_controls = [control for control in self.main_pin if getattr(control, 'visible', True)]
         if len(visible_main_controls) > 1:
                 
-            # Temporary
+            # Hold all our main pin tabs
             self.main_pin_tabs = ft.Tabs(
                 animation_duration=0,
                 on_change=main_pin_tab_change,
@@ -535,12 +466,9 @@ class Workspace(ft.Container):
                 
                 tabs=[]    # Gives our tab control here   
             )
-
-            
             for widget in visible_main_controls:
                 self.main_pin_tabs.tabs.append(widget.tab)
-                #print("Added tab for widget:", widget.data.get('title', 'Untitled'))
-                # Sets the selected tab to the active one in the main pin
+                
                 if widget.data['is_active_tab']:
                     self.main_pin_tabs.selected_index = self.main_pin_tabs.tabs.index(widget.tab)
                     self.main_pin_tabs.indicator_color =  ft.Colors.with_opacity(0.8, widget.data.get('color', ft.Colors.PRIMARY))
@@ -549,16 +477,16 @@ class Workspace(ft.Container):
             # Stick it in a container for styling
             formatted_main_pin = ft.Container(
                 expand=True, border_radius=ft.border_radius.all(8),
-                gradient=dark_gradient, margin=ft.margin.all(0),
-                animate=ft.Animation(300, ft.AnimationCurve.EASE_OUT),
+                gradient=dark_gradient, 
+                margin=ft.margin.all(0),
                 padding=ft.padding.only(top=0, bottom=8, left=8, right=8),
                 content=self.main_pin_tabs
             )
 
-            #print(len(tabs.tabs), " tabs added to main pin")
-
+        elif len(visible_main_controls) == 1:
+            formatted_main_pin = visible_main_controls[0]
         else:
-            formatted_main_pin = self.main_pin
+            formatted_main_pin = ft.Container(expand=True)
 
         
         # Formatted pin locations that hold our pins, and our resizer gesture detectors.
@@ -627,8 +555,8 @@ class Workspace(ft.Container):
         
 
         # Format our pins on the page
-        self.widgets.controls.clear()
-        self.widgets.controls = [
+        self.master_widgets_row.controls.clear()
+        self.master_widgets_row.controls = [
             formatted_left_pin,    # formatted left pin
             ft.Column(
                 expand=True, spacing=0, 
@@ -647,6 +575,7 @@ class Workspace(ft.Container):
 
         # Finally update the UI
         self.p.update()
+
 
 
         
