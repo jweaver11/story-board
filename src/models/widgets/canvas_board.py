@@ -65,8 +65,8 @@ class CanvasBoard(Widget):
 
         self.state: State = State()     # State model from tracking our drawing state
         
-        # Build our widget on start, but just reloads it later
-        self.reload_widget()
+        if self.visible:
+            self.reload_widget()         # Build our widget if it's visible on init
 
     # Called when making changes to the data in a matrix cell
     def _update_matrix_cell(self, row: int, column: int, value):

@@ -54,7 +54,8 @@ class World(Widget):
             }
         )
       
-        self.reload_widget()
+        if self.visible:
+            self.reload_widget()         # Build our widget if it's visible on init
     
 
     

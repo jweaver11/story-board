@@ -118,9 +118,8 @@ class Plotline(Widget):
         self.information_display: ft.Container = None
         self.create_information_display()
 
-        # Builds/reloads our plotline UI
-        self.reload_widget()
-
+        if self.visible:
+            self.reload_widget()         # Build our widget if it's visible on init
     # Called for little data changes
     async def change_data(self, **kwargs):
         ''' Changes a key/value pair in our data and saves the json file '''

@@ -43,8 +43,8 @@ class Chapter(Widget):
         self.comments: dict = {}
         self.load_comments()
 
-        # Load our widget UI on start after we have loaded our data
-        self.reload_widget()
+        if self.visible:
+            self.reload_widget()         # Build our widget if it's visible on init
 
 
     def load_comments(self):

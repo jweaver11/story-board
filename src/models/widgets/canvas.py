@@ -142,7 +142,8 @@ class Canvas(Widget):
         # Load our drawing/display
         self.load_canvas()
 
-        self.reload_widget()
+        if self.visible:
+            self.reload_widget()         # Build our widget if it's visible on init
 
     
 

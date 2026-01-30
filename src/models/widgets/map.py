@@ -139,8 +139,8 @@ class Map(Widget):
         self.mini_widgets.append(self.information_display)
         
 
-        # Reloads the information canvas of the map
-        self.reload_widget()
+        if self.visible:
+            self.reload_widget()         # Build our widget if it's visible on init
 
 
     def _toggle_drawing_mode(self):

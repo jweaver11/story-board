@@ -523,22 +523,20 @@ class Workspace(ft.Container):
         visible_main_controls = [control for control in self.main_pin.controls if getattr(control, 'visible', True)]
         #print(f"Visible main pin controls: {len(visible_main_controls)}")
         if len(visible_main_controls) > 1:
-
-
-            # PC: Save tabs as variable, change active color to match widget color when tab change
                 
             # Temporary
             self.main_pin_tabs = ft.Tabs(
                 animation_duration=0,
                 on_change=main_pin_tab_change,
-                expand=True,  # Layout engine breaks Tabs inside of Columns if this expand is not set
-                #divider_color=ft.Colors.TRANSPARENT,
+                expand=True,  
                 padding=ft.padding.all(0),
                 label_padding=ft.padding.only(left=6, right=6, top=0, bottom=0),
                 mouse_cursor=ft.MouseCursor.BASIC,
                 
                 tabs=[]    # Gives our tab control here   
             )
+
+            
             for widget in visible_main_controls:
                 self.main_pin_tabs.tabs.append(widget.tab)
                 #print("Added tab for widget:", widget.data.get('title', 'Untitled'))
@@ -550,18 +548,12 @@ class Workspace(ft.Container):
 
             # Stick it in a container for styling
             formatted_main_pin = ft.Container(
-                
-                expand=True, 
-            
-                border_radius=ft.border_radius.all(8),
-            
-                gradient=dark_gradient,
+                expand=True, border_radius=ft.border_radius.all(8),
+                gradient=dark_gradient, margin=ft.margin.all(0),
                 animate=ft.Animation(300, ft.AnimationCurve.EASE_OUT),
-                margin=ft.margin.all(0),
-                #padding=ft.padding.all(8),
                 padding=ft.padding.only(top=0, bottom=8, left=8, right=8),
-                    content=self.main_pin_tabs
-                )
+                content=self.main_pin_tabs
+            )
 
             #print(len(tabs.tabs), " tabs added to main pin")
 
