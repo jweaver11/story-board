@@ -14,23 +14,14 @@ from styles.snack_bar import SnackBar
 # Called in main to create menu bar if no story exists, or by a story to create menu bar for that story
 def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
 
-    def handle_submenu_open(e):
-        pass
-    def handle_submenu_close(e):
-        pass
-    def handle_submenu_hover(e):
-        pass
-    def handle_delete_click(e):
-        # Should pop open dialog to confirm deletion, warning that it cannot be undone
-        pass
 
-    def handle_file_rename_click(e):
+    def _rename_clicked(e):
         # Should pop open dialog to rename current story
         pass
 
 
     # Called when file -> new is clicked
-    def handle_create_new_story_clicked(e):
+    def _create_new_story_clicked(e):
         ''' Opens a dialog to create a new story. Checks story is unique or not '''
 
 
@@ -125,7 +116,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
 
 
     # Called when file -> open is clicked
-    def handle_file_open_click(e):
+    def _open_clicked(e):
         ''' Opens a dialog to open an existing story '''
 
         #print("Open Story Clicked")
@@ -209,7 +200,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
         # Opens our dialog
         page.open(dlg)
 
-    def settings_clicked(e):
+    def _settings_clicked(e):
         ''' Goes to the settings page '''
         if page.route != "/settings":
             page.go("/settings")
@@ -248,55 +239,53 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                     alignment=ft.alignment.center
                 ), 
                 style=menubar_style,    # styling for the button
-                on_open=handle_submenu_open,    # Handle when a submenu is opened
-                on_close=handle_submenu_close,  # Handle when a submenu is closed
-                on_hover=handle_submenu_hover,  # Handle when a submenu is hovered
+                
                 controls=[      # The options shown inside of our button
                     ft.MenuItemButton(
                         content=ft.Text("New Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         # Options: Blank Story, From Template, but clicking also just creates blank
                         leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, color=ft.Colors.ON_SURFACE,),
                         style=menubar_style,
-                        on_click=handle_create_new_story_clicked,
+                        on_click=_create_new_story_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Open Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.MENU_BOOK_OUTLINED),
                         style=menubar_style,
-                        on_click=handle_file_open_click,
+                        on_click=_open_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Rename", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.EDIT_OUTLINED),
                         style=menubar_style,
-                        on_click=handle_file_rename_click,
+                        on_click=_rename_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Upload", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         # Options: story, chapter, map, drawing, character, note
                         leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED),
                         style=menubar_style,
-                        on_click=handle_file_open_click,
+                        on_click=_open_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Export", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         # Options: story, chapter, map, drawing, character, note
                         leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED),
                         style=menubar_style,
-                        on_click=handle_file_open_click,
+                        on_click=_open_clicked,
                     ),
                     
                     ft.MenuItemButton(
                         content=ft.Text("Settings", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.SETTINGS_OUTLINED),
                         style=menubar_style,
-                        on_click=settings_clicked,
+                        on_click=_settings_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Delete Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.DELETE_FOREVER_ROUNDED),
                         style=menubar_style,
-                        on_click=handle_delete_click,
+                        #on_click=_delete_clicked,
                     ),
                 ],
             ),
@@ -308,9 +297,6 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
     # Return our formatted menubar
     return ft.Container(
         border=ft.border.only(bottom=ft.BorderSide(width=1, color=ft.Colors.OUTLINE_VARIANT)),
-        #bgcolor=ft.Colors.with_opacity(.4, ft.Colors.ON_INVERSE_SURFACE),
-        
-
         content=ft.Row(
             spacing=0,
             controls=[
@@ -323,7 +309,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                     tooltip="Storyboard is currently in beta. More features coming soon! \nCheck out Settings -> Resources for a list of planned features and known issues. \nJoin the Discord to suggest your features and report bugs."
                 ),  # Feedback button
                 ft.Icon(ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, tooltip="Storyboard is currently in beta. More features coming soon! \nCheck out Settings -> Resources for a list of planned features and known issues. \nJoin the Discord to suggest your features and report bugs."),
-                ft.IconButton(icon=ft.Icons.SETTINGS_OUTLINED, on_click=settings_clicked),   # Settings button
+                ft.IconButton(icon=ft.Icons.SETTINGS_OUTLINED, on_click=_settings_clicked),   # Settings button
             ]
         )
     )
