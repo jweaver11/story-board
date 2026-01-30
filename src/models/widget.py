@@ -76,7 +76,6 @@ class Widget(ft.Container):
         self.w: int = 0                     # Width of our widget
         self.h: int = 0                     # Height of our widget
         self.is_renaming: bool = False      # Whether we are currently renaming this widget or not
-        self.protect_first_launch: bool = True   # Protects certain functions from running on first launch before everything is initialized
 
         # UI ELEMENTS - Tab
         self.tabs: ft.Tabs = ft.Tabs() # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
@@ -94,6 +93,7 @@ class Widget(ft.Container):
 
         # Called at end of constructor for all child widgets to build their view (not here tho since we're not on page yet)
         #self.reload_widget()
+
 
     # Called whenever there are changes in our data
     def save_dict(self):
@@ -727,8 +727,7 @@ class Widget(ft.Container):
 
         self.content = self.tabs
 
-        self.p.update()
-            
+        self.p.update()  
            
         
 

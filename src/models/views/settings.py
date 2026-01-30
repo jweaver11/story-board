@@ -13,7 +13,7 @@ import os
 import json
 from styles.colors import dark_gradient
 from ui.menu_bar import create_menu_bar
-from ui.workspaces_rail import WorkspacesRail
+from ui.workspaces_rail import ReorderableWorkspacesRail
 from models.dataclasses.character_template import default_character_template_data_dict
 
  
@@ -925,7 +925,7 @@ class Settings(ft.View):
         menubar = create_menu_bar(self.p)   
 
         # Set our workspaces rail
-        self.workspaces_rail = WorkspacesRail(self.p, self.story)  
+        self.workspaces_rail = ReorderableWorkspacesRail(self.p, self.story)  
 
         # Set the rail we use for different settings categories
         nav_rail = ft.NavigationRail(

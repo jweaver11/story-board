@@ -24,6 +24,159 @@ class WorkspacesRail(ft.Container):
         # Build our rail on start
         self.reload_rail(story)
 
+
+    # Called whenever we select a new workspace selector rail
+    def on_workspace_change(self, e, story: Story):
+        ''' Changes our selected workspace in settings and for our object.
+        Applies the correct active rail to match the selection '''
+        
+        # Save our newly selected workspace in the settings, and save it for our object (just easier for referencing)
+        if story is not None:   # Make objects later, rather than return functions
+            story.data['selected_rail'] = e.control.destinations[e.control.selected_index].data
+            story.save_dict()
+
+
+    # Called by clicking button on bottom right of rail
+    def toggle_collapse_rail(self, e, story: Story):
+        ''' Collapses or expands the rail, and saves the state in settings '''
+        from models.app import app    # Always grabs updated reference when collapsing/expanding
+
+        # Toggle our collapsed state
+        app.settings.data['workspaces_rail_is_collapsed'] = not app.settings.data['workspaces_rail_is_collapsed']
+        app.settings.save_dict()
+        
+        self.reload_rail(story)  # Reload the rail to apply changes
+
+
+    # Called mostly when re-ordering or collapsing the rail. Also called on start
+    def reload_rail(self, story) -> ft.Control:
+        ''' Reloads our rail, and applies the correct styles and controls based on the state of the rail '''
+        from models.app import app    # Always grabs updated reference when reloading
+
+        selected_rail = story.data.get('selected_rail', 'content') if story is not None else "content"
+
+        # Creates our rails for each workspace selection, that get added to the workspaces_rail list
+        nav_rail = ft.NavigationRail(
+            expand=True, bgcolor=ft.Colors.TRANSPARENT,  
+            selected_index=None,
+            on_change=lambda e: self.on_workspace_change(e, story),    
+            destinations=[  
+                ft.NavigationRailDestination(
+                    icon=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED), # Icon on the rail
+                    selected_icon=ft.Icon(ft.Icons.LIBRARY_BOOKS_ROUNDED, color=ft.Colors.PRIMARY), # Selected icon on the rail
+                    padding=ft.padding.only(top=10, bottom=10), # Padding for spacing
+                    data="content", label_content=ft.Text("Content", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                ),
+                ft.NavigationRailDestination(
+                    icon=ft.Icon(ft.Icons.PEOPLE_OUTLINE_ROUNDED), 
+                    selected_icon=ft.Icon(ft.Icons.PEOPLE_ROUNDED, color=ft.Colors.PRIMARY),
+                    padding=ft.padding.only(top=10, bottom=10),
+                    data="characters", label_content=ft.Text("Characters", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                ),
+                ft.NavigationRailDestination(
+                    icon=ft.Icon(ft.Icons.TIMELINE_ROUNDED, scale=1.2), 
+                    selected_icon=ft.Icon(ft.Icons.TIMELINE_OUTLINED, color=ft.Colors.PRIMARY, scale=1.2),
+                    padding=ft.padding.only(top=10, bottom=10),
+                    data="plotlines", label_content=ft.Text("Plotlines", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                ),
+                ft.NavigationRailDestination(
+                    icon=ft.Icon(ft.Icons.PUBLIC_OUTLINED),
+                    selected_icon=ft.Icon(ft.Icons.PUBLIC, color=ft.Colors.PRIMARY),
+                    padding=ft.padding.only(top=10, bottom=10),
+                    data="world_building", label_content=ft.Text("World Building", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                ),
+                ft.NavigationRailDestination(
+                    icon=ft.Icon(ft.Icons.DRAW_OUTLINED), 
+                    selected_icon=ft.Icon(ft.Icons.DRAW_ROUNDED, color=ft.Colors.PRIMARY),
+                    padding=ft.padding.only(top=10, bottom=10),
+                    data="canvas", label_content=ft.Text("Canvas", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                ),
+                ft.NavigationRailDestination(
+                    icon=ft.Icon(ft.Icons.EVENT_NOTE_OUTLINED),
+                    selected_icon=ft.Icon(ft.Icons.EVENT_NOTE, color=ft.Colors.PRIMARY),
+                    padding=ft.padding.only(top=10, bottom=10),
+                    data="planning", label_content=ft.Text("Planning", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                ),
+            ],
+        )
+        
+    
+
+        # Reads our selected workspace from ourself, and toggles the correct workspace selection icon
+        if selected_rail == "content":
+            nav_rail.selected_index = 0    # Selects first destination in destination list (cuz there is only one)
+        elif selected_rail == "characters":
+            nav_rail.selected_index = 1
+        elif selected_rail == "plotlines":
+            nav_rail.selected_index = 2
+        elif selected_rail == "world_building":
+            nav_rail.selected_index = 3
+        elif selected_rail == "canvas":
+            nav_rail.selected_index = 4
+        elif selected_rail == "planning":
+            nav_rail.selected_index = 5
+
+        # If we're collapsed...
+        if app.settings.data['workspaces_rail_is_collapsed']:
+
+            self.width = 50     # Make the rail less wide
+
+            for destination in nav_rail.destinations:
+                destination.label_content = ft.Text("", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE)   # Remove labels below icons
+
+            # Set our collapsed icon buttons icon depending on collapsed state
+            collapse_icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED
+
+        # If not collapsed, make rail normal size and set the correct icon
+        else:
+            self.width = 120
+            collapse_icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED
+
+
+        # Set our collapsed icon button using our defined icon above
+        collapse_icon_button = ft.IconButton(
+            icon=collapse_icon,
+            on_click=lambda e: self.toggle_collapse_rail(e, story),
+        )
+
+
+        self.content = ft.Column([
+            nav_rail,
+            #ft.Container(expand=True),
+            ft.Row(
+                spacing=0, 
+                controls=[
+                    ft.Container(expand=True),  # Fills left side of row
+                    collapse_icon_button,
+                ]
+            ),
+        ], expand=True)
+
+        # Can fail when changing views. It only fails tho when it doesnt need to update
+        try: 
+            self.update()
+        except Exception as e:
+            pass
+        
+        
+# Class so we can store our all workspaces rail as an object inside of app
+class ReorderableWorkspacesRail(ft.Container):
+    
+    # Constructor for our all_workspaces_rail object. Needs a page reference passed in
+    def __init__(self, page: ft.Page, story: Story = None):
+
+        self.p = page   # Page reference
+       
+        # Style our rail (container)
+        super().__init__(
+            alignment=ft.alignment.center,  # Aligns content to the 
+            padding=ft.padding.only(bottom=10, right=2, left=2),
+            animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+        )
+
+        # Build our rail on start
+        self.reload_rail(story)
+
     
 
     # Called whenever we select a new workspace selector rail
@@ -271,7 +424,7 @@ class WorkspacesRail(ft.Container):
         # Either our list of workspaces, or a reorderable list of our workspaces
         self.content=ft.Column(
             alignment=ft.MainAxisAlignment.CENTER,
-            spacing=4,
+            spacing=18,
         )
 
         # If we're reorderable, make our reorderable rail using a reorderable list
@@ -316,5 +469,3 @@ class WorkspacesRail(ft.Container):
             self.update()
         except Exception as e:
             pass
-        
-        
