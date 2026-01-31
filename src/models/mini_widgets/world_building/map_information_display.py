@@ -24,7 +24,6 @@ class MapInformationDisplay(MiniWidget):
         self, 
         title: str, 
         owner: Widget,                  # The owner is always our map owner
-        father,                         # Our father is always our map owner as well    
         page: ft.Page, 
         key: str,           # Not used, but its required so just whatever works
         data: dict = None               # No data is used here, so NEVER reference it. Use self.owner.data instead
@@ -37,7 +36,6 @@ class MapInformationDisplay(MiniWidget):
         super().__init__(
             title=title,           
             owner=owner, 
-            father=father,       
             page=page,              
             data=data,              
             key=key     

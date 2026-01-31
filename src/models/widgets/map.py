@@ -131,7 +131,6 @@ class Map(Widget):
         self.information_display = MapInformationDisplay(
             title=self.title,
             owner=self,                     # Our map is the owner of this mini widget
-            father=self,                    # Our map is also the father of this mini widget
             page=self.p,
             key="information_display",
             data=None
