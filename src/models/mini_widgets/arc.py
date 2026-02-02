@@ -317,32 +317,24 @@ class Arc(MiniWidget):
     def reload_slider(self):
 
         # Rebuild our slider
-        self.slider = ft.Stack(
-            alignment=ft.Alignment(0,0),
-            expand=True, #height=20,
-            visible=self.visible,
-            controls=[
-                ft.Container(expand=True, ignore_interactions=True),        # Make sure our stack is always expanded to full size
-                ft.GestureDetector(                                             # GD so we can detect right clicks on our slider
-                    on_secondary_tap=lambda e: self.owner.story.open_menu(self.owner.get_menu_options()),  # Open our parent plotline menu options
-                    height=50,       # Change slider visibility on hover and exit
-                    content=ft.RangeSlider(
-                        min=-100, max=100,                                  # Min and max values on each end of slider
-                        start_value=self.data.get('x_alignment_start', 0) * 100,        # Where we start on the slider
-                        end_value=self.data.get('x_alignment_end', 0) * 100,            # Where we end on the slider
-                        divisions=200,                                      # Number of spots on the slider
-                        active_color=self.data.get('color', "secondary"),                 # Get rid of the background colors
-                        tooltip="",
-                        inactive_color=ft.Colors.TRANSPARENT,               # Get rid of the background colors
-                        overlay_color=ft.Colors.with_opacity(.5, self.data.get('color', "secondary")),    # Color of plot point when hovering over it or dragging    
-                        on_change=self.change_x_positions,       # Update our data with new x position as we drag
-                        on_change_end=self.finished_dragging,                     # Save the new position, but don't write it yet    
-                        on_change_start=self.start_dragging,
-                    ),
-                ),
-                
-            ]
+        self.slider = ft.GestureDetector(                                             # GD so we can detect right clicks on our slider
+            on_secondary_tap=lambda e: self.owner.story.open_menu(self.owner.get_menu_options()),  # Open our parent plotline menu options
+            height=50,    # Change slider visibility on hover and exit
+            content=ft.RangeSlider(
+                min=-100, max=100,                                  # Min and max values on each end of slider
+                start_value=self.data.get('x_alignment_start', 0) * 100,        # Where we start on the slider
+                end_value=self.data.get('x_alignment_end', 0) * 100,            # Where we end on the slider
+                divisions=200,                                      # Number of spots on the slider
+                active_color=self.data.get('color', "secondary"),                 # Get rid of the background colors
+                tooltip="",
+                inactive_color=ft.Colors.TRANSPARENT,               # Get rid of the background colors
+                overlay_color=ft.Colors.with_opacity(.5, self.data.get('color', "secondary")),    # Color of plot point when hovering over it or dragging    
+                on_change=self.change_x_positions,       # Update our data with new x position as we drag
+                on_change_end=self.finished_dragging,                     # Save the new position, but don't write it yet    
+                on_change_start=self.start_dragging,
+            ),
         )
+          
                   
         
 
@@ -421,7 +413,7 @@ class Arc(MiniWidget):
         )
 
         self.plotline_control = ft.Stack(
-            expand=True,
+            expand=True, alignment=ft.Alignment(0, 0),
             controls=[
                 ft.Container(expand=True, ignore_interactions=True),
                 self.plotline_row,
