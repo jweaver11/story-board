@@ -100,12 +100,14 @@ class Arc(MiniWidget):
             on_secondary_tap=lambda e: print("Right clicked arc"), 
             on_enter=self.on_start_hover,      # Highlight container
             on_exit=self.on_stop_hover,        # Stop highlight
+            on_hover=self.on_start_hover,
             content=ft.Column(alignment=ft.MainAxisAlignment.CENTER, controls=[ft.Row(alignment=ft.MainAxisAlignment.CENTER, controls=[ft.Text(self.title)])]),
         )   
 
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our arc slider
         self.hidden = False                         # Track if we're in hidden mode for easier dragging
+        self.keep_slider_visible: bool = False      # If we should keep the slider visible when hovering over the arc
 
         # Loads our arc
         self.reload_mini_widget()
@@ -121,32 +123,44 @@ class Arc(MiniWidget):
         ''' Focuses the arc control '''
 
         # Change its border opacity and update the page
-        self.plotline_arc.border=ft.border.only( 
+        self.plotline_arc.border = ft.border.only( 
             left=ft.BorderSide(2, self.data.get('color', "secondary")),
             right=ft.BorderSide(2, self.data.get('color', "secondary")),
             top=ft.BorderSide(2, self.data.get('color', "secondary")),
         )
         self.gd.content.opacity = 1.0
+
+        if self.visible:
+            self.slider.visible = True
+                
         self.p.update()
 
 
     # Called when we stop hovering over our arc on the plotline
     async def on_stop_hover(self, e: ft.HoverEvent):
         ''' Changes the arc control to unfocused '''
+
+        # If we're dragging, just return
+        if self.is_dragging:
+            return
         
-        # If our info display is not opened (we are not visible), lower the border opacity and update the page
+        # If we're hovering our slider, keep it visible
+        if not self.keep_slider_visible:
+            self.slider.visible = False
+        
+        # If we are not visible, lower our border and text
         if not self.visible:
-            self.plotline_arc.border=ft.border.only(
+            self.plotline_arc.border=ft.border.only(        # Make boarder more see through
                 left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
                 right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
                 top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
             )
-            self.gd.content.opacity = .7
-            self.p.update()
+            self.gd.content.opacity = .7        # Make text less prominent
+        
+        self.p.update()
 
     def show_mini_widget(self, e=None):
 
-    
         self.opacity = 1
         self.ignore_interactions = False
         self.plotline_arc.border = ft.border.only(
@@ -188,8 +202,13 @@ class Arc(MiniWidget):
             top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
         )
         
+        print("Slider visible:", self.slider.visible)
 
         return super().hide_mini_widget(update=update)
+    
+
+    
+
 
 
     # Called at the start of dragging our point on the slider
@@ -316,23 +335,32 @@ class Arc(MiniWidget):
     # Called whenever we need to rebuild our slider, such as on construction or when our x position changes
     def reload_slider(self):
 
+        def _state_slider(val: bool):
+            self.keep_slider_visible = val
+            print("Keep slider visible:", self.keep_slider_visible)
+            if not self.keep_slider_visible:
+                self.slider.visible = False
+                self.p.update()
+
         # Rebuild our slider
-        self.slider = ft.GestureDetector(                                             # GD so we can detect right clicks on our slider
-            on_secondary_tap=lambda e: self.owner.story.open_menu(self.owner.get_menu_options()),  # Open our parent plotline menu options
-            height=50,    # Change slider visibility on hover and exit
-            content=ft.RangeSlider(
-                min=-100, max=100,                                  # Min and max values on each end of slider
-                start_value=self.data.get('x_alignment_start', 0) * 100,        # Where we start on the slider
-                end_value=self.data.get('x_alignment_end', 0) * 100,            # Where we end on the slider
-                divisions=200,                                      # Number of spots on the slider
-                active_color=self.data.get('color', "secondary"),                 # Get rid of the background colors
-                tooltip="",
-                inactive_color=ft.Colors.TRANSPARENT,               # Get rid of the background colors
-                overlay_color=ft.Colors.with_opacity(.5, self.data.get('color', "secondary")),    # Color of plot point when hovering over it or dragging    
-                on_change=self.change_x_positions,       # Update our data with new x position as we drag
-                on_change_end=self.finished_dragging,                     # Save the new position, but don't write it yet    
-                on_change_start=self.start_dragging,
-            ),
+        self.slider = ft.TransparentPointer(
+            ft.GestureDetector(                                             # GD so we can detect right clicks on our slider
+                height=50, on_enter=lambda e: _state_slider(True),
+                on_exit=lambda e: _state_slider(False),
+                content=ft.RangeSlider(
+                    min=-100, max=100,                                  # Min and max values on each end of slider
+                    start_value=self.data.get('x_alignment_start', 0) * 100,        # Where we start on the slider
+                    end_value=self.data.get('x_alignment_end', 0) * 100,            # Where we end on the slider
+                    divisions=200,                                      # Number of spots on the slider
+                    active_color=self.data.get('color', "secondary"),                 # Get rid of the background colors
+                    tooltip="",
+                    inactive_color=ft.Colors.TRANSPARENT,               # Get rid of the background colors
+                    overlay_color=ft.Colors.with_opacity(.5, self.data.get('color', "secondary")),    # Color of plot point when hovering over it or dragging    
+                    on_change=self.change_x_positions,       # Update our data with new x position as we drag
+                    on_change_end=self.finished_dragging,                     # Save the new position, but don't write it yet    
+                    on_change_start=self.start_dragging,
+                ),
+            ), visible=False,
         )
           
                   
