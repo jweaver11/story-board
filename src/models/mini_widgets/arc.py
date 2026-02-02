@@ -202,14 +202,8 @@ class Arc(MiniWidget):
             top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
         )
         
-        print("Slider visible:", self.slider.visible)
-
         return super().hide_mini_widget(update=update)
     
-
-    
-
-
 
     # Called at the start of dragging our point on the slider
     async def start_dragging(self, e):

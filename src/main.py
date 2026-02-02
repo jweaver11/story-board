@@ -9,12 +9,11 @@ from utils.route_change import route_change
 from models.views.home import create_home_view
 from models.views.loading import create_loading_view
 from models.views.welcome import create_welcome_view, animate_welcome_text
-import asyncio
-
 
 
 # Main function
 async def main(page: ft.Page):
+    
     # Load settings and previous story (if one exists)
     app.load_settings(page)  
  
@@ -46,11 +45,11 @@ async def main(page: ft.Page):
     # Set our route change function to be called on route changes
     page.on_route_change = route_change 
  
-    app.load_previous_story(page)       # If a previous story was loaded, we load its route/view here
+    # If a previous story was loaded, we load its route/view here
+    app.load_previous_story(page)       
  
-    # If route is default/home (No story was loaded), create a view for that
+    # I no story was loaded, Give us a basic home view
     if page.route == "/":
-        
         page.views.append(create_home_view(page))   # Simple view so we just use a function, not a class
         page.update()
 

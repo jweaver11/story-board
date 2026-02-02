@@ -102,7 +102,6 @@ class Canvas(Widget):
             width=self.data.get('canvas', {}).get('width', None),
             height=self.data.get('canvas', {}).get('height', None),
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
-            border_radius=ft.border_radius.all(2),
             border=ft.border.all(1, ft.Colors.ON_SURFACE_VARIANT),
             aspect_ratio=self.data.get('canvas', {}).get('aspect_ratio'),       # If set, ignores width and height
             content=self.canvas
@@ -128,6 +127,8 @@ class Canvas(Widget):
             )
             # Show comments toggle
         ])
+
+        self.header_displayed_overtop = False
 
 
         self.interactive_viewer = ft.InteractiveViewer(content=self.canvas_container, scale_factor=700)
@@ -613,11 +614,8 @@ class Canvas(Widget):
         self.reload_tab()
 
         self.canvas_container.content = self.canvas
-
-        self.body_container.alignment = ft.alignment.center
-
         self.body_container.content = self.interactive_viewer
 
         self._render_widget()
-
+ 
 

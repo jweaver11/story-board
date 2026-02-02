@@ -34,6 +34,7 @@ class WorkspacesRail(ft.Container):
         if story is not None:   # Make objects later, rather than return functions
             story.data['selected_rail'] = e.control.destinations[e.control.selected_index].data
             story.save_dict()
+            story.active_rail.display_active_rail(story)
 
 
     # Called by clicking button on bottom right of rail

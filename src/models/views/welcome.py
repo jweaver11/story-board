@@ -9,7 +9,7 @@ def create_welcome_view(page: ft.Page) -> ft.View:
         "Welcome to Story Board", 
         theme_style="headlineLarge", 
         expand=1,
-        opacity=0,      # Opacity gets changed in main
+        opacity=0.00,      # Opacity gets changed in main
     )
 
     return ft.View(
