@@ -56,30 +56,32 @@ class MapInformationDisplay(MiniWidget):
         except Exception as e:
             print(f"Error saving map information display data to {self.owner.title}: {e}")
 
+    # Called to toggle our visibility
+    def show_mini_widget(self, e=None):
+        ''' Toggles our visibility and updates our owners data accordingly '''
 
-    # Called when toggling our visibility
-    def toggle_visibility(self, e=None, value: bool = None):
-        ''' Custom toggles our visibility for our information display '''
-
-        if value is not None:
-            self.visible = value
-            self.owner.data['information_display_visibility'] = value
-            self.owner.save_dict()
-        else:
+        if self.visible:
+            return
         
+        # Update our visibility
+        self.owner.data['information_display_visibility'] = True
+        super().show_mini_widget(e)
 
-            # Update our visibility (stored in owners data)
-            self.owner.data['information_display_visibility'] = not self.owner.data['information_display_visibility']
-            self.visible = self.owner.data['information_display_visibility']
-            self.owner.save_dict()
+    def hide_mini_widget(self, e=None, update: bool=False):
+        ''' Hides our mini widget '''
 
-        # Apply the update
-        self.p.update()
+        self.owner.data['information_display_visibility'] = False
+        self.owner.data['information_display_is_pinned'] = False
+        super().hide_mini_widget(e, update)
 
-
-    def on_hover(self, e: ft.HoverEvent):
-        #print(e)
-        pass
+    async def _toggle_pin(self, e):
+        ''' Pins or unpins our information display '''
+            
+        self.owner.data['information_display_is_pinned'] = not self.owner.data['information_display_is_pinned']
+        self.data['is_pinned'] = self.owner.data['information_display_is_pinned']
+        self.save_dict()
+        self.reload_mini_widget()
+        self.owner.reload_widget()
     
     # Called when reloading our mini widget UI
     def reload_mini_widget(self):
@@ -89,7 +91,7 @@ class MapInformationDisplay(MiniWidget):
                 self.title_control,
                 self.content_control,
 
-                ft.TextButton("Hide me", on_click=self.toggle_visibility),
+                ft.TextButton("Hide me", on_click=self.hide_mini_widget),
             ],
             expand=True,
         )

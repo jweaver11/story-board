@@ -3,13 +3,6 @@ The map class for all maps inside our story
 Maps are widgets that have their own drawing canvas, background image, information display, and markers/locations
 '''
 
-# TODO: 
-# BLANK NO TEMPLATE MAPS EXIST AS WELL
-# ADD DUPLICATE OPTION AS WELL
-# Users can choose to create their image or use some default ones, or upload their own
-# When hovering over a map, display it on the rail as well so we can see where new sub maps would
-
-# THERES A MAP DISPLAY DUMMY, HB U CHECK THAT OUT!!!!!
 
 
 import os
@@ -57,25 +50,25 @@ class Map(Widget):
                 # Widget data
                 'tag': "map", 
                 'color': app.settings.data.get('default_map_color'),
+                'icon': "map_outlined",     # What icon to render on a parent map (if we have one)
 
                 # State and view data
                 'information_display_visibility': True,   # Info display mini widget visibility
-                'in_drawing_mode': bool,         # Whether we are in drawing mode or not
-                'image_base64': str,  # Saves our icon as img64 string (Used a preview as well from other widgets)
+                'in_drawing_mode': bool,            # Whether we are in drawing mode or not
+                'image_base64': str,                # Saves our icon as img64 string (Used a preview as well from other widgets)
+                'left': int,                        # Our left position on our parent map (if we have one)
+                'top': int,                         # Our top position on our parent map (if we have one)
                               
-                'summary': str,
-                'markers': dict,        # Our markers on this map
+                'locations': dict,        # Our locations on this map. Locations can also be maps
+                # If location is a map, it just has a tag and the maps key to reference it so we can open its information display when clicking it
 
-                # WIP - parent maps and child maps connected to this one
-                'world': str,       # The world this map belongs to
-                'parent_maps': dict,        # Any parent map this map belongs too
-                'child_maps': dict,         # Any child/sub maps this map has
-                'alignment': {'x': 0, 'y': 0},   # Our alignment on our parent map. Both values between -1 and 1
-      
-                # Map data
+                # Map data for the information display
                 'map_data': {
                     'Summary': str,
                 }
+                # TODO: 
+                # Users can choose to create their image or use some default ones, or upload their own
+                # THERES A MAP DISPLAY DUMMY, HB U CHECK THAT OUT!!!!!
             },  
         )
 
@@ -86,13 +79,22 @@ class Map(Widget):
 
         # State utils
         self.drawing_mode = False  
-        self.dragging_mode = False  
         self.map_width: int = 0
         self.map_height: int = 0
+        self.l: int = 0      # Values to pass into locations for left and top coordinates
+        self.t: int = 0
 
         # Dict of our sub maps
         self.maps: list = []
         self.details = {}
+
+        self.information_display = MapInformationDisplay(
+            title=self.title,
+            owner=self,                     # Our map is the owner of this mini widget
+            page=self.p,
+            key="information_display",
+            data=None
+        )
 
 
         self.canvas = cv.Canvas(
@@ -110,14 +112,10 @@ class Map(Widget):
             on_resize=self._rebuild_map_canvas, 
         )
 
-
-
-        
-
         self.map_gd = ft.GestureDetector(
-            hover_interval=10,
+            hover_interval=20,
             mouse_cursor=ft.MouseCursor.PRECISE,   
-            on_tap=lambda e: print("Open Information Display"),
+            on_tap=self.tap_gd,
             on_secondary_tap=lambda e: print("Open menu to add marker or sub map"),
             on_enter=lambda e: print("Show hover effects"),
             on_exit=lambda e: print("Hide hover effects"),
@@ -128,50 +126,42 @@ class Map(Widget):
             ),
         )
 
-        self.information_display = MapInformationDisplay(
-            title=self.title,
-            owner=self,                     # Our map is the owner of this mini widget
-            page=self.p,
-            key="information_display",
-            data=None
-        )
+        
         self.mini_widgets.append(self.information_display)
         
 
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
 
+    # Called when clicking on our map to show our information display
+    async def tap_gd(self, e: ft.TapEvent):
+        ''' If we're not in drawing mode, show our information display '''
+        if not self.drawing_mode:
+            self.information_display.show_mini_widget()
 
+    # Called to toggle our drawing mode on/off
     def _toggle_drawing_mode(self):
         ''' Toggles our drawing mode on/off '''
-        self.data['in_drawing_mode'] = not self.data.get('in_drawing_mode')
-        print("Toggling drawing mode to:", self.data.get('in_drawing_mode'))
+
+        # Change our data value for drawing mode and save it
+        self.data['in_drawing_mode'] = not self.data.get('in_drawing_mode', False)
         self.save_dict()
-        self.reload_widget()
+        
+        # If we entered drawing mode, show our drawing canvas rail. Otherwise, go back to the previous rail
+        if self.data['in_drawing_mode']:
+            self.story.active_rail.display_active_rail(self.story, "canvas")
+        else:
+            self.story.active_rail.display_active_rail(self.story)
 
+        self.reload_widget()    # Reload our widget
 
+    # Called when mouse hovers over the map
     async def _hover_gd(self, e: ft.HoverEvent):
-        ''' Handles our hover over the map '''
-        # Set coordinates for menu
+        ''' Sets our coordinate positions for menus and passing in new items '''
         self.story.mouse_x = e.global_x
         self.story.mouse_y = e.global_y
-
-        # Calculate and set our alignments for new items
-        w = max(int(self.map_width or 0), 1)
-        x = float(e.local_x)
-        raww = (2.0 * x / w) - 1.0
-        raww = max(-1.0, min(1.0, raww))
-
-        # Calculate and set our y alignment
-        h = max(int(self.map_height or 0), 1)
-        y = float(e.local_y)
-        rawh = (2.0 * y / h) - 1.0
-        rawh = max(-1.0, min(1.0, rawh))
-
-        self.data['alignment']['x'] = round(raww, 2)
-        self.data['alignment']['y'] = round(rawh, 2)
-
-        print("New x alignment:", self.data.get('alignment').get('x'), "New Y alignment:", self.data.get('alignment').get('y'))
+        self.l = e.local_x
+        self.t = e.local_y
 
 
     # Called for any size changes to our map canvas
@@ -193,7 +183,6 @@ class Map(Widget):
         self.reload_tab()
 
         
-        # Make it so that maps 'mini widget' shows inside of the map...
         # We render our map and all the markers, then go through our 'sub maps', find their data, and render them on top as well
         # - Sub maps only have the title still, we don't save their data
         # -- Recursively go through rendering sub maps on top of parent map
@@ -202,12 +191,17 @@ class Map(Widget):
         
         # Create our stack that will hold our background image, canvas, and map elements
         stack = ft.Stack(
-            expand=True, alignment=ft.Alignment(.95, -.95),
+            expand=True, #alignment=ft.Alignment(.95, -.95),
             controls=[
                 self.canvas,    # Our drawing canvas on bottom. From here, it is not actually used other than resizing logic
                 self.map_gd
             ]  # Gestured Detector, which holds our background image, on the bottom
         )
+
+        for mw in self.mini_widgets:
+            if hasattr(mw, 'map_control'):
+                stack.controls.append(mw.map_control)
+                
 
         iv = ft.InteractiveViewer(
             content=stack, expand=True,
@@ -225,7 +219,7 @@ class Map(Widget):
         iv.content = stack
 
 
-        self.header = ft.Row([
+        header = ft.Row([
             ft.IconButton(
                 ft.Icons.DRAW_OUTLINED if not self.data.get('in_drawing_mode') else ft.Icons.DONE,
                 tooltip="Enter Drawing Mode" if not self.data.get('in_drawing_mode') else "Exit Drawing Mode",
@@ -246,12 +240,12 @@ class Map(Widget):
             ft.IconButton(
                 ft.Icons.INFO_OUTLINED,
                 tooltip="Toggle Information Display",
-                on_click=lambda e: self.information_display.toggle_visibility(value=True),
+                on_click=self.information_display.show_mini_widget,
             ),
             # Button to hide markers
         ])
 
-        self.body_container.content = ft.Column([self.header, ft.Divider(thickness=2, height=8), iv], spacing=0)
+        self.body_container.content = ft.Column([header, ft.Divider(thickness=2, height=8), iv], spacing=0)
 
 
         self._render_widget()

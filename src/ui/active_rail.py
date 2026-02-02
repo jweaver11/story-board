@@ -46,10 +46,17 @@ class Active_Rail(ft.Container):
 
         
     # Called when other workspaces are selected
-    def display_active_rail(self, story: Story):
+    def display_active_rail(self, story: Story, rail: str = None):
         ''' Reloads the active rail based on the selected workspace in workspaces_rail '''
 
-        selected_rail = story.data.get('selected_rail', "content")
+        # Allows us to force a rail without saving it to data. Useful for maps
+        if rail is not None:
+            selected_rail = rail
+
+        # Otherwise we'll just get it from the story data
+        else:
+            selected_rail = story.data.get('selected_rail', "content")
+
 
         match selected_rail:
             case "content":
