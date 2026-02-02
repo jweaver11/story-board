@@ -8,24 +8,46 @@ from models.app import app
 from utils.route_change import route_change
 from models.views.home import create_home_view
 from models.views.loading import create_loading_view
+from models.views.welcome import create_welcome_view, animate_welcome_text
+import asyncio
 
 
 
 # Main function
-def main(page: ft.Page):
+async def main(page: ft.Page):
+    # Load settings and previous story (if one exists)
+    app.load_settings(page)  
+ 
+    # Either welcome to storyboard view, or our loading view
+    if app.settings.data.get("is_first_launch", True):
+        # Create the view and add it the page
+        welcome_view = create_welcome_view(page)
+        page.views.append(welcome_view)     # Add welcome view to the page
+        page.update()
 
-    # Set loading view here if we want to use one
-    # Our loading view while we setup the app
-    page.views.append(create_loading_view(page))
-    page.update()
+        # Grab our text and begin animating it
+        text = welcome_view.controls[1]   
+        await animate_welcome_text(text)  
 
+        # Grab our progress ring and show it
+        progress_ring = welcome_view.controls[2]
+        progress_ring.opacity = 1.0
+        progress_ring.update()
+
+        # Make sure we don't run the welcome view again
+        app.settings.data["is_first_launch"] = False
+        app.settings.save_dict()
+
+    # Otherwise they are not new to storyboard, show our loading view
+    else:
+        page.views.append(create_loading_view(page))
+        page.update()
+ 
     # Set our route change function to be called on route changes
     page.on_route_change = route_change 
-
-    # Load settings and previous story (if one exists)
-    app.load_settings(page)             
+ 
     app.load_previous_story(page)       # If a previous story was loaded, we load its route/view here
-
+ 
     # If route is default/home (No story was loaded), create a view for that
     if page.route == "/":
         

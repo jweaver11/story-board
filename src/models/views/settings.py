@@ -52,6 +52,7 @@ class Settings(ft.View):
                 'page_is_maximized': True,   # If the window is maximized or not
                 'page_width': int,     # Last known page width
                 'page_height': int,    # Last known page height
+                'is_first_launch': True,    # If this is the first time the app has been launched or not
 
                 # Paint settings for our canvas drawings to use as default that users can change
                 'paint_settings': {
