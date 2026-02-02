@@ -34,7 +34,6 @@ class Character(Widget):
         )
 
         # Update our padding to be none on the right to handle scrollbars better
-        #self.padding = ft.padding.only(top=0, bottom=8, left=8, right=0)
         self.body_container.padding = ft.padding.only(top=8, bottom=8, left=8, right=0)
 
         # Verifies this object has the required data fields, and creates them if not
@@ -303,7 +302,8 @@ class Character(Widget):
         _load_dict_data(self.data.get('character_data', {}).get('Physical Description', {}), physical_description_container, "Physical Description")
         _load_dict_data(self.data.get('character_data', {}).get('Family', {}), family_container, "Family")
         _load_dict_data(self.data.get('character_data', {}).get('Origin', {}), origin_container, "Origin")
-        _load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container, "Connections")
+        #_load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container, "Connections")
+        # Will need to load list data ^^^^^^^^^^^^^^^^^^^^^^^^^^
         _load_dict_data(self.data.get('character_data', {}).get('Custom Fields', {}), custom_fields_container, "Custom Fields")
 
 
@@ -534,7 +534,7 @@ class Character(Widget):
             _load_dict_data(self.data.get('character_data', {}).get('Physical Description', {}), physical_description_container)
             _load_dict_data(self.data.get('character_data', {}).get('Family', {}), family_container)
             _load_dict_data(self.data.get('character_data', {}).get('Origin', {}), origin_container)
-            _load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container)
+            #_load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container)
             _load_dict_data(self.data.get('character_data', {}).get('Custom Fields', {}), custom_fields_container)
 
             # Set our columns to hold our data sections
