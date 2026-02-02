@@ -17,7 +17,7 @@ class PlotlineInformationDisplay(MiniWidget):
             owner=owner,                    
             page=page,          
             key=key,  # Not used, but its required so just whatever works
-            data=None,      # No data is used here, so NEVER reference it. Use self.owner.data instead
+            data=data,      # No data is used here, so NEVER reference it. Use self.owner.data instead
         ) 
         
         # Since we only reference out owners data and not our own, we don't need to verify it here

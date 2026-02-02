@@ -71,7 +71,6 @@ class Widget(ft.Container):
 
         # Canvas and state trackers for sizing our widget
         self.sizing_canvas = cv.Canvas(on_resize=self._get_size, resize_interval=100, expand=True, content=ft.Container(expand=True, ignore_interactions=True))
-        self.use_sizing_canvas: bool = False                    # Whether we use the sizing canvas or not. Some widgets dont need it
         self.w: int = 0                                         # Width of our widget
         self.h: int = 0                                         # Height of our widget
         self.is_renaming: bool = False                          # Whether we are currently renaming this widget or not
@@ -226,7 +225,6 @@ class Widget(ft.Container):
         self.h = e.height
         
         
-
     # Called when renaming a widget
     def rename(self, title: str):
         ''' Renames our widget in live title, data, and json file '''
@@ -525,6 +523,8 @@ class Widget(ft.Container):
             # Change our icon to match, apply the update
             self.story.active_rail.content.reload_rail()
             self.reload_widget()
+            if self.data.get('pin_location', '') == 'main':
+                self.story.workspace.reload_workspace()
             
 
         # List for our colors when formatted
@@ -685,12 +685,8 @@ class Widget(ft.Container):
         # Clear out our master stack controls so we start fresh to re-render
         self.master_stack.controls.clear()
 
-        # Check if we're using the sizing canvas or not
-        if self.use_sizing_canvas:
-            self.master_stack.controls = [self.sizing_canvas, self.body_container]
-
-        else:   # Widgets that don't use it cuz they have their own: Plotline, Canvas
-            self.master_stack.controls = [self.body_container]
+        # Add our sizing canvas and body container to the stack first
+        self.master_stack.controls = [self.sizing_canvas, self.body_container]
 
         # Separate our mini widgets into left and right side lists
         left_mini_widgets = []
@@ -721,7 +717,8 @@ class Widget(ft.Container):
                 self.master_stack.controls.append(left_column)
             if len(right_mini_widgets) > 0:
                 self.master_stack.controls.append(right_column) 
-
+               
+                
             # Set the tab content
             self.tab.content = self.master_stack  
 

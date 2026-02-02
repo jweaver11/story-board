@@ -98,7 +98,6 @@ class Plotline(Widget):
         self.plotline_width: int = int()    # Width of our plotline canvas. Just used in calculations, not applied
         self.plotline_height: int = int()   # Height of our plotline canvas Just used in calculations, not applied
         self.can_open_menu: bool = False    # If we can open the menu when right clicking
-        self.use_sizing_canvas = True
 
         # Our plotline canvas that draws our plotline line and markers
         self.plotline_canvas = cv.Canvas(
@@ -118,10 +117,11 @@ class Plotline(Widget):
 
         # Declare and create our information display, which is our plotlines mini widget 
         self.information_display: ft.Container = None
-        self.create_information_display()
+        self._create_information_display()
 
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
+
     # Called for little data changes
     async def change_data(self, **kwargs):
         ''' Changes a key/value pair in our data and saves the json file '''
@@ -140,7 +140,7 @@ class Plotline(Widget):
             print(f"Error changing data {key}:{value} in widget {self.title}: {e}")
 
     # Called in the constructor
-    def create_information_display(self):
+    def _create_information_display(self):
         ''' Creates our plotline information display mini widget '''
         from models.mini_widgets.plotline_information_display import PlotlineInformationDisplay
         
@@ -206,6 +206,7 @@ class Plotline(Widget):
         if self.can_open_menu:
             if not self.information_display.visible:
                 self.information_display.show_mini_widget()
+            
 
         
     # Called when creating a new arc
@@ -321,9 +322,12 @@ class Plotline(Widget):
     # Called when right clicking our controls for either plotline or an arc
     def get_menu_options(self) -> list[ft.Control]:
 
-        #TODO: Should be New, show information display, renamde, color, delete
+        async def _show_info_display(e):
+            ''' Shows our information display mini widget '''
+            self.information_display.show_mini_widget()
+            await self.story.close_menu()
 
-        # Color, rename, delete
+        
         return [
              MenuOptionStyle(
                 content=ft.PopupMenuButton(
@@ -345,7 +349,17 @@ class Plotline(Widget):
                     ]
                 ),
             ),
-            # Delete button
+            MenuOptionStyle(
+                on_click=_show_info_display,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.INFO_OUTLINE),
+                    ft.Text(
+                        "Show Info", 
+                        weight=ft.FontWeight.BOLD, 
+                        color=ft.Colors.ON_SURFACE
+                    ), 
+                ]),
+            ),
             MenuOptionStyle(
                 on_click=self.rename_clicked,
                 content=ft.Row([
@@ -372,14 +386,6 @@ class Plotline(Widget):
                     ),
                     items=self._get_color_options()
                 )
-            ),
-            # Delete button
-            MenuOptionStyle(
-                #on_click=lambda e: self._delete_clicked(e),
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED),
-                    ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
-                ]),
             ),
         ]
     

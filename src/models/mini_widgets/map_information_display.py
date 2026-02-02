@@ -25,13 +25,11 @@ class MapInformationDisplay(MiniWidget):
         title: str, 
         owner: Widget,                  # The owner is always our map owner
         page: ft.Page, 
-        key: str,           # Not used, but its required so just whatever works
+        key: str,                       # Not used, but its required so just whatever works
         data: dict = None               # No data is used here, so NEVER reference it. Use self.owner.data instead
     ):
         
-        # Supported categories: World map, continent, region, ocean, country, city, dungeon, room, none.
-        
-        
+
         # Parent constructor
         super().__init__(
             title=title,           
@@ -41,9 +39,12 @@ class MapInformationDisplay(MiniWidget):
             key=key     
         ) 
 
+        # NOT USED
+        self.data['visible'] = self.owner.data.get('information_display_visibility', True)
+
         # Set our visibility based on our owners data
         self.visible = self.owner.data.get('information_display_visibility', True)
-
+        self.data['is_pinned'] = self.owner.data.get('information_display_is_pinned', False)
 
         # Reloads the information display of the map
         self.reload_mini_widget()
@@ -62,6 +63,7 @@ class MapInformationDisplay(MiniWidget):
 
         if self.visible:
             return
+        
         
         # Update our visibility
         self.owner.data['information_display_visibility'] = True
@@ -84,19 +86,50 @@ class MapInformationDisplay(MiniWidget):
         self.owner.reload_widget()
     
     # Called when reloading our mini widget UI
-    def reload_mini_widget(self):
+    def reload_mini_widget(self, no_update: bool=False):
 
-        self.content = ft.Column(
-            [
-                self.title_control,
-                self.content_control,
+            
+        title_control = ft.Row([
+            ft.Icon(ft.Icons.MAP, self.owner.data.get('color', None)),
+            ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE),
+            ft.IconButton(
+                ft.Icons.PUSH_PIN_OUTLINED if not self.owner.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+                self.owner.data.get('color', None),
+                tooltip="Pin Information Display" if not self.owner.data.get('information_display_is_pinned', False) else "Unpin Information Display",
+                on_click=self._toggle_pin
+            ),
+            ft.Container(expand=True),
+            ft.IconButton(
+                ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
+                tooltip=f"Close {self.title}",
+                on_click=lambda e: self.hide_mini_widget(update=True),
+            ),
+        ])
+        
+        content = ft.Column([
+            title_control,
+            ft.Divider(height=2, thickness=2),
+            ft.Container(height=10),  # Spacing 
+            ft.Text("Content"),
+        ], expand=True, tight=True, spacing=0)
 
-                ft.TextButton("Hide me", on_click=self.hide_mini_widget),
-            ],
-            expand=True,
-        )
 
-        self.p.update()
+        
+
+
+        # Format our final layout so the scrollbar doesn't sit overtop the content
+        row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0)
+    
+        column = ft.Column([
+            row
+        ], expand=True, scroll="auto", tight=True)
+        
+        self.content = column
+
+        if no_update:
+            return
+        else:
+            self.p.update()
 
 
 
