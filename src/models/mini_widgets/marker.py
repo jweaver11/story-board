@@ -105,8 +105,6 @@ class Marker(MiniWidget):
         self.save_dict()
         self.plotline_marker.page = self.p
         self.plotline_marker.update()
-        #self.p.update()
-        return
 
     # Called when we finish dragging our plotline_marker to save our position
     async def _drag_end(self, e=None):
@@ -122,6 +120,8 @@ class Marker(MiniWidget):
             self.data['side_location'] = "left"
 
         self.save_dict()
+        if self.owner.information_display.visible:
+            self.owner.information_display.reload_mini_widget(no_update=True)
         await self.owner.rebuild_plotline_canvas(no_update=False)
         
         

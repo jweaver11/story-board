@@ -9,7 +9,7 @@ import flet as ft
 from styles.menu_option_style import MenuOptionStyle
 from models.views.story import Story
 from models.widget import Widget
-from models.mini_widgets.plotlines.arc import Arc
+from models.mini_widgets.arc import Arc
 from utils.verify_data import verify_data
 import flet.canvas as cv
 from models.app import app
@@ -142,7 +142,7 @@ class Plotline(Widget):
     # Called in the constructor
     def create_information_display(self):
         ''' Creates our plotline information display mini widget '''
-        from models.mini_widgets.plotlines.plotline_information_display import PlotlineInformationDisplay
+        from models.mini_widgets.plotline_information_display import PlotlineInformationDisplay
         
         self.information_display = PlotlineInformationDisplay(
             title=self.title,
@@ -172,7 +172,7 @@ class Plotline(Widget):
     # Called in the constructor
     def _load_plot_points(self):
         ''' Loads plotpoints from data into self.plotpoints  '''
-        from models.mini_widgets.plotlines.plot_point import PlotPoint
+        from models.mini_widgets.plot_point import PlotPoint
 
         # Looks up our plotpoints in our data, then passes in that data to create a live object
         for key, data in self.data['plot_points'].items():
@@ -186,7 +186,7 @@ class Plotline(Widget):
             self.mini_widgets.append(self.plot_points[key])  # Plot points need to be in the owners mini widgets list to show up in the UI
 
     def _load_markers(self):
-        from models.mini_widgets.plotlines.marker import Marker
+        from models.mini_widgets.marker import Marker
         ''' Loads markers from data into self.markers  '''
         # Looks up our markers in our data, then passes in that data to create a live object
         for key, data in self.data['markers'].items():
@@ -211,7 +211,7 @@ class Plotline(Widget):
     # Called when creating a new arc
     async def create_arc(self, title: str):
         ''' Creates a new arc inside of our plotline object, and updates the data to match '''
-        from models.mini_widgets.plotlines.arc import Arc
+        from models.mini_widgets.arc import Arc
 
         new_arc = Arc(
             title=title, 
@@ -236,7 +236,7 @@ class Plotline(Widget):
     # Called when creating a new plotpoint
     async def create_plot_point(self, title: str):
         ''' Creates a new plotpoint inside of our plotline object, and updates the data to match '''
-        from models.mini_widgets.plotlines.plot_point import PlotPoint
+        from models.mini_widgets.plot_point import PlotPoint
 
         new_plot_point = PlotPoint(
             title=title, 
@@ -257,7 +257,7 @@ class Plotline(Widget):
 
     async def create_marker(self, title: str):
         ''' Creates a new marker inside of our plotline object, and updates the data to match '''
-        from models.mini_widgets.plotlines.marker import Marker
+        from models.mini_widgets.marker import Marker
 
         left_pos = int((self.x_alignment + 1.0) / 2.0 * (self.plotline_width - 10)) + 5
 

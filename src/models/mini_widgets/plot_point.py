@@ -153,7 +153,9 @@ class PlotPoint(MiniWidget):
         self.save_dict()
         
         # Must reload our plot point to apply the change to ourself, then reload the parent widget to apply the change to the page
-        self.reload_mini_widget()
+        self.reload_mini_widget(no_update=True)
+        if self.owner.information_display.visible:
+            self.owner.information_display.reload_mini_widget(no_update=True)
         self.owner.reload_widget()
 
     # Called to determine if we want to hide our slider

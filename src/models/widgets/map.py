@@ -16,7 +16,7 @@ import os
 import json
 import flet as ft
 from models.widget import Widget
-from models.mini_widgets.world_building.map_information_display import MapInformationDisplay
+from models.mini_widgets.map_information_display import MapInformationDisplay
 from models.views.story import Story
 from utils.verify_data import verify_data
 from styles.snack_bar import SnackBar

@@ -293,6 +293,8 @@ class Arc(MiniWidget):
 
         # Apply the UI changes
         #self.reload_mini_widget()
+        if self.owner.information_display.visible:
+            self.owner.information_display.reload_mini_widget(no_update=True)
         self.owner.reload_widget()
 
     # Called when toggling whether this plot point is shown on the plotline in the plotline filters
