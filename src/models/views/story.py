@@ -450,11 +450,15 @@ class Story(ft.View):
                             case _:
                                 print("content tag not valid. Tag: ", tag)
                             
-
+        
                             
                     # Handle errors if the path is wrong
                     except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
                         print(f"Error loading content from {filename}: {e}")
+
+        # Character connection maps require all our widgets be loaded for comparisons, so we run their loads here
+        for ccm in self.character_connection_maps.values():
+            ccm.load_primary_characters()
 
 
     # Called in startup after we have loaded all our live objects

@@ -73,6 +73,8 @@ class Widget(ft.Container):
         self.sizing_canvas = cv.Canvas(on_resize=self._get_size, resize_interval=100, expand=True, content=ft.Container(expand=True, ignore_interactions=True))
         self.w: int = 0                                         # Width of our widget
         self.h: int = 0                                         # Height of our widget
+        self.l: int = 0      # Values to pass into locations for left and top coordinates
+        self.t: int = 0
         self.is_renaming: bool = False                          # Whether we are currently renaming this widget or not
         self.mini_widgets_displayed_overtop: bool = True        # If miniwidgets are displayed overtop the content inside the stack, or to the side (shrinking the content)
 
@@ -583,6 +585,14 @@ class Widget(ft.Container):
         self.save_dict()
 
         self.story.workspace.reload_workspace()
+
+    # Called when mouse hovers over the map
+    async def _get_coords(self, e: ft.HoverEvent):
+        ''' Sets our coordinate positions for menus and passing in new items '''
+        self.story.mouse_x = e.global_x
+        self.story.mouse_y = e.global_y
+        self.l = e.local_x
+        self.t = e.local_y
     
     # Called at end of constructor
     def reload_tab(self):
@@ -598,7 +608,7 @@ class Widget(ft.Container):
             case "canvas_board": self.icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
             case "note": self.icon = ft.Icon(ft.Icons.COMMENT_OUTLINED)
             case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
-            case "family_tree": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
+            case "character_connection_map": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
             case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)
             case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
             case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)

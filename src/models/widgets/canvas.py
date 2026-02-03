@@ -71,6 +71,7 @@ class Canvas(Widget):
                     'bgcolor': str,               # If its a color
                     'image_base64': str,        # If an image is used. Color ignored if this is set
                     'bg_blend_mode': "src_over",   # Blend mode for background. Starts default
+                    'bg_is_transparent': True,    # If true, background is transparent (no color or image). Used for exporting
                 
                 },
             },

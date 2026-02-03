@@ -20,7 +20,10 @@ def new_character_connection_clicked(character):
                 menu_padding=ft.padding.all(0)
             )
 
-            self.tags_textfield= ft.TextField(hint_text="Connection Type", expand=True, on_blur=self._update_tags, value=self.tags)
+            self.tags_textfield= ft.TextField(
+                hint_text="Connection Type (Friend, Father, Classmate, etc.)", expand=True, on_blur=self._update_tags, value=self.tags,
+                autofill_hints=[ft.AutofillHint.NICKNAME, ft.AutofillHint.GIVEN_NAME],
+            )
 
             # Row constructor
             super().__init__(
@@ -28,7 +31,7 @@ def new_character_connection_clicked(character):
                     self.char_select_btn,   # Button to select character will go here
                     self.name_text,        # Name text will go here
                     self.tags_textfield,   # Tags textfield will go here
-                    ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Connection", on_click=self._delete_connection)
+                    ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Connection", on_click=self._delete_connection),
                 ]
             )
 
@@ -92,8 +95,6 @@ def new_character_connection_clicked(character):
 
         # Set our characters connection data to the safe connections
         character.data['character_data']['Connections'] = safe_connections
-
-
 
         # Update matching characters connections too (to keep both sides of the connection in sync)
         for conn in safe_connections.keys():
@@ -210,7 +211,7 @@ def new_character_connection_clicked(character):
     # Alert dialog to show everything we've built
     dlg = ft.AlertDialog(
         title=ft.Text(f"{character.title}'s Connections:"),
-        content=content,
+        content=ft.AutofillGroup(content),
         actions=[
             ft.TextButton("Cancel", on_click=lambda e: character.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
             ft.TextButton("Save", on_click=_save_and_close),   # Start enabled to just save existing connections

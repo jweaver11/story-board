@@ -78,8 +78,7 @@ class Map(Widget):
         # State utils
         self.map_width: int = 0
         self.map_height: int = 0
-        self.l: int = 0      # Values to pass into locations for left and top coordinates
-        self.t: int = 0
+        
 
         # Dict of our sub maps
         self.maps: list = []
@@ -167,13 +166,7 @@ class Map(Widget):
 
         self.reload_widget()    # Reload our widget
 
-    # Called when mouse hovers over the map
-    async def _get_coords(self, e: ft.HoverEvent):
-        ''' Sets our coordinate positions for menus and passing in new items '''
-        self.story.mouse_x = e.global_x
-        self.story.mouse_y = e.global_y
-        self.l = e.local_x
-        self.t = e.local_y
+    
 
     def _get_menu_options(self) -> list[ft.Control]:
         async def new_item_clicked(e):
