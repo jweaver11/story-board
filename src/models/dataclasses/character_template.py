@@ -46,7 +46,7 @@ def default_character_template_data_dict() -> dict:
         },  
 
         # Connections we have to other characters in the story
-        'Connections': list,    # Example: [{'title': 'title1', 'key':, 'key1', 'type': 'type1']}, {...} ]
+        'Connections': dict,    # Example: {'char_key': {'title': 'Joe', 'tags': 'Friend, Classmate'}}
         
         'Custom Fields': dict       # Anything the user wants to add on their own
         # custom fields {key: {label: str, value: str}, key2: {label: str, value: str} ... }

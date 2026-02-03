@@ -13,7 +13,7 @@ from styles.menu_option_style import MenuOptionStyle
 from models.app import app
 from utils.safe_string_checker import return_safe_name
 from models.dataclasses.character_template import default_character_template_data_dict
-from utils.character_connection import new_character_connection_clicked
+from utils.character_connection_alert_dlg import new_character_connection_clicked
 
 
 
@@ -302,8 +302,7 @@ class Character(Widget):
         _load_dict_data(self.data.get('character_data', {}).get('Physical Description', {}), physical_description_container, "Physical Description")
         _load_dict_data(self.data.get('character_data', {}).get('Family', {}), family_container, "Family")
         _load_dict_data(self.data.get('character_data', {}).get('Origin', {}), origin_container, "Origin")
-        #_load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container, "Connections")
-        # Will need to load list data ^^^^^^^^^^^^^^^^^^^^^^^^^^
+        _load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container, "Connections")
         _load_dict_data(self.data.get('character_data', {}).get('Custom Fields', {}), custom_fields_container, "Custom Fields")
 
 
@@ -534,7 +533,7 @@ class Character(Widget):
             _load_dict_data(self.data.get('character_data', {}).get('Physical Description', {}), physical_description_container)
             _load_dict_data(self.data.get('character_data', {}).get('Family', {}), family_container)
             _load_dict_data(self.data.get('character_data', {}).get('Origin', {}), origin_container)
-            #_load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container)
+            _load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container)
             _load_dict_data(self.data.get('character_data', {}).get('Custom Fields', {}), custom_fields_container)
 
             # Set our columns to hold our data sections
