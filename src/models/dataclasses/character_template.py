@@ -46,7 +46,7 @@ def default_character_template_data_dict() -> dict:
         },  
 
         # Connections we have to other characters in the story
-        'Connections': dict,    # Example: {'char_key': {'title': 'Joe', 'tags': 'Friend, Classmate', 'icon': 'heart', 'left_ratio': 0, 'top_ratio': .5}, ... }
+        'Connections': dict,    # Example: {'char_key': {'title': 'Joe', 'tags': 'Friend, Classmate', 'icon': 'heart', 'left_ratio': 0, 'top_ratio': .5} 'angle': 1-360, ... }
         
         'Custom Fields': dict       # Anything the user wants to add on their own
         # custom fields {key: {label: str, value: str}, key2: {label: str, value: str} ... }
