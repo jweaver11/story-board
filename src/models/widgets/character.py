@@ -9,7 +9,7 @@ import os
 from models.widget import Widget
 from models.views.story import Story
 from utils.verify_data import verify_data
-from styles.menu_option_style import MenuOptionStyle
+from models.mini_widgets.connection import Connection
 from models.app import app
 from utils.safe_string_checker import return_safe_name
 from models.dataclasses.character_template import default_character_template_data_dict
@@ -55,11 +55,11 @@ class Character(Widget):
                 if data is None or 'character_data' not in data else data['character_data'],
             },
         ) 
-                
+
 
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
-
+        
     
     def _new_field_clicked(self, sub_key: str, category: str=""):
         ''' Called when the new field button is clicked '''
@@ -302,7 +302,7 @@ class Character(Widget):
         _load_dict_data(self.data.get('character_data', {}).get('Physical Description', {}), physical_description_container, "Physical Description")
         _load_dict_data(self.data.get('character_data', {}).get('Family', {}), family_container, "Family")
         _load_dict_data(self.data.get('character_data', {}).get('Origin', {}), origin_container, "Origin")
-        _load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container, "Connections")
+        #_load_dict_data(self.story.data.get('connections'), connections_container, "Connections")
         _load_dict_data(self.data.get('character_data', {}).get('Custom Fields', {}), custom_fields_container, "Custom Fields")
 
 
@@ -385,7 +385,7 @@ class Character(Widget):
                 ft.Row([
                     ft.Container(width=6), 
                     ft.Text("Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: new_character_connection_clicked(self), icon_color=self.data.get('color', None)),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: new_character_connection_clicked(self.data.get('key'), self.story, self.title), icon_color=self.data.get('color', None)),
                 ], spacing=0),
                 ft.Row([connections_container])
             ], expand=True, spacing=4)  
@@ -533,7 +533,7 @@ class Character(Widget):
             _load_dict_data(self.data.get('character_data', {}).get('Physical Description', {}), physical_description_container)
             _load_dict_data(self.data.get('character_data', {}).get('Family', {}), family_container)
             _load_dict_data(self.data.get('character_data', {}).get('Origin', {}), origin_container)
-            _load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container)
+            #_load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container)
             _load_dict_data(self.data.get('character_data', {}).get('Custom Fields', {}), custom_fields_container)
 
             # Set our columns to hold our data sections

@@ -1,18 +1,21 @@
 import flet as ft
+from models.dataclasses.connection import ConnectionDataClass
+from styles.colors import colors
 
 
-def new_character_connection_clicked(character):
+
+def new_character_connection_clicked(char1_key: str, story, char_name: str):
 
     # Simple class to handle our connection row controls since we manipulate a lot of unreadable data otherwise
     class ConnectionCtrl(ft.Row):
-        def __init__(self, key: str=None, name: str=None, tags: str=None):
+        def __init__(self, char2_key: str=None, name: str=None, tags: str=None, icon: str=None, color: str=None):
 
-            self.k: str = key if key is not None else ""      # Key of the character we are connecting to (Key is reserved in controls, so use k)
+            self.char2_key: str = char2_key if char2_key is not None else ""      # Key of the character we are connecting to (Key is reserved in controls, so use k)
             self.name: str = name if name is not None else "Select a character"     # Set name if we are a previously loaded connection
             self.tags: str = tags if tags is not None else ""     # Tags/Type of connection    
 
             # Controls
-            self.name_text = ft.Text(self.name, expand=True, selectable=True, weight=ft.FontWeight.BOLD)   # Control to display the name
+            self.name_text = ft.Text(self.name, width=150, overflow=ft.TextOverflow.ELLIPSIS, selectable=True, weight=ft.FontWeight.BOLD)   # Control to display the name
 
             self.char_select_btn = ft.PopupMenuButton(  # Button to select character for the connection
                 icon=ft.Icons.ARROW_DROP_DOWN, tooltip="Select Character",
@@ -20,25 +23,43 @@ def new_character_connection_clicked(character):
                 menu_padding=ft.padding.all(0)
             )
 
-            self.tags_textfield= ft.TextField(
-                hint_text="Connection Type (Friend, Father, Classmate, etc.)", expand=True, on_blur=self._update_tags, value=self.tags,
-                autofill_hints=[ft.AutofillHint.NICKNAME, ft.AutofillHint.GIVEN_NAME],
+            self.tags_textfield= ft.TextField(      # Textfield to enter connection tags
+                hint_text="Connection Type (Friend, Father, Classmate, etc.)", on_blur=self._update_tags, value=self.tags,
+                autofill_hints=[ft.AutofillHint.NICKNAME, ft.AutofillHint.GIVEN_NAME], expand=True,
             )
+
+            self.icon_button = ft.PopupMenuButton(      # Button to change the connection icon 
+                icon=ft.Icons.CONNECT_WITHOUT_CONTACT,
+                tooltip="Change this connection's icon",
+                padding=ft.Padding(0,0,0,0),
+                #items=self._get_icon_options()
+            )
+
+            # Change color
+            self.color_button = ft.PopupMenuButton(     # Button to change the connection color
+                icon=ft.Icons.COLOR_LENS_OUTLINED,
+                tooltip="Change this connection's color",
+                padding=ft.Padding(0,0,0,0),
+                #items=self._get_color_options()
+            )
+        
 
             # Row constructor
             super().__init__(
                 [
-                    self.char_select_btn,   # Button to select character will go here
-                    self.name_text,        # Name text will go here
-                    self.tags_textfield,   # Tags textfield will go here
-                    ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Connection", on_click=self._delete_connection),
+                    self.char_select_btn,      
+                    self.name_text,             
+                    self.tags_textfield,        
+                    self.icon_button,
+                    self.color_button,          
+                    ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Connection", on_click=self._delete_connection),     # Delete button
                 ]
             )
 
         # Set name and key
         def _set_name_and_key(self, e):
             self.name = e.control.text
-            self.k = e.control.data
+            self.char2_key = e.control.data
             update_connections()
             
         # Updates our tags when tf changes
@@ -49,27 +70,42 @@ def new_character_connection_clicked(character):
         # Deletes this connection control and updates our existing connections
         def _delete_connection(self, e):
             nonlocal content
+
+            # Remove this connection from the data
+            for conn in existing_connections:
+                if conn.get('char2_key') == self.char2_key or conn.get('char1_key') == self.char2_key:
+                    if conn.get('char1_key') == char1_key or conn.get('char2_key') == char1_key:
+                        existing_connections.remove(conn)
+                        break
                     
-            if self.k in existing_connections:
-                del existing_connections[self.k]   # Remove from our existing connections dict
+            # Remove ourselves from the content controls and apply update
+            content.controls.remove(self)   
+            story.p.update()
 
-            # 2) Remove the row from UI; existing_connections will be rebuilt by update_connections()
-            if self in content.controls:
-                content.controls.remove(self)
-                content.update()
-
-            update_connections()
-
-        # Grabs all our character options for the dropdown
+        # Grabs all our character options for the dropdown. Exclude already existing connections with those characters
         def _get_char_options(self) -> list[ft.DropdownOption]:
             ''' Excludes the current character we are editing and any already selected connections '''
-            nonlocal character, existing_connections
-            options = []
+            
+            options = []        # Character options stored as keys
+            ctrl_options = []   # Character options stored as dropdown items
+            # Key of all characters in the story
+            for char_key in story.characters.keys():
+                options.append(char_key)
 
-            for char in character.story.characters.values():
-                char_key = char.data.get('key')
-                if char_key != character.data.get('key') and char_key not in existing_connections:
-                    options.append(
+            options.remove(char1_key)   # Remove our primary character from options
+
+            # Remove any characters we already have connections to
+            for connection in story.data.get('connections', {}).values():
+                if connection.get('char1_key') == char1_key:
+                    options.remove(connection.get('char2_key'))
+                elif connection.get('char2_key') == char1_key:
+                    options.remove(connection.get('char1_key'))
+
+            # Make controls for every option
+            for char_key in options:
+                char = story.characters.get(char_key)
+                if char:
+                    ctrl_options.append(
                         ft.PopupMenuItem(
                             text=char.data.get('title'),
                             on_click=self._set_name_and_key,
@@ -77,55 +113,43 @@ def new_character_connection_clicked(character):
                             data=char.data.get('key')
                         )
                     )
+                    
+            return ctrl_options     # Return the formatted controls
+        
+        # Called when color button is clicked
+        def _get_color_options(self) -> list[ft.Control]:
+            ''' Returns a list of all available colors for icon changing '''
 
-            return options
+            # Called when a color option is clicked on popup menu to change icon color
+            def _change_icon_color(color: str, e):
+                ''' Passes in our kwargs to the widget, and applies the updates '''
+
+                # Change our color data for this connection
+
+                # Change our button icon color                
+                pass
+
+            # List for our colors when formatted
+            color_controls = [] 
+
+            # Create our controls for our color options
+            for color in colors:
+                color_controls.append(
+                    ft.PopupMenuItem(
+                        content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
+                        on_click=lambda e, col=color: _change_icon_color(col, e)
+                    )
+                )
+
+            return color_controls
+        
+
 
     # Closes our dialog and saves our character data
     async def _save_and_close(e):
         nonlocal dlg, existing_connections
 
-        # Set a dict we can play with to get rid of any empty keys
-        safe_connections = existing_connections.copy()
-
-        # Remove any empty keys
-        for key in list(safe_connections.keys()):
-            if key == "":
-                del safe_connections[key]    # Remove any empty keys
-
-
-        # Set our characters connection data to the safe connections
-        character.data['character_data']['Connections'] = safe_connections
-
-        # Update matching characters connections too (to keep both sides of the connection in sync)
-        for conn in safe_connections.keys():
-            connected_character = character.story.characters.get(conn)
-
-            # Grab the connected character and update their connection data
-            if connected_character:
-                connected_character.data['character_data']['Connections'][character.data.get('key')] = {
-                    'title': character.data.get('title'),
-                    'tags': safe_connections[conn].get('tags', '')
-                }
-                connected_character.save_dict()
-                connected_character.reload_widget()
-
-        # Go through all our characters now and remove any connections to us that we don't have anymore
-        for char in character.story.characters.values():
-            if char.data.get('key') != character.data.get('key') and char.data.get('key') not in safe_connections:
-
-                if character.data.get('key') in char.data.get('character_data', {}).get('Connections', {}):
-                    del char.data['character_data']['Connections'][character.data.get('key')]
-                    char.save_dict()
-                    char.reload_widget()
-                
-
-        # Delete connections of us in other characters that we don't have (they were deleted)
-                
-
-
-        character.save_dict()
-        character.p.close(dlg)
-        character.reload_widget()
+        pass
 
    
     # Button clicked to add a new connection. Adds a dropdown + textfield row
@@ -139,36 +163,7 @@ def new_character_connection_clicked(character):
     def update_connections():
         nonlocal existing_connections, content
         
-        temp_connections = {}       # Build a temp dict to hold our connections
-
-        # Rebuild our keys based on our current controls
-        for ctrl in content.controls:
-            if isinstance(ctrl, ConnectionCtrl):
-                temp_connections.update({ctrl.k: {'title': ctrl.name, 'tags': ctrl.tags}})
-
-        # Set our existing ocnnections to our newly built temp from most current data
-        existing_connections = temp_connections
-
-        # Makes sure our char options are updated and text value is correct
-        for ctrl in content.controls:
-            if isinstance(ctrl, ConnectionCtrl):
-                ctrl.name_text.value = ctrl.name
-                ctrl.char_select_btn.items = ctrl._get_char_options()   # Update our dropdown options
-
-                # Update styling
-                char = character.story.characters.get(ctrl.k)
-                if char:
-                    color = char.data.get('color', ft.Colors.ON_SURFACE)
-                    ctrl.char_select_btn.icon_color = color
-                    ctrl.name_text.color = color
-                    ctrl.tags_textfield.cursor_color = color
-                    ctrl.tags_textfield.focused_border_color = color
-
-                
-
-        # TODO: Update text, and textfield color and cursor
-        character.p.update()
-                
+        pass
 
 
     # Sets our content to add too
@@ -176,29 +171,40 @@ def new_character_connection_clicked(character):
         [
             ft.Row([
                 ft.Container(width=40),  # Spacer for the Drop down buttons
-                ft.Text("Name", expand=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), 
-                ft.Container(width=50),  # Spacer
+                ft.Text("Connect With", expand=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), 
                 ft.Text("Type", theme_style=ft.TextThemeStyle.LABEL_LARGE),
                 ft.Icon(ft.Icons.INFO_OUTLINED, ft.Colors.ON_SURFACE, scale=.5, tooltip="Seperate multiple connection types with commas (example: Friend, Classmate)"),
                 ft.Container(expand=True),
+                ft.Text("Icon", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=40),
+                ft.Text("Color", theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True, text_align=ft.TextAlign.RIGHT),
                 ft.Container(width=40)  # Spacer for the remove buttons
             ]),
             ft.Divider()
         ], 
         scroll="auto",
-        width=character.p.width * .5,
+        width=story.p.width * .5,
     )
         
     
-    existing_connections = character.data.get('character_data', {}).get('Connections', {})  # Grab our existing connections
+    existing_connections = story.data.get('connections', []).copy()  # Grab our existing connections
 
-    for key, value in existing_connections.items():
-        name = value.get('title')
-        tags = value.get('tags', '')
-        content.controls.append(ConnectionCtrl(key, name, tags))
+    for connection in existing_connections:
+        if char1_key == connection.get('char1_key') or char1_key == connection.get('char2_key'):
+            continue
+        else:
+            existing_connections.remove(connection)
+
+
+    for conn in existing_connections:
+        key = conn.get('char2_key') if conn.get('char1_key') == char1_key else conn.get('char1_key')    # Key of other character for connection
+        name = conn.get('char2_name') if conn.get('char1_key') == char1_key else conn.get('char1_name')   # Name of other character for connection for easier ID
+        tags = conn.get('tags', '')     
+        icon = conn.get('icon', 'connect_without_contact')      
+        color = conn.get('color', 'primary')    
+        content.controls.append(ConnectionCtrl(key, name, tags, icon, color))
         
     # Refresh connections now that all our existing ones are loaded
-    update_connections()
+    #update_connections()
 
     # Add button to add new connections
     content.controls.append(
@@ -210,13 +216,13 @@ def new_character_connection_clicked(character):
 
     # Alert dialog to show everything we've built
     dlg = ft.AlertDialog(
-        title=ft.Text(f"{character.title}'s Connections:"),
+        title=ft.Text(f"{char_name}'s Connections:"),
         content=ft.AutofillGroup(content),
         actions=[
-            ft.TextButton("Cancel", on_click=lambda e: character.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+            ft.TextButton("Cancel", on_click=lambda e: story.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
             ft.TextButton("Save", on_click=_save_and_close),   # Start enabled to just save existing connections
         ],
     )
     
 
-    character.p.open(dlg)
+    story.p.open(dlg)

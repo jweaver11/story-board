@@ -56,8 +56,8 @@ class Story(ft.View):
                 'bottom_pin_height': 200,
                 'created_at': str,
                 'last_modified': str,
+                'connections': [],    # Connections between characters, places, items, etc. Since they are between multiple widgets, I stuck them here
                 
-
                 'settings': {
                     'type': self.type,             # Novel or comic. Affects templates and default data for new content
                     'active_character_template': str,    # Which template is being used for new characters
@@ -458,7 +458,7 @@ class Story(ft.View):
 
         # Character connection maps require all our widgets be loaded for comparisons, so we run their loads here
         for ccm in self.character_connection_maps.values():
-            ccm.load_primary_characters()
+            ccm._load_primary_characters()
 
 
     # Called in startup after we have loaded all our live objects

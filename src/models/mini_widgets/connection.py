@@ -1,8 +1,5 @@
 '''
-The map class for all maps inside of the world_building widget
-Maps are extended mini widgets, with their 'display' being the view of the map, and their mini widget being the maps info display
-Maps don't save like mini widgets. They save their data inside one file, and their drawing data in another file.
-Since maps could have hundreds of sub-maps, we give them each their own file to avoid corruption
+Connection mini widget to show information about a characters connections
 '''
 
 # BLANK NO TEMPLATE MAPS EXIST AS WELL
@@ -14,18 +11,24 @@ Since maps could have hundreds of sub-maps, we give them each their own file to 
 import flet as ft
 from models.widget import Widget
 from models.mini_widget import MiniWidget
+from utils.verify_data import verify_data
+from models.app import app
+from models.dataclasses.connection import ConnectionDataClass
 
 
 
-class MapInformationDisplay(MiniWidget):
+
+class Connection(MiniWidget):
 
     # Constructor.
     def __init__(
         self, 
         title: str, 
-        owner: Widget,                  # The owner is always our map owner
+        owner: Widget,                  # The owner is the Character Connection Map widget that loads this mini widget FROM a characters data
         page: ft.Page, 
         key: str,                       # Not used, but its required so just whatever works
+        primary_character_key: str = None,   # Key of the primary character this connection belongs to
+        secondary_character_key: str = None, # Key of the secondary character this connection belongs to
         data: dict = None               # No data is used here, so NEVER reference it. Use self.owner.data instead
     ):
         
@@ -39,12 +42,14 @@ class MapInformationDisplay(MiniWidget):
             key=key     
         ) 
 
-        # NOT USED
-        self.data['visible'] = self.owner.data.get('information_display_visibility', True)
+        verify_data(
+            self,
+            ConnectionDataClass().__dict__ | {'tag': "connection"}
+        )
 
+        
         # Set our visibility based on our owners data
-        self.visible = self.owner.data.get('information_display_visibility', True)
-        self.data['is_pinned'] = self.owner.data.get('information_display_is_pinned', False)
+        self.visible = self.data.get('visible', True)
 
         # Reloads the information display of the map
         self.reload_mini_widget()
@@ -53,43 +58,60 @@ class MapInformationDisplay(MiniWidget):
     def save_dict(self):
         ''' Overwrites standard mini widget save and save our timelines data instead '''
         try:
+            self.owner.data.get('character_data', {}).get('Connections', {})[self.key] = self.data
             self.owner.save_dict()
         except Exception as e:
             print(f"Error saving map information display data to {self.owner.title}: {e}")
 
-    # Called to toggle our visibility
     def show_mini_widget(self, e=None):
-        ''' Toggles our visibility and updates our owners data accordingly '''
+        ''' Shows our mini widget '''
 
         if self.visible:
             return
-        
-        # Update our visibility
-        self.owner.data['information_display_visibility'] = True
-        super().show_mini_widget(e)
+
+        self.data['visible'] = True
+        self.visible = True
+        self.save_dict()
+
+        for mw in self.owner.mini_widgets:
+            if mw != self and mw.data.get('is_pinned', False) == False:
+                mw.hide_mini_widget()   
+
+        self.reload_mini_widget(no_update=True)
+        #self.owner.reload_widget()
 
     def hide_mini_widget(self, e=None, update: bool=False):
         ''' Hides our mini widget '''
+        
+        if not self.visible:
+            return
+        
+        self.data['visible'] = False
+        self.visible = False
 
-        self.owner.data['information_display_visibility'] = False
-        self.owner.data['information_display_is_pinned'] = False
-        super().hide_mini_widget(e, update)
+        if self.data.get('is_pinned', False):
+            self.data['is_pinned'] = False
 
+        self.save_dict()
+
+        if update:
+            self.reload_mini_widget()
+            #self.owner.reload_widget()
+
+    # Called to toggle pin
     async def _toggle_pin(self, e):
         ''' Pins or unpins our information display '''
             
-        self.owner.data['information_display_is_pinned'] = not self.owner.data['information_display_is_pinned']
-        self.data['is_pinned'] = self.owner.data['information_display_is_pinned']
+        self.data['is_pinned'] = not self.data.get('is_pinned', False)
         self.save_dict()
         self.reload_mini_widget()
         self.owner.reload_widget()
     
     # Called when reloading our mini widget UI
     def reload_mini_widget(self, no_update: bool=False):
-
             
         title_control = ft.Row([
-            ft.Icon(ft.Icons.MAP, self.owner.data.get('color', None)),
+            ft.Icon(self.data.get('icon'), self.owner.data.get('color', None)),
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE),
             ft.IconButton(
                 ft.Icons.PUSH_PIN_OUTLINED if not self.owner.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
@@ -111,9 +133,6 @@ class MapInformationDisplay(MiniWidget):
             ft.Container(height=10),  # Spacing 
             ft.Text("Content"),
         ], expand=True, tight=True, spacing=0)
-
-
-        
 
 
         # Format our final layout so the scrollbar doesn't sit overtop the content

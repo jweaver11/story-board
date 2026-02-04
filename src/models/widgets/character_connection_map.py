@@ -9,9 +9,8 @@ from utils.verify_data import verify_data
 from models.app import app
 import flet.canvas as cv
 from models.mini_widgets.ccm_information_display import CCMInformationDisplay
+from models.mini_widgets.connection import Connection
 
-# TODO: Should allow user to pick primary character(s) that will build the map around
-# Edit view or not. Show characters on the map as nodes that can add connection to other characters
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
 class CharacterConnectionMap(Widget):
     # Constructor
@@ -50,15 +49,15 @@ class CharacterConnectionMap(Widget):
             content=ft.GestureDetector(
                 mouse_cursor=ft.MouseCursor.CLICK, 
                 expand=True,
-                # Non-drawing event handlers
                 on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
                 on_hover=self._get_coords,
                 on_tap=self._show_info_display,
                 drag_interval=10, hover_interval=20,
             ),
             expand=True, resize_interval=100,
-            #on_resize=self._rebuild_map_canvas, 
+            #on_resize=self._rebuild_canvas, 
         )
+
 
         # Our stack for map locations
         self.connections_stack = ft.Stack([
@@ -66,24 +65,63 @@ class CharacterConnectionMap(Widget):
             self.canvas,
         ], expand=True)
 
-        # Requires all widgets loaded first, so story calls self.load_primary_characters(), which reloads the widget
+        # Requires all widgets to be loaded first, so story calls self.load_primary_characters(), which reloads the widget
         #if self.visible:
             #self.reload_widget()
 
-    def load_primary_characters(self):
+    def _load_primary_characters(self):
         ''' Loads our primary characters from our data '''
 
         self.primary_characters.clear()
+        self.mini_widgets.clear()
+
+        # Go through our primary characters and load them
         for char_key in self.data.get('primary_characters', []):
             character = self.story.characters.get(char_key)
             if character:
+                # Add their live object to our primary characters list
                 self.primary_characters.append(character)  
+
+                # Add their connections to our mini widgets so we can see them, since they don't use them
+                for mw in character.mini_widgets:
+                    if isinstance(mw, Connection):
+                        self.mini_widgets.append(mw)
+                        mw.reload_mini_widget()   # Reload to make sure its up to date
+
+        
+        print("Length of our mini widgets after loading primary characters:", len(self.mini_widgets))
+                        
 
         # Make sure we're reloaded
         if self.visible:
             self.reload_widget()  
 
-         
+    # Called when app clicks the hide icon in the tab
+    def toggle_visibility(self, e=None, value: bool=None):
+        ''' Hides the widget from our workspace and updates the json to reflect the change '''
+
+        
+
+        # If we want to specify we're visible or not, we can pass it in
+        if value is not None:
+            self.data['visible'] = value
+            self.visible = value
+        
+        else:
+            # Change our visibility data, save it, then apply it
+            self.data['visible'] = not self.data['visible']
+            self.visible = self.data['visible']
+
+        if self.visible:
+            self._set_primary_characters()   # Load our primary characters when we become visible
+
+        # Save our changes and reload the UI
+        self.save_dict()
+        self.reload_widget()
+
+        # Protect first launch
+        if self.story.workspace is not None:
+            self.story.workspace.reload_workspace()
 
     # Called in the constructor
     def _create_information_display(self):
@@ -118,6 +156,8 @@ class CharacterConnectionMap(Widget):
         # Goes through and see what characters were selected and saves them
         def _save_and_close(e):
 
+            self.primary_characters.clear()
+
             # Go through the content column control. Any checkboxes get added/removed from primary characters
             for control in content.controls:
                 if isinstance(control, CharCheckbox):
@@ -130,6 +170,8 @@ class CharacterConnectionMap(Widget):
             self.data.get('primary_characters').clear()
             for char in self.primary_characters:
                 self.data.get('primary_characters').append(char.data.get('key'))
+
+            self._load_primary_characters()
 
             # Save and reload our widget. Close the dialog
             self.save_dict()
