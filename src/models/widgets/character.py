@@ -385,7 +385,7 @@ class Character(Widget):
                 ft.Row([
                     ft.Container(width=6), 
                     ft.Text("Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: new_character_connection_clicked(self.data.get('key'), self.story, self.title), icon_color=self.data.get('color', None)),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: new_character_connection_clicked(self.story), icon_color=self.data.get('color', None)),
                 ], spacing=0),
                 ft.Row([connections_container])
             ], expand=True, spacing=4)  

@@ -6,8 +6,8 @@ from dataclasses import dataclass
 class ConnectionDataClass:
     char1_key: str = ""                         # Character keys of the two characters in the connection
     char2_key: str = ""           
-    char1_name: str = ""                        # Cached names of the two characters for easier identification
-    char2_name: str = ""      
+    char1_name: str = "Select Character 1"                        # Cached names of the two characters for easier identification
+    char2_name: str = "Select Character 2"      
     type: str = "character"                     # Type of connection. character, world-timeline. Just character for now
     tags: str = None                            # Comma separated tags (friend, sibling, classmate, rival, etc)
     color: str = "primary"                      # Color name for connection representation
