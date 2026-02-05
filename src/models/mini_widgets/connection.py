@@ -14,6 +14,7 @@ from models.mini_widget import MiniWidget
 from utils.verify_data import verify_data
 from models.app import app
 from models.dataclasses.connection import ConnectionDataClass
+from styles.icons import icons
 
 
 
@@ -26,9 +27,7 @@ class Connection(MiniWidget):
         title: str, 
         owner: Widget,                  # The owner is the Character Connection Map widget that loads this mini widget FROM a characters data
         page: ft.Page, 
-        key: str,                       # Not used, but its required so just whatever works
-        primary_character_key: str = None,   # Key of the primary character this connection belongs to
-        secondary_character_key: str = None, # Key of the secondary character this connection belongs to
+        index: int,
         data: dict = None               # No data is used here, so NEVER reference it. Use self.owner.data instead
     ):
         
@@ -39,7 +38,7 @@ class Connection(MiniWidget):
             owner=owner, 
             page=page,              
             data=data,              
-            key=key     
+            key="",                # Stored as a list in story data, so don't use key
         ) 
 
         verify_data(
@@ -51,6 +50,13 @@ class Connection(MiniWidget):
         # Set our visibility based on our owners data
         self.visible = self.data.get('visible', True)
 
+        self.icon_button = ft.PopupMenuButton(      # Button to change the connection icon 
+            icon=self.data.get('icon', ft.Icons.CONNECT_WITHOUT_CONTACT),
+            tooltip="Change Connection's Icon",
+            menu_padding=ft.Padding(0,0,0,0), icon_color=self.data.get('color', ft.Colors.PRIMARY),
+            items=self._get_icon_options()
+        )
+
         # Reloads the information display of the map
         self.reload_mini_widget()
 
@@ -58,8 +64,10 @@ class Connection(MiniWidget):
     def save_dict(self):
         ''' Overwrites standard mini widget save and save our timelines data instead '''
         try:
-            self.owner.data.get('character_data', {}).get('Connections', {})[self.key] = self.data
-            self.owner.save_dict()
+            #TODO: Somehow find our connection (probly index) in the story connections data and save it there
+            #self.owner.data.get('character_data', {}).get('Connections', {})[self.key] = self.data
+            #self.owner.save_dict()
+            pass
         except Exception as e:
             print(f"Error saving map information display data to {self.owner.title}: {e}")
 
@@ -104,22 +112,53 @@ class Connection(MiniWidget):
             
         self.data['is_pinned'] = not self.data.get('is_pinned', False)
         self.save_dict()
-        self.reload_mini_widget()
-        self.owner.reload_widget()
+        e.control.icon = ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED
+        e.control.tooltip = "Pin Connection" if not self.data.get('is_pinned', False) else "Unpin Connection"
+        self.p.update()
+
+    def _get_icon_options(self) -> list[ft.Control]:
+            ''' Returns a list of all available icons for icon changing '''
+
+            # Called when an icon option is clicked on popup menu to change icon
+            def _change_icon(icon: str, e):
+                ''' Passes in our kwargs to the widget, and applies the updates '''
+
+                # Set our data and update our button icon
+                self.data['icon'] = icon
+                self.icon_button.icon = icon
+
+                # Update our existing connections data to match our new data
+                self.save_dict()
+                self.p.update()
+
+            # List for our icons when formatted
+            icon_controls = [] 
+
+            # Create our controls for our icon options
+            for icon in icons:
+                icon_controls.append(
+                    ft.PopupMenuItem(
+                        content=ft.Icon(icon),
+                        on_click=lambda e, ic=icon: _change_icon(ic, e)
+                    )
+                )
+
+            return icon_controls
     
     # Called when reloading our mini widget UI
     def reload_mini_widget(self, no_update: bool=False):
             
         title_control = ft.Row([
+            ft.Text(self.data.get('char1_name', 'Character 1'), weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE, text_align=ft.TextAlign.CENTER),
             ft.Icon(self.data.get('icon'), self.owner.data.get('color', None)),
-            ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE),
+            ft.Text(self.data.get('char2_name', 'Character 2'), weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE, text_align=ft.TextAlign.CENTER),
+            ft.Container(expand=True),
             ft.IconButton(
-                ft.Icons.PUSH_PIN_OUTLINED if not self.owner.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+                ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
                 self.owner.data.get('color', None),
-                tooltip="Pin Information Display" if not self.owner.data.get('information_display_is_pinned', False) else "Unpin Information Display",
+                tooltip="Pin Connection" if not self.data.get('is_pinned', False) else "Unpin Connection",
                 on_click=self._toggle_pin
             ),
-            ft.Container(expand=True),
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
                 tooltip=f"Close {self.title}",

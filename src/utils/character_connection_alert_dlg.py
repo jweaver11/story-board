@@ -1,6 +1,7 @@
 import flet as ft
 from models.dataclasses.connection import ConnectionDataClass
 from styles.colors import colors
+from styles.icons import icons
 
 
 
@@ -38,7 +39,7 @@ def new_character_connection_clicked(story):
                 ), tooltip="Select Character 1", items=self.get_char_options(tag="char1"), menu_padding=ft.padding.all(0)
             )
             self.icon_button = ft.PopupMenuButton(      # Button to change the connection icon 
-                icon=ft.Icons.CONNECT_WITHOUT_CONTACT,
+                icon=self.data.get('icon', ft.Icons.CONNECT_WITHOUT_CONTACT),
                 tooltip="Change Connection's Icon",
                 menu_padding=ft.Padding(0,0,0,0), icon_color=self.data.get('color', ft.Colors.PRIMARY),
                 items=self._get_icon_options()
@@ -46,11 +47,11 @@ def new_character_connection_clicked(story):
             self.char2_button = ft.PopupMenuButton(
                 ft.Container(
                     ft.Text(
-                        self.data.get('char1_name', "Select Character 2"), width=150, color=init_color2,
+                        self.data.get('char2_name', "Select Character 2"), width=150, color=init_color2,
                         overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER
                     ),
                     padding=ft.padding.all(6), border_radius=ft.border_radius.all(8), ink=True
-                ), tooltip="Select Character 2", items=self.get_char_options(tag="char1"), menu_padding=ft.padding.all(0)
+                ), tooltip="Select Character 2", items=self.get_char_options(tag="char2"), menu_padding=ft.padding.all(0)
             )
 
             self.desc_textfield= ft.TextField(      # Textfield to enter connection tags
@@ -190,20 +191,7 @@ def new_character_connection_clicked(story):
             icon_controls = [] 
 
             # Create our controls for our icon options
-            for icon in [
-                "connect_without_contact",
-                "favorite",
-                "heart_broken",
-                "sentiment_satisfied",
-                "sentiment_dissatisfied",
-                "handshake",
-                "school",
-                "work_outlined",
-                "family_restroom_outlined",
-                "people_outlined",
-                "health_and_safety",
-                "sports_esports",
-            ]:
+            for icon in icons:
                 icon_controls.append(
                     ft.PopupMenuItem(
                         content=ft.Icon(icon),
@@ -211,7 +199,7 @@ def new_character_connection_clicked(story):
                     )
                 )
 
-            return icon_controls
+            return icon_controls        #TODO: SOMETHING BREAKING WHEN SWAPPING CHARACTERS
         
         # Called when color button is clicked
         def _get_color_options(self) -> list[ft.Control]:
@@ -269,12 +257,6 @@ def new_character_connection_clicked(story):
     async def _save_and_close(e):
         from models.mini_widgets.connection import Connection
         nonlocal dlg, existing_connections
-
-        # No changes made, just close dialog
-        if story.data.get('connections') == existing_connections:
-            story.p.close(dlg)
-            print("No changes made")
-            return    
         
         story.data['connections'] = existing_connections.copy()   # Save our updated connections back to the story data
         story.save_dict()
@@ -290,7 +272,7 @@ def new_character_connection_clicked(story):
             # Update any connection mini widgets as well
             for mw in ccm.mini_widgets:
                 if mw.visible and isinstance(mw, Connection):
-                    mw.reload_widget()
+                    mw.reload_mini_widget()
 
             # Update any visible character connection maps
             if ccm.visible:

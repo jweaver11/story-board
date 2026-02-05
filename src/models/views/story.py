@@ -458,7 +458,7 @@ class Story(ft.View):
 
         # Character connection maps require all our widgets be loaded for comparisons, so we run their loads here
         for ccm in self.character_connection_maps.values():
-            ccm._load_primary_characters()
+            ccm.load_primary_characters()
 
 
     # Called in startup after we have loaded all our live objects

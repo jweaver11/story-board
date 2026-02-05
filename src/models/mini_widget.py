@@ -165,6 +165,8 @@ class MiniWidget(ft.Container):
         except Exception as e:
             print(f"Error changing custom field {key}:{value} in widget {self.title}: {e}")
 
+    
+
 
     def rename(self, new_name: str):
         ''' Renames our mini widget, updating all references and data accordingly '''
@@ -193,6 +195,16 @@ class MiniWidget(ft.Container):
         # Catch errors
         except Exception as e:
             print(f"Error renaming mini widget {old_name} to {new_name}: {e}")
+
+    # Called to toggle pin
+    async def _toggle_pin(self, e):
+        ''' Pins or unpins our information display '''
+            
+        self.data['is_pinned'] = not self.data.get('is_pinned', False)
+        self.save_dict()
+        e.control.icon = ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED
+        e.control.tooltip = "Pin Connection" if not self.data.get('is_pinned', False) else "Unpin Connection"
+        self.p.update()
         
 
     def show_mini_widget(self, e=None):

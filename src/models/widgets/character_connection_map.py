@@ -8,7 +8,6 @@ from models.views.story import Story
 from utils.verify_data import verify_data
 from models.app import app
 import flet.canvas as cv
-from models.mini_widgets.ccm_information_display import CCMInformationDisplay
 from models.mini_widgets.connection import Connection
 
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
@@ -32,18 +31,13 @@ class CharacterConnectionMap(Widget):
                 # Widget data
                 'tag': "character_connection_map",
                 'color': app.settings.data.get('default_character_connection_map_color'),
-                
+                'show_secondary_connections': bool,     # Whether to show connections of connections
                 'primary_characters': list,    # List of primary characters to build the map around[char_key, char_key]
             },
         )
-        
-        self.icon = ft.Icon(ft.Icons.PERSON, size=100, expand=False)    # Icon of character
-
-        self.information_display: ft.Container = None
-        self._create_information_display()
+    
 
         self.primary_characters = []
-        #self.load_primary_characters()
 
         self.canvas = cv.Canvas(
             content=ft.GestureDetector(
@@ -51,7 +45,6 @@ class CharacterConnectionMap(Widget):
                 expand=True,
                 on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
                 on_hover=self._get_coords,
-                on_tap=self._show_info_display,
                 drag_interval=10, hover_interval=20,
             ),
             expand=True, resize_interval=100,
@@ -69,7 +62,8 @@ class CharacterConnectionMap(Widget):
         #if self.visible:
             #self.reload_widget()
 
-    def _load_primary_characters(self):
+    # Load our primary characters from our data. Then loads the connection mini widgets for each connection involving them
+    def load_primary_characters(self):
         ''' Loads our primary characters from our data '''
 
         self.primary_characters.clear()
@@ -82,25 +76,28 @@ class CharacterConnectionMap(Widget):
                 # Add their live object to our primary characters list
                 self.primary_characters.append(character)  
 
-                # Add their connections to our mini widgets so we can see them, since they don't use them
-                for mw in character.mini_widgets:
-                    if isinstance(mw, Connection):
-                        self.mini_widgets.append(mw)
-                        mw.reload_mini_widget()   # Reload to make sure its up to date
-
-        
-        print("Length of our mini widgets after loading primary characters:", len(self.mini_widgets))
+        # Now go through our story connections and see which ones involve our primary characters
+        for idx, conn_data in enumerate(self.story.data.get('connections', [])):
+            if conn_data.get('char1_key') in self.data.get('primary_characters', []) or conn_data.get('char2_key') in self.data.get('primary_characters', []):
+                # Create a mini widget for this connection
+                mw = Connection(
+                    title="NONE",       # Not used but needs a value
+                    owner=self,
+                    page=self.p,
+                    index=idx,
+                    data=conn_data,  
+                )
+                self.mini_widgets.append(mw)
                         
-
         # Make sure we're reloaded
         if self.visible:
-            self.reload_widget()  
+            for mw in self.mini_widgets:
+                print(f"Connection between {mw.data.get('char1_name')} and {mw.data.get('char2_name')}")
+            self.reload_widget() 
 
     # Called when app clicks the hide icon in the tab
     def toggle_visibility(self, e=None, value: bool=None):
         ''' Hides the widget from our workspace and updates the json to reflect the change '''
-
-        
 
         # If we want to specify we're visible or not, we can pass it in
         if value is not None:
@@ -112,35 +109,12 @@ class CharacterConnectionMap(Widget):
             self.data['visible'] = not self.data['visible']
             self.visible = self.data['visible']
 
-        if self.visible:
-            self._set_primary_characters()   # Load our primary characters when we become visible
+        #if self.visible:
+            #self.load_primary_characters()   # Load our primary characters when we become visible
 
         # Save our changes and reload the UI
         self.save_dict()
         self.reload_widget()
-
-        # Protect first launch
-        if self.story.workspace is not None:
-            self.story.workspace.reload_workspace()
-
-    # Called in the constructor
-    def _create_information_display(self):
-        ''' Creates our plotline information display mini widget '''
-        
-        self.information_display = CCMInformationDisplay(
-            title=self.title,
-            owner=self,
-            page=self.p,
-            key="none",     # Not used, but its required so just whatever works
-            data=None,      # It uses our data, so we don't need to give it a copy that we would have to constantly maintain
-        )
-        # Add to our mini widgets so it shows up in the UI
-        self.mini_widgets.append(self.information_display)
-
-    # Called when clicking on our map to show our information display
-    async def _show_info_display(self, e: ft.TapEvent):
-        ''' If we're not in drawing mode, show our information display '''
-        self.information_display.show_mini_widget()
 
 
     def _set_primary_characters(self, e=None):
@@ -156,26 +130,19 @@ class CharacterConnectionMap(Widget):
         # Goes through and see what characters were selected and saves them
         def _save_and_close(e):
 
-            self.primary_characters.clear()
+            self.data.get('primary_characters').clear()     # Clear current primary characters
 
-            # Go through the content column control. Any checkboxes get added/removed from primary characters
+            # Go through our checkboxes, and see which characters were selected and add them to our data
             for control in content.controls:
                 if isinstance(control, CharCheckbox):
-                    if control.value and control.character not in self.primary_characters:
-                        self.primary_characters.append(control.character)
-                    elif not control.value and control.character in self.primary_characters:
-                        self.primary_characters.remove(control.character)
-
-            # Save the new primary characters to data
-            self.data.get('primary_characters').clear()
-            for char in self.primary_characters:
-                self.data.get('primary_characters').append(char.data.get('key'))
-
-            self._load_primary_characters()
+                    if control.value:
+                        self.data.get('primary_characters').append(control.character.data.get('key'))
+                    
 
             # Save and reload our widget. Close the dialog
             self.save_dict()
-            self.reload_widget()
+            # Loads them back into mini widgets
+            self.load_primary_characters()
             self.p.close(dlg)
 
 
@@ -202,8 +169,9 @@ class CharacterConnectionMap(Widget):
             title=ft.Text(f"Select Primary Character(s)"),
             content=content,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
-                ft.TextButton("Save", on_click=_save_and_close),   # Start enabled to just save existing connections
+                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
+                ft.Container(width=12),   # Spacer
+                ft.TextButton("Save", on_click=_save_and_close, scale=1.2),
             ],
         )
         
@@ -215,14 +183,9 @@ class CharacterConnectionMap(Widget):
         ''' Reloads/Rebuilds our widget based on current data '''
 
         # PURPOSE: To show a character connection map of our characters and their connections to one another
-        # HAS Family view
-        # Has primary user, and all connections to them, and option to expand and show secondary connections (connections of their connections)
-
-        # Love interest -> Sides
-        # Parents -> Up
-        # Siblings -> Side
-        # Children -> Down
-        # Friends -> Side-Down diagonal
+        # Has primary user(s), and all connections to them, 
+        # and option to expand and show secondary connections (connections of their connections)
+        
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
@@ -245,7 +208,8 @@ class CharacterConnectionMap(Widget):
             )
 
         else:
-            standard_length = 150   # Standard length for connection lines?
+            standard_length = 150   # some fraction of self.w and self.h
+            max_length = 300    # Some fraction of self.w and self.h // 2 - padding
 
 
         iv = ft.InteractiveViewer(
@@ -269,7 +233,6 @@ class CharacterConnectionMap(Widget):
         # Build a header for our filters
         self.header = ft.Row([ft.Button(button_title, tooltip="Change Primary Characters", on_click=self._set_primary_characters)], alignment=ft.MainAxisAlignment.CENTER, height=50)
 
-        # Option to show secondary character connections??
 
         # Call render widget (from Widget class) to update the UI
         self._render_widget()

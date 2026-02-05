@@ -59,6 +59,9 @@ class Character(Widget):
 
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
+
+
+        # TODO: RENAME AND DELETE Will need to be custom here, to alter ccm and connections that used our old name and key
         
     
     def _new_field_clicked(self, sub_key: str, category: str=""):
