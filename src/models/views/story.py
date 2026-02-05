@@ -732,5 +732,3 @@ class Story(ft.View):
         self.controls = [self.menubar, row]
 
         page.update()
-
-    
