@@ -55,7 +55,7 @@ def new_character_connection_clicked(story):
             )
 
             self.desc_textfield= ft.TextField(      # Textfield to enter connection tags
-                hint_text="Descriptors (Friend, Rival, etc.)", on_blur=self._update_description, dense=True,
+                hint_text="Descriptors (Friend, Rival, etc.)", on_blur=self._update_description, dense=True, capitalization=ft.TextCapitalization.SENTENCES,
                 autofill_hints=[ft.AutofillHint.NICKNAME, ft.AutofillHint.GIVEN_NAME], expand=True, value=self.data.get('tags', ''),
                 cursor_color=self.data.get('color', ft.Colors.PRIMARY), focused_border_color=self.data.get('color', ft.Colors.PRIMARY)
             )

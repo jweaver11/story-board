@@ -30,7 +30,7 @@ class Connection(MiniWidget):
         index: int,
         data: dict = None               # No data is used here, so NEVER reference it. Use self.owner.data instead
     ):
-        
+        self.idx = index    # The index of this connection in the story connections data list, so we can save back to it
 
         # Parent constructor
         super().__init__(
@@ -64,10 +64,8 @@ class Connection(MiniWidget):
     def save_dict(self):
         ''' Overwrites standard mini widget save and save our timelines data instead '''
         try:
-            #TODO: Somehow find our connection (probly index) in the story connections data and save it there
-            #self.owner.data.get('character_data', {}).get('Connections', {})[self.key] = self.data
-            #self.owner.save_dict()
-            pass
+            self.owner.story.data.get('connections', [])[self.idx] = self.data
+            self.owner.story.save_dict()
         except Exception as e:
             print(f"Error saving map information display data to {self.owner.title}: {e}")
 

@@ -14,6 +14,7 @@ from models.app import app
 from utils.safe_string_checker import return_safe_name
 from models.dataclasses.character_template import default_character_template_data_dict
 from utils.character_connection_alert_dlg import new_character_connection_clicked
+import flet.canvas as cv
 
 
 
@@ -61,7 +62,7 @@ class Character(Widget):
             self.reload_widget()         # Build our widget if it's visible on init
 
 
-        # TODO: RENAME AND DELETE Will need to be custom here, to alter ccm and connections that used our old name and key
+    # TODO: RENAME AND DELETE Will need to be custom here, to alter ccm and connections that used our old name and key
         
     
     def _new_field_clicked(self, sub_key: str, category: str=""):
@@ -112,12 +113,6 @@ class Character(Widget):
         
         dlg.open = True
         self.p.open(dlg)
-
-
-
-       
-
-    
 
     
     # Called when a field is changed in edit mode
@@ -178,6 +173,137 @@ class Character(Widget):
 
             except Exception as ex:
                 print(f"Error uploading file: {ex}")
+
+    # Called when our canvas resizes
+    async def _get_size(self, e: cv.CanvasResizeEvent):
+        ''' Updates our w and h variables when sizing canvas resizes '''
+        if e.width <= 0 or e.height <= 0:
+            return 
+        self.w = e.width
+        self.h = e.height
+
+        # Mini widgets won't show unless we re-render on launch since first render has no size reference to grab them with
+        if self.force_size_render:
+            self.force_size_render = False
+            self.reload_widget()    # Force a reload here since we need all characters loaded to grab connection data correctly
+
+    def _load_connections(self, connections_list: list, container: ft.Container):
+        ''' Loads our connections into a given container '''
+
+        def _edit_connections(index, key, value):
+            ''' Edits a connection in our story connections data '''
+            self.story.data['connections'][index][key] = value
+            self.story.save_dict()
+
+        # Grabs all our character options for the dropdown. Exclude already existing connections with those characters
+        def _get_char_options(tag: str) -> list[ft.PopupMenuButton]:
+            ''' Excludes the already selected character (If one exists) and returns a list of all other characters as control items '''
+            
+            options = []        # Character options stored as keys
+            ctrl_options = []   # Character options stored as dropdown items
+            # Key of all characters in the story
+            for char_key in self.story.characters.keys():
+                options.append(char_key)
+
+            # Make controls for every option
+            for key, character in self.story.characters.items():
+              
+                ctrl_options.append(
+                    ft.PopupMenuItem(
+                        text=character.data.get('title'),       # Set title for display
+                        #on_click=self._set_name_and_key,
+                        content=ft.Text(character.data.get('title'), color=character.data.get('color', ft.Colors.ON_SURFACE)),
+                        data=[key, tag]         # Set key for easy retrievel
+                    )
+                )
+
+            # Exclude already selected character from options so they can't connect to themselves
+            if tag == "char1":
+                if self.data.get('char2_key') in options:
+                    # Remove char2 from options
+                    remove_key = self.data.get('char2_key')
+                    ctrl_options = [ctrl for ctrl in ctrl_options if ctrl.data[0] != remove_key]
+            else:
+                if self.data.get('char1_key') in options:
+                    # Remove char1 from options
+                    remove_key = self.data.get('char1_key')
+                    ctrl_options = [ctrl for ctrl in ctrl_options if ctrl.data[0] != remove_key]
+
+            if self.data.get('key') in options:
+                # Remove self from options
+                remove_key = self.data.get('key')
+                ctrl_options = [ctrl for ctrl in ctrl_options if ctrl.data[0] != remove_key]
+                    
+            return ctrl_options     # Return the formatted controls
+
+        # Edit view
+        if self.data.get('edit_mode', False):
+
+            # Go through our connections
+            for conn in connections_list:
+
+                # Ignore connections not involving this character
+                if self.data.get('key') not in [conn.get('char1_key', ""), conn.get('char2_key', "")]:
+                    continue
+
+                # Set the two characters in the connection
+                char1 = self.story.characters.get(conn.get('char1_key', ""))
+                char2 = self.story.characters.get(conn.get('char2_key', ""))
+
+                # Protect against reload_widget calls before other characters are loaded, or both characters not yet set
+                if char1 is None or char2 is None:
+                    continue
+               
+                # Build the controls
+                container.content.controls.append(
+                    ft.Row([
+                        ft.PopupMenuButton(      # Name one
+                            ft.Container(
+                                ft.Text(
+                                    conn.get('char1_name', "Change Character 1"), color=char1.data.get('color', "primary"),
+                                    overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER
+                                ),
+                                padding=ft.padding.all(6), border_radius=ft.border_radius.all(8), ink=True,
+                            ), tooltip="Change Character 1", items=_get_char_options(tag="char1"), menu_padding=ft.padding.all(0)
+                        ),
+                        ft.IconButton(      # Icon
+                            conn.get('icon', "connect_without_contact"), icon_color=conn.get('color', "primary"), 
+                            on_click=lambda e: new_character_connection_clicked(self.story)
+                        ),      
+                        ft.TextButton(      # Name 2
+                            conn.get('char2_name', "Unknown Character"), on_click=lambda e: new_character_connection_clicked(self.story),
+                            style=ft.ButtonStyle(color=char2.data.get('color', "primary"))
+                        ),
+                        ft.TextField(       # Description
+                            conn.get('description', ""), dense=True, expand=True, multiline=True,
+                            focused_border_color=conn.get('color', "primary"), cursor_color=conn.get('color', "primary"),
+                        ),
+                        ft.PopupMenuButton(   # Color button
+                            icon=ft.Icons.COLOR_LENS, icon_color=conn.get('color', "primary"), tooltip="Change color",
+                        ),
+                        # Delete button here
+                    ], spacing=0)
+                )
+
+        else:
+
+            # Not in edit view
+            for conn in connections_list:
+                if self.data.get('key') not in [conn.get('char1_key', ""), conn.get('char2_key', "")]:
+                    continue
+                char1 = self.story.characters.get(conn.get('char1_key', ""))
+                char2 = self.story.characters.get(conn.get('char2_key', ""))
+                if char1 is None or char2 is None:
+                    continue
+                # Name1, icon, name2, description
+                container.content.controls.append(
+                    ft.Row([
+                        ft.Text(conn.get('char1_name', "Unknown Character"), color=char1.data.get('color', "primary"), weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER, selectable=True, overflow=ft.TextOverflow.ELLIPSIS),
+                        ft.Icon(conn.get('icon', "connect_without_contact"), color=conn.get('color', "primary")),
+                        ft.Text(conn.get('char2_name', "Unknown Character"), color=char2.data.get('color', "primary"), weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER, selectable=True, overflow=ft.TextOverflow.ELLIPSIS),
+                        ft.Text(conn.get('description', ""), expand=True, selectable=True)
+                    ])
+                )
 
     # Called when clicking the edit mode button
     def _edit_mode_clicked(self, e=None):
@@ -259,42 +385,42 @@ class Character(Widget):
                 ft.IconButton(tooltip="Exit Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, icon_color=self.data.get('color', None), on_click=self._edit_mode_clicked),
                 fp, 
             ], wrap=True),
-        ], scroll="auto", expand=True)
+        ], scroll="auto", expand=True, spacing=0)
 
 
         # Create a container for our dicts that we have data in and load them. 
         basic_info_container = ft.Container(            # For basic info
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
             border=ft.border.all(2, ft.Colors.OUTLINE), 
             content=ft.Column([]), 
         )
         template_data_container = ft.Container(         # For template data
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
             border=ft.border.all(2, ft.Colors.OUTLINE), 
             content=ft.Column([]), 
         )
         physical_description_container = ft.Container(  # For physical description
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
             border=ft.border.all(2, ft.Colors.OUTLINE),
             content=ft.Column([]), 
         )   
         family_container = ft.Container(                # For family
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
             border=ft.border.all(2, ft.Colors.OUTLINE),
             content=ft.Column([]), 
         )
         origin_container = ft.Container(                # For origin 
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
             border=ft.border.all(2, ft.Colors.OUTLINE), 
             content=ft.Column([]),
         )
         connections_container = ft.Container(           # For connections
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
             border=ft.border.all(2, ft.Colors.OUTLINE),
             content=ft.Column([]), 
         )
         custom_fields_container = ft.Container(        # For custom fields
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
             border=ft.border.all(2, ft.Colors.OUTLINE),
             content=ft.Column([]), 
         )
@@ -305,107 +431,101 @@ class Character(Widget):
         _load_dict_data(self.data.get('character_data', {}).get('Physical Description', {}), physical_description_container, "Physical Description")
         _load_dict_data(self.data.get('character_data', {}).get('Family', {}), family_container, "Family")
         _load_dict_data(self.data.get('character_data', {}).get('Origin', {}), origin_container, "Origin")
-        #_load_dict_data(self.story.data.get('connections'), connections_container, "Connections")
+        self._load_connections(self.story.data.get('connections'), connections_container)
         _load_dict_data(self.data.get('character_data', {}).get('Custom Fields', {}), custom_fields_container, "Custom Fields")
 
-
-        # Create rows for each section
-        row1 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row2 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row3 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row4 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row5 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row6 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row7 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-
-
         # Add the labels and containers that have the data controls into the rows for formatting
-        row1.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6), 
-                    ft.Text("Basic Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Basic Info", "Basic Info"), icon_color=self.data.get('color', None)),
-
-                ], spacing=0),
-                ft.Row([basic_info_container])
-            ], expand=True, spacing=4)
+        body.controls.append(
+            ft.Row([
+                ft.Container(width=6), 
+                ft.Text("Basic Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Basic Info", "Basic Info"), icon_color=self.data.get('color', None)),
+            ], spacing=0),
         )
+        body.controls.append(
+            ft.Row([basic_info_container])
+        )
+        body.controls.append(ft.Container(height=12))
+
+
         # If we have temlpate data, this will add it to the page
         if 'Template Data' not in self.data.get('character_data', {}):
             pass
         else:
             
             template_title = self.data.get('character_data', {}).get('Template Data', {}).get('Template Name', 'Template Data')
-            row2.controls.append(
-                ft.Column([
-                    ft.Row([
-                        ft.Container(width=6), 
-                        ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.data.get('color', None), selectable=True),
-                        ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Template Data", "Template Data"), icon_color=self.data.get('color', None)),
-
-                    ], spacing=0),
-                    ft.Row([template_data_container])
-                ], expand=True, spacing=4)
+            body.controls.append(
+                ft.Row([
+                    ft.Container(width=6), 
+                    ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Template Data", "Template Data"), icon_color=self.data.get('color', None)),
+                ], spacing=0),
             )
+            body.controls.append(
+                ft.Row([template_data_container])
+            )
+            body.controls.append(ft.Container(height=12))
 
-        row3.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6), 
-                    ft.Text("Physical Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Physical Description", "Physical Description"), icon_color=self.data.get('color', None)),
-
-                ], spacing=0),
-                ft.Row([physical_description_container])
-            ], expand=True, spacing=4)
+        body.controls.append(
+            ft.Row([
+                ft.Container(width=6),
+                ft.Text("Physical Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Physical Description", "Physical Description"), icon_color=self.data.get('color', None)),
+            ], spacing=0),
         )
-        row4.controls.append(
-            
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6), 
-                    ft.Text("Origin", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Origin", "Origin"), icon_color=self.data.get('color', None)),
-
-                ], spacing=0),
-                ft.Row([origin_container])
-            ], expand=True, spacing=4)
+        body.controls.append(
+            ft.Row([physical_description_container])
         )
-        row5.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6), 
-                    ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Family", "Family"), icon_color=self.data.get('color', None)),
+        body.controls.append(ft.Container(height=12))
 
-                ], spacing=0),
-                ft.Row([family_container])
-            ], expand=True, spacing=4)
+        body.controls.append(
+            ft.Row([
+                ft.Container(width=6),
+                ft.Text("Origin", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Origin", "Origin"), icon_color=self.data.get('color', None)),
+            ], spacing=0),
         )
-        row6.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6), 
-                    ft.Text("Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: new_character_connection_clicked(self.story), icon_color=self.data.get('color', None)),
-                ], spacing=0),
-                ft.Row([connections_container])
-            ], expand=True, spacing=4)  
+        body.controls.append(
+            ft.Row([origin_container])
+        )
+        body.controls.append(ft.Container(height=12))
+
+        body.controls.append(
+            ft.Row([
+                ft.Container(width=6),
+                ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Family", "Family"), icon_color=self.data.get('color', None)),
+            ], spacing=0),
+        )
+        body.controls.append(
+            ft.Row([family_container])
+        )
+        body.controls.append(ft.Container(height=12))
+
+
+        body.controls.append(
+            ft.Row([
+                ft.Container(width=6),
+                ft.Text("Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                ft.IconButton(tooltip="Add Connection", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: new_character_connection_clicked(self.story), icon_color=self.data.get('color', None)),
+            ], spacing=0),
+        )
+        body.controls.append(
+            ft.Row([connections_container])
+        )
+        body.controls.append(ft.Container(height=12))
+
+        body.controls.append(
+            ft.Row([
+                ft.Container(width=6),
+                ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields", "Custom Fields"), icon_color=self.data.get('color', None)),
+            ], spacing=0),
+        )
+        body.controls.append(
+            ft.Row([custom_fields_container])
         )
 
-        row7.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6), 
-                    ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields", "Custom"), icon_color=self.data.get('color', None)),
-                ], spacing=0),
-                ft.Row([custom_fields_container])
-            ], expand=True, spacing=4)
-        )
-
-        body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([row1, row2, row3, row4, row5, row6, row7], spacing=16)))
 
         self.body_container.content = body
 
@@ -450,11 +570,7 @@ class Character(Widget):
 
                 idx += 1
 
-            container.content.spans = span_list
-            
-
-                    
-                
+            container.content.spans = span_list  
         
         # Rebuild out tab to reflect any changes
         self.reload_tab()
@@ -521,9 +637,9 @@ class Character(Widget):
                 content=ft.Text(expand=True, selectable=True, spans=[]), 
             )
             connections_container = ft.Container(           # For connections
-                padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
+                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Text(expand=True, selectable=True, spans=[]), 
+                content=ft.Column([]), 
             )
             custom_fields_container = ft.Container(        # For custom fields
                 padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
@@ -536,24 +652,25 @@ class Character(Widget):
             _load_dict_data(self.data.get('character_data', {}).get('Physical Description', {}), physical_description_container)
             _load_dict_data(self.data.get('character_data', {}).get('Family', {}), family_container)
             _load_dict_data(self.data.get('character_data', {}).get('Origin', {}), origin_container)
-            #_load_dict_data(self.data.get('character_data', {}).get('Connections', {}), connections_container)
+            self._load_connections(self.story.data.get('connections'), connections_container)
             _load_dict_data(self.data.get('character_data', {}).get('Custom Fields', {}), custom_fields_container)
 
-            # Set our columns to hold our data sections
-            column1 = ft.Column([], expand=True, spacing=4, alignment=ft.MainAxisAlignment.START)
-            column2 = ft.Column([], expand=True, spacing=4, alignment=ft.MainAxisAlignment.START)
             
             # If we have basic info, this will add it to the page. Protects against custom templates getting rid of certain sections
             if basic_info_container.content.spans:
                 
-                column1.controls.append(
+                body.controls.append(
                     ft.Row([
                         ft.Container(width=6), 
                         ft.Text("Basic Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0),
+                    ], spacing=0)
                 )
-                column1.controls.append(ft.Row([basic_info_container]))
-                column1.controls.append(ft.Container(height=16))  # Spacer
+                body.controls.append(
+                    ft.Row([basic_info_container])
+                )
+                body.controls.append(ft.Container(height=2))
+                
+                
 
             # If we have temlpate data, this will add it to the page
             if 'Template Data' not in self.data.get('character_data', {}):
@@ -563,66 +680,81 @@ class Character(Widget):
                 if app.settings.data.get('show_empty_character_fields', True) or template_data_container.content.spans:
                     template_title = self.data.get('character_data', {}).get('Template Data', {}).get('Template Name', 'Template Data')
         
-                    column2.controls.append(
+                    body.controls.append(
                         ft.Row([
                             ft.Container(width=6), 
-                            ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                        ], spacing=0),
+                            ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.data.get('color', None), selectable=True),
+                        ], spacing=0)
                     )
-                    column2.controls.append(ft.Row([template_data_container]))
-                    column2.controls.append(ft.Container(height=16))  # Spacer
+                    body.controls.append(
+                        ft.Row([template_data_container])
+                    )
+                    body.controls.append(ft.Container(height=2))
 
             if physical_description_container.content.spans:
-                column2.controls.append(
+                body.controls.append(
                     ft.Row([
                         ft.Container(width=6), 
-                        ft.Text("Physical Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0), 
+                        ft.Text("Physical Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                    ], spacing=0)
+                )   
+                body.controls.append(
+                    ft.Row([physical_description_container])
                 )
-                column2.controls.append(ft.Row([physical_description_container]))
-                column2.controls.append(ft.Container(height=16))  # Spacer
+                body.controls.append(ft.Container(height=2))
+            
+
+            if origin_container.content.spans:
+                body.controls.append(
+                        ft.Row([
+                            ft.Container(width=6), 
+                            ft.Text("Origin", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                        ], spacing=0),
+                        
+                )
+                body.controls.append(
+                    ft.Row([origin_container])
+                )
+                body.controls.append(ft.Container(height=2))
 
             if family_container.content.spans:
-                column2.controls.append(
+                body.controls.append(
                     ft.Row([
                         ft.Container(width=6), 
-                        ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                        ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+
                     ], spacing=0),
                 )
-                column2.controls.append(ft.Row([family_container]))
-                column2.controls.append(ft.Container(height=16))  # Spacer
-            if origin_container.content.spans:
-                column1.controls.append(
-                    ft.Row([
-                        ft.Container(width=6), 
-                        ft.Text("Origin", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0),
+                body.controls.append(
+                    ft.Row([family_container])
                 )
-                column1.controls.append(ft.Row([origin_container]))
-                column1.controls.append(ft.Container(height=16))  # Spacer
+                body.controls.append(ft.Container(height=2))
+
             if app.settings.data.get('show_empty_character_fields', True):
-                column1.controls.append(
+                body.controls.append(
                     ft.Row([
-                        ft.Container(width=6),
-                        ft.Text("Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0),    
+                        ft.Container(width=6), 
+                        ft.Text("Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                    ], spacing=0),   
                 )
-                column1.controls.append(ft.Row([connections_container]))
-                column1.controls.append(ft.Container(height=16))  # Spacer
+                body.controls.append(
+                    ft.Row([connections_container])
+                )
+                body.controls.append(ft.Container(height=2))
 
             if custom_fields_container.content.spans:
-                column2.controls.append(
+                body.controls.append(
                     ft.Row([
                         ft.Container(width=6), 
-                        ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
+                        ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
                     ], spacing=0),
                 )
-                column2.controls.append(ft.Row([custom_fields_container]))
-                column2.controls.append(ft.Container(height=16))  # Spacer
+                body.controls.append(
+                    ft.Row([custom_fields_container])
+                )
+                body.controls.append(ft.Container(height=2))
 
 
-            body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([ft.Row([column1, column2], vertical_alignment=ft.CrossAxisAlignment.START)], spacing=16)))
-        
             self.body_container.content = body
 
             # Call render widget (from Widget class) to update the UI

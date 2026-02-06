@@ -11,4 +11,5 @@ icons = [
     "people_outlined",
     "health_and_safety",
     "sports_esports",
+    "link"
 ]
