@@ -456,11 +456,6 @@ class Story(ft.View):
                     except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
                         print(f"Error loading content from {filename}: {e}")
 
-        # Character connection maps require all our widgets be loaded for comparisons, so we run their loads here
-        for ccm in self.character_connection_maps.values():
-            ccm.load_primary_characters()
-
-
     # Called in startup after we have loaded all our live objects
     def load_widgets(self):
         ''' Loads all our widgets (characters, chapters, notes, etc.) into our master list of widgets '''
@@ -495,7 +490,7 @@ class Story(ft.View):
         for ccm in self.character_connection_maps.values():           # Family Trees
             if ccm not in self.widgets:
                 self.widgets.append(ccm)
-
+                
         
     # Called to create a new widget based on tag (chapter, note, character, etc)
     def create_widget(self, title: str, tag: str=None, directory_path: str=None, data: dict=None):
@@ -573,7 +568,6 @@ class Story(ft.View):
                 key = widget.data.get('key', '')
                 self.canvas_boards[key] = widget
                 self.widgets.append(self.canvas_boards[key])
-
      
             case _:
                 print("Widget tag not valid. Tag:", tag)

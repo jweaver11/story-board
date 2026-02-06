@@ -48,7 +48,6 @@ def route_change(e: ft.RouteChangeEvent) -> Story:
                     app.settings.story = story
                     app.settings.save_dict()
 
-
                     new_story.startup()
                     app.settings.story = new_story  # Gives our settings widget the story reference it needs
                     page.views.append(new_story)

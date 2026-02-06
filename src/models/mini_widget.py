@@ -60,7 +60,7 @@ class MiniWidget(ft.Container):
         )
 
         # Apply our visibility
-        self.visible = self.data['visible']
+        self.visible = self.data.get('visible', True)
         
 
         # Control for our title

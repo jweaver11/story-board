@@ -67,7 +67,7 @@ class Widget(ft.Container):
         )
 
         # Apply our visibility
-        self.visible = self.data['visible'] 
+        self.visible = self.data.get('visible', True)
 
         # Canvas and state trackers for sizing our widget
         self.sizing_canvas = cv.Canvas(on_resize=self._get_size, resize_interval=100, expand=True, content=ft.Container(expand=True, ignore_interactions=True))
@@ -77,6 +77,7 @@ class Widget(ft.Container):
         self.t: int = 0
         self.is_renaming: bool = False                          # Whether we are currently renaming this widget or not
         self.mini_widgets_displayed_overtop: bool = True        # If miniwidgets are displayed overtop the content inside the stack, or to the side (shrinking the content)
+        self.force_size_render: bool = True                      # Forces a reload when widgets get their size for the first time, but not every time
 
         # UI ELEMENTS - Tab
         self.tabs: ft.Tabs = ft.Tabs() # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
@@ -225,7 +226,12 @@ class Widget(ft.Container):
             return 
         self.w = e.width
         self.h = e.height
-        
+
+
+        # Mini widgets won't show unless we re-render on launch since first render has no size reference to grab them with
+        if self.force_size_render:
+            self.force_size_render = False
+            self._render_widget()
         
     # Called when renaming a widget
     def rename(self, title: str):

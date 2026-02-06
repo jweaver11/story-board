@@ -110,7 +110,6 @@ class Workspace(ft.Container):
         ''' Adds our drag targets to the master stack so we can drop our widgets into pin locations '''
 
         visible_top_pin_controls = [control for control in self.top_pin.controls if getattr(control, 'visible', True)]
-
         # If no visible in the top pin
         if len(visible_top_pin_controls) == 0:
             self.top_pin_drag_target.content.height = self.story.data.get('top_pin_height', int(self.p.height/5))
@@ -118,19 +117,16 @@ class Workspace(ft.Container):
         visible_left_pin_controls = [control for control in self.left_pin.controls if getattr(control, 'visible', True)]
         # If no visible in the left pin
         if len(visible_left_pin_controls) == 0:
-            
             self.left_pin_drag_target.content.width = self.story.data.get('left_pin_width', int(self.p.width/10))
 
         visible_right_pin_controls = [control for control in self.right_pin.controls if getattr(control, 'visible', True)]
         # If no visible in the right pin
         if len(visible_right_pin_controls) == 0:
-            
             self.right_pin_drag_target.content.width = self.story.data.get('right_pin_width', int(self.p.width/10))
 
         visible_bottom_pin_controls = [control for control in self.bottom_pin.controls if getattr(control, 'visible', True)]
         # If no visible in the bottom pin
         if len(visible_bottom_pin_controls) == 0:
-           
             self.bottom_pin_drag_target.content.height = self.story.data.get('bottom_pin_height', int(self.p.height/5))
         
 
@@ -218,7 +214,8 @@ class Workspace(ft.Container):
             widget.data['index'] = len(self.bottom_pin.controls)
 
 
-        
+        widget.force_size_render = True     # Force a reload in our new pin because our size changes
+
         # Make sure our widget is visible if it was dragged from the rail
         if not widget.visible:
             widget.toggle_visibility(value=True)      # This will save dict as well
@@ -229,9 +226,7 @@ class Workspace(ft.Container):
         self.reload_workspace()
 
         # Reload our widget to apply size changes that some of them need
-        widget.reload_widget()
-        
-        #print(f"{pin_location} pin accepted")
+        #widget.reload_widget()        
 
 
     # Called when we drag a widget from one pin location to another

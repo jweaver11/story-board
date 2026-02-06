@@ -59,11 +59,11 @@ class CharacterConnectionMap(Widget):
         ], expand=True)
 
         # Requires all widgets to be loaded first, so story calls self.load_primary_characters(), which reloads the widget
-        #if self.visible:
-            #self.reload_widget()
+        if self.visible:
+            self.reload_widget()
 
     # Load our primary characters from our data. Then loads the connection mini widgets for each connection involving them
-    def load_primary_characters(self):
+    def _load_primary_characters(self):
         ''' Loads our primary characters from our data '''
 
         self.primary_characters.clear()
@@ -87,13 +87,8 @@ class CharacterConnectionMap(Widget):
                     index=idx,
                     data=conn_data,  
                 )
-                self.mini_widgets.append(mw)
-                        
-        # Make sure we're reloaded
-        if self.visible:
-            for mw in self.mini_widgets:
-                print(f"Connection between {mw.data.get('char1_name')} and {mw.data.get('char2_name')}")
-            self.reload_widget() 
+                self.mini_widgets.append(mw) 
+                
 
     # Called when app clicks the hide icon in the tab
     def toggle_visibility(self, e=None, value: bool=None):
@@ -141,8 +136,8 @@ class CharacterConnectionMap(Widget):
 
             # Save and reload our widget. Close the dialog
             self.save_dict()
-            # Loads them back into mini widgets
-            self.load_primary_characters()
+            
+            self.reload_widget()
             self.p.close(dlg)
 
 
@@ -185,9 +180,9 @@ class CharacterConnectionMap(Widget):
         # PURPOSE: To show a character connection map of our characters and their connections to one another
         # Has primary user(s), and all connections to them, 
         # and option to expand and show secondary connections (connections of their connections)
-        
 
         # Rebuild out tab to reflect any changes
+        self._load_primary_characters()
         self.reload_tab()
 
          
