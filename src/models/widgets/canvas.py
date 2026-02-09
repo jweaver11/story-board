@@ -108,33 +108,6 @@ class Canvas(Widget):
             content=self.canvas
         )
 
-
-        # Other UI elements
-        self.header = ft.Row([
-            # Undo and redo buttons
-            ft.PopupMenuButton(
-                icon=ft.Icons.IMAGE_OUTLINED, tooltip="Set the background of your canvas",
-                menu_padding=ft.padding.all(0), 
-                #on_cancel=self._set_color,
-                items=[
-                    ft.PopupMenuItem("None", on_click=self._set_canvas_background, tooltip="No background"),
-                    ft.PopupMenuItem("Color", on_click=self._set_canvas_background, tooltip="Set a solid color background"),
-                    ft.PopupMenuItem("Image", on_click=self._set_canvas_background, tooltip="Set an image as the background"),
-                ]
-            ),
-            ft.IconButton(
-                icon=ft.Icons.FILE_DOWNLOAD_OUTLINED,
-                tooltip="Export Canvas"
-            )
-            # Show comments toggle
-        ])
-
-        self.header_displayed_overtop = False
-
-
-        self.interactive_viewer = ft.InteractiveViewer(content=self.canvas_container, scale_factor=700)
-
-
         self.current_path= cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
        
         # Load our drawing/display
@@ -614,8 +587,41 @@ class Canvas(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
+        # Other UI elements
+        header = ft.Row([
+            # Undo and redo buttons
+            ft.PopupMenuButton(
+                icon=ft.Icons.IMAGE_OUTLINED, tooltip="Set the background of your canvas",
+                menu_padding=ft.padding.all(0), 
+                #on_cancel=self._set_color,
+                items=[
+                    ft.PopupMenuItem("None", on_click=self._set_canvas_background, tooltip="No background"),
+                    ft.PopupMenuItem("Color", on_click=self._set_canvas_background, tooltip="Set a solid color background"),
+                    ft.PopupMenuItem("Image", on_click=self._set_canvas_background, tooltip="Set an image as the background"),
+                ]
+            ),
+            ft.IconButton(
+                icon=ft.Icons.FILE_DOWNLOAD_OUTLINED,
+                tooltip="Export Canvas"
+            )
+            # Show comments toggle
+        ])
+
+        # Not used, but changes how our mini widgets are positioned
+        self.header = ft.Container(ignore_interactions=True, height=50)
+
+
+        iv = ft.InteractiveViewer(
+            content=self.canvas_container, expand=True,
+            scale_factor=750, boundary_margin=50,
+            min_scale=0.5, max_scale=2.0, scale=1.0,
+        )
+        
+
         self.canvas_container.content = self.canvas
-        self.body_container.content = self.interactive_viewer
+        self.body_container.content = iv
+
+        self.body_container.content = ft.Column([header, iv], spacing=0)
 
         self._render_widget()
  
