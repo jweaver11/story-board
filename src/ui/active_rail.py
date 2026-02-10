@@ -65,10 +65,6 @@ class Active_Rail(ft.Container):
                 self.content = self.characters_rail
             case "plotlines":
                 self.content = self.plotlines_rail
-                # Make sure our plotline is shown if there is only one
-                if len(self.story.plotlines) == 1:
-                    for tl in self.story.plotlines.values():
-                        tl.toggle_visibility(value=True)
             case "world_building":
                 self.content = self.world_building_rail
             case "canvas":

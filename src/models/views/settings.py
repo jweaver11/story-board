@@ -74,6 +74,8 @@ class Settings(ft.View):
 
                 'custom_brushes': dict,    # Saved brushes the user has created that we can load
                 'custom_colors': dict,     # Saved colors the user has created that we can load {name: hex,opac}
+                'active_brush': str,
+                'active_color': str,    
 
                 # Other canvas related settings that are not technically paint
                 'canvas_settings':{
