@@ -311,6 +311,125 @@ class CanvasRail(Rail):
             app.settings.save_dict()
             self.update()
 
+        # Called when saving a custom color
+        def _save_custom_color(e=None):
+            ''' Opens a dialog to name the current color to save it as a custom color. '''
+
+            # Saves the current name and closes the dialog
+            def _save_and_close(e=None): 
+                nonlocal name
+                color = self.color_picker.color
+                opacity = app.settings.data.get('paint_settings', {}).get('color', "1.0").split(",", 1)[1].strip()
+                color_with_opacity = f"{color},{opacity}"
+
+                app.settings.data.setdefault('custom_colors', {})[name] = color_with_opacity
+                app.settings.save_dict()
+                self.p.close(dlg)
+
+            def _set_name(e):
+                nonlocal name
+                name = e.control.value.strip()  
+
+                for ctrl in dlg.content.controls:
+                    if isinstance(ctrl, ft.GestureDetector):
+                        ctrl.content.bgcolor = ft.Colors.TRANSPARENT
+
+                for key in app.settings.data.get('custom_colors', {}).keys():
+                    if key == name:
+                        e.control.error_text = "A color with this name already exists. It will be overwritten if you save."
+                        self.p.update()
+                        return
+                    
+                e.control.error_text = None
+                self.p.update()
+
+            def _delete_color(e):
+                name = e.control.data
+
+                if name in app.settings.data.get('custom_colors', {}):
+                    del app.settings.data['custom_colors'][name]
+                    app.settings.save_dict()
+                    #self.p.close(dlg)
+
+                dlg.content.controls = [ctrl for ctrl in dlg.content.controls if not (isinstance(ctrl, ft.GestureDetector) and ctrl.data == name)]
+                self.p.update()
+                    
+
+            
+
+            # Sets an existing custom color to be overwritten by the current color
+            def _set_color_override(e):
+                nonlocal name
+                
+                if e.control.content.bgcolor == ft.Colors.with_opacity(.1, ft.Colors.ON_SURFACE):
+                    e.control.content.bgcolor = ft.Colors.TRANSPARENT
+                    name = None
+                    self.p.update()
+                    return
+
+                name = e.control.data
+                e.control.content.bgcolor = ft.Colors.with_opacity(.1, ft.Colors.ON_SURFACE)
+                e.control.update()
+
+                for ctrl in dlg.content.controls:
+                    if isinstance(ctrl, ft.GestureDetector) and ctrl != e.control:
+                        #ctrl.disabled = True
+                        ctrl.content.bgcolor = ft.Colors.TRANSPARENT
+                
+                self.p.update()
+
+            
+
+            # Textfield for naming custom color
+            text_field = ft.TextField(
+                label="Color Name", autofocus=True, on_submit=lambda e: _save_and_close(), dense=True,
+                capitalization=ft.TextCapitalization.SENTENCES, on_change=_set_name
+            )
+
+            name: str = None
+
+            dlg = ft.AlertDialog(
+                title=ft.Text("Name your custom color"), 
+                content=ft.Column(
+                    width=self.p.width * 0.4, expand=False,
+                    height=self.p.height * 0.6,
+                    controls=[
+                        
+                        ft.Divider(),
+                        text_field,
+                        ft.Row([
+                            ft.Icon(ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, tooltip="Select a color below to overwrite it with the current color"),
+                        ], spacing=0),
+                    ]
+                ),
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
+                    ft.Container(width=12),   # Spacer
+                    ft.TextButton("Save", on_click=_save_and_close, scale=1.2),   # Start enabled to just save existing connections
+                ]
+            )
+
+            for name, existing_color in app.settings.data.get('custom_colors', {}).items():
+                dlg.content.controls.append(
+                    ft.GestureDetector(
+                        ft.Container(
+                            ft.Row([
+                                ft.Icon(ft.Icons.CIRCLE, existing_color), 
+                                ft.Text(name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True),
+                                ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, data=name, on_click=_delete_color, tooltip="Delete this saved color"),
+                            ]), border_radius=ft.border_radius.all(4)
+                        ),
+                        on_tap=_set_color_override, data=name, mouse_cursor=ft.MouseCursor.CLICK
+                    )
+                )
+
+            self.p.open(dlg)
+
+
+
+
+
+
         # Our header at the top of the rail
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -463,48 +582,6 @@ class CanvasRail(Rail):
             label_position=ft.LabelPosition.LEFT,
             value=app.settings.data.get('paint_settings', {}).get('stroke_dash_pattern', None) is not None,
         )
-
-        
-        
-
-       
-
-        def _save_custom_color(e=None):
-
-            def _save_and_close(e=None): 
-                name = text_field.value.strip()
-                color = self.color_picker.color
-                opacity = app.settings.data.get('paint_settings', {}).get('color', "1.0").split(",", 1)[1].strip()
-                color_with_opacity = f"{color},{opacity}"
-
-                app.settings.data.setdefault('custom_colors', {})[name] = color_with_opacity
-                app.settings.save_dict()
-                self.p.close(dlg)
-
-            text_field = ft.TextField(label="Color Name", autofocus=True, on_submit=lambda e: _save_and_close(), dense=True)
-
-            dlg = ft.AlertDialog(
-                title=ft.Text("Name your custom color"), 
-                content=ft.Column(
-                    width=self.p.width * 0.4,
-                    controls=[
-                        text_field
-                    ]
-                ),
-                actions=[
-                    ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
-                    ft.Container(width=12),   # Spacer
-                    ft.TextButton("Save", on_click=_save_and_close, scale=1.2),   # Start enabled to just save existing connections
-                ]
-            )
-
-            # TODO: Make these selectable so they can be overwritten. Add delete button to the right
-            for name, existing_color in app.settings.data.get('custom_colors', {}).items():
-                dlg.content.controls.append(
-                    ft.Row([ft.Container(width=20, bgcolor=existing_color, border_radius=10), ft.Text(name, theme_style=ft.TextThemeStyle.LABEL_LARGE)])
-                )
-
-            self.p.open(dlg)
 
 
         # Build the content of our rail
