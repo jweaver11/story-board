@@ -56,6 +56,7 @@ class Settings(ft.View):
 
                 # Paint settings for our canvas drawings to use as default that users can change
                 'paint_settings': {
+
                     # Stroke styles
                     'color': "#FFFFFF,1.0",     # Hex color folowed by opacity
                     'stroke_width': 3,
@@ -70,6 +71,9 @@ class Settings(ft.View):
                     'blur_image': int,
                     'blend_mode': "src_over",
                 },
+
+                'custom_brushes': dict,    # Saved brushes the user has created that we can load
+                'custom_colors': dict,     # Saved colors the user has created that we can load {name: hex,opac}
 
                 # Other canvas related settings that are not technically paint
                 'canvas_settings':{

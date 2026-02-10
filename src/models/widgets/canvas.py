@@ -282,39 +282,39 @@ class Canvas(Widget):
         self.current_path.elements.append(move_to_element)
         self.state.paths[0]['elements'].append((move_to_element.__dict__))
 
-        #print(f"Starting drawing with style {style}")
 
-        # If we're using lineto (straight lines), add that element to the current path and state right away
-        if style == "lineto":
-            line_element = cv.Path.LineTo(e.local_x, e.local_y)
-            self.current_path.elements.append(line_element)
-            self.state.paths[0]['elements'].append((line_element.__dict__))
+        match style:
+            # If we're using lineto (straight lines), add that element to the current path and state right away
+            case "lineto":
+                line_element = cv.Path.LineTo(e.local_x, e.local_y)
+                self.current_path.elements.append(line_element)
+                self.state.paths[0]['elements'].append((line_element.__dict__))
 
-        elif style == "arc":
-            arc_element = cv.Path.Arc(
-                width=20,
-                height=20,
-                
-                x=e.local_x,
-                y=e.local_y,
-                start_angle=math.pi,
-                sweep_angle=-math.pi,
-            )
-            self.current_path.elements.append(arc_element)
-            self.state.paths[0]['elements'].append((arc_element.__dict__))
+            case "arc":
+                arc_element = cv.Path.Arc(
+                    width=20,
+                    height=20,
+                    
+                    x=e.local_x,
+                    y=e.local_y,
+                    start_angle=math.pi,
+                    sweep_angle=-math.pi,
+                )
+                self.current_path.elements.append(arc_element)
+                self.state.paths[0]['elements'].append((arc_element.__dict__))
 
         # Else if we're using arcto, add that element to the current path and state right away
-        elif style == 'arcto' or style == 'arctofill':
-            arc_element = cv.Path.ArcTo(
-                radius=12,
-                rotation=0,
-                large_arc=False,
-                x=e.local_x,
-                y=e.local_y,
-                clockwise=True,
-            )
-            self.current_path.elements.append(arc_element)
-            self.state.paths[0]['elements'].append((arc_element.__dict__))
+            case 'arcto' | 'arctofill':
+                arc_element = cv.Path.ArcTo(
+                    radius=12,
+                    rotation=0,
+                    large_arc=False,
+                    x=e.local_x,
+                    y=e.local_y,
+                    clockwise=True,
+                )
+                self.current_path.elements.append(arc_element)
+                self.state.paths[0]['elements'].append((arc_element.__dict__))
 
         # Add the path to the canvas so we can see it
         self.canvas.shapes.append(self.current_path)
@@ -335,118 +335,109 @@ class Canvas(Widget):
         style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
 
 
+        match style:
         # Handle lineto (Straight lines). Grab the element we created on start drawing, update its data
-        if style == "lineto":
+            case "lineto":
             
-            # Set the element and its data
-            line_element = self.current_path.elements[-1]
-            line_dict = line_element.__dict__
+                # Set the element and its data
+                line_element = self.current_path.elements[-1]
+                line_dict = line_element.__dict__
 
-            # Update the elements position
-            line_element.x = e.local_x
-            line_element.y = e.local_y
+                # Update the elements position
+                line_element.x = e.local_x
+                line_element.y = e.local_y
 
-            # Update the dict to match
-            line_dict['x'] = line_element.x
-            line_dict['y'] = line_element.y
+                # Update the dict to match
+                line_dict['x'] = line_element.x
+                line_dict['y'] = line_element.y
 
-            # Update the page and return early
-            try:
-                # Page reference gets lost after dragging widget to new canvas, so we reset it and update
-                self.canvas.update()
-            except Exception as ex:
-                self.canvas.page = self.p
-                self.canvas.update()
-            return
+                # Update the page and return early
+                try:
+                    # Page reference gets lost after dragging widget to new canvas, so we reset it and update
+                    self.canvas.update()
+                except Exception as ex:
+                    self.canvas.page = self.p
+                    self.canvas.update()
+                return
         
-        if style == "arc" or style == "arcfill":
+            case "arc" | "arcfill":
             
-            # Set the element and its data
-            arc_element = self.current_path.elements[-1]
-            arc_dict = arc_element.__dict__
+                # Set the element and its data
+                arc_element = self.current_path.elements[-1]
+                arc_dict = arc_element.__dict__
 
+                # Swap directions of arc depending if we drag up or down from starting point
+                if e.local_y - self.state.y >= 0:   # Dragging down
+                    arc_element.sweep_angle = -math.pi
+                    arc_element.height = abs(self.state.y - e.local_y)
+                    arc_element.y = self.state.y - (arc_element.height / 2)
+                    
+                else:       # Dragging up
+                    arc_element.sweep_angle = math.pi
+                    arc_element.height = abs(e.local_y - self.state.y)
+                    arc_element.y = abs(self.state.y - (arc_element.height / 2))
+
+                #print("arc element y adjustment: ", arc_element.height / 2)
+                #print("arc height: ", arc_element.height)
+
+                if e.local_x - self.state.x < 0:   # Dragging left, move X position of arc to match
+                    arc_element.x = e.local_x
+
+                arc_element.width = abs(e.local_x - self.state.x) 
+
+                # Update the page and return early
+                try:
+                    # Page reference gets lost after dragging widget to new canvas, so we reset it and update
+                    self.canvas.page = self.p
+                    self.canvas.update()
+                except Exception as ex:
+                    self.p.update()
+                return
         
-
-            # Swap directions of arc depending if we drag up or down from starting point
-            if e.local_y - self.state.y >= 0:   # Dragging down
-                arc_element.sweep_angle = -math.pi
-                arc_element.height = abs(self.state.y - e.local_y)
-                arc_element.y = self.state.y - (arc_element.height / 2)
-                
-            else:       # Dragging up
-                
-                arc_element.sweep_angle = math.pi
-                arc_element.height = abs(e.local_y - self.state.y)
-                arc_element.y = abs(self.state.y - (arc_element.height / 2))
-
-            print("arc element y adjustment: ", arc_element.height / 2)
-            print("arc height: ", arc_element.height)
-
-
-                
-                
-
-            arc_element.width = abs(e.local_x - self.state.x) 
-        
-
-            #print("Arc width and height: ", arc_element.width, arc_element.height)
-
-            # Update the page and return early
-            try:
-                # Page reference gets lost after dragging widget to new canvas, so we reset it and update
-                self.canvas.page = self.p
-                self.canvas.update()
-            except Exception as ex:
-                self.p.update()
-
-
-            return
-        
-        # Handle arcs
-        if style == 'arcto' or style == 'arctofill':
+            # Handle arcs
+            case 'arcto' | 'arctofill':
             
-            arc_element = self.current_path.elements[-1]
-            arc_dict = arc_element.__dict__
+                arc_element = self.current_path.elements[-1]
+                arc_dict = arc_element.__dict__
 
-            arc_element.x = e.local_x
-            arc_element.y = e.local_y
+                arc_element.x = e.local_x
+                arc_element.y = e.local_y
+
+                arc_dict['x'] = arc_element.x
+                arc_dict['y'] = arc_element.y
+
+                # Update the page and return early
+                try:
+                    # Page reference gets lost after dragging widget to new canvas, so we reset it and update
+                    self.canvas.page = self.p
+                    self.canvas.update()
+                except Exception as ex:
+                    self.p.update()
+                return
         
-
-            arc_dict['x'] = arc_element.x
-            arc_dict['y'] = arc_element.y
-
-            # Update the page and return early
-            try:
-                # Page reference gets lost after dragging widget to new canvas, so we reset it and update
-                self.canvas.page = self.p
-                self.canvas.update()
-            except Exception as ex:
-                self.p.update()
-            return
         
-        
-        # If its not one of our custom styles, use free-draw stroke, which is constantly adding line_to segements
-        else:
+            # If its not one of our custom styles, use free-draw stroke, which is constantly adding line_to segements
+            case _:
 
-            #TODO: Add check here to reduce num of lines based on previous start and edn
-            # Set the path element based on what kind of path we're adding, add it to our current path and our state paths
-            path_element = cv.Path.LineTo(e.local_x, e.local_y)
+                #TODO: Add check here to reduce num of lines based on previous start and end
+                # Set the path element based on what kind of path we're adding, add it to our current path and our state paths
+                path_element = cv.Path.LineTo(e.local_x, e.local_y)
 
-            # Add the declared element to our current path and state paths
-            self.current_path.elements.append(path_element)
-            self.state.paths[0]['elements'].append((path_element.__dict__))  
+                # Add the declared element to our current path and state paths
+                self.current_path.elements.append(path_element)
+                self.state.paths[0]['elements'].append((path_element.__dict__))  
 
-            # After dragging canvas widget, it loses page reference and can't update
-            try:
-                # Page reference gets lost after dragging widget to new canvas, so we reset it and update
-                self.canvas.page = self.p
-                self.canvas.update()
-            except Exception as ex:
-                self.p.update()
-            
+                # After dragging canvas widget, it loses page reference and can't update
+                try:
+                    # Page reference gets lost after dragging widget to new canvas, so we reset it and update
+                    self.canvas.page = self.p
+                    self.canvas.update()
+                except Exception as ex:
+                    self.p.update()
+                
 
-            # Update our state x and y for the next segment
-            self.state.x, self.state.y = e.local_x, e.local_y
+                # Update our state x and y for the next segment
+                self.state.x, self.state.y = e.local_x, e.local_y
         
 
     # Called when we release the mouse to stop drawing a line
@@ -504,7 +495,7 @@ class Canvas(Widget):
             # Open file dialog to select image
 
 
-    # NOT TESTED ----------------------------------
+    # TODO: NOT TESTED ----------------------------------
     def export_canvas(self, filename: str = "canvas_export.png", desired_width: int = 1920, desired_height: int = 1080):
         """Exports the canvas as an image at desired size, computing bounds if no meta exists."""
         shapes = self.data.get('canvas', {})
