@@ -91,7 +91,7 @@ class Canvas(Widget):
                 on_pan_update=self.is_drawing,
                 on_pan_end=lambda e: self.save_canvas(),
                 on_tap_up=self.add_point,      # Handles so we can add points
-                drag_interval=10,
+                drag_interval=5,
             ),
             expand=True,
             on_resize=self.on_canvas_resize, resize_interval=100,
@@ -326,10 +326,10 @@ class Canvas(Widget):
         ''' Creates our line to add to the canvas as we draw, and saves that paths data to self.state '''
 
         # Sampling to improve perforamance. If the line length is too small, we skip it
-        dx = e.local_x - self.state.x
-        dy = e.local_y - self.state.y
-        if dx * dx + dy * dy < self.min_segment_dist * self.min_segment_dist:
-            return
+        #dx = e.local_x - self.state.x
+        #dy = e.local_y - self.state.y
+        #if dx * dx + dy * dy < self.min_segment_dist * self.min_segment_dist:
+            #return
         
         # Grab our style so we can compare it
         style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))

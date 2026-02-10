@@ -78,42 +78,17 @@ class CanvasRail(Rail):
     # Get our color picker and saved custom color options
     def _get_color_options(self) -> list[ft.PopupMenuItem]:
 
-        def _set_color(e):
-            # Set the color and opacity of the saved color
-            color = e.control.data
-            opacity = color.split(",", 1)[1].strip() if "," in color else "1.0"   # Get opacity from color string, default to 1.0 if not present
-            self.color_picker.color = color.split(",", 1)[0].strip()   # Set color picker color to match
-            self.color_selector.icon_color = color   # Set the color selector icon to match the selected color
-            app.settings.data['paint_settings']['color'] = color   # Set our paint color to the selected color with opacity
-            app.settings.save_dict()
-            self.update()
-            
-
         # Add our color picker and custom colors label
         colors = [
             ft.PopupMenuItem(
                 disabled=True,
                 content=ft.Container(
                     padding=ft.Padding(left=10, right=10, top=10, bottom=20),
-                    content=ft.Column([self.color_picker, ft.Divider(), ft.Text("Saved Colors:", theme_style=ft.TextThemeStyle.LABEL_LARGE)])
+                    content=self.color_picker,
                 ), 
             ),
         ]
 
-        # If no custom colors, show that and return out
-        if len(app.settings.data.get('custom_colors', {})) == 0:
-            colors.append(
-                ft.PopupMenuItem(text="No saved colors.", disabled=True,)
-            )
-            return colors
-
-        # Add our custom color options
-        for name, col in app.settings.data.get('custom_colors', {}).items():
-            colors.append(
-                ft.PopupMenuItem(
-                    content=ft.Row([ft.Icon(ft.Icons.CIRCLE, col), ft.Text(name, theme_style=ft.TextThemeStyle.LABEL_LARGE)]), data=col, on_click=_set_color,   # When clicking on a custom color, set it as our current color
-                )
-            )
 
         return colors
 
@@ -135,6 +110,9 @@ class CanvasRail(Rail):
         self.color_selector.icon_color = selected_color
         
         self.update()
+
+    def _set_brush(self):
+        pass
 
     # Set the blend mode label based on current mode in settings
     def _set_blend_mode_label(self) -> str:
@@ -191,7 +169,6 @@ class CanvasRail(Rail):
             "blend_mode": None,             # Default no blend mode
             "stroke_dash_pattern": None,    # Default no dash pattern
         }
-        app.settings.data.get('paint_settings', {})[app.settings.data.get('active_brush', 'default_brush')] = app.settings.data['paint_settings'].copy() 
         app.settings.save_dict()
         self.reload_rail()    # Reload the rail to apply changes
 
@@ -311,21 +288,21 @@ class CanvasRail(Rail):
             app.settings.save_dict()
             self.update()
 
-        # Called when saving a custom color
-        def _save_custom_color(e=None):
-            ''' Opens a dialog to name the current color to save it as a custom color. '''
+
+        # Called to save our active brush settings as a custom brush we can load later (Excludes color and opacity)
+        def _save_custom_brush(e=None):
+            ''' Shows our existing brush options and allows us to override or save as a new brush '''
 
             # Saves the current name and closes the dialog
             def _save_and_close(e=None): 
                 nonlocal name
-                color = self.color_picker.color
-                opacity = app.settings.data.get('paint_settings', {}).get('color', "1.0").split(",", 1)[1].strip()
-                color_with_opacity = f"{color},{opacity}"
-
-                app.settings.data.setdefault('custom_colors', {})[name] = color_with_opacity
+                brush_settings = app.settings.data['paint_settings'].copy()
+                print("Brush settings saved as: ", brush_settings)
+                app.settings.data.setdefault('custom_brushes', {})[name] = brush_settings
                 app.settings.save_dict()
                 self.p.close(dlg)
 
+            # Sets the name value when typing in the textfield. Checks if it exists and de-selects any existing ones
             def _set_name(e):
                 nonlocal name
                 name = e.control.value.strip()  
@@ -334,31 +311,28 @@ class CanvasRail(Rail):
                     if isinstance(ctrl, ft.GestureDetector):
                         ctrl.content.bgcolor = ft.Colors.TRANSPARENT
 
-                for key in app.settings.data.get('custom_colors', {}).keys():
+                for key in app.settings.data.get('custom_brushes', {}).keys():
                     if key == name:
-                        e.control.error_text = "A color with this name already exists. It will be overwritten if you save."
+                        e.control.error_text = "A brush with this name already exists. It will be overwritten if you save."
                         self.p.update()
                         return
                     
                 e.control.error_text = None
                 self.p.update()
 
-            def _delete_color(e):
+            # Deletes a color
+            def _delete_brush(e):
                 name = e.control.data
 
-                if name in app.settings.data.get('custom_colors', {}):
-                    del app.settings.data['custom_colors'][name]
+                if name in app.settings.data.get('custom_brushes', {}):
+                    del app.settings.data['custom_brushes'][name]
                     app.settings.save_dict()
-                    #self.p.close(dlg)
 
                 dlg.content.controls = [ctrl for ctrl in dlg.content.controls if not (isinstance(ctrl, ft.GestureDetector) and ctrl.data == name)]
                 self.p.update()
                     
-
-            
-
             # Sets an existing custom color to be overwritten by the current color
-            def _set_color_override(e):
+            def _set_brush_override(e):
                 nonlocal name
                 
                 if e.control.content.bgcolor == ft.Colors.with_opacity(.1, ft.Colors.ON_SURFACE):
@@ -373,32 +347,28 @@ class CanvasRail(Rail):
 
                 for ctrl in dlg.content.controls:
                     if isinstance(ctrl, ft.GestureDetector) and ctrl != e.control:
-                        #ctrl.disabled = True
                         ctrl.content.bgcolor = ft.Colors.TRANSPARENT
                 
                 self.p.update()
 
-            
-
             # Textfield for naming custom color
             text_field = ft.TextField(
-                label="Color Name", autofocus=True, on_submit=lambda e: _save_and_close(), dense=True,
+                label="Brush Name", autofocus=True, on_submit=lambda e: _save_and_close(), dense=True,
                 capitalization=ft.TextCapitalization.SENTENCES, on_change=_set_name
             )
 
             name: str = None
 
             dlg = ft.AlertDialog(
-                title=ft.Text("Name your custom color"), 
+                title=ft.Text("Name your custom brush"), 
                 content=ft.Column(
                     width=self.p.width * 0.4, expand=False,
                     height=self.p.height * 0.6,
                     controls=[
-                        
                         ft.Divider(),
                         text_field,
                         ft.Row([
-                            ft.Icon(ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, tooltip="Select a color below to overwrite it with the current color"),
+                            ft.Icon(ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, tooltip="Select a brush below to overwrite it with the current color"),
                         ], spacing=0),
                     ]
                 ),
@@ -409,26 +379,43 @@ class CanvasRail(Rail):
                 ]
             )
 
-            for name, existing_color in app.settings.data.get('custom_colors', {}).items():
+            for name, existing_color in app.settings.data.get('custom_brushes', {}).items():
                 dlg.content.controls.append(
                     ft.GestureDetector(
                         ft.Container(
                             ft.Row([
-                                ft.Icon(ft.Icons.CIRCLE, existing_color), 
-                                ft.Text(name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True),
-                                ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, data=name, on_click=_delete_color, tooltip="Delete this saved color"),
+                                ft.Text(name, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                                # Set mini canvas here with brush stroke preview
+                                ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, data=name, on_click=_delete_brush, tooltip="Delete this saved brush"),
                             ]), border_radius=ft.border_radius.all(4)
                         ),
-                        on_tap=_set_color_override, data=name, mouse_cursor=ft.MouseCursor.CLICK
+                        on_tap=_set_brush_override, data=name, mouse_cursor=ft.MouseCursor.CLICK
                     )
                 )
 
             self.p.open(dlg)
 
+        def _get_brush_options() -> list[ft.PopupMenuItem]:
+            ''' Gets our brush options for the popup menu. '''
+            options = [
+                ft.PopupMenuItem(text="Stroke", data="stroke", icon=ft.Icons.GESTURE_OUTLINED, on_click=_paint_style_changed),
+                ft.PopupMenuItem(text="Line", data="lineto", icon=ft.Icons.HORIZONTAL_RULE, on_click=_paint_style_changed),
+                ft.PopupMenuItem(text="Lasso Fill", data="fill", icon=ft.Icons.GESTURE_OUTLINED, on_click=_paint_style_changed),
+                ft.PopupMenuItem(text="Arc", data="arc", icon=ft.Icons.AUTORENEW_OUTLINED, on_click=_paint_style_changed),
+                ft.PopupMenuItem(text="Half Circle", data="arcto", icon=ft.Icons.AUTORENEW_OUTLINED, on_click=_paint_style_changed),
+            ]
+            for name, brush_settings in app.settings.data.get('custom_brushes', {}).items():
+                color = brush_settings.get('color', "#000000").split(",", 1)[0]   # Get the color without opacity for the swatch
+                print("Going through custom brushes. Name: ", name, "Color: ", color)
+                options.append(
+                    ft.PopupMenuItem(
+                        text=name, data=brush_settings,
+                        icon=ft.Icons.CIRCLE, 
+                       #on_click=self._set_color
+                    )
+                )
 
-
-
-
+            return options
 
         # Our header at the top of the rail
         header = ft.Row(
@@ -479,13 +466,7 @@ class CanvasRail(Rail):
             icon=paint_style_icon,
             tooltip="The style of paint for your brush strokes.",
             menu_padding=ft.padding.all(0),
-            items=[
-                ft.PopupMenuItem(text="Stroke", data="stroke", icon=ft.Icons.BRUSH_OUTLINED, on_click=_paint_style_changed),
-                ft.PopupMenuItem(text="Line", data="lineto", icon=ft.Icons.HORIZONTAL_RULE, on_click=_paint_style_changed),
-                ft.PopupMenuItem(text="Lasso Fill", data="fill", icon=ft.Icons.GESTURE_OUTLINED, on_click=_paint_style_changed),
-                ft.PopupMenuItem(text="Arc", data="arc", icon=ft.Icons.AUTORENEW_OUTLINED, on_click=_paint_style_changed),
-                ft.PopupMenuItem(text="Half Circle", data="arcto", icon=ft.Icons.AUTORENEW_OUTLINED, on_click=_paint_style_changed),
-            ]
+            items=_get_brush_options()
         )
 
         # If we use anti aliasing or not
@@ -600,14 +581,10 @@ class CanvasRail(Rail):
                 ft.Row([
                     ft.Text("Brush", theme_style=ft.TextThemeStyle.LABEL_LARGE),
                     brushes_selector, 
+                    self.color_selector,
+                    ft.IconButton(ft.Icons.SAVE_ROUNDED, tooltip="Save current brush settings as a custom brush", on_click=_save_custom_brush),
                 ]),
 
-                # Color label with selector and Save custom color button
-                ft.Row([
-                    ft.Text("Color",theme_style=ft.TextThemeStyle.LABEL_LARGE),
-                    self.color_selector,
-                    ft.IconButton(ft.Icons.SAVE_ROUNDED, tooltip="Save current color as custom color", on_click=_save_custom_color), 
-                ]),
 
 
                 # TODO: 
