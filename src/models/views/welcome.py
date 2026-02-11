@@ -59,4 +59,4 @@ async def animate_welcome_text(text: ft.Text):
             text.opacity = 1.0
 
         text.update()
-        await asyncio.sleep(.05)   # don't block the UI thread; let the animation run
+        await asyncio.sleep(.04)   # don't block the UI thread; let the animation run

@@ -70,17 +70,14 @@ class Settings(ft.View):
                     'anti_alias': True,
                     'blur_image': int,
                     'blend_mode': "src_over",
-                },
-
-                'custom_brushes': dict,    # Saved brushes the user has created that we can load
-                'current_brush_name': "stroke",   # Name of the currently selected brush, either default or custom. Just used for display purposes
-               
+                },               
 
                 # Other canvas related settings that are not technically paint
                 'canvas_settings':{
                     'erase_mode': False,                # Whether we're in erase mode or not
                     'stroke_dash_pattern': [10, 15],    # Save the active dash pattern so it can just be toggled on and off
                     'saved_brushes': dict,              # Saved brushes the user has created that we can load
+                    'current_brush_name': "stroke",   # Name of the currently selected brush, either default or custom. Just used for display purposes
                 },
 
                 # Settings the user can change in the settings view

@@ -70,9 +70,8 @@ class CanvasRail(Rail):
             items=self._get_color_options()
         )
 
-        self.brush_label = ft.Text(app.settings.data.get('current_brush_name').capitalize(), theme_style=ft.TextThemeStyle.LABEL_LARGE)
+        self.brush_label = ft.Text(app.settings.data.get('canvas_settings').get('current_brush_name').capitalize(), theme_style=ft.TextThemeStyle.LABEL_LARGE)
         self.brush_selector = ft.PopupMenuButton(
-            #icon=brushes_icon,
             tooltip="The style of paint for your brush strokes.",
             menu_padding=ft.padding.all(0),
             items=self._get_brush_options()
@@ -134,22 +133,19 @@ class CanvasRail(Rail):
             case 'arcto' | 'arc': 
                 self.brush_selector.icon = ft.Icons.AUTORENEW_OUTLINED
             case _:
-                print("Set default icon. Style was: ", style)
                 self.brush_selector.icon = ft.Icons.GESTURE_OUTLINED
 
     def _set_brush(self, brush_settings: dict, name: str):
         ''' Sets the current brush settings to the passed in brush settings dictionary '''
 
         app.settings.data['paint_settings'].update(brush_settings)
-        app.settings.data['current_brush_name'] = name
+        app.settings.data['canvas_settings']['current_brush_name'] = name
         app.settings.save_dict()
 
         self.brush_label.value = name.capitalize()
         self._update_brush_selector_icon()
 
-
         self.update()
-        #self.reload_rail()
 
     # Set the blend mode label based on current mode in settings
     def _set_blend_mode_label(self) -> str:
@@ -191,7 +187,7 @@ class CanvasRail(Rail):
 
     # Reset our paint settings to their defaults. Unload any selected brushes.
     def _reset_to_defaults(self, e):
-        ''' Resets all paint settings to their default values. '''
+        ''' Resets all paint settings to their default values (except color and opacity) '''
 
         current_color = app.settings.data.get('paint_settings', {}).get('color', "#000000") 
         app.settings.data['paint_settings'] = {
@@ -207,17 +203,35 @@ class CanvasRail(Rail):
             "stroke_dash_pattern": None,    # Default no dash pattern
         }
         app.settings.save_dict()
-        self.reload_rail()    # Reload the rail to apply changes
+
+        # Since we can't call reload_rail, manually update all controls :(
+        self.paint_anti_alias_toggle.value = True
+        self.paint_stroke_cap_selector.icon = ft.Icons.CIRCLE_OUTLINED
+        self.paint_stroke_join_selector.icon = ft.Icons.CIRCLE_OUTLINED
+        self.paint_stroke_blur_slider.value = 0
+        self.dashed_lines_toggle.value = False
+        self.dashed_lines_pattern.visible = False
+        self.paint_blend_mode_selector.icon = ft.Icons.BLUR_OFF_OUTLINED
+        self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
+
+        self.update()   # Apply update
+
+        
 
 
     # Called to build a small preview canvas of our brush strokes for visual distinction
     def _build_preview_canvas(self, paint_settings: dict) -> cv.Canvas:
         ''' Builds a small canvas, and uses the passed in paint settings to draw a sample stroke to show the user what their current brush settings look like. '''
-        # Set our canvas and grab out style
-        preview_canvas = cv.Canvas(width=100, height=30)
+        # Set our canvas and grab our style. BUILD like width and height are 100, 30. This size is just for padding
+        preview_canvas = cv.Canvas(width=105, height=35)
+
+        # Max size just to display on this canvas
+        max_size = 6
 
         ps = paint_settings.copy()
         style = ps.get('style', 'stroke')
+        if ps.get('stroke_width', 3) > max_size:
+            ps['stroke_width'] = max_size
 
         match style:
             # These cases are for building custom shapes
@@ -234,7 +248,7 @@ class CanvasRail(Rail):
                 ps.update({'style': 'stroke'})
                 preview_canvas.shapes = [
                     cv.Path([
-                        cv.Path.Arc(0, 0, 30, 50, math.pi, math.pi)
+                        cv.Path.Arc(0, 3, 30, 40, math.pi, math.pi)
                     ], ps)
                 ]
 
@@ -261,85 +275,114 @@ class CanvasRail(Rail):
         return preview_canvas
     
     def _get_brush_options(self) -> list[ft.PopupMenuItem]:
-            ''' Gets our brush options for the popup menu. '''
+        ''' Gets our brush options for the popup menu. '''
 
-            default_brush_settings = {
-                'color': "#FFFFFF,1.0" if self.p.theme_mode == "dark" else "#000000,1.0",   # Default to white in dark mode and black in light mode
-                'stroke_width': 3,
-                'style': "stroke",
-                'stroke_cap': "round",
-                'stroke_join': "round",
-                'stroke_miter_limit': 10, 
-                'stroke_dash_pattern': None,
-                'anti_alias': True,
-                'blur_image': 0,
-                'blend_mode': "src_over",
-            }
+        # Default brush settings to creating non-custom brushes
+        default_brush_settings = {
+            'color': "#FFFFFF,1.0" if self.p.theme_mode == "dark" else "#000000,1.0",   # Default to white in dark mode and black in light mode
+            'stroke_width': 3,
+            'style': "stroke",
+            'stroke_cap': "round",
+            'stroke_join': "round",
+            'stroke_miter_limit': 10, 
+            'stroke_dash_pattern': None,
+            'anti_alias': True,
+            'blur_image': 0,
+            'blend_mode': "src_over",
+        }
 
-            fill_brush_settings = default_brush_settings.copy()
-            fill_brush_settings['style'] = 'fill'
+        # Edited brush settings depending on the style
+        fill_brush_settings = default_brush_settings.copy()
+        fill_brush_settings['style'] = 'fill'
 
-            # Start by building our default brush options
-            options = [
-                ft.PopupMenuItem(
-                    text="Stroke", data=default_brush_settings,
-                    content=ft.Row([ft.Text("Stroke", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(default_brush_settings)], spacing=20),
-                    on_click=lambda e: self._set_brush(default_brush_settings, name="Stroke")
+        line_brush_settings = default_brush_settings.copy() 
+        line_brush_settings['style'] = 'lineto'
+
+        arc_brush_settings = default_brush_settings.copy()
+        arc_brush_settings['style'] = 'arc'
+        #arc_fill_brush_settings = fill_brush_settings.copy()
+        #arc_fill_brush_settings['style'] = 'arcfill'
+
+        half_circle_brush_settings = default_brush_settings.copy()
+        half_circle_brush_settings['style'] = 'arcto'
+        #half_circle_fill_brush_settings = fill_brush_settings.copy()
+        #half_circle_fill_brush_settings['style'] = 'arctofill'
+
+        # Start by building our default brush options
+        options = [
+            ft.PopupMenuItem("Default Brushes", disabled=True, height=20),   # Placeholder for shapes section
+            ft.PopupMenuItem(
+                text="Stroke", data=default_brush_settings,
+                content=ft.Container(
+                    ft.Row([ft.Text("Stroke", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(default_brush_settings)], spacing=20),
+                    clip_behavior=ft.ClipBehavior.HARD_EDGE
                 ),
+                on_click=lambda e: self._set_brush(default_brush_settings, name="Stroke")
+            ),
+            ft.PopupMenuItem(
+                text="Lasso Fill", data=fill_brush_settings,
+                content=ft.Container(
+                    ft.Row([ft.Text("Lasso Fill", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(fill_brush_settings)], spacing=20),
+                    clip_behavior=ft.ClipBehavior.HARD_EDGE
+                ),
+                on_click=lambda e: self._set_brush(fill_brush_settings, name="Lasso Fill")
+            ), 
+            ft.PopupMenuItem(content=ft.Divider(), disabled=True, height=16),   # Placeholder for shapes section
+            ft.PopupMenuItem("Tools & Shapes", disabled=True, height=20),   # Placeholder for shapes section
+            ft.PopupMenuItem(
+                text="Erase", data=fill_brush_settings,
+                content=ft.Container(
+                    ft.Row([ft.Text("Erase", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(fill_brush_settings)], spacing=20),
+                    clip_behavior=ft.ClipBehavior.HARD_EDGE
+                ),
+                #on_click=lambda e: self._set_brush(fill_brush_settings, name="Lasso Fill")
+            ),
+            ft.PopupMenuItem(
+                text="Line", data=default_brush_settings,
+                content=ft.Container(
+                    ft.Row([ft.Text("Line", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(line_brush_settings)], spacing=20),
+                    clip_behavior=ft.ClipBehavior.HARD_EDGE
+                ),
+                on_click=lambda e: self._set_brush(line_brush_settings, "Line")
+            ),
+            ft.PopupMenuItem(
+                text="Arc", data=default_brush_settings,
+                content=ft.Container(
+                    ft.Row([ft.Text("Arc", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(arc_brush_settings)], spacing=20),
+                    clip_behavior=ft.ClipBehavior.HARD_EDGE
+                ),
+                on_click=lambda e: self._set_brush(arc_brush_settings, "Arc")
+            ),
+            ft.PopupMenuItem(
+                text="Half Circle", data=default_brush_settings,
+                content=ft.Container(
+                    ft.Row([ft.Text("Half Circle", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(half_circle_brush_settings)], spacing=20),
+                    clip_behavior=ft.ClipBehavior.HARD_EDGE
+                ),
+                on_click=lambda e: self._set_brush(half_circle_brush_settings, "Half Circle")
+            ),
+            #TODO: Add more shapes here
+            
+            # TODO: Add more built in options here
+
+            ft.PopupMenuItem(content=ft.Divider(), disabled=True, height=16),   # Placeholder for shapes section
+            ft.PopupMenuItem("Saved Brushes", disabled=True, height=20),   # Placeholder for shapes section
+        ]
+
+        for name, brush_settings in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}).items():
+            options.append(
                 ft.PopupMenuItem(
-                    text="Lasso Fill", data=fill_brush_settings,
-                    content=ft.Row([ft.Text("Lasso Fill", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(fill_brush_settings)], spacing=20),
-                    on_click=lambda e: self._set_brush(fill_brush_settings, name="Lasso Fill")
-                ), 
-                # TODO: Add more built in options here
-
-                ft.PopupMenuItem(content=ft.Divider(), disabled=True, height=20),   # Placeholder for shapes section
-            ]
-
-            for name, brush_settings in app.settings.data.get('custom_brushes', {}).items():
-                options.append(
-                    ft.PopupMenuItem(
-                        text=name, data=brush_settings,
-                        content=ft.Row([ft.Text(name, expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(brush_settings)], spacing=20),
-                        on_click=lambda e, n=name: self._set_brush(brush_settings, name=n)
-                    )
+                    text=name, data=brush_settings,
+                    content=ft.Container(
+                        ft.Row([ft.Text(name, expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(brush_settings)], spacing=20),
+                        clip_behavior=ft.ClipBehavior.HARD_EDGE
+                    ),
+                    on_click=lambda e, n=name: self._set_brush(brush_settings, name=n)
                 )
+            )
 
-            line_brush_settings = default_brush_settings.copy() 
-            line_brush_settings['style'] = 'lineto'
 
-            arc_brush_settings = default_brush_settings.copy()
-            arc_brush_settings['style'] = 'arc'
-            #arc_fill_brush_settings = fill_brush_settings.copy()
-            #arc_fill_brush_settings['style'] = 'arcfill'
-
-            half_circle_brush_settings = default_brush_settings.copy()
-            half_circle_brush_settings['style'] = 'arcto'
-            #half_circle_fill_brush_settings = fill_brush_settings.copy()
-            #half_circle_fill_brush_settings['style'] = 'arctofill'
-
-            # Add our shapes section
-            options.extend([
-                ft.PopupMenuItem(content=ft.Divider(), disabled=True, height=20),   # Placeholder for shapes section
-                ft.PopupMenuItem(
-                    text="Line", data=default_brush_settings,
-                    content=ft.Row([ft.Text("Line", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(line_brush_settings)], spacing=20),
-                    on_click=lambda e: self._set_brush(line_brush_settings, "Line")
-                ),
-                ft.PopupMenuItem(
-                    text="Arc", data=default_brush_settings,
-                    content=ft.Row([ft.Text("Arc", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(arc_brush_settings)], spacing=20),
-                    on_click=lambda e: self._set_brush(arc_brush_settings, "Arc")
-                ),
-                ft.PopupMenuItem(
-                    text="Half Circle", data=default_brush_settings,
-                    content=ft.Row([ft.Text("Half Circle", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(half_circle_brush_settings)], spacing=20),
-                    on_click=lambda e: self._set_brush(half_circle_brush_settings, "Half Circle")
-                )
-                #TODO: Add more shapes here
-            ])
-
-            return options
+        return options
 
 
 
@@ -394,11 +437,11 @@ class CanvasRail(Rail):
         def _paint_stroke_cap_changed(e):
             new_stroke_cap = e.control.text.lower()
             if new_stroke_cap == "butt":
-                e.control.parent.content = ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED)
+                e.control.parent.icon = ft.Icons.CROP_SQUARE_OUTLINED
             elif new_stroke_cap == "round":
-                e.control.parent.content = ft.Icon(ft.Icons.CIRCLE_OUTLINED)
+                e.control.parent.icon = ft.Icons.CIRCLE_OUTLINED
             else:
-                e.control.parent.content = ft.Icon(ft.Icons.SQUARE_OUTLINED)
+                e.control.parent.icon = ft.Icons.SQUARE_OUTLINED
             app.settings.data['paint_settings']['stroke_cap'] = new_stroke_cap
             app.settings.save_dict()
             self.update()
@@ -407,11 +450,11 @@ class CanvasRail(Rail):
             new_stroke_join = e.control.text.lower()
             # Update icon based on stroke join type if desired
             if new_stroke_join == "miter":
-                e.control.parent.content = ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED)
+                e.control.parent.icon = ft.Icons.CROP_SQUARE_OUTLINED
             elif new_stroke_join == "round":
-                e.control.parent.content = ft.Icon(ft.Icons.CIRCLE_OUTLINED)
+                e.control.parent.icon = ft.Icons.CIRCLE_OUTLINED
             else:
-                e.control.parent.content = ft.Icon(ft.Icons.SQUARE_OUTLINED)
+                e.control.parent.icon = ft.Icons.SQUARE_OUTLINED
             app.settings.data['paint_settings']['stroke_join'] = new_stroke_join
             app.settings.save_dict()
             self.update()
@@ -448,11 +491,14 @@ class CanvasRail(Rail):
             # Saves the current name and closes the dialog
             def _save_and_close(e=None): 
                 nonlocal name
+                # Save current brush settings as a new custom brush
                 brush_settings = app.settings.data['paint_settings'].copy()
-                print("Brush settings saved as: ", brush_settings)
-                app.settings.data.setdefault('custom_brushes', {})[name] = brush_settings
+                app.settings.data['canvas_settings']['saved_brushes'][name] = brush_settings
                 app.settings.save_dict()
-                self.reload_rail()
+
+                # Update our selector to include the new option
+                self.brush_selector.items = self._get_brush_options() 
+                self.brush_selector.update()        # Requires direct update to work
                 self.p.close(dlg)
 
             # Sets the name value when typing in the textfield. Checks if it exists and de-selects any existing ones
@@ -464,7 +510,7 @@ class CanvasRail(Rail):
                     if isinstance(ctrl, ft.GestureDetector):
                         ctrl.content.bgcolor = ft.Colors.TRANSPARENT
 
-                for key in app.settings.data.get('custom_brushes', {}).keys():
+                for key in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}).keys():
                     if key == name:
                         e.control.error_text = "A brush with this name already exists. It will be overwritten if you save."
                         save_button.text = "Overwrite"
@@ -479,8 +525,8 @@ class CanvasRail(Rail):
             def _delete_brush(e):
                 name = e.control.data
 
-                if name in app.settings.data.get('custom_brushes', {}):
-                    del app.settings.data['custom_brushes'][name]
+                if name in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}):
+                    del app.settings.data['canvas_settings']['saved_brushes'][name]
                     app.settings.save_dict()
 
                 dlg.content.controls = [ctrl for ctrl in dlg.content.controls if not (isinstance(ctrl, ft.GestureDetector) and ctrl.data == name)]
@@ -540,7 +586,7 @@ class CanvasRail(Rail):
                 ]
             )
 
-            for name, existing_brush in app.settings.data.get('custom_brushes', {}).items():
+            for name, existing_brush in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}).items():
                 dlg.content.controls.append(
                     ft.GestureDetector(
                         ft.Container(
@@ -567,7 +613,7 @@ class CanvasRail(Rail):
 
         # Opacity slider
         opacity_value = float(app.settings.data.get('paint_settings', {}).get('color', "1.0").split(",", 1)[1].strip()) * 100
-        paint_opacity_slider = ft.Slider(
+        self.paint_opacity_slider = ft.Slider(
             min=0, max=100,  tooltip="The opacity of your brush strokes.",
             divisions=100, value=opacity_value, expand=True,
             label="Opacity: {value}%",
@@ -575,32 +621,16 @@ class CanvasRail(Rail):
         )
 
         # Width/Size of brush
-        paint_width_slider = ft.Slider(
+        self.paint_width_slider = ft.Slider(
             min=1, max=50,  tooltip="The size of your brush strokes.", expand=True,
             divisions=49, value=app.settings.data.get('paint_settings', {}).get('stroke_width', 5),
             label="Brush Size: {value}px",
             on_change_end=_paint_width_changed
         )
 
-        paint_erase_mode_toggle = ft.Checkbox(
-            on_change=_paint_erase_mode_changed, value=app.settings.data.get('canvas_settings', {}).get('erase_mode', False)
-        )
-
-        # Paint style (Stroke, dash, fill, etc.)
-        style = app.settings.data.get('paint_settings', {}).get('style', 'stroke')
-        
-       
-        
-     
-        # If stroke dash pattern is set, we're using dashed stroke
-        if app.settings.data.get('paint_settings', {}).get('stroke_dash_pattern', None):
-            brushes_icon = ft.Icons.LINE_STYLE_OUTLINED
-
-        
-
 
         # If we use anti aliasing or not
-        paint_anti_alias_toggle = ft.Checkbox(
+        self.paint_anti_alias_toggle = ft.Checkbox(
             label="Anti-Aliasing  ", on_change=_paint_anti_alias_changed,
             label_position=ft.LabelPosition.LEFT,
             value=app.settings.data.get('paint_settings', {}).get('anti_alias', True)
@@ -608,15 +638,14 @@ class CanvasRail(Rail):
 
         # Stroke cap shape
         if app.settings.data.get('paint_settings', {}).get('stroke_cap', 'butt') == 'round':
-            paint_stroke_icon = ft.Icon(ft.Icons.CIRCLE_OUTLINED)
+            paint_stroke_icon = ft.Icons.CIRCLE_OUTLINED
         elif app.settings.data.get('paint_settings', {}).get('stroke_cap', 'butt') == 'square':
-            paint_stroke_icon = ft.Icon(ft.Icons.SQUARE_OUTLINED)
+            paint_stroke_icon = ft.Icons.SQUARE_OUTLINED
         else:
-            paint_stroke_icon = ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED)
-        paint_stroke_cap_selector = ft.PopupMenuButton(
-            content=paint_stroke_icon,
+            paint_stroke_icon = ft.Icons.CROP_SQUARE_OUTLINED
+        self.paint_stroke_cap_selector = ft.PopupMenuButton(
+            icon=paint_stroke_icon, menu_padding=ft.padding.all(0),
             tooltip="The shape that your brush strokes will have at the end of each line segment.",
-            menu_padding=ft.padding.all(0),
             items=[
                 ft.PopupMenuItem(text="Butt", on_click=_paint_stroke_cap_changed, icon=ft.Icons.CROP_SQUARE_OUTLINED, tooltip="Flat cut ends"),
                 ft.PopupMenuItem(text="Round", on_click=_paint_stroke_cap_changed, icon=ft.Icons.CIRCLE_OUTLINED, tooltip="Rounded ends"),
@@ -625,13 +654,13 @@ class CanvasRail(Rail):
         )
 
         if app.settings.data.get('paint_settings', {}).get('stroke_join', 'miter') == 'round':
-            stroke_cap_icon = ft.Icon(ft.Icons.CIRCLE_OUTLINED)
+            stroke_cap_icon = ft.Icons.CIRCLE_OUTLINED
         elif app.settings.data.get('paint_settings', {}).get('stroke_join', 'miter') == 'bevel':
-            stroke_cap_icon = ft.Icon(ft.Icons.SQUARE_OUTLINED)
+            stroke_cap_icon = ft.Icons.SQUARE_OUTLINED
         else:
-            stroke_cap_icon = ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED)
-        paint_stroke_join_selector = ft.PopupMenuButton(
-            content=stroke_cap_icon, menu_padding=ft.padding.all(0),
+            stroke_cap_icon = ft.Icons.CROP_SQUARE_OUTLINED
+        self.paint_stroke_join_selector = ft.PopupMenuButton(
+            icon=stroke_cap_icon, menu_padding=ft.padding.all(0),
             tooltip="The shape that your brush strokes will have at the join of two line segments.",
             items=[
                 ft.PopupMenuItem(text="Miter", icon=ft.Icons.CROP_SQUARE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Sharp corners"),
@@ -641,7 +670,7 @@ class CanvasRail(Rail):
         )
 
 
-        paint_stroke_blur_slider = ft.Slider(
+        self.paint_stroke_blur_slider = ft.Slider(
             min=0, max=50,  tooltip="The blur effect of your brush strokes.", expand=True,
             divisions=50, value=app.settings.data.get('paint_settings', {}).get('blur_image', 0),
             label="Stroke Blur: {value}",  
@@ -688,15 +717,13 @@ class CanvasRail(Rail):
             ]
         )
 
-        dashed_lines_toggle = ft.Checkbox(
+        self.dashed_lines_toggle = ft.Checkbox(
             label="Dashed Pattern  ", on_change=_paint_dash_pattern_changed,
             label_position=ft.LabelPosition.LEFT,
             value=app.settings.data.get('paint_settings', {}).get('stroke_dash_pattern', None) is not None,
         )
 
         
-
-
         # Build the content of our rail
         content = ft.Column(
             scroll=ft.ScrollMode.AUTO,
@@ -725,26 +752,23 @@ class CanvasRail(Rail):
                 # Add shadow effect option for paths
                 # Custom saved colors and custom brushes
 
-                ft.Row([ft.Text("Size", theme_style=ft.TextThemeStyle.LABEL_LARGE), paint_width_slider]),      # Size slider
-                ft.Row([ft.Text("Opacity", theme_style=ft.TextThemeStyle.LABEL_LARGE), paint_opacity_slider]),     # Opacity slider
+                ft.Row([ft.Text("Size", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_width_slider]),      # Size slider
+                ft.Row([ft.Text("Opacity", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_opacity_slider]),     # Opacity slider
 
-                # TODO: ADD Fill button here
-                ft.Row([ft.Text("Erase Mode", theme_style=ft.TextThemeStyle.LABEL_LARGE), paint_erase_mode_toggle]),   # Erase mode toggle
-
-                ft.Row([ft.Text("Stroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE), paint_stroke_cap_selector]),     # Stroke cap shape selector
+                ft.Row([ft.Text("Stroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_cap_selector]),     # Stroke cap shape selector
                 ft.Container(height=10),   # Spacer
-                ft.Row([ft.Text("Stroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE), paint_stroke_join_selector]),   # Stroke join shape selector
+                ft.Row([ft.Text("Stroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_join_selector]),   # Stroke join shape selector
                 ft.Container(height=10),   # Spacer
-                ft.Row([dashed_lines_toggle, self.dashed_lines_pattern], spacing=0),     # Dashed line toggle and adjust button
+                ft.Row([self.dashed_lines_toggle, self.dashed_lines_pattern], spacing=0),     # Dashed line toggle and adjust button
                 ft.Container(height=10),   # Spacer 
  
                 
                 ft.Divider(),
                 ft.Row([ft.Text("Effects", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Container(height=10),   # Spacer
-                ft.Row([paint_anti_alias_toggle]),
+                ft.Row([self.paint_anti_alias_toggle]),
                 ft.Container(height=10),   # Spacer
-                ft.Row([ft.Text("Blur", theme_style=ft.TextThemeStyle.LABEL_LARGE), paint_stroke_blur_slider]),
+                ft.Row([ft.Text("Blur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider]),
                 ft.Container(height=10),   # Spacer
                 ft.Row([self.paint_blend_mode_label, self.paint_blend_mode_selector])
 
