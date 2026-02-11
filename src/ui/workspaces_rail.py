@@ -29,9 +29,16 @@ class WorkspacesRail(ft.Container):
     def on_workspace_change(self, e, story: Story):
         ''' Changes our selected workspace in settings and for our object.
         Applies the correct active rail to match the selection '''
+        from models.app import app
         
         # Save our newly selected workspace in the settings, and save it for our object (just easier for referencing)
         if story is not None:   # Make objects later, rather than return functions
+
+            # Catch unneccessary reloads when we are already on the selected rail (Canvas Rail doesn't like it):
+            if story.data.get('selected_rail', 'content') == e.control.destinations[e.control.selected_index].data:
+                return
+        
+            # Save and reload new rail
             story.data['selected_rail'] = e.control.destinations[e.control.selected_index].data
             story.save_dict()
             story.active_rail.display_active_rail(story)

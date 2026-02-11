@@ -73,6 +73,7 @@ class Settings(ft.View):
                 },
 
                 'custom_brushes': dict,    # Saved brushes the user has created that we can load
+                'current_brush_name': "stroke",   # Name of the currently selected brush, either default or custom. Just used for display purposes
                
 
                 # Other canvas related settings that are not technically paint
