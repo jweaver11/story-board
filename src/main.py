@@ -9,6 +9,7 @@ from utils.route_change import route_change
 from models.views.home import create_home_view
 from models.views.loading import create_loading_view
 from models.views.welcome import create_welcome_view, animate_welcome_text
+import asyncio
 
 
 # Main function
@@ -28,14 +29,15 @@ async def main(page: ft.Page):
         text = welcome_view.controls[1]   
         await animate_welcome_text(text)  
 
-        # Grab our progress ring and show it
-        progress_ring = welcome_view.controls[2]
-        progress_ring.opacity = 1.0
-        progress_ring.update()
+        buttons = welcome_view.controls[2]
+        buttons.visible = True
+        buttons.update()
 
-        # Make sure we don't run the welcome view again
-        app.settings.data["is_first_launch"] = False
-        app.settings.save_dict()
+        # Wait here until user clicks either tutorial or skip tutorial button
+        while app.settings.data.get("is_first_launch", True):
+            await asyncio.sleep(0.1)
+
+        
 
     # Otherwise they are not new to storyboard, show our loading view
     else:
