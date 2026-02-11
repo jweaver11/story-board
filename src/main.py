@@ -14,7 +14,7 @@ import asyncio
 
 # Main function
 async def main(page: ft.Page):
-    
+     
     # Load settings and previous story (if one exists)
     app.load_settings(page)  
  

@@ -299,8 +299,6 @@ class CanvasRail(Rail):
         ''' Gets our brush options for the popup menu. '''
 
         color = app.settings.data.get('paint_settings', {}).get('color', "#000000")
-        print("Grabbed color: ", color)
-
         
         # Default brush settings to creating non-custom brushes
         default_brush_settings = {
