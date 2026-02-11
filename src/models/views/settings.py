@@ -58,7 +58,7 @@ class Settings(ft.View):
                 'paint_settings': {
 
                     # Stroke styles
-                    'color': "#FFFFFF,1.0",     # Hex color folowed by opacity
+                    'color': "#FFFFFF,1.0" if self.p.theme_mode == "dark" else "#000000,1.0",     # Hex color folowed by opacity
                     'stroke_width': 3,
                     'style': "stroke",
                     'stroke_cap': "round",
@@ -75,7 +75,6 @@ class Settings(ft.View):
                 # Other canvas related settings that are not technically paint
                 'canvas_settings':{
                     'erase_mode': False,                # Whether we're in erase mode or not
-                    'stroke_dash_pattern': [10, 15],    # Save the active dash pattern so it can just be toggled on and off
                     'saved_brushes': dict,              # Saved brushes the user has created that we can load
                     'current_brush_name': "stroke",   # Name of the currently selected brush, either default or custom. Just used for display purposes
                 },

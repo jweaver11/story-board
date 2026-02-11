@@ -70,22 +70,24 @@ class CanvasRail(Rail):
             items=self._get_color_options()
         )
 
-        self.brush_label = ft.Text(app.settings.data.get('canvas_settings').get('current_brush_name').capitalize(), theme_style=ft.TextThemeStyle.LABEL_LARGE)
+        self.brush_label = ft.Text(
+            app.settings.data.get('canvas_settings').get('current_brush_name').capitalize(), 
+            theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Current brush style"
+        )
         self.brush_selector = ft.PopupMenuButton(
-            tooltip="The style of paint for your brush strokes.",
+            tooltip="Change brush style",
             menu_padding=ft.padding.all(0),
             items=self._get_brush_options()
         )
-        self._update_brush_selector_icon()
+        self.brush_selector.content = ft.Container(
+            ft.Row([self.brush_label, self._build_preview_canvas(app.settings.data.get('paint_settings', {}))], spacing=20),
+            clip_behavior=ft.ClipBehavior.HARD_EDGE,
+        )
 
         self.paint_blend_mode_selector: ft.PopupMenuButton = None   
-        self.paint_blend_mode_label: ft.Text = ft.Text(f"Blend Mode: {self._set_blend_mode_label()}", theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True)
-
-        self.dashed_lines_pattern = ft.IconButton(
-            icon=ft.Icons.TUNE_OUTLINED,
-            tooltip="Adjust the dash pattern for dashed lines.",
-            visible=app.settings.data.get('paint_settings', {}).get('stroke_dash_pattern', None) is not None,
-            #on_click= Open pattern adjustment dialog/button to adjust length and gap, and add more segments. Make reorderable and deletable
+        self.paint_blend_mode_label = ft.Text(
+            f"Blend Mode: {self._set_blend_mode_label()}", theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True,
+            tooltip="Current blend effects applied to your brush strokes. Select to change."
         )
 
     # Get our color picker and saved custom color options
@@ -118,23 +120,16 @@ class CanvasRail(Rail):
         app.settings.save_dict()
 
         self.color_selector.icon_color = selected_color
+        self.brush_selector.items = self._get_brush_options()   # Update our brush options to show the new color in the previews
+        self.brush_selector.content = ft.Container(
+            ft.Row([self.brush_label, self._build_preview_canvas(app.settings.data.get('paint_settings', {}))], spacing=20),
+            clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=ft.border_radius.all(4)
+        )   # Update our brush selector preview to show the new color
         self.update()
 
-    def _update_brush_selector_icon(self):
 
-        style = app.settings.data.get('paint_settings', {}).get('style', 'stroke')
-        match style:
-            case 'stroke': 
-                self.brush_selector.icon = ft.Icons.GESTURE_OUTLINED
-            case 'lineto': 
-                self.brush_selector.icon = ft.Icons.HORIZONTAL_RULE
-            case 'fill': 
-                self.brush_selector.icon = ft.Icons.GESTURE_OUTLINED
-            case 'arcto' | 'arc': 
-                self.brush_selector.icon = ft.Icons.AUTORENEW_OUTLINED
-            case _:
-                self.brush_selector.icon = ft.Icons.GESTURE_OUTLINED
-
+        
+    # Called when selecting one of our brushes
     def _set_brush(self, brush_settings: dict, name: str):
         ''' Sets the current brush settings to the passed in brush settings dictionary '''
 
@@ -143,8 +138,36 @@ class CanvasRail(Rail):
         app.settings.save_dict()
 
         self.brush_label.value = name.capitalize()
-        self._update_brush_selector_icon()
+        self.brush_selector.content = ft.Container(
+            ft.Row([self.brush_label, self._build_preview_canvas(brush_settings)], spacing=20),
+            clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=ft.border_radius.all(4)
+        )
+        self.color_picker.color = brush_settings.get('color', "#000000").split(",", 1)[0].strip()   # Update color picker to match new brush color (without opacity)
+        self.color_selector.icon_color = brush_settings.get('color', ft.Colors.PRIMARY).split(",", 1)[0].strip()   # Update selector icon color to match new brush color (without opacity)
 
+        self.paint_opacity_slider.value = float(brush_settings.get('color', "1.0").split(",", 1)[1].strip()) * 100
+        stroke_cap = brush_settings.get('stroke_cap', 'butt')
+        if stroke_cap == "round":
+            self.paint_stroke_cap_selector.icon = ft.Icons.CIRCLE_OUTLINED
+        elif stroke_cap == "square":
+            self.paint_stroke_cap_selector.icon = ft.Icons.SQUARE_OUTLINED
+        else:
+            self.paint_stroke_cap_selector.icon = ft.Icons.CROP_SQUARE_OUTLINED
+
+        stroke_join = brush_settings.get('stroke_join', 'miter') 
+        if stroke_join == "round":
+            self.paint_stroke_join_selector.icon = ft.Icons.CIRCLE_OUTLINED
+        elif stroke_join == "bevel":
+            self.paint_stroke_join_selector.icon = ft.Icons.SQUARE_OUTLINED
+        else:
+            self.paint_stroke_join_selector.icon = ft.Icons.CROP_SQUARE_OUTLINED
+
+        
+
+        self.paint_anti_alias_toggle.value = brush_settings.get('anti_alias', True)
+        self.paint_stroke_blur_slider.value = brush_settings.get('blur_image', 0)
+        self.paint_blend_mode_selector.icon = ft.Icons.BLUR_OFF_OUTLINED if brush_settings.get('blend_mode', None) is None else ft.Icons.BLUR_ON_OUTLINED
+        self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
         self.update()
 
     # Set the blend mode label based on current mode in settings
@@ -209,8 +232,6 @@ class CanvasRail(Rail):
         self.paint_stroke_cap_selector.icon = ft.Icons.CIRCLE_OUTLINED
         self.paint_stroke_join_selector.icon = ft.Icons.CIRCLE_OUTLINED
         self.paint_stroke_blur_slider.value = 0
-        self.dashed_lines_toggle.value = False
-        self.dashed_lines_pattern.visible = False
         self.paint_blend_mode_selector.icon = ft.Icons.BLUR_OFF_OUTLINED
         self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
 
@@ -277,9 +298,13 @@ class CanvasRail(Rail):
     def _get_brush_options(self) -> list[ft.PopupMenuItem]:
         ''' Gets our brush options for the popup menu. '''
 
+        color = app.settings.data.get('paint_settings', {}).get('color', "#000000")
+        print("Grabbed color: ", color)
+
+        
         # Default brush settings to creating non-custom brushes
         default_brush_settings = {
-            'color': "#FFFFFF,1.0" if self.p.theme_mode == "dark" else "#000000,1.0",   # Default to white in dark mode and black in light mode
+            'color': color,   # Default to white in dark mode and black in light mode
             'stroke_width': 3,
             'style': "stroke",
             'stroke_cap': "round",
@@ -377,7 +402,7 @@ class CanvasRail(Rail):
                         ft.Row([ft.Text(name, expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(brush_settings)], spacing=20),
                         clip_behavior=ft.ClipBehavior.HARD_EDGE
                     ),
-                    on_click=lambda e, n=name: self._set_brush(brush_settings, name=n)
+                    on_click=lambda e, bs=brush_settings, n=name: self._set_brush(bs, name=n)
                 )
             )
 
@@ -410,22 +435,6 @@ class CanvasRail(Rail):
             app.settings.save_dict()
 
         
-
-        # Called when changing paint erase mode
-        def _paint_erase_mode_changed(e):
-            app.settings.data['canvas_settings']['erase_mode'] = e.control.value    # Update if we're in erase mode or not
-            app.settings.save_dict()
-
-        # Called when changing paint dash pattern usage
-        def _paint_dash_pattern_changed(e):
-            if e.control.value:   # If checked, set a default dash pattern
-                app.settings.data['paint_settings']['stroke_dash_pattern'] = app.settings.data['canvas_settings']['stroke_dash_pattern']  
-                self.dashed_lines_pattern.visible = True
-            else:
-                app.settings.data['paint_settings']['stroke_dash_pattern'] = None
-                self.dashed_lines_pattern.visible = False
-            app.settings.save_dict()
-            self.update()
             
 
         # Called when changing paint anti-aliasing
@@ -572,10 +581,9 @@ class CanvasRail(Rail):
                     height=self.p.height * 0.6,
                     controls=[
                         ft.Divider(),
-                        
                         ft.Row([
                             text_field,
-                            ft.Icon(ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, tooltip="Select a brush below to overwrite it with the current color"),
+                            ft.Icon(ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, tooltip="Select a brush below to overwrite instead of saving as a new brush."),
                         ], spacing=0),
                     ], scroll="auto"
                 ),
@@ -593,9 +601,8 @@ class CanvasRail(Rail):
                             ft.Row([
                                 ft.Text(name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
                                 self._build_preview_canvas(existing_brush),
-
                                 ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, data=name, on_click=_delete_brush, tooltip="Delete this saved brush"),
-                            ], spacing=20), border_radius=ft.border_radius.all(4), padding=ft.padding.only(left=10, right=10), clip_behavior=ft.ClipBehavior.HARD_EDGE
+                            ], spacing=20), border_radius=ft.border_radius.all(4), clip_behavior=ft.ClipBehavior.HARD_EDGE
                         ),
                         on_tap=_set_brush_override, data=name, mouse_cursor=ft.MouseCursor.CLICK
                     )
@@ -614,7 +621,7 @@ class CanvasRail(Rail):
         # Opacity slider
         opacity_value = float(app.settings.data.get('paint_settings', {}).get('color', "1.0").split(",", 1)[1].strip()) * 100
         self.paint_opacity_slider = ft.Slider(
-            min=0, max=100,  tooltip="The opacity of your brush strokes.",
+            min=0, max=100,  tooltip="The opacity of your brush strokes. (How see through they are)",
             divisions=100, value=opacity_value, expand=True,
             label="Opacity: {value}%",
             on_change_end=_paint_opacity_changed
@@ -633,7 +640,8 @@ class CanvasRail(Rail):
         self.paint_anti_alias_toggle = ft.Checkbox(
             label="Anti-Aliasing  ", on_change=_paint_anti_alias_changed,
             label_position=ft.LabelPosition.LEFT,
-            value=app.settings.data.get('paint_settings', {}).get('anti_alias', True)
+            value=app.settings.data.get('paint_settings', {}).get('anti_alias', True),
+            tooltip="Whether to use anti-aliasing for smoother brush strokes. Disabling may result in jagged edges"
         )
 
         # Stroke cap shape
@@ -683,8 +691,8 @@ class CanvasRail(Rail):
             paint_blend_mode_icon = ft.Icons.BLUR_OFF_OUTLINED
 
         self.paint_blend_mode_selector = ft.PopupMenuButton(
-            icon=paint_blend_mode_icon,
-            tooltip="The blend mode of your brush strokes.", menu_padding=ft.padding.all(0),
+            icon=paint_blend_mode_icon, menu_padding=ft.padding.all(0),
+            tooltip="Current blend effects applied to your brush strokes. Select to change.",
             items=[
                 ft.PopupMenuItem(text="None", icon=ft.Icons.BLUR_OFF_OUTLINED, on_click=_paint_blend_mode_changed, data=None, tooltip="No blend mode"),
                 ft.PopupMenuItem(text="Color", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="color", tooltip="Take the hue and saturation of the source image, and the luminosity of the destination image"),
@@ -716,13 +724,6 @@ class CanvasRail(Rail):
                 ft.PopupMenuItem(text="XOR", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="xor", tooltip="Apply a bitwise xor operator to the source and destination images. This leaves transparency where they would overlap"),
             ]
         )
-
-        self.dashed_lines_toggle = ft.Checkbox(
-            label="Dashed Pattern  ", on_change=_paint_dash_pattern_changed,
-            label_position=ft.LabelPosition.LEFT,
-            value=app.settings.data.get('paint_settings', {}).get('stroke_dash_pattern', None) is not None,
-        )
-
         
         # Build the content of our rail
         content = ft.Column(
@@ -732,41 +733,40 @@ class CanvasRail(Rail):
 
                 # Label for Paint settings and reset to default button
                 ft.Row([
-                    ft.Text("Paint Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD),
-                    ft.IconButton(ft.Icons.RESTART_ALT_OUTLINED, tooltip="Reset to defaults (Except color and opacity)", on_click=self._reset_to_defaults)
-                ], alignment=ft.MainAxisAlignment.END),
-
-                # Brush label with selector and Save custom brush button
-                ft.Row([
-                    self.brush_label,
-                    self.brush_selector, 
-                    self.color_selector,
                     ft.IconButton(ft.Icons.SAVE_ROUNDED, tooltip="Save current brush settings as a custom brush", on_click=_save_custom_brush),     # Save custom brush button
+                    ft.Text("Brush Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER, expand=True),
+                    ft.IconButton(
+                        ft.Icons.RESTART_ALT_OUTLINED, on_click=self._reset_to_defaults,
+                        tooltip="Resets current brush settings to defaults (Except color and opacity). Will NOT effect any saved brush",
+                    )
+                ],),
+
+                # Brush Selector and Save custom brush button
+                ft.Text("Current Brush", opacity=0.6, theme_style=ft.TextThemeStyle.LABEL_SMALL, tooltip="The current brush you have selected. Click to change or select a saved custom brush."),
+                ft.Row([
+                    self.brush_selector, 
+                    ft.Text("Current Color", opacity=0.6, theme_style=ft.TextThemeStyle.LABEL_SMALL, tooltip="The color of your brush strokes"),
+                    self.color_selector,
                 ], wrap=True),
-
-
-
 
                 # TODO: 
                 # Add shapes and shapefill drawing modes. Path will use paint.style.paintingstyle fill or stroke.
                 # Add shadow effect option for paths
                 # Custom saved colors and custom brushes
 
-                ft.Row([ft.Text("Size", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_width_slider]),      # Size slider
-                ft.Row([ft.Text("Opacity", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_opacity_slider]),     # Opacity slider
+                ft.Row([ft.Text("Size", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Size of your strokes"), self.paint_width_slider]),      # Size slider
+                ft.Row([ft.Text("Opacity", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Opacity of your strokes (How see through they are)"), self.paint_opacity_slider]),     # Opacity slider
 
-                ft.Row([ft.Text("Stroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_cap_selector]),     # Stroke cap shape selector
+                ft.Row([ft.Text("Stroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="End shape of your strokes"), self.paint_stroke_cap_selector]),     # Stroke cap shape selector
                 ft.Container(height=10),   # Spacer
-                ft.Row([ft.Text("Stroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_join_selector]),   # Stroke join shape selector
+                ft.Row([ft.Text("Stroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Shape taken at point of two strokes connecting"), self.paint_stroke_join_selector]),   # Stroke join shape selector
                 ft.Container(height=10),   # Spacer
-                ft.Row([self.dashed_lines_toggle, self.dashed_lines_pattern], spacing=0),     # Dashed line toggle and adjust button
-                ft.Container(height=10),   # Spacer 
  
-                
+                # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
                 ft.Divider(),
                 ft.Row([ft.Text("Effects", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Container(height=10),   # Spacer
-                ft.Row([self.paint_anti_alias_toggle]),
+                self.paint_anti_alias_toggle,
                 ft.Container(height=10),   # Spacer
                 ft.Row([ft.Text("Blur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider]),
                 ft.Container(height=10),   # Spacer
