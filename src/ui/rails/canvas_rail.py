@@ -7,6 +7,7 @@ from styles.menu_option_style import MenuOptionStyle
 import math
 from flet_contrib.color_picker import ColorPicker
 from models.app import app
+import flet.canvas as cv
 
 
 # Class for our Canvas Board rail
@@ -111,7 +112,9 @@ class CanvasRail(Rail):
         
         self.update()
 
-    def _set_brush(self):
+    def _set_brush(self, brush_settings: dict):
+
+        # Set, save, reload
         pass
 
     # Set the blend mode label based on current mode in settings
@@ -171,6 +174,23 @@ class CanvasRail(Rail):
         }
         app.settings.save_dict()
         self.reload_rail()    # Reload the rail to apply changes
+
+
+    # Called to build a small preview canvas of our brush strokes for visual distinction
+    def _build_preview_canvas(self, paint_settings: dict) -> cv.Canvas:
+        ''' Builds a small canvas, and uses the passed in paint settings to draw a sample stroke to show the user what their current brush settings look like. '''
+        preview_canvas = cv.Canvas(width=100, height=30)
+
+        preview_canvas.shapes = [
+            cv.Path([
+                cv.Path.MoveTo(0, 25),
+                cv.Path.CubicTo(0, 25, 10, 16, 50, 15),
+                cv.Path.CubicTo(50, 15, 90, 14, 100, 5)
+                
+            ], paint_settings)
+        ]
+
+        return preview_canvas
 
 
 
@@ -300,6 +320,7 @@ class CanvasRail(Rail):
                 print("Brush settings saved as: ", brush_settings)
                 app.settings.data.setdefault('custom_brushes', {})[name] = brush_settings
                 app.settings.save_dict()
+                self.reload_rail()
                 self.p.close(dlg)
 
             # Sets the name value when typing in the textfield. Checks if it exists and de-selects any existing ones
@@ -314,9 +335,11 @@ class CanvasRail(Rail):
                 for key in app.settings.data.get('custom_brushes', {}).keys():
                     if key == name:
                         e.control.error_text = "A brush with this name already exists. It will be overwritten if you save."
+                        save_button.text = "Overwrite"
                         self.p.update()
                         return
                     
+                save_button.text = "Save"
                 e.control.error_text = None
                 self.p.update()
 
@@ -338,12 +361,14 @@ class CanvasRail(Rail):
                 if e.control.content.bgcolor == ft.Colors.with_opacity(.1, ft.Colors.ON_SURFACE):
                     e.control.content.bgcolor = ft.Colors.TRANSPARENT
                     name = None
+                    save_button.text = "Save"
                     self.p.update()
                     return
 
                 name = e.control.data
                 e.control.content.bgcolor = ft.Colors.with_opacity(.1, ft.Colors.ON_SURFACE)
                 e.control.update()
+                save_button.text = "Overwrite"
 
                 for ctrl in dlg.content.controls:
                     if isinstance(ctrl, ft.GestureDetector) and ctrl != e.control:
@@ -354,40 +379,45 @@ class CanvasRail(Rail):
             # Textfield for naming custom color
             text_field = ft.TextField(
                 label="Brush Name", autofocus=True, on_submit=lambda e: _save_and_close(), dense=True,
-                capitalization=ft.TextCapitalization.SENTENCES, on_change=_set_name
+                capitalization=ft.TextCapitalization.SENTENCES, on_change=_set_name, expand=True
             )
 
             name: str = None
 
+            # Our save button that just changes text from save to overwrite
+            save_button = ft.TextButton("Save", on_click=_save_and_close, scale=1.2)  
+
             dlg = ft.AlertDialog(
                 title=ft.Text("Name your custom brush"), 
                 content=ft.Column(
-                    width=self.p.width * 0.4, expand=False,
+                    width=self.p.width * 0.25, expand=False,
                     height=self.p.height * 0.6,
                     controls=[
                         ft.Divider(),
-                        text_field,
+                        
                         ft.Row([
+                            text_field,
                             ft.Icon(ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, tooltip="Select a brush below to overwrite it with the current color"),
                         ], spacing=0),
-                    ]
+                    ], scroll="auto"
                 ),
                 actions=[
                     ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
                     ft.Container(width=12),   # Spacer
-                    ft.TextButton("Save", on_click=_save_and_close, scale=1.2),   # Start enabled to just save existing connections
+                    save_button
                 ]
             )
 
-            for name, existing_color in app.settings.data.get('custom_brushes', {}).items():
+            for name, existing_brush in app.settings.data.get('custom_brushes', {}).items():
                 dlg.content.controls.append(
                     ft.GestureDetector(
                         ft.Container(
                             ft.Row([
-                                ft.Text(name, theme_style=ft.TextThemeStyle.LABEL_LARGE),
-                                # Set mini canvas here with brush stroke preview
+                                ft.Text(name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                                self._build_preview_canvas(existing_brush),
+
                                 ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, data=name, on_click=_delete_brush, tooltip="Delete this saved brush"),
-                            ]), border_radius=ft.border_radius.all(4)
+                            ], spacing=20), border_radius=ft.border_radius.all(4), padding=ft.padding.only(left=10, right=10), clip_behavior=ft.ClipBehavior.HARD_EDGE
                         ),
                         on_tap=_set_brush_override, data=name, mouse_cursor=ft.MouseCursor.CLICK
                     )
@@ -405,13 +435,11 @@ class CanvasRail(Rail):
                 ft.PopupMenuItem(text="Half Circle", data="arcto", icon=ft.Icons.AUTORENEW_OUTLINED, on_click=_paint_style_changed),
             ]
             for name, brush_settings in app.settings.data.get('custom_brushes', {}).items():
-                color = brush_settings.get('color', "#000000").split(",", 1)[0]   # Get the color without opacity for the swatch
-                print("Going through custom brushes. Name: ", name, "Color: ", color)
                 options.append(
                     ft.PopupMenuItem(
                         text=name, data=brush_settings,
-                        icon=ft.Icons.CIRCLE, 
-                       #on_click=self._set_color
+                        content=ft.Row([ft.Text(name, expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(brush_settings)], spacing=20),
+                        on_click=lambda e: self._set_brush(brush_settings)
                     )
                 )
 
