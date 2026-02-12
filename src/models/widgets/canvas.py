@@ -230,14 +230,12 @@ class Canvas(Widget):
         self.canvas.shapes.append(point)
         self.state.points.append((e.local_x, e.local_y, point.point_mode, point.paint.__dict__))
 
-        # After dragging canvas widget, it loses page reference and can't update
+        # After dragging canvas widget, it loses page reference and can't update, so the exception handles that.
         try:
             self.canvas.update()
-            
         except Exception as ex:
             self.canvas.page = self.p
             self.canvas.update()
-            
             
         # Save our canvas data
         self.save_canvas()
@@ -353,8 +351,10 @@ class Canvas(Widget):
 
                 # Update the page and return early
                 try:
-                    # Page reference gets lost after dragging widget to new canvas, so we reset it and update
-                    self.canvas.update()
+                    # Much more effecient to just update the path, but that fails on first update due to lost page references
+                    self.current_path.update()
+                    
+                # This re-sets the canvas page, which all paths need to update correctly. This should only catch one time per stroke
                 except Exception as ex:
                     self.canvas.page = self.p
                     self.canvas.update()
@@ -377,9 +377,6 @@ class Canvas(Widget):
                     arc_element.height = abs(e.local_y - self.state.y)
                     arc_element.y = abs(self.state.y - (arc_element.height / 2))
 
-                #print("arc element y adjustment: ", arc_element.height / 2)
-                #print("arc height: ", arc_element.height)
-
                 if e.local_x - self.state.x < 0:   # Dragging left, move X position of arc to match
                     arc_element.x = e.local_x
 
@@ -387,11 +384,11 @@ class Canvas(Widget):
 
                 # Update the page and return early
                 try:
-                    # Page reference gets lost after dragging widget to new canvas, so we reset it and update
+                    self.current_path.update()
+                    
+                except Exception as ex:
                     self.canvas.page = self.p
                     self.canvas.update()
-                except Exception as ex:
-                    self.p.update()
                 return
         
             # Handle arcs
@@ -409,17 +406,18 @@ class Canvas(Widget):
                 # Update the page and return early
                 try:
                     # Page reference gets lost after dragging widget to new canvas, so we reset it and update
+                    self.current_path.update()
+                   
+                except Exception as ex:
                     self.canvas.page = self.p
                     self.canvas.update()
-                except Exception as ex:
-                    self.p.update()
                 return
         
         
             # If its not one of our custom styles, use free-draw stroke, which is constantly adding line_to segements
             case _:
 
-                #TODO: Add check here to reduce num of lines based on previous start and end
+                #TODO: Add check here to reduce num of lines based on previous start and end??
                 # Set the path element based on what kind of path we're adding, add it to our current path and our state paths
                 path_element = cv.Path.LineTo(e.local_x, e.local_y)
 
@@ -429,11 +427,10 @@ class Canvas(Widget):
 
                 # After dragging canvas widget, it loses page reference and can't update
                 try:
-                    # Page reference gets lost after dragging widget to new canvas, so we reset it and update
+                    self.current_path.update()
+                except Exception as ex:
                     self.canvas.page = self.p
                     self.canvas.update()
-                except Exception as ex:
-                    self.p.update()
                 
 
                 # Update our state x and y for the next segment
@@ -462,7 +459,7 @@ class Canvas(Widget):
 
     # Called when the canvas control is resized
     async def on_canvas_resize(self, e: ft.ControlEvent):
-        """Rescales stored drawing coordinates to match the new canvas size."""
+        """ Rescales stored drawing coordinates to match the new canvas size """
         #print(e.height, e.width)
         pass
 

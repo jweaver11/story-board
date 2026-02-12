@@ -71,8 +71,8 @@ class CanvasRail(Rail):
         )
 
         self.brush_label = ft.Text(
-            app.settings.data.get('canvas_settings').get('current_brush_name').capitalize(), 
-            theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Current brush style"
+            app.settings.data.get('canvas_settings').get('current_brush_name').capitalize(), overflow=ft.TextOverflow.ELLIPSIS,
+            theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Current brush style", expand=True
         )
         self.brush_selector = ft.PopupMenuButton(
             tooltip="Change brush style",
@@ -140,7 +140,7 @@ class CanvasRail(Rail):
         self.brush_label.value = name.capitalize()
         self.brush_selector.content = ft.Container(
             ft.Row([self.brush_label, self._build_preview_canvas(brush_settings)], spacing=20),
-            clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=ft.border_radius.all(4)
+            clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=ft.border_radius.all(4), expand=True,
         )
         self.color_picker.color = brush_settings.get('color', "#000000").split(",", 1)[0].strip()   # Update color picker to match new brush color (without opacity)
         self.color_selector.icon_color = brush_settings.get('color', ft.Colors.PRIMARY).split(",", 1)[0].strip()   # Update selector icon color to match new brush color (without opacity)
@@ -600,7 +600,7 @@ class CanvasRail(Rail):
                                 ft.Text(name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
                                 self._build_preview_canvas(existing_brush),
                                 ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, data=name, on_click=_delete_brush, tooltip="Delete this saved brush"),
-                            ], spacing=20), border_radius=ft.border_radius.all(4), clip_behavior=ft.ClipBehavior.HARD_EDGE
+                            ], spacing=20), border_radius=ft.border_radius.all(4), clip_behavior=ft.ClipBehavior.HARD_EDGE, padding=ft.padding.only(left=6)
                         ),
                         on_tap=_set_brush_override, data=name, mouse_cursor=ft.MouseCursor.CLICK
                     )
