@@ -66,7 +66,10 @@ class PlotlinesRail(Rail):
             return [
                 MenuOptionStyle(
                     content=ft.PopupMenuButton(
-                        content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                        content=ft.Container(
+                            ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                            padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                        ),
                         tooltip="New", menu_padding=0,
                         items=[
                             ft.PopupMenuItem(
@@ -87,13 +90,18 @@ class PlotlinesRail(Rail):
                             )
                         ]
                     ),
+                    no_padding=True
                 ),
                 MenuOptionStyle(
                     content=ft.PopupMenuButton(
-                        content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                        content=ft.Container(
+                            ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                            padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                        ),
                         tooltip="Upload", menu_padding=0,
                         items=[ft.PopupMenuItem(text="Plotline", icon=ft.Icons.TIMELINE_OUTLINED,)]
                     ),
+                    no_padding=True
                 )
             ]
 
@@ -222,8 +230,7 @@ class PlotlinesRail(Rail):
 
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.CENTER,
-            
+            alignment=ft.MainAxisAlignment.CENTER, wrap=True,
             controls=self.top_row_buttons
         )
 

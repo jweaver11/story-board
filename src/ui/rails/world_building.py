@@ -79,7 +79,10 @@ class WorldBuildingRail(Rail):
         return [
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                    ),
                     tooltip="New", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(
@@ -92,16 +95,21 @@ class WorldBuildingRail(Rail):
                         ),
                     ]
                 ),
+                no_padding=True
             ),
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                    ),
                     tooltip="Upload", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(text="Map", icon=ft.Icons.MAP_OUTLINED,),
                         ft.PopupMenuItem(text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,),
                     ]
                 ),
+                no_padding=True
             )
 
             # New and upload options? or just upload?? or how do i wanna do this?? Compact vs spread out view??
@@ -136,8 +144,7 @@ class WorldBuildingRail(Rail):
 
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.CENTER,
-            
+            alignment=ft.MainAxisAlignment.CENTER, wrap=True,
             controls=self.top_row_buttons
         )
                  

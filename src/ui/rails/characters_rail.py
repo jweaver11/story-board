@@ -26,6 +26,7 @@ class CharactersRail(Rail):
 
         # UI elements
         self.top_row_buttons = [
+            ft.IconButton(ft.Icons.CONNECT_WITHOUT_CONTACT, tooltip="Edit Character Templates", on_click=lambda e: self.p.open(character_template_alert_dialog(self.story))),
             ft.PopupMenuButton(
                 icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                 tooltip="New", menu_padding=0,
@@ -44,6 +45,7 @@ class CharactersRail(Rail):
                 icon=ft.Icons.FILE_UPLOAD_OUTLINED,
                 tooltip="Upload Character",
             ),
+            ft.IconButton(ft.Icons.MANAGE_SEARCH_OUTLINED, tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)),
         ]
 
         # Sort buttons right after the top row
@@ -71,8 +73,18 @@ class CharactersRail(Rail):
         # Builds our buttons that are our options in the menu
         return [
             MenuOptionStyle(
+                ft.Row([
+                    ft.Icon(ft.Icons.CONNECT_WITHOUT_CONTACT,),
+                    ft.Text(f"Edit\nCharacter\nTemplates", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
+                ]),
+                on_click=lambda e: self.p.open(character_template_alert_dialog(self.story)),
+            ),
+            MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                    ),
                     tooltip="New", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(
@@ -85,11 +97,15 @@ class CharactersRail(Rail):
                         ),
                     ]
                 ),
+                no_padding=True
             ),
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
-                    tooltip="Upload", menu_padding=0,
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                    ),
+                    tooltip="Upload", menu_padding=0, expand=True,
                     items=[
                         ft.PopupMenuItem(
                             text="Character", icon=ft.Icons.PERSON_OUTLINED,
@@ -99,6 +115,14 @@ class CharactersRail(Rail):
                         ),
                     ]
                 ),
+                no_padding=True
+            ),
+            MenuOptionStyle(
+                ft.Row([
+                    ft.Icon(ft.Icons.MANAGE_SEARCH_OUTLINED, tooltip="Edit Character Connections"),
+                    ft.Text("Edit\nCharacter\nConnections", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
+                ]),
+                on_click=lambda e: new_character_connection_clicked(self.story),
             )
         ]
     
@@ -154,7 +178,7 @@ class CharactersRail(Rail):
 
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.CENTER,
+            alignment=ft.MainAxisAlignment.CENTER, wrap=True,
             controls=self.top_row_buttons
         )
         
@@ -164,10 +188,7 @@ class CharactersRail(Rail):
             controls=[self.sort_button],
         )
 
-        header_3 = ft.Row([
-            ft.IconButton(ft.Icons.CONNECT_WITHOUT_CONTACT, tooltip="Edit Character Templates", on_click=lambda e: self.p.open(character_template_alert_dialog(self.story))),
-            ft.IconButton(ft.Icons.MANAGE_SEARCH_OUTLINED, tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)),
-        ], alignment=ft.MainAxisAlignment.SPACE_EVENLY)      
+             
 
         # Build the content of our rail
         content = ft.Column(
@@ -269,7 +290,6 @@ class CharactersRail(Rail):
                 ft.Divider(),
                 ft.Container(height=6),
                 header_2,
-                header_3,
                 ft.Container(height=6),
                 menu_gesture_detector
             ]

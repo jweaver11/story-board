@@ -93,11 +93,8 @@ def character_template_alert_dialog(story: Story):
                 if isinstance(ctrl, ft.Container) and ctrl != e.control:
                     ctrl.bgcolor = "transparent"
             
-
+            # Load the template into our edit container
             edit_container.content = load_template(name)
-
-
-            edit_container.update()
             story.p.update()
            
 

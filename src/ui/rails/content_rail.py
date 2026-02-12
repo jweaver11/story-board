@@ -107,7 +107,10 @@ class ContentRail(Rail):
         return [
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)], expand=True),
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)], expand=True),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                    ),
                     tooltip="New", menu_padding=0, expand=True, padding=ft.padding.all(0),
                     items=[
                         ft.PopupMenuItem(
@@ -152,10 +155,14 @@ class ContentRail(Rail):
                         ),
                     ]
                 ),
+                no_padding=True
             ),
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    content=ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),]),
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),]),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                    ),
                     tooltip="Upload", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,),
@@ -169,6 +176,7 @@ class ContentRail(Rail):
                         ft.PopupMenuItem(text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,),
                     ]
                 ),
+                no_padding=True
             )
         ]
         
@@ -186,7 +194,7 @@ class ContentRail(Rail):
         # TODO: Should be 2 buttons: New and upload. Each has all those options
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.CENTER,
+            alignment=ft.MainAxisAlignment.CENTER, wrap=True,
             controls=self.top_row_buttons
         )
                  

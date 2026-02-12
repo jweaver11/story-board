@@ -613,7 +613,7 @@ class CanvasRail(Rail):
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER,
-            controls=self.top_row_buttons
+            controls=self.top_row_buttons, wrap=True,
         )
 
         # Opacity slider

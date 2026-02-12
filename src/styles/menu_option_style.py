@@ -10,7 +10,8 @@ class MenuOptionStyle(ft.GestureDetector):
         content: ft.Control,                # Control displayed as the button
         page: ft.Page = None,              # Page reference
         on_click: callable = None,          # Function called on click
-        data = None                         # Any data needed for this option to help with logic
+        data = None,                         # Any data needed for this option to help with logic
+        no_padding: bool = False,              # Whether to remove default padding around the content (used for popupmenu buttons)
     ):
 
         self.p = page
@@ -24,7 +25,7 @@ class MenuOptionStyle(ft.GestureDetector):
             on_enter=self.on_hover,                                             # Set our hover functions                             
             on_exit=self.on_hover_exit,                                         # Set our stop hovering function
             content=ft.Container(
-                padding=ft.padding.only(right=8, left=8, top=8, bottom=8),
+                padding=ft.padding.only(right=8, left=8, top=8, bottom=8) if not no_padding else None,     # Add padding if not disabled
                 content=content                                                 # Set our content passed in                                
             ),
         )
