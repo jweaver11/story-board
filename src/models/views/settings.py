@@ -128,7 +128,7 @@ class Settings(ft.View):
                 # Hold our default character templates
                 'character_templates': {    
                     'Default': default_character_template_data_dict(),
-                    'Detailed': default_character_template_data_dict() | {'Template Data': {'title': "Detailed", 'Strengths': list, 'Weaknesses': list, 'Deceased': bool}},
+                    'Detailed': default_character_template_data_dict() | {'Template Data': {'title': "Detailed", 'Strengths': str, 'Weaknesses': str, 'Deceased': str}},
                     'Shonen': default_character_template_data_dict() | {'Template Data': {'title': "Shonen", 'Abilities': "Super Strength, Enhanced Healing"}},
                     'Alien': default_character_template_data_dict() | {'Template Data': {'title': "Alien", 'Species': "Unknown", 'Home Planet': "Unknown"}},
                     # Fantasy
@@ -483,7 +483,7 @@ class Settings(ft.View):
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
                 ),
             ]),
-            ft.Text("Settings for widgets across all your stories.", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Text("Default Settings for widgets across all your stories.", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
             ft.Container(height=10),    # Spacer
 
             ft.Divider(),
@@ -491,8 +491,8 @@ class Settings(ft.View):
             ft.Column([
 
                 ft.Container(height=10),    # Spacer
-       
-
+                ft.Text("Pin location and Color of newly created widgets (won't effect existing widgets)", theme_style=ft.TextThemeStyle.BODY_LARGE, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Container(height=2),
                 ft.Row([
                     ft.Container(width=10),   # Spacer
                     ft.Text("Canvases", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
