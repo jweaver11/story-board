@@ -165,7 +165,7 @@ class CharactersRail(Rail):
         )
 
         header_3 = ft.Row([
-            ft.IconButton(ft.Icons.CONNECT_WITHOUT_CONTACT, tooltip="Edit Character Templates", on_click=lambda e: self.p.open(character_template_alert_dialog(self.p))),
+            ft.IconButton(ft.Icons.CONNECT_WITHOUT_CONTACT, tooltip="Edit Character Templates", on_click=lambda e: self.p.open(character_template_alert_dialog(self.story))),
             ft.IconButton(ft.Icons.MANAGE_SEARCH_OUTLINED, tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)),
         ], alignment=ft.MainAxisAlignment.SPACE_EVENLY)      
 

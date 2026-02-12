@@ -281,8 +281,6 @@ def new_character_connection_clicked(story):
         story.p.close(dlg)
         story.p.update()
 
-   
-    
 
     # Sets our content to add too
     content = ft.Column(
