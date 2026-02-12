@@ -9,11 +9,11 @@ import os
 from models.widget import Widget
 from models.views.story import Story
 from utils.verify_data import verify_data
-from models.mini_widgets.connection import Connection
+from models.mini_widgets.character_connection import CharacterConnection
 from models.app import app
 from utils.safe_string_checker import return_safe_name
 from models.dataclasses.character_template import default_character_template_data_dict
-from utils.character_connection_alert_dlg import new_character_connection_clicked
+from utils.alert_dialogs.character_connection import new_character_connection_clicked
 import flet.canvas as cv
 
 
@@ -174,26 +174,8 @@ class Character(Widget):
             except Exception as ex:
                 print(f"Error uploading file: {ex}")
 
-    # Called when our canvas resizes
-    async def _get_size(self, e: cv.CanvasResizeEvent):
-        ''' Updates our w and h variables when sizing canvas resizes '''
-        if e.width <= 0 or e.height <= 0:
-            return 
-        self.w = e.width
-        self.h = e.height
-
-        # Mini widgets won't show unless we re-render on launch since first render has no size reference to grab them with
-        if self.force_size_render:
-            self.force_size_render = False
-            self.reload_widget()    # Force a reload here since we need all characters loaded to grab connection data correctly
-
     def _load_connections(self, connections_list: list, container: ft.Container):
         ''' Loads our connections into a given container '''
-
-        def _edit_connections(index, key, value):
-            ''' Edits a connection in our story connections data '''
-            self.story.data['connections'][index][key] = value
-            self.story.save_dict()
 
         # Grabs all our character options for the dropdown. Exclude already existing connections with those characters
         def _get_char_options(tag: str) -> list[ft.PopupMenuButton]:

@@ -7,19 +7,19 @@ def default_character_template_data_dict() -> dict:
         #'Template Data': dict,     # This is how templates store their data
         'Basic Info': {
             'Summary': str,     # Short summary of the character. Optional
-            'Nickname': str,    # Nickname or Alias of the character
+            'Nickname': str,    
             'Role': str,        # Importance of character in the story. Main, Side, Background, None
             'Tag': str,         # Tag for custom grouping of characters. Protagonist, Antagonist, Supporting, None
-            'Morality': str,    # Lawful, netural, chaotic all have good, neutral, evil (9 alignments)
-            'Age': str,         # Age of the character
-            'Nationality': str, # Where character is from
-            'Occupation': str,  # What the character does for a living
-            'Personality': str, # Description of the character's personality
-            'Goals': str,       # List of characters goals/motivations
+            'Morality': str,    
+            'Age': str,         
+            'Nationality': str, 
+            'Occupation': str,  
+            'Personality': str, 
+            'Goals': str,       
         },
         'Physical Description': {
-            'Sex': str, 
             'Build': str,           # Sumarrized build of character 
+            'Sex': str, 
             'Race': str,  
             'Skin Color': str,  
             'Hair Color': str,   
@@ -28,7 +28,6 @@ def default_character_template_data_dict() -> dict:
             'Weight': str,   
             'Distinguishing Features': str,  
         },
-        
         'Family':  {
             'Love Interest': str,    
             'Father': str,   
@@ -46,5 +45,5 @@ def default_character_template_data_dict() -> dict:
         },  
         
         'Custom Fields': dict       # Anything the user wants to add on their own
-        # custom fields {key: {label: str, value: str}, key2: {label: str, value: str} ... }
+        # custom fields {label: value, num_dogs: 5}
     }

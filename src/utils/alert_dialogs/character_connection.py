@@ -56,7 +56,7 @@ def new_character_connection_clicked(story):
 
             self.desc_textfield= ft.TextField(      # Textfield to enter connection tags
                 hint_text="Descriptors (Friend, Rival, etc.)", on_blur=self._update_description, dense=True, capitalization=ft.TextCapitalization.SENTENCES,
-                autofill_hints=[ft.AutofillHint.NICKNAME, ft.AutofillHint.GIVEN_NAME], expand=True, value=self.data.get('tags', ''),
+                expand=True, value=self.data.get('tags', ''),
                 cursor_color=self.data.get('color', ft.Colors.PRIMARY), focused_border_color=self.data.get('color', ft.Colors.PRIMARY)
             )
 
@@ -255,7 +255,7 @@ def new_character_connection_clicked(story):
 
     # Closes our dialog and saves our character data
     async def _save_and_close(e):
-        from models.mini_widgets.connection import Connection
+        from models.mini_widgets.character_connection import CharacterConnection
         nonlocal dlg, existing_connections
         
         story.data['connections'] = existing_connections.copy()   # Save our updated connections back to the story data
@@ -271,7 +271,7 @@ def new_character_connection_clicked(story):
 
             # Update any connection mini widgets as well
             for mw in ccm.mini_widgets:
-                if mw.visible and isinstance(mw, Connection):
+                if mw.visible and isinstance(mw, CharacterConnection):
                     mw.reload_mini_widget()
 
             # Update any visible character connection maps
@@ -317,8 +317,8 @@ def new_character_connection_clicked(story):
 
     # Alert dialog to show everything we've built
     dlg = ft.AlertDialog(
-        title=ft.Text(f"Connections Editor"),
-        content=ft.AutofillGroup(content),
+        title=ft.Text(f"Character Connections Editor"),
+        content=content,
         actions=[
             ft.TextButton("Cancel", on_click=lambda e: story.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
             ft.Container(width=12),   # Spacer

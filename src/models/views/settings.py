@@ -7,7 +7,7 @@ import flet as ft
 from models.views.story import Story
 from models.widget import Widget
 from utils.verify_data import verify_data
-from utils.new_character_template_alert_dialog import new_character_template_alert_dlg
+from utils.alert_dialogs.character_connection import new_character_connection_clicked
 from styles.colors import colors
 import os
 import json
@@ -464,7 +464,7 @@ class Settings(ft.View):
 
         def _new_character_template_selected(e):
             if e.control.value == "Create New Template":
-                self.p.open(new_character_template_alert_dlg(self.p))
+                self.p.open(new_character_connection_clicked(self.story))
                 e.control.value = self.data.get('active_character_template')    # Resets the dropdown so we can select this again later
                 e.control.update()
 

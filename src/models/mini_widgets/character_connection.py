@@ -19,7 +19,7 @@ from styles.icons import icons
 
 
 
-class Connection(MiniWidget):
+class CharacterConnection(MiniWidget):
 
     # Constructor.
     def __init__(

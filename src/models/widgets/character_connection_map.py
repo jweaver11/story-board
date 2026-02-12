@@ -8,7 +8,7 @@ from models.views.story import Story
 from utils.verify_data import verify_data
 from models.app import app
 import flet.canvas as cv
-from models.mini_widgets.connection import Connection
+from models.mini_widgets.character_connection import CharacterConnection
 
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
 class CharacterConnectionMap(Widget):
@@ -80,7 +80,7 @@ class CharacterConnectionMap(Widget):
         for idx, conn_data in enumerate(self.story.data.get('connections', [])):
             if conn_data.get('char1_key') in self.data.get('primary_characters', []) or conn_data.get('char2_key') in self.data.get('primary_characters', []):
                 # Create a mini widget for this connection
-                mw = Connection(
+                mw = CharacterConnection(
                     title="NONE",       # Not used but needs a value
                     owner=self,
                     page=self.p,

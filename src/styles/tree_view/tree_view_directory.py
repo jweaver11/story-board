@@ -500,7 +500,6 @@ class TreeViewDirectory(ft.GestureDetector):
             ])
 
             return_folder_content(self.full_path, self.story, column)
-
             
             # If empty folder, make the dialog smaller by returning None
             return None if column.controls.__len__() == 1 else column
@@ -508,7 +507,7 @@ class TreeViewDirectory(ft.GestureDetector):
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Are you sure you want to delete folder {self.title} forever?", weight=ft.FontWeight.BOLD),
+            title=ft.Column([ft.Text(f"Are you sure you want to delete folder {self.title} forever?", weight=ft.FontWeight.BOLD), ft.Divider(height=2, thickness=2)]),
             alignment=ft.alignment.center,
             title_padding=ft.padding.all(25),
             content=_return_folder_content(),

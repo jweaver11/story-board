@@ -6,7 +6,7 @@ from models.views.story import Story
 from ui.rails.rail import Rail
 from utils.tree_view import load_directory_data
 from styles.menu_option_style import MenuOptionStyle
-from utils.new_canvas_alert_dlg import new_canvas_alert_dlg
+from utils.alert_dialogs.new_canvas import new_canvas_alert_dlg
 import threading
 import asyncio
 

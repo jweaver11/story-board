@@ -10,6 +10,8 @@ from ui.rails.rail import Rail
 from models.views.story import Story
 from styles.tree_view.tree_view_file import TreeViewFile
 import json
+from utils.alert_dialogs.character_template import character_template_alert_dialog
+from utils.alert_dialogs.character_connection import new_character_connection_clicked
 
 
 class CharactersRail(Rail):
@@ -47,7 +49,7 @@ class CharactersRail(Rail):
         # Sort buttons right after the top row
         self.sort_button = ft.Dropdown(
             f"Sorting by: {self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")}", 
-            label="Sort method", leading_icon=ft.Icons.SORT_ROUNDED, dense=True,
+            label="Sort method", leading_icon=ft.Icons.SORT_ROUNDED, dense=True, expand=True,
             tooltip="Sort Characters By", on_change=self._new_sort_method_selected,
             options=[
                 ft.DropdownOption("Age"), 
@@ -156,14 +158,16 @@ class CharactersRail(Rail):
             controls=self.top_row_buttons
         )
         
-
         header_2 = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER,
-            controls=[self.sort_button]
+            controls=[self.sort_button],
         )
-        
-                 
+
+        header_3 = ft.Row([
+            ft.IconButton(ft.Icons.CONNECT_WITHOUT_CONTACT, tooltip="Edit Character Templates", on_click=lambda e: self.p.open(character_template_alert_dialog(self.p))),
+            ft.IconButton(ft.Icons.MANAGE_SEARCH_OUTLINED, tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)),
+        ], alignment=ft.MainAxisAlignment.SPACE_EVENLY)      
 
         # Build the content of our rail
         content = ft.Column(
@@ -265,6 +269,7 @@ class CharactersRail(Rail):
                 ft.Divider(),
                 ft.Container(height=6),
                 header_2,
+                header_3,
                 ft.Container(height=6),
                 menu_gesture_detector
             ]

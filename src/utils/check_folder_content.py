@@ -1,9 +1,9 @@
+''' Returns our folder's sub-folders and widgets so users are aware of what all they're deleting '''
+
 import flet as ft
 import os
 import json
 from models.views.story import Story
-
-''' Returns our folders sub-folders and widgets so users are aware of what all they're deleting '''
 
 
 def return_folder_content(directory: str, story: Story, expansion_tile: ft.ExpansionTile | ft.Column):
