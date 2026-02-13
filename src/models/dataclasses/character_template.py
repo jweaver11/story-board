@@ -4,7 +4,7 @@ Default data dict for character data templates
 
 def default_character_template_data_dict() -> dict:
     return {
-        #'Template Data': dict,     # This is how templates store their data
+        #'Template Data': dict,     # This is how templates store additional sections
         'Basic Info': {
             'Summary': str,     # Short summary of the character. Optional
             'Nickname': str,    
@@ -43,7 +43,5 @@ def default_character_template_data_dict() -> dict:
             'Education': str,        
             'Trauma': str,
         },  
-        
         'Custom Fields': dict       # Anything the user wants to add on their own
-        # custom fields {label: value, num_dogs: 5}
     }

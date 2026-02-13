@@ -7,6 +7,119 @@ from models.dataclasses.character_template import default_character_template_dat
 
 def character_template_alert_dialog(story: Story):
 
+    class DataColumn(ft.Column):
+        def __init__(self, name: str, **kwargs):
+            super().__init__(**kwargs)
+
+            self.new_section_tf = ft.TextField(
+                label="New Section Name", visible=False, dense=True, autofocus=True,  capitalization=ft.TextCapitalization.WORDS,
+                on_change=self._check_section_name_unique, on_submit=self._new_section_submit
+            )
+
+            self.name = name
+            self.can_create_section = False     
+            self.scroll="auto"
+
+            self.reload()
+
+        # When clicking add new section
+        def _new_section_submit(self, e):
+            if not self.new_section_tf.visible:
+                self.new_section_tf.visible = True
+                self.new_section_tf.update()
+                return
+
+            # If we are visible, use this as a submit button
+            section_name = self.new_section_tf.value.strip() or ""  
+            if section_name != "":
+                if self.can_create_section:
+                    # Create new section here and reload
+                    pass
+
+        # When typing in new section field. Makes sure all sections are unique or they will override each other
+        def _check_section_name_unique(self, e):
+            name = e.control.value.strip() or ""
+            if name == "":
+                self.new_section_tf.error_text = "Section name cannot be empty"
+                self.new_section_tf.update()
+                return
+            
+            for key in self.data.keys():
+                if key == name:   # Check if any existing section matches this name 
+                    self.can_create_section = False
+                    self.new_section_tf.error_text = "Section name must be unique"
+                    self.new_section_tf.update()
+                    return
+            self.can_create_section = True
+
+        def _delete_section(self, section_name: str):
+            pass
+
+        def _add_section(self, section_name: str):
+            pass
+
+        def _update_section(self, section_name: str, new_data: dict):
+            pass
+            
+        def reload(self):
+
+            # Control class for each section we have
+            class Section(ft.Container):
+                def __init__(self, name: str, data: dict, **kwargs):
+                    super().__init__(**kwargs)
+                    self.name = name
+                    self.data = data
+
+                    self.border_radius = ft.border_radius.all(6)
+                    self.border = ft.border.all(1, ft.Colors.ON_SURFACE_VARIANT)
+                    self.padding = ft.padding.all(6)
+
+                    self.content = ft.Column([
+                        ft.Row([
+                            ft.Text(self.name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True),
+                            ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Remove this section from template"),
+                        ], vertical_alignment=ft.CrossAxisAlignment.START, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        
+                        # Rest of section body here
+                        ft.ReorderableListView()
+                    ])
+
+                    for key, value in self.data.items():
+                        self.content.controls[1].controls.append(
+                            ft.Row([
+                                ft.Text(f"{key}: ", weight=ft.FontWeight.BOLD),
+                                ft.Text(str(value))
+                            ])
+                        )
+
+            # Set title and divider for this column
+            self.controls = [
+                ft.Row([
+                    ft.IconButton(ft.Icons.REFRESH_OUTLINED, ft.Colors.ERROR, tooltip="Reset template data to defaults"),
+                    ft.TextField(self.name, label="Active Template"),
+                    ft.IconButton(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Add new Section to template", on_click=self._new_section_submit),
+                    self.new_section_tf,
+                ], vertical_alignment=ft.CrossAxisAlignment.START, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Divider(),
+            ]
+
+            
+
+            for section_name, section_data in self.data.items():
+                self.controls.append(
+                    Section(
+                        name=section_name,  # Name of the section
+                        data=section_data,  # Data (dict) of the section
+                        
+                    )
+                )
+
+
+            story.p.update()
+                
+            
+
+
     async def _save_and_close(e):
         pass
 
@@ -36,8 +149,7 @@ def character_template_alert_dialog(story: Story):
         nonlocal existing_templates, edit_container, editing_current_template, new_template_tf, content
         new_template_tf.value = ""
 
-        existing_templates[name] = default_character_template_data_dict() | {'Template Data': {}}      # Create a new empty template
-
+        existing_templates[name] = default_character_template_data_dict()       # Create a new empty template
 
         # Rebuild our template names list on the left with our newly created template selected
         new_name_column = _get_template_names()
@@ -45,14 +157,14 @@ def character_template_alert_dialog(story: Story):
         content.controls[0] = new_name_column      # Rebuild the template names list
 
         # Rebuild our edit container with new template
-        edit_container.content = ft.Text(f"{name}", expand=True, theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM, text_align=ft.TextAlign.CENTER)
+        edit_container.content = load_template(name)
         content.update()
 
     def load_template(name: str = None) -> ft.Control:
 
         if name is None:
             return ft.Column(
-                [ft.Text("Select a template to start editing", expand=True, theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM, text_align=ft.TextAlign.CENTER)],
+                [ft.Text("Select a template to start editing", expand=True, theme_style=ft.TextThemeStyle.HEADLINE_SMALL, text_align=ft.TextAlign.CENTER)],
                 expand=True, scroll="auto", alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.CENTER
             )
         
@@ -68,14 +180,15 @@ def character_template_alert_dialog(story: Story):
         if template_name is None or template_data is None:
             return
         
-        column1, column2 = ft.Column([], expand=True), ft.Column([], expand=True)
-        
-        column = ft.Column([
-            ft.Text(f"Editing template: {name}", expand=True, theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM, text_align=ft.TextAlign.CENTER),
-            ft.Row([column1, ft.Divider(), column2], expand=True,)
-        ], expand=True, scroll="auto", alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
-        return column
+        # Set existing data. This is all data already in this template
+        template_data_ctrl = DataColumn(
+            name=name,
+            width=edit_container.width,
+            data=template_data
+        )
+
+        return template_data_ctrl
 
 
     # Gets our template names as a column on the left side of the dialog
@@ -95,6 +208,7 @@ def character_template_alert_dialog(story: Story):
             
             # Load the template into our edit container
             edit_container.content = load_template(name)
+            edit_container.update()
             story.p.update()
            
 
@@ -109,7 +223,7 @@ def character_template_alert_dialog(story: Story):
                         break
 
                 if editing_current_template == name:     # If we're currently editing this template, reset our edit container
-                    edit_container.content = ft.Text("Select a template to edit it or click the + button to create a new one.")
+                    edit_container.content = load_template()
                     editing_current_template = ""
 
                 story.p.update()
@@ -150,7 +264,7 @@ def character_template_alert_dialog(story: Story):
     can_create_template = False     # Check if we can create a template based on unique name or not
 
     edit_container = ft.Container(
-        expand=True, 
+        width=story.p.width * .5 - 222, height=story.p.height * .7,
         content=load_template()
     )
     new_template_tf = ft.TextField(
@@ -161,17 +275,22 @@ def character_template_alert_dialog(story: Story):
     
     # Set our content
     content = ft.Row(
-        expand=False, height=story.p.height * .7, width=story.p.width * .5, scroll="auto",
+        height=story.p.height * .7, width=story.p.width * .5, scroll="auto",
         controls=[_get_template_names(), ft.VerticalDivider(width=2), edit_container]
     )
 
     # Alert dialog to show everything we've built
     dlg = ft.AlertDialog(
-        title=ft.Column([ft.Text(f"Character Templates Editor"), ft.Divider()]),
+        title=ft.Column([
+            ft.Row([
+                ft.Text(f"Character Templates Editor"), 
+                ft.Icon(ft.Icons.INFO_OUTLINE, tooltip="Tip: To set bullet points, seperate items with a new line"),
+                ft.Container(ft.IconButton(ft.Icons.CLOSE, ft.Colors.ERROR, on_click=lambda e: story.p.close(dlg), tooltip="Close Template Editor (Without Saving)"), expand=True, alignment=ft.alignment.center_right),
+            ]), 
+            ft.Divider()
+        ]),
         content=content,
         actions=[
-            ft.TextButton("Cancel", on_click=lambda e: story.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
-            ft.Container(width=12),   # Spacer
             ft.TextButton("Save", on_click=_save_and_close, scale=1.2),   # Start enabled to just save existing connections
         ],
     )

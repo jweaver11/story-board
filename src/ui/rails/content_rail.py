@@ -194,7 +194,7 @@ class ContentRail(Rail):
         # TODO: Should be 2 buttons: New and upload. Each has all those options
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.CENTER, wrap=True,
+            alignment=ft.MainAxisAlignment.CENTER,
             controls=self.top_row_buttons
         )
                  

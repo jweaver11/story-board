@@ -73,19 +73,12 @@ class CharactersRail(Rail):
         # Builds our buttons that are our options in the menu
         return [
             MenuOptionStyle(
-                ft.Row([
-                    ft.Icon(ft.Icons.CONNECT_WITHOUT_CONTACT,),
-                    ft.Text(f"Edit\nCharacter\nTemplates", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ]),
-                on_click=lambda e: self.p.open(character_template_alert_dialog(self.story)),
-            ),
-            MenuOptionStyle(
                 content=ft.PopupMenuButton(
                     content=ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)], expand=True),
                         padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
                     ),
-                    tooltip="New", menu_padding=0,
+                    tooltip="New", menu_padding=0, expand=True, padding=ft.padding.all(0),
                     items=[
                         ft.PopupMenuItem(
                             text="Character", icon=ft.Icons.PERSON_OUTLINED,
@@ -108,7 +101,7 @@ class CharactersRail(Rail):
                     tooltip="Upload", menu_padding=0, expand=True,
                     items=[
                         ft.PopupMenuItem(
-                            text="Character", icon=ft.Icons.PERSON_OUTLINED,
+                            "Character", ft.Icons.PERSON_OUTLINED, 
                         ),
                         ft.PopupMenuItem(
                             text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
@@ -119,8 +112,17 @@ class CharactersRail(Rail):
             ),
             MenuOptionStyle(
                 ft.Row([
+                    ft.Icon(ft.Icons.CONNECT_WITHOUT_CONTACT,),
+                    ft.Text(f"Edit Character\nTemplates", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
+                ]),
+                on_click=lambda e: self.p.open(character_template_alert_dialog(self.story)),
+                
+                
+            ),
+            MenuOptionStyle(
+                ft.Row([
                     ft.Icon(ft.Icons.MANAGE_SEARCH_OUTLINED, tooltip="Edit Character Connections"),
-                    ft.Text("Edit\nCharacter\nConnections", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
+                    ft.Text("Edit Character\nConnections", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ]),
                 on_click=lambda e: new_character_connection_clicked(self.story),
             )
@@ -178,7 +180,7 @@ class CharactersRail(Rail):
 
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.CENTER, wrap=True,
+            alignment=ft.MainAxisAlignment.SPACE_EVENLY, wrap=True,
             controls=self.top_row_buttons
         )
         
