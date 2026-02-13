@@ -58,21 +58,41 @@ def character_template_alert_dialog(story: Story):
                     return
             self.can_create_section = True
 
+        # Hide the textfield to add a new section and reset its value and error state
         def _blur_new_section_tf(self, e):
             self.new_section_tf.visible = False
             self.new_section_tf.value = ""
             self.new_section_tf.error_text = None
             self.new_section_tf.update()
 
-        def _section_reorder_handler(self, e: ft.OnReorderEvent):
+        # Called when we submit a new section name. Checks if we can create it and creates it if we can
+        def _reorder_sections(self, e: ft.OnReorderEvent):
             old_index = e.old_index
             new_idx = e.new_index
-            e.control.controls.insert(e.new_index, e.control.controls.pop(e.old_index))
-            for ctrl in e.control.controls:
-                print(ctrl)
+            new_data = {}
 
-            e.control.update()
+            # Find our sections name that is getting moved based on old index
+            for idx, name in enumerate(self.data.keys()):
+                if idx == old_index:
+                    section_name = name
+            section_data = self.data.get(section_name, None)        # Set its data as well
 
+            # Remove the section from its old position
+            self.data.pop(section_name)
+
+            # Re-build our data dict based on new order
+            for idx, name in enumerate(self.data.keys()):
+                # Adds the moved section to our new index, and adds the rest of the data where it should be
+                if idx == new_idx:
+                    new_data[section_name] = section_data
+                new_data[name] = self.data[name]
+
+            if new_idx >= len(self.data):   # If we move to the end of the list, add it there, since it won't be added in the loop
+                new_data[section_name] = section_data
+
+            self.data = new_data
+            existing_templates[self.name] = self.data     # Update our existing templates with the new data
+            self.reload()
             
 
         def _delete_section(self, section_name: str):
@@ -92,12 +112,12 @@ def character_template_alert_dialog(story: Story):
         # Reloads our control visually based on our current data
         def reload(self):   
 
-            print("New Template data on reload---------------------------------------------")    
+            #print("New Template data on reload---------------------------------------------")    
 
-            for key, value in self.data.items():
-                print(f"{key}: {value}")
+            #for key, value in self.data.items():
+                #print(f"{key}: {value}")
 
-            print("\n")        
+            #print("\n")        
                     
             # Set title and divider for this column
             self.controls = [
@@ -114,8 +134,8 @@ def character_template_alert_dialog(story: Story):
                 ft.Divider(height=2, thickness=2),
                 ft.Container(height=6),
                 ft.ReorderableListView(
-                    on_reorder=self._section_reorder_handler, padding=ft.padding.only(right=10), expand=True,
-                    show_default_drag_handles=False,
+                    on_reorder=self._reorder_sections, padding=ft.padding.only(right=10), expand=True,
+                    show_default_drag_handles=False, 
                     
                     #footer=add new section button?
                 )
@@ -124,15 +144,15 @@ def character_template_alert_dialog(story: Story):
             idx = 0
 
             for section_name, section_data in self.data.items():
-
-                
                 self.controls[-1].controls.append(
                     SectionCtrl(
                         name=section_name,  # Name of the section
+                        template_name=self.name,   # Name of the template this section belongs to for easy access to update data
                         data=section_data,  # Data (dict) of the section
                         index=idx,          # Index for our reorderable list
                     )
                 )
+                
                 idx += 1
 
 
@@ -140,22 +160,65 @@ def character_template_alert_dialog(story: Story):
 
     # Simple section class for each section in our template so we can remove and reorder them easily
     class SectionCtrl(ft.Container):
-        def __init__(self, name: str, data: dict, index: int):
+        def __init__(self, name: str, template_name: str, data: dict, index: int):
             super().__init__(data=data)
             self.name = name
+            self.template_name = template_name  
+            self.index = index
 
-            self.border_radius = ft.border_radius.all(8)
+            self.border_radius = ft.border_radius.all(10)
             self.border = ft.border.all(1, ft.Colors.ON_SURFACE_VARIANT)
-            self.padding = ft.padding.all(8)
-            self.margin = ft.margin.only(bottom=10, right=40)
+            self.padding = ft.padding.all(10)
+            self.margin = ft.margin.only(bottom=10, top=10)
 
-            def reorder_handler(e):
-                self.data = {self.data[i]: self.data[j] if j < len(self.data) else v for i, j, v in e.new_index}
-                self.parent.data[self.name] = self.data
+            self.reload()
 
+        def _reorder_items(self, e: ft.OnReorderEvent):
+            old_index = e.old_index
+            new_idx = e.new_index
+            new_data = {}
+
+            print("OLD SECTION Data------------------------------------")
+            for key, value in self.data.items():
+                print(f"{key}: {value}")
+            print("\n")
+
+            # Find our sections name that is getting moved based on old index
+            for idx, key in enumerate(self.data.keys()):
+                if idx == old_index:
+                    k = key
+            value = self.data.get(k, None)        # Set its data as well
+
+            # Remove the section from its old position
+            self.data.pop(k)
+
+            # Re-build our data dict based on new order
+            for idx, name in enumerate(self.data.keys()):
+                # Adds the moved section to our new index, and adds the rest of the data where it should be
+                if idx == new_idx:
+                    new_data[k] = value
+                new_data[name] = self.data[name]
+
+            if new_idx >= len(self.data):   # If we move to the end of the list, add it there, since it won't be added in the loop
+                new_data[k] = value
+
+            # Update our data, our parent TemplateCtrl's data, and the existing_templates data
+            self.data = new_data
+            existing_templates[self.template_name][self.name] = self.data     # Update our parents data
+
+            self.reload()
+            story.p.update()
+
+            
+        def reload(self):
+
+            #print("NEW SECTION Data------------------------------------")
+            #for key, value in self.data.items():
+                #print(f"{key}: {value}")
+            #print("\n")
 
             self.content = ft.ReorderableDraggable(
-                index,
+                self.index,
                 content=ft.Column([
                     ft.Row([
                         ft.Text(self.name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True),
@@ -163,7 +226,7 @@ def character_template_alert_dialog(story: Story):
                     ], vertical_alignment=ft.CrossAxisAlignment.START, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                     
                     # Rest of section body here
-                    ft.ReorderableListView(on_reorder=reorder_handler)
+                    ft.ReorderableListView(on_reorder=self._reorder_items)
                 ])
             )
 
@@ -339,7 +402,11 @@ def character_template_alert_dialog(story: Story):
         title=ft.Column([
             ft.Row([
                 ft.Text(f"Character Templates Editor"), 
-                ft.Icon(ft.Icons.INFO_OUTLINE, size=12, tooltip="Tip: To set bullet points, seperate items with a new line"),
+                ft.Icon(
+                    ft.Icons.INFO_OUTLINE, size=12, 
+                    tooltip="Tips: Drag sections or lines within sections to reorder them." \
+                    "\nTo set bullet points, seperate items with a new line"
+                ),
                 ft.Container(ft.IconButton(ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: story.p.close(dlg), tooltip="Close Template Editor (Without Saving)"), expand=True, alignment=ft.alignment.center_right),
             ]), 
             ft.Divider()
