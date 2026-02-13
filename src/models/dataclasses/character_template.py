@@ -6,42 +6,42 @@ def default_character_template_data_dict() -> dict:
     return {
         #'Template Data': dict,     # This is how templates store additional sections
         'Basic Info': {
-            'Summary': str,     # Short summary of the character. Optional
-            'Nickname': str,    
-            'Role': str,        # Importance of character in the story. Main, Side, Background, None
-            'Tag': str,         # Tag for custom grouping of characters. Protagonist, Antagonist, Supporting, None
-            'Morality': str,    
-            'Age': str,         
-            'Nationality': str, 
-            'Occupation': str,  
-            'Personality': str, 
-            'Goals': str,       
+            'Summary': "",     # Short summary of the character. Optional
+            'Nickname': "",    
+            'Role': "",        # Importance of character in the story. Main, Side, Background, None
+            'Tag': "",         # Tag for custom grouping of characters. Protagonist, Antagonist, Supporting, None
+            'Morality': "",    
+            'Age': "",         
+            'Nationality': "", 
+            'Occupation': "",  
+            'Personality': "", 
+            'Goals': "",       
         },
         'Physical Description': {
-            'Build': str,           # Sumarrized build of character 
-            'Sex': str, 
-            'Race': str,  
-            'Skin Color': str,  
-            'Hair Color': str,   
-            'Eye Color': str,    
-            'Height': str,   
-            'Weight': str,   
-            'Distinguishing Features': str,  
+            'Build': "",           # Sumarrized build of character 
+            'Sex': "", 
+            'Race': "",  
+            'Skin Color': "",  
+            'Hair Color': "",   
+            'Eye Color': "",    
+            'Height': "",   
+            'Weight': "",   
+            'Distinguishing Features': "",  
         },
         'Family':  {
-            'Love Interest': str,    
-            'Father': str,   
-            'Mother': str,    
-            'Siblings': str,
-            'Children': str,
-            'Ancestors': str,
-            'Other': str,
+            'Love Interest': "",    
+            'Father': "",   
+            'Mother': "",    
+            'Siblings': "",
+            'Children': "",
+            'Ancestors': "",
+            'Other': "",
         },   
         'Origin': {     
-            'Birth Date': str,   
-            'Hometown': str,     
-            'Education': str,        
-            'Trauma': str,
+            'Birth Date': "",   
+            'Hometown': "",     
+            'Education': "",        
+            'Trauma': "",
         },  
-        'Custom Fields': dict       # Anything the user wants to add on their own
+        'Custom Fields': {}       # Anything the user wants to add on their own
     }

@@ -7,19 +7,25 @@ from models.dataclasses.character_template import default_character_template_dat
 
 def character_template_alert_dialog(story: Story):
 
-    class DataColumn(ft.Column):
+    # A template control that gets the entire template data so we can manipulate it and save it
+    class TemplateCtrl(ft.Column):
         def __init__(self, name: str, **kwargs):
             super().__init__(**kwargs)
 
+            # Ctrl for creating a new section
             self.new_section_tf = ft.TextField(
                 label="New Section Name", visible=False, dense=True, autofocus=True,  capitalization=ft.TextCapitalization.WORDS,
-                on_change=self._check_section_name_unique, on_submit=self._new_section_submit
+                on_change=self._check_section_name_unique, on_submit=self._new_section_submit,
+                on_blur=self._blur_new_section_tf
             )
+            self.scroll = "none"
+            self.spacing = 0
+            self.expand = True
 
-            self.name = name
-            self.can_create_section = False     
-            self.scroll="auto"
-
+            self.name = name        # Name of this template within our templates dict
+            self.old_name = name     # Old name to check if we changed it for renaming our template key in our dict
+            self.can_create_section = False     # State checking
+            
             self.reload()
 
         # When clicking add new section
@@ -52,6 +58,23 @@ def character_template_alert_dialog(story: Story):
                     return
             self.can_create_section = True
 
+        def _blur_new_section_tf(self, e):
+            self.new_section_tf.visible = False
+            self.new_section_tf.value = ""
+            self.new_section_tf.error_text = None
+            self.new_section_tf.update()
+
+        def _section_reorder_handler(self, e: ft.OnReorderEvent):
+            old_index = e.old_index
+            new_idx = e.new_index
+            e.control.controls.insert(e.new_index, e.control.controls.pop(e.old_index))
+            for ctrl in e.control.controls:
+                print(ctrl)
+
+            e.control.update()
+
+            
+
         def _delete_section(self, section_name: str):
             pass
 
@@ -60,65 +83,97 @@ def character_template_alert_dialog(story: Story):
 
         def _update_section(self, section_name: str, new_data: dict):
             pass
+
+        def _reset_template_data(self, e=None):
+            self.data = default_character_template_data_dict()
+            existing_templates[self.name] = self.data
+            self.reload()
             
-        def reload(self):
+        # Reloads our control visually based on our current data
+        def reload(self):   
 
-            # Control class for each section we have
-            class Section(ft.Container):
-                def __init__(self, name: str, data: dict, **kwargs):
-                    super().__init__(**kwargs)
-                    self.name = name
-                    self.data = data
+            print("New Template data on reload---------------------------------------------")    
 
-                    self.border_radius = ft.border_radius.all(6)
-                    self.border = ft.border.all(1, ft.Colors.ON_SURFACE_VARIANT)
-                    self.padding = ft.padding.all(6)
+            for key, value in self.data.items():
+                print(f"{key}: {value}")
 
-                    self.content = ft.Column([
-                        ft.Row([
-                            ft.Text(self.name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True),
-                            ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Remove this section from template"),
-                        ], vertical_alignment=ft.CrossAxisAlignment.START, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                        
-                        # Rest of section body here
-                        ft.ReorderableListView()
-                    ])
-
-                    for key, value in self.data.items():
-                        self.content.controls[1].controls.append(
-                            ft.Row([
-                                ft.Text(f"{key}: ", weight=ft.FontWeight.BOLD),
-                                ft.Text(str(value))
-                            ])
-                        )
-
+            print("\n")        
+                    
             # Set title and divider for this column
             self.controls = [
+                ft.Container(height=6),
                 ft.Row([
-                    ft.IconButton(ft.Icons.REFRESH_OUTLINED, ft.Colors.ERROR, tooltip="Reset template data to defaults"),
-                    ft.TextField(self.name, label="Active Template"),
+                    ft.IconButton(ft.Icons.REFRESH_OUTLINED, ft.Colors.ERROR, tooltip="Reset template data to defaults", on_click=self._reset_template_data),
+                    ft.TextField(self.name, label="Active Template", dense=True),
+                    ft.Container(expand=True),
                     ft.IconButton(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Add new Section to template", on_click=self._new_section_submit),
                     self.new_section_tf,
-                ], vertical_alignment=ft.CrossAxisAlignment.START, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                ft.Divider(),
+                    ft.Container(width=10, height=44),
+                ], vertical_alignment=ft.CrossAxisAlignment.END),
+                ft.Container(height=6), 
+                ft.Divider(height=2, thickness=2),
+                ft.Container(height=6),
+                ft.ReorderableListView(
+                    on_reorder=self._section_reorder_handler, padding=ft.padding.only(right=10), expand=True,
+                    show_default_drag_handles=False,
+                    
+                    #footer=add new section button?
+                )
             ]
 
-            
+            idx = 0
 
             for section_name, section_data in self.data.items():
-                self.controls.append(
-                    Section(
+
+                
+                self.controls[-1].controls.append(
+                    SectionCtrl(
                         name=section_name,  # Name of the section
                         data=section_data,  # Data (dict) of the section
-                        
+                        index=idx,          # Index for our reorderable list
                     )
                 )
+                idx += 1
 
 
             story.p.update()
-                
-            
 
+    # Simple section class for each section in our template so we can remove and reorder them easily
+    class SectionCtrl(ft.Container):
+        def __init__(self, name: str, data: dict, index: int):
+            super().__init__(data=data)
+            self.name = name
+
+            self.border_radius = ft.border_radius.all(8)
+            self.border = ft.border.all(1, ft.Colors.ON_SURFACE_VARIANT)
+            self.padding = ft.padding.all(8)
+            self.margin = ft.margin.only(bottom=10, right=40)
+
+            def reorder_handler(e):
+                self.data = {self.data[i]: self.data[j] if j < len(self.data) else v for i, j, v in e.new_index}
+                self.parent.data[self.name] = self.data
+
+
+            self.content = ft.ReorderableDraggable(
+                index,
+                content=ft.Column([
+                    ft.Row([
+                        ft.Text(self.name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True),
+                        ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Remove this section from template"),
+                    ], vertical_alignment=ft.CrossAxisAlignment.START, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    
+                    # Rest of section body here
+                    ft.ReorderableListView(on_reorder=reorder_handler)
+                ])
+            )
+
+            for key, value in self.data.items():
+                self.content.content.controls[1].controls.append(
+                    ft.Row([
+                        ft.Text(f"{key}: ", weight=ft.FontWeight.BOLD),
+                        ft.Text(str(value))
+                    ])
+                )
 
     async def _save_and_close(e):
         pass
@@ -182,7 +237,7 @@ def character_template_alert_dialog(story: Story):
         
 
         # Set existing data. This is all data already in this template
-        template_data_ctrl = DataColumn(
+        template_data_ctrl = TemplateCtrl(
             name=name,
             width=edit_container.width,
             data=template_data
@@ -265,7 +320,7 @@ def character_template_alert_dialog(story: Story):
 
     edit_container = ft.Container(
         width=story.p.width * .5 - 222, height=story.p.height * .7,
-        content=load_template()
+        content=load_template(), #padding=ft.padding.all(10), border=ft.border.all(1, ft.Colors.ON_SURFACE_VARIANT)
     )
     new_template_tf = ft.TextField(
         label="Template Name", dense=True, expand=True, capitalization=ft.TextCapitalization.WORDS, 
@@ -275,8 +330,8 @@ def character_template_alert_dialog(story: Story):
     
     # Set our content
     content = ft.Row(
-        height=story.p.height * .7, width=story.p.width * .5, scroll="auto",
-        controls=[_get_template_names(), ft.VerticalDivider(width=2), edit_container]
+        height=story.p.height * .7, width=story.p.width * .5, scroll="none",
+        controls=[_get_template_names(), ft.VerticalDivider(width=2), edit_container, ft.Container(width=10)]
     )
 
     # Alert dialog to show everything we've built
@@ -284,8 +339,8 @@ def character_template_alert_dialog(story: Story):
         title=ft.Column([
             ft.Row([
                 ft.Text(f"Character Templates Editor"), 
-                ft.Icon(ft.Icons.INFO_OUTLINE, tooltip="Tip: To set bullet points, seperate items with a new line"),
-                ft.Container(ft.IconButton(ft.Icons.CLOSE, ft.Colors.ERROR, on_click=lambda e: story.p.close(dlg), tooltip="Close Template Editor (Without Saving)"), expand=True, alignment=ft.alignment.center_right),
+                ft.Icon(ft.Icons.INFO_OUTLINE, size=12, tooltip="Tip: To set bullet points, seperate items with a new line"),
+                ft.Container(ft.IconButton(ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: story.p.close(dlg), tooltip="Close Template Editor (Without Saving)"), expand=True, alignment=ft.alignment.center_right),
             ]), 
             ft.Divider()
         ]),

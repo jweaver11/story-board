@@ -13,7 +13,7 @@ import os
 import json
 from styles.colors import dark_gradient
 from ui.menu_bar import create_menu_bar
-from ui.workspaces_rail import ReorderableWorkspacesRail
+from ui.workspaces_rail import WorkspacesRail
 from models.dataclasses.character_template import default_character_template_data_dict
 
  
@@ -47,7 +47,6 @@ class Settings(ft.View):
                 # Settings the app uses and users do not directly change in the settings view
                 'active_story': "/",    # Route to our active story
                 'workspaces_rail_is_collapsed': bool,  # If the all workspaces rail is collapsed or not
-                'workspaces_rail_is_reorderable': bool,  # If the all workspaces rail is reorderable or not
                 'active_rail_width': 200,  # Width of our active rail that we can resize
                 'page_is_maximized': True,   # If the window is maximized or not
                 'page_width': int,     # Last known page width
@@ -929,7 +928,7 @@ class Settings(ft.View):
         menubar = create_menu_bar(self.p)   
 
         # Set our workspaces rail
-        self.workspaces_rail = ReorderableWorkspacesRail(self.p, self.story)  
+        self.workspaces_rail = WorkspacesRail(self.p, self.story)  
 
         # Set the rail we use for different settings categories
         nav_rail = ft.NavigationRail(
