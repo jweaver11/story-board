@@ -26,7 +26,7 @@ class CharactersRail(Rail):
 
         # UI elements
         self.top_row_buttons = [
-            ft.IconButton(ft.Icons.CONNECT_WITHOUT_CONTACT, tooltip="Edit Character Templates", on_click=lambda e: self.p.open(character_template_alert_dialog(self.story))),
+            ft.IconButton(ft.Icons.CONNECT_WITHOUT_CONTACT, tooltip="Edit Character Templates", on_click=self._open_templates_editor),
             ft.PopupMenuButton(
                 icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                 tooltip="New", menu_padding=0,
@@ -65,6 +65,11 @@ class CharactersRail(Rail):
             ],
         )
         self.sort_button.value = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
+
+    def _open_templates_editor(self, e):    
+        from models.app import app
+        app.settings.selected_index = 3     # Set settings to open on the character templates tab
+        self.p.go("/settings")
         
 
     # Called to return our list of menu options for the content rail

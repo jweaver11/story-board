@@ -58,8 +58,6 @@ def route_change(e: ft.RouteChangeEvent) -> Story:
             # If theres an error loading the story, go to home view
             page.views.append(create_home_view(page))
             page.update()
-            page.open(SnackBar(f"Error loading story for route: {page.route}"))
-                
-                    
-            
-            page.update() 
+            page.open(SnackBar(f"Error loading story for route: {page.route}"))     
+            page.update()
+            return
