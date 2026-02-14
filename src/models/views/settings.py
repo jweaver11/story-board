@@ -868,10 +868,11 @@ class Settings(ft.View):
 
         return content
     
-    def _load_template_settings(self):
+    def _load_template_settings(self, selected_template: str = None):
         ''' Loads our resources settings view '''
 
         # Has resources to help writers, can re-run the tutorial view, examples, discord link, planned features
+        # TODO: Use selete template to auto load new templates data when creating them
 
         page = self.p
 
