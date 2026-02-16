@@ -88,16 +88,15 @@ class Plotline(Widget):
         self.plot_points: dict = {} 
         self.markers: dict = {}
 
-        # Loads our three mini widgets into their dicts
-        self._load_arcs()
-        self._load_plot_points()
-        self._load_markers()
+        
         
         # State elements
-        self.x_alignment: float = 0.00      # Alignment to pass into new plot points and arcs
-        self.plotline_width: int = int()    # Width of our plotline canvas. Just used in calculations, not applied
-        self.plotline_height: int = int()   # Height of our plotline canvas Just used in calculations, not applied
-        self.can_open_menu: bool = False    # If we can open the menu when right clicking
+        self.x_alignment: float = 0.00              # Alignment to pass into new plot points and arcs
+        self.left_position: int = 0                 # Absolute left position on plotline for new markers, plotpoints, and arcs
+        self.plotline_width: int = int()            # Width of our plotline canvas
+        self.plotline_height: int = int()           # Height of our plotline canvas
+        self.can_open_menu: bool = False            # If we can open the menu when right clicking
+        self.show_hover_effects: bool = False   # If we should show hover effects of our plotline. Plot points and markers turn these off when hovering over them
 
         # Our plotline canvas that draws our plotline line and markers
         self.plotline_canvas = cv.Canvas(
@@ -111,6 +110,11 @@ class Plotline(Widget):
                 hover_interval=10,
             )
         )
+
+        # Loads our three mini widgets into their dicts
+        self._load_arcs()
+        self._load_plot_points()
+        self._load_markers()
 
         # Dropdown on the rail. We don't use it here, let the rail handle it
         self.plotline_dropdown = None      # 'Plotline_Dropdown'
@@ -245,6 +249,7 @@ class Plotline(Widget):
             page=self.p, 
             key="plot_points", 
             x_alignment=self.x_alignment,
+            left=self.left_position,
             data=None
         )
         # Add our new Plot Point mini widget object to our plot_points dict, and to our owners mini widgets
@@ -254,6 +259,7 @@ class Plotline(Widget):
 
         # Apply our changes in the UI
         self.story.active_rail.content.reload_rail()
+        await self.rebuild_plotline_canvas()
         self.reload_widget()
 
     async def create_marker(self, title: str):
@@ -270,6 +276,7 @@ class Plotline(Widget):
             page=self.p, 
             key="markers", 
             x_alignment=self.x_alignment,
+            left=self.left_position,
             data=None
         )
         # Add our new Marker mini widget object to our markers dict, and to our owners mini widgets
@@ -394,9 +401,15 @@ class Plotline(Widget):
     async def _hover_plotline_canvas(self, e: ft.HoverEvent):
         ''' Sets our coordinated for opening the menu when right clicking and updates our alignment we want to pass in '''
 
+        # TODO: Add check for show_hover_effects that is turned on/off from plotpoints, markers, and arcs
+        # Also have pp and markers and arcs turn off can_open_menus to help regulate
+
         # Set coordinates for menu
         self.story.mouse_x = e.global_x
         self.story.mouse_y = e.global_y
+
+        self.left_position = int(e.local_x)
+
 
         # Calculate and set our x alignment
         w = max(int(self.plotline_width or 0), 1)
@@ -594,11 +607,14 @@ class Plotline(Widget):
             if self.data.get('show_all_plot_points', False) or plot_point.data.get('is_shown_on_widget', False):
                 # Calculate x position
                 x_alignment = max(-1.0, min(1.0, float(plot_point.data.get('x_alignment', 0.0))))
-                x_pos = int(((x_alignment + 1.0) / 2.0) * (self.plotline_width - 10)) + 5    # because mapping [-1..1] to [0..W], plus 5px padding
+                #x_pos = int(((x_alignment + 1.0) / 2.0) * (self.plotline_width - 10)) + 10    # because mapping [-1..1] to [0..W], plus 5px padding
+                x_pos = plot_point.data.get('left', 0) + 8
+
+                plot_point.plotline_control.top = self.plotline_height // 2 - 8
 
                 # Adjust based on offset from the margin the plot points use
                 offset_x = 5 * x_alignment
-                x_pos = x_pos - offset_x
+                #x_pos = x_pos - offset_x
 
                 if line_direction == "top":
                     moveTo = cv.Path.MoveTo(x_pos, self.plotline_height // 2 - 20)
@@ -632,8 +648,6 @@ class Plotline(Widget):
 
                     line_direction = "bottom"
 
-
-                
                 label_path = cv.Path(
                     elements=[
                         moveTo,
@@ -669,9 +683,9 @@ class Plotline(Widget):
                 
                 # Calculate x position and set the control to have it
                 new_x_pos = int(((x_alignment + 1) / 2) * (self.plotline_width - 10))  
-                marker.plotline_marker.left = new_x_pos  
+                marker.plotline_control.left = new_x_pos  
 
-                # Set how high up we want to go
+                # Set how high up we want to go (Up to 80% height)
                 y_pos = int(self.h // 5)
 
                 # Guard against the header
@@ -679,12 +693,11 @@ class Plotline(Widget):
                     y_pos = 70
 
                 marker_height = self.plotline_height // 2 - y_pos
-                marker.plotline_marker.height = marker_height
-                marker.plotline_marker.top = y_pos
+                marker.plotline_control.height = marker_height
+                marker.plotline_control.top = y_pos
     
                 # Re-paint its shapes (dashed line) if needed (Only first load)
-                
-                marker.plotline_marker.content.content.shapes = [
+                marker.plotline_control.content.content.shapes = [
                     cv.Line(
                         4, 0, 4, (marker_height), 
                         paint=ft.Paint(
@@ -693,7 +706,7 @@ class Plotline(Widget):
                             stroke_width=2
                         ) 
                     )
-                    ]
+                ]
             
                 label_path = cv.Text(
                     new_x_pos, y_pos - 20, 
@@ -796,6 +809,7 @@ class Plotline(Widget):
             if self.data.get('hide_all_plot_points', False):
                 break
             if self.data.get('show_all_plot_points', False) or plot_point.data.get('is_shown_on_widget', False):
+                plot_point.plotline_control.top = self.plotline_height // 2 - 10    # Center it on the plotline, adjust as needed based on your design
 
                 # Add the plot point control to the plotline stack
                 plotline_stack.controls.append(plot_point.plotline_control)
@@ -808,7 +822,7 @@ class Plotline(Widget):
 
             if self.data.get('show_all_markers', False) or marker.data.get('is_shown_on_widget', False):
                 # Add the marker control to the plotline stack
-                plotline_stack.controls.append(marker.plotline_marker)
+                plotline_stack.controls.append(marker.plotline_control)
 
         # Set our content
         self.body_container.content = plotline_stack

@@ -399,7 +399,7 @@ class Widget(ft.Container):
             MenuOptionStyle(
                 on_click=self._delete_clicked,
                 content=ft.Row([
-                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED),
+                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
                     ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
                 ]),
             )

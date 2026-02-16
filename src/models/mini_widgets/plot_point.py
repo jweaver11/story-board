@@ -17,13 +17,14 @@ class PlotPoint(MiniWidget):
         page: ft.Page, 
         key: str,                           # Key is plot_points for plotlines
         x_alignment: float = None,          # Position of plot point on plotline if we pass one in (between -1 and 1)
+        left: int = None,                   # Absolute left position on plotline. If not provided, will be calculated from x_alignment
         data: dict = None       
     ):
         
-        if x_alignment is not None:
-            side_location = 'right' if x_alignment <= 0 else 'left'
+        if left is not None:
+            side_location = 'right' if left <= owner.plotline_width // 2 else 'left'
         else:
-            side_location = None
+            side_location = 'right'
 
         # Parent constructor
         super().__init__(
@@ -42,6 +43,7 @@ class PlotPoint(MiniWidget):
                 'tag': "plot_point",            # Tag to identify what type of object this is
                 'summary': str,
                 'x_alignment': x_alignment if x_alignment is not None else float,           # Float between -1 and 1 on x axis of plotline. 0 is center
+                'left': left, 
                 'is_major': bool,               # If this plot point is a major event
                 'date': str,                    # Date of the plot point
                 'time': str,                    # Time of the plot point
@@ -56,9 +58,7 @@ class PlotPoint(MiniWidget):
         self.x_alignment = ft.Alignment(self.data.get('x_alignment', 0), 0)
 
         # UI elements
-        self.plotline_point: ft.Container = None    # Circle container to show our plot point on the plotline
-        self.slider: ft.Column = None               # Slider to drag our plot point along the plotline
-        self.plotline_control: ft.Stack = None      # Stack that holds our plotline point and slider
+        self.plotline_control: ft.Container = None    # Circle container to show our plot point on the plotline
 
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our plot point
@@ -71,17 +71,36 @@ class PlotPoint(MiniWidget):
         self.owner.plot_points.pop(self.data.get('title', None), None)
         super().delete_dict()
 
-    # Called when actively dragging our slider thumb to change our x position
-    async def change_x_position(self, e):
+    
+    async def move_plot_point(self, e=None):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
 
-        # Grab our new position as a float of whatever number division we're on (-100 -> 100)
-        new_position = float(e.control.value)
-        np = new_position / 100         # Convert that float between -1 -> 1 for our alignment to work
+        if e is None:
+            delta_x = 0
+        else:
+            delta_x = e.delta_x
 
-        # Save the new position to data, but don't needlessly write to file until we stop dragging
-        self.data['x_alignment'] = np
-        self.is_dragging = True     # Update our dragging state. We do it here to see if we actually moved
+        if not isinstance(delta_x, (int, float)):
+            delta_x = 0
+        
+        
+        # Calculate our new absolute positioning based on our delta x from dragging
+        new_left = self.plotline_control.left + delta_x
+
+        # Clamp sides and use timeline padding
+        if new_left < 0:        # Padding on left because canvas draws in middle (5px)
+            new_left = 0
+        elif new_left > self.owner.plotline_width - 16:  # No padding needed on right
+            new_left = self.owner.plotline_width - 16
+        
+        # Set our new left position within our stack
+        self.plotline_control.left = new_left
+
+        self.data['left'] = new_left
+
+        self.save_dict()
+        self.plotline_control.page = self.p
+        self.plotline_control.update()
         
     # Called when hovering over our plot point to show the slider
     async def show_slider(self, e=None):
@@ -97,85 +116,13 @@ class PlotPoint(MiniWidget):
             # Also check if they have a slider visible. This matter for very close together plot points. Make sure only one is ready to drag at a time
             elif pp.slider.visible and pp != self:
                 return
-            
         
         # If we didn't return out, show our slider and hide our plotline point
         self.slider.visible = True
-        self.plotline_point.visible = False
+        self.plotline_control.visible = False
         
         # Apply it to the UI
         self.p.update()
-
-    # Called when we start dragging our slider thumb
-    async def start_dragging(self, e=None):
-        ''' Hides the labels of all the other plot points when we are dragging ours '''
-
-        # Hide all mini widgets while dragging (including our own)
-        for mw in self.owner.mini_widgets:
-            if mw != self and mw.data.get('is_pinned', False) == False:
-                mw.hide_mini_widget()  
-
-        self.plotline_point.visible = False
-        self.p.update()
- 
-
-    # Called when we stop dragging our slider thumb, or when we drag too high or low from slider
-    async def hide_slider(self, e=None):
-        ''' Hides our slider and puts our dot back on the plotline. Saves our new position to the file '''
-
-        # If we clicked the slider thumb but didnt move, make our mini widget visible
-        if not self.is_dragging:
-            self.show_mini_widget()
-            return
-    
-        # Hide slider
-        self.visible = True
-        self.slider.visible = False
-        self.plotline_point.visible = True      # Set our point to visible again
-        self.is_dragging = False                # No longer dragging
-
-        # Show our mini widgets that we hid while dragging
-        for mw in self.owner.mini_widgets:
-            if mw.data.get('visible', False):
-                print("Made mw visible from pp call")
-                mw.visible = True
-
-
-        # Update our alignment based on our correct data. This is updated when dragging, so no need to set it here
-        self.x_alignment = ft.Alignment(self.data.get('x_alignment', 0), 0)
-
-        if self.data.get('x_alignment', 0) <= 0:
-            self.data['side_location'] = 'right'
-        else:
-            self.data['side_location'] = 'left'
-
-        # Save new x_alignment to file
-        self.save_dict()
-        
-        # Must reload our plot point to apply the change to ourself, then reload the parent widget to apply the change to the page
-        self.reload_mini_widget(no_update=True)
-        if self.owner.information_display.visible:
-            self.owner.information_display.reload_mini_widget(no_update=True)
-        self.owner.reload_widget()
-
-    # Called to determine if we want to hide our slider
-    def may_hide_slider(self, e=None):
-        ''' Checks our dragging state. If we are dragging, don't hide the slider '''
-
-        # Check if we're dragging
-        if self.is_dragging:
-            return
-        
-        # If we're not dragging, hide the slider
-        else:
-    
-            # Hide slider
-            self.slider.visible = False
-            self.plotline_point.visible = True      # Set our point to visible again
-            self.is_dragging = False
-
-            # Since no data changed, just update the page to apply changes
-            self.p.update()
             
     # Called when toggling whether this plot point is shown on the plotline in the plotline filters
     def toggle_plotline_control(self, value: bool):
@@ -189,124 +136,81 @@ class PlotPoint(MiniWidget):
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:
             self.hide_mini_widget()
-        
 
         self.owner.reload_widget()
           
 
-    # Called whenever we need to rebuild our slider, such as on construction or when our x position changes
-    def reload_slider(self):
+    async def _drag_start(self, e=None):
+        ''' Called when we start dragging our plot point. Sets our state to dragging and changes our mouse cursor '''
 
-        # Give us a ratio for integers for our left and right expand values to catch hover off of our plot pont
-        ratio = (self.data.get('x_alignment', 0) + 1) / 2     # Convert -1 -> 1 to 0 -> 1
-    
-        # Set the left and right ratio
-        left_ratio = int(ratio * 1000)
-        right_ratio = 1000 - left_ratio
+        self.plotline_control.content.mouse_cursor = ft.MouseCursor.RESIZE_LEFT_RIGHT
+        self.is_dragging = True
+        self.p.update()
 
-        # state used during dragging
-        self.slider = ft.Column(
-            spacing=0,
-            visible=False,                                      # Start hidden until we hover over plot point
-            controls=[
-                #ft.GestureDetector(on_enter=self.hide_slider,  expand=True),    # Invisible container to hide slider when going too far up
-                ft.Container(ignore_interactions=True, expand=True),    # Invisible container to hide slider when going too far up
-                ft.Stack(
-                    alignment=ft.Alignment(0,0),
-                    controls=[
-                    ft.GestureDetector(                                             # GD so we can detect right clicks on our slider
-                        on_secondary_tap=lambda e: print("Right clicked plotpoint"),
-                        content=ft.Slider(
-                            min=-100, max=100, adaptive=True, divisions=200,  # Min and max values on each end of slider
-                            value=self.data.get('x_alignment', 0) * 100,        # Where we start on the slider
-                            interaction=ft.SliderInteraction.SLIDE_THUMB,       # Make sure you can only drag the plot point, and not click the slider to move it
-                            active_color=ft.Colors.TRANSPARENT,                 # Get rid of the background colors
-                            inactive_color=ft.Colors.TRANSPARENT,               # Get rid of the background colors
-                            thumb_color=self.data.get('color', "secondary"),    # Color of our actual dot on the slider
-                            overlay_color=ft.Colors.with_opacity(.5, self.data.get('color', "secondary")),    # Color of plot point when hovering over it or dragging      
-                            on_change=self.change_x_position,      # Update our data with new x position as we drag
-                            on_change_end=self.hide_slider,                     # Save the new position, but don't write it yet
-                            on_change_start=self.start_dragging,      # Hide other plot point labels when we start dragging                      
-                            on_blur=self.hide_slider                            # Hide the slider if we click away from it
-                        ),
-                    ),
-                    # Sitting overtop the slider, is a row with expand based on our proportions
-                    ft.Row(
-                        spacing=0,
-                        expand=True,
-                        height=100,
-                        controls=[
-                            ft.GestureDetector(         # Catch our hovers to the left of the thumb
-                                on_hover=self.may_hide_slider,
-                                hover_interval=100,
-                                expand=left_ratio,
-                                content=ft.Container(expand=True)
-                            ),
-                            ft.Column(
-                                width=50,
-                                spacing=0,
-                                controls=[
-                                    
-                                    # Catch above and below the thumb
-                                    ft.GestureDetector(expand=True, on_hover=self.may_hide_slider, data="line213", hover_interval=100),
+    # Called when we finish dragging our plotline_marker to save our position
+    async def _drag_end(self, e=None):
+        ''' Updates our alignment and side location, and applies the updadte to the canvas for our label '''
 
-                                    # Reserve safe space for the thumb
-                                    ft.Container(       # Safe area
-                                        ignore_interactions=True,
-                                        shape=ft.BoxShape.CIRCLE,
-                                        width=50, height=50, 
-                                    ),
-                                    ft.GestureDetector(expand=True, on_hover=self.may_hide_slider, data="line221", hover_interval=100),
-                                ]
-                            ),
-                            ft.GestureDetector(         # Catch our hovers to the right of the thumb
-                                on_hover=self.may_hide_slider,
-                                hover_interval=100,
-                                data="called from line 226 gd",
-                                expand=right_ratio,
-                                content=ft.Container(expand=True)
-                            ),
-                        ]
-                    )
-                ]),
-                ft.Container(ignore_interactions=True, expand=True),    # Invisible container to hide slider when going too far down
-        ])
+        self.plotline_control.content.mouse_cursor = ft.MouseCursor.CLICK
+        self.is_dragging = False
+        if not self.visible:        # Turn of highlight if we're not visilbe
+            self.plotline_control.shadow = None
+        
+        x_alignment = (self.data.get('left', 0) / (self.owner.plotline_width - 10)) * 2.0 - 1.0
+
+        self.data['x_alignment'] = x_alignment
+
+        if self.data.get('x_alignment', 0) <= 0:
+            self.data['side_location'] = "right"
+        else:
+            self.data['side_location'] = "left"
+
+
+        self.save_dict()
+        if self.owner.information_display.visible:
+            self.owner.information_display.reload_mini_widget(no_update=True)
+        await self.owner.rebuild_plotline_canvas(no_update=False)
+
+    # Called when hovering over our plot point to show the slider
+    async def _highlight(self, e=None):
+        ''' Shows our slider and hides our plotline_marker. Makes sure all other sliders are hidden '''
+
+        # Gives us a focused shadow
+        self.plotline_control.shadow = ft.BoxShadow(4, 8, ft.Colors.with_opacity(.6, self.data.get('color'))) #if self.plotline_control.shadow is None else None
+        self.plotline_control.page = self.p
+        self.plotline_control.update()
+
+    # Hides are shadow unless our info display is visible, then stay highlighted
+    async def _stop_highlight(self, e=None):
+
+        if self.is_dragging:
+            return
+
+        if not self.visible:
+            self.plotline_control.shadow = None
+            self.plotline_control.page = self.p
+            self.plotline_control.update()
+
 
     # Called from reload_mini_widget
     def reload_plotline_control(self):
         """ Rebuilds our plotline control that holds our plot point and slider """
 
-        # Reload our slider
-        self.reload_slider()
-
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
-        self.plotline_point = ft.Container(
-            margin=ft.Margin(16, 0, 16, 0),
-            expand=False, 
-            bgcolor=self.data.get('color', "secondary"),
-            width=20, height=20,
-            shape=ft.BoxShape.CIRCLE,
+        self.plotline_control = ft.Container(
+            margin=ft.Margin(16, 0, 16, 0), expand=False, 
+            width=16, height=16, opacity=1.0, bgcolor=self.data.get('color'),
+            shape=ft.BoxShape.CIRCLE, 
+            alignment=ft.alignment.center, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.GestureDetector(
-                expand=True,
-                on_enter=self.show_slider,
-                on_secondary_tap=lambda e: print("Right click on plot point"),
-                on_tap_down=self.show_slider,
+                width=16, mouse_cursor=ft.MouseCursor.CLICK,
+                on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
+                on_pan_update=self.move_plot_point, drag_interval=20, on_pan_end=self._drag_end,
+                on_secondary_tap=lambda e: print("Right click on PP"),
+                on_tap=self.show_mini_widget,
             ),
         )
-
-                
-
-        # Rebuild our stack to hold our plotline point and slider
-        self.plotline_control = ft.Stack(
-            alignment=self.x_alignment,
-            visible=self.data.get('is_shown_on_widget', True),
-            expand=True,            # Make sure it fills the whole plotline width
-            controls=[
-                ft.Container(expand=True, ignore_interactions=True),        # Make sure our stack is always expanded to full size
-                self.plotline_point,                                        # Our plot point on the plotline
-                self.slider,                                                # Our slider that appears when we hover over the plot point
-            ]
-        ) 
 
 
     # Called when reloading changes to our plot point and in constructor

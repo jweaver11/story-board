@@ -58,6 +58,9 @@ class Arc(MiniWidget):
                 'is_shown_on_widget': True,                 # If this arcs plotline control is shown on the plotline widget
                 'x_alignment_start': x_alignment_start,     # Start position on the plotline
                 'x_alignment_end': x_alignment_end,         # End position on the plotline 
+
+                # Should be left, and width
+
                 
                 # Arc Data
 
@@ -363,6 +366,8 @@ class Arc(MiniWidget):
     # Called from reload mini widget to update our plotline control
     def reload_plotline_control(self):
         ''' Reloads our arc drawing on the plotline based on current/updated data, including page size '''
+
+        # Add drag handles left and right for absolute positioning
 
         # Reload our slider
         self.reload_slider()

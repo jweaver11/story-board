@@ -96,7 +96,7 @@ class TreeViewFile(ft.GestureDetector):
             MenuOptionStyle(
                 on_click=self.delete_clicked,
                 content=ft.Row([
-                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED),
+                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
                     ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
                 ]),
             )

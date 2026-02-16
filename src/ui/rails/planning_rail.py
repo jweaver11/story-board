@@ -7,6 +7,7 @@ from ui.rails.rail import Rail
 
 
 # TODO:Overall goal: Plan out how to manage and develop the story. Mostly useful for companies, but users can use it too
+# Add worlds, canvas board, notes, characters?, plotlines?, maps?
 # Create tasks pertaining to parts of the story
 # Ability to add/import employees, and delegate them to tasks
 # -- Can see employees tasks

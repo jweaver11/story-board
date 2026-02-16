@@ -10,7 +10,6 @@ from ui.rails.rail import Rail
 from models.views.story import Story
 from styles.tree_view.tree_view_file import TreeViewFile
 import json
-from utils.alert_dialogs.character_template import character_template_alert_dialog
 from utils.alert_dialogs.character_connection import new_character_connection_clicked
 
 
@@ -66,9 +65,12 @@ class CharactersRail(Rail):
         )
         self.sort_button.value = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
 
+
+    # Open our settings to the templates tab
     def _open_templates_editor(self, e):    
         from models.app import app
         app.settings.selected_index = 3     # Set settings to open on the character templates tab
+        self.p.overlay.clear()              # If opened from menu, make sure its closed
         self.p.go("/settings")
         
 
@@ -120,10 +122,8 @@ class CharactersRail(Rail):
                     ft.Icon(ft.Icons.CONNECT_WITHOUT_CONTACT,),
                     ft.Text(f"Edit Character\nTemplates", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ]),
-                on_click=lambda e: self.p.open(character_template_alert_dialog(self.story)),
-                
-                
-            ),
+                on_click=self._open_templates_editor
+            ),      
             MenuOptionStyle(
                 ft.Row([
                     ft.Icon(ft.Icons.MANAGE_SEARCH_OUTLINED, tooltip="Edit Character Connections"),

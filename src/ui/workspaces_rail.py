@@ -178,7 +178,7 @@ class WorkspacesRail(ft.Container):
                     icon=ft.Icon(ft.Icons.EVENT_NOTE_OUTLINED),
                     selected_icon=ft.Icon(ft.Icons.EVENT_NOTE, color=ft.Colors.PRIMARY),
                     padding=ft.padding.only(top=10, bottom=10),
-                    data="planning", label_content=ft.Text("Planning", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                    data="planning", label_content=ft.Text("Plan & Design", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER),
                 ),
             ],
         )
