@@ -224,6 +224,7 @@ class Plotline(Widget):
             page=self.p, 
             key="arcs", 
             x_alignment=self.x_alignment,
+            #left=self.left_position,
             data=None
         )
 
@@ -265,10 +266,6 @@ class Plotline(Widget):
     async def create_marker(self, title: str):
         ''' Creates a new marker inside of our plotline object, and updates the data to match '''
         from models.mini_widgets.marker import Marker
-
-        left_pos = int((self.x_alignment + 1.0) / 2.0 * (self.plotline_width - 10)) + 5
-
-        print("Creating marker at left pos: ", left_pos)
 
         new_marker = Marker(
             title=title, 
@@ -607,14 +604,8 @@ class Plotline(Widget):
             if self.data.get('show_all_plot_points', False) or plot_point.data.get('is_shown_on_widget', False):
                 # Calculate x position
                 x_alignment = max(-1.0, min(1.0, float(plot_point.data.get('x_alignment', 0.0))))
-                #x_pos = int(((x_alignment + 1.0) / 2.0) * (self.plotline_width - 10)) + 10    # because mapping [-1..1] to [0..W], plus 5px padding
                 x_pos = plot_point.data.get('left', 0) + 8
-
-                plot_point.plotline_control.top = self.plotline_height // 2 - 8
-
-                # Adjust based on offset from the margin the plot points use
-                offset_x = 5 * x_alignment
-                #x_pos = x_pos - offset_x
+                plot_point.plotline_control.top = self.plotline_height // 2 - 8      # Make sure plot point is in middle of the line
 
                 if line_direction == "top":
                     moveTo = cv.Path.MoveTo(x_pos, self.plotline_height // 2 - 20)
@@ -723,64 +714,43 @@ class Plotline(Widget):
         # Go through our arcs and update their size --------------------------------------------------
         if update_arcs:
             for arc in self.arcs.values():
-                # ---- 1) & 2) Reposition + mid expansion via expand ratios (base 1000) ----
-                # Clamp defensively (RangeSlider should keep ordering, but keep it safe)
-                start_a = max(-1.0, min(1.0, float(arc.data.get('x_alignment_start', -0.2))))
-                end_a = max(-1.0, min(1.0, float(arc.data.get('x_alignment_end', 0.2))))
-                if end_a < start_a:
-                    start_a, end_a = end_a, start_a
+                # Make sure heights and widths r updated
+                arc.plotline_control.bottom = self.plotline_height // 2       # Make sure plot point is in middle of the line
 
-                left_ratio = (start_a + 1.0) / 2.0          # [-1..1] -> [0..1]
-                right_ratio = (1.0 - end_a) / 2.0           # [-1..1] -> [0..1]
+                # Re-set left, height, right
+                ratio = (arc.data.get('left', 0) + arc.data.get('right', 0)) / max(self.plotline_width, 1)
+                ratio = 1.0 - ratio
 
-                left_expand = int(left_ratio * 1000)
-                right_expand = int(right_ratio * 1000)
-                mid_expand = max(0, 1000 - left_expand - right_expand)
-
-                # Update expands in-place
-                if arc.spacing_left is not None:
-                    arc.spacing_left.expand = left_expand
-                if arc.spacing_right is not None:
-                    arc.spacing_right.expand = right_expand
-                if arc.plotline_arc is not None:
-                    arc.plotline_arc.expand = mid_expand
-
-                # ---- 3) Height follows arc width (pixel-based) ----
-                # Use the actual available width (plotline width minus the fixed 24px padding on each side)
-                available_w = max(int(getattr(self, "plotline_width", 0)) - 48, 1)
-                width_px = int(((end_a - start_a) / 2.0) * available_w)  # because mapping [-1..1] to [0..W]
-                max_h = max(int((getattr(self, "plotline_height", 0) / 2) - 50), 0)
-
-                # Semicircle-ish: height ~= width/2, but capped
-                new_h = min(max_h, max(0, int(width_px / 2)))
-                arc.plotline_arc.height = new_h
+                
+                height = ((self.plotline_height - 50) // 2) * (ratio) + 20   # Add 20 to make sure it has a minimum height
+                
+                arc.plotline_control.height = int(height)   
 
             if no_update:
                 self.plotline_canvas.page = self.p
                 self.plotline_canvas.update()
-                #self.p.update()
                 return
             self._render_widget()
 
         # If we didn't rebuild our arcs, just update the canvas
         else:
+            for arc in self.arcs.values():
+                arc.plotline_control.bottom = self.plotline_height // 2
+
+                
+
             if no_update:
                 self.plotline_canvas.page = self.p
                 self.plotline_canvas.update()
-                #self.p.update()
                 return
             self._render_widget()
             
-
-        
-    
 
     # Called when we need to rebuild out plotline UI
     def reload_widget(self):
 
         # Rebuild our tab to reflect any changes
         self.reload_tab()
-        
         
         # Create a stack so we can sit our plotpoints and arcs on our plotline
         plotline_stack = ft.Stack(
@@ -790,9 +760,9 @@ class Plotline(Widget):
                 ft.Container(self.plotline_canvas, ft.padding.only(left=16, right=16), expand=True)      # Add our canvas which has our visual plotline
             ]
         )
-
-        # Order arcs by from longest to shortest, so longer arcs are in back (temp)
-        sorted_arcs = dict(sorted(self.arcs.items(), key=lambda item: item[1].data['x_alignment_end'] - item[1].data['x_alignment_start'], reverse=True))
+ 
+        # Sort our arcs so the bigger ones are in back and smaller on top
+        sorted_arcs = dict(sorted(self.arcs.items(), key=lambda item: item[1].data.get('left', 0) + item[1].data.get('right', 0)))
 
         # Handler for plotline resize events
         for arc in sorted_arcs.values():

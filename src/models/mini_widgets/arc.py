@@ -30,15 +30,29 @@ class Arc(MiniWidget):
             data=data,         
         ) 
 
-        # Set either left or right on start
+        # Newly created arcs
         if x_alignment is not None:
-            x_alignment_start = x_alignment -.2 if x_alignment > -0.8 else -1
-            x_alignment_end = x_alignment + .2 if x_alignment < 0.8 else 1
-            side_location = "left" if x_alignment > 0 else "right"
+            x_align_pixel = int((x_alignment + 1) / 2 * owner.plotline_width)
+            left = x_align_pixel - 50
+            right = x_align_pixel + 50
+
+            if left <= 0:
+                left = 0
+            
+            if right >= owner.plotline_width:
+                right = 0
+
+            if x_alignment <= 0:
+                side_location = "right"
+                
+            else:
+                side_location = "left"
+
         else:
-            x_alignment_start = -0.2
-            x_alignment_end = 0.2
-            side_location = "right"
+            side_location = "right"     # Needs a value but won't be passed in since it should have one already
+            left = 0
+            right = 0
+    
 
         # Verifies this object has the required data fields, and creates them if not
         verify_data(
@@ -56,14 +70,12 @@ class Arc(MiniWidget):
                 'on_top': True,                             # If the mini widget should appear on top of the plotline. If false, appears below      
                 'rail_dropdown_is_expanded': True,          # If the rail dropdown is expanded  
                 'is_shown_on_widget': True,                 # If this arcs plotline control is shown on the plotline widget
-                'x_alignment_start': x_alignment_start,     # Start position on the plotline
-                'x_alignment_end': x_alignment_end,         # End position on the plotline 
 
-                # Should be left, and width
-
+                # Absolute Left and Right positions of the arc on the plotline
+                'left': left,
+                'right': right,       # Default width
                 
                 # Arc Data
-
                 'summary': str,
                 'start_date': str,                          # Start and end date of the branch, for plotline view
                 'end_date': str, 
@@ -71,48 +83,36 @@ class Arc(MiniWidget):
                 'related_locations': list,
                 'related_items': list,
                 'events': list,                             # List of events that occur during this arc
-
             },
         )
 
-        # Declare dicts of our data types  
-        self.arcs: dict = {}
-        self.plot_points: dict = {} 
-
-        # Set our alignment values
-        self.x_alignment_start = ft.Alignment(self.data.get('x_alignment_start'), 0)
-        self.x_alignment_end = ft.Alignment(self.data.get('x_alignment_end', 0), 0)
-
 
         # UI elements
-        self.plotline_control: ft.Stack = None      # Physical slider control that goes on the plotline
-        self.plotline_arc: ft.Container = None      # The actual arc container that draws the arc on the plotline
-        self.gd: ft.GestureDetector = None
-        self.slider: ft.RangeSlider = None
+        self.plotline_control: ft.Container = None      # Arc shaped contorl on the plotline
 
-        # Keep references so we can update expands without rebuilding controls every drag tick
-        self.spacing_left: ft.Container = None
-        self.spacing_right: ft.Container = None
-        self.plotline_row: ft.Row = None
-
-        # Build the gesture detector for our plotline arc. It doesn't need to be rebuilt, so we just do it once in constructor
-        self.gd = ft.GestureDetector(
-            mouse_cursor=ft.MouseCursor.CLICK,
-            expand=True, hover_interval=100,
+        # Set drag handles on left and right of arc connections to the plotline
+        self.left_drag_handle = ft.GestureDetector(
+            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR), 
             on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
             on_secondary_tap=lambda e: print("Right clicked arc"), 
-            on_enter=self.on_start_hover,      # Highlight container
-            on_exit=self.on_stop_hover,        # Stop highlight
-            on_hover=self.on_start_hover,
-            content=ft.Column(alignment=ft.MainAxisAlignment.CENTER, controls=[ft.Row(alignment=ft.MainAxisAlignment.CENTER, controls=[ft.Text(self.title)])]),
-        )   
-
+            on_enter=self._highlight,      # Highlight container
+            visible=False, on_pan_update=self.change_x_positions, on_pan_start=self.start_dragging, on_pan_end=self.finished_dragging
+        )
+        self.right_drag_handle = ft.GestureDetector(
+            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR), 
+            on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
+            on_secondary_tap=lambda e: print("Right clicked arc"), 
+            on_enter=self._highlight,      # Highlight container
+            visible=False, on_pan_update=self.change_x_positions, on_pan_start=self.start_dragging, on_pan_end=self.finished_dragging
+        )    
+        
+        
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our arc slider
         self.hidden = False                         # Track if we're in hidden mode for easier dragging
-        self.keep_slider_visible: bool = False      # If we should keep the slider visible when hovering over the arc
 
         # Loads our arc
+        self.reload_plotline_control()
         self.reload_mini_widget()
 
     def delete_dict(self, e=None):
@@ -122,51 +122,48 @@ class Arc(MiniWidget):
 
 
     # Called when we hover over our arc on the plotline
-    async def on_start_hover(self, e: ft.HoverEvent):
+    async def _highlight(self, e: ft.HoverEvent):
         ''' Focuses the arc control '''
 
         # Change its border opacity and update the page
-        self.plotline_arc.border = ft.border.only( 
+        self.plotline_control.border = ft.border.only( 
             left=ft.BorderSide(2, self.data.get('color', "secondary")),
             right=ft.BorderSide(2, self.data.get('color', "secondary")),
             top=ft.BorderSide(2, self.data.get('color', "secondary")),
         )
-        self.gd.content.opacity = 1.0
+        self.plotline_control.content.opacity = 1.0
+        self.left_drag_handle.visible = True
+        self.right_drag_handle.visible = True
 
-        if self.visible:
-            self.slider.visible = True
-                
-        self.p.update()
-
+        self.plotline_control.page = self.p
+        self.plotline_control.update()
 
     # Called when we stop hovering over our arc on the plotline
-    async def on_stop_hover(self, e: ft.HoverEvent):
+    async def _stop_highlight(self, e: ft.HoverEvent):
         ''' Changes the arc control to unfocused '''
 
-        # If we're dragging, just return
         if self.is_dragging:
             return
         
-        # If we're hovering our slider, keep it visible
-        if not self.keep_slider_visible:
-            self.slider.visible = False
-        
         # If we are not visible, lower our border and text
         if not self.visible:
-            self.plotline_arc.border=ft.border.only(        # Make boarder more see through
+            self.plotline_control.border=ft.border.only(        # Make boarder more see through
                 left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
                 right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
                 top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
             )
-            self.gd.content.opacity = .7        # Make text less prominent
+            self.plotline_control.content.opacity = .7        # Make text less prominent
+            self.left_drag_handle.visible = False
+            self.right_drag_handle.visible = False
         
-        self.p.update()
+            self.plotline_control.page = self.p
+            self.plotline_control.update()
 
-    def show_mini_widget(self, e=None):
+    def show_mini_widget_old_quesiton_mark(self, e=None):
 
         self.opacity = 1
         self.ignore_interactions = False
-        self.plotline_arc.border = ft.border.only(
+        self.plotline_control.border = ft.border.only(
             left=ft.BorderSide(2, self.data.get('color', "secondary")),
             right=ft.BorderSide(2, self.data.get('color', "secondary")),
             top=ft.BorderSide(2, self.data.get('color', "secondary")),
@@ -190,20 +187,23 @@ class Arc(MiniWidget):
             self.reload_mini_widget(no_update=True)
             self.owner.reload_widget()
     
-
     def hide_mini_widget(self, e=None, update: bool=False):
         ''' Hides this arc '''
+
+        
 
         # Set the parts we need to hide in addition to the mini widget info display
         self.opacity = 0
         self.ignore_interactions = True
-        self.slider.visible = False
 
-        self.plotline_arc.border = ft.border.only(
+        self.plotline_control.border = ft.border.only(
             left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
             right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
             top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
         )
+
+        self.left_drag_handle.visible = False
+        self.right_drag_handle.visible = False
         
         return super().hide_mini_widget(update=update)
     
@@ -214,13 +214,11 @@ class Arc(MiniWidget):
 
         self.is_dragging = True
 
-        # Hide all other plot points while dragging for behavior and visual reasons
-        for pp in self.owner.plot_points.values():
-            pp.plotline_control.visible = False
-
         # Hide all other info displays while dragging
         for mw in self.owner.mini_widgets:
             mw.visible = False
+            if isinstance(mw, Arc) and mw != self:
+                mw.plotline_control.ignore_interactions = True
 
         self.p.update()
 
@@ -229,52 +227,58 @@ class Arc(MiniWidget):
     def change_x_positions(self, e: ft.DragUpdateEvent):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
 
-        # Grab our new positions as floats of whatever number division we're on (-100 -> 100)
-        new_start_position = float(e.control.start_value)
-        new_end_position = float(e.control.end_value)
-
-        # Convert that float between -1 -> 1 for our alignment to work
-        nsp = new_start_position / 100
-        nep = new_end_position / 100
-
-        # Save the new position to data (don't write to disk until change_end)
-        self.data['x_alignment_start'] = nsp
-        self.data['x_alignment_end'] = nep
-
-        # ---- 1) & 2) Reposition + mid expansion via expand ratios (base 1000) ----
-        # Clamp defensively (RangeSlider should keep ordering, but keep it safe)
-        start_a = max(-1.0, min(1.0, float(self.data.get('x_alignment_start', -0.2))))
-        end_a = max(-1.0, min(1.0, float(self.data.get('x_alignment_end', 0.2))))
-        if end_a < start_a:
-            start_a, end_a = end_a, start_a
-
-        left_ratio = (start_a + 1.0) / 2.0          # [-1..1] -> [0..1]
-        right_ratio = (1.0 - end_a) / 2.0           # [-1..1] -> [0..1]
-
-        left_expand = int(left_ratio * 1000)
-        right_expand = int(right_ratio * 1000)
-        mid_expand = max(0, 1000 - left_expand - right_expand)
-
-        # Update expands in-place
-        if self.spacing_left is not None:
-            self.spacing_left.expand = left_expand
-        if self.spacing_right is not None:
-            self.spacing_right.expand = right_expand
-        if self.plotline_arc is not None:
-            self.plotline_arc.expand = mid_expand
-
-        # ---- 3) Height follows arc width (pixel-based) ----
-        # Use the actual available width (plotline width minus the fixed 24px padding on each side)
-        available_w = max(int(getattr(self.owner, "plotline_width", 0)) - 48, 1)
-        width_px = int(((end_a - start_a) / 2.0) * available_w)  # because mapping [-1..1] to [0..W]
-        max_h = max(int((getattr(self.owner, "plotline_height", 0) / 2) - 50), 0)
-
-        # Semicircle-ish: height ~= width/2, but capped
-        new_h = min(max_h, max(0, int(width_px / 2)))
-        self.plotline_arc.height = new_h
-
-        self.p.update()
+        # Check to make sure we are wide enough (100px)
+        width = self.owner.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
         
+        # If we're dragging the left handle, update left position
+        if e.control == self.left_drag_handle:
+            new_left = self.data.get('left', 0) + e.delta_x
+
+            # Clamp edges
+            if new_left < 10:
+                new_left = 10
+            if new_left > self.owner.plotline_width - 10:     # Make sure we don't drag past the plotline
+                new_left = self.owner.plotline_width - 10
+
+            # Width check that we're not too small
+            if width >= 100:
+                self.data['left'] = new_left
+                self.plotline_control.left = new_left
+
+            elif width < 100 and e.delta_x < 0:   # If we're trying to make it smaller, allow it, but not if we're trying to make it bigger
+                self.data['left'] = new_left
+                self.plotline_control.left = new_left
+
+        # If we're dragging the right handle, update the right position
+        else:
+            new_right = self.data.get('right', 0) - e.delta_x
+
+            # Clamp edges
+            if new_right < 10:     # Make sure we don't drag past the plotline
+                new_right = 10
+            if new_right > self.owner.plotline_width:
+                new_right = self.owner.plotline_width
+
+            # Width check that we're not too small
+            if width >= 100:
+                self.data['right'] = new_right
+                self.plotline_control.right = new_right
+
+            elif width < 100 and e.delta_x > 0:   # If we're trying to make it smaller, allow it, but not if we're trying to make it bigger
+                self.data['right'] = new_right
+                self.plotline_control.right = new_right
+
+        # Update the height of the arc based on its width
+        ratio = (self.data.get('left', 0) + self.data.get('right', 0)) / max(self.owner.plotline_width, 1)
+        ratio = 1.0 - ratio
+        new_height = ((self.owner.plotline_height - 50) // 2) * (ratio) + 20
+
+        self.plotline_control.height = int(new_height)
+
+        # Apply the updates
+        self.plotline_control.page = self.p 
+        self.plotline_control.update()
+
 
     # Called when we finish dragging our slider thumb to save our new position
     def finished_dragging(self, e):
@@ -283,14 +287,11 @@ class Arc(MiniWidget):
         # Update our state
         self.is_dragging = False                # No longer dragging
 
-        # Make sure our alignment are correct
-        self.x_alignment_start = ft.Alignment(self.data.get('x_alignment_start', -.2), 0)
-        self.x_alignment_end = ft.Alignment(self.data.get('x_alignment_end', .2), 0)
-        self.data['x_alignment'] = (self.data.get('x_alignment_end', 0) + self.data.get('x_alignment_start', 0)) / 2
+        # TODO: Update our x_alignment as well
+        #self.data['x_alignment'] = ((self.data.get('left', 0) + self.data.get('right', 0)) / 2) / max(self.owner.plotline_width, 1) * 2 - 1    
 
-        # Determine which side of the plotline we're on for our mini widget
-        mid_value = e.control.start_value + ((e.control.end_value - e.control.start_value) / 2)
-        if mid_value <= 0:
+
+        if self.data.get('x_alignment', 0) <= 0:
             self.data['side_location'] = "right"
         else:
             self.data['side_location'] = "left"
@@ -303,12 +304,14 @@ class Arc(MiniWidget):
         # Save our new positions to file
         self.save_dict()
 
+        # Make other arcs work again
         for mw in self.owner.mini_widgets:
             if mw.data.get('visible', True):
                 mw.visible = True
+            if isinstance(mw, Arc):
+                mw.plotline_control.ignore_interactions = False
 
-        # Apply the UI changes
-        #self.reload_mini_widget()
+        # Apply changes and make sure update plotline info
         if self.owner.information_display.visible:
             self.owner.information_display.reload_mini_widget(no_update=True)
         self.owner.reload_widget()
@@ -327,126 +330,46 @@ class Arc(MiniWidget):
             self.hide_mini_widget(update=True)
         # Otherwise, just update the page
         else:
-            self.p.update()
-
-    # Called whenever we need to rebuild our slider, such as on construction or when our x position changes
-    def reload_slider(self):
-
-        def _state_slider(val: bool):
-            self.keep_slider_visible = val
-            print("Keep slider visible:", self.keep_slider_visible)
-            if not self.keep_slider_visible:
-                self.slider.visible = False
-                self.p.update()
-
-        # Rebuild our slider
-        self.slider = ft.TransparentPointer(
-            ft.GestureDetector(                                             # GD so we can detect right clicks on our slider
-                height=50, on_enter=lambda e: _state_slider(True),
-                on_exit=lambda e: _state_slider(False),
-                content=ft.RangeSlider(
-                    min=-100, max=100,                                  # Min and max values on each end of slider
-                    start_value=self.data.get('x_alignment_start', 0) * 100,        # Where we start on the slider
-                    end_value=self.data.get('x_alignment_end', 0) * 100,            # Where we end on the slider
-                    divisions=200,                                      # Number of spots on the slider
-                    active_color=self.data.get('color', "secondary"),                 # Get rid of the background colors
-                    tooltip="",
-                    inactive_color=ft.Colors.TRANSPARENT,               # Get rid of the background colors
-                    overlay_color=ft.Colors.with_opacity(.5, self.data.get('color', "secondary")),    # Color of plot point when hovering over it or dragging    
-                    on_change=self.change_x_positions,       # Update our data with new x position as we drag
-                    on_change_end=self.finished_dragging,                     # Save the new position, but don't write it yet    
-                    on_change_start=self.start_dragging,
-                ),
-            ), visible=False,
-        )
-          
-                  
+            self.p.update()      
         
 
     # Called from reload mini widget to update our plotline control
     def reload_plotline_control(self):
         ''' Reloads our arc drawing on the plotline based on current/updated data, including page size '''
 
-        # Add drag handles left and right for absolute positioning
 
-        # Reload our slider
-        self.reload_slider()
-
-        # Make sure our alignment are correct
-        self.x_alignment_start = ft.Alignment(self.data.get('x_alignment_start', -.2), 0)
-        self.x_alignment_end = ft.Alignment(self.data.get('x_alignment_end', .2), 0)
-
-        # Give us a ratio for integers for our left and right expand values to catch hover off of our plot pont
-        left_ratio = (self.data.get('x_alignment_start', 0) + 1) / 2     # Convert -1 -> 1 to 0 -> 1
-        right_ratio = (1 - self.data.get('x_alignment_end', 0)) / 2     # Convert -1 -> 1 to 0 -> 1
-    
-        # Set the left and right ratio
-        left_ratio = int(left_ratio * 1000)
-        right_ratio = int(right_ratio * 1000)
-
-        mid_ratio = 1000 - right_ratio - left_ratio
-
-        spacing_left = ft.Container(expand=left_ratio, ignore_interactions=True)
-        spacing_right = ft.Container(expand=right_ratio, ignore_interactions=True)
-
-        # Store for live updates during dragging
-        self.spacing_left = spacing_left
-        self.spacing_right = spacing_right
-
-        self.gd.content = ft.Container(
-            ft.Text(self.title, style=ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=self.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS)), 
-            alignment=ft.alignment.top_center, opacity=.7, padding=ft.padding.only(top=10)
-        )
-
-
-        # ---- 1) & 2) Reposition + mid expansion via expand ratios (base 1000) ----
-        # Clamp defensively (RangeSlider should keep ordering, but keep it safe)
-        start_a = max(-1.0, min(1.0, float(self.data.get('x_alignment_start', -0.2))))
-        end_a = max(-1.0, min(1.0, float(self.data.get('x_alignment_end', 0.2))))
-        if end_a < start_a:
-            start_a, end_a = end_a, start_a
-
-
-        available_w = max(int(getattr(self.owner, "plotline_width", 0)) - 48, 1)
-        width_px = int(((end_a - start_a) / 2.0) * available_w)  # because mapping [-1..1] to [0..W]
-        max_h = max(int((getattr(self.owner, "plotline_height", 0) / 2) - 50), 0)
-
-        # Semicircle-ish: height ~= width/2, but capped
-        new_h = min(max_h, max(0, int(width_px / 2)))
-
-        self.plotline_arc = ft.Container(
-            offset=ft.Offset(0, -0.5),
-            expand=mid_ratio,
-            height=new_h,
+        self.plotline_control = ft.Container(
+            left=self.data.get('left', 0), right=self.data.get('right', None),
+            alignment=ft.alignment.top_center, height=0,
+            margin=ft.Margin(16, 0, 16, 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            border=ft.border.only(
+            border=ft.border.only(          # Give use borderes on top left and right
                 left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
                 right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
                 top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
             ),
-            border_radius=ft.border_radius.only(top_left=1000, top_right=1000, bottom_left=0, bottom_right=0),
-            content=self.gd,
+            padding=ft.padding.only(top=10),
+            border_radius=ft.border_radius.only(top_left=1000, top_right=1000, bottom_left=0, bottom_right=0),      # Make it uber curved to look like an arc
+            content=ft.GestureDetector(
+                mouse_cursor=ft.MouseCursor.CLICK,
+                hover_interval=100, expand=True,
+                on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
+                on_secondary_tap=lambda e: print("Right clicked arc"), 
+                on_enter=self._highlight,      # Highlight container
+                on_exit=self._stop_highlight,        # Stop highlight
+                #on_hover=self.on_start_hover,
+                content=ft.Column([
+                    ft.Row([
+                        self.left_drag_handle,
+                        ft.Text(self.title, theme_style=ft.TextThemeStyle.LABEL_LARGE, overflow=ft.TextOverflow.ELLIPSIS),
+                        self.right_drag_handle
+                    ], expand=True, alignment=ft.MainAxisAlignment.CENTER, vertical_alignment=ft.CrossAxisAlignment.START, spacing=0),
+                ], expand=True, alignment=ft.MainAxisAlignment.SPACE_BETWEEN, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0)
+            )
         )
 
-        self.plotline_row = ft.Row(
-            expand=True, spacing=0,
-            controls=[
-                ft.Container(width=24, ignore_interactions=True),
-                self.spacing_left,
-                self.plotline_arc,
-                self.spacing_right,
-                ft.Container(width=24, ignore_interactions=True),
-            ]
-        )
-
-        self.plotline_control = ft.Stack(
-            expand=True, alignment=ft.Alignment(0, 0),
-            controls=[
-                ft.Container(expand=True, ignore_interactions=True),
-                self.plotline_row,
-                self.slider,
-            ]
-        ) 
+        #print(f"Plotline control left and right for {self.title}: ", self.data.get('left', 0), self.data.get('right', 100))
+        
         
 
     # Called to reload our mini widget content
@@ -461,7 +384,7 @@ class Arc(MiniWidget):
             self.owner.reload_widget()
 
         # Reload our plotline control and all associated components 
-        self.reload_plotline_control()
+        #self.reload_plotline_control()
 
         # Add hide mode so we can drag without Info Display taking up the screen
         def _hide_mode(e):

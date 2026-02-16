@@ -75,6 +75,11 @@ class Marker(MiniWidget):
         ''' Called when we start dragging our plot point. Sets our state to dragging and changes our mouse cursor '''
 
         self.plotline_control.content.mouse_cursor = ft.MouseCursor.RESIZE_LEFT_RIGHT
+
+        # Hide all other info displays while dragging
+        for mw in self.owner.mini_widgets:
+            mw.visible = False
+
         self.p.update()
 
     # Called when actively dragging our slider thumb to change our x position
@@ -124,6 +129,10 @@ class Marker(MiniWidget):
 
         self.save_dict()
 
+        for mw in self.owner.mini_widgets:
+            if mw.data.get('visible', True):
+                mw.visible = True
+
         if self.owner.information_display.visible:
             self.owner.information_display.reload_mini_widget(no_update=True)
         await self.owner.rebuild_plotline_canvas(no_update=False)
@@ -168,6 +177,7 @@ class Marker(MiniWidget):
             content=ft.GestureDetector(
                 width=10, mouse_cursor=ft.MouseCursor.CLICK,
                 on_enter=self.highlight, on_exit=self.highlight,
+                on_tap_down=self._drag_start,
                 on_pan_start=self._drag_start, on_pan_end=self._drag_end,
                 on_pan_update=self.move_marker, drag_interval=20, 
                 on_secondary_tap=lambda e: print("Right click on Marker"),

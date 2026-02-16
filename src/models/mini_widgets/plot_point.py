@@ -64,6 +64,7 @@ class PlotPoint(MiniWidget):
         self.is_dragging: bool = False              # If we are currently dragging our plot point
 
         # Build our slider for moving our plot point
+        self.reload_plotline_control()
         self.reload_mini_widget(no_update=True)
 
     def delete_dict(self, e=None):
@@ -102,27 +103,6 @@ class PlotPoint(MiniWidget):
         self.plotline_control.page = self.p
         self.plotline_control.update()
         
-    # Called when hovering over our plot point to show the slider
-    async def show_slider(self, e=None):
-        ''' Shows our slider and hides our plotline_point. Makes sure all other sliders are hidden '''
-
-        # Check all other plot points
-        for pp in self.owner.plot_points.values():
-
-            # If they are dragging, we don't wanna also start dragging ours, so return out
-            if pp.is_dragging and pp != self:
-                return
-            
-            # Also check if they have a slider visible. This matter for very close together plot points. Make sure only one is ready to drag at a time
-            elif pp.slider.visible and pp != self:
-                return
-        
-        # If we didn't return out, show our slider and hide our plotline point
-        self.slider.visible = True
-        self.plotline_control.visible = False
-        
-        # Apply it to the UI
-        self.p.update()
             
     # Called when toggling whether this plot point is shown on the plotline in the plotline filters
     def toggle_plotline_control(self, value: bool):
@@ -139,13 +119,23 @@ class PlotPoint(MiniWidget):
 
         self.owner.reload_widget()
           
-
+    # Called when we start dragging
     async def _drag_start(self, e=None):
         ''' Called when we start dragging our plot point. Sets our state to dragging and changes our mouse cursor '''
 
         self.plotline_control.content.mouse_cursor = ft.MouseCursor.RESIZE_LEFT_RIGHT
         self.is_dragging = True
+
+        # Hide all other info displays while dragging
+        for mw in self.owner.mini_widgets:
+            mw.visible = False
+
         self.p.update()
+
+    # Quick fixer for the mouse cursor and highlight is we just clicked the plotpoint without dragging
+    async def _tap_up(self, e=None):
+        self.plotline_control.content.mouse_cursor = ft.MouseCursor.CLICK
+        await self._highlight()
 
     # Called when we finish dragging our plotline_marker to save our position
     async def _drag_end(self, e=None):
@@ -167,6 +157,12 @@ class PlotPoint(MiniWidget):
 
 
         self.save_dict()
+
+        # Re-show all the info displays we hid while dragging
+        for mw in self.owner.mini_widgets:
+            if mw.data.get('visible', True):
+                mw.visible = True
+
         if self.owner.information_display.visible:
             self.owner.information_display.reload_mini_widget(no_update=True)
         await self.owner.rebuild_plotline_canvas(no_update=False)
@@ -176,7 +172,7 @@ class PlotPoint(MiniWidget):
         ''' Shows our slider and hides our plotline_marker. Makes sure all other sliders are hidden '''
 
         # Gives us a focused shadow
-        self.plotline_control.shadow = ft.BoxShadow(4, 8, ft.Colors.with_opacity(.6, self.data.get('color'))) #if self.plotline_control.shadow is None else None
+        self.plotline_control.shadow = ft.BoxShadow(5, 10, ft.Colors.with_opacity(.6, self.data.get('color'))) #if self.plotline_control.shadow is None else None
         self.plotline_control.page = self.p
         self.plotline_control.update()
 
@@ -204,11 +200,11 @@ class PlotPoint(MiniWidget):
             alignment=ft.alignment.center, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.GestureDetector(
-                width=16, mouse_cursor=ft.MouseCursor.CLICK,
+                width=16, mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
                 on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
                 on_pan_update=self.move_plot_point, drag_interval=20, on_pan_end=self._drag_end,
                 on_secondary_tap=lambda e: print("Right click on PP"),
-                on_tap=self.show_mini_widget,
+                on_tap=self.show_mini_widget, on_tap_down=self._drag_start
             ),
         )
 
@@ -226,7 +222,7 @@ class PlotPoint(MiniWidget):
             self.owner.reload_widget()
 
         # Reload our plotline control
-        self.reload_plotline_control()
+        #self.reload_plotline_control()
 
         self.title_control = ft.Row([
             ft.Icon(ft.Icons.LOCATION_PIN, self.owner.data.get('color', None)),
