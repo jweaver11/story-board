@@ -8,7 +8,7 @@ import flet as ft
 from styles.menu_option_style import MenuOptionStyle
 from ui.rails.rail import Rail
 from models.views.story import Story
-from styles.tree_view.tree_view_file import TreeViewFile
+from styles.rail.tree_view_file import TreeViewFile
 import json
 from utils.alert_dialogs.character_connection import new_character_connection_clicked
 

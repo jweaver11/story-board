@@ -103,7 +103,7 @@ class Plotline(Widget):
             on_resize=self.rebuild_plotline_canvas, 
             resize_interval=20, expand=True, 
             content=ft.GestureDetector(
-                expand=True, on_secondary_tap=self.on_secondary_tap,
+                expand=True, on_secondary_tap=self._open_menu,
                 on_hover=self._hover_plotline_canvas,
                 on_exit=self._exit_canvas,
                 on_tap=self._on_tap,
@@ -332,10 +332,13 @@ class Plotline(Widget):
 
         
         return [
-             MenuOptionStyle(
+            MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
-                    tooltip="New", menu_padding=0,
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", weight=ft.FontWeight.BOLD)]),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                    ),
+                    tooltip=f"New Item for {self.title}", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(
                             text="Plot Point", icon=ft.Icons.ADD_LOCATION_OUTLINED,
@@ -351,6 +354,8 @@ class Plotline(Widget):
                         ),
                     ]
                 ),
+                
+                no_padding=True
             ),
             MenuOptionStyle(
                 on_click=_show_info_display,
@@ -377,18 +382,14 @@ class Plotline(Widget):
             # Color changing popup menu
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    expand=True,
-                    tooltip="",
-                    padding=None,
-                    content=ft.Row(
-                        expand=True,
-                        controls=[
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
-                            ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
-                        ]
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.data.get('color', 'primary'),), ft.Text("Color",  weight=ft.FontWeight.BOLD),]),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
                     ),
+                    tooltip=f"Change {self.title} Color", menu_padding=0,
                     items=self._get_color_options()
-                )
+                ),
+                no_padding=True
             ),
         ]
     
@@ -423,7 +424,7 @@ class Plotline(Widget):
             self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
 
             # Divisions on the timeline
-            self.plotline_canvas.shapes[len(self.data.get('divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
+            self.plotline_canvas.shapes[len(self.data.get('plotline_data', {}).get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
             self.plotline_canvas.content.mouse_cursor = ft.MouseCursor.CLICK      # Change cursor to pointer
 
             self.plotline_canvas.page = self.p      # refresh page reference
@@ -433,7 +434,7 @@ class Plotline(Widget):
         else:
             self.can_open_menu = False
             self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
-            self.plotline_canvas.shapes[len(self.data.get('divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
+            self.plotline_canvas.shapes[len(self.data.get('plotline_data', {}).get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
             self.plotline_canvas.content.mouse_cursor = None
 
             self.plotline_canvas.page = self.p      # refresh page reference
@@ -443,7 +444,7 @@ class Plotline(Widget):
         ''' Called when exiting our plotline canvas '''
         self.can_open_menu = False
         self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
-        self.plotline_canvas.shapes[len(self.data.get('divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
+        self.plotline_canvas.shapes[len(self.data.get('plotline_data', {}).get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
         self.plotline_canvas.content.mouse_cursor = None
 
         self.plotline_canvas.page = self.p      # refresh page reference
@@ -451,7 +452,7 @@ class Plotline(Widget):
 
 
     # Called when right clicking our plotline on the canvas
-    async def on_secondary_tap(self, e=None):
+    async def _open_menu(self, e=None):
         ''' Opens our menu for the options of our related plotline '''
         if self.can_open_menu:
             self.story.open_menu(self.get_menu_options())
@@ -485,7 +486,7 @@ class Plotline(Widget):
 
         # Make sure our information display is visible
         if not self.information_display.visible:
-            self.information_display.toggle_visibility(value=True)
+            self.information_display.show_mini_widget()
 
         # Focus the title control for renaming
         self.information_display.title_control.focus()
@@ -551,7 +552,7 @@ class Plotline(Widget):
                 self.plotline_canvas.shapes.append(
                     cv.Text(
                         x, self.plotline_height // 2 - 25 if app.settings.data.get('division_labels_direction', "top") == "top" else self.plotline_height // 2 + 25,
-                        str(self.data.get('plotline_data', {}).get('divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
+                        str(self.data.get('plotline_data', {}).get('Divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
                         ft.TextStyle(14, weight=ft.FontWeight.BOLD),
                         alignment=ft.alignment.center
                     )

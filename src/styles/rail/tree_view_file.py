@@ -1,7 +1,7 @@
 import flet as ft
 from models.widget import Widget
 from styles.menu_option_style import MenuOptionStyle
-from styles.tree_view.tree_view_directory import TreeViewDirectory
+from styles.rail.tree_view_directory import TreeViewDirectory
 from models.app import app
 from styles.colors import colors
 from utils.check_widget_unique import check_widget_unique
@@ -81,17 +81,14 @@ class TreeViewFile(ft.GestureDetector):
             ),
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    expand=True, tooltip="Change this item's color",
-                    padding=ft.Padding(0,0,0,0),
-                    content=ft.Row(
-                        expand=True,
-                        controls=[
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
-                            ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
-                        ]
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.widget.data.get('color', 'primary'),), ft.Text("Color",  weight=ft.FontWeight.BOLD),]),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
                     ),
+                    tooltip=f"Change {self.widget.title} Color", menu_padding=0,
                     items=self._get_color_options()
                 ),
+                no_padding=True
             ),
             MenuOptionStyle(
                 on_click=self.delete_clicked,

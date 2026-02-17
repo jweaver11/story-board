@@ -7,7 +7,7 @@ import os
 import json
 from models.views.story import Story
 from models.widgets.plotline import Plotline
-from styles.tree_view.tree_view_directory import TreeViewDirectory
+from styles.rail.tree_view_directory import TreeViewDirectory
 from utils.check_widget_unique import check_widget_unique
 from utils.alert_dialogs.new_canvas import new_canvas_alert_dlg
 import asyncio

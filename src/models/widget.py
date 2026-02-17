@@ -523,10 +523,10 @@ class Widget(ft.Container):
         ''' Returns a list of all available colors for icon changing '''
 
         # Called when a color option is clicked on popup menu to change icon color
-        def _change_icon_color(color: str):
+        async def _change_icon_color(color: str):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
-            self.change_data(**{'color': color})
+            await self.change_data(**{'color': color})
             
             # Change our icon to match, apply the update
             self.story.active_rail.content.reload_rail()
@@ -543,7 +543,7 @@ class Widget(ft.Container):
             color_controls.append(
                 ft.PopupMenuItem(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                    on_click=lambda e, col=color: _change_icon_color(col)
+                    on_click=lambda e, col=color: self.p.run_task(_change_icon_color, col)
                 )
             )
 
