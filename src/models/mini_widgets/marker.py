@@ -75,6 +75,7 @@ class Marker(MiniWidget):
         ''' Called when we start dragging our plot point. Sets our state to dragging and changes our mouse cursor '''
 
         self.plotline_control.content.mouse_cursor = ft.MouseCursor.RESIZE_LEFT_RIGHT
+        self.is_dragging = True
 
         # Hide all other info displays while dragging
         for mw in self.owner.mini_widgets:
@@ -116,6 +117,9 @@ class Marker(MiniWidget):
         ''' Updates our alignment and side location, and applies the updadte to the canvas for our label '''
 
         self.plotline_control.content.mouse_cursor = ft.MouseCursor.CLICK
+        self.is_dragging = False
+
+        await self.highlight()
 
         x_alignment = (self.data.get('left', 0) / (self.owner.plotline_width - 10)) * 2.0 - 1.0
 
@@ -142,6 +146,8 @@ class Marker(MiniWidget):
     # Called when hovering over our plot point to show the slider
     async def highlight(self, e=None):
         ''' Shows our slider and hides our plotline_marker. Makes sure all other sliders are hidden '''
+        if self.is_dragging:
+            return
 
         self.plotline_control.content.content.opacity = .7 if self.plotline_control.content.content.opacity != .7 else 1
 
@@ -172,7 +178,7 @@ class Marker(MiniWidget):
 
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
         self.plotline_control = ft.Container(
-            margin=ft.Margin(16, 0, 16, 0), expand=False, 
+            margin=ft.Margin(16, 0, 16, 0), expand=False,
             width=10, alignment=ft.alignment.center, clip_behavior=ft.ClipBehavior.HARD_EDGE,
             left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.GestureDetector(
@@ -185,7 +191,7 @@ class Marker(MiniWidget):
                 on_tap=self.show_mini_widget,
                 content=cv.Canvas(
                     width=10, opacity=.7, resize_interval=20,    
-                    content=ft.Container(ignore_interactions=True, expand=True), #on_resize=_resize_plotline_canvas, 
+                    content=ft.Container(ignore_interactions=True, expand=True),
                     shapes=[],    # Set shapes empty so timeline knows to set its dashed line
                 ),
             ),

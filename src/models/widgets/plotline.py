@@ -460,24 +460,78 @@ class Plotline(Widget):
         if self.can_open_menu:
             self.story.open_menu(self.get_menu_options())
 
+    # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
     async def new_item_clicked(self, e):
-        ''' Called when new plot point or arc is clicked from plotline context menu '''
-        
+        ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
+
+        # Checks that the name in the textfield does not match any of the existing mini widgets of that type, and updates visually to reflect
+        async def _check_name_unique(e):
+            name = new_item_tf.value.strip()
+            if not name:
+                submit_button.disabled = True
+            elif tag == "plot_point" and name in self.plot_points:
+                submit_button.disabled = True
+                new_item_tf.error_text = "Name must be unique"
+                new_item_tf.focus()
+            elif tag == "arc" and name in self.arcs:
+                submit_button.disabled = True
+                new_item_tf.error_text = "Name must be unique"
+                new_item_tf.focus()
+            elif tag == "marker" and name in self.markers:
+                submit_button.disabled = True
+                new_item_tf.error_text = "Name must be unique"
+                new_item_tf.focus()
+            else:
+                submit_button.disabled = False
+                new_item_tf.error_text = None
+            
+            new_item_tf.update()
+            submit_button.update()
+            
+        # Create the nwew mini widget with the current text field value. Makes sure we passed checks first
+        async def _create_new_mw(e):
+
+            # Button is disabled if name is the same
+            if submit_button.disabled:
+                new_item_tf.focus()
+                return
+            
+            title = new_item_tf.value.strip()
+            if tag == "plot_point":
+                await self.create_plot_point(title)
+            elif tag == "arc":
+                await self.create_arc(title)
+            elif tag == "marker":
+                await self.create_marker(title)
+
+            self.p.close(dlg)   # Close the dialog
+
+        # Grab the type of mini widget we are creating
         tag = e.control.data
 
-        if tag is not None:
-            match tag:
-                case 'arc':
-                    await self.create_arc(f"Arc {len(self.arcs) + 1}")
-                case "marker":
-                    await self.create_marker(f"Marker {len(self.markers) + 1}")
-                case 'plot_point':  
-                    await self.create_plot_point(f"Plot Point {len(self.plot_points) + 1}")
-        else:
-            print("Error: No tag found for new item creation")
+        # Textfield for the name of the new mw
+        new_item_tf = ft.TextField(
+            label=f"Title", expand=True, on_change=_check_name_unique, autofocus=True,
+            capitalization=ft.TextCapitalization.WORDS, on_submit=_create_new_mw
+        )
 
-        await asyncio.sleep(.3)
-        await self.story.close_menu()
+        # Button for creating new mw. Can also press enter in the textfield
+        submit_button = ft.TextButton("Create", on_click=_create_new_mw, disabled=True)
+
+        # Dialog we open onto the page
+        dlg = ft.AlertDialog(
+            title=ft.Text(f"New {tag.replace('_', ' ').title()} Name"),
+            content=new_item_tf,
+            actions=[
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda e: self.p.close(dlg)),
+                submit_button
+            ],
+        )
+
+        await asyncio.sleep(.3)     # Let menu animation finish before closing or get grey screen briefly
+        await self.story.close_menu()       # Close menu that was open
+        self.p.open(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
+        
 
 
     # Called when rename button is clicked
@@ -676,7 +730,7 @@ class Plotline(Widget):
                 x_alignment = max(-1.0, min(1.0, float(marker.data.get('x_alignment', 0.0))))
                 
                 # Calculate x position and set the control to have it
-                new_x_pos = int(((x_alignment + 1) / 2) * (self.plotline_width - 10))  
+                new_x_pos = int(((x_alignment + 1) / 2) * (self.plotline_width - 10))
                 marker.plotline_control.left = new_x_pos  
 
                 # Set how high up we want to go (Up to 80% height)
@@ -693,7 +747,7 @@ class Plotline(Widget):
                 # Re-paint its shapes (dashed line) if needed (Only first load)
                 marker.plotline_control.content.content.shapes = [
                     cv.Line(
-                        4, 0, 4, (marker_height), 
+                        3, 0, 3, (marker_height), 
                         paint=ft.Paint(
                             marker.data.get('color', "secondary"),
                             stroke_dash_pattern=[10, 10],
@@ -703,7 +757,7 @@ class Plotline(Widget):
                 ]
             
                 label_path = cv.Text(
-                    new_x_pos, y_pos - 20, 
+                    new_x_pos + 3, y_pos - 20, 
                     marker.title,
                     ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=marker.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
                     alignment=ft.alignment.center,
