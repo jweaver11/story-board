@@ -32,7 +32,7 @@ class Rail(ft.Container):
         self.p = page
         self.story = story
         self.directory_path = directory_path
-        self.plotline = plotline
+        self.plotline = plotline        # Plotlines rail
 
         # Text style for our textfields
         self.text_style = ft.TextStyle(
@@ -166,11 +166,24 @@ class Rail(ft.Container):
 
         # Some mini widgets that have their own uniquess checks
         elif tag == "plot_point" and self.plotline is not None:
-            pass
+            for key in self.plotline.plot_points.keys():
+                if key == title:
+                    self.item_is_unique = False
+                    error_text = "Title must be unique"
+                    break
+            
         elif tag == "arc" and self.plotline is not None:
-            pass
+            for key in self.plotline.arcs.keys():
+                if key == title:
+                    self.item_is_unique = False
+                    error_text = "Title must be unique"
+                    break
         elif tag == "marker" and self.plotline is not None:
-            pass
+            for key in self.plotline.markers.keys():
+                if key == title:
+                    self.item_is_unique = False
+                    error_text = "Title must be unique"
+                    break
 
         # Not a category, so we check the widget
         else:
@@ -219,7 +232,7 @@ class Rail(ft.Container):
 
 
     # Called whenever we submit a new item (Chapter, note, category, etc.) via enter key
-    def submit_item(self, e):
+    async def submit_item(self, e):
         ''' Sets our state to submitting, and creates new item if unique. Father is either Plotline or arc for creating mini widgets '''
 
         # Change our submitting state
@@ -231,39 +244,37 @@ class Rail(ft.Container):
         # Protect against empty titles. They break things
         if title is None or title.strip() == "":
             return
+        
+        tag = e.control.data
             
         # If our new title unique (check from on_new_item_change), create the new item
         if self.item_is_unique:
 
-            # Check what kind of item we're creating based on textfield data
-            tag = e.control.data
+            match tag:
+                # New categories
+                case "category":
+                    # Create our new category
+                    self.story.create_folder(directory_path=self.directory_path, name=title)
 
-            # New categories
-            if tag == "category":
-                # Create our new category
-                self.story.create_folder(directory_path=self.directory_path, name=title)
+                # Mini widgets
+                case "plot_point":
+                    if self.plotline is not None:
+                        print("Creating plot point:", title)
+                        await self.plotline.create_plot_point(title)
+                case "arc":
+                    if self.plotline is not None:
+                        print("Creating arc:", title)
+                        await self.plotline.create_arc(title)
+                case "marker":
+                    if self.plotline is not None:
+                        print("Creating marker:", title)
+                        await self.plotline.create_marker(title)
 
-            # New plot points and arcs on Plotlines or arcs
-            elif tag == "plot_point":
-                if self.plotline is not None:
-                    print("Creating plot point:", title)
-                    self.plotline.create_plot_point(title)
-
-            # New arcs on plotlines
-            elif tag == "arc":
-                if self.plotline is not None:
-                    print("Creating arc:", title)
-                    self.plotline.create_arc(title)
-                 
-            elif tag == "marker":
-                if self.plotline is not None:
-                    print("Creating marker:", title)
-                    self.plotline.create_marker(title)
-            # New widgets
-            else:
-                # Create the widget and reload all our rails
-                self.story.create_widget(title, tag)
-                self.story.active_rail.content.reload_rail()
+                # All other cases are widgets
+                case _:
+                    # Create the widget and reload all our rails
+                    self.story.create_widget(title, tag)
+                    self.story.active_rail.content.reload_rail()
 
 
 
@@ -275,13 +286,8 @@ class Rail(ft.Container):
         self.story.close_menu_instant()   
         self.p.open(new_canvas_alert_dlg(self.p, self.story))
 
-    # Called when we select a new dropdown
-    def refresh_buttons(self):
-        ''' Refreshes the buttons at top of the rail '''
-        pass
-
-    # Called every time the mouse moves over the workspace
-    def on_hovers(self, e):
+    # Called every time the mouse moves over our rail
+    async def on_hovers(self, e):
         ''' Stores our mouse positioning so we know where to open menus '''
         self.story.mouse_x = e.global_x 
         self.story.mouse_y = e.global_y 

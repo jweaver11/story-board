@@ -135,6 +135,8 @@ class Marker(MiniWidget):
         if self.owner.information_display.visible:
             self.owner.information_display.reload_mini_widget(no_update=True)
         await self.owner.rebuild_plotline_canvas(no_update=False)
+
+        self.owner.story.active_rail.content.reload_rail()
         
         
     # Called when hovering over our plot point to show the slider

@@ -35,20 +35,24 @@ class Arc(MiniWidget):
 
             # Calculate pixel values we need
             x_align_pixel = int((x_alignment + 1) / 2 * owner.plotline_width)
-            rp = owner.plotline_width - x_align_pixel
+            
 
             # Left and right pixel values
             left = x_align_pixel - 50
-            right = rp - 50
-
-            left_ratio = left / max(owner.plotline_width, 1)
-            right_ratio = right / max(owner.plotline_width, 1)
+            
 
             if left <= 0:
                 left = 0
+                x_align_pixel = 50
+
+            rp = owner.plotline_width - x_align_pixel
+            right = rp - 50
             
             if right >= owner.plotline_width:
                 right = 0
+
+            left_ratio = left / max(owner.plotline_width, 1)
+            right_ratio = right / max(owner.plotline_width, 1)
 
             if x_alignment <= 0:
                 side_location = "right"
@@ -105,14 +109,14 @@ class Arc(MiniWidget):
 
         # Set drag handles on left and right of arc connections to the plotline
         self.left_drag_handle = ft.GestureDetector(
-            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR, self.data.get('color', 'secondary')), 
+            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR, self.data.get('color', 'secondary'), 20), 
             on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
             on_secondary_tap=lambda e: print("Right clicked arc"), 
             on_enter=self._highlight,      # Highlight container
             visible=False, on_pan_update=self.change_x_positions, on_pan_start=self.start_dragging, on_pan_end=self.finished_dragging
         )
         self.right_drag_handle = ft.GestureDetector(
-            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR, self.data.get('color', 'secondary')), 
+            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR, self.data.get('color', 'secondary'), 20), 
             on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
             on_secondary_tap=lambda e: print("Right clicked arc"), 
             on_enter=self._highlight,      # Highlight container
@@ -315,6 +319,7 @@ class Arc(MiniWidget):
         if self.owner.information_display.visible:
             self.owner.information_display.reload_mini_widget(no_update=True)
         self.owner.reload_widget()
+        self.owner.story.active_rail.content.reload_rail()
 
     # Called when toggling whether this plot point is shown on the plotline in the plotline filters
     def toggle_plotline_control(self, value: bool):
@@ -368,7 +373,7 @@ class Arc(MiniWidget):
                         self.left_drag_handle,
                         ft.Text(self.title, theme_style=ft.TextThemeStyle.LABEL_LARGE, overflow=ft.TextOverflow.ELLIPSIS),
                         self.right_drag_handle
-                    ], expand=True, alignment=ft.MainAxisAlignment.CENTER, vertical_alignment=ft.CrossAxisAlignment.START, spacing=0),
+                    ], expand=True, alignment=ft.MainAxisAlignment.CENTER, vertical_alignment=ft.CrossAxisAlignment.START, spacing=4),
                     
                 ], expand=True, alignment=ft.MainAxisAlignment.SPACE_BETWEEN, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0)
             )

@@ -6,40 +6,19 @@ from styles.colors import colors
 
 
 # RAIL ITEMS FOR PLOTPOINTS AND ARCS
-class PlotlineItem(ft.GestureDetector):
+class MiniWidgetItem(ft.GestureDetector):
     
     # Constructor
     def __init__(
         self, 
         mini_widget: MiniWidget, 
-        title: str,
-        icon: ft.Icon = None,
-        additional_menu_options: list[ft.Control] = None
     ):
         
          
         # Set our widget reference and tag
-        self.mini_widget = mini_widget
-        self.title = title
-        self.color = self.mini_widget.data.get('color', ft.Colors.PRIMARY)
-        self.additional_menu_options = additional_menu_options
+        self.mini_widget = mini_widget        
+
         
-
-        # Check if we're a plot point or an arc for icon purposes
-        if isinstance(self.mini_widget, PlotPoint): 
-            self.tag = "plot_point"
-        else:
-            self.tag = "arc"
-
-
-        if self.tag == "plot_point":
-            self.icon = ft.Icons.LOCATION_ON_OUTLINED
-
-        else:
-            self.icon = ft.Icons.CIRCLE_OUTLINED
-
-        if icon is not None:
-            self.icon = icon
             
 
         # Set our text style
@@ -49,15 +28,14 @@ class PlotlineItem(ft.GestureDetector):
             weight=ft.FontWeight.BOLD,
         )
 
-        # Get icon color from widget data if it exists
-        #self.icon_color = mini_widget.data.get('color', 'primary')
+        
 
         # Parent constructor
         super().__init__(
             on_enter = self.on_hover,
             on_exit = self.on_stop_hover,
             on_secondary_tap = lambda e: self.mini_widget.owner.story.open_menu(self.get_menu_options()),
-            on_tap = lambda e: self.mini_widget.toggle_visibility(value=True),    # Open up plotline if not opened, focus our mini widget
+            on_tap = lambda e: self.mini_widget.show_mini_widget(),    # Open up plotline if not opened, focus our mini widget
             mouse_cursor = ft.MouseCursor.CLICK,
         )
 
@@ -90,7 +68,7 @@ class PlotlineItem(ft.GestureDetector):
                     content=ft.Row(
                         expand=True,
                         controls=[
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
+                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.mini_widget.data.get('color', ft.Colors.PRIMARY)),
                             ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
                         ]
                     ),
@@ -105,17 +83,6 @@ class PlotlineItem(ft.GestureDetector):
                 ]),
             )
         ]
-        
-        # Run through our additional menu options if we have any, and set their on_click methods
-        #for option in self.additional_menu_options or []:
-
-            # Set their on_click to call our on_click method, which can handle any type of widget
-            #option.on_tap = lambda e, t=option.data: self.father.new_item_clicked(type=t)
-
-            # Add them to the list
-            #menu_options.append(option)
-
-
 
         return menu_options
 
@@ -258,7 +225,6 @@ class PlotlineItem(ft.GestureDetector):
 
             # Change the data
             self.mini_widget.change_data(**{'color': color})
-            self.color = color
             
             # Change our icon to match, apply the update
             self.reload()
@@ -284,18 +250,18 @@ class PlotlineItem(ft.GestureDetector):
     def delete_clicked(self, e):
         ''' Deletes this file from the story '''
 
-        def _delete_confirmed(e):
+        async def _delete_confirmed(e):
             ''' Deletes the widget after confirmation '''
 
             self.mini_widget.p.close(dlg)
 
-            if self.tag == "plot_point":
+            if self.mini_widget.data.get('tag', "") == "plot_point":
                 self.mini_widget.owner.delete_plot_point(self.mini_widget)
             else:
                 self.mini_widget.owner.delete_arc(self.mini_widget)
 
             self.mini_widget.owner.story.active_rail.content.reload_rail()
-            self.mini_widget.owner.story.close_menu()
+            await self.mini_widget.owner.story.close_menu()
             
 
         # Append an overlay to confirm the deletion
@@ -316,19 +282,17 @@ class PlotlineItem(ft.GestureDetector):
     def reload(self):
 
         self.content = ft.Container(
-            expand=True, 
-            padding=ft.Padding(0, 2, 5, 2),
+            expand=True, margin=ft.margin.only(left=10),
+            padding=ft.Padding(6, 2, 6, 2),
             border_radius=ft.border_radius.all(6),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            content=ft.GestureDetector(
-                mouse_cursor=ft.MouseCursor.CLICK,
-                content=ft.Row(
-                    expand=True,
+            content=ft.Row(
+                    expand=True, #alignment=ft.MainAxisAlignment.CENTER,
                     controls=[
-                        ft.Icon(self.icon, color=self.color, size=20), 
-                        ft.Text(value=self.title, style=self.text_style),
+                        
+                        ft.Text(value=f"{self.mini_widget.title}", style=self.text_style, overflow=ft.TextOverflow.ELLIPSIS, expand=True),
                     ],
                 ),
-            )
+            
         )
         

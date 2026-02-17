@@ -38,12 +38,12 @@ class Plotline(Widget):
                 # Widget Data
                 'tag': "plotline",
                 'color': app.settings.data.get('default_plotline_color'),
+                'order_index': 0,         # Order if we want to order our plotlines
 
                 # State and filter management   
                 'information_display_visibility': True,             # Visibility of our information display mini widget
                 'information_display_is_pinned': False,             # If our information display is pinned open
                 'hide_division_labels': bool,                       # If the division labels are hidden on the plotline
-                
                 
                 # Our rail dropdown states
                 'dropdown_is_expanded': True,               # If the branch dropdown is expanded on the rail
@@ -692,7 +692,7 @@ class Plotline(Widget):
                     cv.Line(
                         4, 0, 4, (marker_height), 
                         paint=ft.Paint(
-                            self.data.get('color', "secondary"),
+                            marker.data.get('color', "secondary"),
                             stroke_dash_pattern=[10, 10],
                             stroke_width=2
                         ) 

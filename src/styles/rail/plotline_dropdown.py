@@ -8,10 +8,9 @@ from models.views.story import Story
 from models.widgets.plotline import Plotline
 import os
 from styles.colors import colors
+import asyncio
 
 
-# TODO: When clicking and expanding, make sure to set the active_plotline to this plotline, 
-# so we can use the buttons at top of rail when there are multiple plotlines
 
 # Expansion tiles used for plotlines (when more than 1), plotpoints labels, and arcs labels
 class PlotlineDropdown(ft.GestureDetector):
@@ -21,7 +20,6 @@ class PlotlineDropdown(ft.GestureDetector):
         self,
         title: str,                                              # Title of this folder
         story: Story,                                            # Story reference for mouse positions and other logic
-        additional_menu_options: list[ft.Control],               # Additional menu options when right clicking a category, depending on the rail
         plotline: Plotline,                                      # Reference to the plotline this dropdown represents 
         rail,     
     ):
@@ -30,7 +28,6 @@ class PlotlineDropdown(ft.GestureDetector):
         self.title = title
         self.story = story
         self.plotline = plotline
-        self.additional_menu_options = additional_menu_options
         self.rail = rail
 
 
@@ -76,28 +73,34 @@ class PlotlineDropdown(ft.GestureDetector):
 
         self.reload()
 
-    # Called to return our menu options when right clicking our dropdown
     def get_menu_options(self) -> list[ft.Control]:
-        ''' Filters the five options we received, and only returns what we need with correct logic '''
-    
 
-        # Add our other three buttons
+        self.rail.plotline = self.plotline
         return [
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
-                    tooltip="New", menu_padding=0,
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", weight=ft.FontWeight.BOLD)]),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                    ),
+                    tooltip=f"New Item for {self.title}", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(
                             text="Plot Point", icon=ft.Icons.ADD_LOCATION_OUTLINED,
-                            on_click=self.new_item_clicked, data="plot_point"
+                            on_click=self.rail.new_item_clicked, data="plot_point"
                         ),
                         ft.PopupMenuItem(
-                            text="Arc", icon=ft.Icons.ADD_CIRCLE_OUTLINED,
-                            on_click=self.new_item_clicked, data="arc"
+                            text="Arc", icon=ft.Icons.CIRCLE_OUTLINED,
+                            on_click=self.rail.new_item_clicked, data="arc"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Marker", icon=ft.Icons.FLAG_OUTLINED,
+                            on_click=self.rail.new_item_clicked, data="marker"
                         ),
                     ]
-                )
+                ),
+                
+                no_padding=True
             ),
             MenuOptionStyle(
                 on_click=self.rename_clicked,
@@ -113,27 +116,14 @@ class PlotlineDropdown(ft.GestureDetector):
             # Color changing popup menu
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    expand=True,
-                    tooltip="",
-                    padding=None,
-                    content=ft.Row(
-                        expand=True,
-                        controls=[
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
-                            ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
-                            ft.Icon(ft.Icons.ARROW_DROP_DOWN_OUTLINED, color=ft.Colors.ON_SURFACE, size=16),
-                        ]
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.plotline.data.get('color', 'primary'),), ft.Text("Color",  weight=ft.FontWeight.BOLD),]),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
                     ),
-                    items=self.get_color_options()
-                )
-            ),
-            # Delete button
-            MenuOptionStyle(
-                on_click=lambda e: self.delete_clicked(e),
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED),
-                    ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
-                ]),
+                    tooltip=f"Change {self.title} Color", menu_padding=0,
+                    items=self.plotline._get_color_options()
+                ),
+                no_padding=True
             ),
         ]
         
@@ -149,53 +139,15 @@ class PlotlineDropdown(ft.GestureDetector):
 
         # Make the plotline widget visible if its not
         if not self.plotline.visible:
-            self.plotline.toggle_visibility()
+            self.plotline.toggle_visibility(value=True)
 
-        #print("Active dropdown before:", self.rail.active_dropdown)
-        if self.rail.active_dropdown is not None:
-            if hasattr(self.rail.active_dropdown, "is_focused"):
-                
-                self.rail.active_dropdown.is_focused = False
-                self.rail.active_dropdown.refresh_expansion_tile()
-            
-            else:
-                self.rail.active_dropdown.plotline_dropdown.is_focused = False
-                self.rail.active_dropdown.plotline_dropdown.refresh_expansion_tile()
 
-        self.rail.active_dropdown = self
-        self.rail.refresh_buttons()
-
-        self.is_focused = True
-        self.refresh_expansion_tile()
         
 
-    # Called when creating a new plot point or arc only
-    def new_item_clicked(self, e=None, tag: str=None):
-        ''' Shows the textfield for creating new item. Requires what type of item (category, chapter, note, etc.) '''
-
-        # If this is called from outside our object, pass in a tag instead
-        if e is not None: 
-            data = e.control.data
-        else:
-            data = tag
+    
         
-        # Check our expanded state. Rebuild if needed
-        if self.is_expanded == False:
-            self.toggle_expand()
-            self.reload()
-         
-        # If the data passed in is a plotpoint
-        if data == "plot_point":
 
-            self.content.controls[0].new_item_clicked(tag="plot_point")
-
-        # Otherwise we're an arc
-        else:
-
-            self.content.controls[1].new_item_clicked(tag="arc")
-
-        # Close the menu, which will also update the page
-        self.story.close_menu_instant()
+        
 
     # Called when our new item textfield changes
     def new_item_check(self, e):
@@ -453,18 +405,6 @@ class PlotlineDropdown(ft.GestureDetector):
 
         self.plotline.p.open(dlg)
 
-
-    def refresh_expansion_tile(self):
-        if self.is_focused:
-            self.expansion_tile.bgcolor = ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE)
-            self.expansion_tile.collapsed_bgcolor = ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE)
-        else:
-            self.expansion_tile.bgcolor = ft.Colors.TRANSPARENT
-            self.expansion_tile.collapsed_bgcolor = ft.Colors.TRANSPARENT
-
-        self.plotline.p.update()
-
-
     # Called when we need to reload this directory tile
     def reload(self):
 
@@ -478,12 +418,11 @@ class PlotlineDropdown(ft.GestureDetector):
             tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
             controls_padding=ft.Padding(10, 0, 0, 0),       # Keeps all sub children indented
             leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, color=self.color),
-            maintain_state=True,
+            maintain_state=True, adaptive=True,
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
-            adaptive=True,
-            bgcolor=ft.Colors.TRANSPARENT if not self.is_focused else ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE),
-            collapsed_bgcolor=ft.Colors.TRANSPARENT if not self.is_focused else ft.Colors.with_opacity(.8, ft.Colors.ON_INVERSE_SURFACE),
-            #shape=ft.RoundedRectangleBorder(),
+            bgcolor="transparent",
+            collapsed_bgcolor="transparent",
+            shape=ft.RoundedRectangleBorder(),
             on_change=lambda e: self.toggle_expand(),
         )
 
@@ -498,6 +437,5 @@ class PlotlineDropdown(ft.GestureDetector):
         # Set the content
         self.content = self.expansion_tile
 
-        self.refresh_expansion_tile()
 
         self.plotline.p.update()

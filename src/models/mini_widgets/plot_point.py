@@ -167,6 +167,8 @@ class PlotPoint(MiniWidget):
             self.owner.information_display.reload_mini_widget(no_update=True)
         await self.owner.rebuild_plotline_canvas(no_update=False)
 
+        self.owner.story.active_rail.content.reload_rail()
+
     # Called when hovering over our plot point to show the slider
     async def _highlight(self, e=None):
         ''' Shows our slider and hides our plotline_marker. Makes sure all other sliders are hidden '''

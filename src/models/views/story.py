@@ -541,6 +541,7 @@ class Story(ft.View):
 
             case "plotline":
                 widget = Plotline(title, self.p, directory_path, self, data)
+                widget.data['order_index'] = len(self.plotlines)   # Set the order index to the end of the list
                 key = widget.data.get('key', '')
                 self.plotlines[key] = widget
                 self.widgets.append(self.plotlines[key])
