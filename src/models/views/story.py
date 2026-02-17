@@ -541,9 +541,11 @@ class Story(ft.View):
 
             case "plotline":
                 widget = Plotline(title, self.p, directory_path, self, data)
-                widget.data['order_index'] = len(self.plotlines)   # Set the order index to the end of the list
+                
                 key = widget.data.get('key', '')
                 self.plotlines[key] = widget
+                widget.data['plotline_order_index'] = len(self.plotlines.keys()) - 1   # Set the order index to the end of the list
+                widget.save_dict()
                 self.widgets.append(self.plotlines[key])
 
             case "map":
@@ -605,8 +607,8 @@ class Story(ft.View):
         page_height = self.p.height
 
         # Adjust mouse positions if the menu would go off screen
-        if self.mouse_x + 150 > page_width:
-            self.mouse_x -= 150
+        if self.mouse_x + 160 > page_width:
+            self.mouse_x -= 160
         if self.mouse_y + 230 > page_height:
             self.mouse_y -= 230
 
@@ -615,7 +617,7 @@ class Story(ft.View):
             left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
             border_radius=ft.border_radius.all(4),
             bgcolor=ft.Colors.with_opacity(.65, ft.Colors.ON_INVERSE_SURFACE),
-            width=150, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
+            width=160, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
             shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=2, blur_style=ft.ShadowBlurStyle.NORMAL),
             content=ft.Column(
                 spacing=0,

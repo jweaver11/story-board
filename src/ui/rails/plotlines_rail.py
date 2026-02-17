@@ -37,8 +37,43 @@ class PlotlinesRail(Rail):
                 #on_click=lambda e: print(""),
             ),
         ]
- 
+
+    # Called when we reorder our plotlines on the rail
+    async def _handle_plotline_reorder(self, e):
+        ''' Handles the reordering and reloading of plotlines based on their new positions on the rail when we drag and drop them '''
+        old_index = e.old_index
+        new_idx = e.new_index
+
+        # Find which plotline we dragged
+        for plotline in self.story.plotlines.values():
+            if plotline.data.get('plotline_order_index', 0) == old_index:
+                dragged_plotline = plotline
+                break
+        # Set its new index
+        dragged_plotline.data['plotline_order_index'] = new_idx
+        dragged_plotline.save_dict()
+
+        # If we didn't move, return out
+        if old_index == new_idx:
+            return
         
+        # If we dragged down
+        elif old_index < new_idx:
+            for plotline in self.story.plotlines.values():
+                if plotline.data.get('plotline_order_index', 0) > old_index and plotline.data.get('plotline_order_index', 0) <= new_idx and plotline != dragged_plotline:
+                    plotline.data['plotline_order_index'] -= 1
+                    plotline.save_dict()
+        
+        # If we dragged up
+        elif old_index > new_idx:
+            for plotline in self.story.plotlines.values():
+                if plotline.data.get('plotline_order_index', 0) >= new_idx and plotline.data.get('plotline_order_index', 0) < old_index and plotline != dragged_plotline:
+                    plotline.data['plotline_order_index'] += 1
+                    plotline.save_dict()
+                
+        # Apply our changes
+        self.reload_rail()
+ 
 
     # Called to return our list of menu options when right clicking on the plotline rail
     def get_menu_options(self) -> list[ft.Control]:
@@ -55,7 +90,7 @@ class PlotlinesRail(Rail):
             MenuOptionStyle(
                 ft.Row([
                     ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, tooltip="Upload Plotline"),
-                    ft.Text("Upload\nPlotline", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
+                    ft.Text("Upload Plotline", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ]),
                 #on_click=self.new_item_clicked, data="plotline", 
             )
@@ -79,11 +114,19 @@ class PlotlinesRail(Rail):
             controls=[]
         )
 
+        # Reorderable List for our plotlines on the rail
+        reorderable_plotlines = ft.ReorderableListView(show_default_drag_handles=False, on_reorder=self._handle_plotline_reorder)
 
-        
+        # Sort our plotlines by their index
+        sorted_plotlines = dict(sorted(self.story.plotlines.items(), key=lambda item: item[1].data.get('plotline_order_index', 0)))  
+
+        i = 0   # Start index for our plotlines
 
         # Run through each plotline in the story
-        for plotline in self.story.plotlines.values():
+        for plotline in sorted_plotlines.values():
+            
+            # Build a column for our dropdown, and a divider under it to seperate each plotline
+            column = ft.Column(expand=False, spacing=0)
 
             # Create an expansion tile for our plotline that we need in order to load its data
             dropdown = PlotlineDropdown(
@@ -93,61 +136,75 @@ class PlotlinesRail(Rail):
                 rail=self
             )
 
-            # Sort our mini widgets
+            # Sort our mini widgets by start earliest to latest
             sorted_plot_points = dict(sorted(plotline.plot_points.items(), key=lambda item: item[1].data.get('left', 0)))  
             sorted_arcs = dict(sorted(plotline.arcs.items(), key=lambda item: item[1].data.get('left', 0)))
             sorted_markers = dict(sorted(plotline.markers.items(), key=lambda item: item[1].data.get('left', 0)))
 
+            # Add a label for our plotpoints section in the dropdown
             dropdown.expansion_tile.controls.append(
                 ft.Row([
                     ft.Icon(ft.Icons.LOCATION_PIN),
                     ft.Text("Plot Points", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD)
                 ])
             )
-
+            dropdown.expansion_tile.controls.append(ft.Container(height=4))   # Spacer
             # Go through our plotpoints from our plotline, and add each item
             for plot_point in sorted_plot_points.values():
                 dropdown.expansion_tile.controls.append(MiniWidgetItem(plot_point))
+            dropdown.expansion_tile.controls.append(ft.Divider())   # Divider between our plot points and arcs sections
 
-            dropdown.expansion_tile.controls.append(ft.Divider())
+            # Arcs label
             dropdown.expansion_tile.controls.append(
                 ft.Row([
                     ft.Icon(ft.Icons.CIRCLE_OUTLINED),
                     ft.Text("Arcs", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD)
                 ])
             )
-
+            dropdown.expansion_tile.controls.append(ft.Container(height=4))   # Spacer
             # Go through all the arcs/sub arcs held in our parent arc or plotline
             for arc in sorted_arcs.values():
                 dropdown.expansion_tile.controls.append(MiniWidgetItem(arc))
+            dropdown.expansion_tile.controls.append(ft.Divider())       # Divider between our arcs and markers sections
 
-            dropdown.expansion_tile.controls.append(ft.Divider())
+            # Markers label
             dropdown.expansion_tile.controls.append(
                 ft.Row([
                     ft.Icon(ft.Icons.FLAG_OUTLINED),
                     ft.Text("Markers", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD)
                 ])
             )
-
+            dropdown.expansion_tile.controls.append(ft.Container(height=4))   # Spacer
+            # Go through all the markers held in our plotline and add them to the dropdown
             for marker in sorted_markers.values():
                 dropdown.expansion_tile.controls.append(MiniWidgetItem(marker))
 
-
-            # Add our arcs dropdown to the plotline dropdown
-            #plotline.plotline_dropdown.content.controls.append()
+            # Set the plotlines dropdown to the one we have just built for it
             plotline.plotline_dropdown = dropdown
-            content.controls.append(plotline.plotline_dropdown)
-            content.controls.append(ft.Divider())
-    
-        content.controls.append(ft.Container(height=6))
+
+            # Add the dropdown as a reorderable element for the list
+            column.controls.append(
+                ft.ReorderableDraggable(
+                    i, 
+                    content=dropdown,
+                )
+            )
+            i += 1      # Increment index
+            column.controls.append(ft.Divider())    # Add a divider under the plotline for visual seperation
+
+            # Add the column to the reorderable list view controls
+            reorderable_plotlines.controls.append(column)
+
+        
 
         # Finally, add our new item textfield at the bottom
+        content.controls.append(reorderable_plotlines)
         content.controls.append(self.new_item_textfield)
+        
 
         # Gesture detector to put on top of stack on the rail to pop open menus on right click
         menu_gesture_detector = ft.GestureDetector(
-            content=content,
-            expand=True,
+            content=content, expand=True,
             on_hover=self.on_hovers,
             on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
             hover_interval=20,

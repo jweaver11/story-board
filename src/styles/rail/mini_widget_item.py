@@ -18,9 +18,6 @@ class MiniWidgetItem(ft.GestureDetector):
         # Set our widget reference and tag
         self.mini_widget = mini_widget        
 
-        
-            
-
         # Set our text style
         self.text_style = ft.TextStyle(
             size=14,
@@ -29,13 +26,12 @@ class MiniWidgetItem(ft.GestureDetector):
         )
 
         
-
         # Parent constructor
         super().__init__(
             on_enter = self.on_hover,
             on_exit = self.on_stop_hover,
             on_secondary_tap = lambda e: self.mini_widget.owner.story.open_menu(self.get_menu_options()),
-            on_tap = lambda e: self.mini_widget.show_mini_widget(),    # Open up plotline if not opened, focus our mini widget
+            on_tap = lambda e: self.mini_widget.show_mini_widget(),    # TODO: Open up and focus widget and mini widget if not already
             mouse_cursor = ft.MouseCursor.CLICK,
         )
 
@@ -45,7 +41,6 @@ class MiniWidgetItem(ft.GestureDetector):
     # Called when this item is right clicked
     def get_menu_options(self) -> list[ft.Control]:
         ''' Pops open a column of the menu options for this tree view item'''
-
         
         # Rename button
         menu_options = [
@@ -282,14 +277,13 @@ class MiniWidgetItem(ft.GestureDetector):
     def reload(self):
 
         self.content = ft.Container(
-            expand=True, margin=ft.margin.only(left=10),
-            padding=ft.Padding(6, 2, 6, 2),
+            expand=True, margin=ft.margin.only(left=12),
+            padding=ft.Padding(6, 4, 6, 4),
             border_radius=ft.border_radius.all(6),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             content=ft.Row(
                     expand=True, #alignment=ft.MainAxisAlignment.CENTER,
                     controls=[
-                        
                         ft.Text(value=f"{self.mini_widget.title}", style=self.text_style, overflow=ft.TextOverflow.ELLIPSIS, expand=True),
                     ],
                 ),

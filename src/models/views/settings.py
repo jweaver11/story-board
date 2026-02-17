@@ -872,12 +872,11 @@ class Settings(ft.View):
         ''' Loads our resources settings view '''
 
         # Has resources to help writers, can re-run the tutorial view, examples, discord link, planned features
-        # TODO: Use selete template to auto load new templates data when creating them
+        # TODO: Use seleted template to auto load new templates data when creating them
 
         page = self.p
 
         
-    
         # A template control that gets the entire template data so we can manipulate it and save it
         class TemplateCtrl(ft.Column):
             def __init__(self, name: str, **kwargs):

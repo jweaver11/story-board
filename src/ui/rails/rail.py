@@ -221,6 +221,7 @@ class Rail(ft.Container):
             # Otherwise its not unique, re-focus our textfield
             else:
                 self.new_item_textfield.visible = True
+                self.new_item_textfield.page = self.p
                 self.new_item_textfield.focus()
         
         # If we're not submitting, just hide the textfield and reset values

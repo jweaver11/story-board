@@ -38,7 +38,7 @@ class Plotline(Widget):
                 # Widget Data
                 'tag': "plotline",
                 'color': app.settings.data.get('default_plotline_color'),
-                'order_index': 0,         # Order if we want to order our plotlines
+                'plotline_order_index': 0,         # Order of our plotlines
 
                 # State and filter management   
                 'information_display_visibility': True,             # Visibility of our information display mini widget
@@ -233,6 +233,7 @@ class Plotline(Widget):
         new_arc.show_mini_widget()
 
         # Apply our changes in the UI
+        self.data['dropdown_is_expanded'] = True 
         self.story.active_rail.content.reload_rail()
         await self.rebuild_plotline_canvas()
         self.reload_widget()
@@ -258,6 +259,7 @@ class Plotline(Widget):
         new_plot_point.show_mini_widget()
 
         # Apply our changes in the UI
+        self.data['dropdown_is_expanded'] = True     # Make sure our dropdown is expanded to show the new plot point
         self.story.active_rail.content.reload_rail()
         await self.rebuild_plotline_canvas()
         self.reload_widget()
@@ -276,6 +278,7 @@ class Plotline(Widget):
             data=None
         )
         # Add our new Marker mini widget object to our markers dict, and to our owners mini widgets
+        self.data['dropdown_is_expanded'] = True 
         self.markers[new_marker.title] = new_marker
         self.mini_widgets.append(new_marker)
         new_marker.show_mini_widget()
