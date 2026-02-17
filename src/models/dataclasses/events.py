@@ -4,6 +4,6 @@ from dataclasses import dataclass
 @dataclass
 class Event:
     tag: str  # 'plot_point', 'arc_start', 'arc_end', 'marker'
-    x_alignment: float
+    left: int
     title: str
     color: str = "secondary"

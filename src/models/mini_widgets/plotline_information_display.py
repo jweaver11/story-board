@@ -222,21 +222,24 @@ class PlotlineInformationDisplay(MiniWidget):
         
 
 
-        # Go through and list all our events in order
+        # Go through and list all our events in order. We'll sort them by their left positions
         events_list = []
 
         for pp in self.owner.plot_points.values():
-            events_list.append(Event(tag='plot_point', x_alignment=pp.data.get('x_alignment', 0), title=pp.title, color=pp.data.get('color', 'secondary')))
+            events_list.append(Event(tag='plot_point', left=pp.data.get('left', 0), title=pp.title, color=pp.data.get('color', 'secondary')))
 
+        # Arcs have a right position, so we calc how far that is from left, and add a new event there as well
         for arc in self.owner.arcs.values():
-            events_list.append(Event(tag='arc_start', x_alignment=arc.data.get('x_alignment_start', 0), title=arc.title, color=arc.data.get('color', 'secondary')))
-            events_list.append(Event(tag='arc_end', x_alignment=arc.data.get('x_alignment_end', 0), title=arc.title, color=arc.data.get('color', 'secondary')))
+            events_list.append(Event(tag='arc_start', left=arc.data.get('left', 0), title=arc.title, color=arc.data.get('color', 'secondary')))
+            arc_width = self.owner.plotline_width - arc.data.get('left', 0) - arc.data.get('right', 0)
+            arc_end: int = arc.data.get('left', 0) + arc_width  
+            events_list.append(Event(tag='arc_end', left=arc_end, title=arc.title, color=arc.data.get('color', 'secondary')))
 
         for marker in self.owner.markers.values():
-            events_list.append(Event(tag='marker', x_alignment=marker.data.get('x_alignment', 0), title=marker.title, color=marker.data.get('color', 'secondary')))
+            events_list.append(Event(tag='marker', left=marker.data.get('left', 0), title=marker.title, color=marker.data.get('color', 'secondary')))
 
         # Sort that list
-        events_list = sorted(events_list, key=lambda e: e.x_alignment)
+        events_list = sorted(events_list, key=lambda e: e.left)
 
         # Hold our text spans
         events_spans = []

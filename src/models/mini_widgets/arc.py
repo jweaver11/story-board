@@ -16,7 +16,7 @@ class Arc(MiniWidget):
         owner: Widget, 
         page: ft.Page, 
         key: str, 
-        x_alignment: float = None,          # Position of plot point on plotline if we pass one in (between -1 and 1)
+        x_alignment: float = None,          # Position of center of arc on plotline if we pass one in (between -1 and 1)
         data: dict = None
     ):
         
@@ -32,9 +32,17 @@ class Arc(MiniWidget):
 
         # Newly created arcs
         if x_alignment is not None:
+
+            # Calculate pixel values we need
             x_align_pixel = int((x_alignment + 1) / 2 * owner.plotline_width)
+            rp = owner.plotline_width - x_align_pixel
+
+            # Left and right pixel values
             left = x_align_pixel - 50
-            right = x_align_pixel + 50
+            right = rp - 50
+
+            left_ratio = left / max(owner.plotline_width, 1)
+            right_ratio = right / max(owner.plotline_width, 1)
 
             if left <= 0:
                 left = 0
@@ -48,10 +56,13 @@ class Arc(MiniWidget):
             else:
                 side_location = "left"
 
+        # Needs values but they shouldn't be used, since the arc is not new
         else:
-            side_location = "right"     # Needs a value but won't be passed in since it should have one already
+            side_location = "right"     
             left = 0
             right = 0
+            left_ratio = 0
+            right_ratio = 0
     
 
         # Verifies this object has the required data fields, and creates them if not
@@ -74,6 +85,8 @@ class Arc(MiniWidget):
                 # Absolute Left and Right positions of the arc on the plotline
                 'left': left,
                 'right': right,       # Default width
+                'left_ratio': left_ratio,
+                'right_ratio': right_ratio,
                 
                 # Arc Data
                 'summary': str,
@@ -92,14 +105,14 @@ class Arc(MiniWidget):
 
         # Set drag handles on left and right of arc connections to the plotline
         self.left_drag_handle = ft.GestureDetector(
-            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR), 
+            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR, self.data.get('color', 'secondary')), 
             on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
             on_secondary_tap=lambda e: print("Right clicked arc"), 
             on_enter=self._highlight,      # Highlight container
             visible=False, on_pan_update=self.change_x_positions, on_pan_start=self.start_dragging, on_pan_end=self.finished_dragging
         )
         self.right_drag_handle = ft.GestureDetector(
-            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR), 
+            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR, self.data.get('color', 'secondary')), 
             on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
             on_secondary_tap=lambda e: print("Right clicked arc"), 
             on_enter=self._highlight,      # Highlight container
@@ -126,12 +139,7 @@ class Arc(MiniWidget):
         ''' Focuses the arc control '''
 
         # Change its border opacity and update the page
-        self.plotline_control.border = ft.border.only( 
-            left=ft.BorderSide(2, self.data.get('color', "secondary")),
-            right=ft.BorderSide(2, self.data.get('color', "secondary")),
-            top=ft.BorderSide(2, self.data.get('color', "secondary")),
-        )
-        self.plotline_control.content.opacity = 1.0
+        self.plotline_control.shadow = ft.BoxShadow(0, 10, self.data.get('color'), blur_style=ft.ShadowBlurStyle.OUTER)
         self.left_drag_handle.visible = True
         self.right_drag_handle.visible = True
 
@@ -147,12 +155,7 @@ class Arc(MiniWidget):
         
         # If we are not visible, lower our border and text
         if not self.visible:
-            self.plotline_control.border=ft.border.only(        # Make boarder more see through
-                left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
-                right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
-                top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
-            )
-            self.plotline_control.content.opacity = .7        # Make text less prominent
+            self.plotline_control.shadow = None
             self.left_drag_handle.visible = False
             self.right_drag_handle.visible = False
         
@@ -190,17 +193,11 @@ class Arc(MiniWidget):
     def hide_mini_widget(self, e=None, update: bool=False):
         ''' Hides this arc '''
 
-        
-
         # Set the parts we need to hide in addition to the mini widget info display
-        self.opacity = 0
-        self.ignore_interactions = True
+        #self.opacity = 0
+        #self.ignore_interactions = True
 
-        self.plotline_control.border = ft.border.only(
-            left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
-            right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
-            top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
-        )
+        self.plotline_control.shadow = None
 
         self.left_drag_handle.visible = False
         self.right_drag_handle.visible = False
@@ -224,11 +221,12 @@ class Arc(MiniWidget):
 
 
     # Called at the end of dragging our point on the slider to update it
-    def change_x_positions(self, e: ft.DragUpdateEvent):
+    async def change_x_positions(self, e: ft.DragUpdateEvent):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
 
         # Check to make sure we are wide enough (100px)
         width = self.owner.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
+        ratio = width / max(self.owner.plotline_width, 1)
         
         # If we're dragging the left handle, update left position
         if e.control == self.left_drag_handle:
@@ -268,10 +266,8 @@ class Arc(MiniWidget):
                 self.data['right'] = new_right
                 self.plotline_control.right = new_right
 
-        # Update the height of the arc based on its width
-        ratio = (self.data.get('left', 0) + self.data.get('right', 0)) / max(self.owner.plotline_width, 1)
-        ratio = 1.0 - ratio
-        new_height = ((self.owner.plotline_height - 50) // 2) * (ratio) + 20
+        
+        new_height = ((self.owner.plotline_height - 100) // 2) * (ratio) + 20
 
         self.plotline_control.height = int(new_height)
 
@@ -287,14 +283,18 @@ class Arc(MiniWidget):
         # Update our state
         self.is_dragging = False                # No longer dragging
 
-        # TODO: Update our x_alignment as well
-        #self.data['x_alignment'] = ((self.data.get('left', 0) + self.data.get('right', 0)) / 2) / max(self.owner.plotline_width, 1) * 2 - 1    
-
+        # Update our x alignment based on our new left and right positions, and save it to our data
+        x_align_pixel = self.data.get('left', 0) + ((self.owner.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)) / 2)
+        self.data['x_alignment'] = ((x_align_pixel) / max(self.owner.plotline_width, 1)) * 2 - 1
 
         if self.data.get('x_alignment', 0) <= 0:
             self.data['side_location'] = "right"
         else:
             self.data['side_location'] = "left"
+
+
+        self.data['left_ratio'] = self.data.get('left', 0) / max(self.owner.plotline_width, 1)
+        self.data['right_ratio'] = self.data.get('right', 0) / max(self.owner.plotline_width, 1)
 
         # Make all other plot points visible again
         for pp in self.owner.plot_points.values():
@@ -337,33 +337,39 @@ class Arc(MiniWidget):
     def reload_plotline_control(self):
         ''' Reloads our arc drawing on the plotline based on current/updated data, including page size '''
 
+        width = self.owner.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
+        width_ratio = width / max(self.owner.plotline_width, 1)
+
+        h = ((self.owner.plotline_height - 100) // 2) * (width_ratio) + 20
+
 
         self.plotline_control = ft.Container(
             left=self.data.get('left', 0), right=self.data.get('right', None),
-            alignment=ft.alignment.top_center, height=0,
+            alignment=ft.alignment.top_center, height=h,
             margin=ft.Margin(16, 0, 16, 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             border=ft.border.only(          # Give use borderes on top left and right
-                left=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
-                right=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
-                top=ft.BorderSide(2, ft.Colors.with_opacity(.7, self.data.get('color', "secondary"))),
-            ),
+                left=ft.BorderSide(2, self.data.get('color', "secondary")),
+                right=ft.BorderSide(2, self.data.get('color', "secondary")),
+                top=ft.BorderSide(2, self.data.get('color', "secondary")),
+            ), 
             padding=ft.padding.only(top=10),
-            border_radius=ft.border_radius.only(top_left=1000, top_right=1000, bottom_left=0, bottom_right=0),      # Make it uber curved to look like an arc
+            border_radius=ft.border_radius.only(top_left=10000, top_right=10000, bottom_left=0, bottom_right=0),      # Make it uber curved to look like an arc
             content=ft.GestureDetector(
                 mouse_cursor=ft.MouseCursor.CLICK,
-                hover_interval=100, expand=True,
+                hover_interval=200, expand=True,
                 on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
                 on_secondary_tap=lambda e: print("Right clicked arc"), 
                 on_enter=self._highlight,      # Highlight container
                 on_exit=self._stop_highlight,        # Stop highlight
-                #on_hover=self.on_start_hover,
+                #on_hover=self._highlight,
                 content=ft.Column([
                     ft.Row([
                         self.left_drag_handle,
                         ft.Text(self.title, theme_style=ft.TextThemeStyle.LABEL_LARGE, overflow=ft.TextOverflow.ELLIPSIS),
                         self.right_drag_handle
                     ], expand=True, alignment=ft.MainAxisAlignment.CENTER, vertical_alignment=ft.CrossAxisAlignment.START, spacing=0),
+                    
                 ], expand=True, alignment=ft.MainAxisAlignment.SPACE_BETWEEN, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0)
             )
         )

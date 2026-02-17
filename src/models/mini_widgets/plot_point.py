@@ -196,7 +196,7 @@ class PlotPoint(MiniWidget):
         self.plotline_control = ft.Container(
             margin=ft.Margin(16, 0, 16, 0), expand=False, 
             width=16, height=16, opacity=1.0, bgcolor=self.data.get('color'),
-            shape=ft.BoxShape.CIRCLE, 
+            shape=ft.BoxShape.CIRCLE,
             alignment=ft.alignment.center, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.GestureDetector(

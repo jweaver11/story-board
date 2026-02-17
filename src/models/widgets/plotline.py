@@ -224,7 +224,6 @@ class Plotline(Widget):
             page=self.p, 
             key="arcs", 
             x_alignment=self.x_alignment,
-            #left=self.left_position,
             data=None
         )
 
@@ -407,7 +406,6 @@ class Plotline(Widget):
 
         self.left_position = int(e.local_x)
 
-
         # Calculate and set our x alignment
         w = max(int(self.plotline_width or 0), 1)
         x = float(e.local_x)
@@ -453,7 +451,7 @@ class Plotline(Widget):
 
 
     # Called when right clicking our plotline on the canvas
-    async def on_secondary_tap(self, e):
+    async def on_secondary_tap(self, e=None):
         ''' Opens our menu for the options of our related plotline '''
         if self.can_open_menu:
             self.story.open_menu(self.get_menu_options())
@@ -502,11 +500,7 @@ class Plotline(Widget):
     
         else:
             
-            # Check if we have a new height. If not, don't update the arcs
-            if self.plotline_height == int(e.height):
-                update_arcs = False
-            else:
-                update_arcs = True
+            update_arcs = True
 
             # Update our page reference and size
             self.plotline_canvas.page = self.p
@@ -604,8 +598,13 @@ class Plotline(Widget):
             if self.data.get('show_all_plot_points', False) or plot_point.data.get('is_shown_on_widget', False):
                 # Calculate x position
                 x_alignment = max(-1.0, min(1.0, float(plot_point.data.get('x_alignment', 0.0))))
-                x_pos = plot_point.data.get('left', 0) + 8
+                
+                
+                new_x_pos = int(((x_alignment + 1) / 2) * (self.plotline_width - 10))  
+                plot_point.plotline_control.left = new_x_pos
                 plot_point.plotline_control.top = self.plotline_height // 2 - 8      # Make sure plot point is in middle of the line
+
+                x_pos = new_x_pos + 8
 
                 if line_direction == "top":
                     moveTo = cv.Path.MoveTo(x_pos, self.plotline_height // 2 - 20)
@@ -713,18 +712,32 @@ class Plotline(Widget):
 
         # Go through our arcs and update their size --------------------------------------------------
         if update_arcs:
+
+            
             for arc in self.arcs.values():
                 # Make sure heights and widths r updated
                 arc.plotline_control.bottom = self.plotline_height // 2       # Make sure plot point is in middle of the line
 
-                # Re-set left, height, right
-                ratio = (arc.data.get('left', 0) + arc.data.get('right', 0)) / max(self.plotline_width, 1)
-                ratio = 1.0 - ratio
+                width = self.plotline_width - arc.data.get('left', 0) - arc.data.get('right', 0)
+                width_ratio = width / max(self.plotline_width, 1)
 
+                height = ((self.plotline_height - 100) // 2) * (width_ratio) + 20   # Add 20 to make sure it has a minimum height
                 
-                height = ((self.plotline_height - 50) // 2) * (ratio) + 20   # Add 20 to make sure it has a minimum height
-                
-                arc.plotline_control.height = int(height)   
+                arc.plotline_control.height = int(height)  
+                    
+
+                # TODO: Arcs need to store their own left and right ratio changes, duhhhh
+                lr = arc.data.get('left_ratio', 0)
+                rr = arc.data.get('right_ratio', 0)            
+
+                new_left = int(lr * self.plotline_width)
+                new_right = int(rr * self.plotline_width)
+
+                arc.data['left'] = new_left
+                arc.data['right'] = new_right
+
+                arc.plotline_control.left = new_left   
+                arc.plotline_control.right = new_right
 
             if no_update:
                 self.plotline_canvas.page = self.p
@@ -732,12 +745,10 @@ class Plotline(Widget):
                 return
             self._render_widget()
 
-        # If we didn't rebuild our arcs, just update the canvas
+        # If we didn't rebuild our arcs (not a resize, just a redraw), just update the canvas
         else:
             for arc in self.arcs.values():
                 arc.plotline_control.bottom = self.plotline_height // 2
-
-                
 
             if no_update:
                 self.plotline_canvas.page = self.p

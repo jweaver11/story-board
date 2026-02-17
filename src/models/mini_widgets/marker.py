@@ -116,7 +116,6 @@ class Marker(MiniWidget):
         ''' Updates our alignment and side location, and applies the updadte to the canvas for our label '''
 
         self.plotline_control.content.mouse_cursor = ft.MouseCursor.CLICK
-       
 
         x_alignment = (self.data.get('left', 0) / (self.owner.plotline_width - 10)) * 2.0 - 1.0
 
