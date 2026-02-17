@@ -158,11 +158,7 @@ class PlotlineInformationDisplay(MiniWidget):
         ])
         
 
-        content = ft.Column([
-            title_control,
-            ft.Divider(height=2, thickness=2),
-            ft.Container(height=10)  # Spacing 
-        ], expand=True, tight=True, spacing=0)
+        content = ft.Column(expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START)
 
 
         # Summary
@@ -178,7 +174,6 @@ class PlotlineInformationDisplay(MiniWidget):
                 label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
             )
         )
-        content.controls.append(ft.Container(height=10))  # Spacing 
 
         
         # Our labels
@@ -217,7 +212,6 @@ class PlotlineInformationDisplay(MiniWidget):
                 )
             ])
         )
-        content.controls.append(ft.Container(height=10))  # Spacing
 
         
 
@@ -247,11 +241,11 @@ class PlotlineInformationDisplay(MiniWidget):
         for idx, event in enumerate(events_list):
 
             if event.tag == 'arc_start':
-                events_spans.append(ft.TextSpan(f"{event.title} Begins\t->\t"))
+                events_spans.append(ft.TextSpan(f"{event.title} Begins\t\t➜\t\t", style=ft.TextStyle(color=event.color)))
             elif event.tag == 'arc_end':
-                events_spans.append(ft.TextSpan(f"{event.title} Ends\t->\t"))
+                events_spans.append(ft.TextSpan(f"{event.title} Ends\t\t➜\t\t", style=ft.TextStyle(color=event.color)))
             else:
-                events_spans.append(ft.TextSpan(f"{event.title}\t->\t"))
+                events_spans.append(ft.TextSpan(f"{event.title}\t\t➜\t\t", style=ft.TextStyle(color=event.color)))
 
             # Remove the arrow for the last one
             if idx == len(events_list) - 1:
@@ -276,16 +270,14 @@ class PlotlineInformationDisplay(MiniWidget):
 
             ], spacing=0)
         )
-        content.controls.append(ft.Container(height=6))  # Spacing
 
         content.controls.append(events_container)
-        content.controls.append(ft.Container(height=10))  # Spacing
 
         # Create our divisions expansion tlie
         divisions_expansion_tile = ft.ExpansionTile(
             ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True, tooltip="Simple evenly spaced division markers on the plotline",),
             controls=[], initially_expanded=self.owner.data.get('divisions_are_expanded', True), 
-            collapsed_icon_color=self.owner.data.get('color', None),
+            dense=True, visual_density=ft.VisualDensity.COMPACT,
             icon_color=self.owner.data.get('color', None), shape=ft.RoundedRectangleBorder(),
             on_change=lambda e: self._change_owner_data_instant('divisions_are_expanded', not self.owner.data.get('divisions_are_expanded', True))
         )
@@ -331,7 +323,7 @@ class PlotlineInformationDisplay(MiniWidget):
         plot_points_expansion_tile = ft.ExpansionTile(
             ft.Text("Plot Points", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True, tooltip="Events in your story that have a short duration",),
             controls=[], initially_expanded=self.owner.data.get('plot_points_id_are_expanded', True), 
-            collapsed_icon_color=self.owner.data.get('color', None),
+            dense=True, visual_density=ft.VisualDensity.COMPACT,
             icon_color=self.owner.data.get('color', None), shape=ft.RoundedRectangleBorder(),
             on_change=lambda e: self._change_owner_data_instant('plot_points_id_are_expanded', not self.owner.data.get('plot_points_id_are_expanded', True))
         )
@@ -342,7 +334,7 @@ class PlotlineInformationDisplay(MiniWidget):
         arcs_expansion_tile = ft.ExpansionTile(
             ft.Text("Arcs", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True, tooltip="Longer story elements that span over a duration of time",),
             controls=[], initially_expanded=self.owner.data.get('arcs_id_are_expanded', True), 
-            collapsed_icon_color=self.owner.data.get('color', None),
+            dense=True, visual_density=ft.VisualDensity.COMPACT,
             icon_color=self.owner.data.get('color', None), shape=ft.RoundedRectangleBorder(),
             on_change=lambda e: self._change_owner_data_instant('arcs_id_are_expanded', not self.owner.data.get('arcs_id_are_expanded', True))
         )
@@ -353,7 +345,7 @@ class PlotlineInformationDisplay(MiniWidget):
         markers_expansion_tile = ft.ExpansionTile(
             ft.Text("Markers", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True, tooltip="Simple point of interest markers on the plotline",),
             controls=[], initially_expanded=self.owner.data.get('markers_id_are_expanded', True), 
-            collapsed_icon_color=self.owner.data.get('color', None),
+            dense=True, visual_density=ft.VisualDensity.COMPACT,
             icon_color=self.owner.data.get('color', None), shape=ft.RoundedRectangleBorder(),
             on_change=lambda e: self._change_owner_data_instant('markers_id_are_expanded', not self.owner.data.get('markers_id_are_expanded', True))
         )
@@ -362,11 +354,13 @@ class PlotlineInformationDisplay(MiniWidget):
 
 
         # Format our final layout so the scrollbar doesn't sit overtop the content
-        row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0)
+        row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
     
         column = ft.Column([
+            title_control,
+            ft.Divider(height=2, thickness=2),
             row
-        ], expand=True, scroll="auto", tight=True)
+        ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START)
         
         self.content = column
 
@@ -374,4 +368,3 @@ class PlotlineInformationDisplay(MiniWidget):
             return
         else:
             self.p.update()
-            #self.update()

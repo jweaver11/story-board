@@ -217,6 +217,7 @@ class MiniWidgetItem(ft.GestureDetector):
         # Called when a color option is clicked on popup menu to change icon color
         def _change_icon_color(color: str):
             ''' Passes in our kwargs to the widget, and applies the updates '''
+            from models.widgets.plotline import Plotline
 
             # Change the data
             self.mini_widget.change_data(**{'color': color})
@@ -224,6 +225,8 @@ class MiniWidgetItem(ft.GestureDetector):
             # Change our icon to match, apply the update
             self.reload()
             self.mini_widget.reload_mini_widget()
+            if isinstance(self.mini_widget.owner, Plotline):
+                self.mini_widget.owner.information_display.reload_mini_widget()
             self.mini_widget.owner.reload_widget()
             #self.mini_widget.story.workspace.reload_workspace()
 
