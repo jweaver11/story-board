@@ -5,6 +5,7 @@ from utils.verify_data import verify_data
 import math
 from styles.text_styles import text_style
 import flet.canvas as cv
+from styles.icons import icons
 
 # Plotpoint mini widget object that appear on plotlines and arcs
 class PlotPoint(MiniWidget):
@@ -24,7 +25,8 @@ class PlotPoint(MiniWidget):
         if left is not None:
             side_location = 'right' if left <= owner.plotline_width // 2 else 'left'
         else:
-            side_location = 'right'
+            side_location = data.get('side_location', 'right') if data is not None else 'right'
+
 
         # Parent constructor
         super().__init__(
@@ -43,6 +45,7 @@ class PlotPoint(MiniWidget):
                 'tag': "plot_point",            # Tag to identify what type of object this is
                 'summary': str,
                 'x_alignment': x_alignment if x_alignment is not None else float,           # Float between -1 and 1 on x axis of plotline. 0 is center
+                'icon': "circle",
                 'left': left, 
                 'is_major': bool,               # If this plot point is a major event
                 'date': str,                    # Date of the plot point
@@ -59,6 +62,12 @@ class PlotPoint(MiniWidget):
 
         # UI elements
         self.plotline_control: ft.Container = None    # Circle container to show our plot point on the plotline
+        self.icon_button = ft.PopupMenuButton(      # Button to change the plot points icon on the plotline
+            icon=self.data.get('icon', 'circle'),
+            tooltip="Plot Point Icon",
+            menu_padding=ft.Padding(0,0,0,0), icon_color=self.data.get('color', ft.Colors.PRIMARY),
+            items=self._get_icon_options()
+        )
 
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our plot point
@@ -155,7 +164,6 @@ class PlotPoint(MiniWidget):
         else:
             self.data['side_location'] = "left"
 
-
         self.save_dict()
 
         # Re-show all the info displays we hid while dragging
@@ -181,13 +189,46 @@ class PlotPoint(MiniWidget):
     # Hides are shadow unless our info display is visible, then stay highlighted
     async def _stop_highlight(self, e=None):
 
+        # If we're dragging, keep highlighted
         if self.is_dragging:
             return
 
+        # If our info display is visible, keep highlighted
         if not self.visible:
             self.plotline_control.shadow = None
             self.plotline_control.page = self.p
             self.plotline_control.update()
+
+    def _get_icon_options(self) -> list[ft.Control]:
+        ''' Returns a list of all available icons for icon changing '''
+
+        # Called when an icon option is clicked on popup menu to change icon
+        def _change_icon(icon: str, e):
+            ''' Passes in our kwargs to the widget, and applies the updates '''
+
+            # Set our data and update our button icon
+            self.data['icon'] = icon
+            self.save_dict()
+
+            # Update the UI to match. Plotline control needs owner to reload as well
+            self.icon_button.icon = icon
+            self.reload_plotline_control()
+            self.owner.reload_widget()
+
+        # List for our icons when formatted
+        icon_controls = [] 
+
+        # Create our controls for our icon options
+        for icon in icons:
+            icon_controls.append(
+                ft.PopupMenuItem(
+                    content=ft.Icon(icon, self.data.get('color', 'secondary')),
+                    on_click=lambda e, ic=icon: _change_icon(ic, e)
+                )
+            )
+
+
+        return icon_controls
 
 
     # Called from reload_mini_widget
@@ -197,16 +238,16 @@ class PlotPoint(MiniWidget):
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
         self.plotline_control = ft.Container(
             margin=ft.Margin(16, 0, 16, 0), expand=False, 
-            width=16, height=16, opacity=1.0, bgcolor=self.data.get('color'),
-            shape=ft.BoxShape.CIRCLE,
+            opacity=1.0, shape=ft.BoxShape.CIRCLE,
             alignment=ft.alignment.center, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.GestureDetector(
-                width=16, mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
+                mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
                 on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
                 on_pan_update=self.move_plot_point, drag_interval=20, on_pan_end=self._drag_end,
                 on_secondary_tap=lambda e: print("Right click on PP"),
-                on_tap=self.show_mini_widget, on_tap_down=self._drag_start
+                on_tap=self.show_mini_widget, on_tap_down=self._drag_start,
+                content=ft.Icon(self.data.get('icon', 'circle'), self.data.get('color', None))
             ),
         )
 
@@ -215,48 +256,34 @@ class PlotPoint(MiniWidget):
     def reload_mini_widget(self, no_update: bool=False):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
-        async def _toggle_pin(e):
-            ''' Pins or unpins our information display '''
-            is_pinned = self.data.get('is_pinned', False)
-            self.data['is_pinned'] = not is_pinned
-            self.save_dict()
-            self.reload_mini_widget()
-            self.owner.reload_widget()
+        
 
-        # Reload our plotline control
-        #self.reload_plotline_control()
-
-        self.title_control = ft.Row([
-            ft.Icon(ft.Icons.LOCATION_PIN, self.owner.data.get('color', None)),
-            ft.Text(self.data['title'], weight=ft.FontWeight.BOLD),
+        title_control = ft.Row([
+            self.icon_button,
+            ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE), # Change to textfield
             ft.IconButton(
-                ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+                ft.Icons.PUSH_PIN_OUTLINED if not self.owner.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
                 self.owner.data.get('color', None),
-                tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
-                on_click=_toggle_pin
+                tooltip="Pin Information Display" if not self.owner.data.get('information_display_is_pinned', False) else "Unpin Information Display",
+                on_click=self._toggle_pin
             ),
             ft.Container(expand=True),
             ft.IconButton(
-                ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,   
+                ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
                 tooltip=f"Close {self.title}",
                 on_click=lambda e: self.hide_mini_widget(update=True),
             ),
         ])
-        
 
-        content = ft.Column([
-            self.title_control,
-            ft.Divider(height=2, thickness=2),
-            ft.Container(height=10)  # Spacing 
-        ], expand=True, tight=True, spacing=0)
+        content = ft.Column(expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, controls=[ft.Container(height=1)])
 
-
-        # Format our final layout so the scrollbar doesn't sit overtop the content
-        row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0)
-    
         column = ft.Column([
-            row
-        ], expand=True, scroll="auto", tight=True)
+            title_control,
+            ft.Divider(height=2, thickness=2),
+            content
+        ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START)
+        
+        self.content = column
         
         self.content = column
             

@@ -1,4 +1,5 @@
-icons = [
+# Icons used for character connections
+connection_icons = [
     "connect_without_contact",
     "favorite",
     "heart_broken",
@@ -13,3 +14,41 @@ icons = [
     "sports_esports",
     "link"
 ]
+
+# Icons used in general purposes
+icons = [
+    "circle",
+    "flag",
+    "dangerous",
+    "star",
+    "flare", 
+    "check_circle",
+    "warning",
+    "lightbulb",
+    "help",
+    "bookmark",
+    "lock",
+    "play_arrow",
+    "pause",
+    "send",
+    "edit",
+    "delete",
+    "save",
+    "cloud",
+    "bug_report",
+    "location_on",
+    "home",
+    "album",  
+    "attach_file", 
+    "bolt", 
+    "brightness_5",  
+    "diamond", 
+    "directions_run", 
+    "done", 
+    "download", 
+    "extension", 
+    "favorite", 
+    "group", 
+    "person",
+]
+

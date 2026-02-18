@@ -36,11 +36,9 @@ class Arc(MiniWidget):
             # Calculate pixel values we need
             x_align_pixel = int((x_alignment + 1) / 2 * owner.plotline_width)
             
-
             # Left and right pixel values
             left = x_align_pixel - 50
             
-
             if left <= 0:
                 left = 0
                 x_align_pixel = 50

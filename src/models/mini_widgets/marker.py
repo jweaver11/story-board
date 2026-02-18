@@ -30,7 +30,7 @@ class Marker(MiniWidget):
         if left is not None:
             side_location = 'right' if left <= owner.plotline_width // 2 else 'left'
         else:
-            side_location = 'right'
+            side_location = data.get('side_location', 'right') if data is not None else 'right'
         
         # Parent constructor
         super().__init__(

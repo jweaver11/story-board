@@ -14,7 +14,7 @@ from models.mini_widget import MiniWidget
 from utils.verify_data import verify_data
 from models.app import app
 from models.dataclasses.connection import ConnectionDataClass
-from styles.icons import icons
+from styles.icons import connection_icons
 
 
 
@@ -133,7 +133,7 @@ class CharacterConnection(MiniWidget):
             icon_controls = [] 
 
             # Create our controls for our icon options
-            for icon in icons:
+            for icon in connection_icons:
                 icon_controls.append(
                     ft.PopupMenuItem(
                         content=ft.Icon(icon),

@@ -19,8 +19,6 @@ class PlotlineInformationDisplay(MiniWidget):
             key=key,  # Not used, but its required so just whatever works
             data=data,      # No data is used here, so NEVER reference it. Use self.owner.data instead
         ) 
-
-        self.padding = ft.padding.only(left=8, top=8, bottom=8)
         
         # Since we only reference out owners data and not our own, we don't need to verify it here
 
@@ -78,7 +76,8 @@ class PlotlineInformationDisplay(MiniWidget):
                 print("Popping index: ", idx)
                 self.owner.data.get('plotline_data', {}).get(key, []).pop(idx)
                 self.owner.save_dict()
-                #self.reload_mini_widget()
+
+                # Rebuild our canvas
                 await self.owner.rebuild_plotline_canvas(no_update=True)
 
                 # Remove the control for this division. Reloading would fix, but lose our scroll placement
@@ -352,7 +351,6 @@ class PlotlineInformationDisplay(MiniWidget):
                 cursor_color=self.owner.data.get('color', None),
                 focused_border_color=self.owner.data.get('color', None),
             )
-            print("Set idx to: ", idx)
 
             # Add to a row with delete button to remove divisions
             divisions_container.content.controls.append(
@@ -372,7 +370,7 @@ class PlotlineInformationDisplay(MiniWidget):
         column = ft.Column([
             title_control,
             ft.Divider(height=2, thickness=2),
-            ft.Container(content, margin=ft.margin.only(right=8), expand=True)
+            content
         ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START)
         
         self.content = column

@@ -1,7 +1,7 @@
 import flet as ft
 from models.dataclasses.connection import ConnectionDataClass
 from styles.colors import colors
-from styles.icons import icons
+from styles.icons import connection_icons
 
 
 
@@ -191,7 +191,7 @@ def new_character_connection_clicked(story):
             icon_controls = [] 
 
             # Create our controls for our icon options
-            for icon in icons:
+            for icon in connection_icons:
                 icon_controls.append(
                     ft.PopupMenuItem(
                         content=ft.Icon(icon),

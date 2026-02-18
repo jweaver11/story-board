@@ -64,8 +64,6 @@ class PlotlineDropdown(ft.GestureDetector):
         # Parent constructor
         super().__init__(
             mouse_cursor=ft.MouseCursor.CLICK,
-            #on_enter=self.on_hover,
-            #on_exit=self.on_stop_hover,
             on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
         )
         

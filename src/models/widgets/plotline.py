@@ -661,9 +661,9 @@ class Plotline(Widget):
                 
                 new_x_pos = int(((x_alignment + 1) / 2) * (self.plotline_width - 10))  
                 plot_point.plotline_control.left = new_x_pos
-                plot_point.plotline_control.top = self.plotline_height // 2 - 8      # Make sure plot point is in middle of the line
+                plot_point.plotline_control.top = self.plotline_height // 2 - 12     # Make sure plot point is in middle of the line
 
-                x_pos = new_x_pos + 8
+                x_pos = new_x_pos + 12
 
                 if line_direction == "top":
                     moveTo = cv.Path.MoveTo(x_pos, self.plotline_height // 2 - 20)
