@@ -210,6 +210,8 @@ class MiniWidget(ft.Container):
     def show_mini_widget(self, e=None):
         ''' Shows our mini widget '''
 
+        print(f"Showing mini widget {self.title}")
+
         if self.visible:
             return
 
@@ -219,13 +221,20 @@ class MiniWidget(ft.Container):
 
         for mw in self.owner.mini_widgets:
             if mw != self and mw.data.get('is_pinned', False) == False:
-                mw.hide_mini_widget()   
+                mw.hide_mini_widget() 
+            elif mw == self.owner.information_display and self.owner.data.get('information_display_is_pinned') and mw != self:
+                print(f"Not hiding information display mini widget {mw.title} becuase its pinned or being shown")  
+            else:
+                print(f"Not hiding pinned mini widget {mw.title} becuase its pinned or being shown")
 
         self.reload_mini_widget(no_update=True)
-        self.owner.reload_widget()
+        #self.owner.reload_widget()
+        self.owner._render_widget()
 
     def hide_mini_widget(self, e=None, update: bool=False):
         ''' Hides our mini widget '''
+
+        print(f"Hiding mini widget {self.title}")
         
         if not self.visible:
             return

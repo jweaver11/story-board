@@ -113,7 +113,7 @@ class Arc(MiniWidget):
             on_secondary_tap=lambda e: print("Right clicked arc"), 
             on_enter=self._highlight,      # Highlight container
             visible=False, on_pan_update=self.change_x_positions, on_pan_start=self.start_dragging, on_pan_end=self.finished_dragging
-        )
+        ) 
         self.right_drag_handle = ft.GestureDetector(
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR, self.data.get('color', 'secondary'), 20), 
             on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
@@ -195,6 +195,7 @@ class Arc(MiniWidget):
     
     def hide_mini_widget(self, e=None, update: bool=False):
         ''' Hides this arc '''
+        print(f"Hiding mini widget {self.title}")
 
         # Set the parts we need to hide in addition to the mini widget info display
         #self.opacity = 0

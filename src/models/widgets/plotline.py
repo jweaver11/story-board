@@ -565,6 +565,8 @@ class Plotline(Widget):
             self.data['old_plotline_height'] = self.plotline_height
             self.save_dict()   # Save our new size to our data
 
+        self.plotline_canvas.page = self.p      # refresh page reference
+
         
         # Draw our plotline on the canvas with its two end markers ------------------------------------------------
         self.plotline_canvas.shapes = [

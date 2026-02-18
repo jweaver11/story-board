@@ -227,7 +227,6 @@ class PlotPoint(MiniWidget):
                 )
             )
 
-
         return icon_controls
 
 

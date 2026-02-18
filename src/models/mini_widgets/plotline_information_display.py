@@ -73,7 +73,6 @@ class PlotlineInformationDisplay(MiniWidget):
 
             # If we're deleting from a list, we'll need a reload
             if delete_idx:
-                print("Popping index: ", idx)
                 self.owner.data.get('plotline_data', {}).get(key, []).pop(idx)
                 self.owner.save_dict()
 

@@ -720,12 +720,16 @@ class Widget(ft.Container):
         left_mini_widgets = []
         right_mini_widgets = []
 
+        
+
         # Go through our mini widgets and separate them into left and right lists based on their side location data
         for mw in self.mini_widgets:
             if mw.data.get('side_location', 'right') == 'left' and mw.data.get('visible', True) != False:
                 left_mini_widgets.append(mw)
             elif mw.data.get('side_location', 'right') == 'right' and mw.data.get('visible', True) != False:
                 right_mini_widgets.append(mw)
+            else:
+                right_mini_widgets.append(mw)   # Default to right side if no location specified, or if not visible (so they dont show at all)
             
         # If we show our mini widgets overtop the content, build them here. 
         if self.mini_widgets_displayed_overtop:     # Widgets: Plotline, Map, Character Connection Map, ...
