@@ -19,6 +19,8 @@ class PlotlineInformationDisplay(MiniWidget):
             key=key,  # Not used, but its required so just whatever works
             data=data,      # No data is used here, so NEVER reference it. Use self.owner.data instead
         ) 
+
+        self.padding = ft.padding.only(left=8, top=8, bottom=8)
         
         # Since we only reference out owners data and not our own, we don't need to verify it here
 
@@ -28,6 +30,9 @@ class PlotlineInformationDisplay(MiniWidget):
         # Set our visibility based on our owners data
         self.visible = self.owner.data.get('information_display_visibility', True)
         self.data['is_pinned'] = self.owner.data.get('information_display_is_pinned', False)
+
+        # Holds our row controls for our divisions so we can add/remove without rebuilding
+        self.divisions_column = ft.Column(spacing=0, scroll="auto")
 
         self.reload_mini_widget()
 
@@ -70,10 +75,30 @@ class PlotlineInformationDisplay(MiniWidget):
 
             # If we're deleting from a list, we'll need a reload
             if delete_idx:
+                print("Popping index: ", idx)
                 self.owner.data.get('plotline_data', {}).get(key, []).pop(idx)
                 self.owner.save_dict()
-                self.reload_mini_widget()
+                #self.reload_mini_widget()
                 await self.owner.rebuild_plotline_canvas(no_update=True)
+
+                # Remove the control for this division. Reloading would fix, but lose our scroll placement
+                for control in self.divisions_column.controls:
+                    if isinstance(control, ft.Row):
+                        text_control = control.controls[0]
+                        if text_control.data[1] == idx:
+                            self.divisions_column.controls.remove(control)
+                            break
+
+                # Update the controls indexes after the deleted one. 
+                for control in self.divisions_column.controls:
+                    if isinstance(control, ft.Row):
+                        text_control = control.controls[0]      # Update both text and delete button indexes
+                        delete_button = control.controls[1]
+                        if text_control.data[0] == 'Divisions' and text_control.data[1] >= idx:
+                            text_control.data[1] -= 1
+                            delete_button.data[1] -= 1
+
+                self.p.update()
 
             else:
                 self.owner.data.get('plotline_data', {}).get(key, [])[idx] = e.control.value
@@ -103,9 +128,9 @@ class PlotlineInformationDisplay(MiniWidget):
         
 
     # Called when reloading our mini widget UI
-    def reload_mini_widget(self, no_update: bool=False, scroll_down: bool=False):
+    def reload_mini_widget(self, no_update: bool=False):
 
-        async def _new_divisions_clicked(e):
+        async def _new_divisions_clicked(e=None):
             ''' Called to add a new division to the bottom of the divisions list '''
             text_control = ft.TextField(
                 expand=True, value=len(self.owner.data.get('plotline_data', {}).get('Divisions', [])) + 1, dense=True, 
@@ -117,8 +142,7 @@ class PlotlineInformationDisplay(MiniWidget):
                 focused_border_color=self.owner.data.get('color', None),
             )
 
-            divisions_container.content.controls.insert(
-                len(divisions_container.content.controls) - 1,
+            self.divisions_column.controls.append(
                 ft.Row([
                     text_control,
                     ft.IconButton(
@@ -133,9 +157,10 @@ class PlotlineInformationDisplay(MiniWidget):
             current_divisions = self.owner.data.get('plotline_data', {}).get('Divisions', [])
             current_divisions.append(str(len(current_divisions) + 1))
 
-            await self.owner.change_data(divisions=current_divisions)
-            
+            self.owner.data.get('plotline_data', {})['Divisions'] = current_divisions
+            self.save_dict()
             self.p.update()
+
             
         title_control = ft.Row([
             ft.Icon(ft.Icons.TIMELINE, self.owner.data.get('color', None)),
@@ -155,7 +180,7 @@ class PlotlineInformationDisplay(MiniWidget):
         ])
         
 
-        content = ft.Column(expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, scroll_down=scroll_down)
+        content = ft.Column(expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, controls=[ft.Container(height=1)])  # Start with some spacing at the top
 
 
 
@@ -273,7 +298,7 @@ class PlotlineInformationDisplay(MiniWidget):
                     
 
         # Make our text control with our built spans
-        events_text = ft.Text(spans=events_spans, selectable=True)
+        events_text = ft.Text(spans=events_spans, selectable=True, expand=True)
 
         # Container to hold the text control for events
         events_container = ft.Container(               
@@ -287,10 +312,11 @@ class PlotlineInformationDisplay(MiniWidget):
             ft.Row([
                 ft.Container(width=6), 
                 ft.Text("Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), tooltip="The order of events that occur in this plotline"),
+                
             ], spacing=0)
         )
 
-        content.controls.append(events_container)
+        content.controls.append(ft.Row([events_container]))
 
         
 
@@ -298,7 +324,12 @@ class PlotlineInformationDisplay(MiniWidget):
         content.controls.append(
             ft.Row([
                 ft.Container(width=6), 
-                ft.Text("Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), tooltip="The order of events that occur in this plotline"),
+                ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), tooltip="The number and label of the divisions on this plotline."),
+                ft.Container(width=10),
+                ft.IconButton(
+                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                    tooltip="Add Division", on_click=_new_divisions_clicked
+                )
             ], spacing=0)
         )
 
@@ -306,7 +337,7 @@ class PlotlineInformationDisplay(MiniWidget):
         divisions_container = ft.Container(               
             padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), 
-            content=ft.Column(spacing=0),
+            content=self.divisions_column,
         )
         
         # Add all our current divisions
@@ -321,6 +352,7 @@ class PlotlineInformationDisplay(MiniWidget):
                 cursor_color=self.owner.data.get('color', None),
                 focused_border_color=self.owner.data.get('color', None),
             )
+            print("Set idx to: ", idx)
 
             # Add to a row with delete button to remove divisions
             divisions_container.content.controls.append(
@@ -335,20 +367,12 @@ class PlotlineInformationDisplay(MiniWidget):
                 ])
             )
 
-        # Add division button
-        divisions_container.content.controls.append(
-            ft.IconButton(
-                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                tooltip="Add Division", on_click=_new_divisions_clicked
-            )
-        )
-
         content.controls.append(divisions_container.content)
 
         column = ft.Column([
             title_control,
             ft.Divider(height=2, thickness=2),
-            content
+            ft.Container(content, margin=ft.margin.only(right=8), expand=True)
         ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START)
         
         self.content = column
