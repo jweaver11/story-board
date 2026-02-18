@@ -101,13 +101,13 @@ class Plotline(Widget):
         # Our plotline canvas that draws our plotline line and markers
         self.plotline_canvas = cv.Canvas(
             on_resize=self.rebuild_plotline_canvas, 
-            resize_interval=20, expand=True, 
+            resize_interval=500, expand=True, 
             content=ft.GestureDetector(
                 expand=True, on_secondary_tap=self._open_menu,
                 on_hover=self._hover_plotline_canvas,
                 on_exit=self._exit_canvas,
                 on_tap=self._on_tap,
-                hover_interval=10,
+                hover_interval=20,
             )
         )
 
@@ -211,8 +211,6 @@ class Plotline(Widget):
             if not self.information_display.visible:
                 self.information_display.show_mini_widget()
             
-
-        
     # Called when creating a new arc
     async def create_arc(self, title: str):
         ''' Creates a new arc inside of our plotline object, and updates the data to match '''
@@ -401,9 +399,6 @@ class Plotline(Widget):
     async def _hover_plotline_canvas(self, e: ft.HoverEvent):
         ''' Sets our coordinated for opening the menu when right clicking and updates our alignment we want to pass in '''
 
-        # TODO: Add check for show_hover_effects that is turned on/off from plotpoints, markers, and arcs
-        # Also have pp and markers and arcs turn off can_open_menus to help regulate
-
         # Set coordinates for menu
         self.story.mouse_x = e.global_x
         self.story.mouse_y = e.global_y
@@ -564,6 +559,7 @@ class Plotline(Widget):
             self.plotline_canvas.page = self.p
             self.plotline_width = int(e.width)
             self.plotline_height = int(e.height)
+
         
         # Draw our plotline on the canvas with its two end markers ------------------------------------------------
         self.plotline_canvas.shapes = [
@@ -771,6 +767,7 @@ class Plotline(Widget):
         # Go through our arcs and update their size --------------------------------------------------
         if update_arcs:
 
+            # TODO: Add width check, make sure their new left and right are 100px wide at least. 
             
             for arc in self.arcs.values():
                 # Make sure heights and widths r updated
@@ -779,26 +776,30 @@ class Plotline(Widget):
                 width = self.plotline_width - arc.data.get('left', 0) - arc.data.get('right', 0)
                 width_ratio = width / max(self.plotline_width, 1)
 
-                height = ((self.plotline_height - 100) // 2) * (width_ratio) + 20   # Add 20 to make sure it has a minimum height
-                
-                arc.plotline_control.height = int(height)  
+                height = (self.plotline_height / 2) * (width_ratio) - 40
+                if height < 40:
+                    height = 40
                     
-
-                # TODO: Arcs need to store their own left and right ratio changes, duhhhh
                 lr = arc.data.get('left_ratio', 0)
                 rr = arc.data.get('right_ratio', 0)            
 
                 new_left = int(lr * self.plotline_width)
                 new_right = int(rr * self.plotline_width)
 
+                new_width = self.plotline_width - new_left - new_right
+                if new_width < 100:
+                    print("Arc width too small, skipping update for this arc: ", arc.title)
+                    continue
+
                 arc.data['left'] = new_left
                 arc.data['right'] = new_right
+                arc.plotline_control.height = int(height) 
 
                 arc.plotline_control.left = new_left   
                 arc.plotline_control.right = new_right
 
             if no_update:
-                self.plotline_canvas.page = self.p
+                print("No update")
                 self.plotline_canvas.update()
                 return
             self._render_widget()
@@ -809,7 +810,7 @@ class Plotline(Widget):
                 arc.plotline_control.bottom = self.plotline_height // 2
 
             if no_update:
-                self.plotline_canvas.page = self.p
+                print("No update")
                 self.plotline_canvas.update()
                 return
             self._render_widget()

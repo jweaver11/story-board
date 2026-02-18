@@ -271,7 +271,9 @@ class Arc(MiniWidget):
                 self.plotline_control.right = new_right
 
         
-        new_height = ((self.owner.plotline_height - 100) // 2) * (ratio) + 20
+        new_height = (self.owner.plotline_height / 2) * (ratio) - 40
+        if new_height < 40:
+            new_height = 40
 
         self.plotline_control.height = int(new_height)
 
@@ -345,8 +347,9 @@ class Arc(MiniWidget):
         width = self.owner.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
         width_ratio = width / max(self.owner.plotline_width, 1)
 
-        h = ((self.owner.plotline_height - 100) // 2) * (width_ratio) + 20
-
+        h = (self.owner.plotline_height / 2) * (width_ratio) - 40
+        if h < 40:
+            h = 40
 
         self.plotline_control = ft.Container(
             left=self.data.get('left', 0), right=self.data.get('right', None),

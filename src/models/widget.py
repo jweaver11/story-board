@@ -198,7 +198,6 @@ class Widget(ft.Container):
             if widget == self:
                 continue
 
-
             # If this gets triggered, we cannot move since a widget with that name already exists in the target directory. Return out of function
             elif widget.data.get('key', '') == new_key:
                 self.p.open(SnackBar(f"Cannot move {self.title}. A widget with that name already exists in the target directory."))
@@ -362,9 +361,7 @@ class Widget(ft.Container):
         self.save_dict()
         self.reload_widget()
 
-        # Protect first launch
-        if self.story.workspace is not None:
-            self.story.workspace.reload_workspace()
+        self.story.workspace.reload_workspace()
 
     # Called when right clicking our tab
     def _get_menu_options(self) -> list[ft.Control]:
@@ -750,7 +747,7 @@ class Widget(ft.Container):
         # Set our tabs content and finally our container content and update the page
         self.tabs.tabs = [self.tab]
         self.content = self.tabs
-        self.p.update()  
+        self.p.update()
            
         
 
