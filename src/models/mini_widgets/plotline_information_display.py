@@ -103,7 +103,7 @@ class PlotlineInformationDisplay(MiniWidget):
         
 
     # Called when reloading our mini widget UI
-    def reload_mini_widget(self, no_update: bool=False):
+    def reload_mini_widget(self, no_update: bool=False, scroll_down: bool=False):
 
         async def _new_divisions_clicked(e):
             ''' Called to add a new division to the bottom of the divisions list '''
@@ -117,8 +117,8 @@ class PlotlineInformationDisplay(MiniWidget):
                 focused_border_color=self.owner.data.get('color', None),
             )
 
-            divisions_expansion_tile.controls.insert(
-                len(divisions_expansion_tile.controls) - 1,
+            divisions_container.content.controls.insert(
+                len(divisions_container.content.controls) - 1,
                 ft.Row([
                     text_control,
                     ft.IconButton(
@@ -136,9 +136,6 @@ class PlotlineInformationDisplay(MiniWidget):
             await self.owner.change_data(divisions=current_divisions)
             
             self.p.update()
-            #text_control.focus()       # Broken and forces focus forever
-
-        
             
         title_control = ft.Row([
             ft.Icon(ft.Icons.TIMELINE, self.owner.data.get('color', None)),
@@ -158,7 +155,8 @@ class PlotlineInformationDisplay(MiniWidget):
         ])
         
 
-        content = ft.Column(expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START)
+        content = ft.Column(expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, scroll_down=scroll_down)
+
 
 
         # Summary
@@ -190,17 +188,6 @@ class PlotlineInformationDisplay(MiniWidget):
                     label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
                 ),
                 ft.TextField(
-                    expand=True, label="Time Label", value=self.owner.data.get('plotline_data', {}).get('Time Label', ""), dense=True,
-                    capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                    on_blur=self._change_owner_data,
-                    data='Time Label',
-                    
-                    focus_color=self.owner.data.get('color', None),
-                    cursor_color=self.owner.data.get('color', None),
-                    focused_border_color=self.owner.data.get('color', None),
-                    label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
-                ),
-                ft.TextField(
                     expand=True, label="Right Label", value=self.owner.data.get('plotline_data', {}).get('Right Label', ""), dense=True, 
                     capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
                     on_blur=self._change_owner_data,
@@ -211,6 +198,19 @@ class PlotlineInformationDisplay(MiniWidget):
                     label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
                 )
             ])
+        )
+
+        content.controls.append(
+            ft.TextField(
+                expand=True, label="Time Label", value=self.owner.data.get('plotline_data', {}).get('Time Label', ""), dense=True,
+                capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                on_blur=self._change_owner_data,
+                data='Time Label',
+                focus_color=self.owner.data.get('color', None),
+                cursor_color=self.owner.data.get('color', None),
+                focused_border_color=self.owner.data.get('color', None),
+                label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+            )
         )
 
         
@@ -225,7 +225,7 @@ class PlotlineInformationDisplay(MiniWidget):
         # Arcs have a right position, so we calc how far that is from left, and add a new event there as well
         for arc in self.owner.arcs.values():
             events_list.append(Event(tag='arc_start', left=arc.data.get('left', 0), title=arc.title, color=arc.data.get('color', 'secondary')))
-            arc_width = self.owner.plotline_width - arc.data.get('left', 0) - arc.data.get('right', 0)
+            arc_width = arc.data.get('width', 0)
             arc_end: int = arc.data.get('left', 0) + arc_width  
             events_list.append(Event(tag='arc_end', left=arc_end, title=arc.title, color=arc.data.get('color', 'secondary')))
 
@@ -235,22 +235,42 @@ class PlotlineInformationDisplay(MiniWidget):
         # Sort that list
         events_list = sorted(events_list, key=lambda e: e.left)
 
-        # Hold our text spans
+        # Hold our text spans for the events
         events_spans = []
 
+        # Go through our events and make spans for them so we can see
         for idx, event in enumerate(events_list):
 
             if event.tag == 'arc_start':
-                events_spans.append(ft.TextSpan(f"{event.title} Begins\t\t➜\t\t", style=ft.TextStyle(color=event.color)))
+                events_spans.append(ft.TextSpan(f"{event.title} Begins\t\t➜\t\t", style=ft.TextStyle(color=event.color, word_spacing=4)))
             elif event.tag == 'arc_end':
-                events_spans.append(ft.TextSpan(f"{event.title} Ends\t\t➜\t\t", style=ft.TextStyle(color=event.color)))
+                events_spans.append(ft.TextSpan(f"{event.title} Ends\t\t➜\t\t", style=ft.TextStyle(color=event.color, word_spacing=4)))
+            elif event.tag == 'marker':
+                events_spans.append(ft.TextSpan(
+                    f"\n{event.title}\n", 
+                    style=ft.TextStyle(color=event.color, weight=ft.FontWeight.BOLD, word_spacing=4)
+                ))
             else:
-                events_spans.append(ft.TextSpan(f"{event.title}\t\t➜\t\t", style=ft.TextStyle(color=event.color)))
+                events_spans.append(ft.TextSpan(f"{event.title}\t\t➜\t\t", style=ft.TextStyle(color=event.color, word_spacing=3)))
 
-            # Remove the arrow for the last one
-            if idx == len(events_list) - 1:
-                # Last one, no arrow
-                events_spans[-1] = ft.TextSpan(events_spans[-1].text[:-4])
+        # Clean up spans a bit.
+        for idx, span in enumerate(events_spans):
+            # Remove newline if marker is first event
+            if idx == 0:
+                if span.text.startswith("\n"):
+                    events_spans[idx] = ft.TextSpan(span.text[1:], style=span.style)
+
+            # Remove all the new lines between markers that have no events between them
+            previous_span = events_spans[idx - 1] if idx > 0 else None
+            if previous_span:
+                if previous_span.text.endswith("\n") and span.text.startswith("\n"):
+                    events_spans[idx - 1] = ft.TextSpan(previous_span.text[:-1], style=previous_span.style)
+
+            # Remove arrow from the end of the last event
+            if idx == len(events_spans) - 1:
+                if span.text.endswith("\t\t➜\t\t"):
+                    events_spans[idx] = ft.TextSpan(span.text[:-6], style=span.style)
+                    
 
         # Make our text control with our built spans
         events_text = ft.Text(spans=events_spans, selectable=True)
@@ -267,19 +287,26 @@ class PlotlineInformationDisplay(MiniWidget):
             ft.Row([
                 ft.Container(width=6), 
                 ft.Text("Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), tooltip="The order of events that occur in this plotline"),
-
             ], spacing=0)
         )
 
         content.controls.append(events_container)
 
-        # Create our divisions expansion tlie
-        divisions_expansion_tile = ft.ExpansionTile(
-            ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True, tooltip="Simple evenly spaced division markers on the plotline",),
-            controls=[], initially_expanded=self.owner.data.get('divisions_are_expanded', True), 
-            dense=True, visual_density=ft.VisualDensity.COMPACT,
-            icon_color=self.owner.data.get('color', None), shape=ft.RoundedRectangleBorder(),
-            on_change=lambda e: self._change_owner_data_instant('divisions_are_expanded', not self.owner.data.get('divisions_are_expanded', True))
+        
+
+        # Add the label and the Divisions container
+        content.controls.append(
+            ft.Row([
+                ft.Container(width=6), 
+                ft.Text("Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), tooltip="The order of events that occur in this plotline"),
+            ], spacing=0)
+        )
+
+        # Container for our divisions list
+        divisions_container = ft.Container(               
+            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
+            border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), 
+            content=ft.Column(spacing=0),
         )
         
         # Add all our current divisions
@@ -296,7 +323,7 @@ class PlotlineInformationDisplay(MiniWidget):
             )
 
             # Add to a row with delete button to remove divisions
-            divisions_expansion_tile.controls.append(
+            divisions_container.content.controls.append(
                 ft.Row([
                     text_control,
                     ft.IconButton(
@@ -309,57 +336,19 @@ class PlotlineInformationDisplay(MiniWidget):
             )
 
         # Add division button
-        divisions_expansion_tile.controls.append(
+        divisions_container.content.controls.append(
             ft.IconButton(
                 ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                 tooltip="Add Division", on_click=_new_divisions_clicked
             )
         )
 
-        content.controls.append(divisions_expansion_tile)
-        content.controls.append(ft.Container(height=10))
+        content.controls.append(divisions_container.content)
 
-        # Markers, Plot Points, and Arcs
-        plot_points_expansion_tile = ft.ExpansionTile(
-            ft.Text("Plot Points", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True, tooltip="Events in your story that have a short duration",),
-            controls=[], initially_expanded=self.owner.data.get('plot_points_id_are_expanded', True), 
-            dense=True, visual_density=ft.VisualDensity.COMPACT,
-            icon_color=self.owner.data.get('color', None), shape=ft.RoundedRectangleBorder(),
-            on_change=lambda e: self._change_owner_data_instant('plot_points_id_are_expanded', not self.owner.data.get('plot_points_id_are_expanded', True))
-        )
-
-        content.controls.append(plot_points_expansion_tile)
-        content.controls.append(ft.Container(height=10))
-
-        arcs_expansion_tile = ft.ExpansionTile(
-            ft.Text("Arcs", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True, tooltip="Longer story elements that span over a duration of time",),
-            controls=[], initially_expanded=self.owner.data.get('arcs_id_are_expanded', True), 
-            dense=True, visual_density=ft.VisualDensity.COMPACT,
-            icon_color=self.owner.data.get('color', None), shape=ft.RoundedRectangleBorder(),
-            on_change=lambda e: self._change_owner_data_instant('arcs_id_are_expanded', not self.owner.data.get('arcs_id_are_expanded', True))
-        )
-
-        content.controls.append(arcs_expansion_tile)
-        content.controls.append(ft.Container(height=10))
-
-        markers_expansion_tile = ft.ExpansionTile(
-            ft.Text("Markers", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), expand=True, tooltip="Simple point of interest markers on the plotline",),
-            controls=[], initially_expanded=self.owner.data.get('markers_id_are_expanded', True), 
-            dense=True, visual_density=ft.VisualDensity.COMPACT,
-            icon_color=self.owner.data.get('color', None), shape=ft.RoundedRectangleBorder(),
-            on_change=lambda e: self._change_owner_data_instant('markers_id_are_expanded', not self.owner.data.get('markers_id_are_expanded', True))
-        )
-
-        content.controls.append(markers_expansion_tile)
-
-
-        # Format our final layout so the scrollbar doesn't sit overtop the content
-        row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
-    
         column = ft.Column([
             title_control,
             ft.Divider(height=2, thickness=2),
-            row
+            content
         ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START)
         
         self.content = column

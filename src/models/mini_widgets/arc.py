@@ -91,6 +91,7 @@ class Arc(MiniWidget):
                 'right': right,       # Default width
                 'left_ratio': left_ratio,
                 'right_ratio': right_ratio,
+                'width': 100,           # Default width of the arc in pixels, used for new arcs that don't have left and right values yet, but need for calcs  
                 
                 # Arc Data
                 'summary': str,
@@ -230,6 +231,7 @@ class Arc(MiniWidget):
 
         # Check to make sure we are wide enough (100px)
         width = self.owner.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
+        
         ratio = width / max(self.owner.plotline_width, 1)
         
         # If we're dragging the left handle, update left position
@@ -270,7 +272,6 @@ class Arc(MiniWidget):
                 self.data['right'] = new_right
                 self.plotline_control.right = new_right
 
-        
         new_height = (self.owner.plotline_height / 2) * (ratio) - 40
         if new_height < 40:
             new_height = 40
@@ -297,7 +298,9 @@ class Arc(MiniWidget):
             self.data['side_location'] = "right"
         else:
             self.data['side_location'] = "left"
-
+            
+        width = self.owner.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
+        self.data['width'] = width
 
         self.data['left_ratio'] = self.data.get('left', 0) / max(self.owner.plotline_width, 1)
         self.data['right_ratio'] = self.data.get('right', 0) / max(self.owner.plotline_width, 1)

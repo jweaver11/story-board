@@ -31,7 +31,7 @@ class MiniWidget(ft.Container):
             expand=True,
             border_radius=ft.border_radius.all(10),
             border=ft.border.all(2, ft.Colors.SECONDARY_CONTAINER),
-            padding=ft.padding.only(left=8, top=8, bottom=8),
+            padding=ft.padding.only(left=8, top=8, bottom=8, right=8),
             data=data,     
             bgcolor=ft.Colors.with_opacity(.7, ft.Colors.SURFACE),
             blur=5,

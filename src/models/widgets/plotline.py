@@ -39,6 +39,8 @@ class Plotline(Widget):
                 'tag': "plotline",
                 'color': app.settings.data.get('default_plotline_color'),
                 'plotline_order_index': 0,         # Order of our plotlines
+                'old_plotline_width': 0,        # Stores previous width and height so inital loads have the right size for the mini widgets to use
+                'old_plotline_height': 0,       
 
                 # State and filter management   
                 'information_display_visibility': True,             # Visibility of our information display mini widget
@@ -559,6 +561,9 @@ class Plotline(Widget):
             self.plotline_canvas.page = self.p
             self.plotline_width = int(e.width)
             self.plotline_height = int(e.height)
+            self.data['old_plotline_width'] = self.plotline_width
+            self.data['old_plotline_height'] = self.plotline_height
+            self.save_dict()   # Save our new size to our data
 
         
         # Draw our plotline on the canvas with its two end markers ------------------------------------------------
@@ -793,13 +798,13 @@ class Plotline(Widget):
 
                 arc.data['left'] = new_left
                 arc.data['right'] = new_right
+                arc.data['width'] = new_width
                 arc.plotline_control.height = int(height) 
 
                 arc.plotline_control.left = new_left   
                 arc.plotline_control.right = new_right
 
             if no_update:
-                print("No update")
                 self.plotline_canvas.update()
                 return
             self._render_widget()
@@ -810,7 +815,6 @@ class Plotline(Widget):
                 arc.plotline_control.bottom = self.plotline_height // 2
 
             if no_update:
-                print("No update")
                 self.plotline_canvas.update()
                 return
             self._render_widget()

@@ -457,11 +457,11 @@ class Widget(ft.Container):
 
             # If we are NOT unique, show our error text
             if not is_unique:
-                self.p.open(SnackBar(error_text))
+                text_field.error_text = error_text
 
             # Otherwise remove our error text
             else:
-                e.control.error_text = None
+                text_field.error_text = None
                 
             self.p.update()
 
@@ -470,12 +470,18 @@ class Widget(ft.Container):
             ''' Checks that we're unique and renames the widget if so. on_blur is auto called after this, so we handle that as well '''
 
             # Get our name and check if its unique
-            name = e.control.value
+            
 
             # Non local variables
             nonlocal is_unique
             nonlocal text_field
             nonlocal submitting
+            nonlocal current_name
+
+            name = text_field.value
+            if name == current_name:
+                self.p.close(dlg)
+                return
 
             # Set submitting to True
             submitting = True
@@ -483,12 +489,12 @@ class Widget(ft.Container):
             # If it is, call the rename function. It will do everything else
             if is_unique:
                 self.rename(name)
+                self.p.close(dlg)
                 
             # Otherwise make sure we show our error
             else:
                 text_field.error_text = "Name already exists"
                 text_field.focus()                                  # Auto focus the textfield
-                self.p.update()
                 
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
@@ -508,12 +514,21 @@ class Widget(ft.Container):
             on_blur=_cancel_rename,
         )
 
-        # Replaces our name text with a text field for renaming
-        self.tab.tab_content.content.content.controls[1] = text_field
+        rename_button = ft.TextButton("Rename", on_click=_submit_name, style=ft.ButtonStyle(color=ft.Colors.PRIMARY))
+
+        dlg = ft.AlertDialog(
+            title=ft.Text(f"Rename {self.title}", weight=ft.FontWeight.BOLD),
+            content=text_field,
+            actions=[
+                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR), on_click=lambda e: self.p.close(dlg)),
+                rename_button   
+            ]
+        )
 
         # Clears our popup menu button and applies to the UI
         self.p.overlay.clear()
-        self.p.update()
+        self.p.open(dlg)
+        
     
     # Called when color button is clicked
     def _get_color_options(self) -> list[ft.Control]:
