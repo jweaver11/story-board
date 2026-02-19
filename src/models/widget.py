@@ -255,7 +255,7 @@ class Widget(ft.Container):
         self.save_dict()                                
 
         # Remove from our live dict wherever we are stored
-        tag = self.data['tag']
+        tag = self.data.get('tag', '')
 
         match tag:
             case "chapter":
@@ -276,6 +276,8 @@ class Widget(ft.Container):
             case "plotline":
                 self.story.plotlines.pop(old_key, None)
                 self.story.plotlines[self.data['key']] = self
+                self.information_display.change_data(**{'title': self.title})   # Passes in our name change to the information display so it can update any references to this plotline
+                self.information_display.reload_mini_widget(no_update=True)
             case "world":
                 self.story.worlds.pop(old_key, None)
                 self.story.worlds[self.data['key']] = self

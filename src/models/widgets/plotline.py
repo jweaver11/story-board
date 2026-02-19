@@ -362,7 +362,7 @@ class Plotline(Widget):
                 ]),
             ),
             MenuOptionStyle(
-                on_click=self.rename_clicked,
+                on_click=self._rename_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
                     ft.Text(
@@ -521,19 +521,6 @@ class Plotline(Widget):
         
 
 
-    # Called when rename button is clicked
-    async def rename_clicked(self, e):
-        ''' Makes sure our information display is visible, and focuses the title control for renaming '''
-
-        # Close the menu
-        await self.story.close_menu()
-
-        # Make sure our information display is visible
-        if not self.information_display.visible:
-            self.information_display.show_mini_widget()
-
-        # Focus the title control for renaming
-        self.information_display.title_control.focus()
 
     # Called for any size changes to our plotline canvas
     async def rebuild_plotline_canvas(self, e: cv.CanvasResizeEvent=None, no_update: bool=False):
