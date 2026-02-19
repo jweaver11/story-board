@@ -217,7 +217,13 @@ class Marker(MiniWidget):
 
         title_control = ft.Row([
             ft.Icon(ft.Icons.FLAG_OUTLINED, self.data.get('color', None)),
-            ft.Text(self.data['title'], weight=ft.FontWeight.BOLD),
+            ft.GestureDetector(
+                ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
+                on_double_tap=self._rename_clicked,
+                on_tap=self._rename_clicked,
+                on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
+                mouse_cursor="click", on_hover=self.owner._hover_tab, hover_interval=500
+            ),
             ft.IconButton(
                 ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
                 self.data.get('color', None),
@@ -230,10 +236,7 @@ class Marker(MiniWidget):
                 tooltip=f"Close {self.title}",
                 on_click=lambda e: self.hide_mini_widget(update=True),
             ),
-        ])
-
-
-
+        ], spacing=0)
 
         
         content = ft.Column(

@@ -383,17 +383,15 @@ class Widget(ft.Container):
             ),
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    expand=True, tooltip="Change this item's color",
+                    expand=True, tooltip=f"Change {self.title}'s color",
                     padding=ft.Padding(0,0,0,0),
-                    content=ft.Row(
-                        expand=True,
-                        controls=[
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
-                            ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
-                        ]
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED), ft.Text("Color", weight=ft.FontWeight.BOLD)]),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
                     ),
                     items=self._get_color_options()
                 ),
+                no_padding=True
             ),
             MenuOptionStyle(
                 on_click=self._delete_clicked,

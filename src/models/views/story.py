@@ -608,9 +608,9 @@ class Story(ft.View):
 
         # Adjust mouse positions if the menu would go off screen
         if self.mouse_x + 160 > page_width:
-            self.mouse_x -= 80
+            self.mouse_x -= 160
         if self.mouse_y + 230 > page_height:
-            self.mouse_y -= 230
+            self.mouse_y -= 115
 
         # Our container that contains a column of our options. Need to use container for positioning
         menu = ft.Container(
