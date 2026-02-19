@@ -3,6 +3,7 @@ from models.mini_widget import MiniWidget
 from models.widgets.plotline import Plotline
 import asyncio
 from models.dataclasses.events import Event
+from utils.verify_data import verify_data
 
 
 # Display that makes Plotlines share much uniformaty in their information display like arcs do
@@ -20,14 +21,21 @@ class PlotlineInformationDisplay(MiniWidget):
             data=data,      # No data is used here, so NEVER reference it. Use self.owner.data instead
         ) 
         
-        # Since we only reference out owners data and not our own, we don't need to verify it here
+        # Verifies this object has the required data fields, and creates them if not
+        verify_data(
+            self,   # Pass in our object so we can access its data and change it
+            {   
+                'title': self.title,          # Title of the mini widget, should match the object title
+                'tag': "plotline_information_display",         # Default mini widget tag, but should be overwritten by child classes
 
-        # NOT USED, but plot points use it when dragging, so this needs a value
-        self.data['visible'] = self.owner.data.get('information_display_visibility', True)
-
-        # Set our visibility based on our owners data
-        self.visible = self.owner.data.get('information_display_visibility', True)
-        self.data['is_pinned'] = self.owner.data.get('information_display_is_pinned', False)
+                # Plotline data
+                'Summary': str,
+                'Time Label': "Years",                          # Label for the time axis (any str they want)
+                'Left Label': "0",                              # Start label
+                'Right Label': "10",                            # Start and end date of the branch, for plotline view
+                'Divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
+            },
+        )
 
         # Holds our row controls for our divisions so we can add/remove without rebuilding
         self.divisions_column = ft.Column(spacing=0, scroll="auto")
@@ -44,26 +52,10 @@ class PlotlineInformationDisplay(MiniWidget):
         except Exception as e:
             print(f"Error saving Plotline information display data to {self.owner.title}: {e}")
 
-    # Called to toggle our visibility
-    def show_mini_widget(self, e=None):
-        ''' Toggles our visibility and updates our owners data accordingly '''
-
-        if self.visible:
-            return
-        
-        # Update our visibility
-        self.owner.data['information_display_visibility'] = True
-        super().show_mini_widget(e)
-
-    def hide_mini_widget(self, e=None, update: bool=False):
-        ''' Hides our mini widget '''
-
-        self.owner.data['information_display_visibility'] = False
-        self.owner.data['information_display_is_pinned'] = False
-        super().hide_mini_widget(e, update)
+    
 
     # Called when changing our owners data from some event
-    async def _change_owner_data(self, e):
+    async def _change_our_data(self, e):
         ''' Sorts what data to change and how, and if we need to rebuild or just update the page '''
 
         if isinstance(e.control.data, list):
@@ -73,8 +65,8 @@ class PlotlineInformationDisplay(MiniWidget):
 
             # If we're deleting from a list, we'll need a reload
             if delete_idx:
-                self.owner.data.get('plotline_data', {}).get(key, []).pop(idx)
-                self.owner.save_dict()
+                self.data.get(key, []).pop(idx)
+                self.save_dict()
 
                 # Rebuild our canvas
                 await self.owner.rebuild_plotline_canvas(no_update=True)
@@ -99,30 +91,21 @@ class PlotlineInformationDisplay(MiniWidget):
                 self.p.update()
 
             else:
-                self.owner.data.get('plotline_data', {}).get(key, [])[idx] = e.control.value
-                self.owner.save_dict()
-                await self.owner.rebuild_plotline_canvas(no_update=True)
+                self.data.get(key, [])[idx] = e.control.value
+                self.save_dict()
+                await self.rebuild_plotline_canvas(no_update=True)
                 
         else:
             key = e.control.data
             value = e.control.value
-            self._change_owner_data_instant(key, value)
+            self._change_our_data_instant(key, value)
             await self.owner.rebuild_plotline_canvas(no_update=True)
 
     
-    def _change_owner_data_instant(self, key, value):
+    def _change_our_data_instant(self, key, value):
         ''' Changes our owners data instantly '''
-        self.owner.data['plotline_data'][key] = value
+        self.data[key] = value
         self.owner.save_dict()
-
-    async def _toggle_pin(self, e):
-        ''' Pins or unpins our information display '''
-            
-        self.owner.data['information_display_is_pinned'] = not self.owner.data['information_display_is_pinned']
-        self.data['is_pinned'] = self.owner.data['information_display_is_pinned']
-        self.save_dict()
-        self.reload_mini_widget()
-        self.owner.reload_widget()
         
 
     # Called when reloading our mini widget UI
@@ -131,10 +114,10 @@ class PlotlineInformationDisplay(MiniWidget):
         async def _new_divisions_clicked(e=None):
             ''' Called to add a new division to the bottom of the divisions list '''
             text_control = ft.TextField(
-                expand=True, value=len(self.owner.data.get('plotline_data', {}).get('Divisions', [])) + 1, dense=True, 
+                expand=True, value=len(self.data.get('Divisions', [])) + 1, dense=True, 
                 capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                on_blur=self._change_owner_data,
-                data=['Divisions', len(self.owner.data.get('plotline_data', {}).get('Divisions', [])), False],
+                on_blur=self._change_our_data,
+                data=['Divisions', len(self.data.get('Divisions', [])), False],
                 focus_color=self.owner.data.get('color', None),
                 cursor_color=self.owner.data.get('color', None),
                 focused_border_color=self.owner.data.get('color', None),
@@ -146,16 +129,16 @@ class PlotlineInformationDisplay(MiniWidget):
                     ft.IconButton(
                         ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
                         tooltip="Delete Division", 
-                        on_click=self._change_owner_data,
-                        data=['Divisions', len(self.owner.data.get('plotline_data', {}).get('Divisions', [])), True],
+                        on_click=self._change_our_data,
+                        data=['Divisions', len(self.data.get('Divisions', [])), True],
                     ),
                 ])
             )
 
-            current_divisions = self.owner.data.get('plotline_data', {}).get('Divisions', [])
+            current_divisions = self.data.get('Divisions', [])
             current_divisions.append(str(len(current_divisions) + 1))
 
-            self.owner.data.get('plotline_data', {})['Divisions'] = current_divisions
+            self.data['Divisions'] = current_divisions
             self.save_dict()
             self.p.update()
 
@@ -164,9 +147,9 @@ class PlotlineInformationDisplay(MiniWidget):
             ft.Icon(ft.Icons.TIMELINE, self.owner.data.get('color', None)),
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE),
             ft.IconButton(
-                ft.Icons.PUSH_PIN_OUTLINED if not self.owner.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+                ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
                 self.owner.data.get('color', None),
-                tooltip="Pin Information Display" if not self.owner.data.get('information_display_is_pinned', False) else "Unpin Information Display",
+                tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
                 on_click=self._toggle_pin
             ),
             ft.Container(expand=True),
@@ -185,9 +168,9 @@ class PlotlineInformationDisplay(MiniWidget):
         # Summary
         content.controls.append(
             ft.TextField(
-                expand=True, label="Summary", value=self.owner.data.get('plotline_data', {}).get('Summary', ""), dense=True, multiline=True,
+                expand=True, label="Summary", value=self.data.get('Summary', ""), dense=True, multiline=True,
                 capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                on_blur=self._change_owner_data,
+                on_blur=self._change_our_data,
                 data='Summary', 
                 focus_color=self.owner.data.get('color', None),
                 cursor_color=self.owner.data.get('color', None),
@@ -201,9 +184,9 @@ class PlotlineInformationDisplay(MiniWidget):
         content.controls.append(
             ft.Row([
                 ft.TextField(
-                    expand=True, label="Left Label", value=self.owner.data.get('plotline_data', {}).get('Left Label', ""), dense=True, 
+                    expand=True, label="Left Label", value=self.data.get('Left Label', ""), dense=True, 
                     capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                    on_blur=self._change_owner_data,
+                    on_blur=self._change_our_data,
                     data='Left Label',
                     focus_color=self.owner.data.get('color', None),
                     cursor_color=self.owner.data.get('color', None),
@@ -211,9 +194,9 @@ class PlotlineInformationDisplay(MiniWidget):
                     label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
                 ),
                 ft.TextField(
-                    expand=True, label="Right Label", value=self.owner.data.get('plotline_data', {}).get('Right Label', ""), dense=True, 
+                    expand=True, label="Right Label", value=self.data.get('Right Label', ""), dense=True, 
                     capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                    on_blur=self._change_owner_data,
+                    on_blur=self._change_our_data,
                     data='Right Label',
                     focus_color=self.owner.data.get('color', None),
                     cursor_color=self.owner.data.get('color', None),
@@ -225,9 +208,9 @@ class PlotlineInformationDisplay(MiniWidget):
 
         content.controls.append(
             ft.TextField(
-                expand=True, label="Time Label", value=self.owner.data.get('plotline_data', {}).get('Time Label', ""), dense=True,
+                expand=True, label="Time Label", value=self.data.get('Time Label', ""), dense=True,
                 capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                on_blur=self._change_owner_data,
+                on_blur=self._change_our_data,
                 data='Time Label',
                 focus_color=self.owner.data.get('color', None),
                 cursor_color=self.owner.data.get('color', None),
@@ -339,12 +322,12 @@ class PlotlineInformationDisplay(MiniWidget):
         )
         
         # Add all our current divisions
-        for idx, division in enumerate(self.owner.data.get('plotline_data').get('Divisions', [])):
+        for idx, division in enumerate(self.data.get('Divisions', [])):
             # Create text control for this division
             text_control = ft.TextField(
                 expand=True,  value=division, dense=True, 
                 capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                on_blur=self._change_owner_data,
+                on_blur=self._change_our_data,
                 data=['Divisions', idx, False],
                 focus_color=self.owner.data.get('color', None),
                 cursor_color=self.owner.data.get('color', None),
@@ -358,7 +341,7 @@ class PlotlineInformationDisplay(MiniWidget):
                     ft.IconButton(
                         ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
                         tooltip="Delete Division", 
-                        on_click=self._change_owner_data,
+                        on_click=self._change_our_data,
                         data=['Divisions', idx, True],
                     ),
                 ])

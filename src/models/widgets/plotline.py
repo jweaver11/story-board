@@ -43,8 +43,6 @@ class Plotline(Widget):
                 'old_plotline_height': 0,       
 
                 # State and filter management   
-                'information_display_visibility': True,             # Visibility of our information display mini widget
-                'information_display_is_pinned': False,             # If our information display is pinned open
                 'hide_division_labels': bool,                       # If the division labels are hidden on the plotline
                 
                 # Our rail dropdown states
@@ -74,14 +72,8 @@ class Plotline(Widget):
                 'arcs': dict,                               # Dict of arcs in this branch
                 'markers': dict,                            # Simple markers with a title
 
-                # Plotline data, outside of its mini widgets
-                'plotline_data': {
-                    'Summary': str,
-                    'Time Label': "Years",                          # Label for the time axis (any str they want)
-                    'Left Label': "0",                              # Start label
-                    'Right Label': "10",                            # Start and end date of the branch, for plotline view
-                    'Divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
-                }
+                # Plotline data shown in the info display mini widget
+                'plotline_data': dict
             },
         ) 
                 
@@ -89,6 +81,13 @@ class Plotline(Widget):
         self.arcs: dict = {}       
         self.plot_points: dict = {} 
         self.markers: dict = {}
+        self.information_display: ft.Container = None
+
+        # Loads our three mini widgets into their dicts
+        self._load_arcs()
+        self._load_plot_points()
+        self._load_markers()
+        self._create_information_display()
 
         
         
@@ -113,17 +112,8 @@ class Plotline(Widget):
             )
         )
 
-        # Loads our three mini widgets into their dicts
-        self._load_arcs()
-        self._load_plot_points()
-        self._load_markers()
-
         # Dropdown on the rail. We don't use it here, let the rail handle it
         self.plotline_dropdown = None      # 'Plotline_Dropdown'
-
-        # Declare and create our information display, which is our plotlines mini widget 
-        self.information_display: ft.Container = None
-        self._create_information_display()
 
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -154,8 +144,8 @@ class Plotline(Widget):
             title=self.title,
             owner=self,
             page=self.p,
-            key="none",     # Not used, but its required so just whatever works
-            data=None,      # It uses our data, so we don't need to give it a copy that we would have to constantly maintain
+            key="plotline_data",     # Not used, but its required so just whatever works
+            data=self.data.get('plotline_data'),      # Uses our dataa 
         )
         # Add to our mini widgets so it shows up in the UI
         self.mini_widgets.append(self.information_display)
@@ -424,7 +414,7 @@ class Plotline(Widget):
             self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
 
             # Divisions on the timeline
-            self.plotline_canvas.shapes[len(self.data.get('plotline_data', {}).get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
+            self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
             self.plotline_canvas.content.mouse_cursor = ft.MouseCursor.CLICK      # Change cursor to pointer
 
             self.plotline_canvas.page = self.p      # refresh page reference
@@ -434,7 +424,7 @@ class Plotline(Widget):
         else:
             self.can_open_menu = False
             self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
-            self.plotline_canvas.shapes[len(self.data.get('plotline_data', {}).get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
+            self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
             self.plotline_canvas.content.mouse_cursor = None
 
             self.plotline_canvas.page = self.p      # refresh page reference
@@ -444,7 +434,7 @@ class Plotline(Widget):
         ''' Called when exiting our plotline canvas '''
         self.can_open_menu = False
         self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
-        self.plotline_canvas.shapes[len(self.data.get('plotline_data', {}).get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
+        self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
         self.plotline_canvas.content.mouse_cursor = None
 
         self.plotline_canvas.page = self.p      # refresh page reference
@@ -589,7 +579,7 @@ class Plotline(Widget):
         ]
 
         # Draw our divisions on the plotline -----------------------------------------------------------------
-        num_divisions = len(self.data.get('plotline_data', {}).get('Divisions', []))  # Total number of divisions
+        num_divisions = len(self.information_display.data.get('Divisions', []))  # Total number of divisions
         div_width = (self.plotline_width - 10) / (num_divisions + 1) if num_divisions > 0 else 0   # Width between each division
         division_width = (self.plotline_width - div_width - 10) / num_divisions  if num_divisions > 0 else 0      # Division width starting after first division plus padding
 
@@ -612,7 +602,7 @@ class Plotline(Widget):
                 self.plotline_canvas.shapes.append(
                     cv.Text(
                         x, self.plotline_height // 2 - 25 if app.settings.data.get('division_labels_direction', "top") == "top" else self.plotline_height // 2 + 25,
-                        str(self.data.get('plotline_data', {}).get('Divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
+                        str(self.information_display.data.get('Divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
                         ft.TextStyle(14, weight=ft.FontWeight.BOLD),
                         alignment=ft.alignment.center
                     )
@@ -623,11 +613,11 @@ class Plotline(Widget):
 
 
         # Add our plotline ends labels ---------------------------------------------------------------------------
-        left_label = str(self.data.get('plotline_data', {}).get('Left Label', '0'))
+        left_label = str(self.information_display.data.get('Left Label', '0'))
         left_label = left_label.split('.', 1)[0] if '.' in left_label else left_label
-        right_label = str(self.data.get('plotline_data', {}).get('Right Label', '10'))
+        right_label = str(self.information_display.data.get('Right Label', '10'))
         right_label = right_label.split('.', 1)[0] if '.' in right_label else right_label
-        time_label = str(self.data.get('plotline_data', {}).get('Time Label', 'years')).capitalize()
+        time_label = str(self.information_display.data.get('Time Label', 'years')).capitalize()
 
         # Set the text width, and align it in center, make sure it wraps
         self.plotline_canvas.shapes.append(cv.Text(
