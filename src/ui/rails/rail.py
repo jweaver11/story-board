@@ -11,6 +11,7 @@ from styles.rail.tree_view_directory import TreeViewDirectory
 from utils.check_widget_unique import check_widget_unique
 from utils.alert_dialogs.new_canvas import new_canvas_alert_dlg
 import asyncio
+from models.app import app
 
 class Rail(ft.Container):
 
@@ -68,6 +69,29 @@ class Rail(ft.Container):
         ''' Returns a list of additional menu options when clicking directories in the rail '''
         return []
     
+    def get_template_options(self, widget_type: str) -> list[ft.Control]:
+        ''' Returns a list of template options when right clicking empty space in the rail '''
+
+        template_options = []
+
+        if widget_type == "character":
+            
+        
+            for name, template in app.settings.data.get('character_templates', {}).items():
+                template_options.append(
+                    ft.MenuItemButton(
+                        ft.Text(name, expand=True, overflow=ft.TextOverflow.ELLIPSIS), width=120,
+                        on_click=self.new_item_clicked,
+                        data="character",
+                        key=name,
+                        close_on_click=True,
+                    )
+                )
+
+        else:
+            pass
+        return template_options
+    
     # Called when a widget is dragged and dropped into this directory
     def on_drag_accept(self, e, new_directory: str):
         ''' Moves our widgets into this directory from wherever they were '''
@@ -116,6 +140,11 @@ class Rail(ft.Container):
         self.new_item_textfield.value = None
         self.new_item_textfield.data = tag
 
+        template_name = None
+
+        if hasattr(e.control, "key") and e.control.key is not None:
+            template_name = e.control.key        
+
         match tag:
             case "character_connection_map":
                 self.new_item_textfield.hint_text = "Character Connection Map Title"
@@ -125,8 +154,15 @@ class Rail(ft.Container):
                 self.new_item_textfield.hint_text = "Plot Point Title"
             case "character" | "category" :
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
+                if tag == "character":      # Set our new template as the active one in settings
+                    if template_name is not None:
+                        app.settings.data['active_character_template'] = template_name 
             case "canvas_board":
                 self.new_item_textfield.hint_text = "Canvas Board Title"
+            case "world":
+                if template_name is not None:
+                    app.settings.data['active_world_template'] = template_name
+                self.new_item_textfield.hint_text = "World Title"
             case _:
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
 
@@ -136,6 +172,7 @@ class Rail(ft.Container):
         # Close the menu (if ones is open)
         await asyncio.sleep(.3)     # Wait for popupmenu's animations to close if we have issues
         await self.story.close_menu()
+        # TODO: Selecting from submenubutton breaks the program
         
 
     # Called whenever our user inputs a new key into one of our textfields for new items
