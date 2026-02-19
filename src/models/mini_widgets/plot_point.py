@@ -43,17 +43,17 @@ class PlotPoint(MiniWidget):
             self,   # Pass in our own data so the function can see the actual data we loaded
             {   
                 'tag': "plot_point",            # Tag to identify what type of object this is
-                'summary': str,
                 'x_alignment': x_alignment if x_alignment is not None else float,           # Float between -1 and 1 on x axis of plotline. 0 is center
                 'icon': "circle",
                 'left': left, 
-                'is_major': bool,               # If this plot point is a major event
-                'date': str,                    # Date of the plot point
-                'time': str,                    # Time of the plot point
                 'color': "secondary",           # Color of the plot point on the plotline
-                'involved_characters': list,
-                'related_locations': list,
-                'related_items': list,
+
+                # Information for our information display
+                'Description': str,
+                'When': str,
+                'Where': list,
+                'Involved Characters': list,
+                'Related Objects': list,
             },
         )
 
@@ -282,7 +282,54 @@ class PlotPoint(MiniWidget):
             ),
         ], spacing=0)
 
-        content = ft.Column(expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, controls=[ft.Container(height=1)])
+
+        description_tf = ft.TextField(
+            value=self.data.get('Description', ''), multiline=True, expand=True, 
+            on_blur=lambda e: self.change_data(**{'Description': e.control.value}), 
+            label="Description", capitalization=ft.TextCapitalization.SENTENCES,
+            tooltip="Brief description of this plot point"
+        )
+
+        when_tf = ft.TextField(
+            value=self.data.get('When', ''), multiline=True, expand=True, 
+            on_blur=lambda e: self.change_data(**{'When': e.control.value}), 
+            label="When", capitalization=ft.TextCapitalization.SENTENCES,
+            tooltip="Time or date related to this plot point"
+        )
+
+        where_tf = ft.TextField(
+            value="\n".join(self.data.get('Where', [])), multiline=True, expand=True, 
+            on_blur=lambda e: self.change_data(**{'Where': e.control.value.split("\n")}), 
+            label="Where", capitalization=ft.TextCapitalization.SENTENCES,
+            tooltip="List of location(s) related to this plot point"
+        )
+
+        #TODO: Involved characters and related objects
+        involved_characters_tf = ft.TextField(
+            value="\n".join(self.data.get('Involved Characters', [])), multiline=True, expand=True, 
+            on_blur=lambda e: self.change_data(**{'Involved Characters': e.control.value.split("\n")}), 
+            label="Involved Characters", capitalization=ft.TextCapitalization.SENTENCES,
+            tooltip="List of character(s) involved in this plot point"
+        )
+
+        related_objects_tf = ft.TextField(
+            value="\n".join(self.data.get('Related Objects', [])), multiline=True, expand=True, 
+            on_blur=lambda e: self.change_data(**{'Related Objects': e.control.value.split("\n")}), 
+            label="Related Objects", capitalization=ft.TextCapitalization.SENTENCES,
+            tooltip="List of object(s) related to this plot point"
+        )
+
+        content = ft.Column(
+            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
+            controls=[
+                ft.Container(height=1),
+                description_tf,
+                ft.Row([when_tf, where_tf]),
+                involved_characters_tf,
+                related_objects_tf,
+                
+            ]
+        )
 
         column = ft.Column([
             title_control,
@@ -292,7 +339,7 @@ class PlotPoint(MiniWidget):
         
         self.content = column
         
-        self.content = column
+      
             
 
         if no_update:
