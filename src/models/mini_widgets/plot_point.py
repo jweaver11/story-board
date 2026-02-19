@@ -109,7 +109,7 @@ class PlotPoint(MiniWidget):
         
             
     # Called when toggling whether this plot point is shown on the plotline in the plotline filters
-    def toggle_plotline_control(self, value: bool):
+    async def toggle_plotline_control(self, value: bool):
         ''' Toggles whether this plot point is shown on the plotline '''
 
         # Change the control visibility, data, and save it
@@ -119,7 +119,7 @@ class PlotPoint(MiniWidget):
         
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:
-            self.hide_mini_widget()
+            await self.hide_mini_widget()
 
         self.owner.reload_widget()
           
@@ -223,6 +223,13 @@ class PlotPoint(MiniWidget):
             )
 
         return icon_controls
+    
+    # Makes sure we stop highlighting
+    def hide_mini_widget(self, e=None, update: bool=False):
+        self.plotline_control.shadow = None
+        self.plotline_control.page = self.p
+        self.plotline_control.update()
+        return super().hide_mini_widget(e, update)
 
 
     # Called from reload_mini_widget

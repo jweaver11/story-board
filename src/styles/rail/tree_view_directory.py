@@ -232,7 +232,6 @@ class TreeViewDirectory(ft.GestureDetector):
             self.reload()
             
             
-
         # Close the menu, which will also update the page
         await asyncio.sleep(.3)
         await self.story.close_menu()

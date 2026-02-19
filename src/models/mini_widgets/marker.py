@@ -1,8 +1,8 @@
-# Markers that have a title and notes that show up as vertical lines on the Timeline
-# Essentially, very simple plot points
+'''
+Very simple mini widget that shows markers on the timeline, which are simplified plot points.
+Just displayed as a dashed vertical line on the plotline with a label, and a description
+'''
 
-# TODO: Add Breaks to timelines, like end book 1, end book 2, etc.
-# Can be used for character deaths
 
 
 import flet as ft
@@ -51,6 +51,7 @@ class Marker(MiniWidget):
                 'x_alignment': x_alignment,           # Float from -1 to 1 representing where we are on the plotline. Used for resizing calcs
                 'left': left,                       # Integer Absolute left position on plotline
                 'color': "secondary",           # Color of the plot point on the plotline
+                'description': str,
             },
         )
         
@@ -218,7 +219,7 @@ class Marker(MiniWidget):
         title_control = ft.Row([
             ft.Icon(ft.Icons.FLAG_OUTLINED, self.data.get('color', None)),
             ft.GestureDetector(
-                ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
+                ft.Container(ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"), padding=ft.padding.only(left=8)),
                 on_double_tap=self._rename_clicked,
                 on_tap=self._rename_clicked,
                 on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
@@ -238,16 +239,23 @@ class Marker(MiniWidget):
             ),
         ], spacing=0)
 
-        
+
+
+
+        description_tf = ft.TextField(
+            value=self.data.get('description', ''), multiline=True, expand=True, 
+            on_blur=lambda e: self.change_data(**{'description': e.control.value}), 
+            label="Description", 
+        )
+
+
         content = ft.Column(
             expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
             controls=[
                 ft.Container(height=1),  # Little padding
+                description_tf
             ]
         )
-
-
-
 
         column = ft.Column([
             title_control,

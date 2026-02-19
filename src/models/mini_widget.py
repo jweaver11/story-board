@@ -256,7 +256,10 @@ class MiniWidget(ft.Container):
 
         self.save_dict()
 
+
+
         if update:
+
             self.reload_mini_widget()
             self.owner._render_widget()
 

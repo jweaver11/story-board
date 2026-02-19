@@ -145,6 +145,7 @@ class PlotlineInformationDisplay(MiniWidget):
             
         title_control = ft.Row([
             ft.Icon(ft.Icons.TIMELINE, self.owner.data.get('color', None)),
+            
             ft.GestureDetector(
                 ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
                 on_double_tap=self.owner._rename_clicked,
@@ -331,7 +332,7 @@ class PlotlineInformationDisplay(MiniWidget):
         for idx, division in enumerate(self.data.get('Divisions', [])):
             # Create text control for this division
             text_control = ft.TextField(
-                expand=True, value=division, dense=True, 
+                expand=True,  value=division, dense=True, 
                 capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
                 on_blur=self._change_our_data,
                 data=['Divisions', idx, False],

@@ -495,6 +495,10 @@ class Plotline(Widget):
 
             self.p.close(dlg)   # Close the dialog
 
+            await asyncio.sleep(0.1)        # Needs a buffer or wont work for some reason
+            await self.story.close_menu()       
+
+
         # Grab the type of mini widget we are creating
         tag = e.control.data
 
@@ -517,8 +521,6 @@ class Plotline(Widget):
             ],
         )
 
-        await asyncio.sleep(.3)     # Let menu animation finish before closing or get grey screen briefly
-        await self.story.close_menu()       # Close menu that was open
         self.p.open(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
         
 
@@ -716,13 +718,13 @@ class Plotline(Widget):
                 marker.plotline_control.left = new_x_pos  
 
                 # Set how high up we want to go (Up to 80% height)
-                y_pos = int(self.h // 5)
+                y_pos = int(self.h // 4)
 
                 # Guard against the header
                 if y_pos < 70: 
                     y_pos = 70
 
-                marker_height = self.plotline_height // 2 - y_pos
+                marker_height = self.plotline_height // 2 #- y_pos
                 marker.plotline_control.height = marker_height
                 marker.plotline_control.top = y_pos
     
@@ -774,7 +776,6 @@ class Plotline(Widget):
 
                 new_width = self.plotline_width - new_left - new_right
                 if new_width < 100:
-                    print("Arc width too small, skipping update for this arc: ", arc.title)
                     continue
 
                 arc.data['left'] = new_left
