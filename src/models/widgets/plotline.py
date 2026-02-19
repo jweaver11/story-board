@@ -83,11 +83,7 @@ class Plotline(Widget):
         self.markers: dict = {}
         self.information_display: ft.Container = None
 
-        # Loads our three mini widgets into their dicts
-        self._load_arcs()
-        self._load_plot_points()
-        self._load_markers()
-        self._create_information_display()
+        
 
         
         
@@ -111,6 +107,12 @@ class Plotline(Widget):
                 hover_interval=20,
             )
         )
+
+        # Loads our three mini widgets into their dicts
+        self._load_arcs()
+        self._load_plot_points()
+        self._load_markers()
+        self._create_information_display()
 
         # Dropdown on the rail. We don't use it here, let the rail handle it
         self.plotline_dropdown = None      # 'Plotline_Dropdown'

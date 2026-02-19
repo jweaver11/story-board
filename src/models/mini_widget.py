@@ -10,7 +10,9 @@ Some mini widgets can have their own files IN ADDITION to normal storage, such a
 import flet as ft
 from models.widget import Widget
 from utils.verify_data import verify_data
-
+from styles.menu_option_style import MenuOptionStyle
+from styles.colors import colors
+import asyncio
 
 class MiniWidget(ft.Container):
 
@@ -63,19 +65,6 @@ class MiniWidget(ft.Container):
         self.visible = self.data.get('visible', True)
         
 
-        # Control for our title
-        self.title_control = ft.TextField(
-            value=self.title,
-            label=None, expand=True,
-        )
-
-        # Control for our content/body
-        self.content_control = ft.TextField(
-            label="Body",
-            expand=True,
-            multiline=True,
-        )
-
     # Called when saving changes in our mini widgets data to the OWNERS json file
     def save_dict(self):
         ''' Saves our current data to the OWNERS json file using this objects dictionary path '''
@@ -84,7 +73,7 @@ class MiniWidget(ft.Container):
         
             # If our data is None (we just got deleted), we don't save ourselves to owners data
             if self.data is None:
-                pass
+                self.owner.data[self.key].pop(self.title, None)
 
             # Otherwise, save like normal
             else:
@@ -94,8 +83,6 @@ class MiniWidget(ft.Container):
 
             # Recursively updates the parents data until owner=owner (widget), which saves to file
             self.owner.save_dict()
-            
-            # This keeps everyones data in sync so we can infinitely nest mini widgets if we want, like for arcs in timelines
 
         except Exception as e:
             print(f"Error saving mini widget data to {self.title}: {e}")
@@ -111,24 +98,32 @@ class MiniWidget(ft.Container):
             if self in self.owner.mini_widgets:
                 self.owner.mini_widgets.remove(self)
 
-            # Remove our data
-            self.data = None
+            tag = self.data.get('tag', '')  
 
-            # Remove the data of our owner (parent) widget/mini widget to match
-            # By deleting the owner data manually here, it will cascade up the chain when save_dict is called
-            self.owner.data[self.key].pop(self.title, None)
-            
-            
-            # Applies the changes up the chain
-            self.owner.save_dict()
+            match tag:
+                case "plot_point":
+                    del self.owner.plot_points[self.title]
+                case "marker":
+                    del self.owner.markers[self.title]
+                case "arc":
+                    del self.owner.arcs[self.title]
+                case "comment":
+                    del self.owner.comments[self.title]
+
+                case _:
+                    print("Invalid mw key")
+                
+
+            # Remove our data.
+            self.data = None
+            self.save_dict()
 
             # Reload the widget if we have to
             self.owner.reload_widget()
 
             # Also reload the active rail to reflect changes
             self.owner.story.active_rail.content.reload_rail() 
-
-            self.data = None
+            self.owner.story.close_menu_instant()
 
         # Catch errors
         except Exception as e:
@@ -177,17 +172,35 @@ class MiniWidget(ft.Container):
             old_name = self.title
 
             # Update our title and data
-            self.title = new_name.capitalize()
+            self.title = new_name
             self.data['title'] = new_name
 
             # Update our owners data to match
             self.owner.data[self.key][new_name] = self.owner.data[self.key].pop(old_name)
 
+            tag = self.data.get('tag', '')
+            match tag:
+                case "plot_point":
+                    self.owner.plot_points[new_name] = self.owner.plot_points.pop(old_name)
+                case "marker":
+                    self.owner.markers[new_name] = self.owner.markers.pop(old_name)
+                case "arc":
+                    self.owner.arcs[new_name] = self.owner.arcs.pop(old_name)
+                case "comment":
+                    self.owner.comments[new_name] = self.owner.comments.pop(old_name)
+                case _:
+                    print("Invalid mw key")
+
             # Save the changes up the chain
             self.save_dict()
 
             # Reload the UI to reflect changes
+            if hasattr(self, 'reload_plotline_control'):
+                self.reload_plotline_control()
+                
             self.reload_mini_widget()
+            self.owner.reload_widget()
+
 
             # Also reload the active rail to reflect changes
             self.owner.story.active_rail.content.reload_rail() 
@@ -244,11 +257,235 @@ class MiniWidget(ft.Container):
 
         if update:
             self.reload_mini_widget()
-            #self.owner.reload_widget()
             self.owner._render_widget()
 
-        self.reload_mini_widget()
+
+    def _get_menu_options(self) -> list[ft.Control]:
+
+        # Color, rename
+        return [
+            MenuOptionStyle(
+                on_click=self._rename_clicked,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
+                    ft.Text(
+                        "Rename", 
+                        weight=ft.FontWeight.BOLD, 
+                        color=ft.Colors.ON_SURFACE
+                    ), 
+                ]),
+            ),
+            MenuOptionStyle(
+                content=ft.PopupMenuButton(
+                    expand=True, tooltip="Change this item's color",
+                    padding=ft.Padding(0,0,0,0),
+                    content=ft.Row(
+                        expand=True,
+                        controls=[
+                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
+                            ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
+                        ]
+                    ),
+                    items=self._get_color_options()
+                ),
+            ),
+            MenuOptionStyle(
+                on_click=self._delete_clicked,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
+                    ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
+                ]),
+            )
+        ]
         
+    def _rename_clicked(self, e):
+        ''' Replaces our widget title with a text field to rename it '''
+
+        # Track if our name is unique for checks, and if we're submitting or not
+        is_unique = True
+        submitting = False
+
+        # Grab our current name for comparison
+        current_name = self.title.lower()
+
+        # Called when clicking outside the input field to cancel renaming
+        def _cancel_rename(e):
+            ''' Puts our name back to static and unalterable '''
+
+            # Grab our submitting state
+            nonlocal submitting
+
+            # Since this auto calls on submit, we need to check. If it is cuz of a submit, do nothing
+            if submitting:
+                submitting = not submitting     # Change submit status to False so we can de-select the textbox
+                return
+            
+
+        # Called everytime a change in textbox occurs
+        def _name_check(e):
+            ''' Checks if the name is unique within its type of widget '''
+
+
+            # Nonlocal variables
+            nonlocal is_unique, submitting
+
+            # Set submitting to false, and unique to True
+            submitting = False
+            is_unique = True
+
+            # Grab out title and tag from the textfield, and set our new key to compare
+            title = e.control.value
+            if title.lower() == current_name:
+                return
+
+            for mw in self.owner.mini_widgets:
+                if mw != self and mw.data.get('key', '') == self.data.get('key', '') and mw.data.get('title', '').lower() == title.lower():
+                    is_unique = False
+                    error_text = "Name already exists"
+                
+
+            # If we are NOT unique, show our error text
+            if not is_unique:
+                text_field.error_text = error_text
+
+            # Otherwise remove our error text
+            else:
+                text_field.error_text = None
+                
+            self.p.update()
+
+        # Called when submitting our textfield.
+        def _submit_name(e):
+            ''' Checks that we're unique and renames the widget if so. on_blur is auto called after this, so we handle that as well '''
+
+            # Non local variables
+            nonlocal is_unique, text_field, submitting, current_name
+            
+            name = text_field.value
+            if name == current_name:
+                self.p.close(dlg)
+                return
+
+            # Set submitting to True
+            submitting = True
+
+            # If it is, call the rename function. It will do everything else
+            if is_unique:
+                self.rename(name)
+                self.p.close(dlg)
+                
+            # Otherwise make sure we show our error
+            else:
+                text_field.error_text = "Name already exists"
+                text_field.focus()                                  # Auto focus the textfield
+                
+        # Our text field that our functions use for renaming and referencing
+        text_field = ft.TextField(
+            value=self.title, 
+            dense=True, capitalization=ft.TextCapitalization.WORDS,
+            focus_color=self.data.get('color', ft.Colors.PRIMARY),
+            border_color=self.data.get('color', ft.Colors.PRIMARY),
+            autofocus=True, adaptive=True,
+            data=self.data.get('tag', ''),
+            text_style=ft.TextStyle(
+                color=ft.Colors.ON_SURFACE,
+                weight=ft.FontWeight.BOLD,
+                overflow=ft.TextOverflow.ELLIPSIS,
+            ),
+            on_submit=_submit_name,
+            on_change=_name_check,
+            on_blur=_cancel_rename,
+        )
+
+        rename_button = ft.TextButton("Rename", on_click=_submit_name, style=ft.ButtonStyle(color=ft.Colors.PRIMARY))
+
+        dlg = ft.AlertDialog(
+            title=ft.Text(f"Rename {self.title}", weight=ft.FontWeight.BOLD),
+            content=text_field,
+            actions=[
+                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR), on_click=lambda e: self.p.close(dlg)),
+                rename_button   
+            ]
+        )
+
+        # Clears our popup menu button and applies to the UI
+        self.p.overlay.clear()
+        self.p.open(dlg)
+
+    # Called when color button is clicked
+    def _get_color_options(self) -> list[ft.Control]:
+        ''' Returns a list of all available colors for icon changing '''
+
+        # Called when a color option is clicked on popup menu to change icon color
+        async def _change_icon_color(color: str):
+            ''' Passes in our kwargs to the widget, and applies the updates '''
+
+            self.change_data(**{'color': color})
+
+            if hasattr(self, 'icon_button'):        # Locations and plotpoints have this
+                self.icon_button.icon_color = color
+
+            if hasattr(self, 'left_drag_handle') and hasattr(self, 'right_drag_handle'):     # Arcs have these
+                self.left_drag_handle.content.color = color
+                self.right_drag_handle.content.color = color
+
+            if hasattr(self, 'reload_plotline_control'):
+                self.reload_plotline_control()
+
+            
+            
+            self.reload_mini_widget()
+            self.owner.reload_widget()
+            # Change our icon to match, apply the update
+            self.owner.story.active_rail.content.reload_rail()
+
+            await asyncio.sleep(0.3)
+            await self.owner.story.close_menu()
+            
+            
+
+        # List for our colors when formatted
+        color_controls = [] 
+
+        # Create our controls for our color options
+        for color in colors:
+            color_controls.append(
+                ft.PopupMenuItem(
+                    content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
+                    on_click=lambda e, col=color: self.p.run_task(_change_icon_color, col)
+                )
+            )
+
+        return color_controls
+    
+    # Called when the delete button is clicked in the menu options
+    def _delete_clicked(self, e):
+        ''' Deletes this file from the story '''
+        from models.app import app
+
+        def _delete_confirmed(e=None):
+            ''' Deletes the widget after confirmation '''
+            self.p.close(dlg)
+            self.delete_dict()
+            
+
+        # Append an overlay to confirm the deletion
+        dlg = ft.AlertDialog(
+            title=ft.Text(f"Are you sure you want to delete {self.title} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
+            alignment=ft.alignment.center,
+            title_padding=ft.padding.all(25),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg)),
+                ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+            ]
+        )
+
+        self.owner.story.close_menu_instant()
+
+        if app.settings.data.get('confirm_item_delete', False):
+            self.p.open(dlg)
+        else:
+            _delete_confirmed()
 
     # Called after any changes happen to the data that need to be reflected in the UI
     def reload_mini_widget(self, no_update: bool=False):
@@ -259,10 +496,7 @@ class MiniWidget(ft.Container):
 
         # Create body content
         self.content = ft.Column(
-            [
-                self.title_control,
-                self.content_control,
-            ],
+            [],
             expand=True,
         )
 

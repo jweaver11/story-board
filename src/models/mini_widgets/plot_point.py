@@ -64,8 +64,8 @@ class PlotPoint(MiniWidget):
         self.plotline_control: ft.Container = None    # Circle container to show our plot point on the plotline
         self.icon_button = ft.PopupMenuButton(      # Button to change the plot points icon on the plotline
             icon=self.data.get('icon', 'circle'),
-            tooltip="Plot Point Icon",
-            menu_padding=ft.Padding(0,0,0,0), icon_color=self.data.get('color', ft.Colors.PRIMARY),
+            tooltip="Plot Point Icon", icon_color=self.data.get('color', 'secondary'),
+            menu_padding=ft.Padding(0,0,0,0), 
             items=self._get_icon_options()
         )
 
@@ -75,11 +75,6 @@ class PlotPoint(MiniWidget):
         # Build our slider for moving our plot point
         self.reload_plotline_control()
         self.reload_mini_widget(no_update=True)
-
-    def delete_dict(self, e=None):
-
-        self.owner.plot_points.pop(self.data.get('title', None), None)
-        super().delete_dict()
 
     
     async def move_plot_point(self, e=None):
@@ -244,7 +239,7 @@ class PlotPoint(MiniWidget):
                 mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
                 on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
                 on_pan_update=self.move_plot_point, drag_interval=20, on_pan_end=self._drag_end,
-                on_secondary_tap=lambda e: print("Right click on PP"),
+                on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
                 on_tap=self.show_mini_widget, on_tap_down=self._drag_start,
                 content=ft.Icon(self.data.get('icon', 'circle'), self.data.get('color', None))
             ),
@@ -262,13 +257,13 @@ class PlotPoint(MiniWidget):
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE), # Change to textfield
             ft.IconButton(
                 ft.Icons.PUSH_PIN_OUTLINED if not self.owner.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
-                self.owner.data.get('color', None),
+                self.data.get('color', None),
                 tooltip="Pin Information Display" if not self.owner.data.get('information_display_is_pinned', False) else "Unpin Information Display",
                 on_click=self._toggle_pin
             ),
             ft.Container(expand=True),
             ft.IconButton(
-                ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
+                ft.Icons.CLOSE, ft.Colors.OUTLINE,
                 tooltip=f"Close {self.title}",
                 on_click=lambda e: self.hide_mini_widget(update=True),
             ),

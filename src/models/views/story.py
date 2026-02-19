@@ -608,7 +608,7 @@ class Story(ft.View):
 
         # Adjust mouse positions if the menu would go off screen
         if self.mouse_x + 160 > page_width:
-            self.mouse_x -= 160
+            self.mouse_x -= 80
         if self.mouse_y + 230 > page_height:
             self.mouse_y -= 230
 

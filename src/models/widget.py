@@ -427,11 +427,6 @@ class Widget(ft.Container):
                 submitting = not submitting     # Change submit status to False so we can de-select the textbox
                 return
             
-            # Otherwise we're not submitting (just clicking off the textbox), so we cancel the rename
-            else:
-
-                self.reload_widget()
-                self.p.update()
 
         # Called everytime a change in textbox occurs
         def _name_check(e):
@@ -469,17 +464,11 @@ class Widget(ft.Container):
 
         # Called when submitting our textfield.
         def _submit_name(e):
-            ''' Checks that we're unique and renames the widget if so. on_blur is auto called after this, so we handle that as well '''
-
-            # Get our name and check if its unique
-            
+            ''' Checks that we're unique and renames the widget if so. on_blur is auto called after this, so we handle that as well '''          
 
             # Non local variables
-            nonlocal is_unique
-            nonlocal text_field
-            nonlocal submitting
-            nonlocal current_name
-
+            nonlocal is_unique, text_field, submitting, current_name
+        
             name = text_field.value
             if name == current_name:
                 self.p.close(dlg)
@@ -500,8 +489,8 @@ class Widget(ft.Container):
                 
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
-            value=self.title, #width=40,
-            dense=True,
+            value=self.title, 
+            dense=True, capitalization=ft.TextCapitalization.WORDS,
             focus_color=self.data.get('color', ft.Colors.PRIMARY),
             border_color=self.data.get('color', ft.Colors.PRIMARY),
             autofocus=True, adaptive=True,

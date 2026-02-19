@@ -187,7 +187,7 @@ class Marker(MiniWidget):
                 on_tap_down=self._drag_start,
                 on_pan_start=self._drag_start, on_pan_end=self._drag_end,
                 on_pan_update=self.move_marker, drag_interval=20, 
-                on_secondary_tap=lambda e: print("Right click on Marker"),
+                on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
                 on_tap=self.show_mini_widget,
                 content=cv.Canvas(
                     width=10, opacity=.7, resize_interval=20,    
@@ -215,36 +215,42 @@ class Marker(MiniWidget):
         # Reload our plotline control
         self._rebuild_plotline_control()
 
-        self.title_control = ft.Row([
-            ft.Icon(ft.Icons.FLAG_OUTLINED, self.owner.data.get('color', None)),
+        title_control = ft.Row([
+            ft.Icon(ft.Icons.FLAG_OUTLINED, self.data.get('color', None)),
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD),
             ft.IconButton(
                 ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
-                self.owner.data.get('color', None),
+                self.data.get('color', None),
                 tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
                 on_click=_toggle_pin
             ),
             ft.Container(expand=True),
             ft.IconButton(
-                icon=ft.Icons.CLOSE,
+                ft.Icons.CLOSE, ft.Colors.OUTLINE,
                 tooltip=f"Close {self.title}",
                 on_click=lambda e: self.hide_mini_widget(update=True),
             ),
         ])
+
+
+
+
         
-        content = ft.Column([
-            self.title_control,
-            ft.Divider(height=2, thickness=2),
-            ft.Container(height=10)  # Spacing 
-        ], expand=True, tight=True, spacing=0)
+        content = ft.Column(
+            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
+            controls=[
+                ft.Container(height=1),  # Little padding
+            ]
+        )
 
 
-        # Format our final layout so the scrollbar doesn't sit overtop the content
-        row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0)
-    
+
+
         column = ft.Column([
-            row
-        ], expand=True, scroll="auto", tight=True)
+            title_control,
+            ft.Divider(height=2, thickness=2),
+            content
+        ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START)
         
         self.content = column
             

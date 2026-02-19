@@ -131,11 +131,6 @@ class Arc(MiniWidget):
         self.reload_plotline_control()
         self.reload_mini_widget()
 
-    def delete_dict(self, e=None):
-
-        self.owner.arcs.pop(self.data.get('title', None), None)
-        super().delete_dict()
-
 
     # Called when we hover over our arc on the plotline
     async def _highlight(self, e: ft.HoverEvent):
@@ -369,10 +364,9 @@ class Arc(MiniWidget):
                 mouse_cursor=ft.MouseCursor.CLICK,
                 hover_interval=200, expand=True,
                 on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
-                on_secondary_tap=lambda e: print("Right clicked arc"), 
+                on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
                 on_enter=self._highlight,      # Highlight container
                 on_exit=self._stop_highlight,        # Stop highlight
-                #on_hover=self._highlight,
                 content=ft.Column([
                     ft.Row([
                         self.left_drag_handle,
@@ -410,29 +404,26 @@ class Arc(MiniWidget):
             self.p.update()
 
 
-        self.title_control = ft.Row([
-            ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.owner.data.get('color', None)),
+        title_control = ft.Row([
+            ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.data.get('color', None)),
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD),
             ft.IconButton(
                 ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
-                self.owner.data.get('color', None),
+                self.data.get('color', None),
                 tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
                 on_click=_toggle_pin
             ),
             ft.Container(expand=True),
             ft.IconButton(
-                ft.Icons.MINIMIZE_OUTLINED, ft.Colors.ON_SURFACE_VARIANT,
-                tooltip="Hide", on_click=_hide_mode
+                ft.Icons.CLOSE, ft.Colors.OUTLINE,
+                tooltip=f"Close {self.title}",
+                on_click=lambda e: self.hide_mini_widget(update=True),
             ),
-            ft.IconButton(
-                ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
-                tooltip=f"Close {self.title}", on_click=lambda e: self.hide_mini_widget(update=True),
-            ),
-        ], spacing=0)
+        ])
 
         
         content = ft.Column([
-            self.title_control,
+            title_control,
             ft.Divider(height=2, thickness=2),
             ft.Container(height=10)  # Spacing 
         ], expand=True, tight=True, spacing=0)
