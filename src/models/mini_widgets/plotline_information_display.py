@@ -34,11 +34,12 @@ class PlotlineInformationDisplay(MiniWidget):
                 'Left Label': "0",                              # Start label
                 'Right Label': "10",                            # Start and end date of the branch, for plotline view
                 'Divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
+                
             },
         )
 
         # Holds our row controls for our divisions so we can add/remove without rebuilding
-        self.divisions_column = ft.Column(spacing=0, scroll="auto")
+        self.divisions_column = ft.Column(spacing=0, scroll="none")
 
         self.reload_mini_widget()
 
@@ -73,17 +74,18 @@ class PlotlineInformationDisplay(MiniWidget):
 
                 # Remove the control for this division. Reloading would fix, but lose our scroll placement
                 for control in self.divisions_column.controls:
-                    if isinstance(control, ft.Row):
-                        text_control = control.controls[0]
+                    if isinstance(control, ft.Container) and isinstance(control.content, ft.Row):
+                    
+                        text_control = control.content.controls[0]
                         if text_control.data[1] == idx:
                             self.divisions_column.controls.remove(control)
                             break
 
                 # Update the controls indexes after the deleted one. 
                 for control in self.divisions_column.controls:
-                    if isinstance(control, ft.Row):
-                        text_control = control.controls[0]      # Update both text and delete button indexes
-                        delete_button = control.controls[1]
+                    if isinstance(control, ft.Container) and isinstance(control.content, ft.Row):
+                        text_control = control.content.controls[0]      # Update both text and delete button indexes
+                        delete_button = control.content.controls[1]
                         if text_control.data[0] == 'Divisions' and text_control.data[1] >= idx:
                             text_control.data[1] -= 1
                             delete_button.data[1] -= 1
@@ -93,7 +95,7 @@ class PlotlineInformationDisplay(MiniWidget):
             else:
                 self.data.get(key, [])[idx] = e.control.value
                 self.save_dict()
-                await self.rebuild_plotline_canvas(no_update=True)
+                await self.owner.rebuild_plotline_canvas(no_update=True)
                 
         else:
             key = e.control.data
@@ -124,15 +126,18 @@ class PlotlineInformationDisplay(MiniWidget):
             )
 
             self.divisions_column.controls.append(
-                ft.Row([
-                    text_control,
-                    ft.IconButton(
-                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
-                        tooltip="Delete Division", 
-                        on_click=self._change_our_data,
-                        data=['Divisions', len(self.data.get('Divisions', [])), True],
-                    ),
-                ])
+                ft.Container(
+                    ft.Row([
+                        text_control,
+                        ft.IconButton(
+                            ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                            tooltip="Delete Division", 
+                            on_click=self._change_our_data,
+                            data=['Divisions', len(self.data.get('Divisions', [])), True],
+                        ),
+                        
+                    ]), margin=ft.margin.only(left=20, right=20)
+                )
             )
 
             current_divisions = self.data.get('Divisions', [])
@@ -142,91 +147,88 @@ class PlotlineInformationDisplay(MiniWidget):
             self.save_dict()
             self.p.update()
 
+        timeline_icon = ft.Icon(ft.Icons.TIMELINE, self.owner.data.get('color', None))
+        plotline_title_text = ft.GestureDetector(
+            ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
+            on_double_tap=self.owner._rename_clicked,
+            on_tap=self.owner._rename_clicked,
+            on_secondary_tap=lambda e: self.owner.story.open_menu(self.owner._get_menu_options()),
+            mouse_cursor="click", on_hover=self.owner._hover_tab, hover_interval=500
+        )
+
+        pin_button = ft.IconButton(
+            ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+            self.owner.data.get('color', None),
+            tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
+            on_click=self._toggle_pin
+        )
+
+        close_button = ft.IconButton(
+            ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
+            tooltip=f"Close {self.title}",
+            on_click=lambda e: self.hide_mini_widget(update=True),
+        )
+
             
         title_control = ft.Row([
-            ft.Icon(ft.Icons.TIMELINE, self.owner.data.get('color', None)),
-            
-            ft.GestureDetector(
-                ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
-                on_double_tap=self.owner._rename_clicked,
-                on_tap=self.owner._rename_clicked,
-                on_secondary_tap=lambda e: self.owner.story.open_menu(self.owner._get_menu_options()),
-                mouse_cursor="click", on_hover=self.owner._hover_tab, hover_interval=500
-            ),
-            ft.IconButton(
-                ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
-                self.owner.data.get('color', None),
-                tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
-                on_click=self._toggle_pin
-            ),
-            ft.Container(expand=True),
-            ft.IconButton(
-                ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
-                tooltip=f"Close {self.title}",
-                on_click=lambda e: self.hide_mini_widget(update=True),
-            ),
+            timeline_icon,
+            plotline_title_text,
+            pin_button,
+            ft.Container(expand=True),      # Spacer
+            close_button
         ])
         
 
-        content = ft.Column(expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, controls=[ft.Container(height=1)])  # Start with some spacing at the top
+          # Start with some spacing at the top
 
 
+        summary_tf = ft.TextField(
+            expand=True, label="Summary", value=self.data.get('Summary', ""), dense=True, multiline=True,
+            capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+            on_blur=self._change_our_data,
+            data='Summary', 
+            focus_color=self.owner.data.get('color', None),
+            cursor_color=self.owner.data.get('color', None),
+            focused_border_color=self.owner.data.get('color', None),
+            label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+        )
 
-        # Summary
-        content.controls.append(
+
+        plotline_side_labels = ft.Row([
             ft.TextField(
-                expand=True, label="Summary", value=self.data.get('Summary', ""), dense=True, multiline=True,
+                expand=True, label="Left Label", value=self.data.get('Left Label', ""), dense=True, 
                 capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
                 on_blur=self._change_our_data,
-                data='Summary', 
+                data='Left Label',
+                focus_color=self.owner.data.get('color', None),
+                cursor_color=self.owner.data.get('color', None),
+                focused_border_color=self.owner.data.get('color', None),
+                label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+            ),
+            ft.TextField(
+                expand=True, label="Right Label", value=self.data.get('Right Label', ""), dense=True, 
+                capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                on_blur=self._change_our_data,
+                data='Right Label',
                 focus_color=self.owner.data.get('color', None),
                 cursor_color=self.owner.data.get('color', None),
                 focused_border_color=self.owner.data.get('color', None),
                 label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
             )
-        )
+        ])
 
-        
-        # Our labels
-        content.controls.append(
-            ft.Row([
-                ft.TextField(
-                    expand=True, label="Left Label", value=self.data.get('Left Label', ""), dense=True, 
-                    capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                    on_blur=self._change_our_data,
-                    data='Left Label',
-                    focus_color=self.owner.data.get('color', None),
-                    cursor_color=self.owner.data.get('color', None),
-                    focused_border_color=self.owner.data.get('color', None),
-                    label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
-                ),
-                ft.TextField(
-                    expand=True, label="Right Label", value=self.data.get('Right Label', ""), dense=True, 
-                    capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                    on_blur=self._change_our_data,
-                    data='Right Label',
-                    focus_color=self.owner.data.get('color', None),
-                    cursor_color=self.owner.data.get('color', None),
-                    focused_border_color=self.owner.data.get('color', None),
-                    label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
-                )
-            ])
-        )
 
-        content.controls.append(
-            ft.TextField(
-                expand=True, label="Time Label", value=self.data.get('Time Label', ""), dense=True,
-                capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
-                on_blur=self._change_our_data,
-                data='Time Label',
-                focus_color=self.owner.data.get('color', None),
-                cursor_color=self.owner.data.get('color', None),
-                focused_border_color=self.owner.data.get('color', None),
-                label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
-            )
-        )
 
-        
+        time_label_tf = ft.TextField(
+            expand=True, label="Time Label", value=self.data.get('Time Label', ""), dense=True,
+            capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+            on_blur=self._change_our_data,
+            data='Time Label',
+            focus_color=self.owner.data.get('color', None),
+            cursor_color=self.owner.data.get('color', None),
+            focused_border_color=self.owner.data.get('color', None),
+            label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+        )
 
 
         # Go through and list all our events in order. We'll sort them by their left positions
@@ -292,41 +294,159 @@ class PlotlineInformationDisplay(MiniWidget):
         events_container = ft.Container(               
             padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), 
-            content=events_text,
+            content=ft.Row([events_text]),
         )
 
-        # Add the label and the events container
-        content.controls.append(
-            ft.Row([
-                ft.Container(width=6), 
-                ft.Text("Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), tooltip="The order of events that occur in this plotline"),
-                
-            ], spacing=0)
-        )
+        events_label = ft.Row([
+            ft.Container(width=6), 
+            ft.Text("Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), tooltip="The order of events that occur in this plotline"),
+            
+        ], spacing=0)
+        
 
-        content.controls.append(ft.Row([events_container]))
+        divisions_label = ft.Row([
+            ft.Container(width=6), 
+            ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), tooltip="The number and label of the divisions on this plotline."),
+            ft.Container(width=10),
+            ft.IconButton(
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                tooltip="Add Division", on_click=_new_divisions_clicked
+            )
+        ], spacing=0)
+
+        # Returns list of our controls, for plot points, arcs, or markers depending on the key we pass in
+        def _get_events(key: str) -> ft.Column:
+            ''' Includes the title and a delete button for each event, and a message if there are no events of that type '''
+            column = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.START, spacing=0, scroll="none")
+
+            if key == "plot_points":
+                for pp in self.owner.plot_points.values():
+                    column.controls.append(
+                        ft.Row([
+                            ft.Container(
+                                ft.Text(pp.title, color=pp.data.get('color', None), expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD), 
+                                on_click=lambda e, p=pp: p.show_mini_widget(), expand=True, padding=ft.padding.only(left=20)
+                            ),
+                            ft.Container(
+                                ft.IconButton(
+                                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda e, p=pp: p._delete_clicked(),
+                                    tooltip="Delete Plot Point", style=ft.ButtonStyle(padding=ft.padding.all(0))
+                                ), margin=ft.margin.only(right=20)
+                            )
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+                    )
+                if not column.controls:
+                    column.controls.append(ft.Text("No plot points added yet.", color=ft.Colors.OUTLINE))
+            
+            elif key == "arcs":
+                for arc in self.owner.arcs.values():
+                    column.controls.append(
+                        ft.Row([
+                            ft.Container(
+                                ft.Text(arc.title, color=arc.data.get('color', None), expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD), 
+                                on_click=lambda e, a=arc: a.show_mini_widget(), expand=True, padding=ft.padding.only(left=20)
+                            ),
+                            ft.Container(
+                                ft.IconButton(
+                                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda e, a=arc: a._delete_clicked(),
+                                    tooltip="Delete Arc", style=ft.ButtonStyle(padding=ft.padding.all(0))
+                                ), margin=ft.margin.only(right=20)
+                            )
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+                    )
+                if not column.controls:
+                    column.controls.append(ft.Text("No arcs added yet.", color=ft.Colors.OUTLINE))
+            
+            elif key == "markers":
+                for marker in self.owner.markers.values():
+                    column.controls.append(
+                        ft.Row([
+                            ft.Container(
+                                ft.Text(marker.title, color=marker.data.get('color', None), expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD),
+                                on_click=lambda e, m=marker: m.show_mini_widget(), expand=True, padding=ft.padding.only(left=20)
+                            ),
+                            ft.Container(
+                                ft.IconButton(
+                                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda e, m=marker: m._delete_clicked(),
+                                    tooltip="Delete Marker", style=ft.ButtonStyle(padding=ft.padding.all(0))
+                                ), margin=ft.margin.only(right=20)
+                            )
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+                    )
+                if not column.controls:
+                    column.controls.append(ft.Text("No markers added yet.", color=ft.Colors.OUTLINE))
+            return column
+
+
+       
 
         
 
-        # Add the label and the Divisions container
-        content.controls.append(
-            ft.Row([
-                ft.Container(width=6), 
-                ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), tooltip="The number and label of the divisions on this plotline."),
-                ft.Container(width=10),
-                ft.IconButton(
-                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                    tooltip="Add Division", on_click=_new_divisions_clicked
-                )
-            ], spacing=0)
+        plot_points_label = ft.Row([
+            ft.Container(width=6),
+            ft.Text("Plot Points", color=self.owner.data.get('color', None), weight=ft.FontWeight.BOLD),
+            ft.Container(width=6),
+            ft.IconButton(
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Create New Plot Point", data="plot_point", 
+                on_click=self.owner.new_item_clicked, style=ft.ButtonStyle(padding=ft.padding.all(0))
+            )
+        ], spacing=0)
+
+        plot_points_list = _get_events("plot_points")
+
+        arcs_label = ft.Row([
+            ft.Container(width=6),
+            ft.Text("Arcs", color=self.owner.data.get('color', None), weight=ft.FontWeight.BOLD),
+            ft.Container(width=6),
+            ft.IconButton(
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Create New Arc", data="arc", 
+                on_click=self.owner.new_item_clicked, style=ft.ButtonStyle(padding=ft.padding.all(0))
+            )
+        ], spacing=0)
+
+        arcs_list = _get_events("arcs") 
+
+        markers_label = ft.Row([
+            ft.Container(width=6),
+            ft.Text("Markers", color=self.owner.data.get('color', None), weight=ft.FontWeight.BOLD),
+            ft.Container(width=6),
+            ft.IconButton(
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Create New Marker", data="marker", 
+                on_click=self.owner.new_item_clicked, style=ft.ButtonStyle(padding=ft.padding.all(0))
+            )
+        ], spacing=0)
+
+        markers_list = _get_events("markers")
+
+
+
+        content = ft.Column(
+            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
+            controls=[
+                ft.Container(height=1),
+                summary_tf,             # Summary
+
+                plotline_side_labels,       # Labels
+                time_label_tf,
+
+                events_label,       # Events
+                events_container,
+                
+                plot_points_label,  # Plot Points
+                plot_points_list,
+
+                arcs_label,         # Arcs
+                arcs_list,
+
+                markers_label,      # Markers
+                markers_list,
+                
+                divisions_label,        # Divisions
+                self.divisions_column
+            ]
         )
 
-        # Container for our divisions list
-        divisions_container = ft.Container(               
-            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), 
-            content=self.divisions_column,
-        )
+        self.divisions_column.controls.clear()  
         
         # Add all our current divisions
         for idx, division in enumerate(self.data.get('Divisions', [])):
@@ -342,19 +462,19 @@ class PlotlineInformationDisplay(MiniWidget):
             )
 
             # Add to a row with delete button to remove divisions
-            divisions_container.content.controls.append(
-                ft.Row([
-                    text_control,
-                    ft.IconButton(
-                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
-                        tooltip="Delete Division", 
-                        on_click=self._change_our_data,
-                        data=['Divisions', idx, True],
-                    ),
-                ])
+            self.divisions_column.controls.append(
+                ft.Container(
+                    ft.Row([
+                        text_control,
+                        ft.IconButton(
+                            ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                            tooltip="Delete Division", 
+                            on_click=self._change_our_data,
+                            data=['Divisions', idx, True],
+                        ),
+                    ]), margin=ft.margin.only(left=20, right=20)
+                )
             )
-
-        content.controls.append(divisions_container.content)
 
         column = ft.Column([
             title_control,

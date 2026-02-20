@@ -110,8 +110,9 @@ class Marker(MiniWidget):
 
         self.data['left'] = new_left
 
-        self.plotline_control.page = self.p
-        self.plotline_control.update()
+        #self.plotline_control.page = self.p
+        #self.plotline_control.update()
+        self.p.update()
 
     # Called when we finish dragging our plotline_marker to save our position
     async def _drag_end(self, e=None):

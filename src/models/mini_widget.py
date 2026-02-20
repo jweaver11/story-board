@@ -461,7 +461,7 @@ class MiniWidget(ft.Container):
         return color_controls
     
     # Called when the delete button is clicked in the menu options
-    def _delete_clicked(self, e):
+    def _delete_clicked(self, e=None):
         ''' Deletes this file from the story '''
         from models.app import app
 

@@ -493,6 +493,9 @@ class Plotline(Widget):
             elif tag == "marker":
                 await self.create_marker(title)
 
+            if self.information_display.visible:
+                self.information_display.reload_mini_widget()
+
             self.p.close(dlg)   # Close the dialog
 
             await asyncio.sleep(0.1)        # Needs a buffer or wont work for some reason
