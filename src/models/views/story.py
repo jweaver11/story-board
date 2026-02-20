@@ -97,6 +97,7 @@ class Story(ft.View):
         self.maps: dict = dict()            # Maps created inside of world building
         self.character_connection_maps: dict = dict()   # Family tree views for tracking character relationships
         self.worlds: dict = dict()     # World building widget that contains our maps, lore, governments, history, etc
+        self.objects: dict = dict()    # Objects that don't fit into the other categories, like vehicles, items, etc. Can be used for both novels and comics
 
         # Store all our widgets above in a master list for easier rendering in the UI
         self.widgets: list = []    
@@ -490,6 +491,14 @@ class Story(ft.View):
         for ccm in self.character_connection_maps.values():           # Family Trees
             if ccm not in self.widgets:
                 self.widgets.append(ccm)
+        for object in self.objects.values():        # Objects
+            if object not in self.widgets:
+                self.widgets.append(object)
+
+        # Now that all widgets are loaded, certain mini widgets need to be re-loaded to update data
+        for plotline in self.plotlines.values():
+            for pp in plotline.plot_points.values():
+                pp.reload_mini_widget(no_update=True)
                 
         
     # Called to create a new widget based on tag (chapter, note, character, etc)

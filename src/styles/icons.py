@@ -1,6 +1,6 @@
 # Icons used for character connections
 connection_icons = [
-    "connect_without_contact",
+    "link",
     "favorite",
     "heart_broken",
     "sentiment_satisfied_outlined",

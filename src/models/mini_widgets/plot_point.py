@@ -304,19 +304,195 @@ class PlotPoint(MiniWidget):
             tooltip="List of location(s) related to this plot point"
         )
 
-        #TODO: Involved characters and related objects
-        involved_characters_tf = ft.TextField(
-            value="\n".join(self.data.get('Involved Characters', [])), multiline=True, expand=True, 
-            on_blur=lambda e: self.change_data(**{'Involved Characters': e.control.value.split("\n")}), 
-            label="Involved Characters", capitalization=ft.TextCapitalization.SENTENCES,
-            tooltip="List of character(s) involved in this plot point"
+        # Adds or removes characters from our involved characters list
+        def _toggle_involved_characters(e):
+            
+            should_add_key = True   # Flag to check if we need to remove or not
+            char_key = e.control.data   # Key of the character
+
+            for key in self.data.get('Involved Characters', []):
+                if char_key == key:     # If the character is in there, remove them and break
+                    self.data['Involved Characters'].remove(key)
+                    should_add_key = False      # Make sure we don't re-add them after
+                    break
+
+            # If we went through the list and didn't find them, add them to the list
+            if should_add_key:
+                print("Adding key")
+                self.data.get('Involved Characters', []).append(char_key)
+
+            self.save_dict()
+
+            involved_characters_row.controls = _set_involved_characters_controls()
+            involved_characters_selector.controls = _get_involved_characters()
+            self.p.update()
+
+        # Called to check our list of characters involved on this plotpoint. They are stored as keys and returned as names for display
+        def _get_involved_characters() -> list[str]:
+            char_list = []
+            
+            for char_key, char_obj in self.owner.story.characters.items():
+                char_list.append(
+                    ft.Checkbox(
+                        char_obj.data.get('title', char_key),
+                        True if char_key in self.data.get('Involved Characters', []) else False,
+                        data=char_key,
+                        label_style=ft.TextStyle(color=char_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
+                        on_change=_toggle_involved_characters
+                    )
+                )
+
+            if len(char_list) == 0:
+                char_list.append(ft.Text("No characters in story yet", color=ft.Colors.OUTLINE))
+            return char_list
+
+        def _toggle_involved_characters_selector(e=None):
+            involved_characters_selector.visible = not involved_characters_selector.visible
+            involved_characters_selector.controls = _get_involved_characters()
+
+            if involved_characters_selector.visible:
+                add_involved_characters_button.icon = ft.Icons.EDIT_OFF_OUTLINED
+            else:
+                add_involved_characters_button.icon = ft.Icons.EDIT_OUTLINED
+
+            self.p.update()
+
+        add_involved_characters_button = ft.IconButton(
+            ft.Icons.EDIT_OUTLINED,
+            tooltip="Connect Involved Characters",
+            on_click=_toggle_involved_characters_selector
         )
 
-        related_objects_tf = ft.TextField(
-            value="\n".join(self.data.get('Related Objects', [])), multiline=True, expand=True, 
-            on_blur=lambda e: self.change_data(**{'Related Objects': e.control.value.split("\n")}), 
-            label="Related Objects", capitalization=ft.TextCapitalization.SENTENCES,
-            tooltip="List of object(s) related to this plot point"
+        involved_characters_selector = ft.Column(
+            _get_involved_characters(),
+            visible=False,
+        )
+
+        def _set_involved_characters_controls(e=None) -> list[ft.Control]:
+
+            controls = [
+                ft.Text("Involved Characters:\t\t\t", theme_style=ft.TextThemeStyle.LABEL_LARGE, color=self.data.get('color', None)),
+            ]
+
+            for idx, ic_key in enumerate(self.data.get('Involved Characters', [])):
+                char = self.owner.story.characters.get(ic_key, None)
+                if char is not None:
+                    name = char.data.get('title', ic_key)
+
+                    # Add the control now
+                    controls.append(ft.Text(name, color=char.data.get('color', None), weight=ft.FontWeight.BOLD))
+                    controls.append(
+                        ft.IconButton(
+                            ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
+                            data=ic_key,
+                            on_click=_toggle_involved_characters
+                        )
+                    )
+                    if idx < len(self.data.get('Involved Characters', [])) - 1: # Skip adding container to last character
+                        controls.append(ft.Container(width=10))
+                           
+                    
+
+            controls.append(add_involved_characters_button)
+            return controls
+
+        
+        involved_characters_row = ft.Row(
+            _set_involved_characters_controls(),
+            wrap=True, spacing=0,
+        )
+
+        def _toggle_related_objects_selector(e=None):
+            # For simplicity, we'll just use a text field to add related objects by key. In the future, we could make a dropdown selector similar to involved characters if needed
+            related_objects_selector.visible = not related_objects_selector.visible
+
+            if related_objects_selector.visible:
+                add_related_objects_button.icon = ft.Icons.EDIT_OFF_OUTLINED
+            else:
+                add_related_objects_button.icon = ft.Icons.EDIT_OUTLINED
+
+            self.p.update()
+
+        add_related_objects_button = ft.IconButton(
+            ft.Icons.EDIT_OUTLINED,
+            tooltip="Add Related Object by Key",
+            on_click=_toggle_related_objects_selector
+        )
+
+        def _set_related_objects_controls(e=None) -> list[ft.Control]:
+
+            controls = [
+                ft.Text("Related Objects:\t\t\t", theme_style=ft.TextThemeStyle.LABEL_LARGE, color=self.data.get('color', None)),
+            ]
+
+            for idx, obj_key in enumerate(self.data.get('Related Objects', [])):
+                char = self.owner.story.objects.get(obj_key, None)
+                if char is not None:
+                    name = char.data.get('title', obj_key)
+
+                    # Add the control now
+                    controls.append(ft.Text(name, color=char.data.get('color', None), weight=ft.FontWeight.BOLD))
+                    controls.append(
+                        ft.IconButton(
+                            ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
+                            data=obj_key,
+                            #on_click=_toggle_related_objects
+                        )
+                    )
+                    if idx < len(self.data.get('Related Objects', [])) - 1: # Skip adding container to last character
+                        controls.append(ft.Container(width=10))
+                           
+                    
+
+            controls.append(add_related_objects_button)
+            return controls
+        
+        def _toggle_related_objects(e):
+            should_add_key = True   # Flag to check if we need to remove or not
+            obj_key = e.control.data   # Key of the character
+
+            for key in self.data.get('Related Objects', []):
+                if obj_key == key:     # If the character is in there, remove them and break
+                    self.data['Related Objects'].remove(key)
+                    should_add_key = False      # Make sure we don't re-add them after
+                    break
+
+            # If we went through the list and didn't find them, add them to the list
+            if should_add_key:
+                self.data.get('Related Objects', []).append(obj_key)
+
+            self.save_dict()
+
+            related_objects_row.controls = _set_related_objects_controls()
+            related_objects_selector.controls = _get_related_objects()
+            self.p.update()
+
+        def _get_related_objects() -> list[str]:
+            char_list = []
+            
+            for obj_key, obj_obj in self.owner.story.objects.items():
+                char_list.append(
+                    ft.Checkbox(
+                        obj_obj.data.get('title', obj_key),
+                        True if obj_key in self.data.get('Involved Characters', []) else False,
+                        data=obj_key,
+                        label_style=ft.TextStyle(color=obj_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
+                        on_change=_toggle_related_objects
+                    )
+                )
+
+            if len(char_list) == 0:
+                char_list.append(ft.Text("No objects in story yet", color=ft.Colors.OUTLINE))
+            return char_list
+
+        related_objects_row = ft.Row(
+            _set_related_objects_controls(),
+            wrap=True, spacing=0,
+        )
+        
+        related_objects_selector = ft.Column(
+            _get_related_objects(),
+            visible=False,
         )
 
         content = ft.Column(
@@ -325,8 +501,12 @@ class PlotPoint(MiniWidget):
                 ft.Container(height=1),
                 description_tf,
                 ft.Row([when_tf, where_tf]),
-                involved_characters_tf,
-                related_objects_tf,
+                
+                involved_characters_row,        # Holds label, buttons for each involved character, and add/remove button
+                involved_characters_selector,
+                
+                related_objects_row,
+                related_objects_selector,
                 
             ]
         )
