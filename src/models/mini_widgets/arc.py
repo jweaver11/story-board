@@ -75,13 +75,8 @@ class Arc(MiniWidget):
                 'tag': "arc",                               # Tag to identify what type of object this is
                 'color': "secondary",                       # Color of the arc in the plotline
                 
-                # Rail display data
-                'dropdown_is_expanded': True,               # If the arc dropdown is expanded on the rail
-                
                 # For rendering on plotline
-                'side_location': side_location, 
-                'on_top': True,                             # If the mini widget should appear on top of the plotline. If false, appears below      
-                'rail_dropdown_is_expanded': True,          # If the rail dropdown is expanded  
+                'side_location': side_location,      
                 'is_shown_on_widget': True,                 # If this arcs plotline control is shown on the plotline widget
 
                 # Absolute Left and Right positions of the arc on the plotline
@@ -92,13 +87,13 @@ class Arc(MiniWidget):
                 'width': 100,           # Default width of the arc in pixels, used for new arcs that don't have left and right values yet, but need for calcs  
                 
                 # Arc Data
-                'summary': str,
-                'start_date': str,                          # Start and end date of the branch, for plotline view
-                'end_date': str, 
-                'involved_characters': list,
-                'related_locations': list,
-                'related_items': list,
-                'events': list,                             # List of events that occur during this arc
+                'Summary': str,
+                'Events': list,             # Simple list of events during this arc["event 1", "event 2", ...]
+                'Start': str,                          
+                'End': str, 
+                'Where': str, 
+                'Involved Characters': list,
+                'Related Objects': list,
             },
         )
 
@@ -159,42 +154,10 @@ class Arc(MiniWidget):
         
             self.plotline_control.page = self.p
             self.plotline_control.update()
-
-    def show_mini_widget_old_quesiton_mark(self, e=None):
-
-        self.opacity = 1
-        self.ignore_interactions = False
-        self.plotline_control.border = ft.border.only(
-            left=ft.BorderSide(2, self.data.get('color', "secondary")),
-            right=ft.BorderSide(2, self.data.get('color', "secondary")),
-            top=ft.BorderSide(2, self.data.get('color', "secondary")),
-        )
-
-        for arc in self.owner.arcs.values():
-            if arc != self and arc.data.get('is_pinned', False) == False:
-                arc.hide_mini_widget()
-
-        if not self.hidden:
-            super().show_mini_widget()
-        else:
-            self.data['visible'] = True
-            self.visible = True
-            self.save_dict()
-
-            for mw in self.owner.mini_widgets:
-                if mw != self and mw.data.get('is_pinned', False) == False:
-                    mw.hide_mini_widget()   
-
-            self.reload_mini_widget(no_update=True)
-            self.owner.reload_widget()
     
     def hide_mini_widget(self, e=None, update: bool=False):
         ''' Hides this arc '''
         print(f"Hiding mini widget {self.title}")
-
-        # Set the parts we need to hide in addition to the mini widget info display
-        #self.opacity = 0
-        #self.ignore_interactions = True
 
         self.plotline_control.shadow = None
 
@@ -385,62 +348,88 @@ class Arc(MiniWidget):
     # Called to reload our mini widget content
     def reload_mini_widget(self, no_update: bool=False):
 
-        async def _toggle_pin(e):
-            ''' Pins or unpins our information display '''
-            is_pinned = self.data.get('is_pinned', False)
-            self.data['is_pinned'] = not is_pinned
-            self.save_dict()
-            self.reload_mini_widget()
-            self.owner.reload_widget()
+        arc_icon = ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.data.get('color', None))
 
-        # Reload our plotline control and all associated components 
-        #self.reload_plotline_control()
+        arc_title_text = ft.GestureDetector(
+            ft.Container(ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"), padding=ft.padding.only(left=8)),
+            on_double_tap=self._rename_clicked,
+            on_tap=self._rename_clicked,
+            on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
+            mouse_cursor="click", on_hover=self.owner._hover_tab, hover_interval=500
+        )
 
-        # Add hide mode so we can drag without Info Display taking up the screen
-        def _hide_mode(e):
-            self.opacity = 0 if self.opacity == 1 else 1
-            self.ignore_interactions = True if self.ignore_interactions == False else False
-            self.hidden = True
-            self.p.update()
+        pin_button = ft.IconButton(
+            ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+            self.data.get('color', None),
+            tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
+            on_click=self._toggle_pin
+        )
 
+        close_button = ft.IconButton(
+            ft.Icons.CLOSE, ft.Colors.OUTLINE,
+            tooltip=f"Close {self.title}",
+            on_click=lambda e: self.hide_mini_widget(update=True),
+        )
+        
 
         title_control = ft.Row([
-            ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.data.get('color', None)),
-            ft.GestureDetector(
-                ft.Container(ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"), padding=ft.padding.only(left=8)),
-                on_double_tap=self._rename_clicked,
-                on_tap=self._rename_clicked,
-                on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", on_hover=self.owner._hover_tab, hover_interval=500
-            ),
-            ft.IconButton(
-                ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
-                self.data.get('color', None),
-                tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
-                on_click=_toggle_pin
-            ),
-            ft.Container(expand=True),
-            ft.IconButton(
-                ft.Icons.CLOSE, ft.Colors.OUTLINE,
-                tooltip=f"Close {self.title}",
-                on_click=lambda e: self.hide_mini_widget(update=True),
-            ),
+            arc_icon,
+            arc_title_text,
+            pin_button,
+            ft.Container(expand=True),      # Spacer
+            close_button
         ], spacing=0)
 
+        summary_tf = ft.TextField(
+            value=self.data.get('Summary', ''), multiline=True, expand=True, 
+            on_blur=lambda e: self.change_data(**{'Summary': e.control.value}), 
+            label="Summary", capitalization=ft.TextCapitalization.SENTENCES,
+            tooltip="Summary of what happened during this arc"
+        )
+
+        start_tf = ft.TextField(
+            value=self.data.get('Start', ''), multiline=True, expand=True, 
+            on_blur=lambda e: self.change_data(**{'Start': e.control.value}), 
+            label="Start", capitalization=ft.TextCapitalization.SENTENCES,
+            tooltip="When this arc began"
+        )
+
+        end_tf = ft.TextField(
+            value=self.data.get('End', ''), multiline=True, expand=True, 
+            on_blur=lambda e: self.change_data(**{'End': e.control.value}), 
+            label="End", capitalization=ft.TextCapitalization.SENTENCES,
+            tooltip="When this arc ends"
+        )
+
+        where_tf = ft.TextField(
+            value=self.data.get('Where'), multiline=True, expand=True, 
+            on_blur=lambda e: self.change_data(**{'Where': e.control.value}), 
+            label="Where", capitalization=ft.TextCapitalization.SENTENCES,
+            tooltip="List of location(s) related to this plot point"
+        )
+
+        # Build the main body content of our info display
+        content = ft.Column(
+            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
+            controls=[
+                ft.Container(height=1), # Spacer
+                summary_tf,             # Summary
+
+                ft.Row([start_tf, end_tf]),             # When
+
+                where_tf,           # Where
+            ]
+        )
+
+
+
         
-        content = ft.Column([
+        column = ft.Column([
             title_control,
             ft.Divider(height=2, thickness=2),
-            ft.Container(height=10)  # Spacing 
+            content
         ], expand=True, tight=True, spacing=0)
 
-
-        # Format our final layout so the scrollbar doesn't sit overtop the content
-        row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0)
-    
-        column = ft.Column([
-            row
-        ], expand=True, scroll="auto", tight=True)
         
         self.content = column
     

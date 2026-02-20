@@ -18,7 +18,7 @@ import asyncio
 
 class Plotline(Widget):
 
-    # Constructor. Requires title, owner widget, page reference, and optional data dictionary
+    # Constructor
     def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):
         
         # Parent constructor
@@ -82,10 +82,6 @@ class Plotline(Widget):
         self.plot_points: dict = {} 
         self.markers: dict = {}
         self.information_display: ft.Container = None
-
-        
-
-        
         
         # State elements
         self.x_alignment: float = 0.00              # Alignment to pass into new plot points and arcs
@@ -108,11 +104,11 @@ class Plotline(Widget):
             )
         )
 
-        # Loads our three mini widgets into their dicts
+        # Loads our mini widgets into their dicts
         self._load_arcs()
         self._load_plot_points()
         self._load_markers()
-        self._create_information_display()
+        self._create_information_display()      # Only one of it, since it just displays our plotline data
 
         # Dropdown on the rail. We don't use it here, let the rail handle it
         self.plotline_dropdown = None      # 'Plotline_Dropdown'
@@ -196,6 +192,7 @@ class Plotline(Widget):
                 data=data
             )
             self.mini_widgets.append(self.markers[key])  # Markers need to be in the owners mini widgets list to show up in the UI
+
 
     # Called when clicking on our canvas
     async def _on_tap(self, e=None):

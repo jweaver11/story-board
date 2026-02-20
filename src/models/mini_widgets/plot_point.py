@@ -51,7 +51,7 @@ class PlotPoint(MiniWidget):
                 # Information for our information display
                 'Description': str,
                 'When': str,
-                'Where': list,
+                'Where': str,
                 'Involved Characters': list,
                 'Related Objects': list,
             },
@@ -298,8 +298,8 @@ class PlotPoint(MiniWidget):
         )
 
         where_tf = ft.TextField(
-            value="\n".join(self.data.get('Where', [])), multiline=True, expand=True, 
-            on_blur=lambda e: self.change_data(**{'Where': e.control.value.split("\n")}), 
+            value=self.data.get('Where'), multiline=True, expand=True, 
+            on_blur=lambda e: self.change_data(**{'Where': e.control.value}), 
             label="Where", capitalization=ft.TextCapitalization.SENTENCES,
             tooltip="List of location(s) related to this plot point"
         )

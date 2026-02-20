@@ -33,8 +33,8 @@ class PlotlineInformationDisplay(MiniWidget):
                 'Time Label': "Years",                          # Label for the time axis (any str they want)
                 'Left Label': "0",                              # Start label
                 'Right Label': "10",                            # Start and end date of the branch, for plotline view
+                'Events': list,             # Simple list of events NOT visually on timeline. Seperate fromm our mini widgets
                 'Divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
-                
             },
         )
 
@@ -419,33 +419,6 @@ class PlotlineInformationDisplay(MiniWidget):
         markers_list = _get_events("markers")
 
 
-
-        content = ft.Column(
-            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
-            controls=[
-                ft.Container(height=1),
-                summary_tf,             # Summary
-
-                plotline_side_labels,       # Labels
-                time_label_tf,
-
-                events_label,       # Events
-                events_container,
-                
-                plot_points_label,  # Plot Points
-                plot_points_list,
-
-                arcs_label,         # Arcs
-                arcs_list,
-
-                markers_label,      # Markers
-                markers_list,
-                
-                divisions_label,        # Divisions
-                self.divisions_column
-            ]
-        )
-
         self.divisions_column.controls.clear()  
         
         # Add all our current divisions
@@ -475,6 +448,36 @@ class PlotlineInformationDisplay(MiniWidget):
                     ]), margin=ft.margin.only(left=20, right=20)
                 )
             )
+
+
+        # Build the main body content of our info display
+        content = ft.Column(
+            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
+            controls=[
+                ft.Container(height=1), # Spacer
+                summary_tf,             # Summary
+
+                plotline_side_labels,       # Labels
+                time_label_tf,
+
+                events_label,       # Events
+                events_container,
+                
+                plot_points_label,  # Plot Points
+                plot_points_list,
+
+                arcs_label,         # Arcs
+                arcs_list,
+
+                markers_label,      # Markers
+                markers_list,
+                
+                divisions_label,        # Divisions
+                self.divisions_column
+            ]
+        )
+
+        
 
         column = ft.Column([
             title_control,
