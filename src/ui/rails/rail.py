@@ -52,8 +52,9 @@ class Rail(ft.Container):
             on_blur=self.on_new_item_blur,                      # Called when clicking off the textfield and after submitting
             on_change=self.on_new_item_change,                  # Called on every key input
             on_submit=self.submit_item,                         # Called when enter is pressed and textfield is focused
-            
+            icon=None,
         )
+        
 
 
         # State variables used for our UI to track logic
@@ -72,19 +73,32 @@ class Rail(ft.Container):
     def get_template_options(self, widget_type: str) -> list[ft.Control]:
         ''' Returns a list of template options when right clicking empty space in the rail '''
 
+        def _change_active_template(e):
+            template_name = e.control.text
+            if widget_type == "character":
+                app.settings.data['active_character_template'] = template_name 
+            elif widget_type == "world":
+                app.settings.data['active_world_template'] = template_name
+
+            app.settings.save_dict()
+            self.new_item_textfield.label = f"Template: {template_name}"
+            self.new_item_textfield.visible = True
+            self.p.update()
+            return
+
         template_options = []
+
+
 
         if widget_type == "character":
             
         
             for name, template in app.settings.data.get('character_templates', {}).items():
                 template_options.append(
-                    ft.MenuItemButton(
-                        ft.Text(name, expand=True, overflow=ft.TextOverflow.ELLIPSIS), width=120,
-                        on_click=self.new_item_clicked,
-                        data="character",
-                        key=name,
-                        close_on_click=True,
+                    ft.PopupMenuItem(
+                        name,
+                        on_click=_change_active_template,
+                        data=widget_type,
                     )
                 )
 
@@ -133,17 +147,22 @@ class Rail(ft.Container):
     async def new_item_clicked(self, e):
         ''' Handles setting our textfield for new category creation '''
 
+        # Make sure our textfield is visible when we open template menu, since it hides itself
+        def _show_textfield(e=None):
+            self.new_item_textfield.visible = True
+            self.new_item_textfield.focus()
+            
+
         tag = e.control.data
         
         # Make textfield visible, reset its value, and give it right data for logic
         self.new_item_textfield.visible = True
         self.new_item_textfield.value = None
         self.new_item_textfield.data = tag
+        self.new_item_textfield.error_text = None
+        self.new_item_textfield.label = None
+        self.new_item_textfield.icon = None
 
-        template_name = None
-
-        if hasattr(e.control, "key") and e.control.key is not None:
-            template_name = e.control.key        
 
         match tag:
             case "character_connection_map":
@@ -154,25 +173,34 @@ class Rail(ft.Container):
                 self.new_item_textfield.hint_text = "Plot Point Title"
             case "character" | "category" :
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
-                if tag == "character":      # Set our new template as the active one in settings
-                    if template_name is not None:
-                        app.settings.data['active_character_template'] = template_name 
+                if tag == "character":
+                    self.new_item_textfield.icon = ft.PopupMenuButton(
+                        ft.Icon(ft.Icons.COPY_ALL), tooltip="Select Template",
+                        items=self.get_template_options("character"), menu_padding=ft.padding.all(0),
+                        on_open=_show_textfield, padding=ft.padding.all(0)
+                    )
+                    self.new_item_textfield.label = f"Template: {app.settings.data.get('active_character_template', 'Default')}"
+                        
             case "canvas_board":
                 self.new_item_textfield.hint_text = "Canvas Board Title"
             case "world":
-                if template_name is not None:
-                    app.settings.data['active_world_template'] = template_name
+                
+                self.new_item_textfield.icon = ft.PopupMenuButton(
+                    ft.Icon(ft.Icons.COPY_ALL), tooltip="Select Template",
+                    items=self.get_template_options("character"), menu_padding=ft.padding.all(0),
+                    on_open=_show_textfield, padding=ft.padding.all(0)
+                )
                 self.new_item_textfield.hint_text = "World Title"
+                self.new_item_textfield.label = f"Template {app.settings.data.get('active_world_template', 'Default')}"
             case _:
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
 
         # Open the textfield early since we have to wait for async close menu
-        self.update()
+        self.p.update()
         
         # Close the menu (if ones is open)
         await asyncio.sleep(.3)     # Wait for popupmenu's animations to close if we have issues
         await self.story.close_menu()
-        # TODO: Selecting from submenubutton breaks the program
         
 
     # Called whenever our user inputs a new key into one of our textfields for new items
@@ -261,11 +289,9 @@ class Rail(ft.Container):
                 self.new_item_textfield.page = self.p
                 self.new_item_textfield.focus()
         
-        # If we're not submitting, just hide the textfield and reset values
+        # If we're not submitting, just hide Textfield
         else:
             self.new_item_textfield.visible = False
-            self.new_item_textfield.value = None
-            self.new_item_textfield.error_text = None
             self.p.update()
 
 

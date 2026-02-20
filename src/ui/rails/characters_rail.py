@@ -92,23 +92,6 @@ class CharactersRail(Rail):
                             on_click=self.new_item_clicked, data="character"
                         ),  
                         ft.PopupMenuItem(
-                            padding=ft.padding.all(0),
-                            content=ft.SubmenuButton(
-                                ft.Container(
-                                    ft.Row([
-                                        ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), 
-                                        ft.Text("Character", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
-                                        ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE)
-                                    ], expand=True),
-                                    border_radius=ft.border_radius.all(6),
-                                ),
-                                self.get_template_options("character"),
-                                clip_behavior=ft.ClipBehavior.NONE, tooltip="Test Submenu",
-                                menu_style=ft.MenuStyle(padding=ft.padding.all(0), alignment=ft.alignment.top_right),
-                                style=ft.ButtonStyle(padding=ft.padding.all(0), shadow_color="transparent", overlay_color="transparent"),
-                            ),
-                        ),
-                        ft.PopupMenuItem(
                             text="Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
                             on_click=self.new_item_clicked, data="character_connection_map"
                         ),
@@ -136,7 +119,7 @@ class CharactersRail(Rail):
             ),
             MenuOptionStyle(
                 ft.Row([
-                    ft.Icon(ft.Icons.CONNECT_WITHOUT_CONTACT,),
+                    ft.Icon(ft.Icons.CONNECT_WITHOUT_CONTACT),
                     ft.Text(f"Edit Character\nTemplates", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ]),
                 on_click=self._open_templates_editor

@@ -123,6 +123,7 @@ class Settings(ft.View):
                 'default_world_pin_location': "right",
 
                 'active_character_template': "Default",             # Which template is being used for new characters for new stories - they default to this
+                'active_world_template': "Default",                 # Which template is being used for new worlds for new stories - they default to this
                 'show_empty_character_fields': True,                # If we show empty character fields in character widget or not
                 'division_labels_direction': "bottom",              # If the division labels are on top of the plotline instead of below
 
