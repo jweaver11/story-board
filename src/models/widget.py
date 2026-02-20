@@ -491,7 +491,7 @@ class Widget(ft.Container):
             dense=True, capitalization=ft.TextCapitalization.WORDS,
             focus_color=self.data.get('color', ft.Colors.PRIMARY),
             border_color=self.data.get('color', ft.Colors.PRIMARY),
-            autofocus=True, adaptive=True,
+            autofocus=True, 
             data=self.data.get('tag', ''),
             text_style=ft.TextStyle(
                 color=ft.Colors.ON_SURFACE,

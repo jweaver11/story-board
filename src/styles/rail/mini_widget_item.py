@@ -196,7 +196,6 @@ class MiniWidgetItem(ft.GestureDetector):
             expand=True,
             dense=True,
             autofocus=True,
-            adaptive=True,
             text_size=14,
             text_style=self.text_style,
             on_submit=_submit_name,

@@ -200,7 +200,7 @@ class World(Widget):
                 if isinstance(value, str):
                     text_control = ft.TextField(
                         expand=True, label=key.capitalize(), value=value, dense=True, multiline=True, hint_text=_get_help_text(key),
-                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, 
+                        capitalization=ft.TextCapitalization.SENTENCES,  
                         on_blur=lambda e, k=key: self._update_world_data(key=sub_key, **{k: e.control.value})
                     )
 
@@ -253,7 +253,7 @@ class World(Widget):
             border=ft.border.all(2, ft.Colors.OUTLINE), 
             content=ft.TextField(
                 expand=True, value=self.data.get('world_data', {}).get('Summary', ""), dense=True, multiline=True,
-                capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                capitalization=ft.TextCapitalization.SENTENCES, 
                 on_blur=lambda e: self._update_summary(e.control.value),
                 border=ft.InputBorder.NONE,                  
             ),

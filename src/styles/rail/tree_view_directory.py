@@ -441,7 +441,7 @@ class TreeViewDirectory(ft.GestureDetector):
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
             value=self.title, expand=True, dense=True,
-            autofocus=True, adaptive=True,
+            autofocus=True, 
             capitalization=ft.TextCapitalization.WORDS,
             text_size=14, text_style=self.text_style,
             on_submit=_submit_name,

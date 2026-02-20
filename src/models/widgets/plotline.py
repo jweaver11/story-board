@@ -447,12 +447,14 @@ class Plotline(Widget):
             self.story.open_menu(self.get_menu_options())
 
     # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
-    async def new_item_clicked(self, e):
+    async def new_item_clicked(self, e, arc: Arc=None):
         ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
 
         # Checks that the name in the textfield does not match any of the existing mini widgets of that type, and updates visually to reflect
         async def _check_name_unique(e):
             name = new_item_tf.value.strip()
+            submit_button.disabled = False
+            new_item_tf.error_text = None
             if not name:
                 submit_button.disabled = True
             elif tag == "plot_point" and name in self.plot_points:
@@ -467,6 +469,7 @@ class Plotline(Widget):
                 submit_button.disabled = True
                 new_item_tf.error_text = "Name must be unique"
                 new_item_tf.focus()
+
             else:
                 submit_button.disabled = False
                 new_item_tf.error_text = None
@@ -489,6 +492,9 @@ class Plotline(Widget):
                 await self.create_arc(title)
             elif tag == "marker":
                 await self.create_marker(title)
+            elif tag == "event":
+                if arc is not None:
+                    await arc.create_event(title)
 
             if self.information_display.visible:
                 self.information_display.reload_mini_widget()

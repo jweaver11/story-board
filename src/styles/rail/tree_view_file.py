@@ -202,7 +202,7 @@ class TreeViewFile(ft.GestureDetector):
         text_field = ft.TextField(
             value=self.widget.title,
             expand=True, dense=True,
-            autofocus=True, adaptive=True,
+            autofocus=True, 
             data=self.widget.data.get('tag', ''),
             text_style=self.text_style,
             on_submit=_submit_name,

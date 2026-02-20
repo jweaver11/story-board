@@ -127,6 +127,19 @@ class Arc(MiniWidget):
         self.reload_mini_widget()
 
 
+    async def create_event(self, title: str):
+        ''' Creates a new event in our events list with the given title '''
+
+        # Add this new event to our data and save it
+        events = self.data.get('Events', [])
+        events.append(title)
+        self.data['Events'] = events
+        self.save_dict()
+
+        # Reload our mini widget to show this new event
+        self.reload_mini_widget()
+
+
     # Called when we hover over our arc on the plotline
     async def _highlight(self, e: ft.HoverEvent):
         ''' Focuses the arc control '''
@@ -408,6 +421,56 @@ class Arc(MiniWidget):
             tooltip="List of location(s) related to this plot point"
         )
 
+        def _get_events_controls() -> list[ft.Control]:
+
+            def _change_cursor(e, tag: str):
+                if tag == "down":
+                    e.control.mouse_cursor = ft.MouseCursor.GRABBING
+                elif tag == "up":
+                    e.control.mouse_cursor = ft.MouseCursor.GRAB
+                self.p.update()
+
+            controls = []
+            for idx, event in enumerate(self.data.get('Events', [])):
+                event_tf = ft.ReorderableDraggable(
+                    idx, 
+                    ft.GestureDetector(
+                        ft.Container(ft.Text(event), margin=ft.margin.only(bottom=6, top=6, left=20, right=10)),
+                        mouse_cursor=ft.MouseCursor.GRAB, 
+                        on_tap_down=lambda e: _change_cursor(e, "down"),
+                        on_tap_up=lambda e: _change_cursor(e, "up"),
+                    )
+                )
+                controls.append(event_tf)
+            return controls
+        
+        def _reorder_events(e):
+            ''' Reorders our events list based on the new order after a drag and drop reorder '''
+            events = self.data.get('Events', [])
+            event = events.pop(e.old_index)
+            events.insert(e.new_index, event)
+
+            events_list.controls = _get_events_controls()
+            self.data['Events'] = events
+            self.save_dict()
+            self.p.update()
+        
+        events_label = ft.Row([
+            ft.Container(width=6),
+            ft.Text("Events", weight=ft.FontWeight.BOLD, tooltip="List of events that happened during this arc"),
+            ft.Container(width=6),
+            ft.IconButton(
+                ft.Icons.ADD, self.data.get('color', None), tooltip="Add Event", 
+                on_click=lambda e: self.p.run_task(self.owner.new_item_clicked, e, self), data="event"
+            ),
+        ], spacing=0)
+
+
+        events_list = ft.ReorderableListView(
+            padding=ft.padding.all(4), show_default_drag_handles=False,
+            controls=_get_events_controls(), on_reorder=_reorder_events, 
+        )
+
         # Build the main body content of our info display
         content = ft.Column(
             expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
@@ -418,6 +481,9 @@ class Arc(MiniWidget):
                 ft.Row([start_tf, end_tf]),             # When
 
                 where_tf,           # Where
+
+                events_label,
+                events_list
             ]
         )
 

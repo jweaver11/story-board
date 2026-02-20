@@ -505,7 +505,7 @@ class CanvasBoard(Widget):
             border=ft.border.all(2, ft.Colors.OUTLINE), margin=ft.margin.only(right=19),
             content=ft.TextField(
                 expand=True, value=self.data.get('description', ""), dense=True, multiline=True,
-                capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                capitalization=ft.TextCapitalization.SENTENCES, 
                 on_blur=lambda e: self.change_data(**{'description': e.control.value}),
                 border=ft.InputBorder.NONE,                  
             ),
@@ -595,7 +595,7 @@ class CanvasBoard(Widget):
                                     ft.TextField(
                                         str(cell), focused_border_color=self.data.get('color', None), cursor_color=self.data.get('color', None),
                                         dense=True, multiline=True, expand=True, #border=ft.InputBorder.NONE,
-                                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True, smart_dashes_type=True,
+                                        capitalization=ft.TextCapitalization.SENTENCES, smart_dashes_type=True,
                                         on_blur=lambda e, r=idx, c=sub_idx: self._update_matrix_cell(r, c, e.control.value)
                                     ), 
                                     expand=True, margin=ft.margin.all(12), alignment=ft.alignment.top_center,

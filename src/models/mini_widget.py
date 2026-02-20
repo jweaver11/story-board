@@ -199,7 +199,11 @@ class MiniWidget(ft.Container):
             if hasattr(self, 'reload_plotline_control'):
                 self.reload_plotline_control()
                 
-            self.reload_mini_widget()
+            if self.visible:
+                self.reload_mini_widget()
+            if hasattr(self.owner, 'information_display'):
+                if self.owner.information_display.visible:
+                    self.owner.information_display.reload_mini_widget() 
             self.owner.reload_widget()
 
 
@@ -387,7 +391,7 @@ class MiniWidget(ft.Container):
             dense=True, capitalization=ft.TextCapitalization.WORDS,
             focus_color=self.data.get('color', ft.Colors.PRIMARY),
             border_color=self.data.get('color', ft.Colors.PRIMARY),
-            autofocus=True, adaptive=True,
+            autofocus=True,
             data=self.data.get('tag', ''),
             text_style=ft.TextStyle(
                 color=ft.Colors.ON_SURFACE,

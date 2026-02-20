@@ -325,7 +325,7 @@ class Character(Widget):
                 if isinstance(value, str):
                     text_control = ft.TextField(
                         expand=True, label=key.capitalize(), value=value, dense=True, multiline=True, hint_text=_get_help_text(key),
-                        capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                        capitalization=ft.TextCapitalization.SENTENCES,
                         on_blur=lambda e, k=key: self._update_character_data(sub_key, **{k: e.control.value})
                     )
 

@@ -33,7 +33,6 @@ class PlotlineInformationDisplay(MiniWidget):
                 'Time Label': "Years",                          # Label for the time axis (any str they want)
                 'Left Label': "0",                              # Start label
                 'Right Label': "10",                            # Start and end date of the branch, for plotline view
-                'Events': list,             # Simple list of events NOT visually on timeline. Seperate fromm our mini widgets
                 'Divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
             },
         )
@@ -117,7 +116,7 @@ class PlotlineInformationDisplay(MiniWidget):
             ''' Called to add a new division to the bottom of the divisions list '''
             text_control = ft.TextField(
                 expand=True, value=len(self.data.get('Divisions', [])) + 1, dense=True, 
-                capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
                 data=['Divisions', len(self.data.get('Divisions', [])), False],
                 focus_color=self.owner.data.get('color', None),
@@ -184,7 +183,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
         summary_tf = ft.TextField(
             expand=True, label="Summary", value=self.data.get('Summary', ""), dense=True, multiline=True,
-            capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+            capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=self._change_our_data,
             data='Summary', 
             focus_color=self.owner.data.get('color', None),
@@ -197,7 +196,7 @@ class PlotlineInformationDisplay(MiniWidget):
         plotline_side_labels = ft.Row([
             ft.TextField(
                 expand=True, label="Left Label", value=self.data.get('Left Label', ""), dense=True, 
-                capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
                 data='Left Label',
                 focus_color=self.owner.data.get('color', None),
@@ -207,7 +206,7 @@ class PlotlineInformationDisplay(MiniWidget):
             ),
             ft.TextField(
                 expand=True, label="Right Label", value=self.data.get('Right Label', ""), dense=True, 
-                capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
                 data='Right Label',
                 focus_color=self.owner.data.get('color', None),
@@ -221,7 +220,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
         time_label_tf = ft.TextField(
             expand=True, label="Time Label", value=self.data.get('Time Label', ""), dense=True,
-            capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+            capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=self._change_our_data,
             data='Time Label',
             focus_color=self.owner.data.get('color', None),
@@ -262,7 +261,7 @@ class PlotlineInformationDisplay(MiniWidget):
                 events_spans.append(ft.TextSpan(f"{event.title} Ends\t\t➜\t\t", style=ft.TextStyle(color=event.color, word_spacing=4)))
             elif event.tag == 'marker':
                 events_spans.append(ft.TextSpan(
-                    f"\n{event.title}\n", 
+                    f"\n---{event.title}---\n", 
                     style=ft.TextStyle(color=event.color, weight=ft.FontWeight.BOLD, word_spacing=4)
                 ))
             else:
@@ -299,8 +298,15 @@ class PlotlineInformationDisplay(MiniWidget):
 
         events_label = ft.Row([
             ft.Container(width=6), 
-            ft.Text("Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), tooltip="The order of events that occur in this plotline"),
-            
+            ft.Text(
+                "Sequence of Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), 
+                color=self.owner.data.get('color', None), tooltip="The order of events that occur in this plotline"
+            ),
+            ft.Container(width=6),
+            ft.IconButton(
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Add Event to Timeline", 
+                on_click=self.owner.new_item_clicked, data="event",
+            )
         ], spacing=0)
         
 
@@ -426,7 +432,7 @@ class PlotlineInformationDisplay(MiniWidget):
             # Create text control for this division
             text_control = ft.TextField(
                 expand=True,  value=division, dense=True, 
-                capitalization=ft.TextCapitalization.SENTENCES, adaptive=True,
+                capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
                 data=['Divisions', idx, False],
                 focus_color=self.owner.data.get('color', None),
