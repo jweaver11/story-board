@@ -513,6 +513,10 @@ class Story(ft.View):
         from models.widgets.map import Map
         from models.widgets.character_connection_map import CharacterConnectionMap
         from models.widgets.world import World
+        from models.mini_widgets.arc import Arc
+        from models.mini_widgets.plot_point import PlotPoint
+        #from models.widgets.object import Object
+
         from models.app import app
 
         if directory_path is None:
@@ -547,6 +551,15 @@ class Story(ft.View):
                 key = widget.data.get('key', '')
                 self.characters[key] = widget
                 self.widgets.append(self.characters[key])
+                for ccm in self.character_connection_maps.values():     # Reload anything that needs character data
+                    if ccm.visible:
+                        ccm.reload_mini_widget()
+                for pl in self.plotlines.values():
+                    for mw in pl.mini_widgets:
+                        if isinstance(mw, PlotPoint) and mw.visible:
+                            mw.reload_mini_widget()
+                        elif isinstance(mw, Arc) and mw.visible:
+                            mw.reload_mini_widget()
 
             case "plotline":
                 widget = Plotline(title, self.p, directory_path, self, data)
