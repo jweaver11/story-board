@@ -261,7 +261,7 @@ class PlotlineInformationDisplay(MiniWidget):
                 events_spans.append(ft.TextSpan(f"{event.title} Ends\t\t➜\t\t", style=ft.TextStyle(color=event.color, word_spacing=4)))
             elif event.tag == 'marker':
                 events_spans.append(ft.TextSpan(
-                    f"\n---{event.title}---\n", 
+                    f"\n◆ {event.title} ◆\n", 
                     style=ft.TextStyle(color=event.color, weight=ft.FontWeight.BOLD, word_spacing=4)
                 ))
             else:
@@ -279,12 +279,13 @@ class PlotlineInformationDisplay(MiniWidget):
             if previous_span:
                 if previous_span.text.endswith("\n") and span.text.startswith("\n"):
                     events_spans[idx - 1] = ft.TextSpan(previous_span.text[:-1], style=previous_span.style)
+                elif previous_span.text.endswith("➜\t\t") and span.text.endswith("◆\n"):     # Remove arrows that lead to marker
+                    events_spans[idx - 1] = ft.TextSpan(previous_span.text[:-3], style=previous_span.style)
 
             # Remove arrow from the end of the last event
             if idx == len(events_spans) - 1:
                 if span.text.endswith("\t\t➜\t\t"):
                     events_spans[idx] = ft.TextSpan(span.text[:-6], style=span.style)
-                    
 
         # Make our text control with our built spans
         events_text = ft.Text(spans=events_spans, selectable=True, expand=True)
@@ -442,18 +443,27 @@ class PlotlineInformationDisplay(MiniWidget):
 
             # Add to a row with delete button to remove divisions
             self.divisions_column.controls.append(
-                ft.Container(
-                    ft.Row([
-                        text_control,
-                        ft.IconButton(
-                            ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
-                            tooltip="Delete Division", 
-                            on_click=self._change_our_data,
-                            data=['Divisions', idx, True],
-                        ),
-                    ]), margin=ft.margin.only(left=20, right=20)
-                )
+                ft.Row([
+                    text_control,
+                    ft.IconButton(
+                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                        tooltip="Delete Division", 
+                        on_click=self._change_our_data,
+                        data=['Divisions', idx, True],
+                    ),
+                ])
             )
+            
+
+        custom_fields_label = ft.Row([
+            ft.Container(width=6),
+            ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.owner.data.get('color', None), selectable=True),
+            ft.IconButton(
+                ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Custom Field",
+                on_click=lambda e: self._new_custom_field_clicked())
+        ], spacing=0)
+
+        custom_fields_column = self._build_custom_fields_column()
 
 
         # Build the main body content of our info display
@@ -479,7 +489,10 @@ class PlotlineInformationDisplay(MiniWidget):
                 markers_list,
                 
                 divisions_label,        # Divisions
-                self.divisions_column
+                ft.Container(self.divisions_column, margin=ft.margin.symmetric(horizontal=20)),
+
+                custom_fields_label,     # Custom Fields
+                ft.Container(custom_fields_column, margin=ft.margin.symmetric(horizontal=20)),
             ]
         )
 

@@ -13,6 +13,7 @@ from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
 import asyncio
+from utils.safe_string_checker import return_safe_name
 
 class MiniWidget(ft.Container):
 
@@ -266,6 +267,78 @@ class MiniWidget(ft.Container):
 
             self.reload_mini_widget()
             self.owner._render_widget()
+
+    def _new_custom_field_clicked(self, e=None):
+        ''' Called when the new field button is clicked '''
+
+        if 'custom_fields' not in self.data:
+            self.data['custom_fields'] = {} 
+
+        def create_field(e): #show in edit view
+            '''Called when user confirms the field name'''
+            
+            field_name = return_safe_name(field_name_input.value)
+            
+            if not field_name:
+                self.p.close(dlg)
+                return  # Don't create if empty
+            
+            # Add the field to data if it doesn't exist
+            if field_name not in self.data['custom_fields']:
+                self.data['custom_fields'][field_name] = ""
+            
+            # Save and reload
+            self.save_dict()
+            self.p.close(dlg)
+            self.reload_mini_widget()       
+            
+
+        # Create a dialog to ask for the field name
+        field_name_input = ft.TextField(
+            label="Field Name", hint_text=f"New Custom Field Name",
+            autofocus=True, capitalization=ft.TextCapitalization.SENTENCES,
+            on_submit=create_field,     # Closes the overlay when submitting
+        )
+        
+        dlg = ft.AlertDialog(
+            title=ft.Text(f"Create New Custom Field"),
+            content=field_name_input,
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Create", on_click=create_field),
+            ],
+        )
+        
+        
+        dlg.open = True
+        self.p.open(dlg)
+
+
+    def _delete_custom_field_clicked(self, field_name: str):
+
+        if field_name in self.data.get('custom_fields', {}):
+            del self.data['custom_fields'][field_name]
+            self.save_dict()
+            self.reload_mini_widget()
+
+    def _build_custom_fields_column(self) -> ft.Column:
+        ''' Builds our column of custom fields for this mini widget '''
+        controls = []
+        for field_name, field_value in self.data.get('custom_fields', {}).items():
+            controls.append(
+                ft.Row([
+                    ft.TextField(
+                        value=field_value, expand=True, label=field_name, capitalization=ft.TextCapitalization.SENTENCES,   
+                        on_blur=lambda e, fn=field_name: self.change_custom_field(**{fn: e.control.value})
+                    ),
+                    ft.IconButton(
+                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Custom Field",
+                        on_click=lambda e, fn=field_name: self._delete_custom_field_clicked(fn)
+                    ),
+                
+                ],)
+            )
+        return ft.Column(controls, spacing=8)
 
 
     def _get_menu_options(self) -> list[ft.Control]:

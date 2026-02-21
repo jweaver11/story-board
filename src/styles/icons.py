@@ -22,6 +22,7 @@ icons = [
     "dangerous",
     "star",
     "flare", 
+    "fireplace",
     "check_circle",
     "warning",
     "lightbulb",

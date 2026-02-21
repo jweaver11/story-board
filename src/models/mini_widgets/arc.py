@@ -663,6 +663,16 @@ class Arc(MiniWidget):
             visible=False,
         )
 
+        custom_fields_label = ft.Row([
+            ft.Container(width=6),
+            ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+            ft.IconButton(
+                ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Custom Field",
+                on_click=lambda e: self._new_custom_field_clicked())
+        ], spacing=0)
+
+        custom_fields_column = self._build_custom_fields_column()
+
         # Build the main body content of our info display
         content = ft.Column(
             expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
@@ -682,6 +692,9 @@ class Arc(MiniWidget):
                 
                 related_objects_row,
                 related_objects_selector,
+
+                custom_fields_label,
+                ft.Container(custom_fields_column, margin=ft.margin.symmetric(horizontal=20)),
             ]
         )
 
