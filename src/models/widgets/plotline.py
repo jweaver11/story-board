@@ -621,14 +621,17 @@ class Plotline(Widget):
             5, self.plotline_height // 2 - 60, left_label, 
             ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center,
             max_width=55,   # Prevent overflow left
+            text_align=ft.TextAlign.LEFT
         ))
         self.plotline_canvas.shapes.append(cv.Text(
             self.plotline_width - 5, self.plotline_height // 2 - 60, right_label, 
-            ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center
+            ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center,
+            text_align=ft.TextAlign.RIGHT, max_width=55   # Prevent overflow right
         ))
         self.plotline_canvas.shapes.append(cv.Text(
             self.plotline_width // 2, self.plotline_height - 50, time_label, 
-            ft.TextStyle(24, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center
+            ft.TextStyle(24, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center,
+            text_align=ft.TextAlign.CENTER
         ))
 
         
@@ -705,6 +708,7 @@ class Plotline(Widget):
                         ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=plot_point.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
                         alignment=ft.alignment.center,
                         max_width=100,
+                        text_align=ft.TextAlign.CENTER
                     )
                 )
 
@@ -752,6 +756,7 @@ class Plotline(Widget):
                     ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=marker.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
                     alignment=ft.alignment.center,
                     max_width=100,
+                    text_align=ft.TextAlign.CENTER
                 )
             
                 
@@ -768,11 +773,7 @@ class Plotline(Widget):
                 arc.plotline_control.bottom = self.plotline_height // 2       # Make sure plot point is in middle of the line
 
                 width = self.plotline_width - arc.data.get('left', 0) - arc.data.get('right', 0)
-                width_ratio = width / max(self.plotline_width, 1)
-
-                height = (self.plotline_height / 2) * (width_ratio) - 40
-                if height < 40:
-                    height = 40
+                
                     
                 lr = arc.data.get('left_ratio', 0)
                 rr = arc.data.get('right_ratio', 0)            
@@ -783,6 +784,16 @@ class Plotline(Widget):
                 new_width = self.plotline_width - new_left - new_right
                 if new_width < 100:
                     continue
+
+                height = new_width * 0.5
+
+                if height >= self.plotline_height / 2 -70:
+                    height = self.plotline_height / 2 -70
+                #width_ratio = width / max(self.plotline_width, 1)
+
+                #height = (self.plotline_height / 2) * (width_ratio) - 40
+                if height < 50:
+                    height = 50
 
                 arc.data['left'] = new_left
                 arc.data['right'] = new_right

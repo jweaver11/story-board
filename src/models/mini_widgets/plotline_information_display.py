@@ -303,11 +303,7 @@ class PlotlineInformationDisplay(MiniWidget):
                 "Sequence of Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), 
                 color=self.owner.data.get('color', None), tooltip="The order of events that occur in this plotline"
             ),
-            ft.Container(width=6),
-            ft.IconButton(
-                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Add Event to Timeline", 
-                on_click=self.owner.new_item_clicked, data="event",
-            )
+            
         ], spacing=0)
         
 

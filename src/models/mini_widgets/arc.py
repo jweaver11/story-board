@@ -242,9 +242,15 @@ class Arc(MiniWidget):
                 self.data['right'] = new_right
                 self.plotline_control.right = new_right
 
-        new_height = (self.owner.plotline_height / 2) * (ratio) - 40
-        if new_height < 40:
-            new_height = 40
+        #new_height = (self.owner.plotline_height / 2) * (ratio) - 40
+        new_height = width * 0.5
+
+        if new_height >= self.owner.plotline_height / 2 -70:
+            new_height = self.owner.plotline_height / 2 -70
+        if new_height < 50:
+            new_height = 50
+
+            print("New height of arc: ", new_height, " for width: ", width)
 
         self.plotline_control.height = int(new_height)
 
@@ -318,15 +324,16 @@ class Arc(MiniWidget):
         ''' Reloads our arc drawing on the plotline based on current/updated data, including page size '''
 
         width = self.owner.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
-        width_ratio = width / max(self.owner.plotline_width, 1)
 
-        h = (self.owner.plotline_height / 2) * (width_ratio) - 40
-        if h < 40:
-            h = 40
+        h = width * 0.5
+        if h < 50:
+            h = 50
+
+        print("Height of arc: ", h, " for width: ", width)
 
         self.plotline_control = ft.Container(
             left=self.data.get('left', 0), right=self.data.get('right', None),
-            alignment=ft.alignment.top_center, height=h,
+            alignment=ft.alignment.top_center, #height=h,
             margin=ft.Margin(16, 0, 16, 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             border=ft.border.only(          # Give use borderes on top left and right
@@ -344,13 +351,17 @@ class Arc(MiniWidget):
                 on_enter=self._highlight,      # Highlight container
                 on_exit=self._stop_highlight,        # Stop highlight
                 content=ft.Column([
+                    ft.Container(
+                        ft.Text(
+                            self.title, expand=True, overflow=ft.TextOverflow.VISIBLE, 
+                            theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER,
+                        ), margin=ft.margin.symmetric(horizontal=25), expand=True, alignment=ft.alignment.bottom_center
+                    ),
                     ft.Row([
                         self.left_drag_handle,
-                        ft.Text(self.title, theme_style=ft.TextThemeStyle.LABEL_LARGE, overflow=ft.TextOverflow.ELLIPSIS),
                         self.right_drag_handle
-                    ], expand=True, alignment=ft.MainAxisAlignment.CENTER, vertical_alignment=ft.CrossAxisAlignment.START, spacing=4),
-                    
-                ], expand=True, alignment=ft.MainAxisAlignment.SPACE_BETWEEN, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0)
+                    ], vertical_alignment=ft.CrossAxisAlignment.START, alignment=ft.MainAxisAlignment.CENTER, spacing=30, expand=True)
+                ], expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0)
             )
         )
 
