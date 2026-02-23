@@ -226,7 +226,6 @@ class Widget(ft.Container):
         self.w = e.width
         self.h = e.height
 
-
         # Mini widgets won't show unless we re-render on launch since first render has no size reference to grab them with
         if self.force_size_render:
             self.force_size_render = False
@@ -344,6 +343,7 @@ class Widget(ft.Container):
         self.hide_tab_icon_button.page = self.p
         self.hide_tab_icon_button.update()
         
+    
 
     # Called when app clicks the hide icon in the tab
     def toggle_visibility(self, e=None, value: bool=None):
@@ -527,7 +527,7 @@ class Widget(ft.Container):
         async def _change_icon_color(color: str):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
-            await self.change_data(**{'color': color})
+            self.change_data(**{'color': color})
             
             # Change our icon to match, apply the update
             self.story.active_rail.content.reload_rail()

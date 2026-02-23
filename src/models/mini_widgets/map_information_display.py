@@ -14,7 +14,7 @@ Since maps could have hundreds of sub-maps, we give them each their own file to 
 import flet as ft
 from models.widget import Widget
 from models.mini_widget import MiniWidget
-
+from utils.verify_data import verify_data
 
 
 class MapInformationDisplay(MiniWidget):
@@ -38,6 +38,25 @@ class MapInformationDisplay(MiniWidget):
             data=data,              
             key=key     
         ) 
+
+        # Verifies this object has the required data fields, and creates them if not
+        verify_data(
+            self,   # Pass in our object so we can access its data and change it
+            {   
+                'title': self.title,          # Title of the mini widget, should match the object title
+                'tag': "map_information_display",         
+
+                # Plotline data
+                'Description': str,
+                
+            },
+        )
+
+        self.border = ft.border.only(
+            left=ft.BorderSide(2, ft.Colors.SECONDARY_CONTAINER),
+            right=ft.BorderSide(2, ft.Colors.SECONDARY_CONTAINER),
+            bottom=ft.BorderSide(2, ft.Colors.SECONDARY_CONTAINER),
+        )
 
         # NOT USED
         self.data['visible'] = self.owner.data.get('information_display_visibility', True)
@@ -87,7 +106,8 @@ class MapInformationDisplay(MiniWidget):
     # Called when reloading our mini widget UI
     def reload_mini_widget(self, no_update: bool=False):
 
-            
+        #TODO: Show preview of the map here in info display so when other maps open this info display, they get a small preview
+
         title_control = ft.Row([
             ft.Icon(ft.Icons.MAP, self.owner.data.get('color', None)),
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE),
@@ -104,26 +124,26 @@ class MapInformationDisplay(MiniWidget):
                 on_click=lambda e: self.hide_mini_widget(update=True),
             ),
         ])
+
+        description_tf = ft.TextField(
+            expand=True, label="Description", value=self.data.get('Description', ""), dense=True, multiline=True,
+            capitalization=ft.TextCapitalization.SENTENCES,
+            on_blur=lambda e: self.change_data(**{'Description': e.control.value}),   # When we click out of the text field, we save our changes
+            focus_color=self.owner.data.get('color', None),
+            cursor_color=self.owner.data.get('color', None),
+            focused_border_color=self.owner.data.get('color', None),
+            label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+        )
         
         content = ft.Column([
             title_control,
             ft.Divider(height=2, thickness=2),
             ft.Container(height=10),  # Spacing 
-            ft.Text("Content"),
+            description_tf
         ], expand=True, tight=True, spacing=0)
 
-
         
-
-
-        # Format our final layout so the scrollbar doesn't sit overtop the content
-        row = ft.Row(expand=True, controls=[content, ft.Container(width=8)], spacing=0)
-    
-        column = ft.Column([
-            row
-        ], expand=True, scroll="auto", tight=True)
-        
-        self.content = column
+        self.content = content
 
         if no_update:
             return

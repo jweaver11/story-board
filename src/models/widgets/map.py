@@ -1,6 +1,6 @@
 '''
 The map class for all maps inside our story
-Maps are widgets that have their own drawing canvas, background image, information display, and markers/locations
+Maps are widgets that have their own drawing canvas, background image, information display, and locations
 '''
 
 
@@ -48,10 +48,6 @@ class Map(Widget):
                 'color': app.settings.data.get('default_map_color'),
                 'icon': "map_outlined",     # What icon to render on a parent map (if we have one)
 
-                # State and view data
-                'information_display_visibility': True,             # Visibility of our information display mini widget
-                'information_display_is_pinned': False,             # If our information display is pinned open
-
                 'drawing_mode': bool,            # Whether we are in drawing mode or not
                 'image_base64': str,                # Saves our icon as img64 string (Used a preview as well from other widgets)
                 'left': int,                        # Our left position on our parent map (if we have one)
@@ -61,12 +57,9 @@ class Map(Widget):
                 # If location is a map, it just has a tag and the maps key to reference it so we can open its information display when clicking it
 
                 # Map data for the information display
-                'map_data': {
-                    'Summary': str,
-                }
-                # TODO: 
-                # Users can choose to create their image or use some default ones, or upload their own
-                # THERES A MAP DISPLAY DUMMY, HB U CHECK THAT OUT!!!!!
+                'map_data': dict,
+                
+                
             },  
         )
 
@@ -104,7 +97,7 @@ class Map(Widget):
                 on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
                 on_hover=self._get_coords,
                 on_tap=self._show_info_display,
-                drag_interval=10, hover_interval=20,
+                drag_interval=500, hover_interval=20,
             ),
             expand=True, resize_interval=100,
             on_resize=self._rebuild_map_canvas, 
@@ -114,7 +107,7 @@ class Map(Widget):
         self.map_stack = ft.Stack([
             ft.Container(
                 expand=True, ignore_interactions=True,
-                image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
+                #image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
             ),
             self.canvas,
         ], expand=True)
@@ -130,8 +123,8 @@ class Map(Widget):
             title=self.title,
             owner=self,
             page=self.p,
-            key="none",     # Not used, but its required so just whatever works
-            data=None,      # It uses our data, so we don't need to give it a copy that we would have to constantly maintain
+            key="map_data",     # Not used, but its required so just whatever works
+            data=self.data.get('map_data'),      
         )
         # Add to our mini widgets so it shows up in the UI
         self.mini_widgets.append(self.information_display)
@@ -145,6 +138,84 @@ class Map(Widget):
         ''' If we're not in drawing mode, show our information display '''
         if not self.data.get('drawing_mode'):
             self.information_display.show_mini_widget()
+
+    # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
+    async def new_item_clicked(self, e):
+        ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
+
+        # Checks that the name in the textfield does not match any of the existing mini widgets of that type, and updates visually to reflect
+        async def _check_name_unique(e):
+            name = new_item_tf.value.strip()
+            submit_button.disabled = False
+            new_item_tf.error_text = None
+            if not name:
+                submit_button.disabled = True
+            elif tag == "plot_point" and name in self.plot_points:
+                submit_button.disabled = True
+                new_item_tf.error_text = "Name must be unique"
+                new_item_tf.focus()
+            elif tag == "arc" and name in self.arcs:
+                submit_button.disabled = True
+                new_item_tf.error_text = "Name must be unique"
+                new_item_tf.focus()
+            elif tag == "marker" and name in self.markers:
+                submit_button.disabled = True
+                new_item_tf.error_text = "Name must be unique"
+                new_item_tf.focus()
+
+            else:
+                submit_button.disabled = False
+                new_item_tf.error_text = None
+            
+            new_item_tf.update()
+            submit_button.update()
+            
+        # Create the nwew mini widget with the current text field value. Makes sure we passed checks first
+        async def _create_new_mw(e):
+
+            # Button is disabled if name is the same
+            if submit_button.disabled:
+                new_item_tf.focus()
+                return
+            
+            title = new_item_tf.value.strip()
+            if tag == "plot_point":
+                await self.create_plot_point(title)
+            
+                
+
+            if self.information_display.visible:
+                self.information_display.reload_mini_widget()
+
+            self.p.close(dlg)   # Close the dialog
+
+            await asyncio.sleep(0.1)        # Needs a buffer or wont work for some reason
+            await self.story.close_menu()       
+
+
+        # Grab the type of mini widget we are creating
+        tag = e.control.data
+
+        # Textfield for the name of the new mw
+        new_item_tf = ft.TextField(
+            label=f"Title", expand=True, on_change=_check_name_unique, autofocus=True,
+            capitalization=ft.TextCapitalization.WORDS, on_submit=_create_new_mw
+        )
+
+        # Button for creating new mw. Can also press enter in the textfield
+        submit_button = ft.TextButton("Create", on_click=_create_new_mw, disabled=True)
+
+        # Dialog we open onto the page
+        dlg = ft.AlertDialog(
+            title=ft.Text(f"New {tag.replace('_', ' ').title()} Name"),
+            content=new_item_tf,
+            actions=[
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda e: self.p.close(dlg)),
+                submit_button
+            ],
+        )
+
+        self.p.open(dlg)    
 
             
 
@@ -199,7 +270,7 @@ class Map(Widget):
         return [
              MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New Location", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
                     tooltip="New Location", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(
@@ -246,7 +317,7 @@ class Map(Widget):
                     content=ft.Row(
                         expand=True,
                         controls=[
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
+                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.data.get('color', None)),
                             ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
                         ]
                     ),
@@ -275,6 +346,9 @@ class Map(Widget):
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
+
+        # TODO: 
+        # Users can choose to create their image or use some default ones, or upload their own
 
         # Clear our map stack controls so we can re-add them
         self.map_stack.controls.clear()
