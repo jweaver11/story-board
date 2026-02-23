@@ -511,6 +511,12 @@ class MiniWidget(ft.Container):
             if hasattr(self, 'reload_plotline_control'):
                 self.reload_plotline_control()
 
+            if hasattr(self, 'map_control'):
+                self.reload_map_control()
+
+            if hasattr(self, 'map_label'):
+                self.map_label.color = color
+
             self.reload_mini_widget()
             self.owner.reload_widget()
             # Change our icon to match, apply the update

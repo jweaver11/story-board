@@ -14,6 +14,7 @@ import flet.canvas as cv
 from models.app import app
 from styles.menu_option_style import MenuOptionStyle
 import asyncio
+from models.mini_widgets.location import Location
 
 
 class Map(Widget):
@@ -129,12 +130,31 @@ class Map(Widget):
         self.mini_widgets.append(self.information_display)
 
     async def create_location(self, title: str, data: dict=None):
-        return
-        #new_location = 
+        
+        new_location = Location(
+            title=title,
+            owner=self,
+            page=self.p,
+            key="locations",     # Not used, but its required so just whatever works
+            data=data,      
+            left=self.l,
+            top=self.t
+        )
+       
+        self.locations[title] = new_location
+        self.mini_widgets.append(new_location)
+        self.reload_widget()
 
     def load_locations(self):
-        pass
-        # For location in location. Check tag, create location object (or map object). Add to self.locations
+        for title, data in self.data.get('locations', {}).items():
+            self.locations[title] = Location(
+                title=title,
+                owner=self,
+                page=self.p,
+                key="locations",     # Not used, but its required so just whatever works
+                data=data,
+            )
+            self.mini_widgets.append(self.locations[title])
 
     # Called when clicking on our map to show our information display
     async def _show_info_display(self, e: ft.TapEvent):
@@ -252,27 +272,27 @@ class Map(Widget):
                     items=[
                         ft.PopupMenuItem(
                             text="Blank", icon=ft.Icons.CHECK_BOX_OUTLINE_BLANK,
-                            on_click=self.new_location_clicked, data="blank"
+                            on_click=self.new_location_clicked, data={'icon': 'location_pin'}
                         ),
                         ft.PopupMenuItem(
                             text="Point of Interest", icon=ft.Icons.LOCATION_PIN,
-                            on_click=self.new_location_clicked, data="blank"
+                            on_click=self.new_location_clicked, data={'icon': 'location_pin'}
                         ),
                         ft.PopupMenuItem(
                             text="Mountain", icon=ft.Icons.TERRAIN,
-                            on_click=self.new_location_clicked, data="blank"
+                            on_click=self.new_location_clicked, data={'icon': 'terrain'}
                         ),
                         ft.PopupMenuItem(
                             text="Forest", icon=ft.Icons.FOREST,
-                            on_click=self.new_location_clicked, data="blank"
+                            on_click=self.new_location_clicked, data={'icon': 'forest'}
                         ),
                         ft.PopupMenuItem(
                             text="Ocean", icon=ft.Icons.WATER,
-                            on_click=self.new_location_clicked, data="blank"
+                            on_click=self.new_location_clicked, data={'icon': 'water'}
                         ),
                         ft.PopupMenuItem(
                             text="City", icon=ft.Icons.LOCATION_CITY,
-                            on_click=self.new_location_clicked, data="blank"
+                            on_click=self.new_location_clicked, data={'icon': 'location_city'}
                         ),
                         ft.PopupMenuItem(
                             text="Dungeon", icon=ft.Icons.STAIRS_OUTLINED,
@@ -332,9 +352,12 @@ class Map(Widget):
 
         # Update our page reference and size
         self.canvas.page = self.p
-        self.map_width = int(e.width)
-        self.map_height = int(e.height)
-        self._render_widget()
+        if e is not None:
+            self.map_width = int(e.width)
+            self.map_height = int(e.height)
+
+        
+        #self._render_widget()
 
 
     # Called when we need to rebuild out map UI
@@ -359,8 +382,9 @@ class Map(Widget):
 
         # Add our map locations to the stack
         for mw in self.mini_widgets:
-            if hasattr(mw, 'map_control'):
+            if hasattr(mw, 'map_control') and hasattr(mw, 'map_label'):
                 self.map_stack.controls.append(mw.map_control)
+                self.map_stack.controls.append(mw.map_label)
                 
         # Create our interactive viewer for panning and zooming
         iv = ft.InteractiveViewer(
