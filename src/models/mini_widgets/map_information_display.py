@@ -48,6 +48,8 @@ class MapInformationDisplay(MiniWidget):
 
                 # Plotline data
                 'Description': str,
+                'Lore': str,
+                'History': str,
                 
             },
         )

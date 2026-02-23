@@ -74,11 +74,10 @@ class Map(Widget):
         
 
         # Dict of our sub maps
-        self.maps: list = []
-        self.details = {}
+        self.locations: dict = {}
+        self.information_display: ft.Container 
 
-        # Declare and create our information display, which is our maps
-        self.information_display: ft.Container = None
+        self.load_locations()
         self._create_information_display()
 
 
@@ -129,6 +128,10 @@ class Map(Widget):
         # Add to our mini widgets so it shows up in the UI
         self.mini_widgets.append(self.information_display)
 
+    async def create_location(self, title: str, data: dict=None):
+        return
+        #new_location = 
+
     def load_locations(self):
         pass
         # For location in location. Check tag, create location object (or map object). Add to self.locations
@@ -140,7 +143,7 @@ class Map(Widget):
             self.information_display.show_mini_widget()
 
     # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
-    async def new_item_clicked(self, e):
+    async def new_location_clicked(self, e):
         ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
 
         # Checks that the name in the textfield does not match any of the existing mini widgets of that type, and updates visually to reflect
@@ -150,15 +153,7 @@ class Map(Widget):
             new_item_tf.error_text = None
             if not name:
                 submit_button.disabled = True
-            elif tag == "plot_point" and name in self.plot_points:
-                submit_button.disabled = True
-                new_item_tf.error_text = "Name must be unique"
-                new_item_tf.focus()
-            elif tag == "arc" and name in self.arcs:
-                submit_button.disabled = True
-                new_item_tf.error_text = "Name must be unique"
-                new_item_tf.focus()
-            elif tag == "marker" and name in self.markers:
+            elif name in self.locations:
                 submit_button.disabled = True
                 new_item_tf.error_text = "Name must be unique"
                 new_item_tf.focus()
@@ -179,11 +174,8 @@ class Map(Widget):
                 return
             
             title = new_item_tf.value.strip()
-            if tag == "plot_point":
-                await self.create_plot_point(title)
+            await self.create_location(title, data)
             
-                
-
             if self.information_display.visible:
                 self.information_display.reload_mini_widget()
 
@@ -194,11 +186,12 @@ class Map(Widget):
 
 
         # Grab the type of mini widget we are creating
-        tag = e.control.data
+        data = e.control.data
+        print("Data for new location:", data)
 
         # Textfield for the name of the new mw
         new_item_tf = ft.TextField(
-            label=f"Title", expand=True, on_change=_check_name_unique, autofocus=True,
+            label=f"Location Name", expand=True, on_change=_check_name_unique, autofocus=True,
             capitalization=ft.TextCapitalization.WORDS, on_submit=_create_new_mw
         )
 
@@ -207,7 +200,7 @@ class Map(Widget):
 
         # Dialog we open onto the page
         dlg = ft.AlertDialog(
-            title=ft.Text(f"New {tag.replace('_', ' ').title()} Name"),
+            title=ft.Text(f"New Location Name"),
             content=new_item_tf,
             actions=[
                 ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda e: self.p.close(dlg)),
@@ -240,26 +233,7 @@ class Map(Widget):
     
 
     def _get_menu_options(self) -> list[ft.Control]:
-        async def new_item_clicked(e):
-            ''' Called when new plot point or arc is clicked from plotline context menu '''
-            
-            tag = e.control.data
-
-            if tag is not None:
-                match tag:
-                    #case 'arc':
-                        #await self.create_arc(f"Arc {len(self.arcs) + 1}")
-                   # case "marker":
-                        #await self.create_marker(f"Marker {len(self.markers) + 1}")
-                    #case 'plot_point':  
-                        #await self.create_plot_point(f"Plot Point {len(self.plot_points) + 1}")
-                    case _:
-                        pass
-            else:
-                print("Error: No tag found for new item creation")
-
-            await asyncio.sleep(.3)
-            await self.story.close_menu()
+        
 
         async def _show_info_display(e):
             ''' Shows our information display mini widget '''
@@ -270,20 +244,43 @@ class Map(Widget):
         return [
              MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New Location", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", weight=ft.FontWeight.BOLD)]),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                    ),
                     tooltip="New Location", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(
                             text="Blank", icon=ft.Icons.CHECK_BOX_OUTLINE_BLANK,
-                            on_click=new_item_clicked, data="blank"
+                            on_click=self.new_location_clicked, data="blank"
                         ),
                         ft.PopupMenuItem(
-                            text="Sub Map", icon=ft.Icons.MAP_OUTLINED,
-                            on_click=new_item_clicked, data="sub_map"
+                            text="Point of Interest", icon=ft.Icons.LOCATION_PIN,
+                            on_click=self.new_location_clicked, data="blank"
                         ),
+                        ft.PopupMenuItem(
+                            text="Mountain", icon=ft.Icons.TERRAIN,
+                            on_click=self.new_location_clicked, data="blank"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Forest", icon=ft.Icons.FOREST,
+                            on_click=self.new_location_clicked, data="blank"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Ocean", icon=ft.Icons.WATER,
+                            on_click=self.new_location_clicked, data="blank"
+                        ),
+                        ft.PopupMenuItem(
+                            text="City", icon=ft.Icons.LOCATION_CITY,
+                            on_click=self.new_location_clicked, data="blank"
+                        ),
+                        ft.PopupMenuItem(
+                            text="Dungeon", icon=ft.Icons.STAIRS_OUTLINED,
+                            on_click=self.new_location_clicked, data={'icon': 'stairs_outlined'}
+                        )
                         
                     ]
-                ),
+                ), no_padding=True,
             ),
             MenuOptionStyle(
                 on_click=_show_info_display,
@@ -355,7 +352,7 @@ class Map(Widget):
         self.map_stack.controls = [     # Add our background and canvas
             ft.Container(
                 expand=True, ignore_interactions=True,
-                image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
+                #image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
             ),
             self.canvas,
         ]

@@ -644,7 +644,6 @@ class Story(ft.View):
             shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=2, blur_style=ft.ShadowBlurStyle.NORMAL),
             content=ft.Column(
                 spacing=0,
-                horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                 controls=menu_options
             ),
         )

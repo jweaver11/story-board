@@ -105,14 +105,14 @@ class Arc(MiniWidget):
         self.left_drag_handle = ft.GestureDetector(
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR, self.data.get('color', 'secondary'), 20), 
             on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
-            on_secondary_tap=lambda e: print("Right clicked arc"), 
+            on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
             on_enter=self._highlight,      # Highlight container
             visible=False, on_pan_update=self.change_x_positions, on_pan_start=self.start_dragging, on_pan_end=self.finished_dragging
         ) 
         self.right_drag_handle = ft.GestureDetector(
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR, self.data.get('color', 'secondary'), 20), 
             on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
-            on_secondary_tap=lambda e: print("Right clicked arc"), 
+            on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
             on_enter=self._highlight,      # Highlight container
             visible=False, on_pan_update=self.change_x_positions, on_pan_start=self.start_dragging, on_pan_end=self.finished_dragging
         )    
@@ -328,8 +328,6 @@ class Arc(MiniWidget):
         h = width * 0.5
         if h < 50:
             h = 50
-
-        print("Height of arc: ", h, " for width: ", width)
 
         self.plotline_control = ft.Container(
             left=self.data.get('left', 0), right=self.data.get('right', None),
