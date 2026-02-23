@@ -254,10 +254,6 @@ class ContentRail(Rail):
         #self.content = content
         
         # Apply our update
-        try:
-            self.update()
-        except Exception as e:
-            pass
-            #self.p.update()
+        self.p.update()
         
 

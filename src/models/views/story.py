@@ -82,10 +82,11 @@ class Story(ft.View):
         self.template = template
             
         # Declare our UI elements before we create them later. They are stored as objects so we can reload them when needed
-        self.menubar: ft.Container = None     # Menu bar at top of page
-        self.workspaces_rail: ft.Container = None      # Rail on left side showing our 6 workspaces
-        self.active_rail: ft.Container = None    # Rail showing whichever workspace is selected
-        self.workspace: ft.Container = None        # Main workspace area where our pins display our widgets
+        self.menubar: ft.Container     # Menu bar at top of page
+        self.workspaces_rail: ft.Container      # Rail on left side showing our 6 workspaces
+        self.active_rail: ft.Container    # Rail showing whichever workspace is selected
+        self.workspace: ft.Container       # Main workspace area where our pins display our widgets
+
 
         # Our widgets objects. Keys are stored as directory paths + titles for uniqueness (example: c:\path\to\character\character_name)
         self.chapters: dict = dict()        # Text based chapeters only
@@ -635,7 +636,7 @@ class Story(ft.View):
             self.mouse_y -= 115
 
         # Our container that contains a column of our options. Need to use container for positioning
-        menu = ft.Container(
+        self.menu = ft.Container(
             left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
             border_radius=ft.border_radius.all(4),
             bgcolor=ft.Colors.with_opacity(.65, ft.Colors.ON_INVERSE_SURFACE),
@@ -649,7 +650,7 @@ class Story(ft.View):
         )
 
         # Outside gesture detector to close the menu when clicking outside the menu container
-        outside_detector = ft.GestureDetector(
+        self.close_menu_detector = ft.GestureDetector(
             expand=True,
             on_tap=self.close_menu,
             on_secondary_tap=self.close_menu,
@@ -657,8 +658,8 @@ class Story(ft.View):
         
 
         # Overlay is a stack, so add the detector, then the menu container
-        self.p.overlay.append(outside_detector)
-        self.p.overlay.append(menu)
+        self.p.overlay.append(self.close_menu_detector)
+        self.p.overlay.append(self.menu)
         self.p.update()
 
 
@@ -685,7 +686,6 @@ class Story(ft.View):
         self.workspaces_rail = WorkspacesRail(page, self)  # Create our all workspaces rail
         self.active_rail = Active_Rail(page, self)  # Container stored in story for the active rails
         self.workspace = Workspace(page, self)  # Reference to our workspace object for pin locations
-        self.workspace.reload_workspace()  # Load our workspace here instead of in the workspace constructor
 
         # Called when hovering over resizer to right of the active rail
         async def show_horizontal_cursor(e: ft.HoverEvent):
