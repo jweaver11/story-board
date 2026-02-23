@@ -288,8 +288,9 @@ class Plotline(Widget):
             self.save_dict()
 
         # Apply changes
-        self.reload_widget()
-
+        if self.information_display.visible:
+            self.information_display.reload_mini_widget(no_update=True)
+        
     def delete_arc(self, arc):
         ''' Deletes an arc from our plotline '''
         
@@ -299,8 +300,9 @@ class Plotline(Widget):
             self.data['arcs'].pop(arc.title, None)
             self.save_dict()
 
-        # Apply changes
-        self.reload_widget()
+        if self.information_display.visible:
+            self.information_display.reload_mini_widget(no_update=True)
+        
 
     def delete_marker(self, marker):
         ''' Deletes a marker from our plotline '''
@@ -311,8 +313,9 @@ class Plotline(Widget):
             self.data['markers'].pop(marker.title, None)
             self.save_dict()
 
-        # Apply changes
-        self.reload_widget()
+        if self.information_display.visible:
+            self.information_display.reload_mini_widget(no_update=True)
+        
 
     # Called when right clicking our controls for either plotline or an arc
     def get_menu_options(self) -> list[ft.Control]:

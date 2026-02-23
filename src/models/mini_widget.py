@@ -103,13 +103,13 @@ class MiniWidget(ft.Container):
 
             match tag:
                 case "plot_point":
-                    del self.owner.plot_points[self.title]
+                    self.owner.delete_plot_point(self)
                 case "marker":
-                    del self.owner.markers[self.title]
+                    self.owner.delete_marker(self)
                 case "arc":
-                    del self.owner.arcs[self.title]
+                    self.owner.delete_arc(self)
                 case "comment":
-                    del self.owner.comments[self.title]
+                    self.owner.delete_comment(self)
 
                 case _:
                     print("Invalid mw key")
@@ -511,8 +511,6 @@ class MiniWidget(ft.Container):
             if hasattr(self, 'reload_plotline_control'):
                 self.reload_plotline_control()
 
-            
-            
             self.reload_mini_widget()
             self.owner.reload_widget()
             # Change our icon to match, apply the update
