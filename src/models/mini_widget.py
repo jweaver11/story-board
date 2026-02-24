@@ -110,6 +110,8 @@ class MiniWidget(ft.Container):
                     self.owner.delete_arc(self)
                 case "comment":
                     self.owner.delete_comment(self)
+                case "location":
+                    self.owner.delete_location(self)
 
                 case _:
                     print("Invalid mw key")
@@ -189,6 +191,8 @@ class MiniWidget(ft.Container):
                     self.owner.arcs[new_name] = self.owner.arcs.pop(old_name)
                 case "comment":
                     self.owner.comments[new_name] = self.owner.comments.pop(old_name)
+                case "location":
+                    self.owner.locations[new_name] = self.owner.locations.pop(old_name)
 
                 case _:
                     print("Invalid mw key")
@@ -199,6 +203,10 @@ class MiniWidget(ft.Container):
             # Reload the UI to reflect changes
             if hasattr(self, 'reload_plotline_control'):
                 self.reload_plotline_control()
+
+            if hasattr(self, 'reload_map_control') and hasattr(self, 'map_label'):
+                self.map_label.text = new_name
+                self.reload_map_control()
                 
             if self.visible:
                 self.reload_mini_widget()
@@ -466,11 +474,6 @@ class MiniWidget(ft.Container):
             border_color=self.data.get('color', ft.Colors.PRIMARY),
             autofocus=True,
             data=self.data.get('tag', ''),
-            text_style=ft.TextStyle(
-                color=ft.Colors.ON_SURFACE,
-                weight=ft.FontWeight.BOLD,
-                overflow=ft.TextOverflow.ELLIPSIS,
-            ),
             on_submit=_submit_name,
             on_change=_name_check,
             on_blur=_cancel_rename,

@@ -58,7 +58,7 @@ class Location(MiniWidget):
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
             {   
-                'tag': "plot_point",            # Tag to identify what type of object this is
+                'tag': "location",            # Tag to identify what type of object this is
                 'x_alignment': alignment if alignment is not None else (),           # Float between -1 and 1 on x axis of map. 0 is center
                 'icon': "circle",
                 'left': left, 
@@ -83,8 +83,17 @@ class Location(MiniWidget):
             self.title, theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER, 
             color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
             left=self.data.get('left', 0), top=self.data.get('top', 0) - 30 if self.data.get('top', 0) > 30 else self.data.get('top', 0) + 30,
-            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            overflow=ft.TextOverflow.VISIBLE,
+            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN), 
+            overflow=ft.TextOverflow.CLIP,
+        )
+        self.map_label = cv.Text(
+            self.data.get('left', 0) + 12, 
+            self.data.get('top', 0) - 30 if self.data.get('top', 0) > 30 else self.data.get('top', 0) + 30,
+            self.title, 
+            ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=self.data.get('color', "secondary"), overflow=ft.TextOverflow.VISIBLE),
+            alignment=ft.alignment.center,
+            max_width=100,
+            text_align=ft.TextAlign.CENTER
         )
                       
         self.icon_button = ft.PopupMenuButton(      # Button to change the plot points icon on the map
@@ -111,14 +120,14 @@ class Location(MiniWidget):
         new_top = self.map_control.top + e.delta_y
 
         # Clamp our position to the bounds of our map
-        if new_left < 0:        
-            new_left = 0
+        if new_left < 20:        
+            new_left = 20
         elif new_left > self.owner.map_width - 20:  
             new_left = self.owner.map_width - 20
-        if new_top < 0:
-            new_top = 0
-        elif new_top > self.owner.map_height:
-            new_top = self.owner.map_height
+        if new_top < 20:
+            new_top = 20
+        elif new_top > self.owner.map_height - 20:
+            new_top = self.owner.map_height - 20
         
         # Apply to data
         self.data['left'] = new_left
@@ -128,8 +137,10 @@ class Location(MiniWidget):
         # Set our new position and animate it there
         self.map_control.left = new_left
         self.map_control.top = new_top
-        self.map_label.left = new_left
-        self.map_label.top = new_top - 30 if new_top > 30 else new_top + 30
+        self.map_label.x = new_left + 12
+        self.map_label.y = new_top - 30 if new_top > 30 else new_top + 30
+        #self.map_label.left = new_left - 50 if new_left > 50 else new_left + 50 
+        #self.map_label.top = new_top - 30 if new_top > 30 else new_top + 30
 
         
         self.map_control.page = self.p
@@ -183,6 +194,8 @@ class Location(MiniWidget):
 
         if self.owner.information_display.visible:
             self.owner.information_display.reload_mini_widget(no_update=True)
+        self.map_control.page = self.p
+        self.map_control.update()
         await self.owner._rebuild_map_canvas()
 
     # Called when hovering over our plot point to show the slider

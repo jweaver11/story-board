@@ -384,7 +384,8 @@ class Map(Widget):
         for mw in self.mini_widgets:
             if hasattr(mw, 'map_control') and hasattr(mw, 'map_label'):
                 self.map_stack.controls.append(mw.map_control)
-                self.map_stack.controls.append(mw.map_label)
+                self.canvas.shapes.append(mw.map_label)
+                #self.map_stack.controls.append(mw.map_label)
                 
         # Create our interactive viewer for panning and zooming
         iv = ft.InteractiveViewer(
