@@ -136,7 +136,7 @@ class Plotline(Widget):
     # Called in the constructor
     def _create_information_display(self):
         ''' Creates our plotline information display mini widget '''
-        from models.mini_widgets.plotline_information_display import PlotlineInformationDisplay
+        from models.mini_widgets.plotline_info import PlotlineInformationDisplay
         
         self.information_display = PlotlineInformationDisplay(
             title=self.title,

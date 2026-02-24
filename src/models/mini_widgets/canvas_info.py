@@ -1,14 +1,8 @@
 '''
-The map class for all maps inside of the world_building widget
-Maps are extended mini widgets, with their 'display' being the view of the map, and their mini widget being the maps info display
-Maps don't save like mini widgets. They save their data inside one file, and their drawing data in another file.
-Since maps could have hundreds of sub-maps, we give them each their own file to avoid corruption
+The Canvas Information display mini widget so our canvases have unique data to display
+Without always taking up drawing space
 '''
 
-# BLANK NO TEMPLATE MAPS EXIST AS WELL
-# ADD DUPLICATE OPTION AS WELL
-# Users can choose to create their image or use some default ones, or upload their own
-# When hovering over a map, display it on the rail as well so we can see where new sub maps would
 
 
 import flet as ft
@@ -17,16 +11,16 @@ from models.mini_widget import MiniWidget
 from utils.verify_data import verify_data
 
 
-class MapInformationDisplay(MiniWidget):
+class CanvasInformationDisplay(MiniWidget):
 
     # Constructor.
     def __init__(
         self, 
         title: str, 
-        owner: Widget,                  # The owner is always our map owner
+        owner: Widget,                  
         page: ft.Page, 
-        key: str,                       # Not used, but its required so just whatever works
-        data: dict = None               # No data is used here, so NEVER reference it. Use self.owner.data instead
+        key: str,                       
+        data: dict = None               
     ):
         
 
@@ -44,16 +38,14 @@ class MapInformationDisplay(MiniWidget):
             self,   # Pass in our object so we can access its data and change it
             {   
                 'title': self.title,          # Title of the mini widget, should match the object title
-                'tag': "map_information_display",        
+                'tag': "canvas_information_display",        
                 'left': 40,
                 'top': 40,
                 'alignment': None,
-                'drawing_mode': bool,            # Whether we are in drawing mode or not
 
-                # Map info
+                # Canvas info
                 'Description': str,
-                'Lore': str,
-                'History': str,
+                'Layers': list, #??
             },
         )
 
@@ -61,7 +53,7 @@ class MapInformationDisplay(MiniWidget):
             ft.IconButton(
                 ft.Icons.MENU_ROUNDED, scale=1.5,
                 on_click=self.toggle_visibility, 
-                tooltip="Show Map Info. Drag to move",
+                tooltip="Show Canvas Info. Drag to move",
             ),
             drag_interval=20, 
             on_pan_start=self._drag_start, 
@@ -70,7 +62,7 @@ class MapInformationDisplay(MiniWidget):
             left=self.data.get('left', 0), top=self.data.get('top', 0),
         )
 
-        # Reloads the information display of the map
+        # Reloads the information display of the canvas
         self.reload_mini_widget()
 
     # Called when saving changes to our timeline object
@@ -79,7 +71,7 @@ class MapInformationDisplay(MiniWidget):
         try:
             self.owner.save_dict()
         except Exception as e:
-            print(f"Error saving map information display data to {self.owner.title}: {e}")
+            print(f"Error saving canvas information display data to {self.owner.title}: {e}")
 
     async def toggle_visibility(self, e=None):
         if self.visible:
@@ -136,15 +128,15 @@ class MapInformationDisplay(MiniWidget):
         new_left = self.show_info_button.left + e.delta_x
         new_top = self.show_info_button.top + e.delta_y
 
-        # Clamp our position to the bounds of our map
-        if new_left < 20:        
-            new_left = 20
-        elif new_left > self.owner.map_width - 40:  
-            new_left = self.owner.map_width - 40
-        if new_top < 20:
-            new_top = 20
-        elif new_top > self.owner.map_height - 40:
-            new_top = self.owner.map_height - 40
+        # Clamp our position to the bounds of our canvas
+        if new_left < 30:        
+            new_left = 30
+        elif new_left > self.owner.canvas_width - 60:  
+            new_left = self.owner.canvas_width - 60
+        if new_top < 30:
+            new_top = 30
+        elif new_top > self.owner.canvas_height - 60:
+            new_top = self.owner.canvas_height - 60
         
         # Apply to data
         self.data['left'] = new_left
@@ -158,14 +150,14 @@ class MapInformationDisplay(MiniWidget):
         self.show_info_button.page = self.p
         self.show_info_button.update()
 
-    # Called when we finish dragging our map_marker to save our position
+    # Called when we finish dragging our canvas_marker to save our position
     async def _drag_end(self, e=None):
         ''' Updates our alignment and side location, and applies the updadte to the canvas for our label '''
 
         self.show_info_button.mouse_cursor = ft.MouseCursor.GRAB
         
-        x_alignment = (self.data.get('left', 0) / (self.owner.map_width - 10)) * 2.0 - 1.0
-        y_alignment = (self.data.get('top', 0) / (self.owner.map_height - 10)) * 2.0 - 1.0  
+        x_alignment = (self.data.get('left', 0) / (self.owner.canvas_width - 10)) * 2.0 - 1.0
+        y_alignment = (self.data.get('top', 0) / (self.owner.canvas_height - 10)) * 2.0 - 1.0  
 
         self.data['alignment'] = (x_alignment, y_alignment)
 
@@ -190,10 +182,10 @@ class MapInformationDisplay(MiniWidget):
     # Called when reloading our mini widget UI
     def reload_mini_widget(self, no_update: bool=False):
 
-        #TODO: Show preview of the map here in info display so when other maps open this info display, they get a small preview
+        #TODO: Layers
 
         title_control = ft.Row([
-            ft.Icon(ft.Icons.MAP, self.owner.data.get('color', None)),
+            ft.Icon(ft.Icons.BRUSH, self.owner.data.get('color', None)),
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE),
             ft.IconButton(
                 ft.Icons.PUSH_PIN_OUTLINED if not self.owner.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,

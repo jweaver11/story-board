@@ -1,10 +1,9 @@
 '''
-The map class for all maps inside our story
-Maps are widgets that have their own drawing canvas, and info display. they can contain nested sub maps as well.
+The canvas class for all canvases inside our story
+Canvases are drawings and images
 '''
 
 #TODO: 
-# ADD DUPLICATE OPTION AS WELL
 # Option for transparent background/no brackground
 # Option to upload image as background
 # Option to export canvas as image file (png, jpg, etc). Option to change how image fits on canvas (stretch, fit, fill, tile, center, etc)
@@ -23,6 +22,7 @@ from models.dataclasses.state import State
 import flet.canvas as cv
 import math
 from models.app import app
+from models.mini_widgets.canvas_info import CanvasInformationDisplay
 
 
 
@@ -54,36 +54,40 @@ class Canvas(Widget):
                 "tag": "canvas",
                 'color': app.settings.data.get('default_canvas_color'),
 
-                  
-
                 # Canvas drawing data we save and load from
-                "canvas": {
+                "canvas_data": {
+
+                    # Data for the info display
+                    'Description': str,
+
                     # Drawing data
                     'paths': list,              # All our shapes, lines, dashed lines, curves, etc.
                     'shadow_paths': list,       # All paths but with shadows
                     'points': list,             # All our points
 
-                    # Sizing
-                    "width": int,
-                    "height": int,
-                    "aspect_ratio": float,      # Used over height and width if set
+                    # Sizing of the canvas
+                    "width": None,
+                    "height": None,
+                    "aspect_ratio": None,      # Used over height and width if set
 
                     # Background settings
-                    'bgcolor': str,               # If its a color
-                    'image_base64': str,        # If an image is used. Color ignored if this is set
-                    'bg_blend_mode': "src_over",   # Blend mode for background. Starts default
-                    'bg_is_transparent': True,    # If true, background is transparent (no color or image). Used for exporting
+                    'bgcolor': str,                 # If its a color
+                    'image_base64': str,            # If an image is used. Color ignored if this is set
+                    'bg_blend_mode': "src_over",    # Blend mode for background. Starts default
+                    'bg_is_transparent': True,    
                 
                 },
+
             },
         )
 
         # State tracking for canvas drawing info
         self.state: State = State()         # Used for our coordinates and how to apply things
         self.min_segment_dist: float = 3.0
+        self.canvas_width: int = 0
+        self.canvas_height: int = 0
 
-        # Track last known canvas size to rescale drawings on resize
-        self._last_canvas_size: tuple[float, float] | None = None
+      
 
         self.canvas = cv.Canvas(
             content=ft.GestureDetector(
@@ -93,46 +97,64 @@ class Canvas(Widget):
                 on_pan_end=lambda e: self.save_canvas(),
                 on_tap_up=self.add_point,      # Handles so we can add points
                 drag_interval=5,
+                expand=True,
             ),
             expand=True,
-            on_resize=self.on_canvas_resize, resize_interval=100,
+            on_resize=self.on_canvas_resize, resize_interval=500,
         )
 
         self.canvases_list = [self.canvas]  # Not used, but may be for layering
 
         self.canvas_container = ft.Container(
-            width=self.data.get('canvas', {}).get('width', None),
-            height=self.data.get('canvas', {}).get('height', None),
+            width=self.data.get('canvas_data', {}).get('width', None),
+            height=self.data.get('canvas_data', {}).get('height', None),
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
             border=ft.border.all(1, ft.Colors.ON_SURFACE_VARIANT),
-            aspect_ratio=self.data.get('canvas', {}).get('aspect_ratio'),       # If set, ignores width and height
+            aspect_ratio=self.data.get('canvas_data', {}).get('aspect_ratio'),       # If set, ignores width and height
             content=self.canvas
         )
+
+        self.canvas_stack = ft.Stack(expand=True)   
 
         self.current_path= cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
        
         # Load our drawing/display
         self.load_canvas()
 
+        self.information_display: ft.Container = None
+        self._create_information_display()
+
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
 
-    
+    # Called in the constructor
+    def _create_information_display(self):
+        ''' Creates our plotline information display mini widget '''
+        
+        self.information_display = CanvasInformationDisplay(
+            title=self.title,
+            owner=self,
+            page=self.p,
+            key="canvas_data",     
+            data=self.data.get('canvas_data'),      
+        )
+        # Add to our mini widgets so it shows up in the UI
+        self.mini_widgets.append(self.information_display)
 
 
     # Called on launch to load our drawing from data into our canvas
     def load_canvas(self):
-        """Loads our drawing from our saved map drawing file."""
+        """ Loads our drawing from our data """
 
         # Clear our canvas, and load our shapes stored in data
         self.canvas.shapes.clear()
-        shapes = self.data.get('canvas', {})
+        shapes = self.data.get('canvas_data', {})
 
         # Load our background color if we have one
-        bgcolor = self.data.get('canvas', {}).get('bgcolor', None)
+        bgcolor = self.data.get('canvas_data', {}).get('bgcolor', None)
         if bgcolor is not None:
             if bgcolor != "":
-                blend_mode = self.data.get('canvas', {}).get('bg_blend_mode', 'src_over')
+                blend_mode = self.data.get('canvas_data', {}).get('bg_blend_mode', 'src_over')
                 self.canvas.shapes.append(
                     cv.Color(       # Can use effects here as well
                         color=bgcolor,
@@ -444,9 +466,9 @@ class Canvas(Widget):
         
         # Add on to what we already have
         if self.state.paths:
-            self.data['canvas']['paths'].extend(self.state.paths)
+            self.data['canvas_data']['paths'].extend(self.state.paths)
         if self.state.points:
-            self.data['canvas']['points'].extend(self.state.points)
+            self.data['canvas_data']['points'].extend(self.state.points)
 
         self.save_dict()
 
@@ -459,28 +481,33 @@ class Canvas(Widget):
 
 
     # Called when the canvas control is resized
-    async def on_canvas_resize(self, e: ft.ControlEvent):
+    async def on_canvas_resize(self, e: cv.CanvasResizeEvent=None):
         """ Rescales stored drawing coordinates to match the new canvas size """
-        #print(e.height, e.width)
-        pass
+        # Update our page reference and size
+        self.canvas.page = self.p
+        if e is not None:
+            self.canvas_width = int(e.width)
+            self.canvas_height = int(e.height)
+
+        if self.information_display.data.get('left', None) is None or self.information_display.data.get('top', None) is None:
+            self.information_display.data['left'] = 30
+            self.information_display.data['top'] = self.canvas_height - 30
+            self.information_display.show_info_button.left = 30
+            self.information_display.show_info_button.top = self.canvas_height - 30
+            self.information_display.show_info_button.page = self.p
+            self.information_display.show_info_button.update()
+            self.information_display.save_dict()
+
 
     def _set_canvas_background(self, e):
-        """Sets the canvas background based on menu selection."""
+        """ Sets the canvas background based on menu selection. """
 
         cp = ColorPicker()
 
         choice = e.control.text
 
         if choice == "None":
-            # Clear background
-            self.data['canvas_meta']['bgimage_path'] = str()
-            self.data['canvas_meta']['bgcolor'] = None
-
-            #self.canvas.image = None       # New flet has image, not here tho
-            # Remove bgcolor shape here
-
-            self.save_dict()
-            self.p.update()
+            pass
 
 
         elif choice == "Color":
@@ -496,7 +523,7 @@ class Canvas(Widget):
     # TODO: NOT TESTED ----------------------------------
     def export_canvas(self, filename: str = "canvas_export.png", desired_width: int = 1920, desired_height: int = 1080):
         """Exports the canvas as an image at desired size, computing bounds if no meta exists."""
-        shapes = self.data.get('canvas', {})
+        shapes = self.data.get('canvas_data', {})
         
         # Compute bounding box from all coordinates
         min_x, min_y, max_x, max_y = float('inf'), float('inf'), float('-inf'), float('-inf')
@@ -571,46 +598,26 @@ class Canvas(Widget):
 
     # Called when we need to rebuild out plotline UI
     def reload_widget(self):       
-        ''' Rebuilds/reloads our map UI '''
+        ''' Rebuilds/reloads our Canvas '''
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        # Other UI elements
-        header = ft.Row([
-            # Undo and redo buttons
-            ft.PopupMenuButton(
-                icon=ft.Icons.IMAGE_OUTLINED, tooltip="Set the background of your canvas",
-                menu_padding=ft.padding.all(0), 
-                #on_cancel=self._set_color,
-                items=[
-                    ft.PopupMenuItem("None", on_click=self._set_canvas_background, tooltip="No background"),
-                    ft.PopupMenuItem("Color", on_click=self._set_canvas_background, tooltip="Set a solid color background"),
-                    ft.PopupMenuItem("Image", on_click=self._set_canvas_background, tooltip="Set an image as the background"),
-                ]
-            ),
-            ft.IconButton(
-                icon=ft.Icons.FILE_DOWNLOAD_OUTLINED,
-                tooltip="Export Canvas"
-            )
-            # Show comments toggle
-        ])
-
-        # Not used, but changes how our mini widgets are positioned
-        self.header = ft.Container(ignore_interactions=True, height=50)
-
+        
 
         iv = ft.InteractiveViewer(
             content=self.canvas_container, expand=True,
             scale_factor=750, boundary_margin=50,
             min_scale=0.5, max_scale=2.0, scale=1.0,
         )
-        
 
-        self.canvas_container.content = self.canvas
-        self.body_container.content = iv
+        self.canvas_stack.controls = [
+            ft.Container(expand=True, ignore_interactions=True),
+            iv,
+            self.information_display.show_info_button,
+        ]
 
-        self.body_container.content = ft.Column([header, iv], spacing=0)
+        self.body_container.content = self.canvas_stack
 
         self._render_widget()
  

@@ -6,7 +6,7 @@ Maps are widgets that have their own drawing canvas, background image, informati
 
 import flet as ft
 from models.widget import Widget
-from models.mini_widgets.map_information_display import MapInformationDisplay
+from models.mini_widgets.map_info import MapInformationDisplay
 from models.views.story import Story
 from utils.verify_data import verify_data
 from models.dataclasses.state import State
@@ -98,7 +98,7 @@ class Map(Widget):
                 on_hover=self._get_coords,
                 #on_tap=self._show_info_display,
                 on_tap=lambda e: self.story.open_menu(self._get_menu_options()),
-                drag_interval=500, hover_interval=20,
+                drag_interval=5, hover_interval=20,
             ),
             expand=True, resize_interval=100,
             on_resize=self._rebuild_map_canvas, 
@@ -124,7 +124,7 @@ class Map(Widget):
             title=self.title,
             owner=self,
             page=self.p,
-            key="map_data",     # Not used, but its required so just whatever works
+            key="map_data",    
             data=self.data.get('map_data'),      
         )
         # Add to our mini widgets so it shows up in the UI
@@ -136,7 +136,7 @@ class Map(Widget):
             title=title,
             owner=self,
             page=self.p,
-            key="locations",     # Not used, but its required so just whatever works
+            key="locations",   
             data=data,      
             left=self.l,
             top=self.t
@@ -230,13 +230,6 @@ class Map(Widget):
         )
 
         self.p.open(dlg)    
-
-            
-
-    
-
-        
-
     
 
     def _get_menu_options(self) -> list[ft.Control]:
