@@ -756,8 +756,3 @@ class Widget(ft.Container):
         self.tabs.tabs = [self.tab]
         self.content = self.tabs
         self.p.update()
-           
-        
-
-
-       
