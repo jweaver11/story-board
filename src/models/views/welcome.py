@@ -25,7 +25,7 @@ def create_welcome_view(page: ft.Page) -> ft.View:
     )
 
     run_tutorial_button = ft.ElevatedButton(
-        text="Run Tutorial", tooltip="plz I worked really hard on it :(",
+        text="Run Tutorial (Recommended)", tooltip="plz I worked really hard on it :(",
         on_click=_run_tutorial_clicked, scale=1.5
     )
     skip_tutorial_button = ft.ElevatedButton(
@@ -39,7 +39,7 @@ def create_welcome_view(page: ft.Page) -> ft.View:
             text,
             ft.Row([
                 run_tutorial_button,
-                ft.Container(width=50),
+                ft.Container(width=75),
                 skip_tutorial_button,
             ], alignment=ft.MainAxisAlignment.CENTER, visible=False),
             ft.ProgressRing(opacity=0),

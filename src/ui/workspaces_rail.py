@@ -27,25 +27,23 @@ class WorkspacesRail(ft.Container):
     
 
     # Called whenever we select a new workspace selector rail
-    def on_workspace_change(self, e, story: Story):
-        ''' Changes our selected workspace in settings and for our object.
-        Applies the correct active rail to match the selection '''
+    def change_workspace(self, e, story: Story, force_rail: str=None):
+        ''' Changes our selected workspace for the active rail '''
+
+        if story is None:       # Protect settings being open but no story loaded
+            return
         
-        # Save our newly selected workspace in the settings, and save it for our object (just easier for referencing)
-        if story is not None:   # Make objects later, rather than return functions
+        if force_rail is not None:      # Use manual setting if one is passed in
+            story.data['selected_rail'] = force_rail
+
+        else:   # Otherwise, we are called from ourselves, so just use the data from the rail we clicked on
             story.data['selected_rail'] = e.control.destinations[0].data
-            story.save_dict()
 
-            # Has the active rail grab its new selection
-            story.active_rail.display_active_rail(story) 
+        # Save data and apply the rail updates
+        story.save_dict()
+        story.active_rail.display_active_rail(story) 
+        self.reload_rail(story)  
 
-            # Reloads our own rail to reflect icon changes
-            self.reload_rail(story)  # Reload the rail to apply the new selection
-
-
-        # Handle when there is no active story (shouldn't happen)
-        else:
-            print("No active story, cannot change active rail")
 
 
     # Called by clicking button on bottom right of rail
@@ -92,7 +90,7 @@ class WorkspacesRail(ft.Container):
             height=70,  # Set height of each rail
             bgcolor=ft.Colors.TRANSPARENT,  # Make rail background transparent
             selected_index=None,    # All rails start unselected, we set the right one later
-            on_change=lambda e: self.on_workspace_change(e, story),    # When the rail is clicked
+            on_change=lambda e: self.change_workspace(e, story),    # When the rail is clicked
 
             destinations=[  # Each rail only has one destination
                 # We do it this way so we can change the order when re-ordering the rail
@@ -110,7 +108,7 @@ class WorkspacesRail(ft.Container):
             height=70,
             bgcolor=ft.Colors.TRANSPARENT,
             selected_index=None,
-            on_change=lambda e: self.on_workspace_change(e, story),  
+            on_change=lambda e: self.change_workspace(e, story),  
             destinations=[
                 ft.NavigationRailDestination(
                     icon=ft.Icon(ft.Icons.PEOPLE_OUTLINE_ROUNDED), 
@@ -125,7 +123,7 @@ class WorkspacesRail(ft.Container):
             height=70,  
             bgcolor=ft.Colors.TRANSPARENT,
             selected_index=None,
-            on_change=lambda e: self.on_workspace_change(e, story),   
+            on_change=lambda e: self.change_workspace(e, story),   
             destinations=[
                 ft.NavigationRailDestination(
                     icon=ft.Icon(ft.Icons.TIMELINE_ROUNDED, scale=1.2), 
@@ -140,7 +138,7 @@ class WorkspacesRail(ft.Container):
             height=70,  
             bgcolor=ft.Colors.TRANSPARENT,
             selected_index=None,
-            on_change=lambda e: self.on_workspace_change(e, story),    
+            on_change=lambda e: self.change_workspace(e, story),    
             destinations=[
                 ft.NavigationRailDestination(
                     #icon=ft.Icon(ft.Icons.MAP_OUTLINED), selected_icon=ft.Icon(ft.Icons.MAP, color=ft.Colors.PRIMARY),
@@ -156,7 +154,7 @@ class WorkspacesRail(ft.Container):
             height=70,  
             bgcolor=ft.Colors.TRANSPARENT,
             selected_index=None,
-            on_change=lambda e: self.on_workspace_change(e, story),  
+            on_change=lambda e: self.change_workspace(e, story),  
             destinations=[
                 ft.NavigationRailDestination(
                     icon=ft.Icon(ft.Icons.DRAW_OUTLINED), 
@@ -172,7 +170,7 @@ class WorkspacesRail(ft.Container):
             height=70,  
             bgcolor=ft.Colors.TRANSPARENT,
             selected_index=None,
-            on_change=lambda e: self.on_workspace_change(e, story),  
+            on_change=lambda e: self.change_workspace(e, story),  
             destinations=[
                 ft.NavigationRailDestination(
                     icon=ft.Icon(ft.Icons.EVENT_NOTE_OUTLINED),

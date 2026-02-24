@@ -101,7 +101,7 @@ class Workspace(ft.Container):
         # Master stack that holds our widgets ^ row, and drag targets overtop. TransparentPointer allows the targets to be physical but not block widgets underneath
         self.master_stack = ft.Stack(expand=True, controls=[self.master_widgets_row, ft.TransparentPointer(self.pin_drag_targets)])
 
-        self.reload_workspace(no_update=True)   # Load our workspace content for the first time without updating the UI, since we're still in the constructor
+        self.reload_workspace()   # Load our workspace content for the first time without updating the UI, since we're still in the constructor
 
 
     # When a draggable starts dragging, we add our drag targets to the master stack
@@ -551,8 +551,10 @@ class Workspace(ft.Container):
         self.content = self.master_stack
 
         # Finally update the UI
-        if not no_update:
+        try:
             self.update()
+        except Exception as e:
+            pass
 
 
 

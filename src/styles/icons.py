@@ -52,5 +52,6 @@ icons = [
     "extension", 
     "favorite", 
     "group", 
+    "villa",
 ]
 

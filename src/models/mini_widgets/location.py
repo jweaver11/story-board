@@ -19,7 +19,7 @@ from models.widget import Widget
 from utils.verify_data import verify_data
 import math
 from styles.text_styles import text_style
-import flet.canvas as cv
+import flet.canvas as cv 
 from styles.icons import icons
 
 # Locations that appear on our map

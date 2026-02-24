@@ -49,7 +49,7 @@ class Map(Widget):
                 'color': app.settings.data.get('default_map_color'),
                 'icon': "map_outlined",     # What icon to render on a parent map (if we have one)
 
-                'drawing_mode': bool,            # Whether we are in drawing mode or not
+                
                 'image_base64': str,                # Saves our icon as img64 string (Used a preview as well from other widgets)
                 'left': int,                        # Our left position on our parent map (if we have one)
                 'top': int,                         # Our top position on our parent map (if we have one)
@@ -84,7 +84,7 @@ class Map(Widget):
 
         self.canvas = cv.Canvas(
             content=ft.GestureDetector(
-                mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('drawing_mode') else ft.MouseCursor.CLICK, 
+                mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('map_data', {}).get('drawing_mode') else ft.MouseCursor.CLICK, 
                 expand=True,
 
                 # Drawing event handlers
@@ -96,7 +96,8 @@ class Map(Widget):
                 # Non-drawing event handlers
                 on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
                 on_hover=self._get_coords,
-                on_tap=self._show_info_display,
+                #on_tap=self._show_info_display,
+                on_tap=lambda e: self.story.open_menu(self._get_menu_options()),
                 drag_interval=500, hover_interval=20,
             ),
             expand=True, resize_interval=100,
@@ -159,7 +160,7 @@ class Map(Widget):
     # Called when clicking on our map to show our information display
     async def _show_info_display(self, e: ft.TapEvent):
         ''' If we're not in drawing mode, show our information display '''
-        if not self.data.get('drawing_mode'):
+        if not self.data.get('map_data', {}).get('drawing_mode', False):
             self.information_display.show_mini_widget()
 
     # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
@@ -232,23 +233,9 @@ class Map(Widget):
 
             
 
-    # Called to toggle our drawing mode on/off
-    def _toggle_drawing_mode(self):
-        ''' Toggles our drawing mode on/off '''
+    
 
-        # Change our data value for drawing mode and save it
-        self.data['in_drawing_mode'] = not self.data.get('in_drawing_mode', False)
-        self.save_dict()
         
-        # If we entered drawing mode, show our drawing canvas rail. Otherwise, go back to the previous rail
-        if self.data['in_drawing_mode']:
-            self.story.active_rail.display_active_rail(self.story, "canvas")
-            self.canvas.content.mouse_cursor = ft.MouseCursor.PRECISE
-        else:
-            self.story.active_rail.display_active_rail(self.story)
-            self.canvas.content.mouse_cursor = ft.MouseCursor.CLICK
-
-        self.reload_widget()    # Reload our widget
 
     
 
@@ -356,6 +343,15 @@ class Map(Widget):
             self.map_width = int(e.width)
             self.map_height = int(e.height)
 
+        if self.information_display.data.get('left', None) is None or self.information_display.data.get('top', None) is None:
+            self.information_display.data['left'] = 30
+            self.information_display.data['top'] = self.map_height - 30
+            self.information_display.show_info_button.left = 30
+            self.information_display.show_info_button.top = self.map_height - 30
+            self.information_display.show_info_button.page = self.p
+            self.information_display.show_info_button.update()
+            self.information_display.save_dict()
+    
         
         #self._render_widget()
 
@@ -368,6 +364,8 @@ class Map(Widget):
         self.reload_tab()
 
         # TODO: 
+        # Little Info Display Button in the bottom right that can be dragged around and shows map info display. No header, clicking canvas does not open it
+        # Also drawing mode button should be near it
         # Users can choose to create their image or use some default ones, or upload their own
 
         # Clear our map stack controls so we can re-add them
@@ -377,8 +375,8 @@ class Map(Widget):
                 expand=True, ignore_interactions=True,
                 #image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
             ),
-            self.canvas,
-        ]
+            self.canvas, 
+        ] 
 
         # Add our map locations to the stack
         for mw in self.mini_widgets:
@@ -386,6 +384,9 @@ class Map(Widget):
                 self.map_stack.controls.append(mw.map_control)
                 self.canvas.shapes.append(mw.map_label)
                 #self.map_stack.controls.append(mw.map_label)
+
+        self.map_stack.controls.append(self.information_display.show_info_button)
+        
                 
         # Create our interactive viewer for panning and zooming
         iv = ft.InteractiveViewer(
@@ -393,36 +394,9 @@ class Map(Widget):
             scale_factor=750, boundary_margin=50,
             min_scale=0.5, max_scale=2.0, scale=1.0,
         )
+        
 
-
-        # Create our header
-        header = ft.Row([
-            ft.IconButton(
-                ft.Icons.DRAW_OUTLINED if not self.data.get('in_drawing_mode') else ft.Icons.DONE,
-                tooltip="Enter Drawing Mode" if not self.data.get('in_drawing_mode') else "Exit Drawing Mode",
-                on_click=lambda e: self._toggle_drawing_mode(),
-            ),
-            # Undo and redo buttons
-            ft.PopupMenuButton(
-                icon=ft.Icons.IMAGE_ASPECT_RATIO_OUTLINED, tooltip="Set the background of your canvas. If one is set, it will be exported with the canvas",
-                menu_padding=ft.padding.all(0), 
-                #on_cancel=self._set_color,
-                items=[
-                    #ft.PopupMenuItem("None", on_click=self._set_canvas_background, tooltip="No background"),
-                    #ft.PopupMenuItem("Color", on_click=self._set_canvas_background, tooltip="Set a solid color background"),
-                    #ft.PopupMenuItem("Image", on_click=self._set_canvas_background, tooltip="Set an image as the background"),
-                ]
-            ),
-            # Show information display
-            ft.IconButton(
-                ft.Icons.INFO_OUTLINED,
-                tooltip="Toggle Information Display",
-                on_click=self.information_display.show_mini_widget,
-            ),
-            # Button to hide markers
-        ])
-
-        self.body_container.content = ft.Column([header, ft.Divider(thickness=2, height=8), iv], spacing=0)
+        self.body_container.content = iv
 
 
         # Not used, but changes how our mini widgets are positioned

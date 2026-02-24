@@ -11,6 +11,7 @@ Maps are widgets that have their own drawing canvas, and info display. they can 
 # Add ft.DecorationImage options to the canvas container for background images??
 # Add color_filter for both decoration image and container ?
 # Fill tool??
+# Little Info Display Button in the bottom right that can be dragged around and shows canvas info display
 
 from flet_contrib.color_picker import ColorPicker
 import flet as ft
