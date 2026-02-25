@@ -243,7 +243,6 @@ class Workspace(ft.Container):
 
                 # CRUCIAL. Fixes outdated page references by creating a new object
                 widget = self.story.rebuild_widget(w)
-                print(f"{widget.title} visible: {widget.visible}, pin location: {widget.data.get('pin_location', 'main')}")
     
                 # Check if widget has data and pin_location
                 pin_location = widget.data.get('pin_location', "")

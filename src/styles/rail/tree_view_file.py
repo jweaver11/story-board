@@ -259,7 +259,7 @@ class TreeViewFile(ft.GestureDetector):
         dlg = ft.AlertDialog(
             title=ft.Text(f"Are you sure you want to delete {self.widget.title} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
             alignment=ft.alignment.center,
-            title_padding=ft.padding.all(25),
+            title_padding=ft.Padding.all(25),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda e: self.widget.p.close(dlg)),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
@@ -285,7 +285,7 @@ class TreeViewFile(ft.GestureDetector):
             content=ft.Draggable(
                 group="widgets",
                 data=self.widget.data['key'],
-                content_feedback=ft.TextButton(content=ft.Row([ft.Icon(self.icon, expand=True), ft.Text(self.widget.title, style=self.text_style, expand=True)], expand=True)),
+                content_feedback=ft.TextButton(ft.Row([ft.Icon(self.icon, expand=True), ft.Text(self.widget.title, style=self.text_style, expand=True)], expand=True)),
                 on_drag_start=lambda e: self.widget.story.workspace.show_pin_drag_targets(),
                 content=ft.GestureDetector(
                     mouse_cursor=ft.MouseCursor.CLICK,
@@ -300,7 +300,8 @@ class TreeViewFile(ft.GestureDetector):
             )
         )
 
-        # If dir dropdown is not None, insert indentation icon ??
-        #ft.Icon(ft.Icons.HORIZONTAL_RULE, rotate=ft.Rotate(math.pi/2)),
-
-        self.widget.p.update()
+        
+        try:
+            self.update()
+        except Exception as e:
+            pass
