@@ -207,7 +207,7 @@ class CanvasInformationDisplay(MiniWidget):
             # Undo and redo buttons
             ft.PopupMenuButton(
                 icon=ft.Icons.IMAGE_ASPECT_RATIO_OUTLINED, tooltip="Set the background of your canvas. If one is set, it will be exported with the canvas",
-                menu_padding=ft.padding.all(0), 
+                menu_padding=ft.Padding.all(0), 
                 #on_cancel=self._set_color,
                 items=[
                     #ft.PopupMenuItem("None", on_click=self._set_canvas_background, tooltip="No background"),

@@ -103,16 +103,16 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
 
             # Our two action buttons at the bottom of the dialog
             actions=[
-                #ft.TextButton("Cancel", on_click=page.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
                 create_button,
             ],
         )
         
         # Add cancel button. Sometimes adding it ^^ first breaks and idk y
-        dlg.actions.insert(0, ft.TextButton("Cancel", on_click=lambda e: page.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)))
+        dlg.actions.insert(0, ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)))
 
         # Open our dialog in the overlay
-        page.open(dlg)
+        page.show_dialog(dlg)
 
 
     # Called when file -> open is clicked
@@ -158,21 +158,21 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
 
 
         # Called when the 'open' button is clicked in the bottom right of the dialog
-        def open_selected_story(e):
+        async def open_selected_story(e=None):
             ''' Changes the route to the selected story '''
 
             #print("Open button clicked, selected story is: ", selected_story)
 
             if selected_story is not None:
                 print("Opening story: ", selected_story)
-                page.go(app.stories[selected_story].route)
+                await page.push_route(app.stories[selected_story].route)
                 app.settings.story = app.stories[selected_story]  # Gives our settings widget the story reference it needs
-                page.close(dlg)
+                page.pop_dialog()
                 page.update()
             else:
                 print("No story selected")
 
-            page.close(dlg)
+            page.pop_dialog()
             page.update()
 
         open_button = ft.TextButton("Open", on_click=open_selected_story, disabled=True)
@@ -192,13 +192,13 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                 on_change=change_selected_story
             ),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: page.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
                 open_button,
             ]
         )
 
         # Opens our dialog
-        page.open(dlg)
+        page.show_dialog(dlg)
 
     async def _settings_clicked(e=None):
         ''' Goes to the settings page '''

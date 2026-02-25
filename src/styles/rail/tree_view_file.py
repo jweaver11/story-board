@@ -6,24 +6,34 @@ from models.app import app
 from styles.colors import colors
 from utils.check_widget_unique import check_widget_unique
 import os
+from models.views.story import Story
 
 # Class for items within a tree view on the rail
 class TreeViewFile(ft.GestureDetector):
 
     def __init__(
         self, 
-        widget: Widget, 
+        data: dict,
+        story: Story,
         father: TreeViewDirectory = None,
-        additional_menu_options: list[ft.Control] = None
     ):
         
-        
-        # Set our widget reference and tag
-        self.widget = widget
-        self.father = father
-        tag = widget.data.get('tag', None)
+        self.data = data
+        self.story = story
 
-        self.additional_menu_options = additional_menu_options
+
+        key = data.get('key', None)
+
+        self.widget = None
+        for widget in story.widgets:
+            if widget.data.get('key', None) == key:
+                self.widget = widget
+                print("Widget was found")
+                break
+        
+        
+        self.father = father
+        tag = data.get('tag', None)
 
 
         match tag:
@@ -49,16 +59,17 @@ class TreeViewFile(ft.GestureDetector):
         )
 
         # Get icon color from widget data if it exists
-        self.icon_color = widget.data.get('color', 'primary')
+        self.icon_color = data.get('color', 'primary')
 
         # Parent constructor
         super().__init__(
             on_enter = self.on_hover,
             on_exit = self.on_stop_hover,
-            on_secondary_tap = lambda e: self.widget.story.open_menu(self.get_menu_options()),
-            on_tap = lambda e: self.widget.toggle_visibility(value=True),
+            on_secondary_tap = lambda _: self.story.open_menu(self.get_menu_options()),
+            #on_tap = lambda _: self.widget.toggle_visibility(value=True) if self.widget is not None else None,
             mouse_cursor = ft.MouseCursor.CLICK,
         )
+
 
 
         self.reload()
@@ -82,10 +93,14 @@ class TreeViewFile(ft.GestureDetector):
             MenuOptionStyle(
                 content=ft.PopupMenuButton(
                     content=ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.widget.data.get('color', 'primary'),), ft.Text("Color",  weight=ft.FontWeight.BOLD),]),
+                        ft.Row([ft.Icon(
+                            ft.Icons.COLOR_LENS_OUTLINED, 
+                            color=self.data.get('color', 'primary')), 
+                            ft.Text("Color",  weight=ft.FontWeight.BOLD)
+                        ,]),
                         padding=ft.padding.all(8), border_radius=ft.BorderRadius.all(6),
                     ),
-                    tooltip=f"Change {self.widget.title} Color", menu_padding=0,
+                    tooltip=f"Change {self.data.get('title' "Unknown title")} Color", menu_padding=0,
                     items=self._get_color_options()
                 ),
                 no_padding=True
@@ -117,7 +132,7 @@ class TreeViewFile(ft.GestureDetector):
         submitting = False
 
         # Grab our current name for comparison
-        current_name = self.widget.title.lower()
+        current_name = self.data.get('title', '').lower()
 
         # Called when clicking outside the input field to cancel renaming
         def _cancel_rename(e):
@@ -156,10 +171,10 @@ class TreeViewFile(ft.GestureDetector):
                 return
 
             # Generate our new key to compare. Requires normalization
-            nk = self.widget.directory_path + "\\" + title + "_" + e.control.data
+            nk = self.data.get('directory_path', "Unknown Directory Path") + "\\" + title + "_" + e.control.data
             new_key = os.path.normpath(nk)
 
-            error_text, is_unique = check_widget_unique(self.widget.story, new_key)
+            error_text, is_unique = check_widget_unique(self.story, new_key)
 
             # If we are NOT unique, show our error text
             if not is_unique:
@@ -169,7 +184,7 @@ class TreeViewFile(ft.GestureDetector):
             else:
                 e.control.error_text = None
                 
-            self.widget.p.update()
+            self.update()
 
         # Called when submitting our textfield.
         def _submit_name(e):
@@ -188,20 +203,21 @@ class TreeViewFile(ft.GestureDetector):
 
             # If it is, call the rename function. It will do everything else
             if is_unique:
-                self.widget.rename(name)
+                if self.widget is not None:
+                    self.widget.rename(name)
                 
             # Otherwise make sure we show our error
             else:
                 text_field.error_text = "Name already exists"
                 text_field.focus()                                  # Auto focus the textfield
-                self.widget.p.update()
+                #self.widget.p.update()
                 
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
-            value=self.widget.title,
+            value=self.data.get('title'),
             expand=True, dense=True,
             autofocus=True, 
-            data=self.widget.data.get('tag', ''),
+            data=self.data.get('tag', ''),
             text_style=self.text_style,
             on_submit=_submit_name,
             on_change=_name_check,
@@ -212,8 +228,7 @@ class TreeViewFile(ft.GestureDetector):
         self.content.content.content.content.controls[1] = text_field
 
         # Clears our popup menu button and applies to the UI
-        self.widget.p.overlay.clear()
-        self.widget.p.update()
+        self.story.close_menu_instant()
 
     def _get_color_options(self) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
@@ -223,13 +238,14 @@ class TreeViewFile(ft.GestureDetector):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
             # Change the data
-            self.widget.change_data(**{'color': color})
-            self.icon_color = color
-            
-            # Change our icon to match, apply the update
-            self.reload()
-            self.widget.reload_widget()
-            self.widget.story.workspace.reload_workspace()
+            if self.widget is not None:
+                self.widget.change_data(**{'color': color})
+                self.icon_color = color
+                
+                # Change our icon to match, apply the update
+                self.reload()
+                self.widget.reload_widget()
+                self.widget.story.workspace.reload_workspace()
 
 
         # List for our colors when formatted
@@ -254,24 +270,24 @@ class TreeViewFile(ft.GestureDetector):
             ''' Deletes the widget after confirmation '''
 
             #self.widget.story.close_menu_instant()
-            self.widget.p.close(dlg)
-            self.widget.story.delete_widget(self.widget) 
+            self.story.p.pop_dialog()
+            self.story.delete_widget(self.widget) 
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Are you sure you want to delete {self.widget.title} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
+            title=ft.Text(f"Are you sure you want to delete {self.data.get('title', "Unkown Title")} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
             alignment=ft.alignment.center,
             title_padding=ft.padding.all(25),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.widget.p.close(dlg)),
+                ft.TextButton("Cancel", on_click=lambda e: self.story.p.pop_dialog()),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
             ]
         )
 
-        self.widget.story.close_menu_instant()
+        self.story.close_menu_instant()
 
         if app.settings.data.get('confirm_item_delete', False):
-            self.widget.p.open(dlg)
+            self.story.p.show_dialog(dlg)
         else:
             _delete_confirmed()
 
@@ -286,16 +302,16 @@ class TreeViewFile(ft.GestureDetector):
             border_radius=ft.BorderRadius.all(6),
             content=ft.Draggable(
                 group="widgets",
-                data=self.widget.data['key'],
-                content_feedback=ft.TextButton(content=ft.Row([ft.Icon(self.icon, expand=True), ft.Text(self.widget.title, style=self.text_style, expand=True)], expand=True)),
-                on_drag_start=lambda e: self.widget.story.workspace.show_pin_drag_targets(),
+                data=self.data.get('key', None),
+                content_feedback=ft.TextButton(content=ft.Row([ft.Icon(self.icon, expand=True), ft.Text(self.data.get('title', "unknown title"), style=self.text_style, expand=True)], expand=True)),
+                on_drag_start=lambda e: self.story.workspace.show_pin_drag_targets(),
                 content=ft.GestureDetector(
                     mouse_cursor=ft.MouseCursor.CLICK,
                     content=ft.Row(
                         expand=True,
                         controls=[
                             ft.Icon(self.icon, color=self.icon_color), 
-                            ft.Text(value=self.widget.title, style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),   
+                            ft.Text(value=self.data.get('title'), style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),   
                         ],
                     ),
                 )
@@ -304,7 +320,7 @@ class TreeViewFile(ft.GestureDetector):
 
         # If dir dropdown is not None, insert indentation icon ??
         try:
-            self.update()
+            print("Tried to update")
         except Exception as e:
             pass
 

@@ -110,7 +110,7 @@ class Canvas(Widget):
             width=self.data.get('canvas_data', {}).get('width', None),
             height=self.data.get('canvas_data', {}).get('height', None),
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
-            border=ft.border.all(1, ft.Colors.ON_SURFACE_VARIANT),
+            border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
             aspect_ratio=self.data.get('canvas_data', {}).get('aspect_ratio'),       # If set, ignores width and height
             content=self.canvas
         )

@@ -219,7 +219,7 @@ class CharactersRail(Rail):
             case "Age":
                 # For sorting our list, sort by age. If no age specified, add to the non-specified list
                 def get_age(character):
-                    age = character.data.get('character_data', {}).get('Basic Info', {}).get('Age', None)
+                    age = character.get('character_data', {}).get('Basic Info', {}).get('Age', None)
                     if age is None or age == "":
                         non_specified_list.append(character)
                     return age
@@ -227,7 +227,7 @@ class CharactersRail(Rail):
 
                 for character in characters_list:
                     if character not in non_specified_list:
-                        content.controls.append(TreeViewFile(character))
+                        content.controls.append(TreeViewFile(character, self.story))
                 
                 content.controls.append(ft.Text("Non-specified Age:", theme_style=ft.TextThemeStyle.LABEL_LARGE))
                 for character in non_specified_list:
@@ -236,7 +236,7 @@ class CharactersRail(Rail):
             case "Alphabetical":
                 characters_list.sort(key=lambda c: c.data.get('title', '').lower())
                 for character in characters_list:
-                    content.controls.append(TreeViewFile(character))
+                    content.controls.append(TreeViewFile(character, self.story))
 
 
             case "Role":
@@ -255,19 +255,19 @@ class CharactersRail(Rail):
                     content.controls.append(ft.Text(f"{role}:", theme_style=ft.TextThemeStyle.LABEL_LARGE))
                     for character in characters_list:
                         if role == character.get('character_data', {}).get('Basic Info', {}).get('Role', None):
-                            content.controls.append(TreeViewFile(character))
+                            content.controls.append(TreeViewFile(character, self.story))
 
                 
 
                 content.controls.append(ft.Text("Non-specified Role:", theme_style=ft.TextThemeStyle.LABEL_LARGE))
                 for character in non_specified_list:
-                    content.controls.append(TreeViewFile(character))
+                    content.controls.append(TreeViewFile(character, self.story))
 
 
             # Otherwise just add them however they were loaded 
             case _:
                 for character in characters_list:
-                    content.controls.append(TreeViewFile(character))
+                    content.controls.append(TreeViewFile(character, self.story))
         
 
         content.controls.append(ft.Container(height=6))

@@ -469,7 +469,7 @@ class Story(ft.View):
 
     # Called in startup after we have loaded all our live objects
     def load_widgets(self):
-        ''' Loads all our widgets (characters, documents, notes, etc.) into our master list of widgets '''
+        ''' Loads ONLY visible widgets from our data into live objects and adds them to widgets list'''
         from models.widgets.document import Document
         from models.widgets.note import Note
         from models.widgets.canvas import Canvas
@@ -497,107 +497,114 @@ class Story(ft.View):
         # Go through all the widgets we should have loaded, and add them to our widget list
         for document in self.documents.values():      # Documents
                     
-            # Create an object for that value
-            document_widget = Document(
-                title=document.get('title', 'Untitled Document'),
-                page=self.p,
-                directory_path=document.get('directory_path', self.data['content_directory_path']),
-                story=self,
-                data=document,
-            )
-
-            # Add that widget to our document widgets dict for easy access later
-            self.document_widgets[document.get('key', '')] = document_widget    
-            self.widgets.append(document_widget)        
+            # If its visible, create an object for that value
+            if document.get('visible'):
+                document_widget = Document(
+                    title=document.get('title', 'Untitled Document'),
+                    page=self.p,
+                    directory_path=document.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=document,
+                )
+                # Add that widget to our document widgets dict for easy access later and to our widgets list
+                self.document_widgets[document.get('key', '')] = document_widget    
+                self.widgets.append(document_widget)        
         
         for note in self.notes.values():      # Notes
-            note_widget = Note(
-                title=note.get('title', 'Untitled Note'),
-                page=self.p,
-                directory_path=note.get('directory_path', self.data['content_directory_path']),
-                story=self,
-                data=note,
-            )
-            self.note_widgets[note.get('key', '')] = note_widget   
-            self.widgets.append(note_widget)      
+            if note.get('visible'):
+                note_widget = Note(
+                    title=note.get('title', 'Untitled Note'),
+                    page=self.p,
+                    directory_path=note.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=note,
+                )
+                self.note_widgets[note.get('key', '')] = note_widget   
+                self.widgets.append(note_widget)      
 
         for canvas in self.canvases.values():      # Canvases
-                    
-            canvas_widget = Canvas(
-                title=canvas.get('title', 'Untitled Canvas'),
-                page=self.p,
-                directory_path=canvas.get('directory_path', self.data['content_directory_path']),
-                story=self,
-                data=canvas,
-            )
-            self.canvas_widgets[canvas.get('key', '')] = canvas_widget   
-            self.widgets.append(canvas_widget)    
+            if canvas.get('visible'):
+                canvas_widget = Canvas(
+                    title=canvas.get('title', 'Untitled Canvas'),
+                    page=self.p,
+                    directory_path=canvas.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=canvas,
+                )
+                self.canvas_widgets[canvas.get('key', '')] = canvas_widget   
+                self.widgets.append(canvas_widget)    
 
         for canvas_board in self.canvas_boards.values():      # Canvas Boards
-            canvas_board_widget = CanvasBoard(
-                name=canvas_board.get('title', 'Untitled Canvas Board'),
-                page=self.p,
-                directory_path=canvas_board.get('directory_path', self.data['content_directory_path']),
-                story=self,
-                data=canvas_board,
-            )
-            self.canvas_board_widgets[canvas_board.get('key', '')] = canvas_board_widget   
-            self.widgets.append(canvas_board_widget)
+            if canvas_board.get('visible'):
+                canvas_board_widget = CanvasBoard(
+                    name=canvas_board.get('title', 'Untitled Canvas Board'),
+                    page=self.p,
+                    directory_path=canvas_board.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=canvas_board,
+                )
+                self.canvas_board_widgets[canvas_board.get('key', '')] = canvas_board_widget   
+                self.widgets.append(canvas_board_widget)
 
-        for character in self.characters.values():      # Characters    
-            character_widget = Character(
-                name=character.get('title', 'Untitled Character'),
-                page=self.p,
-                directory_path=character.get('directory_path', self.data['content_directory_path']),
-                story=self,
-                data=character,
-            )
-            self.character_widgets[character.get('key', '')] = character_widget   
-            self.widgets.append(character_widget)
+        for character in self.characters.values():      # Characters   
+            if character.get('visible'): 
+                character_widget = Character(
+                    name=character.get('title', 'Untitled Character'),
+                    page=self.p,
+                    directory_path=character.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=character,
+                )
+                self.character_widgets[character.get('key', '')] = character_widget   
+                self.widgets.append(character_widget)
 
         for plotline in self.plotlines.values():      # Plotlines
-            plotline_widget = Plotline(
-                title=plotline.get('title', 'Untitled Plotline'),
-                page=self.p,
-                directory_path=plotline.get('directory_path', self.data['content_directory_path']),
-                story=self,
-                data=plotline,
-            )
-            self.plotline_widgets[plotline.get('key', '')] = plotline_widget   
-            self.widgets.append(plotline_widget)
+            if plotline.get('visible'):
+                plotline_widget = Plotline(
+                    title=plotline.get('title', 'Untitled Plotline'),
+                    page=self.p,
+                    directory_path=plotline.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=plotline,
+                )
+                self.plotline_widgets[plotline.get('key', '')] = plotline_widget   
+                self.widgets.append(plotline_widget)
 
         for map in self.maps.values():      # Maps
-            map_widget = Map(
-                title=map.get('title', 'Untitled Map'),
-                page=self.p,
-                directory_path=map.get('directory_path', self.data['content_directory_path']),
-                story=self,
-                data=map,
-            )
-            self.map_widgets[map.get('key', '')] = map_widget   
-            self.widgets.append(map_widget)
+            if map.get('visible'):
+                map_widget = Map(
+                    title=map.get('title', 'Untitled Map'),
+                    page=self.p,
+                    directory_path=map.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=map,
+                )
+                self.map_widgets[map.get('key', '')] = map_widget   
+                self.widgets.append(map_widget)
 
         for character_connection_map in self.character_connection_maps.values():      # Character Connection Maps
-            character_connection_map_widget = CharacterConnectionMap(
-                title=character_connection_map.get('title', 'Untitled Character Connection Map'),
-                page=self.p,
-                directory_path=character_connection_map.get('directory_path', self.data['content_directory_path']),
-                story=self,
-                data=character_connection_map,
-            )
-            self.character_connection_map_widgets[character_connection_map.get('key', '')] = character_connection_map_widget   
-            self.widgets.append(character_connection_map_widget)
+            if character_connection_map.get('visible', True):
+                character_connection_map_widget = CharacterConnectionMap(
+                    title=character_connection_map.get('title', 'Untitled Character Connection Map'),
+                    page=self.p,
+                    directory_path=character_connection_map.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=character_connection_map,
+                )
+                self.character_connection_map_widgets[character_connection_map.get('key', '')] = character_connection_map_widget   
+                self.widgets.append(character_connection_map_widget)
 
         for world in self.worlds.values():      # Worlds
-            world_widget = World(
-                title=world.get('title', 'Untitled World'),
-                page=self.p,
-                directory_path=world.get('directory_path', self.data['content_directory_path']),
-                story=self,
-                data=world,
-            )
-            self.world_widgets[world.get('key', '')] = world_widget   
-            self.widgets.append(world_widget)
+            if world.get('visible', True):
+                world_widget = World(
+                    title=world.get('title', 'Untitled World'),
+                    page=self.p,
+                    directory_path=world.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=world,
+                )
+                self.world_widgets[world.get('key', '')] = world_widget   
+                self.widgets.append(world_widget)
                 
         
     # Called to create a new widget based on tag (document, note, character, etc)
