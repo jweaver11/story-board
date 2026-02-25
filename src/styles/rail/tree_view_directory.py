@@ -567,7 +567,7 @@ class TreeViewDirectory(ft.GestureDetector):
             ]),
             dense=True,
             visual_density=ft.VisualDensity.COMPACT,
-            initially_expanded=self.is_expanded,
+            expanded=self.is_expanded,
             tile_padding=ft.Padding(0, 0, 0, 0),
             controls_padding=ft.Padding(10, 0, 0, 0),       # Keeps all sub children indented
             maintain_state=True,

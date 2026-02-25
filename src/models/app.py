@@ -7,6 +7,7 @@ import flet as ft
 import os
 import json
 from models.widget import Widget
+import asyncio
 
 
 class App:
@@ -155,8 +156,10 @@ class App:
 
         print("new story route:", story.route)
 
+
         # Opens this new story as the active one on screen
-        page.go(story.route)
+        #page.go(story.route)
+        asyncio.create_task(page.push_route(story.route))
         self.settings.data['active_story'] = story.route
         self.settings.story = story
         self.settings.save_dict()

@@ -719,7 +719,7 @@ class Story(ft.View):
                 
                 # Thin vertical divider, which is what the app will actually drag
                 content=ft.VerticalDivider(thickness=2, width=2, color=ft.Colors.OUTLINE_VARIANT),     # Original
-                padding=ft.padding.only(right=8),  # Push the 2px divider ^ to the right side
+                padding=ft.Padding.only(right=8),  # Push the 2px divider ^ to the right side
             ),
             on_hover=show_horizontal_cursor,    # Change our cursor to horizontal when hovering over the resizer
             on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging

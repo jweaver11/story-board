@@ -291,7 +291,7 @@ class Settings(ft.View):
             label="Theme Color", tooltip="Select the primary color scheme for the app",
             capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
             options=self._get_color_options(True),
-            on_change=_set_theme_color,
+            on_select=_set_theme_color,
             value=self.data.get('theme_color', "blue"),
             text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
             color=self.data.get('theme_color', None),
@@ -378,7 +378,7 @@ class Settings(ft.View):
                     tooltip="Default color for new categories",
                     label="Default Folder Color",
                     capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                    options=self._get_color_options(), on_change=_set_default_category_color,
+                    options=self._get_color_options(), on_select=_set_default_category_color,
                     value=self.data.get('default_category_color', "primary"),
                     text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                     color=self.data.get('default_category_color', "primary"),
@@ -507,7 +507,7 @@ class Settings(ft.View):
                     ft.Dropdown(
                         label="Color", tooltip="Default color for new canvases",
                         capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_change=_set_default_widget_color,
+                        options=self._get_color_options(), on_select=_set_default_widget_color,
                         value=self.data.get('default_canvas_color', "primary"),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         color=self.data.get('default_canvas_color', "primary"),
@@ -520,7 +520,7 @@ class Settings(ft.View):
                         value=self.data.get('default_canvas_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -532,7 +532,7 @@ class Settings(ft.View):
                     ft.Dropdown(
                         label="Color", tooltip="Default color for new canvas boards",
                         capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_change=_set_default_widget_color,
+                        options=self._get_color_options(), on_select=_set_default_widget_color,
                         value=self.data.get('default_canvas_board_color', "primary"),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         color=self.data.get('default_canvas_board_color', "primary"),
@@ -545,7 +545,7 @@ class Settings(ft.View):
                         value=self.data.get('default_canvas_board_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_canvas_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.change_data(default_canvas_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -557,7 +557,7 @@ class Settings(ft.View):
                     ft.Dropdown(
                         label="Color", tooltip="Default color for new chapters",
                         capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_change=_set_default_widget_color,
+                        options=self._get_color_options(), on_select=_set_default_widget_color,
                         value=self.data.get('default_chapter_color', "primary"),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         color=self.data.get('default_chapter_color', "primary"),
@@ -570,7 +570,7 @@ class Settings(ft.View):
                         value=self.data.get('default_chapter_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -582,7 +582,7 @@ class Settings(ft.View):
                     ft.Dropdown(
                         label="Color", tooltip="Default color for new characters",
                         capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_change=_set_default_widget_color,
+                        options=self._get_color_options(), on_select=_set_default_widget_color,
                         value=self.data.get('default_character_color', "primary"),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         color=self.data.get('default_character_color', "primary"),
@@ -595,7 +595,7 @@ class Settings(ft.View):
                         value=self.data.get('default_character_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_character_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.change_data(default_character_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -607,7 +607,7 @@ class Settings(ft.View):
                     ft.Dropdown(
                         label="Color", tooltip="Default color for new Character Connection Map",
                         capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_change=_set_default_widget_color,
+                        options=self._get_color_options(), on_select=_set_default_widget_color,
                         value=self.data.get('default_character_connection_map_color', "primary"),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         color=self.data.get('default_character_connection_map_color', "primary"),
@@ -620,7 +620,7 @@ class Settings(ft.View):
                         value=self.data.get('default_character_connection_map_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_character_connection_map_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.change_data(default_character_connection_map_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -633,7 +633,7 @@ class Settings(ft.View):
                     ft.Dropdown(
                         label="Color", tooltip="Default color for new maps",
                         capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_change=_set_default_widget_color,
+                        options=self._get_color_options(), on_select=_set_default_widget_color,
                         value=self.data.get('default_map_color', "primary"),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         color=self.data.get('default_map_color', "primary"),
@@ -646,7 +646,7 @@ class Settings(ft.View):
                         value=self.data.get('default_map_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_map_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.change_data(default_map_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -658,7 +658,7 @@ class Settings(ft.View):
                     ft.Dropdown(
                         label="Color", tooltip="Default color for new notes",
                         capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_change=_set_default_widget_color,
+                        options=self._get_color_options(), on_select=_set_default_widget_color,
                         value=self.data.get('default_note_color', "primary"),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         color=self.data.get('default_note_color', "primary"),
@@ -671,7 +671,7 @@ class Settings(ft.View):
                         value=self.data.get('default_note_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_note_pin_location=e.control.value.lower()), 
+                        on_select=lambda e: self.change_data(default_note_pin_location=e.control.value.lower()), 
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -683,7 +683,7 @@ class Settings(ft.View):
                     ft.Dropdown(
                         label="Color", tooltip="Default color for new planning widgets",
                         capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_change=_set_default_widget_color,
+                        options=self._get_color_options(), on_select=_set_default_widget_color,
                         value=self.data.get('default_planning_color', "primary"),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         color=self.data.get('default_planning_color', "primary"),
@@ -696,7 +696,7 @@ class Settings(ft.View):
                         value=self.data.get('default_planning_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_planning_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.change_data(default_planning_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -710,7 +710,7 @@ class Settings(ft.View):
                     ft.Dropdown(
                         label="Color", tooltip="Default color for new plotlines",
                         capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_change=_set_default_widget_color,
+                        options=self._get_color_options(), on_select=_set_default_widget_color,
                         value=self.data.get('default_plotline_color', "primary"),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         color=self.data.get('default_plotline_color', "primary"),
@@ -723,7 +723,7 @@ class Settings(ft.View):
                         value=self.data.get('default_plotline_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_change=lambda e: self.change_data(default_plotline_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.change_data(default_plotline_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -735,7 +735,7 @@ class Settings(ft.View):
                     ft.Dropdown(
                         label="Color", tooltip="Default color for new World widgets",
                         capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_change=_set_default_widget_color,
+                        options=self._get_color_options(), on_select=_set_default_widget_color,
                         value=self.data.get('default_world_color', "primary"),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         color=self.data.get('default_world_color', "primary"),
@@ -747,7 +747,7 @@ class Settings(ft.View):
                         options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
                         value=self.data.get('default_world_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), dense=True,
-                        on_change=lambda e: self.change_data(default_world_location=e.control.value.lower()),
+                        on_select=lambda e: self.change_data(default_world_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -791,7 +791,7 @@ class Settings(ft.View):
                         value="Default",
                         #options=_load_character_templates(), 
                         options=[ft.DropdownOption("Default")],
-                        on_change=_new_character_template_selected,
+                        on_select=_new_character_template_selected,
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True, tooltip="Select a character template to use when creating new characters",
                         capitalization= ft.TextCapitalization.SENTENCES,
@@ -1357,21 +1357,18 @@ class Settings(ft.View):
                 ft.NavigationRailDestination(
                     icon=ft.Icons.COLOR_LENS_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.COLOR_LENS_ROUNDED, color=ft.Colors.PRIMARY),
-                    label="Appearance",
-                    label_content=ft.Container(ft.Text("Appearance", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
+                    label=ft.Container(ft.Text("Appearance", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
                 ),
                 ft.NavigationRailDestination(
                     icon=ft.Icons.NOW_WIDGETS_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.NOW_WIDGETS_ROUNDED, color=ft.Colors.PRIMARY),
-                    label="Widgets",
-                    label_content=ft.Container(ft.Text("Widgets", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
+                    label=ft.Container(ft.Text("Widgets", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
                 ),
                 ft.NavigationRailDestination(
                     icon=ft.Icons.MENU_BOOK_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.MENU_BOOK, color=ft.Colors.PRIMARY),
-                    label="Story Settings",
                     disabled=self.story is None,   # Disable if no story is loaded
-                    label_content=ft.Container(
+                    label=ft.Container(
                         margin=ft.margin.only(bottom=20),
                         content=ft.Text(
                             "Story Settings", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE,
@@ -1382,14 +1379,12 @@ class Settings(ft.View):
                 ft.NavigationRailDestination(
                     icon=ft.Icons.FILE_PRESENT_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.FILE_PRESENT, color=ft.Colors.PRIMARY),
-                    label="Templates",
-                    label_content=ft.Container(ft.Text("Templates", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
+                    label=ft.Container(ft.Text("Templates", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
                 ),
                 ft.NavigationRailDestination(
                     icon=ft.Icons.INFO_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.INFO_ROUNDED, color=ft.Colors.PRIMARY),
-                    label="Resources",
-                    label_content=ft.Container(ft.Text("Resources", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
+                    label=ft.Container(ft.Text("Resources", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
                 ),
             ],
         )
