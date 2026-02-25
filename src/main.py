@@ -48,7 +48,7 @@ async def main(page: ft.Page):
     page.on_route_change = route_change 
  
     # If a previous story was loaded, we load its route/view here
-    app.load_previous_story(page)       
+    await app.load_previous_story(page)       
  
     # I no story was loaded, Give us a basic home view
     if page.route == "/":

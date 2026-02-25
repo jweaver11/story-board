@@ -32,7 +32,7 @@ class Settings(ft.View):
         # Constructor the parent widget class
         super().__init__(
             route=f"/settings",                                      # Sets our route for our new story
-            padding=ft.padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
+            padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
             spacing=0,                                                      # No spacing between menubar and rest of page
         )
 

@@ -25,11 +25,11 @@ class WorldBuildingRail(Rail):
                 tooltip="New", menu_padding=0,
                 items=[
                     ft.PopupMenuItem(
-                        text="Map", icon=ft.Icons.MAP_OUTLINED,
+                        "Map", icon=ft.Icons.MAP_OUTLINED,
                         on_click=self.new_item_clicked, data="map"
                     ),
                     ft.PopupMenuItem(
-                        text="World", icon=ft.Icons.PUBLIC_OUTLINED,
+                        "World", icon=ft.Icons.PUBLIC_OUTLINED,
                         on_click=self.new_item_clicked, data="world"
                     ),
                 ]
@@ -39,11 +39,11 @@ class WorldBuildingRail(Rail):
                 tooltip="Upload", menu_padding=0,
                 items=[
                     ft.PopupMenuItem(
-                        text="Map", icon=ft.Icons.MAP_OUTLINED,
+                        "Map", icon=ft.Icons.MAP_OUTLINED,
                         on_click=self.new_item_clicked, data="map"
                     ),
                     ft.PopupMenuItem(
-                        text="World", icon=ft.Icons.PUBLIC_OUTLINED,
+                        "World", icon=ft.Icons.PUBLIC_OUTLINED,
                         on_click=self.new_item_clicked, data="world"
                     ),
                 ]

@@ -26,7 +26,7 @@ def create_home_view(page: ft.Page) -> ft.View:
             dlg.open = False
             page.update()
 
-        def submit_new_story(e):
+        async def submit_new_story(e):
             ''' Creates a new story with the given title '''
 
             # Import our variable if it is unique or nah
@@ -53,17 +53,18 @@ def create_home_view(page: ft.Page) -> ft.View:
             else:
                 #print("Title not unique, no story created")
                 story_title_field.error_text = "Title must be unique"
-                story_title_field.focus()   # refocus the text field since the title was not unique
+                await story_title_field.focus()   # refocus the text field since the title was not unique
                 page.update()
 
  
         # Called everytime the user enters a new letter in the text box
-        def check_story_title_unique(e):
+        async def check_story_title_unique(e):
             ''' Called when the text in the text box changes '''
 
             nonlocal is_unique
 
             is_unique = story_is_unique(e.control.value, e.control)
+            print("Is unique: ", is_unique)
 
             if is_unique and e.control.value.strip() != "":
                 create_button.disabled = False
@@ -107,8 +108,8 @@ def create_home_view(page: ft.Page) -> ft.View:
 
 
     return ft.View(
-        "/",
-        [
+        route="/",
+        controls=[
             menubar,
 
             # Row of workspaces rail to the left (None selected)

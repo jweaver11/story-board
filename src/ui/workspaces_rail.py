@@ -16,7 +16,7 @@ class WorkspacesRail(ft.Container):
        
         # Style our rail (container)
         super().__init__(
-            alignment=ft.alignment.center,  # Aligns content to the 
+            alignment=ft.Alignment.CENTER,  # Aligns content to the 
             padding=ft.padding.only(bottom=10, right=2, left=2),
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         )
@@ -99,7 +99,7 @@ class WorkspacesRail(ft.Container):
                     selected_icon=ft.Icon(ft.Icons.LIBRARY_BOOKS_ROUNDED, color=ft.Colors.PRIMARY), # Selected icon on the rail
                     padding=ft.padding.only(top=10, bottom=10), # Padding for spacing
                     # Label underneath the icon and the data we will use to identify the rail
-                    data="content", label_content=ft.Text("Content", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                    data="content", label=ft.Text("Content", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
                 ),
             ],
         )
@@ -114,7 +114,7 @@ class WorkspacesRail(ft.Container):
                     icon=ft.Icon(ft.Icons.PEOPLE_OUTLINE_ROUNDED), 
                     selected_icon=ft.Icon(ft.Icons.PEOPLE_ROUNDED, color=ft.Colors.PRIMARY),
                     padding=ft.padding.only(top=10, bottom=10),
-                    data="characters", label_content=ft.Text("Characters", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                    data="characters", label=ft.Text("Characters", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
                 ),
             ],
         )
@@ -129,7 +129,7 @@ class WorkspacesRail(ft.Container):
                     icon=ft.Icon(ft.Icons.TIMELINE_ROUNDED, scale=1.2), 
                     selected_icon=ft.Icon(ft.Icons.TIMELINE_OUTLINED, color=ft.Colors.PRIMARY, scale=1.2),
                     padding=ft.padding.only(top=10, bottom=10),
-                    data="plotlines", label_content=ft.Text("Plotlines", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                    data="plotlines", label=ft.Text("Plotlines", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
                 ),
             ],
         )
@@ -145,7 +145,7 @@ class WorkspacesRail(ft.Container):
                     icon=ft.Icon(ft.Icons.PUBLIC_OUTLINED),
                     selected_icon=ft.Icon(ft.Icons.PUBLIC, color=ft.Colors.PRIMARY),
                     padding=ft.padding.only(top=10, bottom=10),
-                    data="world_building", label_content=ft.Text("World Building", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                    data="world_building", label=ft.Text("World Building", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
                 ),
             ],
         )
@@ -161,7 +161,7 @@ class WorkspacesRail(ft.Container):
                     #icon=ft.Icons.BRUSH_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.DRAW_ROUNDED, color=ft.Colors.PRIMARY),
                     padding=ft.padding.only(top=10, bottom=10),
-                    data="canvas", label_content=ft.Text("Canvas", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                    data="canvas", label=ft.Text("Canvas", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE),
                 ),
             ],
         )
@@ -176,7 +176,7 @@ class WorkspacesRail(ft.Container):
                     icon=ft.Icon(ft.Icons.EVENT_NOTE_OUTLINED),
                     selected_icon=ft.Icon(ft.Icons.EVENT_NOTE, color=ft.Colors.PRIMARY),
                     padding=ft.padding.only(top=10, bottom=10),
-                    data="planning", label_content=ft.Text("Plan & Design", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER),
+                    data="planning", label=ft.Text("Plan & Design", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER),
                 ),
             ],
         )
@@ -200,17 +200,17 @@ class WorkspacesRail(ft.Container):
         # We do it this way so when the app re-orders the rail, it will save their changes
         for workspace in app.settings.data['workspaces_rail_order']:     # Just a list of strings
             if workspace == "content":
-                workspaces_rail.append(ft.ReorderableDraggable(idx, content_rail))   # Add our corresponding workspace selector rail to the list
+                workspaces_rail.append(ft.ReorderableDragHandle(content_rail))   # Add our corresponding workspace selector rail to the list
             elif workspace == "characters":
-                workspaces_rail.append(ft.ReorderableDraggable(idx, characters_rail)) 
+                workspaces_rail.append(ft.ReorderableDragHandle(characters_rail)) 
             elif workspace == "plotlines":
-                workspaces_rail.append(ft.ReorderableDraggable(idx, plotlines_rail))
+                workspaces_rail.append(ft.ReorderableDragHandle(plotlines_rail))
             elif workspace == "world_building":
-                workspaces_rail.append(ft.ReorderableDraggable(idx, world_building_rail))
+                workspaces_rail.append(ft.ReorderableDragHandle(world_building_rail))
             elif workspace == "canvas":
-                workspaces_rail.append(ft.ReorderableDraggable(idx, canvas_rail))
+                workspaces_rail.append(ft.ReorderableDragHandle(canvas_rail))
             elif workspace == "planning":
-                workspaces_rail.append(ft.ReorderableDraggable(idx, planning_rail))
+                workspaces_rail.append(ft.ReorderableDragHandle(planning_rail))
 
             idx += 1
 

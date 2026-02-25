@@ -154,7 +154,7 @@ class Character(Widget):
         if sort_method == key and self.story.data.get('selected_rail', "") == "characters":
             self.story.active_rail.content.reload_rail()
 
-    async def _files_uploaded(self, e: ft.FilePickerResultEvent):
+    async def _files_uploaded(self, e: ft.FilePickerUploadEvent):
 
         if e.files:
             file_path = e.files[0].path

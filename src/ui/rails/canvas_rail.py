@@ -9,7 +9,7 @@ from models.views.story import Story
 from ui.rails.rail import Rail
 from styles.menu_option_style import MenuOptionStyle
 import math
-from flet_contrib.color_picker import ColorPicker
+from flet_color_pickers import ColorPicker
 from models.app import app
 import flet.canvas as cv
 
@@ -34,7 +34,7 @@ class CanvasRail(Rail):
                 tooltip="New", menu_padding=0,
                 items=[
                     ft.PopupMenuItem(
-                        text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
+                        "Canvas", icon=ft.Icons.BRUSH_OUTLINED,
                         on_click=self.new_canvas_clicked, data="canvas"
                     ),
                     ft.PopupMenuItem(
@@ -49,10 +49,10 @@ class CanvasRail(Rail):
                 menu_padding=0,
                 items=[
                     ft.PopupMenuItem(
-                        text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,
+                        "Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,
                     ),
                     ft.PopupMenuItem(
-                        text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
+                        "Canvas", icon=ft.Icons.BRUSH_OUTLINED,
                     ),
                 ]
             )
@@ -335,7 +335,7 @@ class CanvasRail(Rail):
         options = [
             ft.PopupMenuItem("Default Brushes", disabled=True, height=20),   # Placeholder for shapes section
             ft.PopupMenuItem(
-                text="Stroke", data=default_brush_settings,
+                data=default_brush_settings,
                 content=ft.Container(
                     ft.Row([ft.Text("Stroke", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(default_brush_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
@@ -343,7 +343,7 @@ class CanvasRail(Rail):
                 on_click=lambda e: self._set_brush(default_brush_settings, name="Stroke")
             ),
             ft.PopupMenuItem(
-                text="Lasso Fill", data=fill_brush_settings,
+                data=fill_brush_settings,
                 content=ft.Container(
                     ft.Row([ft.Text("Lasso Fill", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(fill_brush_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
@@ -353,7 +353,7 @@ class CanvasRail(Rail):
             ft.PopupMenuItem(content=ft.Divider(), disabled=True, height=16),   # Placeholder for shapes section
             ft.PopupMenuItem("Tools & Shapes", disabled=True, height=20),   # Placeholder for shapes section
             ft.PopupMenuItem(
-                text="Erase", data=fill_brush_settings,
+                data=fill_brush_settings,
                 content=ft.Container(
                     ft.Row([ft.Text("Erase", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(fill_brush_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
@@ -361,7 +361,7 @@ class CanvasRail(Rail):
                 #on_click=lambda e: self._set_brush(fill_brush_settings, name="Lasso Fill")
             ),
             ft.PopupMenuItem(
-                text="Line", data=default_brush_settings,
+                data=default_brush_settings,
                 content=ft.Container(
                     ft.Row([ft.Text("Line", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(line_brush_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
@@ -369,7 +369,7 @@ class CanvasRail(Rail):
                 on_click=lambda e: self._set_brush(line_brush_settings, "Line")
             ),
             ft.PopupMenuItem(
-                text="Arc", data=default_brush_settings,
+                data=default_brush_settings,
                 content=ft.Container(
                     ft.Row([ft.Text("Arc", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(arc_brush_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
@@ -377,7 +377,7 @@ class CanvasRail(Rail):
                 on_click=lambda e: self._set_brush(arc_brush_settings, "Arc")
             ),
             ft.PopupMenuItem(
-                text="Half Circle", data=default_brush_settings,
+                data=default_brush_settings,
                 content=ft.Container(
                     ft.Row([ft.Text("Half Circle", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(half_circle_brush_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE

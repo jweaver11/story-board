@@ -355,10 +355,10 @@ class Rail(ft.Container):
         self.p.open(new_canvas_alert_dlg(self.p, self.story))
 
     # Called every time the mouse moves over our rail
-    async def on_hovers(self, e):
+    async def on_hovers(self, e: ft.PointerEvent):
         ''' Stores our mouse positioning so we know where to open menus '''
-        self.story.mouse_x = e.global_x 
-        self.story.mouse_y = e.global_y 
+        self.story.mouse_x = e.global_position.x 
+        self.story.mouse_y = e.global_position.y
 
     
 

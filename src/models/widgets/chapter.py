@@ -3,7 +3,7 @@ from models.views.story import Story
 from models.widget import Widget
 from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
-from flet_quill import FletQuill
+#from flet_quill import FletQuill
 from models.app import app
 
 
@@ -118,6 +118,7 @@ class Chapter(Widget):
         self.reload_tab()
         
         # BUILDING BODY - the inside the body container of our widget
+        '''
         self.body_container.content = ft.Column(
             expand=True,
             controls=[
@@ -142,6 +143,7 @@ class Chapter(Widget):
                 )
             ]
         )
+        '''
         
 
         self._render_widget()

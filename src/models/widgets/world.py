@@ -142,7 +142,7 @@ class World(Widget):
         except Exception as ex:
             print(f"Error opening dialog: {ex}") 
 
-    async def _files_uploaded(self, e: ft.FilePickerResultEvent):
+    async def _files_uploaded(self, e: ft.FilePickerUploadEvent):
 
         if e.files:
             file_path = e.files[0].path

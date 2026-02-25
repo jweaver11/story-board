@@ -20,8 +20,8 @@ class Workspace(ft.Container):
         # Set our container properties for the workspace
         super().__init__(
             expand=True,
-            alignment=ft.alignment.center,
-            padding=ft.padding.only(top=10, bottom=10, left=2, right=10),
+            alignment=ft.Alignment.CENTER,
+            padding=ft.Padding.only(top=10, bottom=10, left=2, right=10),
         )
 
         self.p = page

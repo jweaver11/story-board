@@ -30,7 +30,7 @@ class Story(ft.View):
         # Parent constructor
         super().__init__(
             route=return_safe_name(f"/{title}"),    # Sets our route for our new story
-            padding=ft.padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
+            padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
             spacing=0,                                                      # No spacing between menubar and rest of page
         )  
 
@@ -697,8 +697,8 @@ class Story(ft.View):
         async def move_active_rail_divider(e: ft.DragUpdateEvent):
             ''' Responsible for altering the width of the active rail '''
 
-            if (e.delta_x > 0 and self.active_rail.width < page.width/2) or (e.delta_x < 0 and self.active_rail.width > 100):
-                self.active_rail.width += int(e.delta_x)    # Apply the change to our rail
+            if (e.local_delta.x > 0 and self.active_rail.width < page.width/2) or (e.local_delta.x < 0 and self.active_rail.width > 100):
+                self.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
                 
             self.active_rail.update()
             #page.update()   # Apply our changes to the rest of the page
@@ -724,7 +724,7 @@ class Story(ft.View):
             on_hover=show_horizontal_cursor,    # Change our cursor to horizontal when hovering over the resizer
             on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging
             on_pan_end=save_active_rail_width,  # Save the resize when app is done dragging
-            drag_interval=10,
+            drag_interval=20,
         )
 
         

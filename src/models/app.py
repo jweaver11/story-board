@@ -67,7 +67,7 @@ class App:
         page.theme_mode = app.settings.data.get('theme_mode', 'dark')      
     
         # Sets the title of our app, padding, and maximizes the window
-        page.padding = ft.padding.only(top=0, left=0, right=0, bottom=0)    
+        page.padding = ft.Padding.only(top=0, left=0, right=0, bottom=0)    
 
         # Set the window size as maximized or not
         if app.settings.data.get('page_is_maximized', True):

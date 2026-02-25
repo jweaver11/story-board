@@ -31,11 +31,11 @@ class CharactersRail(Rail):
                 tooltip="New", menu_padding=0,
                 items=[
                     ft.PopupMenuItem(
-                        text="Character", icon=ft.Icons.PERSON_ADD_ALT_OUTLINED,
+                        "Character", icon=ft.Icons.PERSON_ADD_ALT_OUTLINED,
                         on_click=self.new_item_clicked, data="character"
                     ),
                     ft.PopupMenuItem(
-                        text="Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                        "Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
                         on_click=self.new_item_clicked, data="character_connection_map"
                     ),
                 ]
@@ -51,7 +51,7 @@ class CharactersRail(Rail):
         self.sort_button = ft.Dropdown(
             f"Sorting by: {self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")}", 
             label="Sort method", leading_icon=ft.Icons.SORT_ROUNDED, dense=True, expand=True,
-            tooltip="Sort Characters By", on_change=self._new_sort_method_selected,
+            tooltip="Sort Characters By", on_select=self._new_sort_method_selected,
             options=[
                 ft.DropdownOption("Age"), 
                 ft.DropdownOption("Alphabetical"), 
