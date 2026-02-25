@@ -598,13 +598,6 @@ class Story(ft.View):
             )
             self.world_widgets[world.get('key', '')] = world_widget   
             self.widgets.append(world_widget)
-
-            
-        # Now that all widgets are loaded, certain mini widgets need to be re-loaded to update data that relies
-        #TODO: Phase out and use the data dicts instead of data_widget dicts
-        for plotline in self.plotlines.values():
-            for pp in plotline.plot_points.values():
-                pp.reload_mini_widget(no_update=True)
                 
         
     # Called to create a new widget based on tag (document, note, character, etc)
@@ -655,17 +648,9 @@ class Story(ft.View):
                     data = {'character_data': data}
                 widget = Character(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.characters[key] = widget
+                self.characters[key] = widget.data
                 self.widgets.append(self.characters[key])
-                for ccm in self.character_connection_maps.values():     # Reload anything that needs character data
-                    if ccm.visible:
-                        ccm.reload_mini_widget()
-                for pl in self.plotlines.values():
-                    for mw in pl.mini_widgets:
-                        if isinstance(mw, PlotPoint) and mw.visible:
-                            mw.reload_mini_widget()
-                        elif isinstance(mw, Arc) and mw.visible:
-                            mw.reload_mini_widget()
+                
 
             case "plotline":
                 widget = Plotline(title, self.p, directory_path, self, data)
@@ -704,11 +689,14 @@ class Story(ft.View):
                 print("Widget tag not valid. Tag:", tag)
 
         # Apply the UI changes
+        print("Before load widgets")
         self.load_widgets()
+        print("After load widgets")
         self.active_rail.content.reload_rail()
+        self.active_rail.update()
+        print("Before reload")
         self.workspace.reload_workspace()
-
-
+        print("After reload")
 
     # Called clicking outside the menu to close it
     async def close_menu(self, e=None):
@@ -817,7 +805,7 @@ class Story(ft.View):
         active_rail_resizer = ft.GestureDetector(
             content=ft.Container(
                 width=10,   # Total width of the GD, so its easier to find with mouse
-                
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                 # Thin vertical divider, which is what the app will actually drag
                 content=ft.VerticalDivider(thickness=2, width=2, color=ft.Colors.OUTLINE_VARIANT),     # Original
                 padding=ft.Padding.only(right=8),  # Push the 2px divider ^ to the right side

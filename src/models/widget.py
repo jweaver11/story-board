@@ -90,6 +90,9 @@ class Widget(ft.Container):
         # UI ELEMENTS - Body                     
         self.header: ft.Control = None              # Optional header control to display above our body and mini widgets
         self.side_bar: ft.Control = None            # Optional side bar control to display to the side of our body
+
+        # File picker
+        self.fp: ft.FilePicker   # File picker for uploading files in our widgets. Result handled by _file_picker_result
     
         # Container that holds our main body content. Gets built in reload_widget of child classes
         self.body_container = ft.Container(expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(6)) 
@@ -582,6 +585,10 @@ class Widget(ft.Container):
             self.p.open(dlg)
         else:
             _delete_confirmed()
+
+    async def _open_file_picker(self, e=None):
+        await self.fp.pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+
         
     async def _set_active_tab(self, e=None):
         self.data['is_active_tab'] = True
