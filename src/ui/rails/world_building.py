@@ -5,6 +5,7 @@ from models.views.story import Story
 from ui.rails.rail import Rail
 from styles.menu_option_style import MenuOptionStyle
 from utils.tree_view import load_directory_data
+from models.isolated_controls.column import IsolatedColumn
 
 
 class WorldBuildingRail(Rail):
@@ -192,7 +193,7 @@ class WorldBuildingRail(Rail):
         )
 
         # Set our content to be a column
-        self.content = ft.Column(
+        self.content = IsolatedColumn(
             spacing=0,
             expand=True,
             controls=[
@@ -202,11 +203,9 @@ class WorldBuildingRail(Rail):
             ]
         )
         
-        # Apply our update
-        try:        # Handle first launch
-            #self.update()
-            #self.story.active_rail.update()
-            self.p.update()
+        # Apply the update
+        try:
+            self.update()
         except Exception as e:
             pass
 

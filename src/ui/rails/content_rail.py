@@ -7,6 +7,7 @@ from ui.rails.rail import Rail
 from utils.tree_view import load_directory_data
 from styles.menu_option_style import MenuOptionStyle
 from utils.alert_dialogs.new_canvas import new_canvas_alert_dlg
+from models.isolated_controls.column import IsolatedColumn
 import threading
 import asyncio
 
@@ -161,7 +162,7 @@ class ContentRail(Rail):
                 content=ft.PopupMenuButton(
                     content=ft.Container(
                         ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),]),
-                        padding=ft.Padding.all(8), border_radius=ft.border_radius.all(6),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
                     ),
                     tooltip="Upload", menu_padding=0,
                     items=[
@@ -242,7 +243,9 @@ class ContentRail(Rail):
             hover_interval=20,
         )
 
-        self.content = ft.Column(
+        
+
+        self.content = IsolatedColumn(
             spacing=0,
             expand=True,
             controls=[

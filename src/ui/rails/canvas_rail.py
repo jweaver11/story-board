@@ -12,6 +12,7 @@ import math
 from flet_color_pickers import ColorPicker
 from models.app import app
 import flet.canvas as cv
+from models.isolated_controls.column import IsolatedColumn
 
 
 # Class for our Canvas Board rail
@@ -780,16 +781,18 @@ class CanvasRail(Rail):
         
 
         # Build the content of our rail
-        self.content = ft.Column(
+        self.content = IsolatedColumn(
             spacing=0,
             expand=True,
             controls=[
                 header,
                 ft.Divider(),
-                content,
-                # Add more controls here as needed
+                content
             ]
         )
 
         # Apply the update
-        self.p.update()
+        try:
+            self.update()
+        except Exception as e:
+            pass

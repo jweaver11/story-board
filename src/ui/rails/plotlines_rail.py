@@ -6,6 +6,7 @@ from ui.rails.rail import Rail
 from styles.rail.plotline_dropdown import PlotlineDropdown
 from styles.rail.mini_widget_item import MiniWidgetItem
 from styles.menu_option_style import MenuOptionStyle
+from models.isolated_controls.column import IsolatedColumn
 
 
 # Class is created in main on program startup
@@ -211,7 +212,7 @@ class PlotlinesRail(Rail):
         )
 
         # Set our content to be a column
-        self.content = ft.Column(
+        self.content = IsolatedColumn(
             spacing=0,
             expand=True,
             controls=[
@@ -223,14 +224,11 @@ class PlotlinesRail(Rail):
 
       
 
-        # Apply the changes to the page
-        try:        # Handle first launch
-            #self.update() 
-            #self.story.active_rail.update()
-            self.p.update()
+        # Apply the update
+        try:
+            self.update()
         except Exception as e:
             pass
-        #self.p.update()
 
 
     

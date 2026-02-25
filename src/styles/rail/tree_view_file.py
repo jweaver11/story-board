@@ -303,10 +303,8 @@ class TreeViewFile(ft.GestureDetector):
         )
 
         # If dir dropdown is not None, insert indentation icon ??
-        #ft.Icon(ft.Icons.HORIZONTAL_RULE, rotate=ft.Rotate(math.pi/2)),
         try:
             self.update()
         except Exception as e:
-            print("Failed to update tree view file")
-        #self.widget.p.update()
+            pass
 

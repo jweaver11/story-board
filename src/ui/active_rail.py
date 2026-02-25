@@ -44,6 +44,8 @@ class Active_Rail(ft.Container):
         # All other rails have reload rail functions, but this one just displays the correct one
         self.display_active_rail(story)
 
+    
+
         
     # Called when other workspaces are selected
     def display_active_rail(self, story: Story, rail: str = None):
@@ -75,3 +77,7 @@ class Active_Rail(ft.Container):
                 self.content = self.content_rail
        
         self.content.reload_rail()
+        try:
+            self.update()
+        except Exception as e:
+            pass

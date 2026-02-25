@@ -11,6 +11,7 @@ from models.views.story import Story
 from styles.rail.tree_view_file import TreeViewFile
 import json
 from utils.alert_dialogs.character_connection import new_character_connection_clicked
+from models.isolated_controls.column import IsolatedColumn
 
 
 class CharactersRail(Rail):
@@ -301,6 +302,21 @@ class CharactersRail(Rail):
                 menu_gesture_detector
             ]
         )
+
+        self.content = IsolatedColumn(
+            spacing=0,
+            expand=True,
+            controls=[
+                header,
+                ft.Divider(),
+                ft.Container(height=6),
+                header_2,
+                menu_gesture_detector
+            ]
+        )
         
-        # Apply our update
-        self.p.update()
+        # Apply the update
+        try:
+            self.update()
+        except Exception as e:
+            pass

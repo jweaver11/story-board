@@ -3,6 +3,7 @@
 import flet as ft
 from models.views.story import Story
 from ui.rails.rail import Rail
+from models.isolated_controls.column import IsolatedColumn
 
 
 
@@ -30,13 +31,21 @@ class PlanningRail(Rail):
         ''' Reloads planning, useful when switching stories '''
 
         # Build the content of our rail
-        self.content = ft.Column(
+        self.content = IsolatedColumn(
+            spacing=0,
+            expand=True,
             controls=[
-                ft.Text("Planning Rail is under construction"),
+                #header,
+                #ft.Divider(),
+                ft.Text("Coming Soon")
+                #menu_gesture_detector
             ]
         )
 
-        # Apply our update
-        self.p.update()
+        # Apply the update
+        try:
+            self.update()
+        except Exception as e:
+            pass
         
 
