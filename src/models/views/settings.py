@@ -310,11 +310,11 @@ class Settings(ft.View):
             
             else:
                 if new_theme_mode == "dark":
-                    e.control.border = ft.border.all(2, ft.Colors.PRIMARY)
-                    self.light_theme_button.border = ft.border.all(2, ft.Colors.ON_SURFACE_VARIANT)
+                    e.control.border = ft.Border.all(2, ft.Colors.PRIMARY)
+                    self.light_theme_button.border = ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT)
                 else:
-                    e.control.border = ft.border.all(2, ft.Colors.PRIMARY)
-                    self.dark_theme_button.border = ft.border.all(2, ft.Colors.ON_SURFACE_VARIANT)
+                    e.control.border = ft.Border.all(2, ft.Colors.PRIMARY)
+                    self.dark_theme_button.border = ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT)
 
             self.data['theme_mode'] = new_theme_mode
             self.save_dict()

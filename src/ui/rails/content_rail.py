@@ -35,8 +35,8 @@ class ContentRail(Rail):
                         on_click=self.new_item_clicked, data="category"
                     ),
                     ft.PopupMenuItem(
-                        "Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
-                        on_click=self.new_item_clicked, data="chapter"
+                        "Document", icon=ft.Icons.NOTE_ADD_OUTLINED,
+                        on_click=self.new_item_clicked, data="document"
                     ),
                     ft.PopupMenuItem(
                         "Canvas", icon=ft.Icons.BRUSH_OUTLINED,
@@ -78,7 +78,7 @@ class ContentRail(Rail):
                 items=[
                     ft.PopupMenuItem("Canvas", icon=ft.Icons.BRUSH_OUTLINED),
                     ft.PopupMenuItem("Canvas Board", icon=ft.Icons.SPACE_DASHBOARD_OUTLINED),
-                    ft.PopupMenuItem("Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED),
+                    ft.PopupMenuItem("Document", icon=ft.Icons.NOTE_ADD_OUTLINED),
                     ft.PopupMenuItem("Character", icon=ft.Icons.PERSON_OUTLINED),
                     ft.PopupMenuItem("Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED),
                     ft.PopupMenuItem("Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED),
@@ -119,8 +119,8 @@ class ContentRail(Rail):
                             on_click=self.new_item_clicked, data="category"
                         ),
                         ft.PopupMenuItem(
-                            "Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
-                            on_click=self.new_item_clicked, data="chapter"
+                            "Document", icon=ft.Icons.NOTE_ADD_OUTLINED,
+                            on_click=self.new_item_clicked, data="document"
                         ),
                         ft.PopupMenuItem(
                             "Canvas", icon=ft.Icons.BRUSH_OUTLINED,
@@ -167,7 +167,7 @@ class ContentRail(Rail):
                     tooltip="Upload", menu_padding=0,
                     items=[
                         ft.PopupMenuItem("Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,),
-                        ft.PopupMenuItem("Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,),
+                        ft.PopupMenuItem("Document", icon=ft.Icons.NOTE_ADD_OUTLINED,),
                         ft.PopupMenuItem("Canvas", icon=ft.Icons.BRUSH_OUTLINED,),
                         ft.PopupMenuItem("Note", icon=ft.Icons.NOTE_ALT_OUTLINED,),
                         ft.PopupMenuItem("Character", icon=ft.Icons.PERSON_OUTLINED,),
@@ -188,8 +188,8 @@ class ContentRail(Rail):
 
         # Depending on story type, we can have different content creation options
         # Categories get colors as well??
-        # Creating a chapter for comics creates a folder to store images and drawings
-        # Creating a chapter for novels creates a text document for writing, and allows
+        # Creating a document for comics creates a folder to store images and drawings
+        # Creating a document for novels creates a text document for writing, and allows
         # Right clicking allows to upload
 
         # TODO: Should be 2 buttons: New and upload. Each has all those options
@@ -219,7 +219,7 @@ class ContentRail(Rail):
 
         content.controls.append(ft.Container(height=6)) # Padding
 
-        # Append our hiddent textfields for creating new categories, chapters, and notes
+        # Append our hiddent textfields for creating new categories, documents, and notes
         content.controls.append(self.new_item_textfield)
 
         # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space

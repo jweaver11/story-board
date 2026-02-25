@@ -501,8 +501,8 @@ class CanvasBoard(Widget):
         self.reload_tab()
 
         description_container = ft.Container(            # For Summary
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(5), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE), margin=ft.margin.only(right=19),
+            padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(5), expand=True,
+            border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(right=19),
             content=ft.TextField(
                 expand=True, value=self.data.get('description', ""), dense=True, multiline=True,
                 capitalization=ft.TextCapitalization.SENTENCES, 
@@ -522,7 +522,7 @@ class CanvasBoard(Widget):
                             label, style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")), selectable=True,
                             tooltip="Connect to one of your canvases and show a live preview of your progress!" if label == "Preview" else None,
                         ),
-                        alignment=ft.alignment.center, margin=ft.margin.symmetric(horizontal=12),    
+                        alignment=ft.Alignment.CENTER, margin=ft.Margin.symmetric(horizontal=12),    
                         width=201 if idx <=1 else None,
                         expand=True if idx > 1 else False,
                     )
@@ -562,8 +562,8 @@ class CanvasBoard(Widget):
                             row_control.controls.append(
                                 ft.Container(
                                     ft.Text("Coming Soon!"),
-                                    width=200, margin=ft.margin.all(12),
-                                    alignment=ft.alignment.top_center, border_radius=ft.border_radius.all(6),
+                                    width=200, margin=ft.Margin.all(12),
+                                    alignment=ft.Alignment.TOP_CENTER, border_radius=ft.BorderRadius.all(6),
                                 )
                             )
                         case "Sketch":      # Sketch canvas for rough thumbnails
@@ -582,9 +582,9 @@ class CanvasBoard(Widget):
                             )
                             row_control.controls.append(
                                 ft.Container(
-                                    canvas, margin=ft.margin.all(12), #border=ft.border.all(1, ft.Colors.OUTLINE),
-                                    bgcolor="surface", border_radius=ft.border_radius.all(6),
-                                    alignment=ft.alignment.top_center, 
+                                    canvas, margin=ft.Margin.all(12), #border=ft.border.all(1, ft.Colors.OUTLINE),
+                                    bgcolor="surface", border_radius=ft.BorderRadius.all(6),
+                                    alignment=ft.Alignment.TOP_CENTER, 
                                 )
                             )
                             canvas.shapes.extend(self._load_canvas(idx, sub_idx))   # Load our saved canvas data into the canvas
@@ -598,7 +598,7 @@ class CanvasBoard(Widget):
                                         capitalization=ft.TextCapitalization.SENTENCES, smart_dashes_type=True,
                                         on_blur=lambda e, r=idx, c=sub_idx: self._update_matrix_cell(r, c, e.control.value)
                                     ), 
-                                    expand=True, margin=ft.margin.all(12), alignment=ft.alignment.top_center,
+                                    expand=True, margin=ft.Margin.all(12), alignment=ft.Alignment.TOP_CENTER,
                                 )
                             )
                         

@@ -22,6 +22,7 @@ class Workspace(ft.Container):
             expand=True,
             alignment=ft.Alignment.CENTER,
             padding=ft.Padding.only(top=10, bottom=10, left=2, right=10),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
         )
 
         self.p = page
@@ -38,16 +39,7 @@ class Workspace(ft.Container):
 
         # Main pin is not rendered directly since it changes based on active tab when more than one widget is present
         self.main_pin = []      # List to hold all our widgets in the main pin that we manipulate easier
-        self.main_pin_tabs = ft.Tabs(
-            content=ft.Column([], expand=True),
-            expand=True,  
-            length=0,
-            selected_index=0,
-            animation_duration=100,
-            #padding=ft.Padding.all(0),
-            #label_padding=ft.Padding.only(left=6, right=6, top=0, bottom=0),
-            #mouse_cursor=ft.MouseCursor.BASIC, 
-        )   
+        self.main_pin_tabs: ft.Tabs
 
         # Pin drag targets
         self.top_pin_drag_target = ft.DragTarget(
@@ -420,52 +412,36 @@ class Workspace(ft.Container):
             drag_interval=20,
         )
 
-        # Called when selected new tab in the main pin
-        async def main_pin_tab_change(e: ft.ControlEvent):
-            ''' Updates the widgets data to reflect the new active tab '''
-
-            # Run through our visible main pin widgets
-            for widget in visible_main_controls:
-
-                # If the widgets tab is selected, make the widget data match, otherwise deselect the rest
-                if widget.tab == e.control.tabs[e.control.selected_index]:
-                    widget.data['is_active_tab'] = True
-                    self.main_pin_tabs.indicator_color = widget.data.get('color', ft.Colors.PRIMARY)
-                else:
-                    widget.data['is_active_tab'] = False
-
-                # Save the data. This allows for selected main pin tabs to save between sessions
-                widget.save_dict()
-
-            self.main_pin_tabs.update()
-
+        
         # Main pin is rendered as a tab control, so we won't use dividers and will use different logic
         visible_main_controls = [control for control in self.main_pin if getattr(control, 'visible', True)]
         if len(visible_main_controls) > 1:
                 
             # Hold all our main pin tabs
+            self.main_pin_tabs = ft.Tabs(
+                expand=True, length=len(visible_main_controls),
+                selected_index=-1,
+                animation_duration=100,
+                content=ft.Column([
+                    ft.TabBar(
+                        tabs=[widget.tab for widget in visible_main_controls], scrollable=True
+                    ), 
+                    ft.TabBarView(
+                        controls=[widget.master_stack for widget in visible_main_controls],
+                        expand=True
+                    )
+                ], expand=True),
+            )   
             
-            #self.main_pin_tabs.on_change = main_pin_tab_change      # Reset the change method
-            self.main_pin_tabs.content.controls.clear()    # Clear the content so we can re-add our visible widgets in the correct order    
-            self.main_pin_tabs.content.controls = [
-                ft.TabBar(
-                    tabs=[widget.tab for widget in visible_main_controls],
-                ), 
-                ft.TabBarView(
-                    controls=[widget.master_stack for widget in visible_main_controls],
-                    expand=True
-                )
-            ]   # Add our tab bar and tab bar view back in so we can add our tabs to the tab bar and our widgets to the tab bar view
-
-            self.main_pin_tabs.length = len(visible_main_controls)   # Set the length of our tabs to the number of visible widgets in the main pin
-            self.main_pin_tabs.selected_index = -1   # Select last tab for now on reloads
+          
+            self.main_pin_tabs.selected_index = -1   #TODO: Set to active tab
             
             
-
             # Stick it in a container for styling
             formatted_main_pin = ft.Container(
                 expand=True, border_radius=ft.BorderRadius.all(8),
                 gradient=dark_gradient, 
+                #bgcolor=ft.Colors.SURFACE_CONTAINER,
                 margin=ft.Margin.all(0),
                 padding=ft.Padding.only(top=0, bottom=8, left=8, right=8),
                 content=self.main_pin_tabs
@@ -543,25 +519,91 @@ class Workspace(ft.Container):
         
 
         # Format our pins on the page
-        self.master_widgets_row.controls.clear()
-        self.master_widgets_row.controls = [
-            formatted_left_pin,    # formatted left pin
-            ft.Column(
-                expand=True, spacing=0, 
+
+        # Pin drag targets
+        self.top_pin_drag_target = ft.DragTarget(
+            group="widgets", 
+            content=ft.Container(expand=True, height=self.story.data.get('top_pin_height', int(self.p.height/5)), bgcolor=ft.Colors.ON_SURFACE, opacity=0, border_radius=8, margin=ft.Margin.only(left=8, right=8),), 
+            on_accept=lambda e: self.pin_drag_accept(e, "top"), on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+        )
+        self.left_pin_drag_target = ft.DragTarget(
+            group="widgets",
+            content=ft.Container(expand=True, width=self.story.data.get('left_pin_width', int(self.p.width/10)), bgcolor=ft.Colors.ON_SURFACE, border_radius=8, opacity=0), 
+            on_accept=lambda e: self.pin_drag_accept(e, "left"), on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+        )
+
+        self.right_pin_drag_target = ft.DragTarget(
+            group="widgets", 
+            content=ft.Container(expand=True, width=self.story.data.get('right_pin_width', int(self.p.width/10)), bgcolor=ft.Colors.ON_SURFACE, border_radius=8, opacity=0), 
+            on_accept=lambda e: self.pin_drag_accept(e, "right"), on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+        )
+        self.bottom_pin_drag_target = ft.DragTarget(
+            group="widgets", 
+            content=ft.Container(expand=True, height=self.story.data.get('bottom_pin_height', int(self.p.height/5)), margin=ft.Margin.only(left=8, right=8), bgcolor=ft.Colors.ON_SURFACE, opacity=0, border_radius=ft.BorderRadius.all(8)),
+            on_accept=lambda e: self.pin_drag_accept(e, "bottom"), on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+        )
+
+        # Weird flet rendering logic, this one needs a container around the drag target to work properly
+        self.main_pin_drag_target = ft.Container(
+            expand=True,
+            padding=ft.Padding.all(8),
+            content=ft.DragTarget(
+                group="widgets", 
+                on_accept=lambda e: self.pin_drag_accept(e, "main"), on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+                content=ft.Container(expand=True,  bgcolor=ft.Colors.ON_SURFACE, opacity=0, border_radius=ft.BorderRadius.all(8))
+            )
+        )
+
+        self.pin_drag_targets = ft.Container(
+            visible=True,
+            expand=True,
+            content=ft.Row(
+                spacing=0,
+                expand=True,
                 controls=[
-                    formatted_top_pin,    # formatted top pin
-                    formatted_main_pin,   # formatted main pin
-                    formatted_bottom_pin,     # formatted bottom pin
-            ]),
-            formatted_right_pin,    # formatted right pin
-        ]
+                    self.left_pin_drag_target,
+                    ft.Column(
+                        expand=True,
+                        spacing=0,
+                        controls=[
+                            self.top_pin_drag_target,
+                            self.main_pin_drag_target,  
+                            self.bottom_pin_drag_target,
+                        ]
+                    ),
+                    self.right_pin_drag_target,
+                ]
+            )
+        )
+
+        # Our master row that holds all our widgets
+        self.master_widgets_row = ft.Row(
+            spacing=0, expand=True, 
+            controls=[
+                formatted_left_pin,    # formatted left pin
+                ft.Column(
+                    expand=True, spacing=0, 
+                    controls=[
+                        formatted_top_pin,    # formatted top pin
+                        formatted_main_pin,   # formatted main pin
+                        formatted_bottom_pin,     # formatted bottom pin
+                ]),
+                formatted_right_pin,    # formatted right pin
+                
+            ]
+        )
+
+        # Master stack that holds our widgets ^ row, and drag targets overtop. TransparentPointer allows the targets to be physical but not block widgets underneath
+        self.master_stack = ft.Stack(expand=True, controls=[self.master_widgets_row, ft.TransparentPointer(self.pin_drag_targets)])
+
+        self.content = self.master_stack
 
         # Set the master_stack as the content of this container
         #self.content = self.master_stack
 
         # Finally update the UI
         try:
-            self.master_stack.update()
+            self.update()
         except Exception as e:
             pass
 

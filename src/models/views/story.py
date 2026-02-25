@@ -535,7 +535,7 @@ class Story(ft.View):
 
         for canvas_board in self.canvas_boards.values():      # Canvas Boards
             canvas_board_widget = CanvasBoard(
-                title=canvas_board.get('title', 'Untitled Canvas Board'),
+                name=canvas_board.get('title', 'Untitled Canvas Board'),
                 page=self.p,
                 directory_path=canvas_board.get('directory_path', self.data['content_directory_path']),
                 story=self,
@@ -546,7 +546,7 @@ class Story(ft.View):
 
         for character in self.characters.values():      # Characters    
             character_widget = Character(
-                title=character.get('title', 'Untitled Character'),
+                name=character.get('title', 'Untitled Character'),
                 page=self.p,
                 directory_path=character.get('directory_path', self.data['content_directory_path']),
                 story=self,
@@ -825,7 +825,7 @@ class Story(ft.View):
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging
             on_pan_end=save_active_rail_width,  # Save the resize when app is done dragging
-            drag_interval=10,
+            drag_interval=20,
         )
 
         

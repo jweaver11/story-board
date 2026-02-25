@@ -7,7 +7,7 @@ from styles.menu_option_style import MenuOptionStyle
 from models.app import app
 
 
-# Class that holds our text chapter objects
+# Class that holds our text document objects
 class Document(Widget):
     # Constructor
     def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):
@@ -30,13 +30,13 @@ class Document(Widget):
                 'color': app.settings.data.get('default_canvas_color'),
                 'mini_widgets_displayed_overtop': False,  
 
-                # Comments displayed on the side of the chapter
+                # Comments displayed on the side of the document
                 'comments': {           
                     'Summary': dict,      # Default comment for summaries.
                 },       
 
                 # The text as json list data that is loaded and saved
-                'chapter_text': list,       
+                'document_text': list,       
             }
         )
 
@@ -103,9 +103,9 @@ class Document(Widget):
         ]
 
 
-    def _save_chapter(self, text_data: list):
-        ''' Saves our chapter text data to our data dictionary '''
-        self.data['chapter_text'] = text_data
+    def _save_document(self, text_data: list):
+        ''' Saves our document text data to our data dictionary '''
+        self.data['document_text'] = text_data
         self.save_dict()
 
 
@@ -123,8 +123,8 @@ class Document(Widget):
             expand=True,
             controls=[
                 FletQuill(
-                    text_data=self.data['chapter_text'],
-                    save_method=self._save_chapter,
+                    text_data=self.data['document_text'],
+                    save_method=self._save_document,
                     #file_path=f"{self.directory_path}/{self.title}_text.json",
 
                     border_visible=True,

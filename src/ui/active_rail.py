@@ -30,6 +30,7 @@ class Active_Rail(ft.Container):
             padding=ft.Padding.only(top=10, bottom=10, right=8, left=8),
             border_radius=ft.BorderRadius.only(top_right=10, bottom_right=10),
             width=app.settings.data['active_rail_width'],  # Sets the width
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
         )
 
         # Add our 6 rails here first so they maintain consitent styling and don't have to be rebuilt on switches

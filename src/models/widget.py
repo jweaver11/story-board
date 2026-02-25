@@ -39,6 +39,7 @@ class Widget(ft.Container):
             data=data,                              # Sets our data. 
             border_radius=ft.BorderRadius.all(10),
             gradient=dark_gradient,
+            #bgcolor=ft.Colors.SURFACE_CONTAINER,
             margin=ft.Margin.all(0),
             padding=ft.Padding.only(top=0, bottom=8, left=8, right=8),
             on_size_change=self._get_size,   # Calls our function to update our size variables whenever our size changes

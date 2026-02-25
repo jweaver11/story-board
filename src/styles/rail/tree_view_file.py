@@ -27,7 +27,7 @@ class TreeViewFile(ft.GestureDetector):
 
 
         match tag:
-            case "chapter": self.icon = ft.Icons.DESCRIPTION_OUTLINED
+            case "document": self.icon = ft.Icons.DESCRIPTION_OUTLINED
             case "canvas": self.icon = ft.Icons.BRUSH_OUTLINED
             case "canvas_board": self.icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
             case "note": self.icon = ft.Icons.NOTE_ALT_OUTLINED

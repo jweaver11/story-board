@@ -48,7 +48,7 @@ class TreeViewDirectory(ft.GestureDetector):
             weight=ft.FontWeight.BOLD,
         )
 
-        # Textfield for creating new items (sub-categories, chapters, notes, characters, etc.)
+        # Textfield for creating new items (sub-categories, documents, notes, characters, etc.)
         self.new_item_textfield = ft.TextField(  
             hint_text="Sub-Category Name",          
             #data="category",                                       # Data for logic routing on submit
@@ -88,15 +88,15 @@ class TreeViewDirectory(ft.GestureDetector):
                     tooltip="New", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(
-                            text="Category", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
+                            "Category", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
                             on_click=self.new_item_clicked, data="category"
                         ),
                         ft.PopupMenuItem(
-                            text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,
-                            on_click=self.new_item_clicked, data="chapter"
+                            "Document", icon=ft.Icons.NOTE_ADD_OUTLINED,
+                            on_click=self.new_item_clicked, data="document"
                         ),
                         ft.PopupMenuItem(
-                            text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,
+                            "Canvas", icon=ft.Icons.BRUSH_OUTLINED,
                             on_click=self.new_item_clicked, data="canvas"
                         ),
                         ft.PopupMenuItem(
@@ -104,23 +104,23 @@ class TreeViewDirectory(ft.GestureDetector):
                             on_click=self.new_item_clicked, data="note"
                         ),
                         ft.PopupMenuItem(
-                            text="Character", icon=ft.Icons.PERSON_OUTLINED,
+                            "Character", icon=ft.Icons.PERSON_OUTLINED,
                             on_click=self.new_item_clicked, data="character"
                         ),  
                         ft.PopupMenuItem(
-                            text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                            "Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
                             on_click=self.new_item_clicked, data="family_tree"
                         ),
                         ft.PopupMenuItem(
-                            text="Plotline", icon=ft.Icons.TIMELINE_OUTLINED,
+                            "Plotline", icon=ft.Icons.TIMELINE_OUTLINED,
                             on_click=self.new_item_clicked, data="plotline"
                         ),
                         ft.PopupMenuItem(
-                            text="Map", icon=ft.Icons.MAP_OUTLINED,
+                            "Map", icon=ft.Icons.MAP_OUTLINED,
                             on_click=self.new_item_clicked, data="map"
                         ),
                         ft.PopupMenuItem(
-                            text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,
+                            "World Building", icon=ft.Icons.PUBLIC_OUTLINED,
                             on_click=self.new_item_clicked, data="world_building"
                         ),
                     ]
@@ -135,15 +135,15 @@ class TreeViewDirectory(ft.GestureDetector):
                     ),
                     tooltip="Upload", menu_padding=0,
                     items=[
-                        ft.PopupMenuItem(text="Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,),
-                        ft.PopupMenuItem(text="Chapter", icon=ft.Icons.NOTE_ADD_OUTLINED,),
-                        ft.PopupMenuItem(text="Canvas", icon=ft.Icons.BRUSH_OUTLINED,),
-                        ft.PopupMenuItem(text="Note", icon=ft.Icons.NOTE_ALT_OUTLINED,),
-                        ft.PopupMenuItem(text="Character", icon=ft.Icons.PERSON_OUTLINED,),
-                        ft.PopupMenuItem(text="Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED),
-                        ft.PopupMenuItem(text="Plotline", icon=ft.Icons.TIMELINE_OUTLINED,),
-                        ft.PopupMenuItem(text="Map", icon=ft.Icons.MAP_OUTLINED,),
-                        ft.PopupMenuItem(text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,),
+                        ft.PopupMenuItem("Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,),
+                        ft.PopupMenuItem("Document", icon=ft.Icons.NOTE_ADD_OUTLINED,),
+                        ft.PopupMenuItem("Canvas", icon=ft.Icons.BRUSH_OUTLINED,),
+                        ft.PopupMenuItem("Note", icon=ft.Icons.NOTE_ALT_OUTLINED,),
+                        ft.PopupMenuItem("Character", icon=ft.Icons.PERSON_OUTLINED,),
+                        ft.PopupMenuItem("Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED),
+                        ft.PopupMenuItem("Plotline", icon=ft.Icons.TIMELINE_OUTLINED,),
+                        ft.PopupMenuItem("Map", icon=ft.Icons.MAP_OUTLINED,),
+                        ft.PopupMenuItem("World Building", icon=ft.Icons.PUBLIC_OUTLINED,),
                     ]
                 ),
                 no_padding=True
@@ -320,7 +320,7 @@ class TreeViewDirectory(ft.GestureDetector):
             match tag:
                 case "category":
                     self.story.create_folder(directory_path=self.full_path, name=title)
-                case "chapter" | "canvas" | "note" | "character" | "plotline" | "map":
+                case "document" | "canvas" | "note" | "character" | "plotline" | "map":
                     self.story.create_widget(directory_path=self.full_path, title=title, tag=tag)
                 
                 case _:
