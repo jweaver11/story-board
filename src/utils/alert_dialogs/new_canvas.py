@@ -278,7 +278,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
     alert_dialog = ft.AlertDialog(
         title=ft.Text("Build Your Canvas", weight=ft.FontWeight.BOLD),
         actions=[
-            ft.TextButton("CANCEL", on_click=lambda e: page.close(alert_dialog), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+            ft.TextButton("CANCEL", on_click=lambda e: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
             create_button
         ],
 

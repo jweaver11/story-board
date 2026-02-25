@@ -552,20 +552,20 @@ class Story(ft.View):
             case "document":
                 widget = Document(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.documents[key] = widget.data
+                self.documents[key] = widget
                 self.widgets.append(self.documents[key])
 
             case "note":
                 widget = Note(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.notes[key] = widget.data
+                self.notes[key] = widget
                 self.widgets.append(self.notes[key])
 
             case "canvas":
                 d = {'canvas': data} if data is not None else None
                 widget = Canvas(title, self.p, directory_path, self, d)
                 key = widget.data.get('key', '')
-                self.canvases[key] = widget.data
+                self.canvases[key] = widget
                 self.widgets.append(self.canvases[key])
 
             case "character":
@@ -574,7 +574,7 @@ class Story(ft.View):
                     data = {'character_data': data}
                 widget = Character(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.characters[key] = widget.data
+                self.characters[key] = widget
                 self.widgets.append(self.characters[key])
                 
 
@@ -582,7 +582,7 @@ class Story(ft.View):
                 widget = Plotline(title, self.p, directory_path, self, data)
                 
                 key = widget.data.get('key', '')
-                self.plotlines[key] = widget.data
+                self.plotlines[key] = widget
                 widget.data['plotline_order_index'] = len(self.plotlines.keys()) - 1   # Set the order index to the end of the list
                 widget.save_dict()
                 self.widgets.append(self.plotlines[key])
@@ -590,25 +590,25 @@ class Story(ft.View):
             case "map":
                 widget = Map(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.maps[key] = widget.data
+                self.maps[key] = widget
                 self.widgets.append(self.maps[key])
 
             case "character_connection_map":
                 widget = CharacterConnectionMap(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.character_connection_maps[key] = widget.data
+                self.character_connection_maps[key] = widget
                 self.widgets.append(self.character_connection_maps[key])
 
             case "world":
                 widget = World(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.worlds[key] = widget.data
+                self.worlds[key] = widget
                 self.widgets.append(self.worlds[key])
 
             case "canvas_board":
                 widget = CanvasBoard(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.canvas_boards[key] = widget.data
+                self.canvas_boards[key] = widget
                 self.widgets.append(self.canvas_boards[key])
      
             case _:

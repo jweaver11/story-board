@@ -35,6 +35,7 @@ class App:
 
         # Create settings.json with empty dict if it doesn't exist
         if not os.path.exists(settings_file_path):
+            os.makedirs(os.path.dirname(settings_file_path), exist_ok=True)  # Ensure directory exists
             with open(settings_file_path, "w", encoding='utf-8') as f:
                 json.dump({}, f)
         

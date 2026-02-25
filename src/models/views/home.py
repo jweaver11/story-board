@@ -13,7 +13,7 @@ def create_home_view(page: ft.Page) -> ft.View:
 
 
     # Called when giant new story button is clicked
-    def create_new_story_button_clicked(e):
+    async def create_new_story_button_clicked(e):
         ''' Opens a dialog to create a new story. Checks story is unique or not '''
         #print("New Story Clicked")
 
@@ -83,7 +83,7 @@ def create_home_view(page: ft.Page) -> ft.View:
             on_change=check_story_title_unique,
         )
 
-        create_button = ft.TextButton("Create", on_click=lambda e: submit_new_story(story_title_field), disabled=True)
+        create_button = ft.TextButton("Create", on_click=lambda e: page.run_task(submit_new_story(story_title_field)), disabled=True)
             
         # The dialog that will pop up whenever the new story button is clicked
         dlg = ft.AlertDialog(
