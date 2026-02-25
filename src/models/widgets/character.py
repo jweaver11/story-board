@@ -24,7 +24,7 @@ import asyncio
 # Widget requires a title, tag, page reference, and a pin location
 class Character(Widget):
     # Constructor
-    def __init__(self, name: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, ):
+    def __init__(self, name: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
 
         # Parent class constructor
         super().__init__(
@@ -32,7 +32,8 @@ class Character(Widget):
             page = page,   
             directory_path = directory_path, 
             story = story,   
-            data = data,    
+            data = data,   
+            is_rebuilt = is_rebuilt 
         )
 
         # Update our padding to be none on the right to handle scrollbars better

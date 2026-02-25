@@ -253,6 +253,10 @@ class Workspace(ft.Container):
 
             # Check if they are visible
             if widget.visible:
+
+                # CRUCIAL. Fixes outdated page references by creating a new object
+                # NOTE: If this doesn work, set widget as new variable (new_widge)
+                widget = self.story.rebuild_widget(widget)
     
                 # Check if widget has data and pin_location
                 pin_location = widget.data.get('pin_location', None)
@@ -284,8 +288,7 @@ class Workspace(ft.Container):
 
         # If main pin is empty, steal one from other pins so we are always fullscreen
         if len(self.main_pin) == 0:
-            pass
-
+            
             # Steal from left first
             if len(self.left_pin.controls) > 0:
                 # Copy and delete last widget in left pin
@@ -303,8 +306,7 @@ class Workspace(ft.Container):
             elif len(self.bottom_pin.controls) > 0:
                 widget = self.bottom_pin.controls.pop()
                 self.main_pin.append(widget)
-            else:
-                pass
+            
 
             # If we stole a widget, make its data match its new location
             if widget is not None:
@@ -321,7 +323,6 @@ class Workspace(ft.Container):
         ''' Reloads our workspace content by clearing and re-adding our 5 pin locations to the master row '''
 
         # Make sure our widgets are arranged correctly
-        self.story.load_widgets()
         self.arrange_widgets()
 
         async def save_pin_sizes(e: ft.DragEndEvent=None):

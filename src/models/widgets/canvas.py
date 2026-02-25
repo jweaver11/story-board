@@ -35,6 +35,7 @@ class Canvas(Widget):
         directory_path: str, 
         story: Story, 
         data: dict = None,
+        is_rebuilt: bool = False
     ):
         
         # Parent constructor
@@ -44,6 +45,7 @@ class Canvas(Widget):
             directory_path=directory_path, 
             story=story,
             data=data,  
+            is_rebuilt = is_rebuilt
         ) 
 
 

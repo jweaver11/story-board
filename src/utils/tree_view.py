@@ -94,31 +94,42 @@ def load_directory_data(
 
         # Now go through our files
         for file_name in files:
+            widget = None
 
             try:
                 # Load the file data to see if it's valid
                 with open(os.path.join(directory, file_name), 'r', encoding='utf-8') as f:
                     file_data = json.load(f)
 
-               
+                key = file_data.get('key', None)
+
+                for widget in story.widgets:
+                    if widget.data.get('key', None) == key:
+                        widget = widget
+                        break
+
+            except Exception as e:
+                print(f"Error loading file {file_name} in directory {directory}: {e}")
+                continue
+            
+            
+            if widget is not None:
+
                 # Create the file item
                 item = TreeViewFile(
-                    data=file_data,
-                    story=story,
+                    widget,
                     father=dir_dropdown if dir_dropdown is not None else None,
                 )        
-
 
                 # Add them to parent expansion tile if one exists, otherwise just add it to the column
                 if dir_dropdown is not None:
                     dir_dropdown.content.content.controls.append(item)
                 else: 
                     column.controls.append(item)
+                pass
 
-            except Exception as e:
-                print(f"Error loading file {file_name} in directory {directory}: {e}")
+            else:
                 continue
-            
 
         # Return the parent expansion tile or column depending on what was provided
         return dir_dropdown if dir_dropdown is not None else column

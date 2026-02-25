@@ -26,7 +26,8 @@ class Map(Widget):
         page: ft.Page, 
         directory_path: str, 
         story: Story,                  
-        data: dict = None
+        data: dict = None,
+        is_rebuilt: bool = False
     ):
         
                 
@@ -37,6 +38,7 @@ class Map(Widget):
             directory_path=directory_path, 
             story=story,
             data=data,  
+            is_rebuilt = is_rebuilt
         ) 
 
 

@@ -15,7 +15,7 @@ from utils.safe_string_checker import return_safe_name
 class World(Widget):
 
     # Constructor
-    def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):
+    def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
         
         # Initialize from our parent class 'Widget'. 
         super().__init__(
@@ -23,7 +23,8 @@ class World(Widget):
             page = page,   
             directory_path = directory_path,  
             story = story,       
-            data = data,    
+            data = data,  
+            is_rebuilt = is_rebuilt  
         )
 
         self.body_container.padding = ft.padding.only(top=8, bottom=8, left=8, right=0)

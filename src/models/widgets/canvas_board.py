@@ -15,7 +15,7 @@ from styles.snack_bar import SnackBar
 
 class CanvasBoard(Widget):
     # Constructor
-    def __init__(self, name: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):
+    def __init__(self, name: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
 
         # Parent class constructor
         super().__init__(
@@ -23,7 +23,8 @@ class CanvasBoard(Widget):
             page = page,   
             directory_path = directory_path, 
             story = story,   
-            data = data,    
+            data = data,  
+            is_rebuilt = is_rebuilt
         )
 
         # Verifies this object has the required data fields, and creates them if not

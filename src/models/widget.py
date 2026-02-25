@@ -30,7 +30,8 @@ class Widget(ft.Container):
         page: ft.Page,          # Grabs a page reference for updates
         directory_path: str,    # Path to our directory that will contain our json file
         story: Story,           # Reference to our story object that owns this widget
-        data: dict = None       # Our data passed in if loaded (or none if new object)
+        data: dict = None,       # Our data passed in if loaded (or none if new object)
+        is_rebuilt: bool = True   # Whether to verify/create data fields or not. Set to false when rebuilding
     ):
 
         # Sets uniformity for all widgets
@@ -52,21 +53,22 @@ class Widget(ft.Container):
         self.story: Story = story                
 
         # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,   # Pass in our own data so the function can see the actual data we loaded
-            {
-                'key': f"{self.directory_path}\\{return_safe_name(self.title)}_tag",  # Unique key for this widget based on directory path + title
-                'title': self.title,                            # Title of our widget  
-                'directory_path': self.directory_path,          # Directory path to the file this widget's data is stored in
-                'tag': str,                                     # Tag to identify what type of widget this is
-                'pin_location': "main" if data is None else data.get('pin_location', "main"),       # Pin location this widget is rendered in the workspace (main, left, right, top, or bottom)
-                'index': int,                                   # Index of this widget in its pin location
-                'visible': True,                                # Whether this widget is visible in the workspace or not
-                'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
-                #'color': str,                                  # Color of the icon and tab divider for this widget. Child classes set this on creation  
-                'custom_fields': dict,                          # Dictionary for any custom fields the widget wants to store
-            },
-        )
+        if not is_rebuilt:
+            verify_data(
+                self,   # Pass in our own data so the function can see the actual data we loaded
+                {
+                    'key': f"{self.directory_path}\\{return_safe_name(self.title)}_tag",  # Unique key for this widget based on directory path + title
+                    'title': self.title,                            # Title of our widget  
+                    'directory_path': self.directory_path,          # Directory path to the file this widget's data is stored in
+                    'tag': str,                                     # Tag to identify what type of widget this is
+                    'pin_location': "main" if data is None else data.get('pin_location', "main"),       # Pin location this widget is rendered in the workspace (main, left, right, top, or bottom)
+                    'index': int,                                   # Index of this widget in its pin location
+                    'visible': True,                                # Whether this widget is visible in the workspace or not
+                    'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
+                    #'color': str,                                  # Color of the icon and tab divider for this widget. Child classes set this on creation  
+                    'custom_fields': dict,                          # Dictionary for any custom fields the widget wants to store
+                }
+            )
 
         # Apply our visibility
         self.visible = self.data.get('visible', True)
@@ -185,7 +187,7 @@ class Widget(ft.Container):
 
         # Handle errors
         except Exception as e:
-            self.p.open(SnackBar(f"Error deleting file {old_file_path}: {e}"))
+            self.p.show_dialog(SnackBar(f"Error deleting file {old_file_path}: {e}"))
             return False
         
     # Called when moving widget files
@@ -207,7 +209,7 @@ class Widget(ft.Container):
 
             # If this gets triggered, we cannot move since a widget with that name already exists in the target directory. Return out of function
             elif widget.data.get('key', '') == new_key:
-                self.p.open(SnackBar(f"Cannot move {self.title}. A widget with that name already exists in the target directory."))
+                self.p.show_dialog(SnackBar(f"Cannot move {self.title}. A widget with that name already exists in the target directory."))
                 return 
             
         # Delete our old file
@@ -366,9 +368,7 @@ class Widget(ft.Container):
 
         # Save our changes and reload the UI
         self.save_dict()
-        self.reload_widget()
-
-        self.story.workspace.reload_workspace()
+        self.story.workspace.reload_workspace()     # No matter what we are getting rebuilt, so just reload teh workspace
 
     # Called when right clicking our tab
     def _get_menu_options(self) -> list[ft.Control]:
@@ -474,7 +474,7 @@ class Widget(ft.Container):
         
             name = text_field.value
             if name == current_name:
-                self.p.close(dlg)
+                self.p.pop_dialog()
                 return
 
             # Set submitting to True
@@ -483,7 +483,7 @@ class Widget(ft.Container):
             # If it is, call the rename function. It will do everything else
             if is_unique:
                 self.rename(name)
-                self.p.close(dlg)
+                self.p.pop_dialog()
                 
             # Otherwise make sure we show our error
             else:
@@ -521,7 +521,7 @@ class Widget(ft.Container):
 
         # Clears our popup menu button and applies to the UI
         self.p.overlay.clear()
-        self.p.open(dlg)
+        self.p.show_dialog(dlg)
         
     
     # Called when color button is clicked
@@ -564,7 +564,7 @@ class Widget(ft.Container):
             ''' Deletes the widget after confirmation '''
 
             #self.widget.story.close_menu_instant()
-            self.p.close(dlg)
+            self.p.pop_dialog()
             self.story.delete_widget(self) 
             self.story.workspace.reload_workspace()
 
@@ -574,7 +574,7 @@ class Widget(ft.Container):
             alignment=ft.alignment.center,
             title_padding=ft.padding.all(25),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg)),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog()),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
             ]
         )
@@ -582,7 +582,7 @@ class Widget(ft.Container):
         self.story.close_menu_instant()
 
         if app.settings.data.get('confirm_item_delete', False):
-            self.p.open(dlg)
+            self.p.show_dialog(dlg)
         else:
             _delete_confirmed()
 
@@ -599,8 +599,7 @@ class Widget(ft.Container):
                 w.save_dict()
 
         self.save_dict()
-
-        self.story.workspace.reload_workspace()
+        #self.story.workspace.reload_workspace()
 
     # Called when mouse hovers over the map
     async def _get_coords(self, e: ft.HoverEvent):
@@ -776,4 +775,3 @@ class Widget(ft.Container):
             self.update()       # Handle first renders where we are not on page yet
         except Exception as e:
             pass
-        #self.p.update()

@@ -19,7 +19,7 @@ import asyncio
 class Plotline(Widget):
 
     # Constructor
-    def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):
+    def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
         
         # Parent constructor
         super().__init__(
@@ -28,6 +28,7 @@ class Plotline(Widget):
             directory_path = directory_path, 
             story = story,     
             data = data,  
+            is_rebuilt = is_rebuilt
         ) 
 
 
