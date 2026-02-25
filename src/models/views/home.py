@@ -114,7 +114,7 @@ def create_home_view(page: ft.Page) -> ft.View:
             # Row of workspaces rail to the left (None selected)
             ft.Container(
                 expand=True,
-                alignment=ft.alignment.center,
+                alignment=ft.Alignment.CENTER,
                 gradient=dark_gradient,
                 content=ft.FloatingActionButton(
                     content=ft.Row([
@@ -122,7 +122,7 @@ def create_home_view(page: ft.Page) -> ft.View:
                         ft.Icon(ft.Icons.ADD_OUTLINED), 
                         ft.Text("Create New Story", theme_style=ft.TextThemeStyle.BODY_LARGE), 
                         ft.Container(expand=True)
-                        ],  alignment=ft.alignment.center),
+                        ],  alignment=ft.Alignment.CENTER),
                     on_click=create_new_story_button_clicked,
                     width=200,
                     height=100,
@@ -130,6 +130,6 @@ def create_home_view(page: ft.Page) -> ft.View:
                 ),
             ),
         ],
-        padding=ft.padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
+        padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
         spacing=0,                                                      # No spacing between menubar and rest of page
     )

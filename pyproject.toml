@@ -9,9 +9,9 @@ authors = [
     { name = "Cory Malichar", email = "nunyabusiness@gmail.com" }
 ]
 dependencies = [
-  "flet-quill @ git+https://github.com/jweaver11/flet_quill",
+  #"flet-quill @ git+https://github.com/jweaver11/flet_quill",
   "flet-contrib",
-  "flet==0.28.3"
+  "flet==0.81.0"
 ]
 
 [tool.flet]
@@ -34,7 +34,7 @@ path = "src"
 
 [tool.uv]
 dev-dependencies = [
-    "flet[all]==0.28.3",
+    "flet[all]==0.81.0",
 ]
 
 [tool.poetry]

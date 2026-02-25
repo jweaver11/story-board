@@ -56,4 +56,4 @@ async def main(page: ft.Page):
         page.update()
 
 # Runs the app
-ft.app(main)
+ft.run(main)

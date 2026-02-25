@@ -25,11 +25,11 @@ def create_welcome_view(page: ft.Page) -> ft.View:
     )
 
     run_tutorial_button = ft.ElevatedButton(
-        text="Run Tutorial", tooltip="plz I worked really hard on it :(",
+        "Run Tutorial", tooltip="plz I worked really hard on it :(",
         on_click=_run_tutorial_clicked, scale=1.5
     )
     skip_tutorial_button = ft.ElevatedButton(
-        text="Skip Tutorial", tooltip="Must be a pro :o", 
+        "Skip Tutorial", tooltip="Must be a pro :o", 
         on_click=_skip_tutorial_clicked, scale=1.5
     )
 

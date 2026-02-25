@@ -185,8 +185,8 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                 color=ft.Colors.ON_SURFACE,
                 weight=ft.FontWeight.BOLD,
             ),
-            alignment=ft.alignment.center,
-            title_padding=ft.padding.all(25),
+            alignment=ft.Alignment.CENTER,
+            title_padding=ft.Padding.all(25),
             content=ft.RadioGroup(
                 content=ft.Column(scroll=ft.ScrollMode.AUTO, expand=False, controls=get_stories_list()),
                 on_change=change_selected_story
@@ -224,7 +224,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
     menubar = ft.MenuBar(
         expand=True,
         style=ft.MenuStyle(     # Styling our menubar
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
             bgcolor=ft.Colors.TRANSPARENT,
             shadow_color=ft.Colors.TRANSPARENT,
             mouse_cursor={
@@ -236,7 +236,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
             ft.SubmenuButton(   # Button that opens a subment
                 content=ft.Container(
                     content=ft.Text("File", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),     # Content of subment button
-                    alignment=ft.alignment.center
+                    alignment=ft.Alignment.CENTER
                 ), 
                 style=menubar_style,    # styling for the button
                 
@@ -296,7 +296,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
         
     # Return our formatted menubar
     return ft.Container(
-        border=ft.border.only(bottom=ft.BorderSide(width=1, color=ft.Colors.OUTLINE_VARIANT)),
+        border=ft.Border.only(bottom=ft.BorderSide(width=1, color=ft.Colors.OUTLINE_VARIANT)),
         content=ft.Row(
             spacing=0,
             controls=[

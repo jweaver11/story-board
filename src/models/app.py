@@ -80,8 +80,8 @@ class App:
         page.on_resized = app.settings._page_resized
 
 
-    # Called on app startup in main
-    def load_previous_story(self, page: ft.Page) -> bool:
+      # Called on app startup in main
+    async def load_previous_story(self, page: ft.Page):
         ''' Loads our saved stories from the json files in story folders within the stories directory. If none exist, do nothing '''
         
         from constants import data_paths
@@ -128,16 +128,17 @@ class App:
 
         # Initialize and load all our stories data and UI elements
         for story in app.stories.values():
+            
             # Sets our active story to the page route. The route change function will load the stories data and UI
             if story.route == app.settings.data.get('active_story', None):
                 app.settings.story = story  # Gives our settings widget the story reference it needs
-                page.route = story.route    # This will call our route change function and set our story view
-
-                page.update()
-                return True
+                await page.push_route(story.route)
+                return
+                
             
-        page.update()
-        return False
+        # Give us home view if no stories were active
+        #print("Page route is: ", page.route)
+        await page.push_route("/home")
 
     
     
