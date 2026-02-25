@@ -127,7 +127,9 @@ class Story(ft.View):
         # Called outside of constructor to avoid circular import issues, or it would be called here
         #self.startup() # Called when opening our active story to load all its data and build its view
         
-        
+    def is_isolated(self):      # NOTE: May break stuff. Remove if it does
+        return True
+    
     # Called from main when our program starts up. Needs a page reference, thats why not called here
     def startup(self):
 
@@ -285,6 +287,7 @@ class Story(ft.View):
             self.save_dict()
 
             self.active_rail.content.reload_rail()
+            self.active_rail.update()
 
         # Handle errors
         except Exception as e:

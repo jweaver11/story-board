@@ -200,7 +200,7 @@ class Rail(ft.Container):
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
 
         # Open the textfield early since we have to wait for async close menu
-        self.p.update()
+        self.new_item_textfield.update()
         
         # Close the menu (if ones is open)
         await asyncio.sleep(.3)     # Wait for popupmenu's animations to close if we have issues
@@ -260,14 +260,14 @@ class Rail(ft.Container):
 
         # If we are NOT unique, show our error text
         if not self.item_is_unique:
-            #print("Setting error text:", error_text)
             e.control.error_text = error_text
 
         # Otherwise remove our error text
         else:
             e.control.error_text = None
             
-        self.p.update()
+        e.control.update()
+        #self.new_item_textfield.update()
 
 
     # Called when clicking off the textfield and after submission
@@ -284,7 +284,7 @@ class Rail(ft.Container):
                 self.new_item_textfield.visible = False
                 self.new_item_textfield.value = None
                 self.new_item_textfield.error_text = None
-                self.p.update()
+                self.new_item_textfield.update()
                 return
             
             # Otherwise its not unique, re-focus our textfield
@@ -296,7 +296,7 @@ class Rail(ft.Container):
         # If we're not submitting, just hide Textfield
         else:
             self.new_item_textfield.visible = False
-            self.p.update()
+            self.new_item_textfield.update()
 
 
     # Called whenever we submit a new item (Chapter, note, category, etc.) via enter key
@@ -342,7 +342,6 @@ class Rail(ft.Container):
                 case _:
                     # Create the widget and reload all our rails
                     self.story.create_widget(title, tag)
-                    self.story.active_rail.content.reload_rail()
 
 
 
@@ -381,7 +380,6 @@ class Rail(ft.Container):
             self.update()
         except Exception as e:
             pass
-        #self.p.update()
 
         # Return yourself as the control
         return self

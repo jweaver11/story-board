@@ -200,17 +200,17 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
         # Opens our dialog
         page.open(dlg)
 
-    def _settings_clicked(e):
+    async def _settings_clicked(e=None):
         ''' Goes to the settings page '''
         if page.route != "/settings":
-            page.go("/settings")
+            await page.push_route("/settings")
         else:
             # Get the active story title and find its route
             active_story_title = app.settings.data.get('active_story', "/")
             if active_story_title != "/" and active_story_title in app.stories:
-                page.go(app.stories[active_story_title].route)
+                await page.push_route(app.stories[active_story_title].route)
             else:
-                page.go("/")
+                await page.push_route("/")
 
 
     # Styling used by lots of menu bar items

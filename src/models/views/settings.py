@@ -339,12 +339,12 @@ class Settings(ft.View):
         # Button that changes the theme from dark or light when clicked
         self.light_theme_button = ft.Container(
             content=ft.Icon(ft.Icons.LIGHT_MODE, color=ft.Colors.YELLOW_700), height=100, width=100, border_radius=10, data="light",
-            border=ft.border.all(2, ft.Colors.ON_SURFACE_VARIANT) if self.data['theme_mode'] == "dark" else ft.border.all(2, ft.Colors.PRIMARY), 
+            border=ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT) if self.data['theme_mode'] == "dark" else ft.Border.all(2, ft.Colors.PRIMARY), 
             bgcolor=ft.Colors.WHITE, on_click=_toggle_theme, tooltip="Set light mode", ink=True
         )
         self.dark_theme_button = ft.Container(
             content=ft.Icon(ft.Icons.DARK_MODE, color=ft.Colors.WHITE), height=100, width=100, border_radius=10, data="dark",
-            border=ft.border.all(2, ft.Colors.ON_SURFACE_VARIANT) if self.data['theme_mode'] == "light" else ft.border.all(2, ft.Colors.PRIMARY), 
+            border=ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT) if self.data['theme_mode'] == "light" else ft.Border.all(2, ft.Colors.PRIMARY), 
             bgcolor=ft.Colors.GREY_900, on_click=_toggle_theme, tooltip="Set dark mode", ink=True
         )
         
@@ -1248,7 +1248,7 @@ class Settings(ft.View):
                                 ),
                                 ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Template", on_click=lambda e, name=template_name: _delete_template(name))
                             ]),
-                            on_click=lambda e, name=template_name: _edit_template(name, e), padding=ft.padding.only(left=6), border_radius=6
+                            on_click=lambda e, name=template_name: _edit_template(name, e), padding=ft.Padding.only(left=6), border_radius=6
                         )
                     )
 
@@ -1275,8 +1275,8 @@ class Settings(ft.View):
 
         edit_container = ft.Container(
             #width=page.width * .5 - 222, height=page.height * .7,
-            expand=True, border_radius=ft.border_radius.all(10),
-            content=load_template(), padding=ft.padding.all(10), #border=ft.border.all(1, ft.Colors.ON_SURFACE_VARIANT)
+            expand=True, border_radius=ft.BorderRadius.all(10),
+            content=load_template(), padding=ft.Padding.all(10), #border=ft.border.all(1, ft.Colors.ON_SURFACE_VARIANT)
         )
         
         
@@ -1357,19 +1357,19 @@ class Settings(ft.View):
                 ft.NavigationRailDestination(
                     icon=ft.Icons.COLOR_LENS_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.COLOR_LENS_ROUNDED, color=ft.Colors.PRIMARY),
-                    label=ft.Container(ft.Text("Appearance", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
+                    label=ft.Container(ft.Text("Appearance", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.Margin.only(bottom=20))
                 ),
                 ft.NavigationRailDestination(
                     icon=ft.Icons.NOW_WIDGETS_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.NOW_WIDGETS_ROUNDED, color=ft.Colors.PRIMARY),
-                    label=ft.Container(ft.Text("Widgets", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
+                    label=ft.Container(ft.Text("Widgets", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.Margin.only(bottom=20))
                 ),
                 ft.NavigationRailDestination(
                     icon=ft.Icons.MENU_BOOK_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.MENU_BOOK, color=ft.Colors.PRIMARY),
                     disabled=self.story is None,   # Disable if no story is loaded
                     label=ft.Container(
-                        margin=ft.margin.only(bottom=20),
+                        margin=ft.Margin.only(bottom=20),
                         content=ft.Text(
                             "Story Settings", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE,
                             color=ft.Colors.OUTLINE if self.story is None else None
@@ -1379,27 +1379,27 @@ class Settings(ft.View):
                 ft.NavigationRailDestination(
                     icon=ft.Icons.FILE_PRESENT_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.FILE_PRESENT, color=ft.Colors.PRIMARY),
-                    label=ft.Container(ft.Text("Templates", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
+                    label=ft.Container(ft.Text("Templates", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.Margin.only(bottom=20))
                 ),
                 ft.NavigationRailDestination(
                     icon=ft.Icons.INFO_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.INFO_ROUNDED, color=ft.Colors.PRIMARY),
-                    label=ft.Container(ft.Text("Resources", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.margin.only(bottom=20))
+                    label=ft.Container(ft.Text("Resources", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.Margin.only(bottom=20))
                 ),
             ],
         )
 
         nav_rail_container = ft.Container(
             bgcolor=ft.Colors.with_opacity(.5, ft.Colors.SURFACE),
-            border_radius=ft.border_radius.only(top_left=20, bottom_left=20),
-            padding=ft.padding.all(20),
+            border_radius=ft.BorderRadius.only(top_left=20, bottom_left=20),
+            padding=ft.Padding.all(20),
             content=nav_rail,
         )
 
         # Build the body of appearance view
         self.body_container = ft.Container(
             expand=True, 
-            padding=ft.padding.all(40),
+            padding=ft.Padding.all(40),
             #content=self._load_appearance_settings()        # Default to appearance settings when settings are first opened
         )
 
@@ -1416,8 +1416,8 @@ class Settings(ft.View):
                     ft.VerticalDivider(thickness=2, width=2),
                     ft.Container(
                         expand=True,
-                        gradient=dark_gradient, border_radius=20,
-                        margin=ft.margin.all(10),
+                        gradient=dark_gradient, border_radius=ft.BorderRadius.all(20),
+                        margin=ft.Margin.all(10),
                         content=ft.Row(
                             controls=[
                                 nav_rail_container,
