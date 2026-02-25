@@ -146,7 +146,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         story.active_rail.display_active_rail(story)
 
         # Build the canvas here
-        page.close(alert_dialog)
+        page.pop_dialog(alert_dialog)
 
         page.update()
 
@@ -156,7 +156,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
 
     canvas_data = {'width': None, 'height': None, 'aspect_ratio': None}       # Data we will pass set to pass in whenever a different template is selected
 
-    create_button = ft.TextButton(text="CREATE", on_click=_create_button_clicked, disabled=True)  # Button to create the canvas
+    create_button = ft.TextButton("CREATE", on_click=_create_button_clicked, disabled=True)  # Button to create the canvas
 
     width_textfield = ft.TextField(
         label="Width", data="width", width=140, dense=True, input_filter=ft.NumbersOnlyInputFilter(), 
@@ -177,99 +177,99 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         ft.Container(
             content=ft.Text("Blank", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(5), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=120, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=120,
+            height=120, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=120,
             data={'width': None, 'height': None, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("4k (3840x2160)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(5), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=90, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=160,
+            height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=160,
             data={'width': 3840, 'height': 2160, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("2k (2560x1440)",text_align=ft.TextAlign.CENTER), padding=ft.padding.all(5), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=90, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=160,
+            height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=160,
             data={'width': 2560, 'height': 1440, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("HD (1920x1080)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(5), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=90, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=160,
+            height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=160,
             data={'width': 1920, 'height': 1080, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("Banner (1500x500)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(5), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=90, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=270,
+            height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=270,
             data={'width': 1500, 'height': 500, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("4k (2160x3840)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected, 
-            height=160, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=90,
+            height=160, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
             data={'width': 2160, 'height': 3840, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("2k (1440x2560)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=160, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=90,
+            height=160, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
             data={'width': 1440, 'height': 2560, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("HD (1080x1920)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected, 
-            height=160, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=90,
+            height=160, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
             data={'width': 1080, 'height': 1920, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("Banner (500x1500)", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=270, alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=90,
+            height=270, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
             data={'width': 500, 'height': 1500, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("16:9", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, height=90, width=160,
+            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, height=90, width=160,
             data={'width': None, 'height': None, 'aspect_ratio': '16:9'}
         ),
         
         ft.Container(
             content=ft.Text("2:1", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, height=90, width=160,
+            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, height=90, width=160,
             data={'width': None, 'height': None, 'aspect_ratio': '2:1'}
         ),
         ft.Container(
             content=ft.Text("4:3", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, height=120, width=160,
+            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, height=120, width=160,
             data={'width': None, 'height': None, 'aspect_ratio': '4:3'}
         ),
         ft.Container(
             content=ft.Text("9:16", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, height=160, width=90,
+            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, height=160, width=90,
             data={'width': None, 'height': None, 'aspect_ratio': '9:16'}
         ),
         
         ft.Container(
             content=ft.Text("1:2", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=90, height=160,
+            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90, height=160,
             data={'width': None, 'height': None, 'aspect_ratio': '1:2'}
         ),
         ft.Container(
             content=ft.Text("3:4", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=90, height=120,
+            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90, height=120,
             data={'width': None, 'height': None, 'aspect_ratio': '3:4'}
         ),
         ft.Container(
             content=ft.Text("1:1", text_align=ft.TextAlign.CENTER), padding=ft.padding.all(4), border_radius=4,
             border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.alignment.top_center, bgcolor=ft.Colors.SURFACE, width=90, height=90,
+            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90, height=90,
             data={'width': None, 'height': None, 'aspect_ratio': '1:1'}
         )
     ]

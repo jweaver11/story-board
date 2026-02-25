@@ -258,7 +258,7 @@ class Canvas(Widget):
         try:
             self.canvas.update()
         except Exception as ex:
-            self.canvas.page = self.p
+            #self.canvas.page = self.p
             self.canvas.update()
             
         # Save our canvas data
@@ -380,7 +380,7 @@ class Canvas(Widget):
                     
                 # This re-sets the canvas page, which all paths need to update correctly. This should only catch one time per stroke
                 except Exception as ex:
-                    self.canvas.page = self.p
+                    #self.canvas.page = self.p
                     self.canvas.update()
                 return
         
@@ -411,7 +411,7 @@ class Canvas(Widget):
                     self.current_path.update()
                     
                 except Exception as ex:
-                    self.canvas.page = self.p
+                    #self.canvas.page = self.p
                     self.canvas.update()
                 return
         
@@ -433,7 +433,7 @@ class Canvas(Widget):
                     self.current_path.update()
                    
                 except Exception as ex:
-                    self.canvas.page = self.p
+                    #self.canvas.page = self.p
                     self.canvas.update()
                 return
         
@@ -453,7 +453,7 @@ class Canvas(Widget):
                 try:
                     self.current_path.update()
                 except Exception as ex:
-                    self.canvas.page = self.p
+                    #self.canvas.page = self.p
                     self.canvas.update()
                 
 
@@ -485,7 +485,7 @@ class Canvas(Widget):
     async def on_canvas_resize(self, e: cv.CanvasResizeEvent=None):
         """ Rescales stored drawing coordinates to match the new canvas size """
         # Update our page reference and size
-        self.canvas.page = self.p
+        #self.canvas.page = self.p
         if e is not None:
             self.canvas_width = int(e.width)
             self.canvas_height = int(e.height)
@@ -495,7 +495,7 @@ class Canvas(Widget):
             self.information_display.data['top'] = self.canvas_height - 30
             self.information_display.show_info_button.left = 30
             self.information_display.show_info_button.top = self.canvas_height - 30
-            self.information_display.show_info_button.page = self.p
+            #self.information_display.show_info_button.page = self.p
             self.information_display.show_info_button.update()
             self.information_display.save_dict()
 

@@ -80,9 +80,7 @@ class CanvasInformationDisplay(MiniWidget):
         else:
             self.show_mini_widget()
             self.show_info_button.content.icon = ft.Icons.REMOVE
-        self.show_info_button.page = self.p
         self.show_info_button.update()
-        self.p.update()
 
     # Called to toggle our drawing mode on/off
     def _toggle_drawing_mode(self, e=None):
@@ -125,8 +123,8 @@ class CanvasInformationDisplay(MiniWidget):
 
         
         # Calculate our new absolute positioning based on our delta x from dragging
-        new_left = self.show_info_button.left + e.delta_x
-        new_top = self.show_info_button.top + e.delta_y
+        new_left = self.show_info_button.left + e.local_delta.x
+        new_top = self.show_info_button.top + e.local_delta.y
 
         # Clamp our position to the bounds of our canvas
         if new_left < 30:        
@@ -147,7 +145,6 @@ class CanvasInformationDisplay(MiniWidget):
         self.show_info_button.left = new_left
         self.show_info_button.top = new_top
 
-        self.show_info_button.page = self.p
         self.show_info_button.update()
 
     # Called when we finish dragging our canvas_marker to save our position
@@ -175,7 +172,6 @@ class CanvasInformationDisplay(MiniWidget):
             if mw.data.get('visible', True):
                 mw.visible = True
 
-        self.show_info_button.page = self.p
         self.show_info_button.update()
         self.owner._render_widget()
     

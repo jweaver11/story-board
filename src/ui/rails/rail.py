@@ -351,7 +351,7 @@ class Rail(ft.Container):
 
         # Close the menu (if ones is open), which will update the page as well
         self.story.close_menu_instant()   
-        self.p.open(new_canvas_alert_dlg(self.p, self.story))
+        self.p.show_dialog(new_canvas_alert_dlg(self.p, self.story))
 
     # Called every time the mouse moves over our rail
     async def on_hovers(self, e: ft.PointerEvent):
