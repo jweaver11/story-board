@@ -83,7 +83,11 @@ class Rail(ft.Container):
             app.settings.save_dict()
             self.new_item_textfield.label = f"Template: {template_name}"
             self.new_item_textfield.visible = True
-            self.p.update()
+            try:
+                self.new_item_textfield.update()
+            except Exception as e:
+                pass
+            #self.p.update()
             return
 
         template_options = []
@@ -373,7 +377,11 @@ class Rail(ft.Container):
         )
 
         # Apply the update to UI
-        self.p.update()
+        try:        # Handle first launch
+            self.update()
+        except Exception as e:
+            pass
+        #self.p.update()
 
         # Return yourself as the control
         return self

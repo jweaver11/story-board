@@ -12,6 +12,7 @@ class MenuOptionStyle(ft.GestureDetector):
         on_click: callable = None,          # Function called on click
         data = None,                         # Any data needed for this option to help with logic
         no_padding: bool = False,              # Whether to remove default padding around the content (used for popupmenu buttons)
+        no_effects: bool = False,              # Whether to remove default hover effects (used for submenu buttons)
     ):
 
         self.p = page
@@ -22,10 +23,10 @@ class MenuOptionStyle(ft.GestureDetector):
             data=data,
             mouse_cursor=ft.MouseCursor.CLICK,
             on_tap=on_click if on_click is not None else lambda e: None,        # Set our on click function
-            on_enter=self.on_hover,                                             # Set our hover functions                             
-            on_exit=self.on_hover_exit,                                         # Set our stop hovering function
+            on_enter=self.on_hover if not no_effects else None,                                             # Set our hover functions                             
+            on_exit=self.on_hover_exit if not no_effects else None,                                         # Set our stop hovering function
             content=ft.Container(
-                padding=ft.padding.only(right=8, left=8, top=8, bottom=8) if not no_padding else None,     # Add padding if not disabled
+                padding=ft.padding.all(8) if not no_padding else None,     # Add padding if not disabled
                 content=content                                                 # Set our content passed in                                
             ),
         )

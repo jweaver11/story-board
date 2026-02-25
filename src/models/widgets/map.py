@@ -1,12 +1,12 @@
 '''
 The map class for all maps inside our story
-Maps are widgets that have their own drawing canvas, background image, information display, and markers/locations
+Maps are widgets that have their own drawing canvas, background image, information display, and locations
 '''
 
 
 import flet as ft
 from models.widget import Widget
-from models.mini_widgets.map_information_display import MapInformationDisplay
+from models.mini_widgets.map_info import MapInformationDisplay
 from models.views.story import Story
 from utils.verify_data import verify_data
 from models.dataclasses.state import State
@@ -14,6 +14,7 @@ import flet.canvas as cv
 from models.app import app
 from styles.menu_option_style import MenuOptionStyle
 import asyncio
+from models.mini_widgets.location import Location
 
 
 class Map(Widget):
@@ -48,11 +49,7 @@ class Map(Widget):
                 'color': app.settings.data.get('default_map_color'),
                 'icon': "map_outlined",     # What icon to render on a parent map (if we have one)
 
-                # State and view data
-                'information_display_visibility': True,             # Visibility of our information display mini widget
-                'information_display_is_pinned': False,             # If our information display is pinned open
-
-                'drawing_mode': bool,            # Whether we are in drawing mode or not
+                
                 'image_base64': str,                # Saves our icon as img64 string (Used a preview as well from other widgets)
                 'left': int,                        # Our left position on our parent map (if we have one)
                 'top': int,                         # Our top position on our parent map (if we have one)
@@ -61,12 +58,9 @@ class Map(Widget):
                 # If location is a map, it just has a tag and the maps key to reference it so we can open its information display when clicking it
 
                 # Map data for the information display
-                'map_data': {
-                    'Summary': str,
-                }
-                # TODO: 
-                # Users can choose to create their image or use some default ones, or upload their own
-                # THERES A MAP DISPLAY DUMMY, HB U CHECK THAT OUT!!!!!
+                'map_data': dict,
+                
+                
             },  
         )
 
@@ -81,17 +75,16 @@ class Map(Widget):
         
 
         # Dict of our sub maps
-        self.maps: list = []
-        self.details = {}
+        self.locations: dict = {}
+        self.information_display: ft.Container 
 
-        # Declare and create our information display, which is our maps
-        self.information_display: ft.Container = None
+        self.load_locations()
         self._create_information_display()
 
 
         self.canvas = cv.Canvas(
             content=ft.GestureDetector(
-                mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('drawing_mode') else ft.MouseCursor.CLICK, 
+                mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('map_data', {}).get('drawing_mode') else ft.MouseCursor.CLICK, 
                 expand=True,
 
                 # Drawing event handlers
@@ -103,8 +96,9 @@ class Map(Widget):
                 # Non-drawing event handlers
                 on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
                 on_hover=self._get_coords,
-                on_tap=self._show_info_display,
-                drag_interval=10, hover_interval=20,
+                #on_tap=self._show_info_display,
+                on_tap=lambda e: self.story.open_menu(self._get_menu_options()),
+                drag_interval=5, hover_interval=20,
             ),
             expand=True, resize_interval=100,
             on_resize=self._rebuild_map_canvas, 
@@ -114,7 +108,7 @@ class Map(Widget):
         self.map_stack = ft.Stack([
             ft.Container(
                 expand=True, ignore_interactions=True,
-                image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
+                #image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
             ),
             self.canvas,
         ], expand=True)
@@ -130,65 +124,116 @@ class Map(Widget):
             title=self.title,
             owner=self,
             page=self.p,
-            key="none",     # Not used, but its required so just whatever works
-            data=None,      # It uses our data, so we don't need to give it a copy that we would have to constantly maintain
+            key="map_data",    
+            data=self.data.get('map_data'),      
         )
         # Add to our mini widgets so it shows up in the UI
         self.mini_widgets.append(self.information_display)
 
+    async def create_location(self, title: str, data: dict=None):
+        
+        new_location = Location(
+            title=title,
+            owner=self,
+            page=self.p,
+            key="locations",   
+            data=data,      
+            left=self.l,
+            top=self.t
+        )
+       
+        self.locations[title] = new_location
+        self.mini_widgets.append(new_location)
+        self.reload_widget()
+
     def load_locations(self):
-        pass
-        # For location in location. Check tag, create location object (or map object). Add to self.locations
+        for title, data in self.data.get('locations', {}).items():
+            self.locations[title] = Location(
+                title=title,
+                owner=self,
+                page=self.p,
+                key="locations",     # Not used, but its required so just whatever works
+                data=data,
+            )
+            self.mini_widgets.append(self.locations[title])
 
     # Called when clicking on our map to show our information display
     async def _show_info_display(self, e: ft.TapEvent):
         ''' If we're not in drawing mode, show our information display '''
-        if not self.data.get('drawing_mode'):
+        if not self.data.get('map_data', {}).get('drawing_mode', False):
             self.information_display.show_mini_widget()
 
+    # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
+    async def new_location_clicked(self, e):
+        ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
+
+        # Checks that the name in the textfield does not match any of the existing mini widgets of that type, and updates visually to reflect
+        async def _check_name_unique(e):
+            name = new_item_tf.value.strip()
+            submit_button.disabled = False
+            new_item_tf.error_text = None
+            if not name:
+                submit_button.disabled = True
+            elif name in self.locations:
+                submit_button.disabled = True
+                new_item_tf.error_text = "Name must be unique"
+                new_item_tf.focus()
+
+            else:
+                submit_button.disabled = False
+                new_item_tf.error_text = None
             
+            new_item_tf.update()
+            submit_button.update()
+            
+        # Create the nwew mini widget with the current text field value. Makes sure we passed checks first
+        async def _create_new_mw(e):
 
-    # Called to toggle our drawing mode on/off
-    def _toggle_drawing_mode(self):
-        ''' Toggles our drawing mode on/off '''
+            # Button is disabled if name is the same
+            if submit_button.disabled:
+                new_item_tf.focus()
+                return
+            
+            title = new_item_tf.value.strip()
+            await self.create_location(title, data)
+            
+            if self.information_display.visible:
+                self.information_display.reload_mini_widget()
 
-        # Change our data value for drawing mode and save it
-        self.data['in_drawing_mode'] = not self.data.get('in_drawing_mode', False)
-        self.save_dict()
-        
-        # If we entered drawing mode, show our drawing canvas rail. Otherwise, go back to the previous rail
-        if self.data['in_drawing_mode']:
-            self.story.active_rail.display_active_rail(self.story, "canvas")
-            self.canvas.content.mouse_cursor = ft.MouseCursor.PRECISE
-        else:
-            self.story.active_rail.display_active_rail(self.story)
-            self.canvas.content.mouse_cursor = ft.MouseCursor.CLICK
+            self.p.close(dlg)   # Close the dialog
 
-        self.reload_widget()    # Reload our widget
+            await asyncio.sleep(0.1)        # Needs a buffer or wont work for some reason
+            await self.story.close_menu()       
 
+
+        # Grab the type of mini widget we are creating
+        data = e.control.data
+        print("Data for new location:", data)
+
+        # Textfield for the name of the new mw
+        new_item_tf = ft.TextField(
+            label=f"Location Name", expand=True, on_change=_check_name_unique, autofocus=True,
+            capitalization=ft.TextCapitalization.WORDS, on_submit=_create_new_mw
+        )
+
+        # Button for creating new mw. Can also press enter in the textfield
+        submit_button = ft.TextButton("Create", on_click=_create_new_mw, disabled=True)
+
+        # Dialog we open onto the page
+        dlg = ft.AlertDialog(
+            title=ft.Text(f"New Location Name"),
+            content=new_item_tf,
+            actions=[
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda e: self.p.close(dlg)),
+                submit_button
+            ],
+        )
+
+        self.p.open(dlg)    
     
 
     def _get_menu_options(self) -> list[ft.Control]:
-        async def new_item_clicked(e):
-            ''' Called when new plot point or arc is clicked from plotline context menu '''
-            
-            tag = e.control.data
-
-            if tag is not None:
-                match tag:
-                    #case 'arc':
-                        #await self.create_arc(f"Arc {len(self.arcs) + 1}")
-                   # case "marker":
-                        #await self.create_marker(f"Marker {len(self.markers) + 1}")
-                    #case 'plot_point':  
-                        #await self.create_plot_point(f"Plot Point {len(self.plot_points) + 1}")
-                    case _:
-                        pass
-            else:
-                print("Error: No tag found for new item creation")
-
-            await asyncio.sleep(.3)
-            await self.story.close_menu()
+        
 
         async def _show_info_display(e):
             ''' Shows our information display mini widget '''
@@ -199,20 +244,43 @@ class Map(Widget):
         return [
              MenuOptionStyle(
                 content=ft.PopupMenuButton(
-                    content=ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
+                    content=ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", weight=ft.FontWeight.BOLD)]),
+                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                    ),
                     tooltip="New Location", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(
                             text="Blank", icon=ft.Icons.CHECK_BOX_OUTLINE_BLANK,
-                            on_click=new_item_clicked, data="blank"
+                            on_click=self.new_location_clicked, data={'icon': 'location_pin'}
                         ),
                         ft.PopupMenuItem(
-                            text="Sub Map", icon=ft.Icons.MAP_OUTLINED,
-                            on_click=new_item_clicked, data="sub_map"
+                            text="Point of Interest", icon=ft.Icons.LOCATION_PIN,
+                            on_click=self.new_location_clicked, data={'icon': 'location_pin'}
                         ),
+                        ft.PopupMenuItem(
+                            text="Mountain", icon=ft.Icons.TERRAIN,
+                            on_click=self.new_location_clicked, data={'icon': 'terrain'}
+                        ),
+                        ft.PopupMenuItem(
+                            text="Forest", icon=ft.Icons.FOREST,
+                            on_click=self.new_location_clicked, data={'icon': 'forest'}
+                        ),
+                        ft.PopupMenuItem(
+                            text="Ocean", icon=ft.Icons.WATER,
+                            on_click=self.new_location_clicked, data={'icon': 'water'}
+                        ),
+                        ft.PopupMenuItem(
+                            text="City", icon=ft.Icons.LOCATION_CITY,
+                            on_click=self.new_location_clicked, data={'icon': 'location_city'}
+                        ),
+                        ft.PopupMenuItem(
+                            text="Dungeon", icon=ft.Icons.STAIRS_OUTLINED,
+                            on_click=self.new_location_clicked, data={'icon': 'stairs_outlined'}
+                        )
                         
                     ]
-                ),
+                ), no_padding=True,
             ),
             MenuOptionStyle(
                 on_click=_show_info_display,
@@ -246,7 +314,7 @@ class Map(Widget):
                     content=ft.Row(
                         expand=True,
                         controls=[
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
+                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.data.get('color', None)),
                             ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
                         ]
                     ),
@@ -264,9 +332,21 @@ class Map(Widget):
 
         # Update our page reference and size
         self.canvas.page = self.p
-        self.map_width = int(e.width)
-        self.map_height = int(e.height)
-        self._render_widget()
+        if e is not None:
+            self.map_width = int(e.width)
+            self.map_height = int(e.height)
+
+        if self.information_display.data.get('left', None) is None or self.information_display.data.get('top', None) is None:
+            self.information_display.data['left'] = 30
+            self.information_display.data['top'] = self.map_height - 30
+            self.information_display.show_info_button.left = 30
+            self.information_display.show_info_button.top = self.map_height - 30
+            self.information_display.show_info_button.page = self.p
+            self.information_display.show_info_button.update()
+            self.information_display.save_dict()
+    
+        
+        #self._render_widget()
 
 
     # Called when we need to rebuild out map UI
@@ -276,20 +356,30 @@ class Map(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
+        # TODO: 
+        # Little Info Display Button in the bottom right that can be dragged around and shows map info display. No header, clicking canvas does not open it
+        # Also drawing mode button should be near it
+        # Users can choose to create their image or use some default ones, or upload their own
+
         # Clear our map stack controls so we can re-add them
         self.map_stack.controls.clear()
         self.map_stack.controls = [     # Add our background and canvas
             ft.Container(
                 expand=True, ignore_interactions=True,
-                image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
+                #image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
             ),
-            self.canvas,
-        ]
+            self.canvas, 
+        ] 
 
         # Add our map locations to the stack
         for mw in self.mini_widgets:
-            if hasattr(mw, 'map_control'):
+            if hasattr(mw, 'map_control') and hasattr(mw, 'map_label'):
                 self.map_stack.controls.append(mw.map_control)
+                self.canvas.shapes.append(mw.map_label)
+                #self.map_stack.controls.append(mw.map_label)
+
+        self.map_stack.controls.append(self.information_display.show_info_button)
+        
                 
         # Create our interactive viewer for panning and zooming
         iv = ft.InteractiveViewer(
@@ -297,36 +387,9 @@ class Map(Widget):
             scale_factor=750, boundary_margin=50,
             min_scale=0.5, max_scale=2.0, scale=1.0,
         )
+        
 
-
-        # Create our header
-        header = ft.Row([
-            ft.IconButton(
-                ft.Icons.DRAW_OUTLINED if not self.data.get('in_drawing_mode') else ft.Icons.DONE,
-                tooltip="Enter Drawing Mode" if not self.data.get('in_drawing_mode') else "Exit Drawing Mode",
-                on_click=lambda e: self._toggle_drawing_mode(),
-            ),
-            # Undo and redo buttons
-            ft.PopupMenuButton(
-                icon=ft.Icons.IMAGE_ASPECT_RATIO_OUTLINED, tooltip="Set the background of your canvas. If one is set, it will be exported with the canvas",
-                menu_padding=ft.padding.all(0), 
-                #on_cancel=self._set_color,
-                items=[
-                    #ft.PopupMenuItem("None", on_click=self._set_canvas_background, tooltip="No background"),
-                    #ft.PopupMenuItem("Color", on_click=self._set_canvas_background, tooltip="Set a solid color background"),
-                    #ft.PopupMenuItem("Image", on_click=self._set_canvas_background, tooltip="Set an image as the background"),
-                ]
-            ),
-            # Show information display
-            ft.IconButton(
-                ft.Icons.INFO_OUTLINED,
-                tooltip="Toggle Information Display",
-                on_click=self.information_display.show_mini_widget,
-            ),
-            # Button to hide markers
-        ])
-
-        self.body_container.content = ft.Column([header, ft.Divider(thickness=2, height=8), iv], spacing=0)
+        self.body_container.content = iv
 
 
         # Not used, but changes how our mini widgets are positioned

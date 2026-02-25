@@ -224,7 +224,11 @@ class PlotlinesRail(Rail):
       
 
         # Apply the changes to the page
-        self.p.update()
+        try:        # Handle first launch
+            self.update()
+        except Exception as e:
+            pass
+        #self.p.update()
 
 
     

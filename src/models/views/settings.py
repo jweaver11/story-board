@@ -263,6 +263,7 @@ class Settings(ft.View):
                 
 
         self.p.update()
+        #self.update()
         
     # Called when appearance settings category is selected
     def _load_appearance_settings(self) -> ft.Container:

@@ -93,7 +93,7 @@ class MiniWidgetItem(ft.GestureDetector):
         self.update()
 
     # Called when rename button is clicked
-    def rename_clicked(self, e):
+    async def rename_clicked(self, e):
         
         # TODO: Edit rename to fit arcs
 
@@ -120,7 +120,6 @@ class MiniWidgetItem(ft.GestureDetector):
             else:
 
                 self.reload()
-                self.mini_widget.p.update()
 
         # Called everytime a change in textbox occurs
         def _name_check(e):
@@ -184,19 +183,13 @@ class MiniWidgetItem(ft.GestureDetector):
                 self.mini_widget.rename(name)
                 
                 
-            # Otherwise make sure we show our error
-            else:
-                text_field.error_text = "Name already exists"
-                text_field.focus()                                  # Auto focus the textfield
-                self.mini_widget.p.update()
-                
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
             value=self.mini_widget.title,
             expand=True,
             dense=True,
             autofocus=True,
-            text_size=14,
+            text_size=14, capitalization=ft.TextCapitalization.WORDS,
             text_style=self.text_style,
             on_submit=_submit_name,
             on_change=_name_check,
@@ -204,11 +197,11 @@ class MiniWidgetItem(ft.GestureDetector):
         )
 
         # Replaces our name text with a text field for renaming
-        self.content.content.content.controls[1] = text_field
+        #self.content.content.content.controls[1] = text_field
 
         # Clears our popup menu button and applies to the UI
-        self.mini_widget.p.overlay.clear()
-        self.mini_widget.p.update()
+        await self.mini_widget.owner.story.close_menu()   # Close the menu to apply the update, since the menu is what holds the reference to this item
+        
 
     def get_color_options(self) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
@@ -284,11 +277,10 @@ class MiniWidgetItem(ft.GestureDetector):
             border_radius=ft.border_radius.all(6),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             content=ft.Row(
-                    expand=True, #alignment=ft.MainAxisAlignment.CENTER,
-                    controls=[
-                        ft.Text(value=f"{self.mini_widget.title}", style=self.text_style, overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                    ],
-                ),
-            
+                expand=True, #alignment=ft.MainAxisAlignment.CENTER,
+                controls=[
+                    ft.Text(value=f"{self.mini_widget.title}", style=self.text_style, overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                ],
+            ),
         )
         

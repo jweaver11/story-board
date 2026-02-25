@@ -10,3 +10,5 @@ arc_icon = ft.Container(
     ),
     #shape=ft.BoxShape.CIRCLE,
 )
+
+dungeon_icon = ft.Container()

@@ -203,7 +203,10 @@ class WorldBuildingRail(Rail):
         )
         
         # Apply our update
-        self.p.update()
+        try:        # Handle first launch
+            self.update()
+        except Exception as e:
+            pass
 
 
         
