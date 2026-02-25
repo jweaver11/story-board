@@ -225,7 +225,9 @@ class PlotlinesRail(Rail):
 
         # Apply the changes to the page
         try:        # Handle first launch
-            self.update()
+            #self.update() 
+            #self.story.active_rail.update()
+            self.p.update()
         except Exception as e:
             pass
         #self.p.update()

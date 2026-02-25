@@ -204,7 +204,9 @@ class WorldBuildingRail(Rail):
         
         # Apply our update
         try:        # Handle first launch
-            self.update()
+            #self.update()
+            #self.story.active_rail.update()
+            self.p.update()
         except Exception as e:
             pass
 

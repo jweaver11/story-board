@@ -65,7 +65,7 @@ class CanvasRail(Rail):
         self.color_selector = ft.PopupMenuButton(
             icon=ft.Icons.COLOR_LENS_OUTLINED, tooltip="The color of your brush strokes.",
             icon_color=app.settings.data.get('paint_settings', {}).get('color', ft.Colors.PRIMARY),
-            menu_padding=ft.padding.all(0), size_constraints=ft.BoxConstraints(min_width=310),
+            menu_padding=ft.Padding.all(0), size_constraints=ft.BoxConstraints(min_width=310),
             on_cancel=self._set_color,
             items=self._get_color_options()
         )
@@ -76,7 +76,7 @@ class CanvasRail(Rail):
         )
         self.brush_selector = ft.PopupMenuButton(
             tooltip="Change brush style",
-            menu_padding=ft.padding.all(0),
+            menu_padding=ft.Padding.all(0),
             items=self._get_brush_options()
         )
         self.brush_selector.content = ft.Container(
@@ -655,12 +655,12 @@ class CanvasRail(Rail):
         else:
             paint_stroke_icon = ft.Icons.CROP_SQUARE_OUTLINED
         self.paint_stroke_cap_selector = ft.PopupMenuButton(
-            icon=paint_stroke_icon, menu_padding=ft.padding.all(0),
+            icon=paint_stroke_icon, menu_padding=ft.Padding.all(0),
             tooltip="The shape that your brush strokes will have at the end of each line segment.",
             items=[
-                ft.PopupMenuItem(text="Butt", on_click=_paint_stroke_cap_changed, icon=ft.Icons.CROP_SQUARE_OUTLINED, tooltip="Flat cut ends"),
-                ft.PopupMenuItem(text="Round", on_click=_paint_stroke_cap_changed, icon=ft.Icons.CIRCLE_OUTLINED, tooltip="Rounded ends"),
-                ft.PopupMenuItem(text="Square", on_click=_paint_stroke_cap_changed, icon=ft.Icons.SQUARE_OUTLINED, tooltip="Sharp cut ends"),
+                ft.PopupMenuItem("Butt", on_click=_paint_stroke_cap_changed, icon=ft.Icons.CROP_SQUARE_OUTLINED, tooltip="Flat cut ends"),
+                ft.PopupMenuItem("Round", on_click=_paint_stroke_cap_changed, icon=ft.Icons.CIRCLE_OUTLINED, tooltip="Rounded ends"),
+                ft.PopupMenuItem("Square", on_click=_paint_stroke_cap_changed, icon=ft.Icons.SQUARE_OUTLINED, tooltip="Sharp cut ends"),
             ]
         )
 
@@ -671,12 +671,12 @@ class CanvasRail(Rail):
         else:
             stroke_cap_icon = ft.Icons.CROP_SQUARE_OUTLINED
         self.paint_stroke_join_selector = ft.PopupMenuButton(
-            icon=stroke_cap_icon, menu_padding=ft.padding.all(0),
+            icon=stroke_cap_icon, menu_padding=ft.Padding.all(0),
             tooltip="The shape that your brush strokes will have at the join of two line segments.",
             items=[
-                ft.PopupMenuItem(text="Miter", icon=ft.Icons.CROP_SQUARE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Sharp corners"),
-                ft.PopupMenuItem(text="Round", icon=ft.Icons.CIRCLE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Rounded corners"),
-                ft.PopupMenuItem(text="Bevel", icon=ft.Icons.SQUARE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Flat cut corners"),
+                ft.PopupMenuItem("Miter", icon=ft.Icons.CROP_SQUARE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Sharp corners"),
+                ft.PopupMenuItem("Round", icon=ft.Icons.CIRCLE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Rounded corners"),
+                ft.PopupMenuItem("Bevel", icon=ft.Icons.SQUARE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Flat cut corners"),
             ]
         )
 
@@ -694,37 +694,37 @@ class CanvasRail(Rail):
             paint_blend_mode_icon = ft.Icons.BLUR_OFF_OUTLINED
 
         self.paint_blend_mode_selector = ft.PopupMenuButton(
-            icon=paint_blend_mode_icon, menu_padding=ft.padding.all(0),
+            icon=paint_blend_mode_icon, menu_padding=ft.Padding.all(0),
             tooltip="Current blend effects applied to your brush strokes. Select to change.",
             items=[
-                ft.PopupMenuItem(text="None", icon=ft.Icons.BLUR_OFF_OUTLINED, on_click=_paint_blend_mode_changed, data=None, tooltip="No blend mode"),
-                ft.PopupMenuItem(text="Color", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="color", tooltip="Take the hue and saturation of the source image, and the luminosity of the destination image"),
-                ft.PopupMenuItem(text="Color Burn", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="color_burn", tooltip="Divide the inverse of the destination by the source, and inverse the result"),
-                ft.PopupMenuItem(text="Color Dodge", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="color_dodge", tooltip="Divide the destination by the inverse of the source"),
-                ft.PopupMenuItem(text="Darken", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="darken", tooltip="Composite the source and destination image by choosing the lowest value from each color channel"),
-                ft.PopupMenuItem(text="Difference", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="difference", tooltip="Subtract the smaller value from the bigger value for each channel"),
-                ft.PopupMenuItem(text="Destination", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst", tooltip="Drop the source image, only paint the destination image"),
-                ft.PopupMenuItem(text="Destination Atop Source", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst_a_top", tooltip="Composite the destination image over the source image, but only where it overlaps the source"),
-                ft.PopupMenuItem(text="Destination In", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst_in", tooltip="Show the destination image, but only where the two images overlap. The source image is not rendered, it is treated merely as a mask. The color channels of the source are ignored, only the opacity has an effect"),
-                ft.PopupMenuItem(text="Destination Out", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst_out", tooltip="Show the destination image, but only where the two images do not overlap. The source image is not rendered, it is treated merely as a mask. The color channels of the source are ignored, only the opacity has an effect"),
-                ft.PopupMenuItem(text="Destination Over", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst_over", tooltip="Composite the source image under the destination image"),
-                ft.PopupMenuItem(text="Exclusion", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="exclusion", tooltip="Subtract double the product of the two images from the sum of the two images."),
-                ft.PopupMenuItem(text="Hard Light", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="hard_light", tooltip="Multiply the components of the source and destination images after adjusting them to favor the source"),
-                ft.PopupMenuItem(text="Hue", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="hue", tooltip="Take the hue of the source image, and the saturation and luminosity of the destination image"),
-                ft.PopupMenuItem(text="Lighten", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="lighten", tooltip="Composite the source and destination image by choosing the highest value from each color channel"),
-                ft.PopupMenuItem(text="Luminosity", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="luminosity", tooltip="Take the luminosity of the source image, and the hue and saturation of the destination image"),
-                ft.PopupMenuItem(text="Modulate", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="modulate", tooltip="Multiply the color components of the source and destination images"),
-                ft.PopupMenuItem(text="Multiply", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="multiply", tooltip="Multiply the components of the source and destination images, including the alpha channel"),
-                ft.PopupMenuItem(text="Overlay", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="overlay", tooltip="Multiply the components of the source and destination images after adjusting them to favor the destination"),
-                ft.PopupMenuItem(text="Plus", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="plus", tooltip="Sum the components of the source and destination images"),
-                ft.PopupMenuItem(text="Saturation", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="saturation", tooltip="Take the saturation of the source image, and the hue and luminosity of the destination image"),
-                ft.PopupMenuItem(text="Screen", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="screen", tooltip="Multiply the inverse of the components of the source and destination images, and inverse the result"),
-                ft.PopupMenuItem(text="Soft Light", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="soft_light", tooltip="Somewhere between Overlay and Color blend modes"),
-                ft.PopupMenuItem(text="Source", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="src", tooltip="Drop the destination image, only paint the source image"),
-                ft.PopupMenuItem(text="Soure Atop Destination", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="src_a_top", tooltip="Composite the source image over the destination image, but only where it overlaps the destination"),
-                ft.PopupMenuItem(text="Source In", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="src_in", tooltip="Show the source image, but only where the two images overlap. The destination image is not rendered, it is treated merely as a mask. The color channels of the destination are ignored, only the opacity has an effect"),
-                ft.PopupMenuItem(text="Source Out", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="src_out", tooltip="Show the source image, but only where the two images do not overlap. The destination image is not rendered, it is treated merely as a mask. The color channels of the destination are ignored, only the opacity has an effect"),
-                ft.PopupMenuItem(text="XOR", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="xor", tooltip="Apply a bitwise xor operator to the source and destination images. This leaves transparency where they would overlap"),
+                ft.PopupMenuItem("None", icon=ft.Icons.BLUR_OFF_OUTLINED, on_click=_paint_blend_mode_changed, data=None, tooltip="No blend mode"),
+                ft.PopupMenuItem("Color", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="color", tooltip="Take the hue and saturation of the source image, and the luminosity of the destination image"),
+                ft.PopupMenuItem("Color Burn", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="color_burn", tooltip="Divide the inverse of the destination by the source, and inverse the result"),
+                ft.PopupMenuItem("Color Dodge", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="color_dodge", tooltip="Divide the destination by the inverse of the source"),
+                ft.PopupMenuItem("Darken", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="darken", tooltip="Composite the source and destination image by choosing the lowest value from each color channel"),
+                ft.PopupMenuItem("Difference", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="difference", tooltip="Subtract the smaller value from the bigger value for each channel"),
+                ft.PopupMenuItem("Destination", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst", tooltip="Drop the source image, only paint the destination image"),
+                ft.PopupMenuItem("Destination Atop Source", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst_a_top", tooltip="Composite the destination image over the source image, but only where it overlaps the source"),
+                ft.PopupMenuItem("Destination In", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst_in", tooltip="Show the destination image, but only where the two images overlap. The source image is not rendered, it is treated merely as a mask. The color channels of the source are ignored, only the opacity has an effect"),
+                ft.PopupMenuItem("Destination Out", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst_out", tooltip="Show the destination image, but only where the two images do not overlap. The source image is not rendered, it is treated merely as a mask. The color channels of the source are ignored, only the opacity has an effect"),
+                ft.PopupMenuItem("Destination Over", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst_over", tooltip="Composite the source image under the destination image"),
+                ft.PopupMenuItem("Exclusion", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="exclusion", tooltip="Subtract double the product of the two images from the sum of the two images."),
+                ft.PopupMenuItem("Hard Light", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="hard_light", tooltip="Multiply the components of the source and destination images after adjusting them to favor the source"),
+                ft.PopupMenuItem("Hue", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="hue", tooltip="Take the hue of the source image, and the saturation and luminosity of the destination image"),
+                ft.PopupMenuItem("Lighten", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="lighten", tooltip="Composite the source and destination image by choosing the highest value from each color channel"),
+                ft.PopupMenuItem("Luminosity", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="luminosity", tooltip="Take the luminosity of the source image, and the hue and saturation of the destination image"),
+                ft.PopupMenuItem("Modulate", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="modulate", tooltip="Multiply the color components of the source and destination images"),
+                ft.PopupMenuItem("Multiply", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="multiply", tooltip="Multiply the components of the source and destination images, including the alpha channel"),
+                ft.PopupMenuItem("Overlay", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="overlay", tooltip="Multiply the components of the source and destination images after adjusting them to favor the destination"),
+                ft.PopupMenuItem("Plus", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="plus", tooltip="Sum the components of the source and destination images"),
+                ft.PopupMenuItem("Saturation", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="saturation", tooltip="Take the saturation of the source image, and the hue and luminosity of the destination image"),
+                ft.PopupMenuItem("Screen", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="screen", tooltip="Multiply the inverse of the components of the source and destination images, and inverse the result"),
+                ft.PopupMenuItem("Soft Light", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="soft_light", tooltip="Somewhere between Overlay and Color blend modes"),
+                ft.PopupMenuItem("Source", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="src", tooltip="Drop the destination image, only paint the source image"),
+                ft.PopupMenuItem("Soure Atop Destination", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="src_a_top", tooltip="Composite the source image over the destination image, but only where it overlaps the destination"),
+                ft.PopupMenuItem("Source In", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="src_in", tooltip="Show the source image, but only where the two images overlap. The destination image is not rendered, it is treated merely as a mask. The color channels of the destination are ignored, only the opacity has an effect"),
+                ft.PopupMenuItem("Source Out", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="src_out", tooltip="Show the source image, but only where the two images do not overlap. The destination image is not rendered, it is treated merely as a mask. The color channels of the destination are ignored, only the opacity has an effect"),
+                ft.PopupMenuItem("XOR", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="xor", tooltip="Apply a bitwise xor operator to the source and destination images. This leaves transparency where they would overlap"),
             ]
         )
         

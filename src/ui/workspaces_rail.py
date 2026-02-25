@@ -17,7 +17,7 @@ class WorkspacesRail(ft.Container):
         # Style our rail (container)
         super().__init__(
             alignment=ft.Alignment.CENTER,  # Aligns content to the 
-            padding=ft.padding.only(bottom=10, right=2, left=2),
+            padding=ft.Padding.only(bottom=10, right=2, left=2),
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         )
 
@@ -97,7 +97,7 @@ class WorkspacesRail(ft.Container):
                 ft.NavigationRailDestination(
                     icon=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED), # Icon on the rail
                     selected_icon=ft.Icon(ft.Icons.LIBRARY_BOOKS_ROUNDED, color=ft.Colors.PRIMARY), # Selected icon on the rail
-                    padding=ft.padding.only(top=10, bottom=10), # Padding for spacing
+                    padding=ft.Padding.only(top=10, bottom=10), # Padding for spacing
                     # Label underneath the icon and the data we will use to identify the rail
                     data="content", 
                     label=ft.Text(
@@ -118,7 +118,7 @@ class WorkspacesRail(ft.Container):
                 ft.NavigationRailDestination(
                     icon=ft.Icon(ft.Icons.PEOPLE_OUTLINE_ROUNDED), 
                     selected_icon=ft.Icon(ft.Icons.PEOPLE_ROUNDED, color=ft.Colors.PRIMARY),
-                    padding=ft.padding.only(top=10, bottom=10),
+                    padding=ft.Padding.only(top=10, bottom=10),
                     data="characters", 
                     label=ft.Text("Characters" if app.settings.data.get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE) 
                 ),
@@ -134,7 +134,7 @@ class WorkspacesRail(ft.Container):
                 ft.NavigationRailDestination(
                     icon=ft.Icon(ft.Icons.TIMELINE_ROUNDED, scale=1.2), 
                     selected_icon=ft.Icon(ft.Icons.TIMELINE_OUTLINED, color=ft.Colors.PRIMARY, scale=1.2),
-                    padding=ft.padding.only(top=10, bottom=10),
+                    padding=ft.Padding.only(top=10, bottom=10),
                     data="plotlines", 
                     label=ft.Text("Plotlines" if app.settings.data.get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE) 
                 ),
@@ -151,7 +151,7 @@ class WorkspacesRail(ft.Container):
                     #icon=ft.Icon(ft.Icons.MAP_OUTLINED), selected_icon=ft.Icon(ft.Icons.MAP, color=ft.Colors.PRIMARY),
                     icon=ft.Icon(ft.Icons.PUBLIC_OUTLINED),
                     selected_icon=ft.Icon(ft.Icons.PUBLIC, color=ft.Colors.PRIMARY),
-                    padding=ft.padding.only(top=10, bottom=10),
+                    padding=ft.Padding.only(top=10, bottom=10),
                     data="world_building", 
                     label=ft.Text("World Building" if app.settings.data.get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE)
                 ),
@@ -168,7 +168,7 @@ class WorkspacesRail(ft.Container):
                     icon=ft.Icon(ft.Icons.DRAW_OUTLINED), 
                     #icon=ft.Icons.BRUSH_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.DRAW_ROUNDED, color=ft.Colors.PRIMARY),
-                    padding=ft.padding.only(top=10, bottom=10),
+                    padding=ft.Padding.only(top=10, bottom=10),
                     data="canvas", 
                     label=ft.Text("Canvas" if app.settings.data.get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE)
                 ),
@@ -184,7 +184,7 @@ class WorkspacesRail(ft.Container):
                 ft.NavigationRailDestination(
                     icon=ft.Icon(ft.Icons.EVENT_NOTE_OUTLINED),
                     selected_icon=ft.Icon(ft.Icons.EVENT_NOTE, color=ft.Colors.PRIMARY),
-                    padding=ft.padding.only(top=10, bottom=10),
+                    padding=ft.Padding.only(top=10, bottom=10),
                     data="planning", 
                     label=ft.Text("Plan & Design" if app.settings.data.get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER) 
                 ),

@@ -12,6 +12,8 @@ from models.views.welcome import create_welcome_view, animate_welcome_text
 import asyncio
 
 
+ft.context.disable_auto_update()
+
 # Main function
 async def main(page: ft.Page):
      

@@ -638,10 +638,10 @@ class Story(ft.View):
         # Our container that contains a column of our options. Need to use container for positioning
         self.menu = ft.Container(
             left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
-            border_radius=ft.border_radius.all(4),
+            border_radius=ft.BorderRadius.all(4),
             bgcolor=ft.Colors.with_opacity(.65, ft.Colors.ON_INVERSE_SURFACE),
-            width=160, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT),
-            shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=2, blur_style=ft.ShadowBlurStyle.NORMAL),
+            width=160, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
+            shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=2, blur_style=ft.BlurStyle.NORMAL),
             content=ft.Column(
                 spacing=0,
                 controls=menu_options
@@ -686,12 +686,7 @@ class Story(ft.View):
         self.active_rail = Active_Rail(page, self)  # Container stored in story for the active rails
         self.workspace = Workspace(page, self)  # Reference to our workspace object for pin locations
 
-        # Called when hovering over resizer to right of the active rail
-        async def show_horizontal_cursor(e: ft.HoverEvent):
-            ''' Changes the cursor to horizontal when hovering over the resizer '''
-
-            e.control.mouse_cursor = ft.MouseCursor.RESIZE_LEFT_RIGHT
-            e.control.update()
+        
 
         # Called when resizing the active rail by dragging the resizer
         async def move_active_rail_divider(e: ft.DragUpdateEvent):
@@ -701,7 +696,6 @@ class Story(ft.View):
                 self.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
                 
             self.active_rail.update()
-            #page.update()   # Apply our changes to the rest of the page
 
         # Called when app stops dragging the resizer to resize the active rail
         async def save_active_rail_width(e: ft.DragEndEvent):
@@ -721,10 +715,10 @@ class Story(ft.View):
                 content=ft.VerticalDivider(thickness=2, width=2, color=ft.Colors.OUTLINE_VARIANT),     # Original
                 padding=ft.Padding.only(right=8),  # Push the 2px divider ^ to the right side
             ),
-            on_hover=show_horizontal_cursor,    # Change our cursor to horizontal when hovering over the resizer
+            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging
             on_pan_end=save_active_rail_width,  # Save the resize when app is done dragging
-            drag_interval=20,
+            drag_interval=10,
         )
 
         

@@ -10,9 +10,10 @@ Canvases are drawings and images
 # Add ft.DecorationImage options to the canvas container for background images??
 # Add color_filter for both decoration image and container ?
 # Fill tool??
+# Ability to Lock (no drawing mode) for images
 # Little Info Display Button in the bottom right that can be dragged around and shows canvas info display
 
-from flet_contrib.color_picker import ColorPicker
+from flet_color_pickers import ColorPicker
 import flet as ft
 from models.widget import Widget
 from models.views.story import Story

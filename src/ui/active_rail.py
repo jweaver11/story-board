@@ -28,7 +28,7 @@ class Active_Rail(ft.Container):
         super().__init__(
             alignment=ft.Alignment.TOP_CENTER,
             padding=ft.Padding.only(top=10, bottom=10, right=8, left=8),
-            border_radius=ft.border_radius.only(top_right=10, bottom_right=10),
+            border_radius=ft.BorderRadius.only(top_right=10, bottom_right=10),
             width=app.settings.data['active_rail_width'],  # Sets the width
         )
 
