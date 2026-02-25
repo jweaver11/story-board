@@ -1,7 +1,7 @@
 ''' 
 Master Story class that contains data and methods for the entire story 
 Our story is an extended ft.View, meaning new routes can display the story object directly
-The Story object creates widgets (characters, chapters, notes, etc.) objects that are stored inside of itself.
+The Story object creates widgets (characters, documents, notes, etc.) objects that are stored inside of itself.
 Stories contain metadata, ui elements, and all the widgets, as well as methods to create new widgets only
 '''
 
@@ -80,6 +80,13 @@ class Story(ft.View):
         )
 
         self.template = template
+
+        # Variables to store our mouse position for opening menus
+        self.mouse_x: int = 0
+        self.mouse_y: int = 0
+
+        # State that we are not initialized yet, which will be changed at the end of startup method
+        self.is_initialized = False
             
         # Declare our UI elements before we create them later. They are stored as objects so we can reload them when needed
         self.menubar: ft.Container     # Menu bar at top of page
@@ -87,11 +94,10 @@ class Story(ft.View):
         self.active_rail: ft.Container    # Rail showing whichever workspace is selected
         self.workspace: ft.Container       # Main workspace area where our pins display our widgets
 
-
-        # Our widgets objects. Keys are stored as directory paths + titles for uniqueness (example: c:\path\to\character\character_name)
-        self.chapters: dict = dict()        # Text based chapeters only
+        # Our data objects. These are loaded initially and then manipulated, never cleared
+        self.documents: dict = dict()        # Text based chapters only
         self.notes: dict = dict()           # Notes stored in our story
-        self.canvases: dict = dict()        # canvases by the user for comic chapters, or to store images (as backgrounds)
+        self.canvases: dict = dict()        # canvases by the user for comic documents, or to store images (as backgrounds)
         self.canvas_boards: dict = dict()   # Canvas boards that store multiple canvases inside of them 
         self.characters: dict = dict()      # Characters in the story
         self.plotlines: dict = dict()       # plotlines for our story
@@ -100,15 +106,24 @@ class Story(ft.View):
         self.worlds: dict = dict()     # World building widget that contains our maps, lore, governments, history, etc
         self.objects: dict = dict()    # Objects that don't fit into the other categories, like vehicles, items, etc. Can be used for both novels and comics
 
+
+        # Our live widget objects store for display purposes. Routely purged and re-loaded to keep page updates fresh and effecient
+        # We have to do this because controls are NOT meant to be removed and re-added from the page, causing major sync and performance issues
+        self.document_widgets: dict = dict()   
+        self.note_widgets: dict = dict()    
+        self.canvas_widgets: dict = dict()  
+        self.canvas_board_widgets: dict = dict()
+        self.character_widgets: dict = dict()
+        self.plotline_widgets: dict = dict()
+        self.map_widgets: dict = dict()
+        self.character_connection_map_widgets: dict = dict()
+        self.world_widgets: dict = dict()
+        self.object_widgets: dict = dict()  
+
         # Store all our widgets above in a master list for easier rendering in the UI
         self.widgets: list = []    
 
-        # Variables to store our mouse position for opening menus
-        self.mouse_x: int = 0
-        self.mouse_y: int = 0
-
-        # State that we are not initialized yet, which will be changed at the end of startup method
-        self.is_initialized = False
+        
         # Called outside of constructor to avoid circular import issues, or it would be called here
         #self.startup() # Called when opening our active story to load all its data and build its view
         
@@ -124,11 +139,8 @@ class Story(ft.View):
             print("New story created:", self.title)
             # Run logic here to initialize certain things
 
-        # This also loads our canvas board images here, since they can be opened in either workspace
-        self.load_content()
 
-        # Everything we loaded above is a widget, but this just adds them all to self.widgets
-        self.load_widgets()
+        self._load_data()    # Load our files that contain widgets into their data dicts, not the widgets themselves
 
         # Builds our view (menubar, rails, workspace) and adds it to the page
         self.build_view()
@@ -186,7 +198,7 @@ class Story(ft.View):
 
 
         # TODO: Try statements only when writing to files
-        # On story first creation, add default folders inside content: chapters, notes, canvases, images
+        # On story first creation, add default folders inside content: documents, notes, canvases, images
         # Inside characters: main, side, background
 
         try:
@@ -352,8 +364,8 @@ class Story(ft.View):
             tag = widget.data.get('tag', None)
 
             match tag:
-                case "chapter":
-                    del self.chapters[widget.data.get('key', '')]
+                case "document":
+                    del self.documents[widget.data.get('key', '')]
                 case "canvas":
                     del self.canvases[widget.data.get('key', '')]
                 case "note":
@@ -365,7 +377,7 @@ class Story(ft.View):
                 case "map":
                     del self.maps[widget.data.get('key', '')]
                 case "world_building":
-                    del self.world_buildings[widget.data.get('key', '')]
+                    del self.worlds[widget.data.get('key', '')]
                 case "character_connection_map":
                     del self.character_connection_maps[widget.data.get('key', '')]
                 case "canvas_board":
@@ -389,17 +401,9 @@ class Story(ft.View):
             self.close_menu_instant()
 
     # Called on story startup to load all our content objects
-    def load_content(self):
+    def _load_data(self):
         ''' Loads our content from our content folder inside of our story folder '''
-        from models.widgets.note import Note
-        from models.widgets.chapter import Chapter
-        from models.widgets.canvas import Canvas
-        from models.widgets.character import Character
-        from models.widgets.plotline import Plotline   
-        from models.widgets.map import Map
-        from models.widgets.world import World
-        from models.widgets.character_connection_map import CharacterConnectionMap
-        from models.widgets.canvas_board import CanvasBoard
+        
 
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder
         if not os.path.exists(self.data['content_directory_path']):
@@ -427,28 +431,27 @@ class Story(ft.View):
                         
                         # Extract the title from the data
                         key = widget_data.get("key", None)
-                        title = widget_data.get("title", filename.replace(".json", ""))
                         tag = widget_data.get("tag", "")
 
                         match tag:
-                            case "chapter": 
-                                self.chapters[key] = Chapter(title, self.p, dirpath, self, widget_data)
+                            case "document": 
+                                self.documents[key] = widget_data
                             case "canvas":
-                                self.canvases[key] = Canvas(title, self.p, dirpath, self, widget_data)
+                                self.canvases[key] = widget_data
                             case "canvas_board":
-                                self.canvas_boards[key] = CanvasBoard(title, self.p, dirpath, self, widget_data)
+                                self.canvas_boards[key] = widget_data
                             case "note":
-                                self.notes[key] = Note(title, self.p, dirpath, self, widget_data)
+                                self.notes[key] = widget_data
                             case "character":
-                                self.characters[key] = Character(title, self.p, dirpath, self, widget_data)
+                                self.characters[key] = widget_data
                             case "plotline":
-                                self.plotlines[key] = Plotline(title, self.p, dirpath, self, widget_data)
+                                self.plotlines[key] = widget_data
                             case "map":
-                                self.maps[key] = Map(title, self.p, dirpath, self, widget_data)
+                                self.maps[key] = widget_data
                             case "world":
-                                self.worlds[key] = World(title, self.p, dirpath, self, widget_data)
+                                self.worlds[key] = widget_data
                             case "character_connection_map":
-                                self.character_connection_maps[key] = CharacterConnectionMap(title, self.p, dirpath, self, widget_data)
+                                self.character_connection_maps[key] = widget_data
                             case _:
                                 print("content tag not valid. Tag: ", tag)
                             
@@ -458,54 +461,153 @@ class Story(ft.View):
                     except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
                         print(f"Error loading content from {filename}: {e}")
 
+        
+            
+
     # Called in startup after we have loaded all our live objects
     def load_widgets(self):
-        ''' Loads all our widgets (characters, chapters, notes, etc.) into our master list of widgets '''
+        ''' Loads all our widgets (characters, documents, notes, etc.) into our master list of widgets '''
+        from models.widgets.document import Document
+        from models.widgets.note import Note
+        from models.widgets.canvas import Canvas
+        from models.widgets.canvas_board import CanvasBoard
+        from models.widgets.character import Character
+        from models.widgets.plotline import Plotline
+        from models.widgets.map import Map
+        from models.widgets.character_connection_map import CharacterConnectionMap
+        from models.widgets.world import World
+        #from models.widgets.object import Object
 
-        self.widgets.clear()   # Should be empty, but just in case
+        # Clear any previous valus
+        self.document_widgets.clear()
+        self.note_widgets.clear()
+        self.canvas_widgets.clear()
+        self.canvas_board_widgets.clear()
+        self.character_widgets.clear()
+        self.plotline_widgets.clear()
+        self.map_widgets.clear()
+        self.character_connection_map_widgets.clear()
+        self.world_widgets.clear()
+        self.object_widgets.clear()
+        self.widgets.clear()   
 
         # Go through all the widgets we should have loaded, and add them to our widget list
-        for chapter in self.chapters.values():      # Chapters
-            if chapter not in self.widgets:
-                self.widgets.append(chapter)
-        for canvas in self.canvases.values():    # Canvases
-            if canvas not in self.widgets:
-                self.widgets.append(canvas)
-        for canvas_board in self.canvas_boards.values():    # Canvas Boards
-            if canvas_board not in self.widgets:
-                self.widgets.append(canvas_board)
-        for note in self.notes.values():        # Notes
-            if note not in self.widgets:
-                self.widgets.append(note)
-        for character in self.characters.values():      # Characters
-            if character not in self.widgets:
-                self.widgets.append(character)
-        for plotline in self.plotlines.values():        # plotlines
-            if plotline not in self.widgets:
-                self.widgets.append(plotline)
-        for map in self.maps.values():      # Maps
-            if map not in self.widgets:
-                self.widgets.append(map)
-        for world in self.worlds.values():        # World Building
-            if world not in self.widgets:
-                self.widgets.append(world)
-        for ccm in self.character_connection_maps.values():           # Family Trees
-            if ccm not in self.widgets:
-                self.widgets.append(ccm)
-        for object in self.objects.values():        # Objects
-            if object not in self.widgets:
-                self.widgets.append(object)
+        for document in self.documents.values():      # Documents
+                    
+            # Create an object for that value
+            document_widget = Document(
+                title=document.get('title', 'Untitled Document'),
+                page=self.p,
+                directory_path=document.get('directory_path', self.data['content_directory_path']),
+                story=self,
+                data=document,
+            )
 
-        # Now that all widgets are loaded, certain mini widgets need to be re-loaded to update data
+            # Add that widget to our document widgets dict for easy access later
+            self.document_widgets[document.get('key', '')] = document_widget    
+            self.widgets.append(document_widget)        
+        
+        for note in self.notes.values():      # Notes
+            note_widget = Note(
+                title=note.get('title', 'Untitled Note'),
+                page=self.p,
+                directory_path=note.get('directory_path', self.data['content_directory_path']),
+                story=self,
+                data=note,
+            )
+            self.note_widgets[note.get('key', '')] = note_widget   
+            self.widgets.append(note_widget)      
+
+        for canvas in self.canvases.values():      # Canvases
+                    
+            canvas_widget = Canvas(
+                title=canvas.get('title', 'Untitled Canvas'),
+                page=self.p,
+                directory_path=canvas.get('directory_path', self.data['content_directory_path']),
+                story=self,
+                data=canvas,
+            )
+            self.canvas_widgets[canvas.get('key', '')] = canvas_widget   
+            self.widgets.append(canvas_widget)    
+
+        for canvas_board in self.canvas_boards.values():      # Canvas Boards
+            canvas_board_widget = CanvasBoard(
+                title=canvas_board.get('title', 'Untitled Canvas Board'),
+                page=self.p,
+                directory_path=canvas_board.get('directory_path', self.data['content_directory_path']),
+                story=self,
+                data=canvas_board,
+            )
+            self.canvas_board_widgets[canvas_board.get('key', '')] = canvas_board_widget   
+            self.widgets.append(canvas_board_widget)
+
+        for character in self.characters.values():      # Characters    
+            character_widget = Character(
+                title=character.get('title', 'Untitled Character'),
+                page=self.p,
+                directory_path=character.get('directory_path', self.data['content_directory_path']),
+                story=self,
+                data=character,
+            )
+            self.character_widgets[character.get('key', '')] = character_widget   
+            self.widgets.append(character_widget)
+
+        for plotline in self.plotlines.values():      # Plotlines
+            plotline_widget = Plotline(
+                title=plotline.get('title', 'Untitled Plotline'),
+                page=self.p,
+                directory_path=plotline.get('directory_path', self.data['content_directory_path']),
+                story=self,
+                data=plotline,
+            )
+            self.plotline_widgets[plotline.get('key', '')] = plotline_widget   
+            self.widgets.append(plotline_widget)
+
+        for map in self.maps.values():      # Maps
+            map_widget = Map(
+                title=map.get('title', 'Untitled Map'),
+                page=self.p,
+                directory_path=map.get('directory_path', self.data['content_directory_path']),
+                story=self,
+                data=map,
+            )
+            self.map_widgets[map.get('key', '')] = map_widget   
+            self.widgets.append(map_widget)
+
+        for character_connection_map in self.character_connection_maps.values():      # Character Connection Maps
+            character_connection_map_widget = CharacterConnectionMap(
+                title=character_connection_map.get('title', 'Untitled Character Connection Map'),
+                page=self.p,
+                directory_path=character_connection_map.get('directory_path', self.data['content_directory_path']),
+                story=self,
+                data=character_connection_map,
+            )
+            self.character_connection_map_widgets[character_connection_map.get('key', '')] = character_connection_map_widget   
+            self.widgets.append(character_connection_map_widget)
+
+        for world in self.worlds.values():      # Worlds
+            world_widget = World(
+                title=world.get('title', 'Untitled World'),
+                page=self.p,
+                directory_path=world.get('directory_path', self.data['content_directory_path']),
+                story=self,
+                data=world,
+            )
+            self.world_widgets[world.get('key', '')] = world_widget   
+            self.widgets.append(world_widget)
+
+            
+        # Now that all widgets are loaded, certain mini widgets need to be re-loaded to update data that relies
+        #TODO: Phase out and use the data dicts instead of data_widget dicts
         for plotline in self.plotlines.values():
             for pp in plotline.plot_points.values():
                 pp.reload_mini_widget(no_update=True)
                 
         
-    # Called to create a new widget based on tag (chapter, note, character, etc)
+    # Called to create a new widget based on tag (document, note, character, etc)
     def create_widget(self, title: str, tag: str=None, directory_path: str=None, data: dict=None):
         ''' Creates our new widget based on the tag passed in and directory_path passed in'''
-        from models.widgets.chapter import Chapter
+        from models.widgets.document import Document
         from models.widgets.note import Note
         from models.widgets.canvas import Canvas
         from models.widgets.canvas_board import CanvasBoard
@@ -525,23 +627,23 @@ class Story(ft.View):
 
 
         match tag:
-            case "chapter":
-                widget = Chapter(title, self.p, directory_path, self, data)
+            case "document":
+                widget = Document(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.chapters[key] = widget
-                self.widgets.append(self.chapters[key])
+                self.documents[key] = widget.data
+                self.widgets.append(self.documents[key])
 
             case "note":
                 widget = Note(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.notes[key] = widget
+                self.notes[key] = widget.data
                 self.widgets.append(self.notes[key])
 
             case "canvas":
                 d = {'canvas': data} if data is not None else None
                 widget = Canvas(title, self.p, directory_path, self, d)
                 key = widget.data.get('key', '')
-                self.canvases[key] = widget
+                self.canvases[key] = widget.data
                 self.widgets.append(self.canvases[key])
 
             case "character":
@@ -566,7 +668,7 @@ class Story(ft.View):
                 widget = Plotline(title, self.p, directory_path, self, data)
                 
                 key = widget.data.get('key', '')
-                self.plotlines[key] = widget
+                self.plotlines[key] = widget.data
                 widget.data['plotline_order_index'] = len(self.plotlines.keys()) - 1   # Set the order index to the end of the list
                 widget.save_dict()
                 self.widgets.append(self.plotlines[key])
@@ -574,31 +676,32 @@ class Story(ft.View):
             case "map":
                 widget = Map(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.maps[key] = widget
+                self.maps[key] = widget.data
                 self.widgets.append(self.maps[key])
 
             case "character_connection_map":
                 widget = CharacterConnectionMap(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.character_connection_maps[key] = widget
+                self.character_connection_maps[key] = widget.data
                 self.widgets.append(self.character_connection_maps[key])
 
             case "world":
                 widget = World(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.worlds[key] = widget
+                self.worlds[key] = widget.data
                 self.widgets.append(self.worlds[key])
 
             case "canvas_board":
                 widget = CanvasBoard(title, self.p, directory_path, self, data)
                 key = widget.data.get('key', '')
-                self.canvas_boards[key] = widget
+                self.canvas_boards[key] = widget.data
                 self.widgets.append(self.canvas_boards[key])
      
             case _:
                 print("Widget tag not valid. Tag:", tag)
 
         # Apply the UI changes
+        self.load_widgets()
         self.active_rail.content.reload_rail()
         self.workspace.reload_workspace()
 
@@ -683,8 +786,9 @@ class Story(ft.View):
 
         # Create our rails and workspace objects
         self.workspaces_rail = WorkspacesRail(page, self)  # Create our all workspaces rail
-        self.active_rail = Active_Rail(page, self)  # Container stored in story for the active rails
+        
         self.workspace = Workspace(page, self)  # Reference to our workspace object for pin locations
+        self.active_rail = Active_Rail(page, self)  # Container stored in story for the active rails
 
         
 

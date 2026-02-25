@@ -111,6 +111,8 @@ class Workspace(ft.Container):
         # Master stack that holds our widgets ^ row, and drag targets overtop. TransparentPointer allows the targets to be physical but not block widgets underneath
         self.master_stack = ft.Stack(expand=True, controls=[self.master_widgets_row, ft.TransparentPointer(self.pin_drag_targets)])
 
+        self.content = self.master_stack
+
         self.reload_workspace()   # Load our workspace content for the first time without updating the UI, since we're still in the constructor
 
 
@@ -234,14 +236,18 @@ class Workspace(ft.Container):
         ''' Arranges our widgets to their correct pin locations after a change is made to their pin location.
         Also adds widgets to their correct pin locations if they are missing from any pin location '''
 
+
+
         story = self.story
 
-        # Clear all pin locations first
-        self.top_pin.controls.clear()
-        self.left_pin.controls.clear()
-        self.main_pin.clear()
-        self.right_pin.controls.clear()
-        self.bottom_pin.controls.clear()
+
+        # Refresh our controls by creating them as new objects (even though their the same)
+        self.top_pin = ft.Row(height=story.data['top_pin_height'], controls=[])
+        self.left_pin = ft.Column(width=story.data['left_pin_width'], controls=[])
+        self.right_pin = ft.Column(width=story.data['right_pin_width'], controls=[])
+        self.bottom_pin = ft.Row(height=story.data['bottom_pin_height'], controls=[])
+        self.main_pin.clear()       # Main pin is not rendered as its just a list, so we can just clear it
+        
 
         if len(story.widgets) == 0:
             return
@@ -323,6 +329,7 @@ class Workspace(ft.Container):
         ''' Reloads our workspace content by clearing and re-adding our 5 pin locations to the master row '''
 
         # Make sure our widgets are arranged correctly
+        self.story.load_widgets()
         self.arrange_widgets()
 
         async def save_pin_sizes(e: ft.DragEndEvent=None):
@@ -550,7 +557,7 @@ class Workspace(ft.Container):
         ]
 
         # Set the master_stack as the content of this container
-        self.content = self.master_stack
+        #self.content = self.master_stack
 
         # Finally update the UI
         try:

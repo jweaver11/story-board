@@ -8,7 +8,7 @@ from models.app import app
 
 
 # Class that holds our text chapter objects
-class Chapter(Widget):
+class Document(Widget):
     # Constructor
     def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None):
 
@@ -26,7 +26,7 @@ class Chapter(Widget):
             object=self,   # Pass in our own data so the function can see the actual data we loaded
             required_data={
                 # Widget data
-                'tag': "chapter",
+                'tag': "document",
                 'color': app.settings.data.get('default_canvas_color'),
                 'mini_widgets_displayed_overtop': False,  
 

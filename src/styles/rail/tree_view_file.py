@@ -135,7 +135,7 @@ class TreeViewFile(ft.GestureDetector):
             else:
 
                 self.reload()
-                self.widget.p.update()
+                #self.widget.p.update()
 
         # Called everytime a change in textbox occurs
         def _name_check(e):
@@ -304,6 +304,9 @@ class TreeViewFile(ft.GestureDetector):
 
         # If dir dropdown is not None, insert indentation icon ??
         #ft.Icon(ft.Icons.HORIZONTAL_RULE, rotate=ft.Rotate(math.pi/2)),
-
-        self.widget.p.update()
+        try:
+            self.update()
+        except Exception as e:
+            print("Failed to update tree view file")
+        #self.widget.p.update()
 

@@ -37,10 +37,10 @@ class Widget(ft.Container):
         super().__init__(
             expand=True, 
             data=data,                              # Sets our data. 
-            border_radius=ft.border_radius.all(10),
+            border_radius=ft.BorderRadius.all(10),
             gradient=dark_gradient,
-            margin=ft.margin.all(0),
-            padding=ft.padding.only(top=0, bottom=8, left=8, right=8),
+            margin=ft.Margin.all(0),
+            padding=ft.Padding.only(top=0, bottom=8, left=8, right=8),
             on_size_change=self._get_size,   # Calls our function to update our size variables whenever our size changes
         )
 
@@ -91,7 +91,7 @@ class Widget(ft.Container):
         self.side_bar: ft.Control = None            # Optional side bar control to display to the side of our body
     
         # Container that holds our main body content. Gets built in reload_widget of child classes
-        self.body_container = ft.Container(expand=True, border_radius=ft.border_radius.all(10), padding=ft.padding.all(6)) 
+        self.body_container = ft.Container(expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(6)) 
 
         # Holds our sizing canvas, body container, header, and mini widgets all under the tab
         self.master_stack: ft.Stack = ft.Stack(expand=True)     
@@ -104,6 +104,8 @@ class Widget(ft.Container):
     # Called whenever there are changes in our data
     def save_dict(self):
         ''' Saves our current data to the json file '''
+
+        # TODO: Find matching widget type and save to normal data dict (not widget dict)
 
         try:
 
@@ -258,9 +260,9 @@ class Widget(ft.Container):
         tag = self.data.get('tag', '')
 
         match tag:
-            case "chapter":
-                self.story.chapters.pop(old_key, None)
-                self.story.chapters[self.data['key']] = self
+            case "document":
+                self.story.documents.pop(old_key, None)
+                self.story.documents[self.data['key']] = self
             case "canvas":
                 self.story.canvases.pop(old_key, None)
                 self.story.canvases[self.data['key']] = self
@@ -302,7 +304,7 @@ class Widget(ft.Container):
 
     # Called when a new mini note is created inside a widget
     def create_comment(self, title: str):
-        ''' Creates a mini note inside an image or chapter '''
+        ''' Creates a mini note inside an image or document '''
         from models.mini_widgets.comment import Comment
 
         self.mini_widgets.append(
@@ -609,7 +611,7 @@ class Widget(ft.Container):
 
         # Set our icon based on what type of widget we are using tag
         match tag:
-            case "chapter": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
+            case "document": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
             case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
             case "canvas_board": self.icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
             case "note": self.icon = ft.Icon(ft.Icons.COMMENT_OUTLINED)
@@ -739,7 +741,7 @@ class Widget(ft.Container):
 
         
         # Mini widgets that shrink the body container to make room for themselves
-        else:       # Widgets: Canvas, Chapter
+        else:       # Widgets: Canvas, document
             pass
 
 
@@ -762,4 +764,8 @@ class Widget(ft.Container):
 
         # Set our tabs content and finally our container content and update the page
         self.content = self.tabs
-        self.p.update()
+        try:
+            self.update()       # Handle first renders where we are not on page yet
+        except Exception as e:
+            pass
+        #self.p.update()
