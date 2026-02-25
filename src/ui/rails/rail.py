@@ -180,8 +180,8 @@ class Rail(ft.Container):
                 if tag == "character":
                     self.new_item_textfield.icon = ft.PopupMenuButton(
                         ft.Icon(ft.Icons.COPY_ALL), tooltip="Select Template",
-                        items=self.get_template_options("character"), menu_padding=ft.padding.all(0),
-                        on_open=_show_textfield, padding=ft.padding.all(0)
+                        items=self.get_template_options("character"), menu_padding=ft.Padding.all(0),
+                        on_open=_show_textfield, padding=ft.Padding.all(0)
                     )
                     self.new_item_textfield.label = f"Template: {app.settings.data.get('active_character_template', 'Default')}"
                         
@@ -191,8 +191,8 @@ class Rail(ft.Container):
                 
                 self.new_item_textfield.icon = ft.PopupMenuButton(
                     ft.Icon(ft.Icons.COPY_ALL), tooltip="Select Template",
-                    items=self.get_template_options("character"), menu_padding=ft.padding.all(0),
-                    on_open=_show_textfield, padding=ft.padding.all(0)
+                    items=self.get_template_options("character"), menu_padding=ft.Padding.all(0),
+                    on_open=_show_textfield, padding=ft.Padding.all(0)
                 )
                 self.new_item_textfield.hint_text = "World Title"
                 self.new_item_textfield.label = f"Template {app.settings.data.get('active_world_template', 'Default')}"

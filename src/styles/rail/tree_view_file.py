@@ -83,7 +83,7 @@ class TreeViewFile(ft.GestureDetector):
                 content=ft.PopupMenuButton(
                     content=ft.Container(
                         ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.widget.data.get('color', 'primary'),), ft.Text("Color",  weight=ft.FontWeight.BOLD),]),
-                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                        padding=ft.padding.all(8), border_radius=ft.BorderRadius.all(6),
                     ),
                     tooltip=f"Change {self.widget.title} Color", menu_padding=0,
                     items=self._get_color_options()
@@ -102,13 +102,11 @@ class TreeViewFile(ft.GestureDetector):
     # Called when hovering mouse over a tree view item
     async def on_hover(self, e):
         self.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.WHITE)
-        self.page = self.widget.p
         self.update()
 
     # Called when stopping hover over a tree view item
     async def on_stop_hover(self, e):
         self.content.bgcolor = ft.Colors.TRANSPARENT
-        self.page = self.widget.p
         self.update()
 
     # Called when rename button is clicked
@@ -285,7 +283,7 @@ class TreeViewFile(ft.GestureDetector):
             expand=True, 
             padding=ft.Padding(0, 2, 5, 2),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            border_radius=ft.border_radius.all(6),
+            border_radius=ft.BorderRadius.all(6),
             content=ft.Draggable(
                 group="widgets",
                 data=self.widget.data['key'],

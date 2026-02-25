@@ -37,7 +37,17 @@ class Workspace(ft.Container):
         self.bottom_pin = ft.Row(height=story.data['bottom_pin_height'], controls=[])
 
         # Main pin is not rendered directly since it changes based on active tab when more than one widget is present
-        self.main_pin = []
+        self.main_pin = []      # List to hold all our widgets in the main pin that we manipulate easier
+        self.main_pin_tabs = ft.Tabs(
+            content=ft.Column([], expand=True),
+            expand=True,  
+            length=0,
+            selected_index=0,
+            animation_duration=100,
+            #padding=ft.Padding.all(0),
+            #label_padding=ft.Padding.only(left=6, right=6, top=0, bottom=0),
+            #mouse_cursor=ft.MouseCursor.BASIC, 
+        )   
 
         # Pin drag targets
         self.top_pin_drag_target = ft.DragTarget(
@@ -144,17 +154,14 @@ class Workspace(ft.Container):
         e.control.content.update()
         
     # Accepting drags for our five pin locations
-    def pin_drag_accept(self, e, pin_location: str):
+    def pin_drag_accept(self, e: ft.DragTargetEvent, pin_location: str):
 
         # Reset our container to be invisible again
         e.control.content.opacity = 0
         e.control.content.update()
 
-        # Load our event data
-        event_data = json.loads(e.data)
         
-        # Grab our draggable from the event
-        draggable = e.page.get_control(event_data.get("src_id"))
+        draggable = e.page.get_control(e.src_id)
             
         # Grab our key and set the widget
         widget_key = draggable.data
@@ -331,10 +338,9 @@ class Workspace(ft.Container):
         # Updates the size of our pin in the story object
         async def move_top_pin_divider(e: ft.DragUpdateEvent):
             # Set limits so we dont resize too small or too large
-            if (e.delta_y > 0 and self.top_pin.height < self.p.height/2) or (e.delta_y < 0 and self.top_pin.height >= self.minimum_pin_height):
-                self.top_pin.height += e.delta_y
+            if (e.local_delta.x > 0 and self.top_pin.height < self.p.height/2) or (e.local_delta.x < 0 and self.top_pin.height >= self.minimum_pin_height):
+                self.top_pin.height += e.local_delta.y
             # Update the page
-            self.top_pin.page = self.p
             self.top_pin.update()
         
             
@@ -353,9 +359,8 @@ class Workspace(ft.Container):
 
         # Left pin reisizer method and variable
         async def move_left_pin_divider(e: ft.DragUpdateEvent):
-            if (e.delta_x > 0 and self.left_pin.width < self.p.width/2) or (e.delta_x < 0 and self.left_pin.width >= self.minimum_pin_width):
-                self.left_pin.width += e.delta_x
-            self.left_pin.page = self.p
+            if (e.local_delta.x > 0 and self.left_pin.width < self.p.width/2) or (e.local_delta.x < 0 and self.left_pin.width >= self.minimum_pin_width):
+                self.left_pin.width += e.local_delta.x
             self.left_pin.update()
         
         left_pin_resizer = ft.GestureDetector(
@@ -373,9 +378,8 @@ class Workspace(ft.Container):
 
         # Right pin resizer method and variable
         async def move_right_pin_divider(e: ft.DragUpdateEvent):
-            if (e.delta_x < 0 and self.right_pin.width < self.p.width/2) or (e.delta_x > 0 and self.right_pin.width >= self.minimum_pin_width):
-                self.right_pin.width -= e.delta_x
-            self.right_pin.page = self.p
+            if (e.local_delta.x < 0 and self.right_pin.width < self.p.width/2) or (e.local_delta.x > 0 and self.right_pin.width >= self.minimum_pin_width):
+                self.right_pin.width -= e.local_delta.x
             self.right_pin.update()
         
         right_pin_resizer = ft.GestureDetector(
@@ -392,9 +396,9 @@ class Workspace(ft.Container):
 
         # Bottom pin resizer method and variable
         async def move_bottom_pin_divider(e: ft.DragUpdateEvent):
-            if (e.delta_y < 0 and self.bottom_pin.height < self.p.height/2) or (e.delta_y > 0 and self.bottom_pin.height >= self.minimum_pin_height):
-                self.bottom_pin.height -= e.delta_y
-            self.bottom_pin.page = self.p
+            if (e.local_delta.y < 0 and self.bottom_pin.height < self.p.height/2) or (e.local_delta.y > 0 and self.bottom_pin.height >= self.minimum_pin_height):
+                self.bottom_pin.height -= e.local_delta.y
+            
             self.bottom_pin.update()
         
         bottom_pin_resizer = ft.GestureDetector(
@@ -433,22 +437,23 @@ class Workspace(ft.Container):
         if len(visible_main_controls) > 1:
                 
             # Hold all our main pin tabs
-            self.main_pin_tabs = ft.Tabs(
-                animation_duration=0,
-                on_change=main_pin_tab_change,
-                expand=True,  
-                padding=ft.Padding.all(0),
-                label_padding=ft.Padding.only(left=6, right=6, top=0, bottom=0),
-                mouse_cursor=ft.MouseCursor.BASIC,
-                tabs=[]    # Gives our tab control here   
-            )
-            for widget in visible_main_controls:
-                self.main_pin_tabs.tabs.append(widget.tab)
-                
-                if widget.data['is_active_tab']:
-                    self.main_pin_tabs.selected_index = self.main_pin_tabs.tabs.index(widget.tab)
-                    self.main_pin_tabs.indicator_color =  ft.Colors.with_opacity(0.8, widget.data.get('color', ft.Colors.PRIMARY))
-                    
+            
+            #self.main_pin_tabs.on_change = main_pin_tab_change      # Reset the change method
+            self.main_pin_tabs.content.controls.clear()    # Clear the content so we can re-add our visible widgets in the correct order    
+            self.main_pin_tabs.content.controls = [
+                ft.TabBar(
+                    tabs=[widget.tab for widget in visible_main_controls],
+                ), 
+                ft.TabBarView(
+                    controls=[widget.master_stack for widget in visible_main_controls],
+                    expand=True
+                )
+            ]   # Add our tab bar and tab bar view back in so we can add our tabs to the tab bar and our widgets to the tab bar view
+
+            self.main_pin_tabs.length = len(visible_main_controls)   # Set the length of our tabs to the number of visible widgets in the main pin
+            self.main_pin_tabs.selected_index = -1   # Select last tab for now on reloads
+            
+            
 
             # Stick it in a container for styling
             formatted_main_pin = ft.Container(
@@ -549,7 +554,7 @@ class Workspace(ft.Container):
 
         # Finally update the UI
         try:
-            self.update()
+            self.master_stack.update()
         except Exception as e:
             pass
 

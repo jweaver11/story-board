@@ -41,6 +41,7 @@ class Widget(ft.Container):
             gradient=dark_gradient,
             margin=ft.margin.all(0),
             padding=ft.padding.only(top=0, bottom=8, left=8, right=8),
+            on_size_change=self._get_size,   # Calls our function to update our size variables whenever our size changes
         )
 
         # Set our parameters we passed in (data set in super())
@@ -80,9 +81,9 @@ class Widget(ft.Container):
         self.force_size_render: bool = True                      # Forces a reload when widgets get their size for the first time, but not every time
 
         # UI ELEMENTS - Tab
-        self.tabs: ft.Tabs = ft.Tabs() # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
+        self.tabs: ft.Tabs = None # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
         self.tab: ft.Tab = ft.Tab()  # Tab that holds our title and hide icon. Nests inside of a ft.Tabs control
-        self.icon: ft.Icon = ft.Icon()
+        self.icon: ft.Icon = None
         self.hide_tab_icon_button: ft.IconButton = ft.IconButton()    # 'X' icon button to hide widget from workspace'
 
         # UI ELEMENTS - Body                     
@@ -219,7 +220,7 @@ class Widget(ft.Container):
             return False
 
     # Called when our canvas resizes
-    async def _get_size(self, e: cv.CanvasResizeEvent):
+    async def _get_size(self, e: ft.LayoutSizeChangeEvent[ft.Container]):
         ''' Updates our w and h variables when sizing canvas resizes '''
         if e.width <= 0 or e.height <= 0:
             return 
@@ -324,23 +325,21 @@ class Widget(ft.Container):
         self.story.workspace.show_pin_drag_targets()
         
     # Called when mouse enters the tab part of the widget
-    async def _enter_tab(self, e):
+    async def _enter_tab(self, e: ft.PointerEvent):
         ''' Changes the hide icon button color slightly for more interactivity '''
         self.hide_tab_icon_button.icon_color = ft.Colors.ON_SURFACE
-        self.hide_tab_icon_button.page = self.p
         self.hide_tab_icon_button.update()
 
     # Called when mouse hovers over the tab part of the widget
-    async def _hover_tab(self, e):
+    async def _hover_tab(self, e: ft.PointerEvent):
         ''' Updates our mouse x/y state for opening menu at mouse position '''
-        self.story.mouse_x = e.global_x
-        self.story.mouse_y = e.global_y
+        self.story.mouse_x = e.global_position.x
+        self.story.mouse_y = e.global_position.y
 
     # Called when mouse stops hovering over the tab part of the widget
     async def _exit_tab(self, e):
         ''' Reverts the color change of the hide icon button '''
         self.hide_tab_icon_button.icon_color = ft.Colors.OUTLINE
-        self.hide_tab_icon_button.page = self.p
         self.hide_tab_icon_button.update()
         
     
@@ -628,12 +627,7 @@ class Widget(ft.Container):
         tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
 
         # Initialize our tabs control that will hold our tab. We only have one tab, but this is needed for it to render
-        self.tabs = ft.Tabs(
-            selected_index=0, animation_duration=0,
-            padding=ft.padding.all(0), label_padding=ft.padding.all(0),
-            mouse_cursor=ft.MouseCursor.BASIC, divider_color=ft.Colors.TRANSPARENT,
-            indicator_color = ft.Colors.with_opacity(0.7, self.data.get('color', ft.Colors.PRIMARY)),
-        )
+        
 
         # Our icon button that will hide the widget when clicked in the workspace
         self.hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
@@ -650,7 +644,7 @@ class Widget(ft.Container):
         self.tab = ft.Tab(
 
             # Content of the tab itself. Has widgets name and hide widget icon, and functionality for dragging
-            tab_content=ft.Draggable(   # Draggable is the control so we can drag and drop to different pin locations
+            label=ft.Draggable(   # Draggable is the control so we can drag and drop to different pin locations
                 group="widgets",    # Group for draggables (and receiving drag targets) to accept each other
                 data=self.data['key'],  # Pass ourself through the data (of our tab, NOT our object) so we can move ourself around
 
@@ -703,7 +697,7 @@ class Widget(ft.Container):
         self.master_stack.controls.clear()
 
         # Add our sizing canvas and body container to the stack first
-        self.master_stack.controls = [self.sizing_canvas, self.body_container]
+        self.master_stack.controls = [self.body_container]
 
         # Separate our mini widgets into left and right side lists
         left_mini_widgets = []
@@ -752,7 +746,20 @@ class Widget(ft.Container):
         # If we have a header, add it to the stack. Headers are be immune to scrolling
         self.master_stack.controls.append(self.header) if self.header is not None else None
 
+
+        # Tabs stuff
+        self.tabs = ft.Tabs(
+            expand=True,  
+            length=1,
+            selected_index=0,
+            content=ft.Column([
+                ft.TabBar(tabs=[self.tab]),     # Holds our tab at the top of the widget
+                ft.TabBarView([self.master_stack], expand=True)# Holds our body
+            ], expand=True),
+            
+        )   
+
+
         # Set our tabs content and finally our container content and update the page
-        self.tabs.tabs = [self.tab]
         self.content = self.tabs
         self.p.update()

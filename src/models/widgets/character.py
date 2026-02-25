@@ -245,7 +245,7 @@ class Character(Widget):
                                     conn.get('char1_name', "Change Character 1"), color=char1.data.get('color', "primary"),
                                     overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER
                                 ),
-                                padding=ft.padding.all(6), border_radius=ft.border_radius.all(8), ink=True,
+                                padding=ft.padding.all(6), border_radius=ft.BorderRadius.all(8), ink=True,
                             ), tooltip="Change Character 1", items=_get_char_options(tag="char1"), menu_padding=ft.padding.all(0)
                         ),
                         ft.IconButton(      # Icon
@@ -354,14 +354,14 @@ class Character(Widget):
         else:
             img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
 
-        fp = ft.FilePicker(on_result=self._files_uploaded)
+        fp = ft.FilePicker(on_upload=self._files_uploaded)
             
         # Column we will append to for the bot of our view. Has our icon, and exit edit mode button
         # TODO: Foreground decoration when hovering adds the ("upload image" button)
         body = ft.Column([
             ft.Row([
                 ft.IconButton(
-                    content=img, tooltip="Upload Image", on_click=lambda e: fp.pick_files(
+                    img, tooltip="Upload Image", on_click=lambda e: fp.pick_files(
                     allow_multiple=False, allowed_extensions=["png", "jpg", "jpeg", "webp"])
                 ),
                 ft.IconButton(tooltip="Exit Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, icon_color=self.data.get('color', None), on_click=self._edit_mode_clicked),
@@ -372,38 +372,38 @@ class Character(Widget):
 
         # Create a container for our dicts that we have data in and load them. 
         basic_info_container = ft.Container(            # For basic info
-            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE), 
+            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+            border=ft.Border.all(2, ft.Colors.OUTLINE), 
             content=ft.Column([]), 
         )
         template_data_container = ft.Container(         # For template data
-            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE), 
+            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+            border=ft.Border.all(2, ft.Colors.OUTLINE), 
             content=ft.Column([]), 
         )
         physical_description_container = ft.Container(  # For physical description
-            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE),
+            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+            border=ft.Border.all(2, ft.Colors.OUTLINE),
             content=ft.Column([]), 
         )   
         family_container = ft.Container(                # For family
-            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE),
+            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+            border=ft.Border.all(2, ft.Colors.OUTLINE),
             content=ft.Column([]), 
         )
         origin_container = ft.Container(                # For origin 
-            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE), 
+            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+            border=ft.Border.all(2, ft.Colors.OUTLINE), 
             content=ft.Column([]),
         )
         connections_container = ft.Container(           # For connections
-            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE),
+            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+            border=ft.Border.all(2, ft.Colors.OUTLINE),
             content=ft.Column([]), 
         )
         custom_fields_container = ft.Container(        # For custom fields
-            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE),
+            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+            border=ft.Border.all(2, ft.Colors.OUTLINE),
             content=ft.Column([]), 
         )
 
@@ -594,37 +594,37 @@ class Character(Widget):
 
             # Create a container for our dicts that we have data in and load them. 
             basic_info_container = ft.Container(            # For basic info
-                padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
+                padding=ft.padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE), 
                 content=ft.Text(expand=True, selectable=True, spans=[]), 
             )
             template_data_container = ft.Container(         # For template data
-                padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
+                padding=ft.padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE), 
                 content=ft.Text(expand=True, selectable=True, spans=[]), 
             )
             physical_description_container = ft.Container(  # For physical description
-                padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
+                padding=ft.padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE),
                 content=ft.Text(expand=True, selectable=True, spans=[]), 
             )   
             family_container = ft.Container(                # For family
-                padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
+                padding=ft.padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE),
                 content=ft.Text(expand=True, selectable=True, spans=[]),  
             )
             origin_container = ft.Container(                # For origin 
-                padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
+                padding=ft.padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE), 
                 content=ft.Text(expand=True, selectable=True, spans=[]), 
             )
             connections_container = ft.Container(           # For connections
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
+                padding=ft.padding.all(8), border_radius=ft.BorderRadius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE),
                 content=ft.Column([]), 
             )
             custom_fields_container = ft.Container(        # For custom fields
-                padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
+                padding=ft.padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
                 border=ft.border.all(2, ft.Colors.OUTLINE),
                 content=ft.Text(expand=True, selectable=True, spans=[]), 
             )
