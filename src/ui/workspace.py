@@ -99,11 +99,13 @@ class Workspace(ft.Container):
             )
         )
 
+        self.blocker = ft.Container(expand=True, ignore_interactions=True)     # Blocks events during a rebuild
+
         # Our master row that holds all our widgets
         self.master_widgets_row = ft.Row(spacing=0, expand=True, controls=[])
 
         # Master stack that holds our widgets ^ row, and drag targets overtop. TransparentPointer allows the targets to be physical but not block widgets underneath
-        self.master_stack = ft.Stack(expand=True, controls=[self.master_widgets_row, ft.TransparentPointer(self.pin_drag_targets)])
+        self.master_stack = ft.Stack(expand=True, controls=[self.master_widgets_row, ft.TransparentPointer(self.pin_drag_targets), self.blocker])
 
         self.content = self.master_stack
 
@@ -148,6 +150,10 @@ class Workspace(ft.Container):
     # Accepting drags for our five pin locations
     def pin_drag_accept(self, e: ft.DragTargetEvent, pin_location: str):
 
+        self.blocker.ignore_interactions = False   # Block events during the rearrange and reload process to prevent weird bugs
+        self.blocker.update()
+
+
         # Reset our container to be invisible again
         e.control.content.opacity = 0
         e.control.content.update()
@@ -174,14 +180,8 @@ class Workspace(ft.Container):
 
         # If we were dragged from the main pin and we were the active tab, set the first tab to new active
         if old_pin_location == "main" and widget.data['is_active_tab'] == True:
-
             widget.data['is_active_tab'] = False   # Deselect ourselves
-
-            # If there are other widgets in the main pin, set the first one to active tab
-            #self.self.main_pin[0].data['is_active_tab'] = True
-            #self.self.main_pin[0].save_dict()
-                
-                
+  
 
         # Set our objects pin location to the correct new location
         widget.data['pin_location'] = pin_location  
@@ -211,6 +211,7 @@ class Workspace(ft.Container):
 
         widget.force_size_render = True     # Force a reload in our new pin because our size changes
 
+        
         # Make sure our widget is visible if it was dragged from the rail
         if not widget.visible:
             widget.toggle_visibility(value=True)      # This will save dict as well
@@ -219,6 +220,9 @@ class Workspace(ft.Container):
 
         # Apply to UI
         self.reload_workspace()     
+
+        self.blocker.ignore_interactions = True   # Unblock events after the rearrange and reload process is done
+        self.blocker.update()
 
 
     # Called when we drag a widget from one pin location to another
@@ -406,6 +410,9 @@ class Workspace(ft.Container):
             drag_interval=20,
         )
 
+        def tab_change(e: ft.Event):
+            pass
+
         
         # Main pin is rendered as a tab control, so we won't use dividers and will use different logic
         if len(self.main_pin) > 1:
@@ -414,6 +421,7 @@ class Workspace(ft.Container):
             self.main_pin_tabs = ft.Tabs(
                 expand=True, length=len(self.main_pin),
                 selected_index=-1,
+                on_change=tab_change,
                 animation_duration=100,
                 content=ft.Column([
                     ft.TabBar(
@@ -474,6 +482,7 @@ class Workspace(ft.Container):
         #print("Right Pin: ", len(self.right_pin.controls), formatted_right_pin.visible)
         #print("Bottom Pin: ", len(self.bottom_pin.controls), formatted_bottom_pin.visible)
 
+
         # Our master row that holds all our widgets
         self.master_widgets_row.controls.clear()
         self.master_widgets_row.controls = [
@@ -487,6 +496,7 @@ class Workspace(ft.Container):
             ]),
             formatted_right_pin,   
         ]
+        
         
         # Finally update the UI
         try:

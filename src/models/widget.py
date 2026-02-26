@@ -74,7 +74,6 @@ class Widget(ft.Container):
         self.visible = self.data.get('visible', True)
 
         # Canvas and state trackers for sizing our widget
-        self.sizing_canvas = cv.Canvas(on_resize=self._get_size, resize_interval=100, expand=True, content=ft.Container(expand=True, ignore_interactions=True))
         self.w: int = 0                                         # Width of our widget
         self.h: int = 0                                         # Height of our widget
         self.l: int = 0      # Values to pass into locations for left and top coordinates
@@ -96,7 +95,7 @@ class Widget(ft.Container):
         self.fp: ft.FilePicker   # File picker for uploading files in our widgets. Result handled by _file_picker_result
     
         # Container that holds our main body content. Gets built in reload_widget of child classes
-        self.body_container = ft.Container(expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(16), on_size_change=self._get_size) 
+        self.body_container = ft.Container(expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(16), on_size_change=self._get_size, size_change_interval=500) 
 
         # Holds our sizing canvas, body container, header, and mini widgets all under the tab
         self.master_stack: ft.Stack = ft.Stack(expand=True)   # Master stack that holds all our elements together. Gets added to our tab content in reload_widget
@@ -363,15 +362,13 @@ class Widget(ft.Container):
         # If we want to specify we're visible or not, we can pass it in
         if value is not None:
             self.data['visible'] = value
-            self.visible = value
-        
         else:
             # Change our visibility data, save it, then apply it
             self.data['visible'] = not self.data['visible']
-            self.visible = self.data['visible']
 
         # Save our changes and reload the UI
         self.save_dict()
+       
         self.story.workspace.reload_workspace()     # No matter what we are getting rebuilt, so just reload teh workspace
 
     # Called when right clicking our tab
@@ -608,10 +605,10 @@ class Widget(ft.Container):
     # Called when mouse hovers over the map
     async def _get_coords(self, e: ft.HoverEvent):
         ''' Sets our coordinate positions for menus and passing in new items '''
-        self.story.mouse_x = e.global_x
-        self.story.mouse_y = e.global_y
-        self.l = e.local_x
-        self.t = e.local_y
+        self.story.mouse_x = e.global_position.x
+        self.story.mouse_y = e.global_position.y
+        self.l = e.local_position.x
+        self.t = e.local_position.y
     
     # Called at end of constructor
     def reload_tab(self):
@@ -743,12 +740,12 @@ class Widget(ft.Container):
             # Add the columns so long as they are showing anything
             if len(left_mini_widgets) > 0:
                 self.master_stack.controls.append(left_column)
-                print("Showing mw on left")
-                print("Left column width: ", left_column.width)
+                #print("Showing mw on left")
+                #print("Left column width: ", left_column.width)
             if len(right_mini_widgets) > 0:
                 self.master_stack.controls.append(right_column) 
-                print("Showing mw on right")
-                print("Right column width: ", right_column.width)
+                #print("Showing mw on right")
+                #print("Right column width: ", right_column.width)
                
             
             
@@ -776,15 +773,13 @@ class Widget(ft.Container):
             ], expand=True),
             
         )   
-
-
-        # Set our tabs content and finally our container content and update the page
         self.content = self.tabs
+
         try:
 
             # If we are in the main pin, our tab and master_stack are shown, so update those
             if self.data.get('pin_location', '') == 'main':
-                self.master_stack.update()       # Handle first renders where we are not on page yet
+                self.master_stack.update()       
                 self.tab.update()
 
             # If not in the main pin, we are directly on the page, so update ourselves
