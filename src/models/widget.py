@@ -87,7 +87,6 @@ class Widget(ft.Container):
         self.tabs: ft.Tabs = None # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
         self.tab: ft.Tab = ft.Tab()  # Tab that holds our title and hide icon button. Nests inside of a ft.Tabs control
         self.icon: ft.Icon = None
-        self.hide_tab_icon_button: ft.IconButton = ft.IconButton()    # 'X' icon button to hide widget from workspace'
 
         # UI ELEMENTS - Body                     
         self.header: ft.Control = None              # Optional header control to display above our body and mini widgets
@@ -97,10 +96,10 @@ class Widget(ft.Container):
         self.fp: ft.FilePicker   # File picker for uploading files in our widgets. Result handled by _file_picker_result
     
         # Container that holds our main body content. Gets built in reload_widget of child classes
-        self.body_container = ft.Container(expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(16)) 
+        self.body_container = ft.Container(expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(16), on_size_change=self._get_size) 
 
         # Holds our sizing canvas, body container, header, and mini widgets all under the tab
-        self.master_stack: ft.Stack = ft.Stack(expand=True, on_size_change=self._get_size)   # Master stack that holds all our elements together. Gets added to our tab content in reload_widget
+        self.master_stack: ft.Stack = ft.Stack(expand=True)   # Master stack that holds all our elements together. Gets added to our tab content in reload_widget
         self.mini_widgets = []                      # List of mini widgets that belong to this widget
 
         # Called at end of constructor for all child widgets to build their view (not here tho since we're not on page yet)
@@ -337,8 +336,8 @@ class Widget(ft.Container):
     # Called when mouse enters the tab part of the widget
     async def _enter_tab(self, e: ft.PointerEvent):
         ''' Changes the hide icon button color slightly for more interactivity '''
-        self.hide_tab_icon_button.icon_color = ft.Colors.ON_SURFACE
-        self.hide_tab_icon_button.update()
+        e.control.icon_color = ft.Colors.ON_SURFACE
+        e.control.update()
         
 
     # Called when mouse hovers over the tab part of the widget
@@ -351,8 +350,8 @@ class Widget(ft.Container):
     # Called when mouse stops hovering over the tab part of the widget
     async def _exit_tab(self, e):
         ''' Reverts the color change of the hide icon button '''
-        self.hide_tab_icon_button.icon_color = ft.Colors.OUTLINE
-        self.hide_tab_icon_button.update()
+        e.control.icon_color = ft.Colors.OUTLINE
+        e.control.update()
         
         
     
@@ -644,7 +643,7 @@ class Widget(ft.Container):
         
 
         # Our icon button that will hide the widget when clicked in the workspace
-        self.hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
+        hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
             scale=0.8,
             on_click=lambda e: self.toggle_visibility(),
             icon=ft.Icons.CLOSE_ROUNDED,
@@ -670,7 +669,7 @@ class Widget(ft.Container):
 
                 # The content of our draggable. We use a gesture detector so we have more events
                 content=ft.GestureDetector(
-                    ft.Row([self.icon, tab_text, self.hide_tab_icon_button]),
+                    ft.Row([self.icon, tab_text, hide_tab_icon_button]),
                     mouse_cursor=ft.MouseCursor.CLICK,
                     hover_interval=20,
                     on_enter=self._enter_tab,
