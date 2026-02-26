@@ -366,12 +366,12 @@ class PlotlineInformationDisplay(MiniWidget):
                         ft.Row([
                             ft.Container(
                                 ft.Text(marker.title, color=marker.data.get('color', None), expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD),
-                                on_click=lambda e, m=marker: m.show_mini_widget(), expand=True, padding=ft.padding.only(left=20)
+                                on_click=lambda e, m=marker: m.show_mini_widget(), expand=True, padding=ft.Padding.only(left=20)
                             ),
                             ft.Container(
                                 ft.IconButton(
                                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda e, m=marker: m._delete_clicked(),
-                                    tooltip="Delete Marker", style=ft.ButtonStyle(padding=ft.padding.all(0))
+                                    tooltip="Delete Marker", style=ft.ButtonStyle(padding=ft.Padding.all(0))
                                 ), margin=ft.Margin.only(right=20)
                             )
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
@@ -391,7 +391,7 @@ class PlotlineInformationDisplay(MiniWidget):
             ft.Container(width=6),
             ft.IconButton(
                 ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Create New Plot Point", data="plot_point", 
-                on_click=self.owner.new_item_clicked, style=ft.ButtonStyle(padding=ft.padding.all(0))
+                on_click=self.owner.new_item_clicked, style=ft.ButtonStyle(padding=ft.Padding.all(0))
             )
         ], spacing=0)
 
@@ -403,7 +403,7 @@ class PlotlineInformationDisplay(MiniWidget):
             ft.Container(width=6),
             ft.IconButton(
                 ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Create New Arc", data="arc", 
-                on_click=self.owner.new_item_clicked, style=ft.ButtonStyle(padding=ft.padding.all(0))
+                on_click=self.owner.new_item_clicked, style=ft.ButtonStyle(padding=ft.Padding.all(0))
             )
         ], spacing=0)
 
@@ -415,7 +415,7 @@ class PlotlineInformationDisplay(MiniWidget):
             ft.Container(width=6),
             ft.IconButton(
                 ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Create New Marker", data="marker", 
-                on_click=self.owner.new_item_clicked, style=ft.ButtonStyle(padding=ft.padding.all(0))
+                on_click=self.owner.new_item_clicked, style=ft.ButtonStyle(padding=ft.Padding.all(0))
             )
         ], spacing=0)
 
