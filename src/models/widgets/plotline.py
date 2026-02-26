@@ -391,25 +391,25 @@ class Plotline(Widget):
     
 
     # Called when hovering over our plotline on the canvas
-    async def _hover_plotline_canvas(self, e: ft.HoverEvent):
+    async def _hover_plotline_canvas(self, e: ft.PointerEvent):
         ''' Sets our coordinated for opening the menu when right clicking and updates our alignment we want to pass in '''
 
         # Set coordinates for menu
-        self.story.mouse_x = e.global_x
-        self.story.mouse_y = e.global_y
+        self.story.mouse_x = e.global_position.x
+        self.story.mouse_y = e.global_position.y
 
-        self.left_position = int(e.local_x)
+        self.left_position = int(e.local_position.x)
 
         # Calculate and set our x alignment
         w = max(int(self.plotline_width or 0), 1)
-        x = float(e.local_x)
+        x = float(e.local_position.x)
         raw = (2.0 * x / w) - 1.0
         raw = max(-1.0, min(1.0, raw))
         self.x_alignment = round(raw, 2)    # Save new x_alignment
 
 
         # Check if we're over the plotline line itself and give visual feedback and allow us to right click 
-        if abs(e.local_y - (self.plotline_height / 2)) <= 25:
+        if abs(e.local_position.y - (self.plotline_height / 2)) <= 25:
             
             self.can_open_menu = True       # State we can open the menu
 
@@ -420,7 +420,6 @@ class Plotline(Widget):
             self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
             self.plotline_canvas.content.mouse_cursor = ft.MouseCursor.CLICK      # Change cursor to pointer
 
-            self.plotline_canvas.page = self.p      # refresh page reference
             self.plotline_canvas.update()
 
         # If not, disable right clicking and remove visual feedback
@@ -430,7 +429,6 @@ class Plotline(Widget):
             self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
             self.plotline_canvas.content.mouse_cursor = None
 
-            self.plotline_canvas.page = self.p      # refresh page reference
             self.plotline_canvas.update()
 
     async def _exit_canvas(self, e: ft.HoverEvent):
@@ -440,7 +438,6 @@ class Plotline(Widget):
         self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
         self.plotline_canvas.content.mouse_cursor = None
 
-        self.plotline_canvas.page = self.p      # refresh page reference
         self.plotline_canvas.update()
 
 
@@ -549,14 +546,11 @@ class Plotline(Widget):
             update_arcs = True
 
             # Update our page reference and size
-            self.plotline_canvas.page = self.p
             self.plotline_width = int(e.width)
             self.plotline_height = int(e.height)
             self.data['old_plotline_width'] = self.plotline_width
             self.data['old_plotline_height'] = self.plotline_height
             self.save_dict()   # Save our new size to our data
-
-        self.plotline_canvas.page = self.p      # refresh page reference
 
         
         # Draw our plotline on the canvas with its two end markers ------------------------------------------------
@@ -605,7 +599,7 @@ class Plotline(Widget):
                         x, self.plotline_height // 2 - 25 if app.settings.data.get('division_labels_direction', "top") == "top" else self.plotline_height // 2 + 25,
                         str(self.information_display.data.get('Divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
                         ft.TextStyle(14, weight=ft.FontWeight.BOLD),
-                        alignment=ft.alignment.center
+                        alignment=ft.Alignment.CENTER
                     )
                 )
             
@@ -623,18 +617,18 @@ class Plotline(Widget):
         # Set the text width, and align it in center, make sure it wraps
         self.plotline_canvas.shapes.append(cv.Text(
             5, self.plotline_height // 2 - 60, left_label, 
-            ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center,
+            ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
             max_width=55,   # Prevent overflow left
             text_align=ft.TextAlign.LEFT
         ))
         self.plotline_canvas.shapes.append(cv.Text(
             self.plotline_width - 5, self.plotline_height // 2 - 60, right_label, 
-            ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center,
+            ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
             text_align=ft.TextAlign.RIGHT, max_width=55   # Prevent overflow right
         ))
         self.plotline_canvas.shapes.append(cv.Text(
             self.plotline_width // 2, self.plotline_height - 50, time_label, 
-            ft.TextStyle(24, weight=ft.FontWeight.BOLD), alignment=ft.alignment.center,
+            ft.TextStyle(24, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
             text_align=ft.TextAlign.CENTER
         ))
 
@@ -834,7 +828,7 @@ class Plotline(Widget):
             expand=True, 
             alignment=ft.Alignment(0, 0),
             controls=[
-                ft.Container(self.plotline_canvas, ft.padding.only(left=16, right=16), expand=True)      # Add our canvas which has our visual plotline
+                ft.Container(self.plotline_canvas, ft.Padding.only(left=16, right=16), expand=True)      # Add our canvas which has our visual plotline
             ]
         )
  
@@ -1053,14 +1047,14 @@ class Plotline(Widget):
 
         plot_points_filters = ft.Container(
             padding=None,
-            width=170, shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=4, blur_style=ft.ShadowBlurStyle.OUTER),
-            border=ft.border.all(1, ft.Colors.OUTLINE),
-            border_radius=ft.border_radius.all(6),
+            width=170, shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=4, blur_style=ft.BlurStyle.OUTER),
+            border=ft.Border.all(1, ft.Colors.OUTLINE),
+            border_radius=ft.BorderRadius.all(6),
             content=ft.ExpansionTile(
                 expand=True, dense=True,
                 on_change=lambda e: self.p.run_task(self.change_data, **{'plot_points_filter_dropdown_expanded': not self.data.get('plot_points_filter_dropdown_expanded', True)}),
                 title=ft.Text("Plot Point Filters", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), 
-                initially_expanded=self.data.get('plot_points_filter_dropdown_expanded', True),
+                expanded=self.data.get('plot_points_filter_dropdown_expanded', True),
                 visual_density=ft.VisualDensity.COMPACT, collapsed_bgcolor=ft.Colors.SURFACE,
                 tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
                 maintain_state=True, adaptive=True, bgcolor=ft.Colors.SURFACE,
@@ -1073,14 +1067,14 @@ class Plotline(Widget):
 
         arcs_filters = ft.Container(
             padding=None,
-            width=170, shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=4, blur_style=ft.ShadowBlurStyle.OUTER),
-            border=ft.border.all(1, ft.Colors.OUTLINE),
-            border_radius=ft.border_radius.all(6),
+            width=170, shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=4, blur_style=ft.BlurStyle.OUTER),
+            border=ft.Border.all(1, ft.Colors.OUTLINE),
+            border_radius=ft.BorderRadius.all(6),
             content=ft.ExpansionTile(
                 expand=True, dense=True,
                 on_change=lambda e: self.p.run_task(self.change_data, **{'arcs_filter_dropdown_expanded': not self.data.get('arcs_filter_dropdown_expanded', True)}),
                 title=ft.Text("Arcs Filters", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), 
-                initially_expanded=self.data.get('arcs_filter_dropdown_expanded', True),
+                expanded=self.data.get('arcs_filter_dropdown_expanded', True),
                 visual_density=ft.VisualDensity.COMPACT, collapsed_bgcolor=ft.Colors.SURFACE,
                 tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
                 maintain_state=True, adaptive=True, bgcolor=ft.Colors.SURFACE,
@@ -1092,14 +1086,14 @@ class Plotline(Widget):
 
         markers_filters = ft.Container(
             padding=None,
-            width=170, shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=4, blur_style=ft.ShadowBlurStyle.OUTER),
-            border=ft.border.all(1, ft.Colors.OUTLINE),
-            border_radius=ft.border_radius.all(6),
+            width=170, shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=4, blur_style=ft.BlurStyle.OUTER),
+            border=ft.Border.all(1, ft.Colors.OUTLINE),
+            border_radius=ft.BorderRadius.all(6),
             content=ft.ExpansionTile(
                 expand=True, dense=True,
                 on_change=lambda e: self.p.run_task(self.change_data, **{'markers_filter_dropdown_expanded': not self.data.get('markers_filter_dropdown_expanded', True)}),
                 title=ft.Text("Markers Filters", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), 
-                initially_expanded=self.data.get('markers_filter_dropdown_expanded', True),
+                expanded=self.data.get('markers_filter_dropdown_expanded', True),
                 visual_density=ft.VisualDensity.COMPACT, collapsed_bgcolor=ft.Colors.SURFACE,
                 tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
                 maintain_state=True, adaptive=True, bgcolor=ft.Colors.SURFACE,

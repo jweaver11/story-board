@@ -135,7 +135,7 @@ class PlotlineInformationDisplay(MiniWidget):
                             data=['Divisions', len(self.data.get('Divisions', [])), True],
                         ),
                         
-                    ]), margin=ft.margin.only(left=20, right=20)
+                    ]), margin=ft.Margin.only(left=20, right=20)
                 )
             )
 
@@ -292,8 +292,8 @@ class PlotlineInformationDisplay(MiniWidget):
 
         # Container to hold the text control for events
         events_container = ft.Container(               
-            padding=ft.padding.all(6), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), 
+            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
             content=ft.Row([events_text]),
         )
 
@@ -328,13 +328,13 @@ class PlotlineInformationDisplay(MiniWidget):
                         ft.Row([
                             ft.Container(
                                 ft.Text(pp.title, color=pp.data.get('color', None), expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD), 
-                                on_click=lambda e, p=pp: p.show_mini_widget(), expand=True, padding=ft.padding.only(left=20)
+                                on_click=lambda e, p=pp: p.show_mini_widget(), expand=True, padding=ft.Padding.only(left=20)
                             ),
                             ft.Container(
                                 ft.IconButton(
                                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda e, p=pp: p._delete_clicked(),
-                                    tooltip="Delete Plot Point", style=ft.ButtonStyle(padding=ft.padding.all(0))
-                                ), margin=ft.margin.only(right=20)
+                                    tooltip="Delete Plot Point", style=ft.ButtonStyle(padding=ft.Padding.all(0))
+                                ), margin=ft.Margin.only(right=20)
                             )
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
                     )
@@ -347,13 +347,13 @@ class PlotlineInformationDisplay(MiniWidget):
                         ft.Row([
                             ft.Container(
                                 ft.Text(arc.title, color=arc.data.get('color', None), expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD), 
-                                on_click=lambda e, a=arc: a.show_mini_widget(), expand=True, padding=ft.padding.only(left=20)
+                                on_click=lambda e, a=arc: a.show_mini_widget(), expand=True, padding=ft.Padding.only(left=20)
                             ),
                             ft.Container(
                                 ft.IconButton(
                                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda e, a=arc: a._delete_clicked(),
-                                    tooltip="Delete Arc", style=ft.ButtonStyle(padding=ft.padding.all(0))
-                                ), margin=ft.margin.only(right=20)
+                                    tooltip="Delete Arc", style=ft.ButtonStyle(padding=ft.Padding.all(0))
+                                ), margin=ft.Margin.only(right=20)
                             )
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
                     )
@@ -372,7 +372,7 @@ class PlotlineInformationDisplay(MiniWidget):
                                 ft.IconButton(
                                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda e, m=marker: m._delete_clicked(),
                                     tooltip="Delete Marker", style=ft.ButtonStyle(padding=ft.padding.all(0))
-                                ), margin=ft.margin.only(right=20)
+                                ), margin=ft.Margin.only(right=20)
                             )
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
                     )
@@ -485,10 +485,10 @@ class PlotlineInformationDisplay(MiniWidget):
                 markers_list,
                 
                 divisions_label,        # Divisions
-                ft.Container(self.divisions_column, margin=ft.margin.symmetric(horizontal=20)),
+                ft.Container(self.divisions_column, margin=ft.Margin.symmetric(horizontal=20)),
 
                 custom_fields_label,     # Custom Fields
-                ft.Container(custom_fields_column, margin=ft.margin.symmetric(horizontal=20)),
+                ft.Container(custom_fields_column, margin=ft.Margin.symmetric(horizontal=20)),
             ]
         )
 

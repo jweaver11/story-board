@@ -341,14 +341,20 @@ class Widget(ft.Container):
     # Called when mouse hovers over the tab part of the widget
     async def _hover_tab(self, e: ft.PointerEvent):
         ''' Updates our mouse x/y state for opening menu at mouse position '''
-        self.story.mouse_x = e.global_position.x
-        self.story.mouse_y = e.global_position.y
+        try:
+            self.story.mouse_x = e.global_position.x
+            self.story.mouse_y = e.global_position.y
+        except Exception as e:
+            pass
 
     # Called when mouse stops hovering over the tab part of the widget
     async def _exit_tab(self, e):
         ''' Reverts the color change of the hide icon button '''
-        self.hide_tab_icon_button.icon_color = ft.Colors.OUTLINE
-        self.hide_tab_icon_button.update()
+        try:
+            self.hide_tab_icon_button.icon_color = ft.Colors.OUTLINE
+            self.hide_tab_icon_button.update()
+        except Exception as e:
+            pass
         
     
 
