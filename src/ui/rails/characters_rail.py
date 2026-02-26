@@ -219,7 +219,7 @@ class CharactersRail(Rail):
             case "Age":
                 # For sorting our list, sort by age. If no age specified, add to the non-specified list
                 def get_age(character):
-                    age = character.get('character_data', {}).get('Basic Info', {}).get('Age', None)
+                    age = character.data.get('character_data', {}).get('Basic Info', {}).get('Age', None)
                     if age is None or age == "":
                         non_specified_list.append(character)
                     return age
@@ -242,7 +242,7 @@ class CharactersRail(Rail):
             case "Role":
                 different_roles = set()
                 def get_role(character):
-                    role = character.get('character_data', {}).get('Basic Info', {}).get('Role', None)
+                    role = character.data.get('character_data', {}).get('Basic Info', {}).get('Role', None)
                     if role is None or role == "" or role == "None":
                         non_specified_list.append(character)
                     else:
@@ -254,7 +254,7 @@ class CharactersRail(Rail):
                 for role in sorted(different_roles):   # Future implimentation use custom roles. For now we just have 3 so we will hardcode it
                     content.controls.append(ft.Text(f"{role}:", theme_style=ft.TextThemeStyle.LABEL_LARGE))
                     for character in characters_list:
-                        if role == character.get('character_data', {}).get('Basic Info', {}).get('Role', None):
+                        if role == character.data.get('character_data', {}).get('Basic Info', {}).get('Role', None):
                             content.controls.append(TreeViewFile(character, self.story))
 
                 

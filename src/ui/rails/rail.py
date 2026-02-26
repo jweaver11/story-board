@@ -12,8 +12,9 @@ from utils.check_widget_unique import check_widget_unique
 from utils.alert_dialogs.new_canvas import new_canvas_alert_dlg
 import asyncio
 from models.app import app
+from models.isolated_controls.column import IsolatedColumn
 
-class Rail(ft.Container):
+class Rail(ft.Column):
 
     # Constructor
     def __init__(
@@ -25,9 +26,7 @@ class Rail(ft.Container):
     ):
         
         # Initialize the parent Container class first
-        super().__init__(
-            padding=ft.Padding(0, 0, 0, 0),        # Adds padding left to match divider on the right
-        )
+        super().__init__(spacing=0, expand=True, scroll="none")
             
         # Store our parameters
         self.p = page

@@ -831,8 +831,12 @@ class Story(ft.View):
         async def move_active_rail_divider(e: ft.DragUpdateEvent):
             ''' Responsible for altering the width of the active rail '''
 
-            if (e.local_delta.x > 0 and self.active_rail.width < page.width/2) or (e.local_delta.x < 0 and self.active_rail.width > 100):
-                self.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
+
+            self.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
+            if self.active_rail.width < 100:
+                self.active_rail.width = 100
+            elif self.active_rail.width > page.width / 2:
+                self.active_rail.width = page.width / 2
                 
             self.active_rail.update()
 
@@ -875,7 +879,7 @@ class Story(ft.View):
                 self.active_rail,    # Rail for the selected workspace
                 active_rail_resizer,   # Divider between rail and work area
                 
-                self.workspace,    # Work area for pagelets
+                self.workspace,    # Work area for widgets
             ],
         )
 

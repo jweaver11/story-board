@@ -8,8 +8,7 @@ from utils.tree_view import load_directory_data
 from styles.menu_option_style import MenuOptionStyle
 from utils.alert_dialogs.new_canvas import new_canvas_alert_dlg
 from models.isolated_controls.column import IsolatedColumn
-import threading
-import asyncio
+
 
 
 # Class is created in main on program startup
@@ -201,7 +200,7 @@ class ContentRail(Rail):
                  
 
         # Build the content of our rail
-        content = ft.Column(
+        content = IsolatedColumn(
             scroll=ft.ScrollMode.AUTO,
             spacing=0,
             controls=[]
@@ -243,18 +242,14 @@ class ContentRail(Rail):
             hover_interval=20,
         )
 
-        
+       
 
-        self.content = IsolatedColumn(
-            spacing=0,
-            expand=True,
-            controls=[
-                header,
-                ft.Divider(),
-                menu_gesture_detector
-            ]
-        )
-        #self.content = content
+        self.controls = [
+            header,
+            ft.Divider(),
+            menu_gesture_detector
+        ]
+        
         
         # Apply our update
         self.p.update()

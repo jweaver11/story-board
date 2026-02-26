@@ -11,6 +11,8 @@ from models.views.story import Story
 import json
 from styles.colors import dark_gradient
 from styles.snack_bar import SnackBar
+from models.isolated_controls.row import IsolatedRow
+from models.isolated_controls.column import IsolatedColumn
 
 # Our workspace object that is stored in our story object
 class Workspace(ft.Container):
@@ -32,10 +34,10 @@ class Workspace(ft.Container):
         self.minimum_pin_width = int(self.p.width / 10)
 
         # Creates our 4 side pin locations for our widgets inside our workspace. These are placed directly on the page
-        self.top_pin = ft.Row(height=story.data['top_pin_height'], controls=[])
-        self.left_pin = ft.Column(width=story.data['left_pin_width'], controls=[])
-        self.right_pin = ft.Column(width=story.data['right_pin_width'], controls=[])
-        self.bottom_pin = ft.Row(height=story.data['bottom_pin_height'], controls=[])
+        self.top_pin = IsolatedRow(height=story.data['top_pin_height'], controls=[])
+        self.left_pin = IsolatedColumn(width=story.data['left_pin_width'], controls=[])
+        self.right_pin = IsolatedColumn(width=story.data['right_pin_width'], controls=[])
+        self.bottom_pin = IsolatedRow(height=story.data['bottom_pin_height'], controls=[])
 
         # Main pin is not rendered directly since it changes based on active tab when more than one widget is present
         self.main_pin = []      # List to hold all our widgets in the main pin that we manipulate easier
@@ -255,7 +257,6 @@ class Workspace(ft.Container):
 
                     case "left":
                         self.left_pin.controls.append(widget)
-
                         continue
 
                     case "right":
@@ -316,14 +317,17 @@ class Workspace(ft.Container):
             self.story.data['bottom_pin_height'] = self.bottom_pin.height
             self.story.save_dict()
 
+        
         # Method called wn our divider (inside a gesture detector) is dragged
         # Updates the size of our pin in the story object
         async def move_top_pin_divider(e: ft.DragUpdateEvent):
-            # Set limits so we dont resize too small or too large
-            if (e.local_delta.x > 0 and self.top_pin.height < self.p.height/2) or (e.local_delta.x < 0 and self.top_pin.height >= self.minimum_pin_height):
-                self.top_pin.height += e.local_delta.y
-            # Update the page
-            self.top_pin.update()
+            self.top_pin.height += e.local_delta.y
+
+            if self.top_pin.height < self.minimum_pin_height:
+                self.top_pin.height = self.minimum_pin_height
+            elif self.top_pin.height > self.p.height/2:
+                self.top_pin.height = self.p.height/2
+            formatted_top_pin.update()   # Update the formatted container that holds the pin and divider, since the pin itself is not rendered directly and has no resizer on it
         
         # The control that holds our divider, which we drag to resize the top pin
         top_pin_resizer = ft.GestureDetector(
@@ -340,9 +344,12 @@ class Workspace(ft.Container):
 
         # Left pin reisizer method and variable
         async def move_left_pin_divider(e: ft.DragUpdateEvent):
-            if (e.local_delta.x > 0 and self.left_pin.width < self.p.width/2) or (e.local_delta.x < 0 and self.left_pin.width >= self.minimum_pin_width):
-                self.left_pin.width += e.local_delta.x
-            self.left_pin.update()
+            self.left_pin.width += e.local_delta.x
+            if self.left_pin.width < self.minimum_pin_width:
+                self.left_pin.width = self.minimum_pin_width
+            elif self.left_pin.width > self.p.width/2:
+                self.left_pin.width = self.p.width/2
+            formatted_left_pin.update()    # Update the formatted container that holds the pin and divider, since the pin itself is not rendered directly and has no resizer on it
         
         left_pin_resizer = ft.GestureDetector(
             content=ft.Container(
@@ -359,10 +366,13 @@ class Workspace(ft.Container):
 
         # Right pin resizer method and variable
         async def move_right_pin_divider(e: ft.DragUpdateEvent):
-            if (e.local_delta.x < 0 and self.right_pin.width < self.p.width/2) or (e.local_delta.x > 0 and self.right_pin.width >= self.minimum_pin_width):
-                self.right_pin.width -= e.local_delta.x
-            self.right_pin.update()
-        
+            self.right_pin.width -= e.local_delta.x
+            if self.right_pin.width < self.minimum_pin_width:
+                self.right_pin.width = self.minimum_pin_width
+            elif self.right_pin.width > self.p.width/2:
+                self.right_pin.width = self.p.width/2
+            formatted_right_pin.update() 
+
         right_pin_resizer = ft.GestureDetector(
             content=ft.Container(
                 width=10,
@@ -377,10 +387,12 @@ class Workspace(ft.Container):
 
         # Bottom pin resizer method and variable
         async def move_bottom_pin_divider(e: ft.DragUpdateEvent):
-            if (e.local_delta.y < 0 and self.bottom_pin.height < self.p.height/2) or (e.local_delta.y > 0 and self.bottom_pin.height >= self.minimum_pin_height):
-                self.bottom_pin.height -= e.local_delta.y
-            
-            self.bottom_pin.update()
+            self.bottom_pin.height -= e.local_delta.y
+            if self.bottom_pin.height < self.minimum_pin_height:
+                self.bottom_pin.height = self.minimum_pin_height
+            elif self.bottom_pin.height > self.p.height/2:
+                self.bottom_pin.height = self.p.height/2
+            formatted_bottom_pin.update()
         
         bottom_pin_resizer = ft.GestureDetector(
             content=ft.Container(
