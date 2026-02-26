@@ -41,9 +41,9 @@ class Widget(ft.Container):
             border_radius=ft.BorderRadius.all(10),
             gradient=dark_gradient,
             #bgcolor=ft.Colors.SURFACE_CONTAINER,
-            margin=ft.Margin.all(0),
-            padding=ft.Padding.only(top=0, bottom=8, left=8, right=8),
-            on_size_change=self._get_size,   # Calls our function to update our size variables whenever our size changes
+            #margin=ft.Margin.all(0),
+            #padding=ft.Padding.only(top=0, bottom=8, left=8, right=8),
+            #on_size_change=self._get_size if data.get('pin_location', "main") != "main" else None,   # Only track size changes if we are not in the main pin, since main pin widgets have a different resizing behavior that causes issues with the sizing canvas
         )
 
         # Set our parameters we passed in (data set in super())
@@ -85,7 +85,7 @@ class Widget(ft.Container):
 
         # UI ELEMENTS - Tab
         self.tabs: ft.Tabs = None # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
-        self.tab: ft.Tab = ft.Tab()  # Tab that holds our title and hide icon. Nests inside of a ft.Tabs control
+        self.tab: ft.Tab = ft.Tab()  # Tab that holds our title and hide icon button. Nests inside of a ft.Tabs control
         self.icon: ft.Icon = None
         self.hide_tab_icon_button: ft.IconButton = ft.IconButton()    # 'X' icon button to hide widget from workspace'
 
@@ -97,10 +97,10 @@ class Widget(ft.Container):
         self.fp: ft.FilePicker   # File picker for uploading files in our widgets. Result handled by _file_picker_result
     
         # Container that holds our main body content. Gets built in reload_widget of child classes
-        self.body_container = ft.Container(expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(6)) 
+        self.body_container = ft.Container(expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(16)) 
 
         # Holds our sizing canvas, body container, header, and mini widgets all under the tab
-        self.master_stack: ft.Stack = ft.Stack(expand=True)     
+        self.master_stack: ft.Stack = ft.Stack(expand=True, on_size_change=self._get_size)   # Master stack that holds all our elements together. Gets added to our tab content in reload_widget
         self.mini_widgets = []                      # List of mini widgets that belong to this widget
 
         # Called at end of constructor for all child widgets to build their view (not here tho since we're not on page yet)
@@ -235,6 +235,8 @@ class Widget(ft.Container):
         self.w = e.width
         self.h = e.height
 
+        print("New size for ", self.title, ": ", self.w, self.h)
+
         # Mini widgets won't show unless we re-render on launch since first render has no size reference to grab them with
         if self.force_size_render:
             self.force_size_render = False
@@ -337,24 +339,21 @@ class Widget(ft.Container):
         ''' Changes the hide icon button color slightly for more interactivity '''
         self.hide_tab_icon_button.icon_color = ft.Colors.ON_SURFACE
         self.hide_tab_icon_button.update()
+        
 
     # Called when mouse hovers over the tab part of the widget
     async def _hover_tab(self, e: ft.PointerEvent):
         ''' Updates our mouse x/y state for opening menu at mouse position '''
-        try:
-            self.story.mouse_x = e.global_position.x
-            self.story.mouse_y = e.global_position.y
-        except Exception as e:
-            pass
+        self.story.mouse_x = e.global_position.x
+        self.story.mouse_y = e.global_position.y
+        
 
     # Called when mouse stops hovering over the tab part of the widget
     async def _exit_tab(self, e):
         ''' Reverts the color change of the hide icon button '''
-        try:
-            self.hide_tab_icon_button.icon_color = ft.Colors.OUTLINE
-            self.hide_tab_icon_button.update()
-        except Exception as e:
-            pass
+        self.hide_tab_icon_button.icon_color = ft.Colors.OUTLINE
+        self.hide_tab_icon_button.update()
+        
         
     
 
@@ -745,10 +744,15 @@ class Widget(ft.Container):
             # Add the columns so long as they are showing anything
             if len(left_mini_widgets) > 0:
                 self.master_stack.controls.append(left_column)
+                print("Showing mw on left")
+                print("Left column width: ", left_column.width)
             if len(right_mini_widgets) > 0:
                 self.master_stack.controls.append(right_column) 
+                print("Showing mw on right")
+                print("Right column width: ", right_column.width)
                
-                
+            
+            
             # Set the tab content
             self.tab.content = self.master_stack  
 
@@ -778,6 +782,14 @@ class Widget(ft.Container):
         # Set our tabs content and finally our container content and update the page
         self.content = self.tabs
         try:
-            self.update()       # Handle first renders where we are not on page yet
+
+            # If we are in the main pin, our tab and master_stack are shown, so update those
+            if self.data.get('pin_location', '') == 'main':
+                self.master_stack.update()       # Handle first renders where we are not on page yet
+                self.tab.update()
+
+            # If not in the main pin, we are directly on the page, so update ourselves
+            else:
+                self.update()
         except Exception as e:
             pass

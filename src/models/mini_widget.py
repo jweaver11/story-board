@@ -237,6 +237,8 @@ class MiniWidget(ft.Container):
     def show_mini_widget(self, e=None):
         ''' Shows our mini widget '''
 
+        print("Show called for", self.title)
+
         if self.visible:
             return
 
@@ -255,6 +257,8 @@ class MiniWidget(ft.Container):
 
     def hide_mini_widget(self, e=None, update: bool=False):
         ''' Hides our mini widget '''
+
+        print("Hide called for", self.title)
         
         # Return early if we are already hidden or pin
         if not self.visible:

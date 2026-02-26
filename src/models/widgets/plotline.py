@@ -198,7 +198,7 @@ class Plotline(Widget):
     # Called when clicking on our canvas
     async def _on_tap(self, e=None):
         ''' Makes sure our information display is visible '''
-       
+        
         if self.can_open_menu:
             if not self.information_display.visible:
                 self.information_display.show_mini_widget()
@@ -332,20 +332,20 @@ class Plotline(Widget):
                 content=ft.PopupMenuButton(
                     content=ft.Container(
                         ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", weight=ft.FontWeight.BOLD)]),
-                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
                     ),
                     tooltip=f"New Item for {self.title}", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(
-                            text="Plot Point", icon=ft.Icons.ADD_LOCATION_OUTLINED,
+                            "Plot Point", icon=ft.Icons.ADD_LOCATION_OUTLINED,
                             on_click=self.new_item_clicked, data="plot_point"
                         ),
                         ft.PopupMenuItem(
-                            text="Arc", icon=ft.Icons.CIRCLE_OUTLINED,
+                            "Arc", icon=ft.Icons.CIRCLE_OUTLINED,
                             on_click=self.new_item_clicked, data="arc"
                         ),
                         ft.PopupMenuItem(
-                            text="Marker", icon=ft.Icons.FLAG_OUTLINED,
+                            "Marker", icon=ft.Icons.FLAG_OUTLINED,
                             on_click=self.new_item_clicked, data="marker"
                         ),
                     ]
@@ -380,7 +380,7 @@ class Plotline(Widget):
                 content=ft.PopupMenuButton(
                     content=ft.Container(
                         ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.data.get('color', 'primary'),), ft.Text("Color",  weight=ft.FontWeight.BOLD),]),
-                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
                     ),
                     tooltip=f"Change {self.title} Color", menu_padding=0,
                     items=self._get_color_options()

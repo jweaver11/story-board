@@ -299,7 +299,7 @@ class Character(Widget):
 
         # Reload the widget. The reload widget should load differently depending on if we're in edit mode or not
         self.reload_widget()
-        self.story.workspace.reload_workspace()    # Ineffecient but required At the moment
+        #self.story.workspace.reload_workspace()    # Ineffecient but required At the moment
 
     # Called if our widget is in edit view. 
     def _edit_mode_view(self):
