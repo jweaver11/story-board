@@ -139,7 +139,7 @@ class CharacterConnectionMap(Widget):
             self.save_dict()
             
             self.reload_widget()
-            self.p.close(dlg)
+            self.p.pop_dialog()
 
 
         # Sets our content to add too
@@ -165,13 +165,13 @@ class CharacterConnectionMap(Widget):
             title=ft.Text(f"Select Primary Character(s)"),
             content=content,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
                 ft.Container(width=12),   # Spacer
                 ft.TextButton("Save", on_click=_save_and_close, scale=1.2),
             ],
         )
         
-        self.p.open(dlg)        # open the dialog
+        self.p.show_dialog(dlg)        # open the dialog
     
 
     # Called after any changes happen to the data that need to be reflected in the UI
@@ -191,14 +191,14 @@ class CharacterConnectionMap(Widget):
         # Clear our map stack controls so we can re-add them
         self.connections_stack.controls.clear()
         self.connections_stack.controls = [     # Add our background and canvas
-            ft.Container(expand=True, ignore_interactions=True, border=ft.border.all(2, "red")),    # Container to stay expanded (Add bg here)
+            ft.Container(expand=True, ignore_interactions=True, border=ft.Border.all(2, "red")),    # Container to stay expanded (Add bg here)
             self.canvas,
         ]
 
         if not self.primary_characters:
             self.connections_stack.controls.append(
                 ft.Container(
-                    expand=True, alignment=ft.alignment.center,
+                    expand=True, alignment=ft.Alignment.CENTER,
                     content=ft.Button("Select Primary Character(s)", on_click=self._set_primary_characters, scale=2)
                 )
             )
