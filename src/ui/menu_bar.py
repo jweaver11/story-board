@@ -215,7 +215,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
 
     # Styling used by lots of menu bar items
     menubar_style = ft.ButtonStyle(
-        bgcolor={ft.ControlState.HOVERED: ft.Colors.TRANSPARENT},
+        #bgcolor={ft.ControlState.HOVERED: ft.Colors.TRANSPARENT},
         shape=ft.RoundedRectangleBorder(radius=10),
         color=ft.Colors.PRIMARY
     )
@@ -238,7 +238,9 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                     content=ft.Text("File", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),     # Content of subment button
                     alignment=ft.Alignment.CENTER
                 ), 
-                style=menubar_style,    # styling for the button
+                #style=menubar_style,    # styling for the button
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10),),
+                menu_style=ft.MenuStyle(padding=ft.Padding.all(0)),
                 
                 controls=[      # The options shown inside of our button
                     ft.MenuItemButton(
@@ -255,7 +257,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                         on_click=_open_clicked,
                     ),
                     ft.MenuItemButton(
-                        content=ft.Text("Rename", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                        content=ft.Text("Rename Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.EDIT_OUTLINED),
                         style=menubar_style,
                         on_click=_rename_clicked,

@@ -777,7 +777,7 @@ class Story(ft.View):
         # Our container that contains a column of our options. Need to use container for positioning
         self.menu = ft.Container(
             left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
-            border_radius=ft.BorderRadius.all(4),
+            border_radius=ft.BorderRadius.all(10),
             bgcolor=ft.Colors.with_opacity(.65, ft.Colors.ON_INVERSE_SURFACE),
             width=160, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
             shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=2, blur_style=ft.BlurStyle.NORMAL),

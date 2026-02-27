@@ -87,11 +87,11 @@ class WorldBuildingRail(Rail):
                     tooltip="New", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(
-                            text="Map", icon=ft.Icons.MAP_OUTLINED,
+                            "Map", icon=ft.Icons.MAP_OUTLINED,
                             on_click=self.new_item_clicked, data="map"
                         ),
                         ft.PopupMenuItem(
-                            text="World", icon=ft.Icons.PUBLIC_OUTLINED,
+                            "World", icon=ft.Icons.PUBLIC_OUTLINED,
                             on_click=self.new_item_clicked, data="world"
                         ),
                     ]
@@ -102,12 +102,12 @@ class WorldBuildingRail(Rail):
                 content=ft.PopupMenuButton(
                     content=ft.Container(
                         ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
-                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
                     ),
                     tooltip="Upload", menu_padding=0,
                     items=[
-                        ft.PopupMenuItem(text="Map", icon=ft.Icons.MAP_OUTLINED,),
-                        ft.PopupMenuItem(text="World Building", icon=ft.Icons.PUBLIC_OUTLINED,),
+                        ft.PopupMenuItem("Map", icon=ft.Icons.MAP_OUTLINED,),
+                        ft.PopupMenuItem("World Building", icon=ft.Icons.PUBLIC_OUTLINED,),
                     ]
                 ),
                 no_padding=True

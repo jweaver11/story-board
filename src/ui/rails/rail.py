@@ -72,22 +72,6 @@ class Rail(ft.Column):
     def get_template_options(self, widget_type: str) -> list[ft.Control]:
         ''' Returns a list of template options when right clicking empty space in the rail '''
 
-        def _change_active_template(e):
-            template_name = e.control.text
-            if widget_type == "character":
-                app.settings.data['active_character_template'] = template_name 
-            elif widget_type == "world":
-                app.settings.data['active_world_template'] = template_name
-
-            app.settings.save_dict()
-            self.new_item_textfield.label = f"Template: {template_name}"
-            self.new_item_textfield.visible = True
-            try:
-                self.new_item_textfield.update()
-            except Exception as e:
-                pass
-            #self.p.update()
-            return
 
         template_options = []
 
@@ -98,12 +82,11 @@ class Rail(ft.Column):
         
             for name, template in app.settings.data.get('character_templates', {}).items():
                 template_options.append(
-                    ft.PopupMenuItem(
-                        name,
-                        on_click=_change_active_template,
-                        data=widget_type,
-                    )
+                    ft.MenuItemButton(name, data=widget_type, on_click=self.new_item_clicked)
                 )
+
+        # Add add button to bottom that opens the settings to the template section
+        # Add templates label at the top that is disabled
 
         else:
             pass
@@ -158,7 +141,7 @@ class Rail(ft.Column):
         self.new_item_textfield.visible = True
         self.new_item_textfield.value = None
         self.new_item_textfield.data = tag
-        self.new_item_textfield.error_text = None
+        self.new_item_textfield.error = None
         self.new_item_textfield.label = None
         self.new_item_textfield.icon = None
 
@@ -173,32 +156,24 @@ class Rail(ft.Column):
             case "character" | "folder" :
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
                 if tag == "character":
-                    self.new_item_textfield.icon = ft.PopupMenuButton(
-                        ft.Icon(ft.Icons.COPY_ALL), tooltip="Select Template",
-                        items=self.get_template_options("character"), menu_padding=ft.Padding.all(0),
-                        on_open=_show_textfield, padding=ft.Padding.all(0)
-                    )
-                    self.new_item_textfield.label = f"Template: {app.settings.data.get('active_character_template', 'Default')}"
+                    template_name = str(e.control.content)
+                    self.new_item_textfield.label = f"{template_name} Template"
                         
             case "canvas_board":
                 self.new_item_textfield.hint_text = "Canvas Board Title"
             case "world":
-                
-                self.new_item_textfield.icon = ft.PopupMenuButton(
-                    ft.Icon(ft.Icons.COPY_ALL), tooltip="Select Template",
-                    items=self.get_template_options("character"), menu_padding=ft.Padding.all(0),
-                    on_open=_show_textfield, padding=ft.Padding.all(0)
-                )
                 self.new_item_textfield.hint_text = "World Title"
-                self.new_item_textfield.label = f"Template {app.settings.data.get('active_world_template', 'Default')}"
+                template_name = str(e.control.content)
+                self.new_item_textfield.label = f"{template_name} Template"
             case _:
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
 
         # Open the textfield early since we have to wait for async close menu
         self.new_item_textfield.update()
+        self.story.active_rail.update()
         
         # Close the menu (if ones is open)
-        await asyncio.sleep(.3)     # Wait for popupmenu's animations to close if we have issues
+        #await asyncio.sleep(.3)     # Wait for popupmenu's animations to close if we have issues
         await self.story.close_menu()
         
 

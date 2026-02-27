@@ -220,8 +220,7 @@ class Widget(ft.Container):
             self.save_dict()
 
             # Reload the rail to apply changes
-            self.story.active_rail.content.reload_rail()
-            self.story.active_rail.update()
+            self.story.active_rail.display_active_rail(self.story)
             return True
         else:
             return False
