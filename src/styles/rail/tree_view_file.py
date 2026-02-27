@@ -254,6 +254,8 @@ class TreeViewFile(ft.GestureDetector):
             #self.widget.story.close_menu_instant()
             self.widget.p.pop_dialog()
             self.widget.story.delete_widget(self.widget) 
+            self.widget.story.active_rail.content.reload_rail()    # Reload the rail to reflect the deletion
+            self.widget.story.active_rail.update()
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(

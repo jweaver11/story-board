@@ -568,6 +568,8 @@ class Widget(ft.Container):
             #self.widget.story.close_menu_instant()
             self.p.pop_dialog()
             self.story.delete_widget(self) 
+            self.story.active_rail.content.reload_rail()    # Reload the rail to reflect the deletion
+            self.story.active_rail.update()
             self.story.workspace.reload_workspace()
 
         # Append an overlay to confirm the deletion
