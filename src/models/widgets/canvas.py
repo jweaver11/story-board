@@ -14,6 +14,9 @@ Canvases are drawings and images
 # Little Info Display Button in the bottom right that can be dragged around and shows canvas info display
 # Manage saving so not at the end of every stroke.
 # Add undo/redo based on capture list
+# Remove old items from the undo/redo list after like 30 or so 
+# Open drawings and maps in their own window to not lag?????
+# Always use aspect ratio when renderng canvas, height and width are just for exporting them
 
 from flet_color_pickers import ColorPicker
 import flet as ft
@@ -61,44 +64,41 @@ class Canvas(Widget):
                 "tag": "canvas",
                 'color': app.settings.data.get('default_canvas_color'),
 
-                # Canvas drawing data we save and load from
-                "canvas_data": {
+                'capture_list': list,     # Capture list of our canvas, used for undo/redo stuff
 
-                    # Data for the info display
-                    'Description': str,
+                # Canvas drawing data we save and load from
+                "canvas": {
 
                     # Drawing data
-                    'paths': list,              # All our shapes, lines, dashed lines, curves, etc.
-                    'shadow_paths': list,       # All paths but with shadows
-                    'points': list,             # All our points
+                    #'paths': list,              # All our shapes, lines, dashed lines, curves, etc.
+                    #'shadow_paths': list,       # All paths but with shadows
+                    #'points': list,             # All our points
 
-                    'capture_list': list,
+                    #'capture_list': list,
 
                     # Sizing of the canvas
-                    "width": None,
-                    "height": None,
-                    "aspect_ratio": None,      # Used over height and width if set
+                    
 
                     # Background settings
-                    'bgcolor': str,                 # If its a color
-                    'image_base64': str,            # If an image is used. Color ignored if this is set
-                    'bg_blend_mode': "src_over",    # Blend mode for background. Starts default
-                    'bg_is_transparent': True,    
-                
+                    #'bgcolor': str,                 # If its a color
+                    #'image_base64': str,            # If an image is used. Color ignored if this is set
+                    #'bg_blend_mode': "src_over",    # Blend mode for background. Starts default
+                    #'bg_is_transparent': True,    
                 },
+
+                'canvas_data': {}       # Information display data for its mini widget
 
             },
         )
 
 
-        decoded_capture_list = [base64.b64decode(capture) for capture in self.data.get('canvas_data', {}).get('capture_list', [])]
+        decoded_capture_list = [base64.b64decode(capture) for capture in self.data.get('capture_list', [])]
 
         # State tracking for canvas drawing info
         self.state = State(capture_list = decoded_capture_list)         # Used for our coordinates and how to apply things
-        self.min_segment_dist = 3.0
         self.canvas_width = 0
         self.canvas_height = 0
-        
+        self.undo_idx = 0       #??
 
         self.canvas = cv.Canvas(
             content=ft.GestureDetector(
@@ -111,26 +111,21 @@ class Canvas(Widget):
                 expand=True,
             ),
             expand=True, shapes=[],
-            on_resize=self.on_canvas_resize, 
+            on_resize=self.rebuild_canvas, 
             resize_interval=500,
         )
 
 
         self.canvas_container = ft.Container(
-            width=self.data.get('canvas_data', {}).get('width', None),
-            height=self.data.get('canvas_data', {}).get('height', None),
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
             border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
             aspect_ratio=self.data.get('canvas_data', {}).get('aspect_ratio'),       # If set, ignores width and height
             content=self.canvas
         )
 
-        self.canvas_stack = ft.Stack(expand=True)   
-
         self.current_path= cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
        
-        # Load our drawing/display
-        self.load_canvas()
+        #self.load_canvas()     OUTDATED
 
         self.information_display: ft.Container = None
         self._create_information_display()
@@ -154,7 +149,7 @@ class Canvas(Widget):
 
 
     # Called on launch to load our drawing from data into our canvas
-    def load_canvas(self):
+    def load_canvas_OUTDATED(self):
         """ Loads our drawing from our data """
 
         # Clear our canvas, and load our shapes stored in data
@@ -478,53 +473,51 @@ class Canvas(Widget):
     # Called when we release the mouse to stop drawing a line
     async def save_canvas(self):
         """ Saves our paths to our canvas data for storage """
+
+        print("Saving canvas: ", self.title)
+        try:
+            await self.canvas.capture()
+            cc = await self.canvas.get_capture()
+                
+
+            self.state.capture_list.append(cc)
+
+            encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
+            self.data['capture_list'].append(encoded_capture)
+
+            #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}_capture.png")
+
+            self.save_dict()
+
+            # Clear the current state
+            self.state.paths.clear()
+            self.state.points.clear()
+        except Exception as e:
+            print("failed to save canvas")
+
         
-        # Add on to what we already have
-        #if self.state.paths:
-            #self.data['canvas_data']['paths'].extend(self.state.paths)
-        #if self.state.points:
-            #self.data['canvas_data']['points'].extend(self.state.points)
-
-        await self.canvas.capture()
-        cc = await self.canvas.get_capture()
-            
-
-        self.state.capture_list.append(cc)
-
-        encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
-        self.data['canvas_data']['capture_list'].append(encoded_capture)
-        #print("Capture list length: ", len(self.state.capture_list))
-
-        #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}_capture.png")
-
-        #for c in self.capture_list:
-            #print("Capture in list: ", c, "\n\n")
-
-        self.save_dict()
-
-        # Clear the current state, otherwise it constantly grows and lags the program
-        self.state.paths.clear()
-        self.state.points.clear()
-
-        #print("Length of canvas paths data: ", len(self.data['canvas']['paths']))
-        #print("Number of elements in all paths: ", sum(len(p['elements']) for p in self.data['canvas']['paths']))
 
 
     # Called when the canvas control is resized
-    async def on_canvas_resize(self, e: cv.CanvasResizeEvent=None):
+    async def rebuild_canvas(self, e: cv.CanvasResizeEvent=None):
         """ Rescales stored drawing coordinates to match the new canvas size """
-        # Update our page reference and size
-        #self.canvas.page = self.p
+
+        
         if e is not None:
             self.canvas_width = int(e.width)
             self.canvas_height = int(e.height)
 
-        str_bgimage = self.data.get('canvas_data', {}).get('capture_list', [])[-1]
-        bgimage = cv.Image(str_bgimage, 0, 0, self.canvas_width, self.canvas_height)
-        self.canvas.shapes.append(bgimage)
+        # Reload our most recent capture to fit the new canvas size
+        self.canvas.shapes.clear()
+        str_bgimage = self.data.get('capture_list', [])[-1] if self.data.get('capture_list', []) else None
+        if str_bgimage is not None:
+            bgimage = cv.Image(str_bgimage, 0, 0, self.canvas_width, self.canvas_height)
+            self.canvas.shapes.append(bgimage)
 
+        print("length canvas shapes: ", len(self.canvas.shapes))
+    
         try:
-            self.canvas.update()
+            self.canvas.update()    # Update the canvas
         except Exception as _:
             pass
 
@@ -570,21 +563,19 @@ class Canvas(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        
-
         iv = ft.InteractiveViewer(
             content=self.canvas_container, expand=True,
             scale_factor=750, boundary_margin=50,
             min_scale=0.5, max_scale=2.0, scale=1.0,
         )
 
-        self.canvas_stack.controls = [
+        canvas_stack = ft.Stack([
             ft.Container(expand=True, ignore_interactions=True),
             iv,
             self.information_display.show_info_button,
-        ]
+        ], expand=True)
 
-        self.body_container.content = self.canvas_stack
+        self.body_container.content = canvas_stack
 
         self._render_widget()
 

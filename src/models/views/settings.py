@@ -192,7 +192,7 @@ class Settings(ft.View):
         
 
     # Called when the page is resized
-    def _page_resized(self, e=None):
+    def page_resized(self, e=None):
         ''' This is set inside of app.load_settings() to be called whenever the page is resized. Saves the new page size to data/if its maximized'''
 
         # If we're minmized, save nothing and just return
@@ -212,6 +212,7 @@ class Settings(ft.View):
             self.data['page_height'] = self.p.height
             self.save_dict()
             return
+
         
     def _get_color_options(e=None, is_theme_dropdown: bool=False):
         ''' Adds our choices to the color scheme dropdown control'''

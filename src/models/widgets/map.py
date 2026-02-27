@@ -362,6 +362,7 @@ class Map(Widget):
         # Little Info Display Button in the bottom right that can be dragged around and shows map info display. No header, clicking canvas does not open it
         # Also drawing mode button should be near it
         # Users can choose to create their image or use some default ones, or upload their own
+        # Make show_info_button is a checkmark when in drawing mode
 
         # Clear our map stack controls so we can re-add them
         self.map_stack.controls.clear()

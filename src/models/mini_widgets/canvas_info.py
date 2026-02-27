@@ -39,12 +39,16 @@ class CanvasInformationDisplay(MiniWidget):
             {   
                 'title': self.title,          # Title of the mini widget, should match the object title
                 'tag': "canvas_information_display",        
-                'left': 40,
+                'left': 40,     # Position of our button
                 'top': 40,
-                'alignment': None,
+                'alignment': None,      # Saved alignment of our button for easier resizing
 
                 # Canvas info
                 'Description': str,
+                "Width": None,
+                "Height": None,
+                "Aspect Ratio": None,      # Used over height and width if set
+                'Is Locked': False, # Lock state tracking. When locked, no changes can be made (no drawing)
                 'Layers': list, #??
             },
         )

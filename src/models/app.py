@@ -77,9 +77,12 @@ class App:
         else:
             page.window.width = app.settings.data.get('page_width')
             page.window.height = app.settings.data.get('page_height')
+            page.window.left = app.settings.data.get('page_left')
+            page.window.top = app.settings.data.get('page_top')
+
 
         # Set our logic when page window is resized
-        page.on_resized = app.settings._page_resized
+        page.on_resize = app.settings.page_resized
 
 
       # Called on app startup in main

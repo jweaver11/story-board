@@ -62,7 +62,7 @@ class Widget(ft.Container):
                     'directory_path': self.directory_path,          # Directory path to the file this widget's data is stored in
                     'tag': str,                                     # Tag to identify what type of widget this is
                     'pin_location': "main" if data is None else data.get('pin_location', "main"),       # Pin location this widget is rendered in the workspace (main, left, right, top, or bottom)
-                    'index': int,                                   # Index of this widget in its pin location
+                    'index': 999,                                   # Index of this widget in its pin location (start at end)
                     'visible': True,                                # Whether this widget is visible in the workspace or not
                     'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
                     #'color': str,                                  # Color of the icon and tab divider for this widget. Child classes set this on creation  
