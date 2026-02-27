@@ -433,13 +433,14 @@ class Story(ft.View):
                         # Extract the title from the data
                         key = widget_data.get("key", None)
                         tag = widget_data.get("tag", "")
+                        dir_path = widget_data.get("directory_path", "")
 
                         match tag:
                             case "document": 
                                 self.documents[key] = Document(     # Create the object in its dict
                                     title=widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
-                                    directory_path=widget_data.get('directory_path', self.data['content_directory_path']),
+                                    directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
@@ -448,7 +449,7 @@ class Story(ft.View):
                                 self.canvases[key] = Canvas(
                                     title=widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
-                                    directory_path=widget_data.get('directory_path', self.data['content_directory_path']),
+                                    directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
@@ -457,7 +458,7 @@ class Story(ft.View):
                                 self.canvas_boards[key] = CanvasBoard(
                                     widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
-                                    directory_path=widget_data.get('directory_path', self.data['content_directory_path']),
+                                    directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
@@ -466,7 +467,7 @@ class Story(ft.View):
                                 self.notes[key] = Note(
                                     title=widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
-                                    directory_path=widget_data.get('directory_path', self.data['content_directory_path']),
+                                    directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
@@ -475,7 +476,7 @@ class Story(ft.View):
                                 self.characters[key] = Character(
                                     widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
-                                    directory_path=widget_data.get('directory_path', self.data['content_directory_path']),
+                                    directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
@@ -484,7 +485,7 @@ class Story(ft.View):
                                 self.plotlines[key] = Plotline(
                                     title=widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
-                                    directory_path=widget_data.get('directory_path', self.data['content_directory_path']),
+                                    directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
@@ -493,7 +494,7 @@ class Story(ft.View):
                                 self.maps[key] = Map(
                                     title=widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
-                                    directory_path=widget_data.get('directory_path', self.data['content_directory_path']),
+                                    directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
@@ -502,7 +503,7 @@ class Story(ft.View):
                                 self.worlds[key] = World(
                                     title=widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
-                                    directory_path=widget_data.get('directory_path', self.data['content_directory_path']),
+                                    directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
@@ -511,7 +512,7 @@ class Story(ft.View):
                                 self.character_connection_maps[key] = CharacterConnectionMap(
                                     widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
-                                    directory_path=widget_data.get('directory_path', self.data['content_directory_path']),
+                                    directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )

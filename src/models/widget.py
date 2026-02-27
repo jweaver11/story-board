@@ -92,7 +92,7 @@ class Widget(ft.Container):
         self.side_bar: ft.Control = None            # Optional side bar control to display to the side of our body
 
         # File picker
-        self.fp: ft.FilePicker   # File picker for uploading files in our widgets. Result handled by _file_picker_result
+        self.file_picker = ft.FilePicker()  # File picker for uploading, saving, etc
     
         # Container that holds our main body content. Gets built in reload_widget of child classes
         self.body_container = ft.Container(expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(16), on_size_change=self._get_size, size_change_interval=500) 
@@ -133,7 +133,7 @@ class Widget(ft.Container):
         # Handle errors
         except Exception as e:
             print(f"Error saving widget to {file_path}: {e}") 
-            print("Data that failed to save: ", self.data)
+            #print("Data that failed to save: ", self.data)
 
     # Called for little data changes
     def change_data(self, **kwargs):
@@ -233,7 +233,7 @@ class Widget(ft.Container):
         self.w = e.width
         self.h = e.height
 
-        print("New size for ", self.title, ": ", self.w, self.h)
+        #print("New size for ", self.title, ": ", self.w, self.h)
 
         # Mini widgets won't show unless we re-render on launch since first render has no size reference to grab them with
         if self.force_size_render:
@@ -779,11 +779,12 @@ class Widget(ft.Container):
 
             # If we are in the main pin, our tab and master_stack are shown, so update those
             if self.data.get('pin_location', '') == 'main':
+
                 self.master_stack.update()       
                 self.tab.update()
                 self.update()       # Crucial for sub controls to update through the tree to the page, even though we are technically not on it in main
 
-            # If not in the main pin, we are directly on the page, so update ourselves
+            # If not in the main pin, we are directly on the page, so just update ourselves
             else:
                 self.update()
         except Exception as e:

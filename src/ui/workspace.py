@@ -41,7 +41,6 @@ class Workspace(ft.Container):
 
         # Main pin is not rendered directly since it changes based on active tab when more than one widget is present
         self.main_pin = []      # List to hold all our widgets in the main pin that we manipulate easier
-        self.main_pin_tabs: ft.Tabs
 
         # Pin drag targets
         self.top_pin_drag_target = ft.DragTarget(
@@ -240,9 +239,11 @@ class Workspace(ft.Container):
         
         if len(story.widgets) == 0: # Return early if no widgets exist yet
             return
+        
+        sorted_widgets = sorted(story.widgets, key=lambda w: w.data.get('index', 0))    # Sort our widgets by their index in their pin location so they are in the correct order when we add them back to the UI
 
         # Go through all our widgets in the story
-        for w in story.widgets:
+        for w in sorted_widgets:
 
             # Check if they are visible
             if w.data.get('visible', False):
@@ -308,6 +309,34 @@ class Workspace(ft.Container):
             if stolen_widget is not None:
                 stolen_widget.data['pin_location'] = "main"
                 stolen_widget.save_dict()
+
+            
+        for idx, w in enumerate(self.main_pin):
+            old_index = w.data.get('index', 0)
+            w.data['index'] = idx
+            if old_index != w.data['index']:
+                w.save_dict()
+        for idx, w in enumerate(self.left_pin.controls):
+            old_index = w.data.get('index', 0)
+            w.data['index'] = idx
+            if old_index != w.data['index']:
+                w.save_dict()
+        for idx, w in enumerate(self.right_pin.controls):
+            old_index = w.data.get('index', 0)
+            w.data['index'] = idx
+            if old_index != w.data['index']:
+                w.save_dict()
+        for idx, w in enumerate(self.top_pin.controls):
+            old_index = w.data.get('index', 0)
+            w.data['index'] = idx
+            if old_index != w.data['index']:
+                w.save_dict()
+        for idx, w in enumerate(self.bottom_pin.controls):
+            old_index = w.data.get('index', 0)
+            w.data['index'] = idx
+            if old_index != w.data['index']:
+                w.save_dict()
+        
 
 
     # Called when we need to reload our workspace content, especially after pin drags
@@ -413,15 +442,25 @@ class Workspace(ft.Container):
             drag_interval=20,
         )
 
-        def tab_change(e: ft.Event):
-            pass
+        async def tab_change(e: ft.Event):
+
+            for idx, w in enumerate(self.main_pin):
+                old_is_active_tab = w.data.get('is_active_tab', False)
+                if idx == e.data:
+                    w.data['is_active_tab'] = True
+                else:
+                    w.data['is_active_tab'] = False
+
+                if old_is_active_tab != w.data['is_active_tab']:    # Only save changes
+                    w.save_dict()
+
 
         
         # Main pin is rendered as a tab control, so we won't use dividers and will use different logic
         if len(self.main_pin) > 1:
                 
             # Hold all our main pin tabs
-            self.main_pin_tabs = ft.Tabs(
+            main_pin_tabs = ft.Tabs(
                 expand=True, length=len(self.main_pin),
                 selected_index=-1,
                 on_change=tab_change,
@@ -437,7 +476,7 @@ class Workspace(ft.Container):
                 ], expand=True),
             )   
             
-            self.main_pin_tabs.selected_index = -1   #TODO: Set to active tab
+            main_pin_tabs.selected_index = -1   #TODO: Set to active tab
             
             # Stick it in a container for styling
             formatted_main_pin = ft.Container(
@@ -445,11 +484,17 @@ class Workspace(ft.Container):
                 gradient=dark_gradient, 
                 margin=ft.Margin.all(0),
                 padding=ft.Padding.only(top=0, bottom=8, left=8, right=8),
-                content=self.main_pin_tabs
+                content=main_pin_tabs
             )
+
+            for idx, widget in enumerate(self.main_pin):
+                if widget.data.get('is_active_tab', False):
+                    main_pin_tabs.selected_index = idx
+                    break
 
         elif len(self.main_pin) == 1:
             formatted_main_pin = self.main_pin[0]
+            main_pin_tabs.selected_index = 0    
         else:
             formatted_main_pin = ft.Container(expand=True)
         

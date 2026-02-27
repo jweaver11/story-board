@@ -12,6 +12,8 @@ Canvases are drawings and images
 # Fill tool??
 # Ability to Lock (no drawing mode) for images
 # Little Info Display Button in the bottom right that can be dragged around and shows canvas info display
+# Manage saving so not at the end of every stroke.
+# Add undo/redo based on capture list
 
 from flet_color_pickers import ColorPicker
 import flet as ft
@@ -24,6 +26,8 @@ import flet.canvas as cv
 import math
 from models.app import app
 from models.mini_widgets.canvas_info import CanvasInformationDisplay
+import json
+import base64
 
 
 
@@ -68,6 +72,8 @@ class Canvas(Widget):
                     'shadow_paths': list,       # All paths but with shadows
                     'points': list,             # All our points
 
+                    'capture_list': list,
+
                     # Sizing of the canvas
                     "width": None,
                     "height": None,
@@ -84,29 +90,31 @@ class Canvas(Widget):
             },
         )
 
-        # State tracking for canvas drawing info
-        self.state: State = State()         # Used for our coordinates and how to apply things
-        self.min_segment_dist: float = 3.0
-        self.canvas_width: int = 0
-        self.canvas_height: int = 0
 
-      
+        decoded_capture_list = [base64.b64decode(capture) for capture in self.data.get('canvas_data', {}).get('capture_list', [])]
+
+        # State tracking for canvas drawing info
+        self.state = State(capture_list = decoded_capture_list)         # Used for our coordinates and how to apply things
+        self.min_segment_dist = 3.0
+        self.canvas_width = 0
+        self.canvas_height = 0
+        
 
         self.canvas = cv.Canvas(
             content=ft.GestureDetector(
                 mouse_cursor=ft.MouseCursor.PRECISE,
                 on_pan_start=self.start_drawing,
                 on_pan_update=self.is_drawing,
-                on_pan_end=lambda e: self.save_canvas(),
+                on_pan_end=lambda e: self.p.run_task(self.save_canvas),
                 on_tap_up=self.add_point,      # Handles so we can add points
-                drag_interval=5,
+                drag_interval=10,
                 expand=True,
             ),
-            expand=True,
-            on_resize=self.on_canvas_resize, resize_interval=500,
+            expand=True, shapes=[],
+            on_resize=self.on_canvas_resize, 
+            resize_interval=500,
         )
 
-        self.canvases_list = [self.canvas]  # Not used, but may be for layering
 
         self.canvas_container = ft.Container(
             width=self.data.get('canvas_data', {}).get('width', None),
@@ -240,6 +248,11 @@ class Canvas(Widget):
                     self.p.open(SnackBar(f"Error loading {self.title}"))
 
             self.canvas.shapes.append(new_path)
+
+
+        
+
+        
     
 
     # Called when we click the canvas and don't initiate a drag
@@ -254,17 +267,19 @@ class Canvas(Widget):
         
         # Add point to the canvas and our state data
         self.canvas.shapes.append(point)
-        self.state.points.append((e.local_position.x, e.local_position.y, point.point_mode, point.paint.__dict__))
+        self.state.points.append((e.local_position.x, e.local_position.y, point.point_mode.value, app.settings.data.get('paint_settings', {})))
 
         # After dragging canvas widget, it loses page reference and can't update, so the exception handles that.
         try:
             self.canvas.update()
-        except Exception as ex:
-            #self.canvas.page = self.p
-            self.canvas.update()
+        except Exception as e:
+            print("Failed to update canvas")
+
+        #print(self.state.points)
+        #print(self.canvas.shapes)
             
         # Save our canvas data
-        self.save_canvas()
+        #self.save_canvas()
         
     # Called when we start drawing on the canvas
     async def start_drawing(self, e: ft.DragStartEvent):
@@ -346,7 +361,7 @@ class Canvas(Widget):
 
         
     # Called when actively drawing on the canvas
-    async def is_drawing(self, e: ft.PointerEvent):
+    async def is_drawing(self, e: ft.DragUpdateEvent):
         ''' Creates our line to add to the canvas as we draw, and saves that paths data to self.state '''
 
         # Sampling to improve perforamance. If the line length is too small, we skip it
@@ -379,10 +394,9 @@ class Canvas(Widget):
                 try:
                     # Much more effecient to just update the path, but that fails on first update due to lost page references
                     self.current_path.update()
-                    
+                    self.canvas.update()
                 # This re-sets the canvas page, which all paths need to update correctly. This should only catch one time per stroke
-                except Exception as ex:
-                    #self.canvas.page = self.p
+                except Exception as e:
                     self.canvas.update()
                 return
         
@@ -411,9 +425,8 @@ class Canvas(Widget):
                 # Update the page and return early
                 try:
                     self.current_path.update()
-                    
+                    self.canvas.update()
                 except Exception as ex:
-                    #self.canvas.page = self.p
                     self.canvas.update()
                 return
         
@@ -433,9 +446,8 @@ class Canvas(Widget):
                 try:
                     # Page reference gets lost after dragging widget to new canvas, so we reset it and update
                     self.current_path.update()
-                   
+                    self.canvas.update()
                 except Exception as ex:
-                    #self.canvas.page = self.p
                     self.canvas.update()
                 return
         
@@ -454,8 +466,8 @@ class Canvas(Widget):
                 # After dragging canvas widget, it loses page reference and can't update
                 try:
                     self.current_path.update()
+                    self.canvas.update()
                 except Exception as ex:
-                    #self.canvas.page = self.p
                     self.canvas.update()
                 
 
@@ -464,14 +476,29 @@ class Canvas(Widget):
         
 
     # Called when we release the mouse to stop drawing a line
-    def save_canvas(self):
+    async def save_canvas(self):
         """ Saves our paths to our canvas data for storage """
         
         # Add on to what we already have
-        if self.state.paths:
-            self.data['canvas_data']['paths'].extend(self.state.paths)
-        if self.state.points:
-            self.data['canvas_data']['points'].extend(self.state.points)
+        #if self.state.paths:
+            #self.data['canvas_data']['paths'].extend(self.state.paths)
+        #if self.state.points:
+            #self.data['canvas_data']['points'].extend(self.state.points)
+
+        await self.canvas.capture()
+        cc = await self.canvas.get_capture()
+            
+
+        self.state.capture_list.append(cc)
+
+        encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
+        self.data['canvas_data']['capture_list'].append(encoded_capture)
+        #print("Capture list length: ", len(self.state.capture_list))
+
+        #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}_capture.png")
+
+        #for c in self.capture_list:
+            #print("Capture in list: ", c, "\n\n")
 
         self.save_dict()
 
@@ -492,14 +519,22 @@ class Canvas(Widget):
             self.canvas_width = int(e.width)
             self.canvas_height = int(e.height)
 
+        str_bgimage = self.data.get('canvas_data', {}).get('capture_list', [])[-1]
+        bgimage = cv.Image(str_bgimage, 0, 0, self.canvas_width, self.canvas_height)
+        self.canvas.shapes.append(bgimage)
+
+        try:
+            self.canvas.update()
+        except Exception as _:
+            pass
+
         if self.information_display.data.get('left', None) is None or self.information_display.data.get('top', None) is None:
             self.information_display.data['left'] = 30
             self.information_display.data['top'] = self.canvas_height - 30
             self.information_display.show_info_button.left = 30
             self.information_display.show_info_button.top = self.canvas_height - 30
-            #self.information_display.show_info_button.page = self.p
             self.information_display.show_info_button.update()
-            self.information_display.save_dict()
+            #self.information_display.save_dict()
 
 
     def _set_canvas_background(self, e):
@@ -524,80 +559,9 @@ class Canvas(Widget):
 
 
     # TODO: NOT TESTED ----------------------------------
-    def export_canvas(self, filename: str = "canvas_export.png", desired_width: int = 1920, desired_height: int = 1080):
+    def export_canvas(self):
         """Exports the canvas as an image at desired size, computing bounds if no meta exists."""
-        shapes = self.data.get('canvas_data', {})
         
-        # Compute bounding box from all coordinates
-        min_x, min_y, max_x, max_y = float('inf'), float('inf'), float('-inf'), float('-inf')
-        
-        # Check points
-        for point in shapes.get('points', []):
-            px, py = point[0], point[1]
-            min_x = min(min_x, px)
-            min_y = min(min_y, py)
-            max_x = max(max_x, px)
-            max_y = max(max_y, py)
-        
-        # Check paths
-        for path in shapes.get('paths', []):
-            for element in path.get('elements', []):
-                if 'x' in element and 'y' in element:
-                    min_x = min(min_x, element['x'])
-                    min_y = min(min_y, element['y'])
-                    max_x = max(max_x, element['x'])
-                    max_y = max(max_y, element['y'])
-        
-        # If no shapes, use defaults
-        if min_x == float('inf'):
-            min_x, min_y, max_x, max_y = 0, 0, desired_width, desired_height
-        
-        # Calculate original bounds
-        orig_width = max_x - min_x
-        orig_height = max_y - min_y
-        
-        # Avoid division by zero
-        if orig_width == 0:
-            orig_width = 1
-        if orig_height == 0:
-            orig_height = 1
-        
-        # Scale factor to fit desired size (maintain aspect ratio or stretch as needed)
-        scale_x = desired_width / orig_width
-        scale_y = desired_height / orig_height
-        scale = min(scale_x, scale_y)  # To fit without cropping; use max for stretching
-        
-        # Create image at desired size
-        #img = Image.new("RGBA", (desired_width, desired_height), (255, 255, 255, 0))
-        #draw = ImageDraw.Draw(img)
-        
-        # Render shapes, scaled and translated
-        offset_x = (desired_width - orig_width * scale) / 2  # Center horizontally
-        offset_y = (desired_height - orig_height * scale) / 2  # Center vertically
-        
-        # Render points
-        for point in shapes.get('points', []):
-            px, py, point_mode, paint_settings = point
-            scaled_x = (px - min_x) * scale + offset_x
-            scaled_y = (py - min_y) * scale + offset_y
-            # Draw as circle (adapt for point_mode)
-            #draw.ellipse((scaled_x-2, scaled_y-2, scaled_x+2, scaled_y+2), fill=paint_settings.get('color', 'black'))
-        
-        # Render paths (simplified; full path rendering needs more logic for curves)
-        for path in shapes.get('paths', []):
-            paint_settings = path.get('paint', {})
-            points = []
-            for element in path.get('elements', []):
-                if element['type'] in ['moveto', 'lineto']:
-                    scaled_x = (element['x'] - min_x) * scale + offset_x
-                    scaled_y = (element['y'] - min_y) * scale + offset_y
-                    points.append((scaled_x, scaled_y))
-            #if points:
-                #draw.line(points, fill=paint_settings.get('color', 'black'), width=2)
-        
-        #img.save(os.path.join(self.directory_path, filename))
-        self.page.open(SnackBar(f"Canvas exported to {filename} at {desired_width}x{desired_height}"))
-        self.page.update()
 
     # Called when we need to rebuild out plotline UI
     def reload_widget(self):       
@@ -623,5 +587,7 @@ class Canvas(Widget):
         self.body_container.content = self.canvas_stack
 
         self._render_widget()
+
+        
  
 
