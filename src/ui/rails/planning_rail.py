@@ -31,12 +31,12 @@ class PlanningRail(Rail):
         ''' Reloads planning, useful when switching stories '''
 
         # Build the content of our rail
-        self.contorls = [
-                #header,
-                #ft.Divider(),
-                ft.Text("Coming Soon")
-                #menu_gesture_detector
-            ]
+        self.controls = [
+            #header,
+            #ft.Divider(),
+            ft.Text("Coming Soon")
+            #menu_gesture_detector
+        ]
         
 
         # Apply the update

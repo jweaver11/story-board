@@ -81,7 +81,7 @@ class TreeViewFile(ft.GestureDetector):
                 content=ft.PopupMenuButton(
                     content=ft.Container(
                         ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.widget.data.get('color', 'primary'),), ft.Text("Color",  weight=ft.FontWeight.BOLD),]),
-                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
                     ),
                     tooltip=f"Change {self.widget.title} Color", menu_padding=0,
                     items=self._get_color_options()
