@@ -389,7 +389,7 @@ class Canvas(Widget):
                 try:
                     # Much more effecient to just update the path, but that fails on first update due to lost page references
                     self.current_path.update()
-                    self.canvas.update()
+                    #self.canvas.update()
                 # This re-sets the canvas page, which all paths need to update correctly. This should only catch one time per stroke
                 except Exception as e:
                     self.canvas.update()
@@ -420,7 +420,7 @@ class Canvas(Widget):
                 # Update the page and return early
                 try:
                     self.current_path.update()
-                    self.canvas.update()
+                    #self.canvas.update()
                 except Exception as ex:
                     self.canvas.update()
                 return
@@ -441,7 +441,7 @@ class Canvas(Widget):
                 try:
                     # Page reference gets lost after dragging widget to new canvas, so we reset it and update
                     self.current_path.update()
-                    self.canvas.update()
+                    #self.canvas.update()
                 except Exception as ex:
                     self.canvas.update()
                 return
@@ -461,7 +461,7 @@ class Canvas(Widget):
                 # After dragging canvas widget, it loses page reference and can't update
                 try:
                     self.current_path.update()
-                    self.canvas.update()
+                    #self.canvas.update()
                 except Exception as ex:
                     self.canvas.update()
                 

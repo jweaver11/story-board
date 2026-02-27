@@ -303,17 +303,14 @@ class CharactersRail(Rail):
             ]
         )
 
-        self.content = IsolatedColumn(
-            spacing=0,
-            expand=True,
-            controls=[
-                header,
-                ft.Divider(),
-                ft.Container(height=6),
-                header_2,
-                menu_gesture_detector
-            ]
-        )
+        self.controls = [
+            header,
+            ft.Divider(),
+            ft.Container(height=6),
+            header_2,
+            menu_gesture_detector
+        ]
+        
         
         # Apply the update
         try:

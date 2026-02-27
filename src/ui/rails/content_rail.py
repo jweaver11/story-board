@@ -30,8 +30,8 @@ class ContentRail(Rail):
                 tooltip="New", menu_padding=0,
                 items=[
                     ft.PopupMenuItem(
-                        "Category", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
-                        on_click=self.new_item_clicked, data="category"
+                        "Folder", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
+                        on_click=self.new_item_clicked, data="folder"
                     ),
                     ft.PopupMenuItem(
                         "Document", icon=ft.Icons.NOTE_ADD_OUTLINED,
@@ -114,23 +114,23 @@ class ContentRail(Rail):
                     tooltip="New", menu_padding=0, expand=True, padding=ft.Padding.all(0),
                     items=[
                         ft.PopupMenuItem(
-                            "Category", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
-                            on_click=self.new_item_clicked, data="category"
+                            "Folder", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
+                            on_click=self.new_item_clicked, data="folder"
                         ),
                         ft.PopupMenuItem(
                             "Document", icon=ft.Icons.NOTE_ADD_OUTLINED,
                             on_click=self.new_item_clicked, data="document"
                         ),
                         ft.PopupMenuItem(
-                            "Canvas", icon=ft.Icons.BRUSH_OUTLINED,
+                            "Canvas", icon=ft.Icons.BRUSH_OUTLINED, disabled=True,
                             on_click=self.new_item_clicked, data="canvas"
                         ),
                         ft.PopupMenuItem(
                             "Canvas Board", icon=ft.Icons.SPACE_DASHBOARD_OUTLINED,
-                            on_click=self.new_item_clicked, data="canvas_board"
+                            on_click=self.new_item_clicked, data="canvas_board", disabled=True
                         ),
                         ft.PopupMenuItem(
-                            "Note", ft.Icons.NOTE_ALT_OUTLINED,
+                            "Note", ft.Icons.NOTE_ALT_OUTLINED, disabled=True,
                             on_click=self.new_item_clicked, data="note"
                         ),
                         ft.PopupMenuItem(
@@ -142,11 +142,11 @@ class ContentRail(Rail):
                             on_click=self.new_item_clicked, data="character_connection_map"
                         ),
                         ft.PopupMenuItem(
-                            "Plotline", icon=ft.Icons.TIMELINE_OUTLINED,
+                            "Plotline", icon=ft.Icons.TIMELINE_OUTLINED, disabled=True,
                             on_click=self.new_item_clicked, data="plotline"
                         ),
                         ft.PopupMenuItem(
-                            "Map", icon=ft.Icons.MAP_OUTLINED,
+                            "Map", icon=ft.Icons.MAP_OUTLINED, disabled=True,
                             on_click=self.new_item_clicked, data="map"
                         ),
                         ft.PopupMenuItem(
@@ -165,14 +165,14 @@ class ContentRail(Rail):
                     ),
                     tooltip="Upload", menu_padding=0,
                     items=[
-                        ft.PopupMenuItem("Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,),
+                        ft.PopupMenuItem("Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED, disabled=True),
                         ft.PopupMenuItem("Document", icon=ft.Icons.NOTE_ADD_OUTLINED,),
-                        ft.PopupMenuItem("Canvas", icon=ft.Icons.BRUSH_OUTLINED,),
+                        ft.PopupMenuItem("Canvas", icon=ft.Icons.BRUSH_OUTLINED, disabled=True),
                         ft.PopupMenuItem("Note", icon=ft.Icons.NOTE_ALT_OUTLINED,),
                         ft.PopupMenuItem("Character", icon=ft.Icons.PERSON_OUTLINED,),
                         ft.PopupMenuItem("Family Tree", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED),
-                        ft.PopupMenuItem("Plotline", icon=ft.Icons.TIMELINE_OUTLINED,),
-                        ft.PopupMenuItem("Map", icon=ft.Icons.MAP_OUTLINED,),
+                        ft.PopupMenuItem("Plotline", icon=ft.Icons.TIMELINE_OUTLINED, disabled=True),
+                        ft.PopupMenuItem("Map", icon=ft.Icons.MAP_OUTLINED, disabled=True),
                         ft.PopupMenuItem("World Building", icon=ft.Icons.PUBLIC_OUTLINED,),
                     ]
                 ),

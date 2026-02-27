@@ -351,9 +351,6 @@ class Widget(ft.Container):
         ''' Reverts the color change of the hide icon button '''
         e.control.icon_color = ft.Colors.OUTLINE
         e.control.update()
-        
-        
-    
 
     # Called when app clicks the hide icon in the tab
     def toggle_visibility(self, e=None, value: bool=None):
@@ -365,6 +362,10 @@ class Widget(ft.Container):
         else:
             # Change our visibility data, save it, then apply it
             self.data['visible'] = not self.data['visible']
+
+        # Make us not the active tab if we were the one
+        if self.data.get('is_active_tab', False) and not self.data.get('visible'):
+            self.data['is_active_tab'] = False
 
         # Save our changes and reload the UI
         self.save_dict()

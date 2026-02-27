@@ -363,6 +363,7 @@ class Workspace(ft.Container):
                 self.top_pin.height = self.minimum_pin_height
             elif self.top_pin.height > self.p.height/2:
                 self.top_pin.height = self.p.height/2
+            self.top_pin_drag_target.content.height = self.top_pin.height  
             formatted_top_pin.update()   # Update the formatted container that holds the pin and divider, since the pin itself is not rendered directly and has no resizer on it
         
         # The control that holds our divider, which we drag to resize the top pin
@@ -385,6 +386,7 @@ class Workspace(ft.Container):
                 self.left_pin.width = self.minimum_pin_width
             elif self.left_pin.width > self.p.width/2:
                 self.left_pin.width = self.p.width/2
+            self.left_pin_drag_target.content.width = self.left_pin.width
             formatted_left_pin.update()    # Update the formatted container that holds the pin and divider, since the pin itself is not rendered directly and has no resizer on it
         
         left_pin_resizer = ft.GestureDetector(
@@ -407,6 +409,7 @@ class Workspace(ft.Container):
                 self.right_pin.width = self.minimum_pin_width
             elif self.right_pin.width > self.p.width/2:
                 self.right_pin.width = self.p.width/2
+            self.right_pin_drag_target.content.width = self.right_pin.width
             formatted_right_pin.update() 
 
         right_pin_resizer = ft.GestureDetector(
@@ -428,6 +431,7 @@ class Workspace(ft.Container):
                 self.bottom_pin.height = self.minimum_pin_height
             elif self.bottom_pin.height > self.p.height/2:
                 self.bottom_pin.height = self.p.height/2
+            self.bottom_pin_drag_target.content.height = self.bottom_pin.height
             formatted_bottom_pin.update()
         
         bottom_pin_resizer = ft.GestureDetector(
@@ -494,7 +498,7 @@ class Workspace(ft.Container):
 
         elif len(self.main_pin) == 1:
             formatted_main_pin = self.main_pin[0]
-            main_pin_tabs.selected_index = 0    
+            
         else:
             formatted_main_pin = ft.Container(expand=True)
         

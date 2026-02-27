@@ -252,16 +252,16 @@ class TreeViewFile(ft.GestureDetector):
             ''' Deletes the widget after confirmation '''
 
             #self.widget.story.close_menu_instant()
-            self.widget.p.close(dlg)
+            self.widget.p.pop_dialog()
             self.widget.story.delete_widget(self.widget) 
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
             title=ft.Text(f"Are you sure you want to delete {self.widget.title} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
             title_padding=ft.Padding.all(25),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.widget.p.close(dlg)),
+                ft.TextButton("Cancel", on_click=lambda e: self.widget.p.pop_dialog(dlg)),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
             ]
         )
@@ -269,7 +269,7 @@ class TreeViewFile(ft.GestureDetector):
         self.widget.story.close_menu_instant()
 
         if app.settings.data.get('confirm_item_delete', False):
-            self.widget.p.open(dlg)
+            self.widget.p.show_dialog(dlg)
         else:
             _delete_confirmed()
 

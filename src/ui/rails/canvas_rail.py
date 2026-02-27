@@ -791,6 +791,14 @@ class CanvasRail(Rail):
             ]
         )
 
+        self.controls = [
+            #header,
+            #ft.Divider(),
+            ft.Text("Coming Soon")
+            #menu_gesture_detector
+        ]
+        
+
         # Apply the update
         try:
             self.update()

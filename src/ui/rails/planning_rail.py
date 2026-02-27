@@ -31,16 +31,13 @@ class PlanningRail(Rail):
         ''' Reloads planning, useful when switching stories '''
 
         # Build the content of our rail
-        self.content = IsolatedColumn(
-            spacing=0,
-            expand=True,
-            controls=[
+        self.contorls = [
                 #header,
                 #ft.Divider(),
                 ft.Text("Coming Soon")
                 #menu_gesture_detector
             ]
-        )
+        
 
         # Apply the update
         try:

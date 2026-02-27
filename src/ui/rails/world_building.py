@@ -193,15 +193,12 @@ class WorldBuildingRail(Rail):
         )
 
         # Set our content to be a column
-        self.content = IsolatedColumn(
-            spacing=0,
-            expand=True,
-            controls=[
-                header,
-                ft.Divider(),
-                menu_gesture_detector
-            ]
-        )
+        self.controls = [
+            header,
+            ft.Divider(),
+            menu_gesture_detector
+        ]
+        
         
         # Apply the update
         try:

@@ -57,7 +57,7 @@ class Rail(ft.Column):
 
 
         # State variables used for our UI to track logic
-        self.item_is_unique = True          # If the new category, chapter, note, etc. title is unique within its directory
+        self.item_is_unique = True          # If the new folder, chapter, note, etc. title is unique within its directory
         self.are_submitting = False         # If we are currently submitting this item
 
 
@@ -174,7 +174,7 @@ class Rail(ft.Column):
                 self.new_item_textfield.hint_text = "World Building Name"
             case "plot_point": 
                 self.new_item_textfield.hint_text = "Plot Point Title"
-            case "character" | "category" :
+            case "character" | "folder" :
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
                 if tag == "character":
                     self.new_item_textfield.icon = ft.PopupMenuButton(
@@ -221,7 +221,7 @@ class Rail(ft.Column):
         nk = self.directory_path + "\\" + title + "_" + e.control.data
         new_key = os.path.normpath(nk)
 
-        if tag == "category":
+        if tag == "folder":
             new_key = os.path.normcase(os.path.normpath(self.directory_path + "\\" + title))
             new_key = new_key.strip()  # Remove trailing spaces for folder names
             for key in self.story.data['folders'].keys():
@@ -229,7 +229,7 @@ class Rail(ft.Column):
                 # Path comparisons require normalization
                 if os.path.normcase(os.path.normpath(key)) == new_key:
                     self.item_is_unique = False
-                    error_text = "Category must be unique."
+                    error_text = "Folder must be unique."
                     break
 
         # Some mini widgets that have their own uniquess checks
@@ -319,7 +319,7 @@ class Rail(ft.Column):
 
             match tag:
                 # New categories
-                case "category":
+                case "folder":
                     # Create our new category
                     self.story.create_folder(directory_path=self.directory_path, name=title)
 
