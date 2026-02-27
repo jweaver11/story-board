@@ -286,25 +286,28 @@ class Workspace(ft.Container):
             
             # Steal last widget from left controls first
             if len(self.left_pin.controls) > 0:
-                stole_widget = self.left_pin.controls.pop()
-                self.main_pin.append(stole_widget)
+                stolen_widget = self.left_pin.controls.pop()
+                self.main_pin.append(stolen_widget)
             # Then right if left is emtpy
             elif len(self.right_pin.controls) > 0:
-                stole_widget = self.right_pin.controls.pop()
-                self.main_pin.append(stole_widget)
+                stolen_widget = self.right_pin.controls.pop()
+                self.main_pin.append(stolen_widget)
             # Then top if right is empty
             elif len(self.top_pin.controls) > 0:
-                stole_widget = self.top_pin.controls.pop()
-                self.main_pin.append(stole_widget)
+                stolen_widget = self.top_pin.controls.pop()
+                self.main_pin.append(stolen_widget)
             # Then bottom if top is empty
             elif len(self.bottom_pin.controls) > 0:
-                stole_widget = self.bottom_pin.controls.pop()
-                self.main_pin.append(stole_widget)
+                stolen_widget = self.bottom_pin.controls.pop()
+                self.main_pin.append(stolen_widget)
+
+            else:
+                stolen_widget = None
             
             # If we stole a widget, make its data match its new location
-            if stole_widget is not None:
-                stole_widget.data['pin_location'] = "main"
-                stole_widget.save_dict()
+            if stolen_widget is not None:
+                stolen_widget.data['pin_location'] = "main"
+                stolen_widget.save_dict()
 
 
     # Called when we need to reload our workspace content, especially after pin drags
@@ -449,7 +452,7 @@ class Workspace(ft.Container):
             formatted_main_pin = self.main_pin[0]
         else:
             formatted_main_pin = ft.Container(expand=True)
-
+        
         
         # Formatted pin locations that hold our pins, and our resizer gesture detectors.
         # Main pin is always expanded and has no resizer, so it doesnt need to be formatted
@@ -457,7 +460,7 @@ class Workspace(ft.Container):
         formatted_left_pin = ft.Row(spacing=0, controls=[self.left_pin, left_pin_resizer]) 
         formatted_right_pin = ft.Row(spacing=0, controls=[right_pin_resizer, self.right_pin])  # Right pin formatting row
         formatted_bottom_pin = ft.Column(spacing=0, controls=[bottom_pin_resizer, self.bottom_pin])  # Bottom pin formatting column
-
+        
         # Check if our pins have any widgets in them. If not, hide them
         if len(self.top_pin.controls) == 0:
             formatted_top_pin.visible = False

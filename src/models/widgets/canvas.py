@@ -248,13 +248,13 @@ class Canvas(Widget):
 
         # Create the point using our paint settings and point mode
         point = cv.Points(
-            points=[(e.local_x, e.local_y)],
+            points=[(e.local_position.x, e.local_position.y)],
             paint=ft.Paint(**app.settings.data.get('paint_settings', {})),
         )
         
         # Add point to the canvas and our state data
         self.canvas.shapes.append(point)
-        self.state.points.append((e.local_x, e.local_y, point.point_mode, point.paint.__dict__))
+        self.state.points.append((e.local_position.x, e.local_position.y, point.point_mode, point.paint.__dict__))
 
         # After dragging canvas widget, it loses page reference and can't update, so the exception handles that.
         try:
@@ -292,7 +292,7 @@ class Canvas(Widget):
         
 
         # Update state x and y coordinates
-        self.state.x, self.state.y = e.local_x, e.local_y
+        self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
         # Clear and set our current path and state to match it
         self.current_path = cv.Path(elements=[], paint=ft.Paint(**safe_paint_settings))
@@ -300,7 +300,7 @@ class Canvas(Widget):
         self.state.paths.append({'elements': list(), 'paint': state_paint_settings})
 
         # Set move to element at our starting position that the mouse is at for the path to start from
-        move_to_element = cv.Path.MoveTo(e.local_x, e.local_y)
+        move_to_element = cv.Path.MoveTo(e.local_position.x, e.local_position.y)
 
         # Add that element to current paths elements and our state paths
         self.current_path.elements.append(move_to_element)
@@ -310,7 +310,7 @@ class Canvas(Widget):
         match style:
             # If we're using lineto (straight lines), add that element to the current path and state right away
             case "lineto":
-                line_element = cv.Path.LineTo(e.local_x, e.local_y)
+                line_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
                 self.current_path.elements.append(line_element)
                 self.state.paths[0]['elements'].append((line_element.__dict__))
 
@@ -319,8 +319,8 @@ class Canvas(Widget):
                     width=20,
                     height=20,
                     
-                    x=e.local_x,
-                    y=e.local_y,
+                    x=e.local_position.x,
+                    y=e.local_position.y,
                     start_angle=math.pi,
                     sweep_angle=-math.pi,
                 )
@@ -333,8 +333,8 @@ class Canvas(Widget):
                     radius=12,
                     rotation=0,
                     large_arc=False,
-                    x=e.local_x,
-                    y=e.local_y,
+                    x=e.local_position.x,
+                    y=e.local_position.y,
                     clockwise=True,
                 )
                 self.current_path.elements.append(arc_element)
@@ -346,12 +346,12 @@ class Canvas(Widget):
 
         
     # Called when actively drawing on the canvas
-    async def is_drawing(self, e: ft.DragUpdateEvent):
+    async def is_drawing(self, e: ft.PointerEvent):
         ''' Creates our line to add to the canvas as we draw, and saves that paths data to self.state '''
 
         # Sampling to improve perforamance. If the line length is too small, we skip it
-        #dx = e.local_x - self.state.x
-        #dy = e.local_y - self.state.y
+        #dx = e.local_position.x - self.state.x
+        #dy = e.local_position.y - self.state.y
         #if dx * dx + dy * dy < self.min_segment_dist * self.min_segment_dist:
             #return
         
@@ -368,8 +368,8 @@ class Canvas(Widget):
                 line_dict = line_element.__dict__
 
                 # Update the elements position
-                line_element.x = e.local_x
-                line_element.y = e.local_y
+                line_element.x = e.local_position.x
+                line_element.y = e.local_position.y
 
                 # Update the dict to match
                 line_dict['x'] = line_element.x
@@ -393,20 +393,20 @@ class Canvas(Widget):
                 arc_dict = arc_element.__dict__
 
                 # Swap directions of arc depending if we drag up or down from starting point
-                if e.local_y - self.state.y >= 0:   # Dragging down
+                if e.local_position.y - self.state.y >= 0:   # Dragging down
                     arc_element.sweep_angle = -math.pi
-                    arc_element.height = abs(self.state.y - e.local_y)
+                    arc_element.height = abs(self.state.y - e.local_position.y)
                     arc_element.y = self.state.y - (arc_element.height / 2)
                     
                 else:       # Dragging up
                     arc_element.sweep_angle = math.pi
-                    arc_element.height = abs(e.local_y - self.state.y)
+                    arc_element.height = abs(e.local_position.y - self.state.y)
                     arc_element.y = abs(self.state.y - (arc_element.height / 2))
 
-                if e.local_x - self.state.x < 0:   # Dragging left, move X position of arc to match
-                    arc_element.x = e.local_x
+                if e.local_position.x - self.state.x < 0:   # Dragging left, move X position of arc to match
+                    arc_element.x = e.local_position.x
 
-                arc_element.width = abs(e.local_x - self.state.x) 
+                arc_element.width = abs(e.local_position.x - self.state.x) 
 
                 # Update the page and return early
                 try:
@@ -423,8 +423,8 @@ class Canvas(Widget):
                 arc_element = self.current_path.elements[-1]
                 arc_dict = arc_element.__dict__
 
-                arc_element.x = e.local_x
-                arc_element.y = e.local_y
+                arc_element.x = e.local_position.x
+                arc_element.y = e.local_position.y
 
                 arc_dict['x'] = arc_element.x
                 arc_dict['y'] = arc_element.y
@@ -445,7 +445,7 @@ class Canvas(Widget):
 
                 #TODO: Add check here to reduce num of lines based on previous start and end??
                 # Set the path element based on what kind of path we're adding, add it to our current path and our state paths
-                path_element = cv.Path.LineTo(e.local_x, e.local_y)
+                path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
 
                 # Add the declared element to our current path and state paths
                 self.current_path.elements.append(path_element)
@@ -460,7 +460,7 @@ class Canvas(Widget):
                 
 
                 # Update our state x and y for the next segment
-                self.state.x, self.state.y = e.local_x, e.local_y
+                self.state.x, self.state.y = e.local_position.x, e.local_position.y
         
 
     # Called when we release the mouse to stop drawing a line

@@ -163,7 +163,7 @@ class CanvasInformationDisplay(MiniWidget):
         else:
             self.data['side_location'] = "left"
 
-        print("Side Location:", self.data['side_location'])
+        #print("Side Location:", self.data['side_location'])
 
         self.save_dict()
 
@@ -173,7 +173,7 @@ class CanvasInformationDisplay(MiniWidget):
                 mw.visible = True
 
         self.show_info_button.update()
-        #self.owner._render_widget()
+        self.owner._render_widget()
     
     # Called when reloading our mini widget UI
     def reload_mini_widget(self, no_update: bool=False):

@@ -781,6 +781,7 @@ class Widget(ft.Container):
             if self.data.get('pin_location', '') == 'main':
                 self.master_stack.update()       
                 self.tab.update()
+                self.update()       # Crucial for sub controls to update through the tree to the page, even though we are technically not on it in main
 
             # If not in the main pin, we are directly on the page, so update ourselves
             else:

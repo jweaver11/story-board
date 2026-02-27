@@ -146,7 +146,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         story.active_rail.display_active_rail(story)
 
         # Build the canvas here
-        page.pop_dialog(alert_dialog)
+        page.pop_dialog()
 
         page.update()
 
@@ -171,7 +171,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         on_change=_check_title, capitalization=ft.TextCapitalization.WORDS # Add check for other widgets with same names
     )
 
-    title_textfield_container = ft.Container(title_textfield, margin=ft.margin.only(top=6))
+    title_textfield_container = ft.Container(title_textfield, margin=ft.Margin.only(top=6))
 
     template_controls = [
         ft.Container(

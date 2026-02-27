@@ -58,7 +58,18 @@ class PlotlineDropdown(ft.GestureDetector):
             text_style=self.text_style,
         )
 
-        self.expansion_tile: ft.ExpansionTile = None    # Placeholder for our expansion tile
+        self.expansion_tile: ft.ExpansionTile = ft.ExpansionTile(
+            title=ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left"),
+            dense=True, expanded=self.is_expanded,
+            visual_density=ft.VisualDensity.COMPACT,
+            tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
+            controls_padding=ft.Padding(10, 0, 0, 0),       # Keeps all sub children indented
+            leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, color=self.color),
+            maintain_state=True, adaptive=True,
+            expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
+            shape=ft.RoundedRectangleBorder(),      # Gets rid of the build in borders
+            on_change=lambda e: self.toggle_expand(),
+        )
 
         
         # Parent constructor
