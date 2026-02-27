@@ -110,15 +110,11 @@ class Rail(ft.Column):
         return template_options
     
     # Called when a widget is dragged and dropped into this directory
-    def on_drag_accept(self, e, new_directory: str):
+    def on_drag_accept(self, e: ft.DragTargetEvent, new_directory: str):
         ''' Moves our widgets into this directory from wherever they were '''
         #print("Drag accepting")
 
-        # Load our data (draggables can't just pass in simple data for some reason)
-        event_data = json.loads(e.data)
-
-        # Grab our draggable from the event
-        draggable = e.page.get_control(event_data.get("src_id"))
+        draggable = e.page.get_control(e.src_id)
             
         # Grab our key and set the widget
         widget_key = draggable.data

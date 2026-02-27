@@ -31,43 +31,43 @@ class ContentRail(Rail):
                 items=[
                     ft.PopupMenuItem(
                         "Folder", icon=ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
-                        on_click=self.new_item_clicked, data="folder"
+                        on_click=self.new_item_clicked, data="folder",
                     ),
                     ft.PopupMenuItem(
                         "Document", icon=ft.Icons.NOTE_ADD_OUTLINED,
                         on_click=self.new_item_clicked, data="document"
                     ),
                     ft.PopupMenuItem(
-                        "Canvas", icon=ft.Icons.BRUSH_OUTLINED,
-                        on_click=self.new_canvas_clicked, data="canvas"
-                    ),
-                    ft.PopupMenuItem(
-                        "Canvas Board", icon=ft.Icons.SPACE_DASHBOARD_OUTLINED,
-                        on_click=self.new_item_clicked, data="canvas_board"
-                    ),
-                    ft.PopupMenuItem(
-                        "Note", ft.Icons.NOTE_ALT_OUTLINED,
+                        "Note", ft.Icons.NOTE_ALT_OUTLINED, 
                         on_click=self.new_item_clicked, data="note"
                     ),
                     ft.PopupMenuItem(
                         "Character", icon=ft.Icons.PERSON_OUTLINED,
                         on_click=self.new_item_clicked, data="character"
-                    ),  
+                    ), 
                     ft.PopupMenuItem(
                         "Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
                         on_click=self.new_item_clicked, data="character_connection_map"
                     ),
                     ft.PopupMenuItem(
-                        "Plotline", icon=ft.Icons.TIMELINE_OUTLINED,
+                        "World", icon=ft.Icons.PUBLIC_OUTLINED,
+                        on_click=self.new_item_clicked, data="world"
+                    ),
+                    ft.PopupMenuItem(
+                        "Canvas", icon=ft.Icons.BRUSH_OUTLINED, disabled=True,
+                        on_click=self.new_canvas_clicked, data="canvas"
+                    ),
+                    ft.PopupMenuItem(
+                        "Canvas Board", icon=ft.Icons.SPACE_DASHBOARD_OUTLINED,
+                        on_click=self.new_item_clicked, data="canvas_board", disabled=True
+                    ),
+                    ft.PopupMenuItem(
+                        "Plotline", icon=ft.Icons.TIMELINE_OUTLINED, disabled=True,
                         on_click=self.new_item_clicked, data="plotline"
                     ),
                     ft.PopupMenuItem(
-                        "Map", icon=ft.Icons.MAP_OUTLINED,
+                        "Map", icon=ft.Icons.MAP_OUTLINED, disabled=True,
                         on_click=self.new_item_clicked, data="map"
-                    ),
-                    ft.PopupMenuItem(
-                        "World", icon=ft.Icons.PUBLIC_OUTLINED,
-                        on_click=self.new_item_clicked, data="world"
                     ),
                 ]
             ),
@@ -228,7 +228,7 @@ class ContentRail(Rail):
         # Wrap the gd in a drag target so we can move characters here
         dt = ft.DragTarget(
             group="widgets", on_will_accept=self.on_will_accepts, on_leave=self.leave_rail,
-            content=ft.Container(content=content, bgcolor=ft.Colors.with_opacity(0, ft.Colors.ON_SURFACE)),     # Our content is the content we built above
+            content=ft.Container(content=content, bgcolor=ft.Colors.with_opacity(0, ft.Colors.ON_SURFACE), border_radius=ft.BorderRadius.all(8)),     # Our content is the content we built above
             on_accept=lambda e: self.on_drag_accept(e, self.directory_path)
         )
         

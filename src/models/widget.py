@@ -221,6 +221,7 @@ class Widget(ft.Container):
 
             # Reload the rail to apply changes
             self.story.active_rail.content.reload_rail()
+            self.story.active_rail.update()
             return True
         else:
             return False
