@@ -99,12 +99,12 @@ class TreeViewFile(ft.GestureDetector):
 
     # Called when hovering mouse over a tree view item
     async def on_hover(self, e):
-        self.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.WHITE)
+        self.content.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
         self.update()
 
     # Called when stopping hover over a tree view item
     async def on_stop_hover(self, e):
-        self.content.bgcolor = ft.Colors.TRANSPARENT
+        self.content.content.bgcolor = ft.Colors.TRANSPARENT
         self.update()
 
     # Called when rename button is clicked
@@ -279,6 +279,10 @@ class TreeViewFile(ft.GestureDetector):
     # Called to reload our tree view file display
     def reload(self):
 
+        ft.ListTile()
+
+        ft.OutlinedBorder
+
         self.content = ft.Container(
             expand=True, 
             padding=ft.Padding(0, 2, 5, 2),
@@ -299,6 +303,22 @@ class TreeViewFile(ft.GestureDetector):
                         ],
                     ),
                 )
+            )
+        )
+
+        self.content = ft.Draggable(
+            group="widgets",
+            data=self.widget.data['key'],
+            content_feedback=ft.TextButton(ft.Row([ft.Icon(self.icon, expand=True), ft.Text(self.widget.title, style=self.text_style, expand=True)], expand=True)),
+            on_drag_start=lambda e: self.widget.story.workspace.show_pin_drag_targets(),
+            content=ft.ListTile(
+                leading=ft.Icon(self.icon, color=self.icon_color),
+                title=ft.Text(self.widget.title, style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                #trailing
+                shape=ft.RoundedRectangleBorder(radius=6),
+                bgcolor=ft.Colors.TRANSPARENT, dense=True,
+                content_padding=ft.Padding.all(0),
+                min_vertical_padding=0,
             )
         )
 
