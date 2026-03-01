@@ -252,10 +252,10 @@ class ContentRail(Rail):
                  
 
         # Build the content of our rail
-        content = IsolatedColumn(
+        content = ft.ListView(
             scroll=ft.ScrollMode.AUTO,
             spacing=0,
-            controls=[]
+            controls=[],
         )
 
         # Load our content directory data into the rail
