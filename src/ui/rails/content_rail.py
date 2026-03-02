@@ -34,21 +34,27 @@ class ContentRail(Rail):
                 ),
                 [
                     ft.MenuItemButton(      # Folders
-                        leading=ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED), content="Folder", 
+                        leading=ft.Icon(ft.Icons.FOLDER_OUTLINED), content="Folder", 
                         data="folder", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new folder to organize your story",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ), 
                     ft.MenuItemButton(      # Documents
-                        leading=ft.Icon(ft.Icons.NOTE_OUTLINED, rotate=ft.Rotate(math.pi * 1.5)), content="Document", 
+                        leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED), content="Document", 
                         data="document", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new document for text chapters or scenes in your story",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ), 
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED), content="Canvas",
+                        data="canvas", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Canvas for sketching drawing, or visual note taking",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
+                    ),
                     ft.MenuItemButton(      
                         leading=ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED), content="Note", 
                         data="note", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new note for jotting down ideas, thoughts, reminders, themes, etc.",
+                        tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ), 
                     ft.SubmenuButton(
@@ -61,28 +67,36 @@ class ContentRail(Rail):
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED), content="Plotline",
                         data="plotline", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
+                        tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED), content="Canvas Board",
+                        data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.MAP_OUTLINED), content="Map",
+                        data="map", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
                     ),
                     ft.SubmenuButton(
                         ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                         self.get_template_options("world"), 
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10),),
+                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10)),
                         tooltip="Create a new world for your story. Choose from templates or create a default world."
                     ),
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED), content="Character Connection Map", 
                         data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
+                        tooltip="Visualize the connections between the characters in your story"
                     ),  
-
-                    # Disabled widgets until performance is fixed to handle them
-                    ft.MenuItemButton("Canvas"),
-                    ft.MenuItemButton("Canvas Board"),
-                    ft.MenuItemButton("Plotline"),
-                    ft.MenuItemButton("Map"),
                 ],
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER),
             ),
             ft.SubmenuButton(
@@ -91,24 +105,31 @@ class ContentRail(Rail):
                     padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
                     width=40, height=40, alignment=ft.Alignment.CENTER
                 ),
-                [
+                [     
                     ft.MenuItemButton(      # Folders
-                        leading=ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED), content="Folder", 
+                        leading=ft.Icon(ft.Icons.FOLDER_OUTLINED), content="Folder", 
                         data="folder", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new folder to organize your story",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ), 
                     ft.MenuItemButton(      # Documents
-                        leading=ft.Icon(ft.Icons.NOTE_OUTLINED, rotate=ft.Rotate(math.pi * 1.5)), content="Document", 
+                        leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED), content="Document", 
                         data="document", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new document for text chapters or scenes in your story"
+                        tooltip="Create a new document for text chapters or scenes in your story",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ), 
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED), content="Canvas",
+                        data="canvas", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Canvas for sketching drawing, or visual note taking",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
+                    ),
                     ft.MenuItemButton(      
                         leading=ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED), content="Note", 
                         data="note", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new note for jotting down ideas, thoughts, reminders, themes, etc.",
+                        tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
-                    ), # TODO: Make note have dropdown for options like blank: themes, research, ideas, etc
+                    ), 
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.PERSON_OUTLINED), content="Character", 
                         data="character", on_click=self.new_item_clicked, close_on_click=True,
@@ -116,32 +137,38 @@ class ContentRail(Rail):
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ),
                     ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED), content="Plotline",
+                        data="plotline", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
+                        tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED), content="Canvas Board",
+                        data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.MAP_OUTLINED), content="Map",
+                        data="map", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
+                    ),
+                    
+                    ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.PUBLIC_OUTLINED), content="World", 
                         data="world", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new world for your story. Choose from templates or create a default world.",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ),
-
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED), content="Character Connection Map", 
                         data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
+                        tooltip="Visualize the connections between the characters in your story"
                     ),  
-
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED), content="Plotline",
-                        data="plotline", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
-                        disabled=True,
-                    ),
-
-                    # Disabled widgets until performance is fixed to handle them
-                    ft.MenuItemButton("Canvas"),
-                    ft.MenuItemButton("Canvas Board"),
-                    #ft.MenuItemButton("Plotline"),
-                    ft.MenuItemButton("Map"),
                 ],
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER),
             ),
         ]
@@ -164,53 +191,72 @@ class ContentRail(Rail):
             MenuOptionStyle(
                 content=ft.SubmenuButton(
                     ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True)], expand=True),
+                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True)], expand=True),
                         padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
                     ),
                     [
                         ft.MenuItemButton(      # Folders
-                            leading=ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED), content="Folder", 
+                            leading=ft.Icon(ft.Icons.FOLDER_OUTLINED), content="Folder", 
                             data="folder", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new folder to organize your story",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                         ), 
                         ft.MenuItemButton(      # Documents
-                            leading=ft.Icon(ft.Icons.NOTE_OUTLINED, rotate=ft.Rotate(math.pi * 1.5)), content="Document", 
+                            leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED), content="Document", 
                             data="document", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new document for text chapters or scenes in your story",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                         ), 
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.BRUSH_OUTLINED), content="Canvas",
+                            data="canvas", on_click=self.new_item_clicked, close_on_click=True,
+                            tooltip="Create a new Canvas for sketching drawing, or visual note taking",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
+                        ),
                         ft.MenuItemButton(      
                             leading=ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED), content="Note", 
                             data="note", on_click=self.new_item_clicked, close_on_click=True,
-                            tooltip="Create a new note for jotting down ideas, thoughts, reminders, themes, etc.",
+                            tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                         ), 
                         ft.SubmenuButton(
                             ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                             self.get_template_options("character"), 
                             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10)),
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10),),
                             tooltip="Create a new character for your story. Choose from templates or create a default character."
+                        ),
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED), content="Plotline",
+                            data="plotline", on_click=self.new_item_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
+                            tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
+                        ),
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED), content="Canvas Board",
+                            data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
+                            tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                        ),
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.MAP_OUTLINED), content="Map",
+                            data="map", on_click=self.new_item_clicked, close_on_click=True,
+                            tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
                         ),
                         ft.SubmenuButton(
                             ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                             self.get_template_options("world"), 
                             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8))
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10)),
+                            tooltip="Create a new world for your story. Choose from templates or create a default world."
                         ),
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED), content="Character Connection Map", 
                             data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
-                            tooltip="Visualize the connections betwee the characters in your story",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
-                        ),  
-
-                        # Disabled widgets until performance is fixed to handle them
-                        ft.MenuItemButton("Canvas"),
-                        ft.MenuItemButton("Canvas Board"),
-                        ft.MenuItemButton("Plotline"),
-                        ft.MenuItemButton("Map"),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
+                            tooltip="Visualize the connections between the characters in your story"
+                        ),
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                     style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
@@ -223,19 +269,71 @@ class ContentRail(Rail):
             MenuOptionStyle(
                 content=ft.SubmenuButton(
                     ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True)], expand=True),
+                        ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True)], expand=True),
                         padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
                     ),
                     [
-                        ft.MenuItemButton("Image"), 
-                        ft.MenuItemButton("Document"), 
-                        ft.MenuItemButton("Canvas"), 
-                        ft.MenuItemButton("Note"), 
-                        ft.MenuItemButton("Character"), 
-                        ft.MenuItemButton("Family Tree"), 
-                        ft.MenuItemButton("Plotline"), 
-                        ft.MenuItemButton("Map"), 
-                        ft.MenuItemButton("World Building"),
+                        ft.MenuItemButton(      # Folders
+                        leading=ft.Icon(ft.Icons.FOLDER_OUTLINED), content="Folder", 
+                        data="folder", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new folder to organize your story",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                    ), 
+                    ft.MenuItemButton(      # Documents
+                        leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED), content="Document", 
+                        data="document", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new document for text chapters or scenes in your story",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                    ), 
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED), content="Canvas",
+                        data="canvas", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Canvas for sketching drawing, or visual note taking",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
+                    ),
+                    ft.MenuItemButton(      
+                        leading=ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED), content="Note", 
+                        data="note", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                    ), 
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.PERSON_OUTLINED), content="Character", 
+                        data="character", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new character for your story. Choose from templates or create a default character.",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED), content="Plotline",
+                        data="plotline", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
+                        tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED), content="Canvas Board",
+                        data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.MAP_OUTLINED), content="Map",
+                        data="map", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
+                    ),
+                    
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.PUBLIC_OUTLINED), content="World", 
+                        data="world", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new world for your story. Choose from templates or create a default world.",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED), content="Character Connection Map", 
+                        data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
+                        tooltip="Visualize the connections between the characters in your story"
+                    ),  
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                     style=ft.ButtonStyle(padding=ft.Padding.all(0)),

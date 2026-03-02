@@ -677,6 +677,7 @@ class Widget(ft.Container):
             icon=ft.Icons.CLOSE_ROUNDED,
             icon_color=ft.Colors.OUTLINE,
             tooltip="Hide",
+            mouse_cursor=ft.MouseCursor.CLICK,
         )
 
 

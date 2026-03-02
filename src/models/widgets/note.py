@@ -104,7 +104,7 @@ class Note(Widget):
                     ),
                     ft.IconButton(
                         ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
-                        tooltip=f"Delete the segment {key}?",
+                        tooltip=f"Delete segment {key}",
                         on_click=lambda e, k=key: self.delete_segment(k)
                     )
                 ])

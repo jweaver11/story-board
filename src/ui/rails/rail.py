@@ -75,11 +75,8 @@ class Rail(ft.Column):
 
         template_options = []
 
-
-
         if widget_type == "character":
             
-        
             for name, template in app.settings.data.get('character_templates', {}).items():
                 template_options.append(
                     ft.MenuItemButton(name, data=widget_type, on_click=self.new_item_clicked)
@@ -88,8 +85,19 @@ class Rail(ft.Column):
         # Add add button to bottom that opens the settings to the template section
         # Add templates label at the top that is disabled
 
+        elif widget_type == "world":
+            for name, template in app.settings.data.get('world_templates', {}).items():
+                template_options.append(
+                    ft.MenuItemButton(name, data=widget_type, on_click=self.new_item_clicked)
+                )
+
         else:
-            pass
+            template_options = [
+                ft.MenuItemButton("Blank", data=widget_type, on_click=self.new_item_clicked),
+                ft.MenuItemButton("Research", data=widget_type, on_click=self.new_item_clicked),
+                ft.MenuItemButton("Theme", data=widget_type, on_click=self.new_item_clicked),
+                ft.MenuItemButton("Idea", data=widget_type, on_click=self.new_item_clicked),
+            ]
         return template_options
     
     # Called when a widget is dragged and dropped into this directory
@@ -230,11 +238,11 @@ class Rail(ft.Column):
 
         # If we are NOT unique, show our error text
         if not self.item_is_unique:
-            e.control.error_text = error_text
+            e.control.error = error_text
 
         # Otherwise remove our error text
         else:
-            e.control.error_text = None
+            e.control.error = None
             
         e.control.update()
         #self.new_item_textfield.update()
@@ -253,15 +261,15 @@ class Rail(ft.Column):
             if self.item_is_unique:
                 self.new_item_textfield.visible = False
                 self.new_item_textfield.value = None
-                self.new_item_textfield.error_text = None
+                self.new_item_textfield.error = None
                 self.new_item_textfield.update()
                 return
             
             # Otherwise its not unique, re-focus our textfield
             else:
                 self.new_item_textfield.visible = True
-                self.new_item_textfield.page = self.p
                 self.new_item_textfield.focus()
+                self.new_item_textfield.update()
         
         # If we're not submitting, just hide Textfield
         else:
