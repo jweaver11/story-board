@@ -4,9 +4,11 @@ Default data dict for character data templates
  
 def default_character_template_data_dict() -> dict:
     return {
+
+        'About': "",
+
         #'Template Data': dict,     # This is how templates store additional sections
         'Basic Info': {
-            'About': "",     # Short about of the character. Optional
             'Nickname': "",    
             'Role': "",        # Importance of character in the story. Main, Side, Background, None
             'Tag': "",         # Tag for custom grouping of characters. Protagonist, Antagonist, Supporting, None
