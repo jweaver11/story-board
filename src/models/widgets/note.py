@@ -35,7 +35,7 @@ class Note(Widget):
                 'pin_location': "right" if data is None else data.get('pin_location', "right"),   # Default pin location for notes
 
                 # Note data
-                'content': str
+                'note_data': {}
             },
         )
 
@@ -43,23 +43,82 @@ class Note(Widget):
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
 
+    async def _add_new_segment(self, e=None):
+
+        async def create_segment(e=None):
+            await self.save_segment(new_segment_tf.value, "", True)
+            self.p.pop_dialog()
+
+        new_segment_tf = ft.TextField(label="Segment Title", autofocus=True, capitalization=ft.TextCapitalization.WORDS)
+
+        dlg = ft.AlertDialog(
+            title=ft.Text("Add New Note Segment"),
+            content=new_segment_tf,
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Create", on_click=create_segment)
+            ],
+            actions_alignment=ft.MainAxisAlignment.END
+        )
+
+        self.p.show_dialog(dlg)
+
     # Saves content when text field is unfocused
-    async def save_content(self, e):
-        self.data['content'] = e.control.value
+    async def save_segment(self, key: str, value: str, should_reload: bool=False):
+        self.data['note_data'][key] = value
         self.save_dict()
+
+        if should_reload:
+            self.reload_widget()
+
+    def delete_segment(self, key: str):
+        if key in self.data['note_data']:
+            del self.data['note_data'][key]
+            self.save_dict()
+            self.reload_widget()
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
+
+        async def _save_segment(e):
+            key = e.control.label
+            value = e.control.value
+            await self.save_segment(key, value)
+
         # Rebuild out tab to reflect any changes
         self.reload_tab()
         
-        # Body of the tab, which is the content of flet container
-        body = ft.TextField(
-            expand=True, multiline=True,
-            value=self.data.get('content', ''),
-            on_blur=self.save_content,
+        # Hold our segment controls when we load the note data
+        segments_list = []
+
+        # Go through the note data and load the segments
+        for key, value in self.data.get('note_data', {}).items():
+            segments_list.append(
+                ft.Row([
+                    ft.TextField(
+                        value, expand=True,
+                        multiline=True, label=key, dense=True, capitalization=ft.TextCapitalization.SENTENCES, 
+                        on_blur=_save_segment,
+                    ),
+                    ft.IconButton(
+                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                        tooltip=f"Delete the segment {key}?",
+                        on_click=lambda e, k=key: self.delete_segment(k)
+                    )
+                ])
+            )
+
+        add_segment_button = ft.IconButton(
+            ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+            tooltip="Add New Segment to Note",
+            on_click=self._add_new_segment
+        )
+        
+        body = ft.Column(
+            expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            controls=segments_list + [ft.Row([add_segment_button], alignment=ft.MainAxisAlignment.CENTER)]
         )
 
         # Assign the body_container content as whatever view you have built in the widget

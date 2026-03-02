@@ -550,7 +550,7 @@ class Workspace(ft.Container):
         self.master_widgets_row.controls.clear()
         self.master_widgets_row.controls = [
             formatted_left_pin,    # formatted left pin
-            ft.Column(
+            IsolatedColumn(
                 expand=True, spacing=0, 
                 controls=[
                     formatted_top_pin,    # formatted top pin
