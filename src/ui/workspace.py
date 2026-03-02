@@ -31,7 +31,9 @@ class Workspace(ft.Container):
         self.story = story
 
         self.minimum_pin_height = int(self.p.height / 5)
-        self.minimum_pin_width = int(self.p.width / 10)
+        self.minimum_pin_width = int(self.p.width / 8)
+        self.maximum_pin_height = int(self.p.height / 2)   
+        self.maximum_pin_width = int(self.p.width / 2)   
 
         # Creates our 4 side pin locations for our widgets inside our workspace. These are placed directly on the page
         self.top_pin = IsolatedRow(height=story.data['top_pin_height'], controls=[])
@@ -117,23 +119,28 @@ class Workspace(ft.Container):
 
         # If no visible in the top pin
         if len(self.top_pin.controls) == 0:
-            self.top_pin_drag_target.content.height = self.story.data.get('top_pin_height', int(self.p.height/5))
-
+            #self.top_pin_drag_target.content.height = self.story.data.get('top_pin_height', int(self.p.height/5))
+            self.top_pin_drag_target.content.height = self.minimum_pin_height   # Set to minimum height so we can actually see it and drop into it
+            self.top_pin_drag_target.update()
+       
         # If no visible in the left pin
         if len(self.left_pin.controls) == 0:
-            self.left_pin_drag_target.content.width = self.story.data.get('left_pin_width', int(self.p.width/10))
-
-        # If no visible in the right pin
+            #self.left_pin_drag_target.content.width = self.story.data.get('left_pin_width', int(self.pwidth/10))
+            self.left_pin_drag_target.content.width = self.minimum_pin_width   # Set to minimum width so we can actually see it and drop into it
+            self.left_pin_drag_target.update()
+        
+        # If no visible in the right pind
         if len(self.right_pin.controls) == 0:
-            self.right_pin_drag_target.content.width = self.story.data.get('right_pin_width', int(self.p.width/10))
-
+            #self.right_pin_drag_target.content.width = self.story.data.get('right_pin_width', int(self.p.width/10))
+            self.right_pin_drag_target.content.width = self.minimum_pin_width   # Set to minimum width so we can actually see it and drop into it
+            self.right_pin_drag_target.update()
+        
         # If no visible in the bottom pin
         if len(self.bottom_pin.controls) == 0:
-            self.bottom_pin_drag_target.content.height = self.story.data.get('bottom_pin_height', int(self.p.height/5))
-        
+            #self.bottom_pin_drag_target.content.height = self.story.data.get('bottom_pin_height', int(self.p.height/5))
+            self.bottom_pin_drag_target.content.height = self.minimum_pin_height   # Set to minimum height so we can actually see it and drop into it
+            self.bottom_pin_drag_target.update()
 
-
-    
     # Called when a draggable hovers over a drag target before dropping
     async def on_hover_pin_drag_target(self, e):
         ''' Makes the drag target visible for so visual feedback '''
@@ -361,8 +368,8 @@ class Workspace(ft.Container):
 
             if self.top_pin.height < self.minimum_pin_height:
                 self.top_pin.height = self.minimum_pin_height
-            elif self.top_pin.height > self.p.height/2:
-                self.top_pin.height = self.p.height/2
+            elif self.top_pin.height > self.maximum_pin_height:
+                self.top_pin.height = self.maximum_pin_height
             self.top_pin_drag_target.content.height = self.top_pin.height  
             formatted_top_pin.update()   # Update the formatted container that holds the pin and divider, since the pin itself is not rendered directly and has no resizer on it
         
@@ -384,8 +391,8 @@ class Workspace(ft.Container):
             self.left_pin.width += e.local_delta.x
             if self.left_pin.width < self.minimum_pin_width:
                 self.left_pin.width = self.minimum_pin_width
-            elif self.left_pin.width > self.p.width/2:
-                self.left_pin.width = self.p.width/2
+            elif self.left_pin.width > self.maximum_pin_width:
+                self.left_pin.width = self.maximum_pin_width
             self.left_pin_drag_target.content.width = self.left_pin.width
             formatted_left_pin.update()    # Update the formatted container that holds the pin and divider, since the pin itself is not rendered directly and has no resizer on it
         
@@ -407,8 +414,8 @@ class Workspace(ft.Container):
             self.right_pin.width -= e.local_delta.x
             if self.right_pin.width < self.minimum_pin_width:
                 self.right_pin.width = self.minimum_pin_width
-            elif self.right_pin.width > self.p.width/2:
-                self.right_pin.width = self.p.width/2
+            elif self.right_pin.width > self.maximum_pin_width:
+                self.right_pin.width = self.maximum_pin_width
             self.right_pin_drag_target.content.width = self.right_pin.width
             formatted_right_pin.update() 
 
@@ -429,8 +436,8 @@ class Workspace(ft.Container):
             self.bottom_pin.height -= e.local_delta.y
             if self.bottom_pin.height < self.minimum_pin_height:
                 self.bottom_pin.height = self.minimum_pin_height
-            elif self.bottom_pin.height > self.p.height/2:
-                self.bottom_pin.height = self.p.height/2
+            elif self.bottom_pin.height > self.maximum_pin_height:
+                self.bottom_pin.height = self.maximum_pin_height
             self.bottom_pin_drag_target.content.height = self.bottom_pin.height
             formatted_bottom_pin.update()
         

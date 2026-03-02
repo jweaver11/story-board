@@ -100,13 +100,13 @@ class TreeViewFile(ft.GestureDetector):
     # Called when hovering mouse over a tree view item
     async def on_hover(self, e):
         self.content.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
-        self.content.content.trailing.opacity = .8
+        self.content.content.trailing.visible = True    
         self.update()
 
     # Called when stopping hover over a tree view item
     async def on_stop_hover(self, e):
         self.content.content.bgcolor = ft.Colors.TRANSPARENT
-        self.content.content.trailing.opacity = 0
+        self.content.content.trailing.visible = False
         self.update()
 
     # Called when rename button is clicked
@@ -296,10 +296,10 @@ class TreeViewFile(ft.GestureDetector):
                 mouse_cursor=ft.MouseCursor.CLICK,
                 trailing=ft.IconButton(
                     icon=ft.Icons.MORE_VERT_ROUNDED,
-                    opacity=0, 
+                    visible=False,
                     on_click=lambda e: self.widget.story.open_menu(self.get_menu_options()),
                     mouse_cursor=ft.MouseCursor.CLICK,
-                )
+                ),
             ),
         )
 

@@ -671,7 +671,7 @@ class Widget(ft.Container):
                 content=ft.GestureDetector(
                     ft.Row([self.icon, tab_text, hide_tab_icon_button]),
                     mouse_cursor=ft.MouseCursor.CLICK,
-                    hover_interval=20,
+                    hover_interval=100,
                     on_enter=self._enter_tab,
                     on_hover=self._hover_tab,
                     on_exit=self._exit_tab,

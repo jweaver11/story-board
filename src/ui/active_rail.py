@@ -27,10 +27,11 @@ class Active_Rail(ft.Container):
         # Consistent styling for all our rails
         super().__init__(
             alignment=ft.Alignment.TOP_CENTER,
-            animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            #animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             padding=ft.Padding.only(top=10, bottom=10, right=8, left=8),
-            width=app.settings.data['active_rail_width'],  # Sets the width
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+            #width=app.settings.data['active_rail_width'],  # Sets the width
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            expand=True
         )
 
         # Add our 6 rails here first so they maintain consitent styling and don't have to be rebuilt on switches

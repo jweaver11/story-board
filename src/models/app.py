@@ -21,6 +21,9 @@ class App:
         # Dict of all our stories.
         self.stories = {}
 
+        # State management
+        self.ignore_settings_change = True # Ignore settings changes when page is loading itself and saving incorrect changes
+
     # Called on app startup in main
     def load_settings(self, page: ft.Page):
         ''' Loads our settings from a JSON file into our rendered settings control. If none exist, creates default settings '''
@@ -144,6 +147,8 @@ class App:
         # Give us home view if no stories were active
         #print("Page route is: ", page.route)
         await page.push_route("/home")
+
+        self.ignore_settings_change = False
 
     
     

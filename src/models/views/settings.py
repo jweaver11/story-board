@@ -49,7 +49,7 @@ class Settings(ft.View):
                 # Settings the app uses and users do not directly change in the settings view
                 'active_story': "/",    # Route to our active story
                 'workspaces_rail_is_collapsed': bool,  # If the all workspaces rail is collapsed or not
-                'active_rail_width': 200,  # Width of our active rail that we can resize
+                'active_rail_width': 225,  # Width of our active rail that we can resize
                 'page_is_maximized': True,   # If the window is maximized or not
                 'page_width': int,     # Last known page width
                 'page_height': int,    # Last known page height
@@ -194,7 +194,12 @@ class Settings(ft.View):
     # Called when the page is resized
     def page_resized(self, e=None):
         ''' This is set inside of app.load_settings() to be called whenever the page is resized. Saves the new page size to data/if its maximized'''
+        from models.app import app  
 
+        # Catch page resizing when app is initializing and ignore them
+        if app.ignore_settings_change:      
+            return
+        
         # If we're minmized, save nothing and just return
         if self.p.window.minimized:
             return
