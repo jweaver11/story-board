@@ -500,7 +500,7 @@ class Plotline(Widget):
             if self.information_display.visible:
                 self.information_display.reload_mini_widget()
 
-            self.p.close(dlg)   # Close the dialog
+            self.p.pop_dialog()   # Close the dialog
 
             await asyncio.sleep(0.1)        # Needs a buffer or wont work for some reason
             await self.story.close_menu()       
@@ -523,12 +523,12 @@ class Plotline(Widget):
             title=ft.Text(f"New {tag.replace('_', ' ').title()} Name"),
             content=new_item_tf,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda e: self.p.close(dlg)),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda e: self.p.pop_dialog()),
                 submit_button
             ],
         )
 
-        self.p.open(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
+        self.p.show_dialog(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
         
 
 
@@ -704,11 +704,13 @@ class Plotline(Widget):
                         y_pos + 20 if line_direction == "bottom" else y_pos - 20,
                         plot_point.title, 
                         ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=plot_point.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
-                        alignment=ft.alignment.center,
+                        alignment=ft.Alignment.CENTER,
                         max_width=100,
                         text_align=ft.TextAlign.CENTER
                     )
                 )
+
+            #plot_point.plotline_control.update()
 
         # Add our markers on the plotline ------------------------------------------------
         for marker in self.markers.values():
@@ -752,7 +754,7 @@ class Plotline(Widget):
                     new_x_pos + 3, y_pos - 20, 
                     marker.title,
                     ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=marker.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
-                    alignment=ft.alignment.center,
+                    alignment=ft.Alignment.CENTER,
                     max_width=100,
                     text_align=ft.TextAlign.CENTER
                 )
@@ -804,7 +806,10 @@ class Plotline(Widget):
             if no_update:
                 self.plotline_canvas.update()
                 return
-            self._render_widget()
+            if self.data.get('pin_location', "") == "main":
+                self.master_stack.update()
+            else:
+                self.update()
 
         # If we didn't rebuild our arcs (not a resize, just a redraw), just update the canvas
         else:
@@ -814,7 +819,11 @@ class Plotline(Widget):
             if no_update:
                 self.plotline_canvas.update()
                 return
-            self._render_widget()
+            if self.data.get('pin_location', "") == "main":
+                self.master_stack.update()
+            else:
+                self.update()
+
             
 
     # Called when we need to rebuild out plotline UI

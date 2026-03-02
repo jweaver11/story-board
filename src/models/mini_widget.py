@@ -231,7 +231,7 @@ class MiniWidget(ft.Container):
         self.save_dict()
         e.control.icon = ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED
         e.control.tooltip = "Pin Connection" if not self.data.get('is_pinned', False) else "Unpin Connection"
-        self.p.update()
+        e.control.update()
         
 
     def show_mini_widget(self, e=None):
@@ -252,8 +252,10 @@ class MiniWidget(ft.Container):
             #else:
                 #print(f"Not hiding pinned mini widget {mw.title} becuase its pinned or just clicked to show itself")
 
-        self.reload_mini_widget(no_update=True)
-        self.owner._render_widget()
+        self.update()
+
+        #self.reload_mini_widget(no_update=True)
+        #self.owner._render_widget()
 
     def hide_mini_widget(self, e=None, update: bool=False):
         ''' Hides our mini widget '''
@@ -273,12 +275,14 @@ class MiniWidget(ft.Container):
 
         self.save_dict()
 
+        self.update()
 
 
-        if update:
 
-            self.reload_mini_widget()
-            self.owner._render_widget()
+        #if update:
+
+            #self.reload_mini_widget()
+            #self.owner._render_widget()
 
     def _new_custom_field_clicked(self, e=None):
         ''' Called when the new field button is clicked '''
@@ -443,7 +447,7 @@ class MiniWidget(ft.Container):
             else:
                 text_field.error_text = None
                 
-            self.p.update()
+            text_field()
 
         # Called when submitting our textfield.
         def _submit_name(e):

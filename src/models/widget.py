@@ -81,6 +81,8 @@ class Widget(ft.Container):
         self.is_renaming: bool = False                          # Whether we are currently renaming this widget or not
         self.mini_widgets_displayed_overtop: bool = True        # If miniwidgets are displayed overtop the content inside the stack, or to the side (shrinking the content)
         self.force_size_render: bool = True                      # Forces a reload when widgets get their size for the first time, but not every time
+        self.left_mw_column = ft.Column()           # Mini widget columns who's width we'll adjust when resizing
+        self.right_mw_column = ft.Column()
 
         # UI ELEMENTS - Tab
         self.tabs: ft.Tabs = None # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
@@ -234,11 +236,22 @@ class Widget(ft.Container):
         self.h = e.height
 
         #print("New size for ", self.title, ": ", self.w, self.h)
+        self.left_mw_column.width = self.w / 3
+        self.right_mw_column.width = self.w / 3
+
+        try:
+            if self.left_mw_column.visible:
+                self.left_mw_column.update()
+            if self.right_mw_column.visible:
+                self.right_mw_column.update()
+        except Exception as e:
+            pass
+
 
         # Mini widgets won't show unless we re-render on launch since first render has no size reference to grab them with
-        if self.force_size_render:
-            self.force_size_render = False
-            self._render_widget()
+        #if self.force_size_render:
+            #self.force_size_render = False
+            #self._render_widget()
         
     # Called when renaming a widget
     def rename(self, title: str):
@@ -720,44 +733,41 @@ class Widget(ft.Container):
 
         # Go through our mini widgets and separate them into left and right lists based on their side location data
         for mw in self.mini_widgets:
-            if mw.data.get('side_location', 'right') == 'left' and mw.data.get('visible', True) != False:
+            if mw.data.get('side_location', 'right') == 'left':
                 left_mini_widgets.append(mw)
-            elif mw.data.get('side_location', 'right') == 'right' and mw.data.get('visible', True) != False:
+            elif mw.data.get('side_location', 'right') == 'right':
                 right_mini_widgets.append(mw)
             else:
-                right_mini_widgets.append(mw)   # Default to right side if no location specified, or if not visible (so they dont show at all)
+                right_mini_widgets.append(mw)   # Default to right side if no location specified
             
         # If we show our mini widgets overtop the content, build them here. 
         if self.mini_widgets_displayed_overtop:     # Widgets: Plotline, Map, Character Connection Map, ...
 
             # Format a column to hold left and right side
-            left_column = ft.Column(
-                left_mini_widgets, spacing=4, tight=True, width=self.w * .3,
+            self.left_mw_column = ft.Column(
+                left_mini_widgets, spacing=4, tight=True, width=self.w / 3,
                 top=50 if self.header is not None else 0, left=0, bottom=0, expand=True, 
             )
-            right_column = ft.Column(
-                right_mini_widgets, spacing=4, tight=True, width=self.w * .3, 
+            self.right_mw_column = ft.Column(
+                right_mini_widgets, spacing=4, tight=True, width=self.w / 3, 
                 top=50 if self.header is not None else 0, right=0, bottom=0, expand=True, 
             )
 
             # Add the columns so long as they are showing anything
-            if len(left_mini_widgets) > 0:
-                self.master_stack.controls.append(left_column)
-                #print("Showing mw on left")
-                #print("Left column width: ", left_column.width)
-            if len(right_mini_widgets) > 0:
-                self.master_stack.controls.append(right_column) 
-                #print("Showing mw on right")
-                #print("Right column width: ", right_column.width)
-               
             
+            #self.master_stack.controls.append(self.left_mw_column)
+            #print(f"MW's in left column for {self.title}: ", len(left_mini_widgets))
+            
+        
+            #self.master_stack.controls.append(self.right_mw_column) 
+            #print(f"MW's in right column for {self.title}: ", len(right_mini_widgets))
             
             # Set the tab content
             self.tab.content = self.master_stack  
 
         
         # Mini widgets that shrink the body container to make room for themselves
-        else:       # Widgets: Canvas, document
+        else:       # Widgets: Canvas?, document
             pass
 
 

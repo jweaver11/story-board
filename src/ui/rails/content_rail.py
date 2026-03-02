@@ -36,17 +36,20 @@ class ContentRail(Rail):
                     ft.MenuItemButton(      # Folders
                         leading=ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED), content="Folder", 
                         data="folder", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new folder to organize your story"
+                        tooltip="Create a new folder to organize your story",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ), 
                     ft.MenuItemButton(      # Documents
                         leading=ft.Icon(ft.Icons.NOTE_OUTLINED, rotate=ft.Rotate(math.pi * 1.5)), content="Document", 
                         data="document", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new document for text chapters or scenes in your story"
+                        tooltip="Create a new document for text chapters or scenes in your story",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ), 
                     ft.MenuItemButton(      
                         leading=ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED), content="Note", 
                         data="note", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new note for jotting down ideas, thoughts, reminders, themes, etc."
+                        tooltip="Create a new note for jotting down ideas, thoughts, reminders, themes, etc.",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ), 
                     ft.SubmenuButton(
                         ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
@@ -54,6 +57,11 @@ class ContentRail(Rail):
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                         style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10),),
                         tooltip="Create a new character for your story. Choose from templates or create a default character."
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED), content="Plotline",
+                        data="plotline", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
                     ),
                     ft.SubmenuButton(
                         ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
@@ -64,7 +72,8 @@ class ContentRail(Rail):
                     ),
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED), content="Character Connection Map", 
-                        data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True
+                        data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ),  
 
                     # Disabled widgets until performance is fixed to handle them
@@ -86,7 +95,8 @@ class ContentRail(Rail):
                     ft.MenuItemButton(      # Folders
                         leading=ft.Icon(ft.Icons.CREATE_NEW_FOLDER_OUTLINED), content="Folder", 
                         data="folder", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new folder to organize your story"
+                        tooltip="Create a new folder to organize your story",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ), 
                     ft.MenuItemButton(      # Documents
                         leading=ft.Icon(ft.Icons.NOTE_OUTLINED, rotate=ft.Rotate(math.pi * 1.5)), content="Document", 
@@ -96,28 +106,39 @@ class ContentRail(Rail):
                     ft.MenuItemButton(      
                         leading=ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED), content="Note", 
                         data="note", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new note for jotting down ideas, thoughts, reminders, themes, etc."
+                        tooltip="Create a new note for jotting down ideas, thoughts, reminders, themes, etc.",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ), 
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.PERSON_OUTLINED), content="Character", 
                         data="character", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new character for your story. Choose from templates or create a default character."
+                        tooltip="Create a new character for your story. Choose from templates or create a default character.",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ),
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.PUBLIC_OUTLINED), content="World", 
                         data="world", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new world for your story. Choose from templates or create a default world."
+                        tooltip="Create a new world for your story. Choose from templates or create a default world.",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ),
 
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED), content="Character Connection Map", 
-                        data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True
+                        data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
                     ),  
+
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED), content="Plotline",
+                        data="plotline", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                        disabled=True,
+                    ),
 
                     # Disabled widgets until performance is fixed to handle them
                     ft.MenuItemButton("Canvas"),
                     ft.MenuItemButton("Canvas Board"),
-                    ft.MenuItemButton("Plotline"),
+                    #ft.MenuItemButton("Plotline"),
                     ft.MenuItemButton("Map"),
                 ],
                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
@@ -237,7 +258,7 @@ class ContentRail(Rail):
         menubar = ft.MenuBar(
             self.top_row_buttons,
             style=ft.MenuStyle(
-                bgcolor="transparent",
+                bgcolor="transparent", shadow_color="transparent",
                 shape=ft.RoundedRectangleBorder(radius=10),
             ),
             #alignment=ft.MainAxisAlignment.CENTER,

@@ -104,7 +104,6 @@ class PlotPoint(MiniWidget):
         self.data['left'] = new_left
 
         self.save_dict()
-        self.plotline_control.page = self.p
         self.plotline_control.update()
         
             
@@ -134,7 +133,7 @@ class PlotPoint(MiniWidget):
         for mw in self.owner.mini_widgets:
             mw.visible = False
 
-        self.p.update()
+        self.update()
 
     # Quick fixer for the mouse cursor and highlight is we just clicked the plotpoint without dragging
     async def _tap_up(self, e=None):
@@ -178,7 +177,6 @@ class PlotPoint(MiniWidget):
 
         # Gives us a focused shadow
         self.plotline_control.shadow = ft.BoxShadow(5, 10, ft.Colors.with_opacity(.6, self.data.get('color'))) #if self.plotline_control.shadow is None else None
-        self.plotline_control.page = self.p
         self.plotline_control.update()
 
     # Hides are shadow unless our info display is visible, then stay highlighted
@@ -191,7 +189,6 @@ class PlotPoint(MiniWidget):
         # If our info display is visible, keep highlighted
         if not self.visible:
             self.plotline_control.shadow = None
-            self.plotline_control.page = self.p
             self.plotline_control.update()
 
     def _get_icon_options(self) -> list[ft.Control]:
@@ -227,7 +224,6 @@ class PlotPoint(MiniWidget):
     # Makes sure we stop highlighting
     def hide_mini_widget(self, e=None, update: bool=False):
         self.plotline_control.shadow = None
-        self.plotline_control.page = self.p
         self.plotline_control.update()
         return super().hide_mini_widget(e, update)
 
@@ -240,7 +236,7 @@ class PlotPoint(MiniWidget):
         self.plotline_control = ft.Container(
             margin=ft.Margin(16, 0, 16, 0), expand=False, 
             opacity=1.0, shape=ft.BoxShape.CIRCLE,
-            alignment=ft.alignment.center, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.GestureDetector(
                 mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
@@ -252,12 +248,17 @@ class PlotPoint(MiniWidget):
             ),
         )
 
+        try:
+            self.plotline_control.update()
+            #self.owner.update()
+            print("Success updating plotline control")
+        except Exception as e:
+            print("Error updating plotline control: ", e)
+
 
     # Called when reloading changes to our plot point and in constructor
     def reload_mini_widget(self, no_update: bool=False):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
-
-        
 
         title_control = ft.Row([
             self.icon_button,
@@ -325,7 +326,7 @@ class PlotPoint(MiniWidget):
 
             involved_characters_row.controls = _set_involved_characters_controls()
             involved_characters_selector.controls = _get_involved_characters()
-            self.p.update()
+            self.update()
 
         # Called to check our list of characters involved on this plotpoint. They are stored as keys and returned as names for display
         def _get_involved_characters() -> list[str]:
@@ -355,7 +356,7 @@ class PlotPoint(MiniWidget):
             else:
                 add_involved_characters_button.icon = ft.Icons.EDIT_OUTLINED
 
-            self.p.update()
+            self.update()
 
         add_involved_characters_button = ft.IconButton(
             ft.Icons.EDIT_OUTLINED,
@@ -411,7 +412,7 @@ class PlotPoint(MiniWidget):
             else:
                 add_related_objects_button.icon = ft.Icons.EDIT_OUTLINED
 
-            self.p.update()
+            self.update()
 
         add_related_objects_button = ft.IconButton(
             ft.Icons.EDIT_OUTLINED,
@@ -465,7 +466,7 @@ class PlotPoint(MiniWidget):
 
             related_objects_row.controls = _set_related_objects_controls()
             related_objects_selector.controls = _get_related_objects()
-            self.p.update()
+            self.update()
 
         def _get_related_objects() -> list[str]:
             char_list = []
@@ -519,7 +520,7 @@ class PlotPoint(MiniWidget):
                 related_objects_selector,
                 
                 custom_fields_label,
-                ft.Container(custom_fields_column, margin=ft.margin.symmetric(horizontal=20)),
+                ft.Container(custom_fields_column, margin=ft.Margin.symmetric(horizontal=20)),
             ]
         )
 
@@ -537,4 +538,4 @@ class PlotPoint(MiniWidget):
         if no_update:
             return
         else:
-            self.p.update()
+            self.update()
