@@ -91,6 +91,8 @@ class Canvas(Widget):
             },
         )
 
+        # TODO: When saving capture, set most recent one as a snapshot for Canvas Boards to
+
 
         decoded_capture_list = [base64.b64decode(capture) for capture in self.data.get('capture_list', [])]
 

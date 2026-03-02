@@ -859,7 +859,7 @@ class Story(ft.View):
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging
             on_pan_end=save_active_rail_width,  # Save the resize when app is done dragging
-            drag_interval=50,
+            drag_interval=20,
         )
 
         # Isolates the row containing our active rail resizing doesnt lag heckin bac

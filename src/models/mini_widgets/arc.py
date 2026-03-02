@@ -123,8 +123,8 @@ class Arc(MiniWidget):
         self.hidden = False                         # Track if we're in hidden mode for easier dragging
 
         # Loads our arc
-        self.reload_plotline_control()
-        self.reload_mini_widget()
+        #self.reload_plotline_control()
+        #self.reload_mini_widget()
 
 
     async def create_event(self, title: str):

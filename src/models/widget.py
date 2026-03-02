@@ -83,6 +83,7 @@ class Widget(ft.Container):
         self.force_size_render: bool = True                      # Forces a reload when widgets get their size for the first time, but not every time
         self.left_mw_column = ft.Column()           # Mini widget columns who's width we'll adjust when resizing
         self.right_mw_column = ft.Column()
+        self.should_update = False
 
         # UI ELEMENTS - Tab
         self.tabs: ft.Tabs = None # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
@@ -97,7 +98,11 @@ class Widget(ft.Container):
         self.file_picker = ft.FilePicker()  # File picker for uploading, saving, etc
     
         # Container that holds our main body content. Gets built in reload_widget of child classes
-        self.body_container = ft.Container(expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(16), on_size_change=self._get_size, size_change_interval=500) 
+        self.body_container = ft.Container(
+            expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(16), 
+            on_size_change=self._get_size, size_change_interval=500,
+            on_hover=self._update,
+        ) 
 
         # Holds our sizing canvas, body container, header, and mini widgets all under the tab
         self.master_stack: ft.Stack = ft.Stack(expand=True)   # Master stack that holds all our elements together. Gets added to our tab content in reload_widget
@@ -247,11 +252,22 @@ class Widget(ft.Container):
         except Exception as e:
             pass
 
+        self.should_update = True
+
 
         # Mini widgets won't show unless we re-render on launch since first render has no size reference to grab them with
         #if self.force_size_render:
             #self.force_size_render = False
             #self._render_widget()
+
+    async def _update(self, e=None):
+        try:
+            if self.should_update:
+
+                self.should_update = False
+                self.update()
+        except Exception as e:
+            pass
         
     # Called when renaming a widget
     def rename(self, title: str):
@@ -382,7 +398,6 @@ class Widget(ft.Container):
 
         # Save our changes and reload the UI
         self.save_dict()
-       
         self.story.workspace.reload_workspace()     # No matter what we are getting rebuilt, so just reload teh workspace
 
     # Called when right clicking our tab
@@ -552,8 +567,8 @@ class Widget(ft.Container):
             # Change our icon to match, apply the update
             self.story.active_rail.content.reload_rail()
             self.reload_widget()
-            if self.data.get('pin_location', '') == 'main':
-                self.story.workspace.reload_workspace()
+            #if self.data.get('pin_location', '') == 'main':
+                #self.story.workspace.reload_workspace()
             
 
         # List for our colors when formatted

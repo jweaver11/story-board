@@ -40,7 +40,7 @@ class PlotlineInformationDisplay(MiniWidget):
         # Holds our row controls for our divisions so we can add/remove without rebuilding
         self.divisions_column = ft.Column(spacing=0, scroll="none")
 
-        self.reload_mini_widget()
+        #self.reload_mini_widget()
 
     
 

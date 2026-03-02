@@ -74,7 +74,7 @@ class PlotPoint(MiniWidget):
 
         # Build our slider for moving our plot point
         self.reload_plotline_control()
-        self.reload_mini_widget(no_update=True)
+        #self.reload_mini_widget(no_update=True)
 
     
     async def move_plot_point(self, e=None):
@@ -250,7 +250,6 @@ class PlotPoint(MiniWidget):
 
         try:
             self.plotline_control.update()
-            #self.owner.update()
             print("Success updating plotline control")
         except Exception as e:
             print("Error updating plotline control: ", e)

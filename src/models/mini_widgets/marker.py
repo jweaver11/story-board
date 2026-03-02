@@ -65,7 +65,7 @@ class Marker(MiniWidget):
         self.is_dragging: bool = False              # If we are currently dragging our plot point
 
         # Build our slider for moving our plot point
-        self.reload_mini_widget()
+        #self.reload_mini_widget()
 
     def delete_dict(self, e=None):
 

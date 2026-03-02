@@ -108,7 +108,7 @@ class ContentRail(Rail):
                         data="note", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new note for jotting down ideas, thoughts, reminders, themes, etc.",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
-                    ), 
+                    ), # TODO: Make note have dropdown for options like blank: themes, research, ideas, etc
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.PERSON_OUTLINED), content="Character", 
                         data="character", on_click=self.new_item_clicked, close_on_click=True,

@@ -710,7 +710,6 @@ class Plotline(Widget):
                     )
                 )
 
-            #plot_point.plotline_control.update()
 
         # Add our markers on the plotline ------------------------------------------------
         for marker in self.markers.values():
@@ -806,23 +805,17 @@ class Plotline(Widget):
             if no_update:
                 self.plotline_canvas.update()
                 return
-            if self.data.get('pin_location', "") == "main":
-                self.master_stack.update()
-            else:
-                self.update()
+           
 
         # If we didn't rebuild our arcs (not a resize, just a redraw), just update the canvas
         else:
             for arc in self.arcs.values():
-                arc.plotline_control.bottom = self.plotline_height // 2
+                arc.plotline_control.bottom = self.plotline_height / 2
 
             if no_update:
                 self.plotline_canvas.update()
                 return
-            if self.data.get('pin_location', "") == "main":
-                self.master_stack.update()
-            else:
-                self.update()
+            
 
             
 

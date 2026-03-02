@@ -703,6 +703,8 @@ class CanvasBoard(Widget):
 
         self.body_container.content = body
 
+        # TODO: Add undo-redo buttons like our canvas has for our sketches
+
         # Call render widget (from Widget class) to update the UI
         self._render_widget()
             

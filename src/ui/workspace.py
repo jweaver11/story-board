@@ -13,6 +13,7 @@ from styles.colors import dark_gradient
 from styles.snack_bar import SnackBar
 from models.isolated_controls.row import IsolatedRow
 from models.isolated_controls.column import IsolatedColumn
+from models.isolated_controls.tab_bar_view import IsolatedTabBarView
 
 # Our workspace object that is stored in our story object
 class Workspace(ft.Container):
@@ -43,6 +44,8 @@ class Workspace(ft.Container):
 
         # Main pin is not rendered directly since it changes based on active tab when more than one widget is present
         self.main_pin = []      # List to hold all our widgets in the main pin that we manipulate easier
+        self.main_pin_tabs: ft.Tabs = None
+        self.main_pin_column = ft.Column(expand=True)
 
         # Pin drag targets
         self.top_pin_drag_target = ft.DragTarget(
@@ -103,7 +106,7 @@ class Workspace(ft.Container):
         self.blocker = ft.Container(expand=True, ignore_interactions=True)     # Blocks events during a rebuild
 
         # Our master row that holds all our widgets
-        self.master_widgets_row = ft.Row(spacing=0, expand=True, controls=[])
+        self.master_widgets_row = IsolatedRow(spacing=0, expand=True, controls=[])
 
         # Master stack that holds our widgets ^ row, and drag targets overtop. TransparentPointer allows the targets to be physical but not block widgets underneath
         self.master_stack = ft.Stack(expand=True, controls=[self.master_widgets_row, ft.TransparentPointer(self.pin_drag_targets), self.blocker])
@@ -153,6 +156,7 @@ class Workspace(ft.Container):
         e.control.content.opacity = 0
         e.control.content.update()
         
+
     # Accepting drags for our five pin locations
     def pin_drag_accept(self, e: ft.DragTargetEvent, pin_location: str):
 
