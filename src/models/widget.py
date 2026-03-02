@@ -653,7 +653,7 @@ class Widget(ft.Container):
             case "document": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
             case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
             case "canvas_board": self.icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
-            case "note": self.icon = ft.Icon(ft.Icons.COMMENT_OUTLINED)
+            case "note": self.icon = ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED)
             case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
             case "character_connection_map": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
             case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)

@@ -58,7 +58,7 @@ class Character(Widget):
                 if data is None or 'character_data' not in data else data['character_data'],
             },
         ) 
-
+ 
 
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -572,7 +572,7 @@ class Character(Widget):
                         src_base64=self.data.get('image_base64', ""),
                         width=100,
                         height=100,
-                        fit=ft.ImageFit.FILL,
+                        fit=ft.BoxFit.FILL,
                     ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
                 )
             else:

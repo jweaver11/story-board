@@ -130,9 +130,6 @@ class Settings(ft.View):
                 # Hold our default character templates
                 'character_templates': {    
                     'Default': default_character_template_data_dict(),
-                    'Detailed': {'Detailed Data': {'title': "Detailed", 'Strengths': str, 'Weaknesses': str, 'Deceased': str}} | default_character_template_data_dict(), 
-                    'Shonen': {'Shonen Data': {'title': "Shonen", 'Abilities': "Super Strength, Enhanced Healing"}} | default_character_template_data_dict(),
-                    'Alien': {'Template Data': {'title': "Alien", 'Species': "Unknown", 'Home Planet': "Unknown"}} | default_character_template_data_dict(),
                     # Fantasy/DnD
                 },   
                 'world_templates': {    # TODO

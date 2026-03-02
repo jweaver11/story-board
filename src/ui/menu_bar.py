@@ -312,7 +312,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                     tooltip="Storyboard is currently in beta. More features coming soon! \nCheck out Settings -> Resources for a list of planned features and known issues. \nJoin the Discord to suggest your features and report bugs."
                 ),  # Feedback button
                 ft.Icon(ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, tooltip="Storyboard is currently in beta. More features coming soon! \nCheck out Settings -> Resources for a list of planned features and known issues. \nJoin the Discord to suggest your features and report bugs."),
-                ft.IconButton(icon=ft.Icons.SETTINGS_OUTLINED, on_click=_settings_clicked),   # Settings button
+                ft.IconButton(icon=ft.Icons.SETTINGS_OUTLINED, on_click=_settings_clicked, mouse_cursor=ft.MouseCursor.CLICK),   # Settings button
             ]
         )
     )

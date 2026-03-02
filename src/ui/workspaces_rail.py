@@ -252,6 +252,7 @@ class WorkspacesRail(ft.Container):
         collapse_icon_button = ft.IconButton(
             icon=collapse_icon,
             on_click=lambda e: self.toggle_collapse_rail(e, story),
+            mouse_cursor=ft.MouseCursor.CLICK
         )
 
         # Sets our content as a column. This will fill our width and hold...

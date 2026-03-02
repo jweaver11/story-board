@@ -28,7 +28,7 @@ class TreeViewFile(ft.GestureDetector):
             case "document": self.icon = ft.Icons.DESCRIPTION_OUTLINED
             case "canvas": self.icon = ft.Icons.BRUSH_OUTLINED
             case "canvas_board": self.icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
-            case "note": self.icon = ft.Icons.NOTE_ALT_OUTLINED
+            case "note": self.icon = ft.Icons.STICKY_NOTE_2_OUTLINED
             case "character": self.icon = ft.Icons.PERSON_OUTLINED
             case "plotline": self.icon = ft.Icons.TIMELINE_OUTLINED
             case "map": self.icon = ft.Icons.MAP_OUTLINED
@@ -265,7 +265,7 @@ class TreeViewFile(ft.GestureDetector):
             alignment=ft.Alignment.CENTER,
             title_padding=ft.Padding.all(25),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.widget.p.pop_dialog(dlg)),
+                ft.TextButton("Cancel", on_click=lambda e: self.widget.p.pop_dialog()),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
             ]
         )
