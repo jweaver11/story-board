@@ -249,7 +249,7 @@ class CharactersRail(Rail):
                         different_roles.add(role)
                     return role
             
-                characters_list.sort(key=get_role)   # Returns not set values, then alphabetically by role
+                #characters_list.sort(key=get_role)   # Returns not set values, then alphabetically by role
 
                 for role in sorted(different_roles):   # Future implimentation use custom roles. For now we just have 3 so we will hardcode it
                     content.controls.append(ft.Text(f"{role}:", theme_style=ft.TextThemeStyle.LABEL_LARGE))

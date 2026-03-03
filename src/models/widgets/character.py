@@ -51,13 +51,12 @@ class Character(Widget):
                 'image_base64': str,    # Saves our icon as img64 string 
 
                 # Character data
+                'About': "",
                 # If this dict doesn't exist, we create it with our active template data. If we fail to pull that, we use a default template (which has quite a lot)
                 'character_data': app.settings.data.get('character_templates', {}).get(app.settings.get('active_character_template', ""), default_character_template_data_dict()) 
                 if data is None or 'character_data' not in data else data['character_data'],
             },
         ) 
-
-        self.fp = ft.FilePicker(on_upload=self._files_uploaded)
  
 
         if self.visible:
@@ -67,14 +66,14 @@ class Character(Widget):
     # TODO: RENAME AND DELETE Will need to be custom here, to alter ccm and connections that used our old name and key
         
     
-    def _new_field_clicked(self, sub_key: str, category: str=""):
+    def _new_field_clicked(self, section: str):
         ''' Called when the new field button is clicked '''
 
         if 'character_data' not in self.data:
             self.data['character_data'] = {}
 
-        if sub_key not in self.data['character_data']:
-            self.data['character_data'][sub_key] = {}
+        if section not in self.data['character_data']:
+            self.data['character_data'][section] = {}
 
         def create_field(e): #show in edit view
             '''Called when user confirms the field name'''
@@ -82,86 +81,85 @@ class Character(Widget):
             field_name = return_safe_name(field_name_input.value)
             
             if not field_name:
-                self.p.close(dlg)
+                self.p.pop_dialog()
                 return  # Don't create if empty
             
             # Add the field to data if it doesn't exist
-            if field_name not in self.data['character_data'][sub_key]:
-                self.data['character_data'][sub_key][field_name] = ""
+            if field_name not in self.data['character_data'][section]:
+                self.data['character_data'][section][field_name] = ""
             
             # Save and reload
             self.save_dict()
-            self.p.close(dlg)
+            self.p.pop_dialog()
             self.reload_widget()
                                 
             
 
         # Create a dialog to ask for the field name
         field_name_input = ft.TextField(
-            label="Field Name", hint_text=f"New {category} Name",
+            label="Field Name",
             autofocus=True, capitalization=ft.TextCapitalization.SENTENCES,
             on_submit=create_field,     # Closes the overlay when submitting
         )
         
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Create New {category} Field"),
+            title=ft.Text(f"Create New Field in {section}"),
             content=field_name_input,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
                 ft.TextButton("Create", on_click=create_field),
             ],
         )
-        
-        
-        dlg.open = True
-        self.p.open(dlg)
+     
+        self.p.show_dialog(dlg)
 
     
     # Called when a field is changed in edit mode
-    def _update_character_data(self, sub_key: str="", **kwargs):
+    def _update_character_data(self, **kwargs):
         ''' Updates the character data dict or up to one sub dict '''
 
-        will_reload_rail = False
-    
-        sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
+        for key, value in kwargs.items():
+            if 'character_data' not in self.data:
+                self.data['character_data'] = {}
 
-        for k, value in kwargs.items():
-            self.data['character_data'][sub_key][k] = value
-            if sort_method == k and self.story.data.get('selected_rail', "") == "characters":
-                will_reload_rail = True
-
+            if key in self.data['character_data']:
+                self.data['character_data'][key] = value
+            else:
+                # Check if this key is in a sub dict, and update it there if it is
+                for sub_key, sub_dict in self.data['character_data'].items():
+                    if isinstance(sub_dict, dict) and key in sub_dict:
+                        self.data['character_data'][sub_key][key] = value
+                        break
         
         self.save_dict()
 
-        
-        if will_reload_rail:
-            self.story.active_rail.content.reload_rail()
-
-    def _delete_character_data(self, sub_key: str="", **kwargs):
+    # Deletes a field from our character data dict
+    def _delete_character_data(self, **kwargs):
         ''' Deletes fields from the character data dict or up to one sub dict '''
 
         for key in kwargs.keys():
-            if sub_key != "":
-                if key in self.data['character_data'][sub_key]:
-                    del self.data['character_data'][sub_key][key]
+            if 'character_data' not in self.data:
+                return
+
+            if key in self.data['character_data']:
+                del self.data['character_data'][key]
             else:
-                if key in self.data['character_data']:
-                    del self.data['character_data'][key]
+                # Check if this key is in a sub dict, and delete it there if it is
+                for sub_key, sub_dict in self.data['character_data'].items():
+                    if isinstance(sub_dict, dict) and key in sub_dict:
+                        del self.data['character_data'][sub_key][key]
+                        break
                 
         self.save_dict()
         self.reload_widget()
 
-        # Check if we're sorting by the updated key, and if characters rail is selected. If it is, reload the rail
-        sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
-        if sort_method == key and self.story.data.get('selected_rail', "") == "characters":
-            self.story.active_rail.content.reload_rail()
 
-    async def _files_uploaded(self, e: ft.FilePickerUploadEvent):
+    async def _upload_char_image(self, e=None):
 
-        if e.files:
-            file_path = e.files[0].path
-            #print("File path:", file_path)
+        files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+        if files:
 
+            file_path = files[0].path
             try:
                 import base64
 
@@ -299,7 +297,6 @@ class Character(Widget):
 
         # Reload the widget. The reload widget should load differently depending on if we're in edit mode or not
         self.reload_widget()
-        #self.story.workspace.reload_workspace()    # Ineffecient but required At the moment
 
     # Called if our widget is in edit view. 
     def _edit_mode_view(self):
@@ -314,199 +311,120 @@ class Character(Widget):
                 case "Role":
                     return "Main, Supporting, Background... "
                 case "Tag":
-                    return "Protagonist, Antagonist, etc..."
+                    return "Protagonist, Antagonist, ..."
                 case "Goals":
                     return "Separate Goals with new lines"
                 
                 case _:
                     return None
 
-
-        def _load_dict_data(dict: dict, container: ft.Container, sub_key: str=""):
+        # Loads our character data dict into text controls for editing
+        def _load_char_data_controls() -> list[ft.Control]:
             ''' Loads data from a dict into a given container '''
-            for key, value in dict.items():
-                if isinstance(value, str):
-                    text_control = ft.TextField(
-                        expand=True, label=key.capitalize(), value=value, dense=True, multiline=True, hint_text=_get_help_text(key),
-                        capitalization=ft.TextCapitalization.SENTENCES,
-                        on_blur=lambda e, k=key: self._update_character_data(sub_key, **{k: e.control.value})
-                    )
+            control_list = []
+            
+            # Go through our sections inside of our character data
+            for section, values in self.data.get('character_data', {}).items():
 
-                    
-                    container.content.controls.append(
-                        ft.Row([
-                            text_control,
-                            ft.IconButton(
-                                tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
-                                on_click=lambda e, k=key: self._delete_character_data(sub_key=sub_key, **{k: None})
-                            ),
-                        ])
-                    )
+                # Skip non-dict sections 
+                if not isinstance(values, dict):
+                    continue
+
+                # Set a label and container to hold our text spans for each section
+                label = ft.Row([
+                    ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                    ft.IconButton(
+                        tooltip="Add New Field", icon=ft.Icons.NEW_LABEL_OUTLINED, mouse_cursor="click",
+                        on_click=lambda e, s=section:self._new_field_clicked(s), icon_color=self.data.get('color', None)
+                    ),
+                ])
+                # Container to hold the text control of our section info
+                container = ft.Container(         # For template data
+                    padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+                    border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(bottom=10),
+                    content=ft.Column(expand=True, spacing=6) # Forces container to take up space
+                )
+
+                # Go through every key/value pair in this section and add it to our text span list with formatting
+                for key, value in values.items():
+                    if isinstance(value, str) and (value or app.settings.data.get('show_empty_character_fields', True)):
+
+                        # Add the each key for this section
+                        container.content.controls.append(
+                            ft.Row([
+                                ft.TextField(
+                                    label=key, hint_text=_get_help_text(key), value=value, 
+                                    on_blur=lambda e, k=key: self._update_character_data(**{k: e.control.value}), expand=True,
+                                    dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
+                                    focus_color=self.data.get('color', "primary"), focused_border_color=self.data.get('color', "primary"), 
+                                    cursor_color=self.data.get('color', "primary"),
+                                ),
+                                ft.IconButton(
+                                    tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, mouse_cursor="click",
+                                    on_click=lambda e, k=key: self._delete_character_data(**{k: ""}), icon_color=ft.Colors.ERROR
+                                )
+                            ])
+                        )
+
+
+                # Add the label and container with our text spans to the control list for this section
+                control_list.append(label)
+                control_list.append(container)
+
+            return control_list
 
 
         
         if self.data.get('image_base64', ""):
             img = ft.Container(
                 ft.Image(
-                    src_base64=self.data.get('image_base64', ""),
-                    width=100,
-                    height=100,
-                    fit=ft.ImageFit.FILL,
-                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                    src=self.data.get('image_base64', ""),
+                    width=80,
+                    height=80,
+                    fit=ft.BoxFit.FILL,
+                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             )
         else:
             img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
 
-        self.fp = ft.FilePicker(on_upload=self._files_uploaded)
-            
-        # Column we will append to for the bot of our view. Has our icon, and exit edit mode button
-        # TODO: Foreground decoration when hovering adds the ("upload image" button)
+        # Changes for the about section
+        async def _change_about_data(e):
+            ''' Called when the about section is changed in edit mode '''
+            self.data['About'] = e.control.value
+            self.save_dict()
+
+        about_section = ft.Column([
+            ft.Row([
+                ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.IconButton(
+                    tooltip="Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, icon_color=self.data.get('color', None), 
+                    on_click=self._edit_mode_clicked, mouse_cursor="click"
+                ),
+            ]),
+            ft.Container(
+                border_radius=ft.BorderRadius.all(10), expand=True,
+                border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(left=6),   
+                content=ft.TextField(
+                    self.data.get('char_data', {}).get('About', ""), on_blur=_change_about_data, expand=True, 
+                    dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
+                    focus_color="transparent", focused_border_color="transparent", 
+                    cursor_color=self.data.get('color', "primary"), border_color="transparent"
+                ), 
+            )
+        ], expand=True, spacing=0)
+
+        
+        # Header that holds our image, edit mode button, and about section
+        header = ft.Row([
+            ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_char_image, mouse_cursor="click"),
+            about_section
+        ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
+
         body = ft.Column([
-            ft.Row([
-                ft.IconButton(img, tooltip="Upload Image", on_click=self._open_file_picker),
-                ft.IconButton(tooltip="Exit Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, icon_color=self.data.get('color', None), on_click=self._edit_mode_clicked),
-            ], wrap=True),
-        ], scroll="auto", expand=True, spacing=0)
+            header
+        ], scroll="auto", expand=True, spacing=4)
 
-
-        # Create a container for our dicts that we have data in and load them. 
-        basic_info_container = ft.Container(            # For basic info
-            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-            border=ft.Border.all(2, ft.Colors.OUTLINE), 
-            content=ft.Column([]), 
-        )
-        template_data_container = ft.Container(         # For template data
-            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-            border=ft.Border.all(2, ft.Colors.OUTLINE), 
-            content=ft.Column([]), 
-        )
-        physical_description_container = ft.Container(  # For physical description
-            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-            border=ft.Border.all(2, ft.Colors.OUTLINE),
-            content=ft.Column([]), 
-        )   
-        family_container = ft.Container(                # For family
-            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-            border=ft.Border.all(2, ft.Colors.OUTLINE),
-            content=ft.Column([]), 
-        )
-        origin_container = ft.Container(                # For origin 
-            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-            border=ft.Border.all(2, ft.Colors.OUTLINE), 
-            content=ft.Column([]),
-        )
-        connections_container = ft.Container(           # For connections
-            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-            border=ft.Border.all(2, ft.Colors.OUTLINE),
-            content=ft.Column([]), 
-        )
-        custom_fields_container = ft.Container(        # For custom fields
-            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-            border=ft.Border.all(2, ft.Colors.OUTLINE),
-            content=ft.Column([]), 
-        )
-
-        # Load the dicts into controls
-        _load_dict_data(self.data.get('character_data', {}).get('Basic Info', {}), basic_info_container, "Basic Info")
-        _load_dict_data(self.data.get('character_data', {}).get('Template Data', {}), template_data_container, "Template Data")
-        _load_dict_data(self.data.get('character_data', {}).get('Physical Description', {}), physical_description_container, "Physical Description")
-        _load_dict_data(self.data.get('character_data', {}).get('Family', {}), family_container, "Family")
-        _load_dict_data(self.data.get('character_data', {}).get('Origin', {}), origin_container, "Origin")
-        self._load_connections(self.story.data.get('connections'), connections_container)
-        _load_dict_data(self.data.get('character_data', {}).get('Custom Fields', {}), custom_fields_container, "Custom Fields")
-
-        # Add the labels and containers that have the data controls into the rows for formatting
-        body.controls.append(
-            ft.Row([
-                ft.Container(width=6), 
-                ft.Text("Basic Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Basic Info", "Basic Info"), icon_color=self.data.get('color', None)),
-            ], spacing=0),
-        )
-        body.controls.append(
-            ft.Row([basic_info_container])
-        )
-        body.controls.append(ft.Container(height=12))
-
-
-        # If we have temlpate data, this will add it to the page
-        if 'Template Data' not in self.data.get('character_data', {}):
-            pass
-        else:
-            
-            template_title = self.data.get('character_data', {}).get('Template Data', {}).get('Template Name', 'Template Data')
-            body.controls.append(
-                ft.Row([
-                    ft.Container(width=6), 
-                    ft.Text(template_title, style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Template Data", "Template Data"), icon_color=self.data.get('color', None)),
-                ], spacing=0),
-            )
-            body.controls.append(
-                ft.Row([template_data_container])
-            )
-            body.controls.append(ft.Container(height=12))
-
-        body.controls.append(
-            ft.Row([
-                ft.Container(width=6),
-                ft.Text("Physical Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Physical Description", "Physical Description"), icon_color=self.data.get('color', None)),
-            ], spacing=0),
-        )
-        body.controls.append(
-            ft.Row([physical_description_container])
-        )
-        body.controls.append(ft.Container(height=12))
-
-        body.controls.append(
-            ft.Row([
-                ft.Container(width=6),
-                ft.Text("Origin", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Origin", "Origin"), icon_color=self.data.get('color', None)),
-            ], spacing=0),
-        )
-        body.controls.append(
-            ft.Row([origin_container])
-        )
-        body.controls.append(ft.Container(height=12))
-
-        body.controls.append(
-            ft.Row([
-                ft.Container(width=6),
-                ft.Text("Family", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Family", "Family"), icon_color=self.data.get('color', None)),
-            ], spacing=0),
-        )
-        body.controls.append(
-            ft.Row([family_container])
-        )
-        body.controls.append(ft.Container(height=12))
-
-
-        body.controls.append(
-            ft.Row([
-                ft.Container(width=6),
-                ft.Text("Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                ft.IconButton(tooltip="Add Connection", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: new_character_connection_clicked(self.story), icon_color=self.data.get('color', None)),
-            ], spacing=0),
-        )
-        body.controls.append(
-            ft.Row([connections_container])
-        )
-        body.controls.append(ft.Container(height=12))
-
-        body.controls.append(
-            ft.Row([
-                ft.Container(width=6),
-                ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields", "Custom Fields"), icon_color=self.data.get('color', None)),
-            ], spacing=0),
-        )
-        body.controls.append(
-            ft.Row([custom_fields_container])
-        )
-
+        body.controls.extend(_load_char_data_controls())   
 
         self.body_container.content = body
 
@@ -524,23 +442,24 @@ class Character(Widget):
             # Go through our sections inside of our character data
             for section, values in self.data.get('character_data', {}).items():
 
-                # Skip non-dict sections (like about which is just a str)
+                # Skip non-dict sections 
                 if not isinstance(values, dict):
                     continue
 
                 # Set a label and container to hold our text spans for each section
                 label = ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None))
                 
-
+                # List to hold text spans for each text control in the container
                 text_span_list = []
 
+                # Container to hold the text control of our section info
                 container = ft.Container(         # For template data
                     padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-                    border=ft.Border.all(2, ft.Colors.OUTLINE), 
+                    border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(bottom=10),
                     content=ft.Row([ft.Text(expand=True, spans=text_span_list, size=14)]), # Forces container to take up space
                 )
 
-                
+                # Go through every key/value pair in this section and add it to our text span list with formatting
                 for key, value in values.items():
                     if isinstance(value, str) and (value or app.settings.data.get('show_empty_character_fields', True)):
 
@@ -595,9 +514,9 @@ class Character(Widget):
         if self.data.get('image_base64', ""):
             img = ft.Container(
                 ft.Image(
-                    src_base64=self.data.get('image_base64', ""),
-                    width=100,
-                    height=100,
+                    src=self.data.get('image_base64', ""),
+                    width=80,
+                    height=80,
                     fit=ft.BoxFit.FILL,
                 ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
             )
@@ -605,31 +524,38 @@ class Character(Widget):
             img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
 
         about_section = ft.Column([
-            ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+            ft.Row([
+                ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.IconButton(
+                    tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), 
+                    on_click=self._edit_mode_clicked, mouse_cursor="click"
+                ),
+            ]),
             ft.Container(
                 padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
                 border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(left=6),   
-                content=ft.Row([ft.Text(self.data.get('char_data', {}).get('About', ""), expand=True, size=14)], expand=True), # Forces container to take up space
+                content=ft.Row([ft.Text(self.data.get('About', ""), expand=True, size=14)], expand=True), # Forces container to take up space
             )
-        ], expand=True)
+        ], expand=True, spacing=0)
 
         
         # Header that holds our image, edit mode button, and about section
         header = ft.Row([
-            ft.IconButton(img, tooltip="Upload Image", on_click=self._open_file_picker),
-            ft.IconButton(tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), on_click=self._edit_mode_clicked),
+            ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_char_image, mouse_cursor="click"),
             about_section
-        ], spacing=0)
+        ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
 
 
         # Body that holds the rest of our widget
         body = ft.Column(
             controls=[header],
-            scroll="auto", expand=True,
+            scroll="auto", expand=True, spacing=4
         )
 
-        body.controls.extend(_load_char_data_controls())   # Load in our character data controls after the header
+        # Load in our character data controls after the header
+        body.controls.extend(_load_char_data_controls())   
 
+        # Set the body we built
         self.body_container.content = body
 
         # Call render widget (from Widget class) to update the UI
