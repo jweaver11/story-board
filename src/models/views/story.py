@@ -15,7 +15,7 @@ from styles.snack_bar import SnackBar
 from utils.safe_string_checker import return_safe_name
 
  
-class Story(ft.View):
+class Story(ft.Column):
     
     # Constructor.
     def __init__(
@@ -29,12 +29,14 @@ class Story(ft.View):
         
         # Parent constructor
         super().__init__(
-            route=return_safe_name(f"/{title}"),    # Sets our route for our new story
-            padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
+            #route=return_safe_name(f"/{title}"),    # Sets our route for our new story
+            #padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
             spacing=0,                                                      # No spacing between menubar and rest of page
+            expand=True,
         )  
 
         self.title = title              # Gives our story a title when its created
+        self.route = return_safe_name(f"/{title}_story")   # Sets our route for our new story
         self.p = page                   # Reference to our page object for updating UI elements
         self.data = data                # Sets our data (if any) passed in. New stories just have none
         self.template = template        # Template for our story (sci-fi, fantasy, etc.)
@@ -45,7 +47,7 @@ class Story(ft.View):
             self,           # Pass in our own data so the function can see the actual data we loaded
             {
                 'title': self.title,
-                'directory_path': os.path.join(data_paths.stories_directory_path, self.route),
+                'directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}_story")),
                 'tag': "story",
                 'selected_rail': "content",
                 'content_directory_path': os.path.join(data_paths.stories_directory_path, self.route, "content"),
@@ -114,7 +116,8 @@ class Story(ft.View):
         # Called outside of constructor to avoid circular import issues, or it would be called here
         #self.startup() # Called when opening our active story to load all its data and build its view
         
-    def is_isolated(self):      # NOTE: May break stuff. Remove if it does
+    # Isolates stories from page.update calls. Needed for keeper performance when opening menus
+    def is_isolated(self): 
         return True
     
     # Called from main when our program starts up. Needs a page reference, thats why not called here
@@ -366,7 +369,7 @@ class Story(ft.View):
                     del self.plotlines[widget.data.get('key', '')]
                 case "map":
                     del self.maps[widget.data.get('key', '')]
-                case "world_building":
+                case "world":
                     del self.worlds[widget.data.get('key', '')]
                 case "character_connection_map":
                     del self.character_connection_maps[widget.data.get('key', '')]
@@ -374,7 +377,7 @@ class Story(ft.View):
                     del self.canvas_boards[widget.data.get('key', '')]
 
                 case _:
-                    self.p.open(SnackBar(f"Error deleting widget: Unknown tag {tag}"))
+                    self.p.show_dialog(SnackBar(f"Error deleting widget: Unknown tag {tag}"))
                     return
             
             
@@ -872,7 +875,7 @@ class Story(ft.View):
 
 
         # Save our 2 rails, divers, and our workspace container in a row
-        row = ft.Row(
+        row = IsolatedRow(
             spacing=0,  # No space between elements
             expand=True,  # Makes sure it takes up the entire window/screen
 

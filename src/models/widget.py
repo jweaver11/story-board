@@ -331,6 +331,7 @@ class Widget(ft.Container):
         # Reload our widget ui and rail to reflect changes 
         self.reload_widget()           
         self.story.active_rail.content.reload_rail()   
+        self.story.active_rail.update()
 
 
 

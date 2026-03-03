@@ -13,26 +13,27 @@ def route_change(e: ft.RouteChangeEvent) -> Story:
     page: ft.Page = e.page
 
     # Clear our views and any existing controls
-    page.views.clear()
+    #page.views.clear()
+    page.controls.clear()
 
     match page.route:
         case "/":
             # Append the view manually since its just a function to return the view
-            page.views.append(create_home_view(page))
+            page.controls.append(create_home_view(page))
             page.update()
             return
         case "/home":
             # Append the view manually since its just a function to return the view
-            page.views.append(create_home_view(page))
+            page.controls.append(create_home_view(page))
             page.update()
             return
         case "/settings":
             app.settings.reload_settings()
-            page.views.append(app.settings)
+            page.controls.append(app.settings)
             page.update()
             return
         case "/loading":
-            page.views.append(create_loading_view(page))
+            page.controls.append(create_loading_view(page))
             page.update()
             return
         case _:
@@ -50,14 +51,14 @@ def route_change(e: ft.RouteChangeEvent) -> Story:
 
                     new_story.startup()
                     app.settings.story = new_story  # Gives our settings widget the story reference it needs
-                    page.views.append(new_story)
+                    page.controls.append(new_story)
                     page.update() 
                     return
                 
             
             # If theres an error loading the story, go to home view
-            page.views.append(create_home_view(page))
+            page.controls.append(create_home_view(page))
             page.update()
-            page.open(SnackBar(f"Error loading story for route: {page.route}"))     
+            page.show_dialog(SnackBar(f"Error loading story for route: {page.route}"))     
             page.update()
             return

@@ -24,7 +24,7 @@ async def main(page: ft.Page):
     if app.settings.data.get("is_first_launch", True):
         # Create the view and add it the page
         welcome_view = create_welcome_view(page)
-        page.views.append(welcome_view)     # Add welcome view to the page
+        page.controls.append(welcome_view)     # Add welcome view to the page
         page.update()
 
         # Grab our text and begin animating it
@@ -43,7 +43,7 @@ async def main(page: ft.Page):
 
     # Otherwise they are not new to storyboard, show our loading view
     else:
-        page.views.append(create_loading_view(page))
+        page.controls.append(create_loading_view(page))
         page.update()
  
     # Set our route change function to be called on route changes
@@ -54,7 +54,7 @@ async def main(page: ft.Page):
  
     # I no story was loaded, Give us a basic home view
     if page.route == "/":
-        page.views.append(create_home_view(page))   # Simple view so we just use a function, not a class
+        page.controls.append(create_home_view(page))   # Simple view so we just use a function, not a class
         page.update()
 
 # Runs the app

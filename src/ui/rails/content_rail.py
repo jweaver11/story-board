@@ -270,7 +270,7 @@ class ContentRail(Rail):
                 content=ft.SubmenuButton(
                     ft.Container(
                         ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True)], expand=True),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
                     ),
                     [
                         ft.MenuItemButton(      # Folders
@@ -336,7 +336,7 @@ class ContentRail(Rail):
                     ),  
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
                 ),
                 no_padding=True, no_effects=True
             )

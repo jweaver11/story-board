@@ -69,24 +69,23 @@ class TreeViewFile(ft.GestureDetector):
             MenuOptionStyle(
                 on_click=self.rename_clicked,
                 content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
+                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.widget.data.get('color', 'primary'),),
                     ft.Text(
                         "Rename", 
                         weight=ft.FontWeight.BOLD, 
-                        color=ft.Colors.ON_SURFACE
+                        
                     ), 
                 ]),
             ),
             MenuOptionStyle(
-                content=ft.PopupMenuButton(
-                    content=ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.widget.data.get('color', 'primary'),), ft.Text("Color",  weight=ft.FontWeight.BOLD),]),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
-                    ),
-                    tooltip=f"Change {self.widget.title} Color", menu_padding=0,
-                    items=self._get_color_options()
+                ft.SubmenuButton(
+                    ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.widget.data.get('color', "primary")), ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True)], expand=True),
+                    self._get_color_options(), 
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10)),
+                    tooltip="Change this widget's color"
                 ),
-                no_padding=True
+                no_padding=True, no_effects=True
             ),
             MenuOptionStyle(
                 on_click=self.delete_clicked,
@@ -135,7 +134,6 @@ class TreeViewFile(ft.GestureDetector):
             else:
 
                 self.reload()
-                self.widget.p.update()
 
         # Called everytime a change in textbox occurs
         def _name_check(e):
@@ -163,13 +161,14 @@ class TreeViewFile(ft.GestureDetector):
 
             # If we are NOT unique, show our error text
             if not is_unique:
-                e.control.error_text = error_text
+                e.control.error = error_text
 
             # Otherwise remove our error text
             else:
-                e.control.error_text = None
-                
-            self.widget.p.update()
+                e.control.error = None
+
+            e.control.update()
+            
 
         # Called when submitting our textfield.
         def _submit_name(e):
@@ -192,9 +191,9 @@ class TreeViewFile(ft.GestureDetector):
                 
             # Otherwise make sure we show our error
             else:
-                text_field.error_text = "Name already exists"
+                text_field.error = "Name already exists"
                 text_field.focus()                                  # Auto focus the textfield
-                self.widget.p.update()
+                self.update()
                 
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
@@ -209,10 +208,11 @@ class TreeViewFile(ft.GestureDetector):
         )
 
         # Replaces our name text with a text field for renaming
-        self.content.content.content.content.controls[1] = text_field
+        self.content.content.title = text_field
 
         # Clears our popup menu button and applies to the UI
         self.widget.p.overlay.clear()
+        self.update()
         self.widget.p.update()
 
     def _get_color_options(self) -> list[ft.Control]:
@@ -228,9 +228,7 @@ class TreeViewFile(ft.GestureDetector):
             
             # Change our icon to match, apply the update
             self.reload()
-            self.widget.reload_widget()
             self.widget.story.workspace.reload_workspace()
-
 
         # List for our colors when formatted
         color_controls = [] 
@@ -238,9 +236,10 @@ class TreeViewFile(ft.GestureDetector):
         # Create our controls for our color options
         for color in colors:
             color_controls.append(
-                ft.PopupMenuItem(
+                ft.MenuItemButton(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                    on_click=lambda e, col=color: _change_icon_color(col)
+                    on_click=lambda e, col=color: _change_icon_color(col), close_on_click=True,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))
                 )
             )
 
@@ -253,7 +252,6 @@ class TreeViewFile(ft.GestureDetector):
         def _delete_confirmed(e=None):
             ''' Deletes the widget after confirmation '''
 
-            #self.widget.story.close_menu_instant()
             self.widget.p.pop_dialog()
             self.widget.story.delete_widget(self.widget) 
             self.widget.story.active_rail.content.reload_rail()    # Reload the rail to reflect the deletion

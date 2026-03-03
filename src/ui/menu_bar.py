@@ -204,13 +204,17 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
         ''' Goes to the settings page '''
         if page.route != "/settings":
             await page.push_route("/settings")
+            print("Pushed settings route")
         else:
             # Get the active story title and find its route
-            active_story_title = app.settings.data.get('active_story', "/")
-            if active_story_title != "/" and active_story_title in app.stories:
-                await page.push_route(app.stories[active_story_title].route)
+            if story is not None:
+                
+
+                await page.push_route(story.route)
+                print("Pushing story route: ", story.route)
             else:
                 await page.push_route("/")
+                print("Pushing home route")
 
 
     # Styling used by lots of menu bar items

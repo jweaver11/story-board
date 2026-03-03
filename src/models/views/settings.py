@@ -17,7 +17,7 @@ from ui.workspaces_rail import WorkspacesRail
 from models.dataclasses.character_template import default_character_template_data_dict
 
  
-class Settings(ft.View):
+class Settings(ft.Column):
 
     # Constructor
     def __init__(
@@ -31,12 +31,13 @@ class Settings(ft.View):
         
         # Constructor the parent widget class
         super().__init__(
-            route=f"/settings",                                      # Sets our route for our new story
-            padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
-            spacing=0,                                                      # No spacing between menubar and rest of page
+            #route=f"/settings",                                      # Sets our route for our new story
+            #padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
+            spacing=0, expand=True                                                    # No spacing between menubar and rest of page
         )
 
         self.p = page   # Grabs our original page, as sometimes the reference gets lost. with all the UI changes that happen. p.update() always works
+        self.route = "/settings"   # Sets our route for our settings view
         self.story = story
         self.file_path = file_path
         self.data = data
@@ -171,6 +172,12 @@ class Settings(ft.View):
         # Handle errors
         except Exception as e:
             print(f"Error changing settings data: {e}")
+
+
+    async def _close_settings(self, e=None):
+        ''' Closes the settings view and returns to the story or home view '''
+        await self.p.push_route(self.story.route if self.story is not None else "/")
+        
 
 
     def create_character_template(self, template_name: str, data: dict):
@@ -357,7 +364,7 @@ class Settings(ft.View):
                 ft.Text("Appearance", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
                 ft.Container(expand=True),   # Spacer to push title to left
                 ft.IconButton(
-                    ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
+                    ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
                 )
             ]),
@@ -490,7 +497,7 @@ class Settings(ft.View):
                 ft.Text("Widget Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
                 ft.Container(expand=True),   # Spacer to push title to left
                 ft.IconButton(
-                    ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
+                    ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
                 ),
             ]),
@@ -857,7 +864,7 @@ class Settings(ft.View):
                 ft.Text("Story Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
                 ft.Container(expand=True),   # Spacer to push close button to the right
                 ft.IconButton(
-                    ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
+                    ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
                 )
             ]),            
@@ -1289,7 +1296,7 @@ class Settings(ft.View):
                 ft.Text("Templates", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
                 ft.Container(expand=True),   # Spacer to push title to left
                 ft.IconButton(
-                    ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
+                    ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
                 )
             ]),
@@ -1318,7 +1325,7 @@ class Settings(ft.View):
                 ft.Text("Resources", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
                 ft.Container(expand=True),   # Spacer to push title to left
                 ft.IconButton(
-                    ft.Icons.CLOSE_OUTLINED, on_click=lambda e: self.p.go(self.story.route if self.story is not None else "/"), 
+                    ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
                 )
             ]),
@@ -1345,7 +1352,7 @@ class Settings(ft.View):
         self.controls.clear()
         
         # Set our menubar
-        menubar = create_menu_bar(self.p)   
+        menubar = create_menu_bar(self.p, self.story)   
 
         # Set our workspaces rail
         self.workspaces_rail = WorkspacesRail(self.p, self.story)  
@@ -1418,19 +1425,23 @@ class Settings(ft.View):
                     self.workspaces_rail,
                     ft.VerticalDivider(thickness=2, width=2),
                     ft.Container(
-                        expand=True,
-                        gradient=dark_gradient, border_radius=ft.BorderRadius.all(20),
-                        margin=ft.Margin.all(10),
-                        content=ft.Row(
-                            controls=[
-                                nav_rail_container,
-                                ft.VerticalDivider(thickness=2, width=2),   
+                        ft.Container(
+                            expand=True,
+                            gradient=dark_gradient, 
+                            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                            border_radius=ft.BorderRadius.all(20),
+                            margin=ft.Margin.all(10),
+                            content=ft.Row(
+                                controls=[
+                                    nav_rail_container,
+                                    ft.VerticalDivider(thickness=2, width=2),   
 
-                                self.body_container
-                            ],
-                            spacing=0,
-                        )
-                    ),
+                                    self.body_container
+                                ],
+                                spacing=0,
+                            )
+                        ), bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, expand=True
+                    )
                 ]
             ),  
         ]
