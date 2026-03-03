@@ -164,7 +164,6 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
             #print("Open button clicked, selected story is: ", selected_story)
 
             if selected_story is not None:
-                print("Opening story: ", selected_story)
                 await page.push_route(app.stories[selected_story].route)
                 app.settings.story = app.stories[selected_story]  # Gives our settings widget the story reference it needs
                 page.pop_dialog()
