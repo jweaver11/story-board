@@ -49,7 +49,7 @@ class Note(Widget):
             await self.save_segment(new_segment_tf.value, "", True)
             self.p.pop_dialog()
 
-        new_segment_tf = ft.TextField(label="Segment Title", autofocus=True, capitalization=ft.TextCapitalization.WORDS)
+        new_segment_tf = ft.TextField(label="Segment Title", autofocus=True, capitalization=ft.TextCapitalization.WORDS, on_submit=create_segment)
 
         dlg = ft.AlertDialog(
             title=ft.Text("Add New Note Segment"),

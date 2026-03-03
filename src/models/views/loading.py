@@ -10,5 +10,5 @@ def create_loading_view(page: ft.Page) -> ft.View:
         ],
         route="/loading",
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        vertical_alignment=ft.MainAxisAlignment.CENTER, expand=True,
+        vertical_alignment=ft.MainAxisAlignment.CENTER,
     )

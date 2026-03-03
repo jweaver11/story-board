@@ -177,7 +177,7 @@ class Widget(ft.Container):
         try:
 
             # File path to save our json data to
-            old_file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json")
+            old_file_path = os.path.normpath(os.path.join(self.data.get('key', "") + ".json"))
 
             # Delete the file if it exists
             if os.path.exists(old_file_path):
@@ -654,6 +654,7 @@ class Widget(ft.Container):
             case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)
             case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
             case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
+            case "object": self.icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
             case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
 
 

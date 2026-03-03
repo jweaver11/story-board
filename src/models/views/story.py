@@ -206,49 +206,7 @@ class Story(ft.View):
 
             def _create_template_name():
 
-                self.create_folder(
-                    directory_path=self.data['content_directory_path'], 
-                    name="Notes"
-                )
-                    
-                # Using templates
-                if template is not None:
-                    pass
-
-                # Create our folder to store our maps data files and their canvases
-                maps_folders = [
-                    "maps",
-                    #"displays",
-                ]
-                for folder in maps_folders:
-                    folder_path = os.path.join(directory_path, "world_building", folder)
-                    os.makedirs(folder_path, exist_ok=True)
-
-                # Set our sub folders inside of notes
-                notes_folders = [
-                    "Themes",
-                    "Quotes",
-                    "Research",
-                ]
-
-                # Create the sub folders inside of notes
-                for folder in notes_folders:
-                    folder_path = os.path.join(directory_path, "content", "Notes")
-
-                    # Creates the sub folder using out path above
-                    self.create_folder(
-                        directory_path=folder_path, 
-                        name=folder
-                    )
-                    
-                
-                # Create the path to the story's JSON file
-                directory_path = os.path.join(data_paths.stories_directory_path, self.title) 
-
-                # If multiplanetary, create the worlds folder
-                if self.data['settings']['multi_planetary']:
-                    worlds_folder_path = os.path.join(self.data['world_building_directory_path'], "maps")
-                    self.create_folder(worlds_folder_path, name="Worlds")
+                pass
 
         # Handle errors
         except Exception as e:
@@ -270,9 +228,11 @@ class Story(ft.View):
 
             # Make the folder in our storage if it doesn't already exist
             os.makedirs(folder_path, exist_ok=True) 
+
             # Add this folder to our folders data so we can save stuff like colors
             self.data['folders'].update({folder_path: {'name': name, 'color': app.settings.data.get('default_category_color', "primary"), 'is_expanded': True}})
             self.save_dict()
+
 
             self.active_rail.content.reload_rail()
             self.active_rail.update()
@@ -289,13 +249,20 @@ class Story(ft.View):
             # Delete the folder from storage
             shutil.rmtree(full_path)
 
+            # TODO: Delete this folder and all sub folders and widgets inside of this folder
+
             # Remove it from data
             self.data['folders'].pop(full_path, None)
 
             self.save_dict()
 
+            for widget in self.widgets:
+                if widget.directory_path.startswith(full_path):
+                    self.delete_widget(widget, update=False)
+
             self.active_rail.content.reload_rail()
             self.active_rail.update()
+            self.workspace.reload_workspace()
             self.close_menu_instant()
 
         # Handle errors
@@ -309,7 +276,7 @@ class Story(ft.View):
 
         try:
             # Check if the folder exists in our data
-            if full_path in self.data['folders']:
+            if full_path in self.data.get('folders', {}):
                 self.data['folders'][full_path][key] = value
                 self.save_dict()
                 #print("Changed folder data:", full_path, key, value)
@@ -326,11 +293,15 @@ class Story(ft.View):
         # Does the actual renaming
         os.rename(old_path, new_path)
 
+        
+
         # Update the old key in our folders data
         if old_path in self.data['folders']:
             #print("Updating old path in story data")
             self.data['folders'][new_path] = self.data['folders'].pop(old_path)
             self.save_dict()
+
+        # TODO: Update all folders and widgets that used the old path to the new path
 
         # Go through each widget and update its directory path if it was in the renamed folder
         for widget in self.widgets:
@@ -338,12 +309,14 @@ class Story(ft.View):
                 # Update the directory path
                 relative_path = widget.directory_path[len(old_path):]
                 widget.directory_path = new_path + relative_path
+                widget.data['directory_path'] = widget.directory_path  # Update its data
+                widget.data['key'] = f"{widget.directory_path}\\{return_safe_name(self.title)}_{self.data.get('tag', '')}"
                 widget.save_dict()  # Save the updated widget data
                 #print("Updated widget directory path to ", widget.title, " to ", widget.directory_path)
         
 
     # Called when deleting a widget from our story
-    def delete_widget(self, widget) -> bool:
+    def delete_widget(self, widget, update: bool=True) -> bool:
         ''' Deletes the object from our live story object and its reference in the pins.
         We then remove its storage file from our file storage as well. '''
 
@@ -388,9 +361,10 @@ class Story(ft.View):
         if widget.delete_file():
             _delete_live_widget(widget)
 
-            self.active_rail.content.reload_rail()
-            self.workspace.reload_workspace()
-            self.close_menu_instant()
+            if update:
+                self.active_rail.content.reload_rail()
+                self.workspace.reload_workspace()
+                self.close_menu_instant()
 
     # Called on story startup to load all our content objects
     def load_widgets(self):
@@ -407,12 +381,22 @@ class Story(ft.View):
         from models.widgets.world import World
         #from models.widgets.object import Object
 
+        # If we are being re-loaded after settings or another story, clear our content so we can load it fresh
         self.widgets.clear()
+        self.documents.clear()
+        self.notes.clear()
+        self.canvases.clear()
+        self.canvas_boards.clear()
+        self.characters.clear()
+        self.plotlines.clear()
+        self.maps.clear()
+        self.character_connection_maps.clear()
+        self.worlds.clear()
+        self.objects.clear()
         
 
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder
         if not os.path.exists(self.data['content_directory_path']):
-            #print("Content folder does not exist, creating it.")
             os.makedirs(self.data['content_directory_path'])    
             return
 

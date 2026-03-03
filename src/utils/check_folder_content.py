@@ -49,7 +49,7 @@ def return_folder_content(directory: str, story: Story, expansion_tile: ft.Expan
 
         new_expansion_tile = ft.ExpansionTile(
             title=ft.Text(capital_dir_path, color=color, weight=ft.FontWeight.BOLD), 
-            leading=ft.Icon(ft.Icons.FOLDER, color=color),
+            leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, color=color),
             controls_padding=ft.Padding(15, 5, 0, 5), dense=True,
             tile_padding=ft.Padding(5, 0, 0, 0), shape=ft.RoundedRectangleBorder(),
         )
@@ -58,7 +58,7 @@ def return_folder_content(directory: str, story: Story, expansion_tile: ft.Expan
         return_folder_content(full_path, story, new_expansion_tile)
 
         if new_expansion_tile.controls:
-            new_expansion_tile.initially_expanded=True
+            new_expansion_tile.expanded = True
 
         # Add our expansion tile for the directory to its parent, or the column if top most directory
         expansion_tile.controls.append(new_expansion_tile)
@@ -76,17 +76,17 @@ def return_folder_content(directory: str, story: Story, expansion_tile: ft.Expan
 
         # Set our icon based on what type of widget we are using tag
         match tag:
-            case "chapter": icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, color)
-            case "canvas": icon = ft.Icon(ft.Icons.BRUSH_OUTLINED, color)
-            case "note": icon = ft.Icon(ft.Icons.COMMENT_OUTLINED, color)
-            case "character": icon = ft.Icon(ft.Icons.PERSON_OUTLINE, color)
-            case "plotline": icon = ft.Icon(ft.Icons.TIMELINE, color)
-            case "map": icon = ft.Icon(ft.Icons.MAP_OUTLINED, color)
-            case "world": icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED, color)
-            case _: icon = ft.Icon(ft.Icons.ERROR_OUTLINE, color)
+            case "document": icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
+            case "canvas": icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
+            case "canvas_board": icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
+            case "note": icon = ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED)
+            case "character": icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
+            case "character_connection_map": icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
+            case "plotline": icon = ft.Icon(ft.Icons.TIMELINE)
+            case "map": icon = ft.Icon(ft.Icons.MAP_OUTLINED)
+            case "world": icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
+            case "object": icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
+            case _: icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
 
         expansion_tile.controls.append(ft.Row([icon, ft.Text(f"{title}", weight=ft.FontWeight.BOLD)]))
-
-    if len(expansion_tile.controls) == 0:
-        expansion_tile.controls.append(ft.Text("Empty Folder", italic=True, color=ft.Colors.ON_SURFACE_VARIANT))
 

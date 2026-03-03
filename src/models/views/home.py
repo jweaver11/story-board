@@ -107,7 +107,7 @@ def create_home_view(page: ft.Page) -> ft.View:
         page.update()
 
 
-    return ft.Column(
+    return ft.View(
         route="/",
         controls=[
             menubar,
@@ -131,5 +131,5 @@ def create_home_view(page: ft.Page) -> ft.View:
                 ),
             ),
         ],
-        spacing=0, expand=True,                                              # No spacing between menubar and rest of page
+        spacing=0,                                             # No spacing between menubar and rest of page
     )
