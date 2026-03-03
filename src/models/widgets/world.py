@@ -26,8 +26,6 @@ class World(Widget):
             data = data,  
             is_rebuilt = is_rebuilt  
         )
-
-        self.body_container.padding = ft.padding.only(top=8, bottom=8, left=8, right=0)
         
         # Verifies this object has the required data fields, and creates them if not
         verify_data(
@@ -41,9 +39,10 @@ class World(Widget):
                 'edit_mode': bool,              # Whether we are in edit mode or not
                 'image_base64': str,            # Saves our image as img64 string
 
+                'About': str,
+
                 # World data
                 'world_data': {
-                    'Summary': str,
                     'Locations': dict,
                     'Lore': dict,
                     'Power Systems': dict,
@@ -63,42 +62,56 @@ class World(Widget):
 
     
 
-    def _update_world_data(self, key: str, **kwargs):
-        ''' Updates our world data field with a new value '''
+    # Called when a field is changed in edit mode
+    def _update_world_data(self, **kwargs):
+        ''' Updates the world data dict or up to one sub dict '''
 
-        for k, value in kwargs.items():
-            self.data['world_data'][key][k] = value
+        for key, value in kwargs.items():
+            if 'world_data' not in self.data:
+                self.data['world_data'] = {}
 
+            if key in self.data['world_data']:
+                self.data['world_data'][key] = value
+            else:
+                # Check if this key is in a sub dict, and update it there if it is
+                for sub_key, sub_dict in self.data['world_data'].items():
+                    if isinstance(sub_dict, dict) and key in sub_dict:
+                        self.data['world_data'][sub_key][key] = value
+                        break
+        
         self.save_dict()
 
-    def _update_summary(self, value: str):
-        ''' Updates our world summary field with a new value '''
+    
 
-        self.data['world_data']['Summary'] = value
-        self.save_dict()
-
-    def _delete_world_data(self, sub_key: str="", **kwargs):
-        ''' Deletes fields from the character data dict or up to one sub dict '''
+    # Deletes a field from our world data dict
+    def _delete_world_data(self, **kwargs):
+        ''' Deletes fields from the world data dict or up to one sub dict '''
 
         for key in kwargs.keys():
-            if sub_key != "":
-                if key in self.data['world_data'][sub_key]:
-                    del self.data['world_data'][sub_key][key]
+            if 'world_data' not in self.data:
+                return
+
+            if key in self.data['world_data']:
+                del self.data['world_data'][key]
             else:
-                if key in self.data['world_data']:
-                    del self.data['world_data'][key]
+                # Check if this key is in a sub dict, and delete it there if it is
+                for sub_key, sub_dict in self.data['world_data'].items():
+                    if isinstance(sub_dict, dict) and key in sub_dict:
+                        del self.data['world_data'][sub_key][key]
+                        break
                 
         self.save_dict()
         self.reload_widget()
 
-    def _new_field_clicked(self, sub_key: str, category: str=""):
-        ''' Called when the new field button is clicked '''
+    # Called when adding a new field to a section
+    def _new_field_clicked(self, section: str):
+        ''' Opens a dialog to name a new field inside a section '''
 
         if 'world_data' not in self.data:
             self.data['world_data'] = {}
 
-        if sub_key not in self.data['world_data']:
-            self.data['world_data'][sub_key] = {}
+        if section not in self.data['world_data']:
+            self.data['world_data'][section] = {}
 
         def create_field(e): #show in edit view
             '''Called when user confirms the field name'''
@@ -106,49 +119,45 @@ class World(Widget):
             field_name = return_safe_name(field_name_input.value)
             
             if not field_name:
-                self.p.close(dlg)
+                self.p.pop_dialog()
                 return  # Don't create if empty
             
             # Add the field to data if it doesn't exist
-            if field_name not in self.data['world_data'][sub_key]:
-                self.data['world_data'][sub_key][field_name] = ""
+            if field_name not in self.data['world_data'][section]:
+                self.data['world_data'][section][field_name] = ""
             
             # Save and reload
             self.save_dict()
-            self.p.close(dlg)
+            self.p.pop_dialog()
             self.reload_widget()
                                 
             
 
         # Create a dialog to ask for the field name
         field_name_input = ft.TextField(
-            label="Field Name", hint_text=f"New {category} Name",
+            label="Field Name",
             autofocus=True, capitalization=ft.TextCapitalization.SENTENCES,
             on_submit=create_field,     # Closes the overlay when submitting
         )
         
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Create New {category} Field"),
+            title=ft.Text(f"Create New Field in {section}"),
             content=field_name_input,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
                 ft.TextButton("Create", on_click=create_field),
             ],
         )
-        
-        try:
-            dlg.open = True
-            self.p.open(dlg)
+     
+        self.p.show_dialog(dlg)
 
-        except Exception as ex:
-            print(f"Error opening dialog: {ex}") 
+    # Called when clicking our upload image button
+    async def _upload_world_image(self, e=None):
 
-    async def _files_uploaded(self, e: ft.FilePickerUploadEvent):
+        files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+        if files:
 
-        if e.files:
-            file_path = e.files[0].path
-            #print("File path:", file_path)
-
+            file_path = files[0].path
             try:
                 import base64
 
@@ -158,14 +167,13 @@ class World(Widget):
                     self.data['image_base64'] = f"{encoded_string}"
                     self.save_dict()
                     self.reload_widget()
-                    print("Success")
 
-            except Exception as ex:
-                print(f"Error uploading file: {ex}")
+            except Exception as _:
+                pass
     
     # Called when clicking the edit mode button
     def _edit_mode_clicked(self, e=None):
-        ''' Switches between edit mode and not for the character '''
+        ''' Switches between edit mode and not for the world '''
 
         # Change our edit mode data flag, and save it to file
         self.data['edit_mode'] = not self.data['edit_mode']
@@ -176,7 +184,7 @@ class World(Widget):
 
     # Called if our widget is in edit view. 
     def _edit_mode_view(self):
-        ''' Returns our character data with input capabilities '''
+        ''' Returns our world data with input capabilities '''
 
         def _get_help_text(key: str="") -> str:
             ''' Returns help text for certain fields '''
@@ -195,520 +203,244 @@ class World(Widget):
                     return None
 
 
-        def _load_dict_data(dict: dict, container: ft.Container, sub_key: str=""):
+        # Loads our world data dict into text controls for editing
+        def _load_world_data_controls() -> list[ft.Control]:
             ''' Loads data from a dict into a given container '''
-            for key, value in dict.items():
-                if isinstance(value, str):
-                    text_control = ft.TextField(
-                        expand=True, label=key.capitalize(), value=value, dense=True, multiline=True, hint_text=_get_help_text(key),
-                        capitalization=ft.TextCapitalization.SENTENCES,  
-                        on_blur=lambda e, k=key: self._update_world_data(key=sub_key, **{k: e.control.value})
-                    )
+            control_list = []
+            
+            # Go through our sections inside of our world data
+            for section, values in self.data.get('world_data', {}).items():
 
-                    container.content.controls.append(
-                        ft.Row([
-                            text_control,
-                            ft.IconButton(
-                                tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,   
-                                on_click=lambda e, k=key: self._delete_world_data(sub_key=sub_key, **{k: None})
-                            ),
-                        ])
-                    )
+                # Skip non-dict sections 
+                if not isinstance(values, dict):
+                    continue
+
+                # Set a label and container to hold our text spans for each section
+                label = ft.Row([
+                    ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                    ft.IconButton(
+                        tooltip="Add New Field", icon=ft.Icons.NEW_LABEL_OUTLINED, mouse_cursor="click",
+                        on_click=lambda e, s=section:self._new_field_clicked(s), icon_color=self.data.get('color', None)
+                    ),
+                ])
+                # Container to hold the text control of our section info
+                container = ft.Container(         # For template data
+                    padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+                    border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(bottom=10),
+                    content=ft.Column(expand=True, spacing=6) # Forces container to take up space
+                )
+
+                # Go through every key/value pair in this section and add it to our text span list with formatting
+                for key, value in values.items():
+                    if isinstance(value, str) and (value or app.settings.data.get('show_empty_world_fields', True)):
+
+                        # Add the each key for this section
+                        container.content.controls.append(
+                            ft.Row([
+                                ft.TextField(
+                                    label=key, hint_text=_get_help_text(key), value=value, 
+                                    on_blur=lambda e, k=key: self._update_world_data(**{k: e.control.value}), expand=True,
+                                    dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
+                                    focus_color=self.data.get('color', "primary"), focused_border_color=self.data.get('color', "primary"), 
+                                    cursor_color=self.data.get('color', "primary"),
+                                ),
+                                ft.IconButton(
+                                    tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, mouse_cursor="click",
+                                    on_click=lambda e, k=key: self._delete_world_data(**{k: ""}), icon_color=ft.Colors.ERROR
+                                )
+                            ])
+                        )
+
+
+                # Add the label and container with our text spans to the control list for this section
+                control_list.append(label)
+                control_list.append(container)
+
+            return control_list
                     
         if self.data.get('image_base64', ""):
             img = ft.Container(
                 ft.Image(
-                    src_base64=self.data.get('image_base64', ""),
-                    width=100,
-                    height=100,
-                    fit=ft.ImageFit.FILL,
-                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                    src=self.data.get('image_base64', ""),
+                    width=80,
+                    height=80,
+                    fit=ft.BoxFit.FILL,
+                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             )
         else:
-            img = ft.Icon(ft.Icons.PUBLIC_OUTLINED, size=100, color=self.data.get('color', "primary"), expand=False)
+            img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
 
-        fp = ft.FilePicker(on_result=self._files_uploaded)
+        # Changes for the about section
+        async def _change_about_data(e):
+            ''' Called when the about section is changed in edit mode '''
+            self.data['About'] = e.control.value
+            self.save_dict()
 
-        # Column we will append to for the bot of our view. Has our icon, and exit edit mode button
-        # TODO: Foreground decoration when hovering adds the ("upload image" button)
-        body = ft.Column([
+        about_section = ft.Column([
             ft.Row([
+                ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                 ft.IconButton(
-                    content=img, tooltip="Upload Image", on_click=lambda e: fp.pick_files(
-                    allow_multiple=False, allowed_extensions=["png", "jpg", "jpeg", "webp"])
+                    tooltip="Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, icon_color=self.data.get('color', None), 
+                    on_click=self._edit_mode_clicked, mouse_cursor="click"
                 ),
-                ft.IconButton(tooltip="Exit Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, icon_color=self.data.get('color', None), on_click=self._edit_mode_clicked),
-                fp
-            ], wrap=True),
-        ], scroll="auto", expand=True)
-
-
-        # Create a container for our dicts that we have data in and load them. 
-        template_data_container = ft.Container(            # For basic info
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE), 
-            content=ft.Column([]), 
-        )
-        summary_container = ft.Container(            # For basic info
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE), 
-            content=ft.TextField(
-                expand=True, value=self.data.get('world_data', {}).get('Summary', ""), dense=True, multiline=True,
-                capitalization=ft.TextCapitalization.SENTENCES, 
-                on_blur=lambda e: self._update_summary(e.control.value),
-                border=ft.InputBorder.NONE,                  
-            ),
-        )
-        locations_container = ft.Container(  # For physical description
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE),
-            content=ft.Column([]), 
-        )   
-        lore_container = ft.Container(                # For family
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE),
-            content=ft.Column([]), 
-        )
-        power_systems_container = ft.Container(                # For origin 
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE), 
-            content=ft.Column([]),
-        )
-        social_systems_container = ft.Container(           # For connections
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE),
-            content=ft.Column([]), 
-        )
-        geography_container = ft.Container(           # For connections
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE),
-            content=ft.Column([]), 
-        )
-        technology_container = ft.Container(           # For connections
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE),
-            content=ft.Column([]),
-        )
-        history_container = ft.Container(           # For connections
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE),
-            content=ft.Column([]),
-        )
-        governments_container = ft.Container(           # For connections
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE),
-            content=ft.Column([]),
-        )
-        custom_fields_container = ft.Container(        # For custom fields
-            padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-            border=ft.border.all(2, ft.Colors.OUTLINE),
-            content=ft.Column([]), 
-        )
+            ]),
+            ft.Container(
+                border_radius=ft.BorderRadius.all(10), expand=True,
+                border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(left=6),   
+                content=ft.TextField(
+                    self.data.get('char_data', {}).get('About', ""), on_blur=_change_about_data, expand=True, 
+                    dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
+                    focus_color="transparent", focused_border_color="transparent", 
+                    cursor_color=self.data.get('color', "primary"), border_color="transparent"
+                ), 
+            )
+        ], expand=True, spacing=0)
 
         
-        _load_dict_data(self.data.get('world_data', {}).get('Template Data', {}), template_data_container, "Template Data")
-        _load_dict_data(self.data.get('world_data', {}).get('Locations', {}), locations_container, "Locations")
-        _load_dict_data(self.data.get('world_data', {}).get('Lore', {}), lore_container, "Lore")
-        _load_dict_data(self.data.get('world_data', {}).get('Power Systems', {}), power_systems_container, "Power Systems")
-        _load_dict_data(self.data.get('world_data', {}).get('Social Systems', {}), social_systems_container, "Social Systems")
-        _load_dict_data(self.data.get('world_data', {}).get('Geography', {}), geography_container, "Geography")
-        _load_dict_data(self.data.get('world_data', {}).get('Technology', {}), technology_container, "Technology")
-        _load_dict_data(self.data.get('world_data', {}).get('History', {}), history_container, "History")
-        _load_dict_data(self.data.get('world_data', {}).get('Governments', {}), governments_container, "Governments")
-        _load_dict_data(self.data.get('world_data', {}).get('Custom Fields', {}), custom_fields_container, "Custom Fields")
+        # Header that holds our image, edit mode button, and about section
+        header = ft.Row([
+            ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_world_image, mouse_cursor="click"),
+            about_section
+        ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
 
+        body = ft.Column([
+            header
+        ], scroll="auto", expand=True, spacing=4)
 
-        # Create rows for each section
-        row1 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row2 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row3 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row4 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row5 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row6 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row7 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row8 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row9 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-        row10 = ft.Row(alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-
-
-        row1.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6), 
-                    ft.Text("Summary", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True),
-                ], spacing=0),
-                ft.Row([summary_container])
-            ], expand=True, spacing=4)
-        )
-        
-        
-        row2.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6),
-                    ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Locations", "Location"), icon_color=self.data.get('color', None)),
-
-                ], spacing=0),
-                ft.Row([locations_container])
-            ], expand=True, spacing=4)
-        )
-        row3.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6),
-                    ft.Text("Lore", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Lore", "Lore"), icon_color=self.data.get('color', None)),
-
-                ], spacing=0),
-                ft.Row([lore_container])
-            ], expand=True, spacing=4)
-        )
-        row4.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6),
-                    ft.Text("Social Systems", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Social Systems", "Social System"), icon_color=self.data.get('color', None)),
-
-                ], spacing=0),
-                ft.Row([social_systems_container])
-            ], expand=True, spacing=4)
-        )
-        row5.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6),
-                    ft.Text("Power Systems", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Power Systems", "Power System"), icon_color=self.data.get('color', None)),
-
-                ], spacing=0),
-                ft.Row([power_systems_container])
-            ], expand=True, spacing=4)
-        )
-        row6.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6),
-                    ft.Text("Geography", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Geography", "Geography"), icon_color=self.data.get('color', None)),
-
-                ], spacing=0),
-                ft.Row([geography_container])
-            ], expand=True, spacing=4)
-        )
-        row7.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6),
-                    ft.Text("Technology", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Technology", "Technology"), icon_color=self.data.get('color', None)),
-
-                ], spacing=0),
-                ft.Row([technology_container])
-            ], expand=True, spacing=4)
-        )
-        row8.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6),
-                    ft.Text("History", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("History", "History"), icon_color=self.data.get('color', None)),
-
-                ], spacing=0),
-                ft.Row([history_container])
-            ], expand=True, spacing=4)
-        )
-        row9.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6),
-                    ft.Text("Governments", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Governments", "Government"), icon_color=self.data.get('color', None)),
-
-                ], spacing=0),
-                ft.Row([governments_container])
-            ], expand=True, spacing=4)
-        )
-        row10.controls.append(
-            ft.Column([
-                ft.Row([
-                    ft.Container(width=6),
-                    ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ft.IconButton(tooltip="Add Custom Field", icon=ft.Icons.NEW_LABEL_OUTLINED, on_click=lambda e: self._new_field_clicked("Custom Fields", "Custom"), icon_color=self.data.get('color', None)),
-
-                ], spacing=0),
-                ft.Row([custom_fields_container])
-            ], expand=True, spacing=4)
-        )
-        
-
-        body.controls.append(ft.Container(padding=ft.padding.only(right=8), content=ft.Column([row1, row2, row3, row4, row5, row6, row7, row8, row9, row10], spacing=16)))
+        body.controls.extend(_load_world_data_controls())   
 
         self.body_container.content = body
 
 
-    # Called to reload our widget UI
-    def reload_widget(self):
-        ''' Reloads our world building widget '''
+    # Called after any changes happen to the data that need to be reflected in the UI
+    def reload_widget(self): #this is the edit view currently
+        ''' Reloads/Rebuilds our widget based on current data '''
 
-
-        def _load_dict_data(dict: dict, container: ft.Container):
+        def _load_world_data_controls() -> list[ft.Control]:
             ''' Loads data from a dict into a given container '''
-            span_list = []
-            dict_length = len(dict)
-            idx = 0
 
-            for key, value in dict.items():    
+            # TODO: Skip empty ones check
+
+            control_list = []
+            
+            # Go through our sections inside of our world data
+            for section, values in self.data.get('world_data', {}).items():
+
+                # Skip non-dict sections 
+                if not isinstance(values, dict):
+                    continue
+
+                # Set a label and container to hold our text spans for each section
+                label = ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None))
                 
-                if isinstance(value, str):
-                    # Treat Goals as a list for display purposes
-                    if "\n" in value:  
-                        spans = [ft.TextSpan(f"{key.capitalize()}:\n", ft.TextStyle(weight=ft.FontWeight.BOLD))]  # Key is bold with formatting
+                # List to hold text spans for each text control in the container
+                text_span_list = []
 
-                        # Treat string as a list and split by new lines or commas
-                        values = [v.strip() for v in value.replace('\n', ',').split(',') if v.strip()]
-                        for val in values:
-                            spans.append(ft.TextSpan(f"\t\u2022\t{val.capitalize()}\n"))
-                        spans.append(ft.TextSpan("\n"))  # Extra new line at end
+                # Container to hold the text control of our section info
+                container = ft.Container(         # For template data
+                    padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+                    border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(bottom=10),
+                    content=ft.Row([ft.Text(expand=True, spans=text_span_list, size=14)]), # Forces container to take up space
+                )
 
-                    # Everything else just gets simple display
-                    else:
-                        
-                        spans = [ft.TextSpan(f"{key.capitalize()}: ", ft.TextStyle(weight=ft.FontWeight.BOLD))]   # Key is bold with formatting
+                # Go through every key/value pair in this section and add it to our text span list with formatting
+                for key, value in values.items():
+                    if isinstance(value, str) and (value or app.settings.data.get('show_empty_world_fields', True)):
 
-                        if idx == dict_length - 1:  # Last item, no new line
-                            spans.append(ft.TextSpan(f"{value}"))     # Last item, no new line
+
+                        # If artifically created new lines, treat as bullet point list
+                        if "\n" in value:
+                            text_span_list.append(
+                                ft.TextSpan(f"{key.capitalize()}:\n", ft.TextStyle(weight=ft.FontWeight.BOLD))
+                            )
+
+                            # Add the value for this key, with a bullet point if there are multiple values separated by new lines
+                            values = [v.strip() for v in value.replace('\n', ',').split(',') if v.strip()]
+                            for val in values:
+                                text_span_list.append(ft.TextSpan(f"\t\u2022\t{val.capitalize()}\n"))
+
+                        # Otherwise, just add the key and value normally
                         else:
-                            spans.append(ft.TextSpan(f"{value}\n\n"))     # Rest of the value
 
-                    # Only show the item if it has a value or if we are set to show empty fields
-                    if value or app.settings.data.get('show_empty_character_fields', True):
-                        span_list.extend(spans)
+                            # Add the each key for this section
+                            text_span_list.append(
+                                ft.TextSpan(f"{key.capitalize()}:\t\t", ft.TextStyle(weight=ft.FontWeight.BOLD))
+                            )
+                            text_span_list.append(ft.TextSpan(f"{value}\n"))     # Rest of the value
 
-                idx += 1
 
-            container.content.spans = span_list
-                    
+                # Remove unnecessary new line at the end for cleaner formatting
+                last_span = text_span_list[-1] if text_span_list else None
+                if last_span and last_span.text.endswith("\n"):
+                    last_span.text = last_span.text[:-1]  # Remove the last new line for cleaner formatting
 
+                # Add the label and container with our text spans to the control list for this section
+                control_list.append(label)
+                control_list.append(container)
+
+            return control_list
+
+        # Rebuild out tab to reflect any changes
         self.reload_tab()
 
         # Check if we're in edit mode or not. If yes, build the edit view like this
         if self.data.get('edit_mode', False):
             self._edit_mode_view()
             self._render_widget()
+            return
 
 
         # If NOT in edit mode, build our normal view
+        # Set either our image or a default icon
+        if self.data.get('image_base64', ""):
+            img = ft.Container(
+                ft.Image(
+                    src=self.data.get('image_base64', ""),
+                    width=80,
+                    height=80,
+                    fit=ft.BoxFit.FILL,
+                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+            )
         else:
+            img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
 
-            if self.data.get('image_base64', ""):
-                img = ft.Container(
-                    ft.Image(
-                        src_base64=self.data.get('image_base64', ""),
-                        width=100,
-                        height=100,
-                        fit=ft.ImageFit.FILL,
-                    ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
-                )
-            else:
-                img = ft.Icon(ft.Icons.PUBLIC_OUTLINED, size=100, color=self.data.get('color', "primary"), expand=False)
-
-            fp = ft.FilePicker(on_result=self._files_uploaded)
-
-            body = ft.Column([
-                ft.Row([
-                    ft.IconButton(
-                        content=img, tooltip="Upload Image", on_click=lambda e: fp.pick_files(
-                        allow_multiple=False, allowed_extensions=["png", "jpg", "jpeg", "webp"])
-                    ),
-                    ft.IconButton(tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), on_click=self._edit_mode_clicked),
-                    fp
-                ], wrap=True),
-            ], scroll="auto", expand=True)
-
-
-            # Create a container for our dicts that we have data in and load them. 
-            template_data_container = ft.Container(            # For basic info
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE), 
-                content=ft.Text(expand=True, selectable=True, spans=[]), 
+        about_section = ft.Column([
+            ft.Row([
+                ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.IconButton(
+                    tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), 
+                    on_click=self._edit_mode_clicked, mouse_cursor="click"
+                ),
+            ]),
+            ft.Container(
+                padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+                border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(left=6),   
+                content=ft.Row([ft.Text(self.data.get('About', ""), expand=True, size=14)], expand=True), # Forces container to take up space
             )
-            summary_container = ft.Container(            # For basic info
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE), 
-                content=ft.Text(
-                    self.data.get('world_data', {}).get('Summary', ""),
-                    expand=True, selectable=True, 
-                )
-            )
-            locations_container = ft.Container(  # For physical description
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Text(expand=True, selectable=True, spans=[]),
-            )   
-            lore_container = ft.Container(                # For family
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Text(expand=True, selectable=True, spans=[]),
-            )
-            power_systems_container = ft.Container(                # For origin 
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE), 
-                content=ft.Text(expand=True, selectable=True, spans=[]),
-            )
-            social_systems_container = ft.Container(           # For connections
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Text(expand=True, selectable=True, spans=[]),
-            )
-            geography_container = ft.Container(           # For connections
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Text(expand=True, selectable=True, spans=[]),
-            )
-            technology_container = ft.Container(           # For connections
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Text(expand=True, selectable=True, spans=[]),
-            )
-            history_container = ft.Container(           # For connections
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Text(expand=True, selectable=True, spans=[]),
-            )
-            governments_container = ft.Container(           # For connections
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Text(expand=True, selectable=True, spans=[]),
-            )
-            custom_fields_container = ft.Container(        # For custom fields
-                padding=ft.padding.all(8), border_radius=ft.border_radius.all(10), expand=True,
-                border=ft.border.all(2, ft.Colors.OUTLINE),
-                content=ft.Text(expand=True, selectable=True, spans=[]),
-            )
+        ], expand=True, spacing=0)
 
-            _load_dict_data(self.data.get('world_data', {}).get('Template Data', {}), template_data_container)
-            _load_dict_data(self.data.get('world_data', {}).get('Locations', {}), locations_container)
-            _load_dict_data(self.data.get('world_data', {}).get('Lore', {}), lore_container)
-            _load_dict_data(self.data.get('world_data', {}).get('Power Systems', {}), power_systems_container)
-            _load_dict_data(self.data.get('world_data', {}).get('Social Systems', {}), social_systems_container)
-            _load_dict_data(self.data.get('world_data', {}).get('Geography', {}), geography_container)
-            _load_dict_data(self.data.get('world_data', {}).get('Technology', {}), technology_container)
-            _load_dict_data(self.data.get('world_data', {}).get('History', {}), history_container)
-            _load_dict_data(self.data.get('world_data', {}).get('Custom Fields', {}), custom_fields_container)
-
-            # Set our columns to hold our data sections
-            column1 = ft.Column([], expand=True, spacing=4, alignment=ft.MainAxisAlignment.START)
-            column2 = ft.Column([], expand=True, spacing=4, alignment=ft.MainAxisAlignment.START)
-  
-            if locations_container.content.spans:
-                column2.controls.append(
-                    ft.Row([
-                        ft.Container(width=6), 
-                        ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0), 
-                )
-                column2.controls.append(ft.Row([locations_container]))
-                column2.controls.append(ft.Container(height=16))  # Spacer
-
-            if lore_container.content.spans:
-                column1.controls.append(
-                    ft.Row([
-                        ft.Container(width=6), 
-                        ft.Text("Lore", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0),
-                )
-                column1.controls.append(ft.Row([lore_container]))
-                column1.controls.append(ft.Container(height=16))  # Spacer
-            if power_systems_container.content.spans:
-                column2.controls.append(
-                    ft.Row([
-                        ft.Container(width=6), 
-                        ft.Text("Power Systems", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0),
-                )
-                column2.controls.append(ft.Row([power_systems_container]))
-                column2.controls.append(ft.Container(height=16))  # Spacer
-
-            if social_systems_container.content.spans:
-                column1.controls.append(
-                    ft.Row([
-                        ft.Container(width=6), 
-                        ft.Text("Social Systems", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0),
-                )
-                column1.controls.append(ft.Row([social_systems_container]))
-                column1.controls.append(ft.Container(height=16))  # Spacer
-
-            if geography_container.content.spans:
-                column2.controls.append(
-                    ft.Row([
-                        ft.Container(width=6), 
-                        ft.Text("Geography", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0),
-                )
-                column2.controls.append(ft.Row([geography_container]))
-                column2.controls.append(ft.Container(height=16))  # Spacer
-
-            if governments_container.content.spans:
-                column1.controls.append(
-                    ft.Row([
-                        ft.Container(width=6), 
-                        ft.Text("Governments", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0),
-                )
-                column1.controls.append(ft.Row([governments_container]))
-                column1.controls.append(ft.Container(height=16))  # Spacer
-
-            if technology_container.content.spans:
-                column1.controls.append(
-                    ft.Row([
-                        ft.Container(width=6), 
-                        ft.Text("Technology", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0),
-                )
-                column1.controls.append(ft.Row([technology_container]))
-                column1.controls.append(ft.Container(height=16))  # Spacer
-
-            if history_container.content.spans:
-                column1.controls.append(
-                    ft.Row([
-                        ft.Container(width=6), 
-                        ft.Text("History", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0),
-                )
-                column1.controls.append(ft.Row([history_container]))
-                column1.controls.append(ft.Container(height=16))  # Spacer
-            
-            if custom_fields_container.content.spans:
-                column2.controls.append(
-                    ft.Row([
-                        ft.Container(width=6), 
-                        ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                    ], spacing=0),
-                )
-                column2.controls.append(ft.Row([custom_fields_container]))
-                column2.controls.append(ft.Container(height=16))  # Spacer
         
-            body.controls.append(
-                ft.Container(
-                    padding=ft.padding.only(right=8), 
-                    content=ft.Column([
-                        ft.Row([
-                            ft.Container(width=6), 
-                            ft.Text("Summary", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True, expand=True)
-                        ], spacing=0), 
-                        ft.Row([summary_container]),
-                        ft.Container(height=16),  # Spacer  
-                        ft.Row([column1, column2], vertical_alignment=ft.CrossAxisAlignment.START, expand=True)
-                    ], spacing=0)
-                )
-            )
+        # Header that holds our image, edit mode button, and about section
+        header = ft.Row([
+            ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_world_image, mouse_cursor="click"),
+            about_section
+        ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
 
-            self.body_container.content = body
 
-            self._render_widget()
+        # Body that holds the rest of our widget
+        body = ft.Column(
+            controls=[header],
+            scroll="auto", expand=True, spacing=4
+        )
+
+        # Load in our world data controls after the header
+        body.controls.extend(_load_world_data_controls())   
+
+        # Set the body we built
+        self.body_container.content = body
+
+        # Call render widget (from Widget class) to update the UI
+        self._render_widget()
 
 
 

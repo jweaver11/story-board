@@ -65,9 +65,9 @@ class Character(Widget):
 
     # TODO: RENAME AND DELETE Will need to be custom here, to alter ccm and connections that used our old name and key
         
-    
+    # Called when adding a new field to a section
     def _new_field_clicked(self, section: str):
-        ''' Called when the new field button is clicked '''
+        ''' Opens a dialog to name a new field inside a section '''
 
         if 'character_data' not in self.data:
             self.data['character_data'] = {}
@@ -153,8 +153,8 @@ class Character(Widget):
         self.save_dict()
         self.reload_widget()
 
-
-    async def _upload_char_image(self, e=None):
+    # Called when clicking our upload image button
+    async def _upload_character_image(self, e=None):
 
         files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
         if files:
@@ -169,10 +169,9 @@ class Character(Widget):
                     self.data['image_base64'] = f"{encoded_string}"
                     self.save_dict()
                     self.reload_widget()
-                    print("Success")
 
-            except Exception as ex:
-                print(f"Error uploading file: {ex}")
+            except Exception as _:
+                pass
 
     def _load_connections(self, connections_list: list, container: ft.Container):
         ''' Loads our connections into a given container '''
@@ -319,7 +318,7 @@ class Character(Widget):
                     return None
 
         # Loads our character data dict into text controls for editing
-        def _load_char_data_controls() -> list[ft.Control]:
+        def _load_character_data_controls() -> list[ft.Control]:
             ''' Loads data from a dict into a given container '''
             control_list = []
             
@@ -416,7 +415,7 @@ class Character(Widget):
         
         # Header that holds our image, edit mode button, and about section
         header = ft.Row([
-            ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_char_image, mouse_cursor="click"),
+            ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_character_image, mouse_cursor="click"),
             about_section
         ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
 
@@ -424,7 +423,7 @@ class Character(Widget):
             header
         ], scroll="auto", expand=True, spacing=4)
 
-        body.controls.extend(_load_char_data_controls())   
+        body.controls.extend(_load_character_data_controls())   
 
         self.body_container.content = body
 
@@ -432,7 +431,7 @@ class Character(Widget):
     def reload_widget(self): #this is the edit view currently
         ''' Reloads/Rebuilds our widget based on current data '''
 
-        def _load_char_data_controls() -> list[ft.Control]:
+        def _load_character_data_controls() -> list[ft.Control]:
             ''' Loads data from a dict into a given container '''
 
             # TODO: Skip empty ones check
@@ -496,11 +495,8 @@ class Character(Widget):
 
             return control_list
 
-            
-        
         # Rebuild out tab to reflect any changes
         self.reload_tab()
-
 
         # Check if we're in edit mode or not. If yes, build the edit view like this
         if self.data.get('edit_mode', False):
@@ -541,7 +537,7 @@ class Character(Widget):
         
         # Header that holds our image, edit mode button, and about section
         header = ft.Row([
-            ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_char_image, mouse_cursor="click"),
+            ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_character_image, mouse_cursor="click"),
             about_section
         ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
 
@@ -553,7 +549,7 @@ class Character(Widget):
         )
 
         # Load in our character data controls after the header
-        body.controls.extend(_load_char_data_controls())   
+        body.controls.extend(_load_character_data_controls())   
 
         # Set the body we built
         self.body_container.content = body
