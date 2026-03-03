@@ -5,7 +5,7 @@ from utils.check_story_unique import story_is_unique
 
 
 # Called when creating our home view (No stories exist or none active)
-def create_home_view(page: ft.Page) -> ft.Column: 
+def create_home_view(page: ft.Page) -> ft.View: 
     ''' Creates a custom menu bar with neww, open, and import new story buttons, and a create new story button in the middle'''
     from models.app import app
 
@@ -108,7 +108,7 @@ def create_home_view(page: ft.Page) -> ft.Column:
 
 
     return ft.Column(
-        #route="/",
+        route="/",
         controls=[
             menubar,
 

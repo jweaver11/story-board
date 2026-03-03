@@ -17,7 +17,7 @@ from ui.workspaces_rail import WorkspacesRail
 from models.dataclasses.character_template import default_character_template_data_dict
 
  
-class Settings(ft.Column):
+class Settings(ft.View):
 
     # Constructor
     def __init__(
@@ -31,9 +31,9 @@ class Settings(ft.Column):
         
         # Constructor the parent widget class
         super().__init__(
-            #route=f"/settings",                                      # Sets our route for our new story
-            #padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
-            spacing=0, expand=True                                                    # No spacing between menubar and rest of page
+            route=f"/settings",                                      # Sets our route for our new story
+            padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
+            spacing=0,                                                   # No spacing between menubar and rest of page
         )
 
         self.p = page   # Grabs our original page, as sometimes the reference gets lost. with all the UI changes that happen. p.update() always works

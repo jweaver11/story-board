@@ -2,7 +2,7 @@ import flet as ft
 import asyncio
 
 
-def create_welcome_view(page: ft.Page) -> ft.Column:
+def create_welcome_view(page: ft.Page) -> ft.View:
     ''' Creates a loading view to be shown while the app is initializing '''
     from models.app import app
 
@@ -33,7 +33,8 @@ def create_welcome_view(page: ft.Page) -> ft.Column:
         on_click=_skip_tutorial_clicked, scale=1.5
     )
 
-    return ft.Column(
+    return ft.View(
+        route="/welcome",
         controls=[
             ft.Container(expand=4),    # Spacing
             text,

@@ -131,7 +131,7 @@ class TreeViewDirectory(ft.GestureDetector):
                 content=ft.PopupMenuButton(
                     ft.Container(
                         ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", weight=ft.FontWeight.BOLD)]),
-                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                        padding=ft.Padding.all(8), border_radius=ft.Border.all(6),
                     ),
                     tooltip="Upload", menu_padding=0,
                     items=[
@@ -148,42 +148,41 @@ class TreeViewDirectory(ft.GestureDetector):
                 ),
                 no_padding=True
             ),
-            # Rename button
-            MenuOptionStyle(
-                on_click=self.rename_clicked,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
-                    ft.Text(
-                        "Rename", 
-                        weight=ft.FontWeight.BOLD, 
-                        color=ft.Colors.ON_SURFACE
-                    ), 
-                ]),
-            ),
 
-            # Color changing popup menu
-            MenuOptionStyle(
-                content=ft.PopupMenuButton(
-                    expand=True,
-                    tooltip="Change category color",
-                    padding=None,
-                    content=ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.color), ft.Text("Color",  weight=ft.FontWeight.BOLD),]),
-                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
-                    ),
-                    items=self.get_color_options()
-                ),
-                no_padding=True
-            ),
         
             # Delete button
             MenuOptionStyle(
-                on_click=lambda e: self._delete_clicked(e),
+                on_click=self.rename_clicked,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.color),
+                    ft.Text(
+                        "Rename", 
+                        weight=ft.FontWeight.BOLD, 
+                        
+                    ), 
+                ]),
+            ),
+            MenuOptionStyle(
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.color), 
+                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    self._get_color_options(), 
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10)),
+                    tooltip="Change this folder's color"
+                ),
+                no_padding=True, no_effects=True
+            ),
+            MenuOptionStyle(
+                on_click=self._delete_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
                     ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
                 ]),
-            ),
+            )
         ]
 
         # Return our menu options list
@@ -233,7 +232,6 @@ class TreeViewDirectory(ft.GestureDetector):
             
             
         # Close the menu, which will also update the page
-        await asyncio.sleep(.3)
         await self.story.close_menu()
 
     # Called when clicking off the textfield and after submission
@@ -250,8 +248,8 @@ class TreeViewDirectory(ft.GestureDetector):
             if self.item_is_unique:
                 e.control.visible = False
                 e.control.value = None
-                e.control.error_text = None
-                self.p.update()
+                e.control.error = None
+                self.update()
                 return
             
             # Otherwise its not unique, re-focus our textfield
@@ -263,8 +261,8 @@ class TreeViewDirectory(ft.GestureDetector):
         else:
             e.control.visible = False
             e.control.value = None
-            e.control.error_text = None
-            self.p.update()
+            e.control.error = None
+            self.update()
 
 
     # Called whenever our user inputs a new key into one of our textfields for new items
@@ -300,13 +298,13 @@ class TreeViewDirectory(ft.GestureDetector):
         # If we are NOT unique, show our error text
         if not self.item_is_unique:
             #print("Setting error text:", error_text)
-            e.control.error_text = error_text
+            e.control.error = error_text
 
         # Otherwise remove our error text
         else:
-            e.control.error_text = None
+            e.control.error = None
             
-        self.p.update()
+        e.control.update()
 
             
     def new_item_textfield_submit(self, e):
@@ -324,10 +322,10 @@ class TreeViewDirectory(ft.GestureDetector):
                     self.story.create_widget(directory_path=self.full_path, title=title, tag=tag)
                 
                 case _:
-                    self.p.open(SnackBar(f"Error creating new item: Unknown type '{tag}'"))
+                    self.p.show_dialog(SnackBar(f"Error creating new item: Unknown type '{tag}'"))
         else:
             self.new_item_textfield.focus()                                  
-            self.p.update()
+            self.update()
 
     def category_submit(self, e):
         # Get our name and check if its unique
@@ -346,7 +344,7 @@ class TreeViewDirectory(ft.GestureDetector):
         # Otherwise make sure we show our error
         else:
             self.new_item_textfield.focus()                                  # Auto focus the textfield
-            self.p.update()
+            self.update()
 
     # Called when rename button is clicked
     async def rename_clicked(self, e):
@@ -399,9 +397,9 @@ class TreeViewDirectory(ft.GestureDetector):
 
             # Give us our error text if not unique
             if not self.is_unique:
-                e.control.error_text = "Category name already exists"
+                e.control.error = "Category name already exists"
             else:
-                e.control.error_text = None
+                e.control.error = None
 
             e.control.update()
 
@@ -434,7 +432,7 @@ class TreeViewDirectory(ft.GestureDetector):
                 
             # Otherwise make sure we show our error
             else:
-                text_field.error_text = "Name already exists"
+                text_field.error = "Name already exists"
                 text_field.focus()                                  # Auto focus the textfield
                 self.p.update()
                 
@@ -455,13 +453,12 @@ class TreeViewDirectory(ft.GestureDetector):
         # Clears our popup menu button and applies to the UI
         await self.story.close_menu()
 
-    def get_color_options(self) -> list[ft.Control]:
+    def _get_color_options(self) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
 
         # Called when a color option is clicked on popup menu to change icon color
-        async def _change_icon_color(e):
+        def _change_icon_color(color: str):
             ''' Passes in our kwargs to the widget, and applies the updates '''
-            color = e.control.data
 
             # Change the data
             self.story.change_folder_data(self.full_path, 'color', color)
@@ -469,8 +466,8 @@ class TreeViewDirectory(ft.GestureDetector):
             
             # Change our icon to match, apply the update
             self.story.active_rail.content.reload_rail()
-            await asyncio.sleep(.3)
-            await self.story.close_menu()      
+            self.story.active_rail.update()
+            self.story.close_menu_instant() 
 
         # List for our colors when formatted
         color_controls = [] 
@@ -478,13 +475,17 @@ class TreeViewDirectory(ft.GestureDetector):
         # Create our controls for our color options
         for color in colors:
             color_controls.append(
-                ft.PopupMenuItem(
+                ft.MenuItemButton(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                    data=color, on_click=_change_icon_color
+                    on_click=lambda e, col=color: _change_icon_color(col), close_on_click=True,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))
                 )
             )
 
         return color_controls
+       
+
+        
     
     # Called when the delete button is clicked in the menu options
     def _delete_clicked(self, e):
@@ -493,7 +494,7 @@ class TreeViewDirectory(ft.GestureDetector):
         def _delete_confirmed(e=None):
             ''' Deletes the widget after confirmation '''
 
-            self.p.close(dlg)
+            self.p.pop_dialog()
             self.story.delete_folder(self.full_path)
 
         # Called to add our folder contents to the confirmation dialog
@@ -513,11 +514,11 @@ class TreeViewDirectory(ft.GestureDetector):
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
             title=ft.Column([ft.Text(f"Are you sure you want to delete folder {self.title} forever?", weight=ft.FontWeight.BOLD), ft.Divider(height=2, thickness=2)]),
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
             title_padding=ft.padding.all(25),
             content=_return_folder_content(),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg)),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog()),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
             ]
         )
@@ -525,7 +526,7 @@ class TreeViewDirectory(ft.GestureDetector):
         self.story.close_menu_instant()
 
         if app.settings.data.get('confirm_item_delete', False):
-            self.p.open(dlg)
+            self.p.show_dialog(dlg)
         else:
             _delete_confirmed()
 

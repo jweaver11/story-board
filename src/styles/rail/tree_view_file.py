@@ -79,7 +79,11 @@ class TreeViewFile(ft.GestureDetector):
             ),
             MenuOptionStyle(
                 ft.SubmenuButton(
-                    ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.widget.data.get('color', "primary")), ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True)], expand=True),
+                    ft.Row([
+                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.widget.data.get('color', "primary")), 
+                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
                     self._get_color_options(), 
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                     style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10)),
@@ -193,7 +197,7 @@ class TreeViewFile(ft.GestureDetector):
             else:
                 text_field.error = "Name already exists"
                 text_field.focus()                                  # Auto focus the textfield
-                self.update()
+                text_field.update()
                 
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(

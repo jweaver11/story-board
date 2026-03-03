@@ -27,7 +27,8 @@ class MenuOptionStyle(ft.GestureDetector):
             on_exit=self.on_hover_exit if not no_effects else None,                                         # Set our stop hovering function
             content=ft.Container(
                 padding=ft.Padding.all(8) if not no_padding else None,     # Add padding if not disabled
-                content=content                                                 # Set our content passed in                                
+                content=content,                                                 # Set our content passed in           
+                border_radius=ft.BorderRadius.all(10)                     
             ),
         )
 

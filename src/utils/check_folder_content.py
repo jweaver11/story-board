@@ -87,3 +87,6 @@ def return_folder_content(directory: str, story: Story, expansion_tile: ft.Expan
 
         expansion_tile.controls.append(ft.Row([icon, ft.Text(f"{title}", weight=ft.FontWeight.BOLD)]))
 
+    if len(expansion_tile.controls) == 0:
+        expansion_tile.controls.append(ft.Text("Empty Folder", italic=True, color=ft.Colors.ON_SURFACE_VARIANT))
+

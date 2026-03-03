@@ -15,7 +15,7 @@ from styles.snack_bar import SnackBar
 from utils.safe_string_checker import return_safe_name
 
  
-class Story(ft.Column):
+class Story(ft.View):
     
     # Constructor.
     def __init__(
@@ -29,14 +29,12 @@ class Story(ft.Column):
         
         # Parent constructor
         super().__init__(
-            #route=return_safe_name(f"/{title}"),    # Sets our route for our new story
-            #padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
+            route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
+            padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
             spacing=0,                                                      # No spacing between menubar and rest of page
-            expand=True,
         )  
 
         self.title = title              # Gives our story a title when its created
-        self.route = return_safe_name(f"/{title}_story")   # Sets our route for our new story
         self.p = page                   # Reference to our page object for updating UI elements
         self.data = data                # Sets our data (if any) passed in. New stories just have none
         self.template = template        # Template for our story (sci-fi, fantasy, etc.)
@@ -297,6 +295,7 @@ class Story(ft.Column):
             self.save_dict()
 
             self.active_rail.content.reload_rail()
+            self.active_rail.update()
             self.close_menu_instant()
 
         # Handle errors
@@ -407,6 +406,8 @@ class Story(ft.Column):
         from models.widgets.character_connection_map import CharacterConnectionMap
         from models.widgets.world import World
         #from models.widgets.object import Object
+
+        self.widgets.clear()
         
 
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder

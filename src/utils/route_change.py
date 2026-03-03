@@ -14,35 +14,28 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
     page: ft.Page = e.page
 
     # Clear our views and any existing controls
-    #page.views.clear()
-    page.controls.clear()
+    page.views.clear()
 
-    # Short loading animation so switching isn't so jarring. The program actually loads surprisingly quick
-    page.controls.append(create_loading_view(page))
-    await asyncio.sleep(1)
+    
 
     match page.route:
         case "/":
             # Append the view manually since its just a function to return the view
-            page.controls.clear()
-            page.controls.append(create_home_view(page))
+            page.views.append(create_home_view(page))
             page.update()
             return
         case "/home":
             # Append the view manually since its just a function to return the view
-            page.controls.clear()
-            page.controls.append(create_home_view(page))
+            page.views.append(create_home_view(page))
             page.update()
             return
         case "/settings":
             app.settings.reload_settings()
-            page.controls.clear()
-            page.controls.append(app.settings)
+            page.views.append(app.settings)
             page.update()
             return
         case "/loading":
-            page.controls.clear()
-            page.controls.append(create_loading_view(page))
+            page.views.append(create_loading_view(page))
             page.update()
             return
         case _:
@@ -60,8 +53,7 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
 
                     new_story.startup()
                     app.settings.story = new_story  # Gives our settings widget the story reference it needs
-                    page.controls.clear()
-                    page.controls.append(new_story)
+                    page.views.append(new_story)
                     page.update() 
                     return
                 
