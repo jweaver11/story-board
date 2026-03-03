@@ -251,6 +251,17 @@ class World(Widget):
                             ])
                         )
 
+                if len(container.content.controls) == 0:
+                    container.content.controls.append(
+                        ft.Row([
+                            ft.Text("No fields to display", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
+                            ft.TextButton(
+                                ft.Text("Delete Section?", color=ft.Colors.ERROR),
+                                on_click=lambda e, s=section: self._delete_world_data(**{s: ""})
+                            )
+                        ])
+                    )
+
 
                 # Add the label and container with our text spans to the control list for this section
                 control_list.append(label)

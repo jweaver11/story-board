@@ -341,7 +341,7 @@ class Character(Widget):
                 container = ft.Container(         # For template data
                     padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
                     border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(bottom=10),
-                    content=ft.Column(expand=True, spacing=6) # Forces container to take up space
+                    content=ft.Column(expand=True, spacing=6, controls=[]) # Forces container to take up space
                 )
 
                 # Go through every key/value pair in this section and add it to our text span list with formatting
@@ -364,6 +364,18 @@ class Character(Widget):
                                 )
                             ])
                         )
+
+                if len(container.content.controls) == 0:
+                    container.content.controls.append(
+                        ft.Row([
+                            ft.Text("No fields to display", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
+                            ft.TextButton(
+                                ft.Text("Delete Section?", color=ft.Colors.ERROR),
+                                on_click=lambda e, s=section: self._delete_character_data(**{s: ""})
+                            )
+                        ])
+                    )
+    
 
 
                 # Add the label and container with our text spans to the control list for this section
