@@ -6,6 +6,7 @@ import flet as ft
 from models.mini_widget import MiniWidget
 from models.widget import Widget
 from utils.verify_data import verify_data
+from styles.menu_option_style import MenuOptionStyle
 
 
 # Class that holds our mini note objects inside images or chapters
@@ -26,25 +27,64 @@ class Comment(MiniWidget):
         verify_data(
             self,   # Pass in our object so we can access its data and change it
             {   # Pass in the required fields and their types``
+                'tag': "comment",
                 'content': str,
                 'collapsed': bool,
             },
         )
 
         self.visible = True
+        self.padding=ft.Padding.only(left=8, right=8, bottom=8)
 
         # Load our widget UI on start after we have loaded our data
         self.reload_mini_widget()
 
     def expand_mini_widget(self, e=None):
         ''' Shows our mini widget on the side of the document '''
-
-        self.change_data(collapsed=False)  # Change our data to not collapsed, which will trigger a reload
+        self.change_data(**{'collapsed': False})  # Change our data to not collapsed, which will trigger a reload
         self.reload_mini_widget()
 
     def collapse_mini_widget(self, e=None):
-        self.change_data(collapsed=True)  # Change our data to collapsed, which will trigger a reload
+        self.change_data(**{'collapsed': True})  # Change our data to collapsed, which will trigger a reload
         self.reload_mini_widget()
+
+    def _get_menu_options(self) -> list[ft.Control]:
+
+        # Color, rename
+        return [
+            MenuOptionStyle(
+                on_click=self._rename_clicked,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
+                    ft.Text(
+                        "Rename", 
+                        weight=ft.FontWeight.BOLD, 
+                        
+                    ), 
+                ]),
+            ),
+            MenuOptionStyle(
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
+                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    self._get_color_options(), 
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    tooltip="Change this widget's color"
+                ),
+                no_padding=True, no_effects=True
+            ),
+            MenuOptionStyle(
+                on_click=self._delete_clicked,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
+                    ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
+                ]),
+            )
+        ]
 
 
     # Called after any changes happen to the data that need to be reflected in the UI
@@ -66,7 +106,7 @@ class Comment(MiniWidget):
                     ft.Icons.EXPAND_LESS if self.data.get('collapsed', False) else ft.Icons.EXPAND_MORE,
                     ft.Colors.OUTLINE,
                     tooltip=f"Collapse {self.title}" if not self.data.get('collapsed', False) else f"Expand {self.title}",
-                    on_click=self.expand_mini_widget if not self.data.get('collapsed', False) else self.collapse_mini_widget,
+                    on_click=self.expand_mini_widget if self.data.get('collapsed', False) else self.collapse_mini_widget,
                 ),
                 on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
                 on_enter=self._set_menu_coords
@@ -95,8 +135,11 @@ class Comment(MiniWidget):
 
         # If we are not collapsed, show the content, otherwise just show the title
         if not self.data.get('collapsed', False):
+            self.padding=ft.Padding.only(left=8, right=8, bottom=8)
             column.controls.append(ft.Divider(height=2, thickness=2))
             column.controls.append(content)
+        else:
+            self.padding=ft.Padding.only(left=8, right=8)
         
         self.content = column
 

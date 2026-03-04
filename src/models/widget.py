@@ -83,7 +83,7 @@ class Widget(ft.Container):
         self.force_size_render: bool = True                      # Forces a reload when widgets get their size for the first time, but not every time
         self.left_mw_column = ft.Column()           # Mini widget columns who's width we'll adjust when resizing
         self.right_mw_column = ft.Column()
-        self.should_update = False
+        self.skip_update = False     # Used to skip unnecessary updates when resizing document
 
         # UI ELEMENTS - Tab
         self.tabs: ft.Tabs = None # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
@@ -241,10 +241,10 @@ class Widget(ft.Container):
 
     async def _update(self, e=None):
         try:
-            if self.should_update:
+            if not self.skip_update:
 
-                self.should_update = False
-                self.update()
+                self.skip_update = True
+                #self.update()
         except Exception as e:
             pass
         
@@ -315,26 +315,88 @@ class Widget(ft.Container):
         self.story.active_rail.content.reload_rail()   
         self.story.active_rail.update()
 
-    def create_comment_clicked(self, e):
-        pass
+    def create_comment_clicked(self, e, side_location: str="left"):
+        ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
+
+        # Checks that the name in the textfield does not match any of the existing mini widgets of that type, and updates visually to reflect
+        async def _check_name_unique(e):
+            name = new_item_tf.value.strip()
+            submit_button.disabled = False
+            new_item_tf.error = None
+            if not name:
+                submit_button.disabled = True
+            elif tag == "comment" and name in self.comments.keys():
+                submit_button.disabled = True
+                new_item_tf.error = "Name must be unique"
+                await new_item_tf.focus()
+            
+            else:
+                submit_button.disabled = False
+                new_item_tf.error = None
+
+            
+            new_item_tf.update()
+            submit_button.update()
+            
+        # Create the nwew mini widget with the current text field value. Makes sure we passed checks first
+        async def _create_new_mw(e):
+
+            # Button is disabled if name is the same
+            if submit_button.disabled:
+                await new_item_tf.focus()
+                return
+            
+            title = new_item_tf.value.strip()
+            await self.create_comment(title, side_location)
+            
+            self.p.pop_dialog()   # Close the dialog
+            await self.story.close_menu()       
+
+        # Grab the type of mini widget we are creating
+        tag = "comment"
+
+        # Textfield for the name of the new mw
+        new_item_tf = ft.TextField(
+            label=f"Title", expand=True, on_change=_check_name_unique, autofocus=True,
+            capitalization=ft.TextCapitalization.WORDS, on_submit=_create_new_mw
+        )
+
+        # Button for creating new mw. Can also press enter in the textfield
+        submit_button = ft.TextButton("Create", on_click=_create_new_mw, disabled=True)
+
+        # Dialog we open onto the page
+        dlg = ft.AlertDialog(
+            title=ft.Text(f"New {tag.replace('_', ' ').title()} Name"),
+            content=new_item_tf,
+            actions=[
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda e: self.p.pop_dialog()),
+                submit_button
+            ],
+        )
+
+        self.p.show_dialog(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
 
     # Called when a new mini note is created inside a widget
-    def create_comment(self, title: str):
+    async def create_comment(self, title: str, side_location: str="left"):
         ''' Creates a mini note inside an image or document '''
         from models.mini_widgets.comment import Comment
 
+        new_comment = Comment(
+            title=title, 
+            widget=self, 
+            page=self.p, 
+            key="comments",
+            data={'side_location': side_location}
+        )
+        self.comments[title] = new_comment
         self.mini_widgets.append(
-            Comment(
-                title=title, 
-                owner=self, 
-                father=self,
-                page=self.p, 
-                dictionary_path="mini_notes",
-                data=None
-            )
+            new_comment
         )
 
         self.reload_widget()
+
+    def delete_comment(self, title: str):
+        del self.comments[title]
 
 
     # Called when a draggable starts dragging.

@@ -114,7 +114,7 @@ class MiniWidget(ft.Container):
                 case "arc":
                     self.widget.delete_arc(self)
                 case "comment":
-                    self.widget.delete_comment(self)
+                    self.widget.delete_comment(self.title)
                 case "location":
                     self.widget.delete_location(self)
 

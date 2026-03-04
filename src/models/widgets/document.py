@@ -7,7 +7,7 @@ from styles.menu_option_style import MenuOptionStyle
 from models.app import app
 from models.isolated_controls.row import IsolatedRow
 from models.isolated_controls.column import IsolatedColumn
-
+import math
 
 # Class that holds our text document objects
 class Document(Widget):
@@ -59,9 +59,6 @@ class Document(Widget):
             #aspect_ratio=8.5/11.0,  # paper-like ratio
         )
 
-        # State management
-        self.skip_update = False     # Used to skip unnecessary updates when resizing document
-
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
 
@@ -102,40 +99,34 @@ class Document(Widget):
             self.document_container.height = None
             self.document_container.update()
             self.skip_update = True
-            
-        
-
-        
-            
 
     def load_comments(self):
         ''' Loads our mini notes from our data into live objects '''
         from models.mini_widgets.comment import Comment
 
-        # Loop through our data mini notes and create live objects for each
-        for note_title, note_data in self.data['comments'].items():
-            self.mini_widgets.append(Comment(
-                title=note_title,
-                widget=self,
-                page=self.p,
+        for title, comment_data in self.data['comments'].items():
+            self.comments[title] = Comment(
+                title=title, 
+                widget=self, 
+                page=self.p, 
                 key="comments",
-                data=note_data,
-            ))
+                data=comment_data
+            )
+            self.mini_widgets.append(
+                self.comments[title]
+            )
     
+
     def submit_comment(self, e):
         title = e.control.value
         self.create_comment(title)
         e.control.value = ""
         self.reload_widget()
 
-    
-
-
     def _save_document(self, text_data: list):
         ''' Saves our document text data to our data dictionary '''
         self.data['document_data'] = text_data
         self.save_dict()
-
 
 
     # Called after any changes happen to the data that need to be reflected in the UI
@@ -152,10 +143,28 @@ class Document(Widget):
         self.right_comments.controls.append(ft.Container(height=10))
 
         # Add comment buttons go here
+        self.left_comments.controls.append(
+            ft.IconButton(
+                ft.Icons.ADD_COMMENT_OUTLINED,
+                self.data.get('color', "primary"),
+                tooltip="Create a new comment",
+                on_click=self.create_comment_clicked,
+                data="left"
+            )
+        )
+        self.right_comments.controls.append(
+            ft.IconButton(
+                ft.Icons.ADD_COMMENT_OUTLINED,
+                self.data.get('color', "primary"),
+                tooltip="Create a new comment",
+                on_click=lambda e: self.create_comment_clicked(e, "right"),
+                flip=ft.Flip(flip_x=True)
+            )
+        )
 
 
         for mw in self.mini_widgets:
-            if mw.data.get('side', 'left') == 'left':
+            if mw.data.get('side_location', 'left') == 'left':
                 self.left_comments.controls.append(mw)
             else:
                 self.right_comments.controls.append(mw)
