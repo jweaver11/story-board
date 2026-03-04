@@ -47,7 +47,7 @@ class Document(Widget):
         self.load_comments()
 
         # Hold our comments on left and right side of the document
-        self.left_comments = IsolatedColumn([], expand=1, scroll="none")
+        self.left_comments = IsolatedColumn([], expand=1, scroll="none", horizontal_alignment=ft.CrossAxisAlignment.END)
         self.right_comments = IsolatedColumn([], expand=1, scroll="none")
         self.document_container = ft.Container(
             ft.TextField(hint_text="Temp doc textfield instead of quill for now", expand=True),
@@ -116,7 +116,7 @@ class Document(Widget):
         for note_title, note_data in self.data['comments'].items():
             self.mini_widgets.append(Comment(
                 title=note_title,
-                owner=self,
+                widget=self,
                 page=self.p,
                 key="comments",
                 data=note_data,
@@ -148,6 +148,24 @@ class Document(Widget):
         self.left_comments.controls.clear()
         self.right_comments.controls.clear()
 
+        self.left_comments.controls.append(ft.Container(height=10))
+        self.right_comments.controls.append(ft.Container(height=10))
+
+        # Add comment buttons go here
+
+
+        for mw in self.mini_widgets:
+            if mw.data.get('side', 'left') == 'left':
+                self.left_comments.controls.append(mw)
+            else:
+                self.right_comments.controls.append(mw)
+
+
+
+
+
+
+
         self.document_container.content = ft.TextField("Quill goes here", expand=True, multiline=True)
 
 
@@ -158,7 +176,7 @@ class Document(Widget):
             self.left_comments,
             self.document_container,
             self.right_comments
-        ], expand=True)
+        ], expand=True, vertical_alignment=ft.CrossAxisAlignment.START)
 
         # Column that holds our row with the comments and document for scrolling
         master_column = IsolatedColumn(

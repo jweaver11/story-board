@@ -9,16 +9,16 @@ from utils.verify_data import verify_data
 # Display that makes Plotlines share much uniformaty in their information display like arcs do
 class PlotlineInformationDisplay(MiniWidget):
 
-    # Constructor. Requires title, owner widget, page reference, and optional data dictionary
-    def __init__(self, title: str, owner: Plotline,  page: ft.Page, key: str, data: dict=None):
+    # Constructor. Requires title, widget widget, page reference, and optional data dictionary
+    def __init__(self, title: str, widget: Plotline,  page: ft.Page, key: str, data: dict=None):
 
         # Parent constructor
         super().__init__(
             title=title,        
-            owner=owner,                    
+            widget=widget,                    
             page=page,          
             key=key,  # Not used, but its required so just whatever works
-            data=data,      # No data is used here, so NEVER reference it. Use self.owner.data instead
+            data=data,      # No data is used here, so NEVER reference it. Use self.widget.data instead
         ) 
         
         # Verifies this object has the required data fields, and creates them if not
@@ -48,13 +48,13 @@ class PlotlineInformationDisplay(MiniWidget):
     def save_dict(self):
         ''' Overwrites standard mini widget save and save our Plotlines data instead '''
         try:
-            self.owner.save_dict()
+            self.widget.save_dict()
         except Exception as e:
-            print(f"Error saving Plotline information display data to {self.owner.title}: {e}")
+            print(f"Error saving Plotline information display data to {self.widget.title}: {e}")
 
     
 
-    # Called when changing our owners data from some event
+    # Called when changing our widgets data from some event
     async def _change_our_data(self, e):
         ''' Sorts what data to change and how, and if we need to rebuild or just update the page '''
 
@@ -69,7 +69,7 @@ class PlotlineInformationDisplay(MiniWidget):
                 self.save_dict()
 
                 # Rebuild our canvas
-                await self.owner.rebuild_plotline_canvas(no_update=True)
+                await self.widget.rebuild_plotline_canvas(no_update=True)
 
                 # Remove the control for this division. Reloading would fix, but lose our scroll placement
                 for control in self.divisions_column.controls:
@@ -94,19 +94,19 @@ class PlotlineInformationDisplay(MiniWidget):
             else:
                 self.data.get(key, [])[idx] = e.control.value
                 self.save_dict()
-                await self.owner.rebuild_plotline_canvas(no_update=True)
+                await self.widget.rebuild_plotline_canvas(no_update=True)
                 
         else:
             key = e.control.data
             value = e.control.value
             self._change_our_data_instant(key, value)
-            await self.owner.rebuild_plotline_canvas(no_update=True)
+            await self.widget.rebuild_plotline_canvas(no_update=True)
 
     
     def _change_our_data_instant(self, key, value):
-        ''' Changes our owners data instantly '''
+        ''' Changes our widgets data instantly '''
         self.data[key] = value
-        self.owner.save_dict()
+        self.widget.save_dict()
         
 
     # Called when reloading our mini widget UI
@@ -119,9 +119,9 @@ class PlotlineInformationDisplay(MiniWidget):
                 capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
                 data=['Divisions', len(self.data.get('Divisions', [])), False],
-                focus_color=self.owner.data.get('color', None),
-                cursor_color=self.owner.data.get('color', None),
-                focused_border_color=self.owner.data.get('color', None),
+                focus_color=self.widget.data.get('color', None),
+                cursor_color=self.widget.data.get('color', None),
+                focused_border_color=self.widget.data.get('color', None),
             )
 
             self.divisions_column.controls.append(
@@ -146,18 +146,18 @@ class PlotlineInformationDisplay(MiniWidget):
             self.save_dict()
             self.p.update()
 
-        timeline_icon = ft.Icon(ft.Icons.TIMELINE, self.owner.data.get('color', None))
+        timeline_icon = ft.Icon(ft.Icons.TIMELINE, self.widget.data.get('color', None))
         plotline_title_text = ft.GestureDetector(
             ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
-            on_double_tap=self.owner._rename_clicked,
-            on_tap=self.owner._rename_clicked,
-            on_secondary_tap=lambda e: self.owner.story.open_menu(self.owner._get_menu_options()),
-            mouse_cursor="click", on_hover=self.owner._hover_tab, hover_interval=500
+            on_double_tap=self.widget._rename_clicked,
+            on_tap=self.widget._rename_clicked,
+            on_secondary_tap=lambda e: self.widget.story.open_menu(self.widget._get_menu_options()),
+            mouse_cursor="click", on_hover=self.widget._hover_tab, hover_interval=500
         )
 
         pin_button = ft.IconButton(
             ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
-            self.owner.data.get('color', None),
+            self.widget.data.get('color', None),
             tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
             on_click=self._toggle_pin
         )
@@ -186,10 +186,10 @@ class PlotlineInformationDisplay(MiniWidget):
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=self._change_our_data,
             data='Summary', 
-            focus_color=self.owner.data.get('color', None),
-            cursor_color=self.owner.data.get('color', None),
-            focused_border_color=self.owner.data.get('color', None),
-            label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+            focus_color=self.widget.data.get('color', None),
+            cursor_color=self.widget.data.get('color', None),
+            focused_border_color=self.widget.data.get('color', None),
+            label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
         )
 
 
@@ -199,20 +199,20 @@ class PlotlineInformationDisplay(MiniWidget):
                 capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
                 data='Left Label',
-                focus_color=self.owner.data.get('color', None),
-                cursor_color=self.owner.data.get('color', None),
-                focused_border_color=self.owner.data.get('color', None),
-                label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+                focus_color=self.widget.data.get('color', None),
+                cursor_color=self.widget.data.get('color', None),
+                focused_border_color=self.widget.data.get('color', None),
+                label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
             ),
             ft.TextField(
                 expand=True, label="Right Label", value=self.data.get('Right Label', ""), dense=True, 
                 capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
                 data='Right Label',
-                focus_color=self.owner.data.get('color', None),
-                cursor_color=self.owner.data.get('color', None),
-                focused_border_color=self.owner.data.get('color', None),
-                label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+                focus_color=self.widget.data.get('color', None),
+                cursor_color=self.widget.data.get('color', None),
+                focused_border_color=self.widget.data.get('color', None),
+                label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
             )
         ])
 
@@ -223,27 +223,27 @@ class PlotlineInformationDisplay(MiniWidget):
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=self._change_our_data,
             data='Time Label',
-            focus_color=self.owner.data.get('color', None),
-            cursor_color=self.owner.data.get('color', None),
-            focused_border_color=self.owner.data.get('color', None),
-            label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+            focus_color=self.widget.data.get('color', None),
+            cursor_color=self.widget.data.get('color', None),
+            focused_border_color=self.widget.data.get('color', None),
+            label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
         )
 
 
         # Go through and list all our events in order. We'll sort them by their left positions
         events_list = []
 
-        for pp in self.owner.plot_points.values():
+        for pp in self.widget.plot_points.values():
             events_list.append(Event(tag='plot_point', left=pp.data.get('left', 0), title=pp.title, color=pp.data.get('color', 'secondary')))
 
         # Arcs have a right position, so we calc how far that is from left, and add a new event there as well
-        for arc in self.owner.arcs.values():
+        for arc in self.widget.arcs.values():
             events_list.append(Event(tag='arc_start', left=arc.data.get('left', 0), title=arc.title, color=arc.data.get('color', 'secondary')))
             arc_width = arc.data.get('width', 0)
             arc_end: int = arc.data.get('left', 0) + arc_width  
             events_list.append(Event(tag='arc_end', left=arc_end, title=arc.title, color=arc.data.get('color', 'secondary')))
 
-        for marker in self.owner.markers.values():
+        for marker in self.widget.markers.values():
             events_list.append(Event(tag='marker', left=marker.data.get('left', 0), title=marker.title, color=marker.data.get('color', 'secondary')))
 
         # Sort that list
@@ -301,7 +301,7 @@ class PlotlineInformationDisplay(MiniWidget):
             ft.Container(width=6), 
             ft.Text(
                 "Sequence of Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), 
-                color=self.owner.data.get('color', None), tooltip="The order of events that occur in this plotline"
+                color=self.widget.data.get('color', None), tooltip="The order of events that occur in this plotline"
             ),
             
         ], spacing=0)
@@ -309,7 +309,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
         divisions_label = ft.Row([
             ft.Container(width=6), 
-            ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.owner.data.get('color', None), tooltip="The number and label of the divisions on this plotline."),
+            ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.widget.data.get('color', None), tooltip="The number and label of the divisions on this plotline."),
             ft.Container(width=10),
             ft.IconButton(
                 ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
@@ -323,7 +323,7 @@ class PlotlineInformationDisplay(MiniWidget):
             column = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.START, spacing=0, scroll="none")
 
             if key == "plot_points":
-                for pp in self.owner.plot_points.values():
+                for pp in self.widget.plot_points.values():
                     column.controls.append(
                         ft.Row([
                             ft.Container(
@@ -342,7 +342,7 @@ class PlotlineInformationDisplay(MiniWidget):
                     column.controls.append(ft.Text("No plot points added yet.", color=ft.Colors.OUTLINE))
             
             elif key == "arcs":
-                for arc in self.owner.arcs.values():
+                for arc in self.widget.arcs.values():
                     column.controls.append(
                         ft.Row([
                             ft.Container(
@@ -361,7 +361,7 @@ class PlotlineInformationDisplay(MiniWidget):
                     column.controls.append(ft.Text("No arcs added yet.", color=ft.Colors.OUTLINE))
             
             elif key == "markers":
-                for marker in self.owner.markers.values():
+                for marker in self.widget.markers.values():
                     column.controls.append(
                         ft.Row([
                             ft.Container(
@@ -387,11 +387,11 @@ class PlotlineInformationDisplay(MiniWidget):
 
         plot_points_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Plot Points", color=self.owner.data.get('color', None), weight=ft.FontWeight.BOLD),
+            ft.Text("Plot Points", color=self.widget.data.get('color', None), weight=ft.FontWeight.BOLD),
             ft.Container(width=6),
             ft.IconButton(
                 ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Create New Plot Point", data="plot_point", 
-                on_click=self.owner.new_item_clicked, style=ft.ButtonStyle(padding=ft.Padding.all(0))
+                on_click=self.widget.new_item_clicked, style=ft.ButtonStyle(padding=ft.Padding.all(0))
             )
         ], spacing=0)
 
@@ -399,11 +399,11 @@ class PlotlineInformationDisplay(MiniWidget):
 
         arcs_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Arcs", color=self.owner.data.get('color', None), weight=ft.FontWeight.BOLD),
+            ft.Text("Arcs", color=self.widget.data.get('color', None), weight=ft.FontWeight.BOLD),
             ft.Container(width=6),
             ft.IconButton(
                 ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Create New Arc", data="arc", 
-                on_click=self.owner.new_item_clicked, style=ft.ButtonStyle(padding=ft.Padding.all(0))
+                on_click=self.widget.new_item_clicked, style=ft.ButtonStyle(padding=ft.Padding.all(0))
             )
         ], spacing=0)
 
@@ -411,11 +411,11 @@ class PlotlineInformationDisplay(MiniWidget):
 
         markers_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Markers", color=self.owner.data.get('color', None), weight=ft.FontWeight.BOLD),
+            ft.Text("Markers", color=self.widget.data.get('color', None), weight=ft.FontWeight.BOLD),
             ft.Container(width=6),
             ft.IconButton(
                 ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Create New Marker", data="marker", 
-                on_click=self.owner.new_item_clicked, style=ft.ButtonStyle(padding=ft.Padding.all(0))
+                on_click=self.widget.new_item_clicked, style=ft.ButtonStyle(padding=ft.Padding.all(0))
             )
         ], spacing=0)
 
@@ -432,9 +432,9 @@ class PlotlineInformationDisplay(MiniWidget):
                 capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
                 data=['Divisions', idx, False],
-                focus_color=self.owner.data.get('color', None),
-                cursor_color=self.owner.data.get('color', None),
-                focused_border_color=self.owner.data.get('color', None),
+                focus_color=self.widget.data.get('color', None),
+                cursor_color=self.widget.data.get('color', None),
+                focused_border_color=self.widget.data.get('color', None),
             )
 
             # Add to a row with delete button to remove divisions
@@ -453,7 +453,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
         custom_fields_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.owner.data.get('color', None), selectable=True),
+            ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None), selectable=True),
             ft.IconButton(
                 ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Custom Field",
                 on_click=lambda e: self._new_custom_field_clicked())

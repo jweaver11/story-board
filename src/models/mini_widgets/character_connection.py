@@ -25,17 +25,17 @@ class CharacterConnection(MiniWidget):
     def __init__(
         self, 
         title: str, 
-        owner: Widget,                  # The owner is the Character Connection Map widget that loads this mini widget FROM a characters data
+        widget: Widget,                  # The widget is the Character Connection Map widget that loads this mini widget FROM a characters data
         page: ft.Page, 
         index: int,
-        data: dict = None               # No data is used here, so NEVER reference it. Use self.owner.data instead
+        data: dict = None               # No data is used here, so NEVER reference it. Use self.widget.data instead
     ):
         self.idx = index    # The index of this connection in the story connections data list, so we can save back to it
 
         # Parent constructor
         super().__init__(
             title=title,           
-            owner=owner, 
+            widget=widget, 
             page=page,              
             data=data,              
             key="",                # Stored as a list in story data, so don't use key
@@ -47,7 +47,7 @@ class CharacterConnection(MiniWidget):
         )
 
         
-        # Set our visibility based on our owners data
+        # Set our visibility based on our widgets data
         self.visible = self.data.get('visible', True)
 
         self.icon_button = ft.PopupMenuButton(      # Button to change the connection icon 
@@ -64,10 +64,10 @@ class CharacterConnection(MiniWidget):
     def save_dict(self):
         ''' Overwrites standard mini widget save and save our timelines data instead '''
         try:
-            self.owner.story.data.get('connections', [])[self.idx] = self.data
-            self.owner.story.save_dict()
+            self.widget.story.data.get('connections', [])[self.idx] = self.data
+            self.widget.story.save_dict()
         except Exception as e:
-            print(f"Error saving map information display data to {self.owner.title}: {e}")
+            print(f"Error saving map information display data to {self.widget.title}: {e}")
 
     def show_mini_widget(self, e=None):
         ''' Shows our mini widget '''
@@ -79,12 +79,12 @@ class CharacterConnection(MiniWidget):
         self.visible = True
         self.save_dict()
 
-        for mw in self.owner.mini_widgets:
+        for mw in self.widget.mini_widgets:
             if mw != self and mw.data.get('is_pinned', False) == False:
                 mw.hide_mini_widget()   
 
         self.reload_mini_widget(no_update=True)
-        #self.owner.reload_widget()
+        #self.widget.reload_widget()
 
     def hide_mini_widget(self, e=None, update: bool=False):
         ''' Hides our mini widget '''
@@ -102,7 +102,7 @@ class CharacterConnection(MiniWidget):
 
         if update:
             self.reload_mini_widget()
-            #self.owner.reload_widget()
+            #self.widget.reload_widget()
 
     # Called to toggle pin
     async def _toggle_pin(self, e):
@@ -148,12 +148,12 @@ class CharacterConnection(MiniWidget):
             
         title_control = ft.Row([
             ft.Text(self.data.get('char1_name', 'Character 1'), weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE, text_align=ft.TextAlign.CENTER),
-            ft.Icon(self.data.get('icon'), self.owner.data.get('color', None)),
+            ft.Icon(self.data.get('icon'), self.widget.data.get('color', None)),
             ft.Text(self.data.get('char2_name', 'Character 2'), weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE, text_align=ft.TextAlign.CENTER),
             ft.Container(expand=True),
             ft.IconButton(
                 ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
-                self.owner.data.get('color', None),
+                self.widget.data.get('color', None),
                 tooltip="Pin Connection" if not self.data.get('is_pinned', False) else "Unpin Connection",
                 on_click=self._toggle_pin
             ),

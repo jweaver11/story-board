@@ -10,11 +10,11 @@ from styles.icons import icons
 # Plotpoint mini widget object that appear on plotlines and arcs
 class PlotPoint(MiniWidget):
 
-    # Constructor. Requires title, owner widget, page reference, and optional data dictionary
+    # Constructor. Requires title, widget widget, page reference, and optional data dictionary
     def __init__(
         self, 
         title: str, 
-        owner: Widget, 
+        widget: Widget, 
         page: ft.Page, 
         key: str,                           # Key is plot_points for plotlines
         x_alignment: float = None,          # Position of plot point on plotline if we pass one in (between -1 and 1)
@@ -23,7 +23,7 @@ class PlotPoint(MiniWidget):
     ):
         
         if left is not None:
-            side_location = 'right' if left <= owner.plotline_width // 2 else 'left'
+            side_location = 'right' if left <= widget.plotline_width // 2 else 'left'
         else:
             side_location = data.get('side_location', 'right') if data is not None else 'right'
 
@@ -31,7 +31,7 @@ class PlotPoint(MiniWidget):
         # Parent constructor
         super().__init__(
             title=title,        
-            owner=owner,        
+            widget=widget,        
             page=page,          
             key=key,  
             side_location=side_location,
@@ -95,8 +95,8 @@ class PlotPoint(MiniWidget):
         # Clamp sides and use timeline padding
         if new_left < 0:        # Padding on left because canvas draws in middle (5px)
             new_left = 0
-        elif new_left > self.owner.plotline_width - 16:  # No padding needed on right
-            new_left = self.owner.plotline_width - 16
+        elif new_left > self.widget.plotline_width - 16:  # No padding needed on right
+            new_left = self.widget.plotline_width - 16
         
         # Set our new left position within our stack
         self.plotline_control.left = new_left
@@ -120,7 +120,7 @@ class PlotPoint(MiniWidget):
         if value == False:
             await self.hide_mini_widget()
 
-        self.owner.reload_widget()
+        self.widget.reload_widget()
           
     # Called when we start dragging
     async def _drag_start(self, e=None):
@@ -130,7 +130,7 @@ class PlotPoint(MiniWidget):
         self.is_dragging = True
 
         # Hide all other info displays while dragging
-        for mw in self.owner.mini_widgets:
+        for mw in self.widget.mini_widgets:
             mw.visible = False
 
         self.update()
@@ -149,7 +149,7 @@ class PlotPoint(MiniWidget):
         if not self.visible:        # Turn of highlight if we're not visilbe
             self.plotline_control.shadow = None
         
-        x_alignment = (self.data.get('left', 0) / (self.owner.plotline_width - 10)) * 2.0 - 1.0
+        x_alignment = (self.data.get('left', 0) / (self.widget.plotline_width - 10)) * 2.0 - 1.0
 
         self.data['x_alignment'] = x_alignment
 
@@ -161,15 +161,15 @@ class PlotPoint(MiniWidget):
         self.save_dict()
 
         # Re-show all the info displays we hid while dragging
-        for mw in self.owner.mini_widgets:
+        for mw in self.widget.mini_widgets:
             if mw.data.get('visible', True):
                 mw.visible = True
 
-        if self.owner.information_display.visible:
-            self.owner.information_display.reload_mini_widget(no_update=True)
-        await self.owner.rebuild_plotline_canvas(no_update=False)
+        if self.widget.information_display.visible:
+            self.widget.information_display.reload_mini_widget(no_update=True)
+        await self.widget.rebuild_plotline_canvas(no_update=False)
 
-        self.owner.story.active_rail.content.reload_rail()
+        self.widget.story.active_rail.content.reload_rail()
 
     # Called when hovering over our plot point to show the slider
     async def _highlight(self, e=None):
@@ -202,10 +202,10 @@ class PlotPoint(MiniWidget):
             self.data['icon'] = icon
             self.save_dict()
 
-            # Update the UI to match. Plotline control needs owner to reload as well
+            # Update the UI to match. Plotline control needs widget to reload as well
             self.icon_button.icon = icon
             self.reload_plotline_control()
-            self.owner.reload_widget()
+            self.widget.reload_widget()
 
         # List for our icons when formatted
         icon_controls = [] 
@@ -242,7 +242,7 @@ class PlotPoint(MiniWidget):
                 mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
                 on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
                 on_pan_update=self.move_plot_point, drag_interval=20, on_pan_end=self._drag_end,
-                on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
+                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
                 on_tap=self.show_mini_widget, on_tap_down=self._drag_start,
                 content=ft.Icon(self.data.get('icon', 'circle'), self.data.get('color', None))
             ),
@@ -265,13 +265,13 @@ class PlotPoint(MiniWidget):
                 ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
                 on_double_tap=self._rename_clicked,
                 on_tap=self._rename_clicked,
-                on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", on_hover=self.owner._hover_tab, hover_interval=500
+                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
+                mouse_cursor="click", on_hover=self.widget._hover_tab, hover_interval=500
             ),
             ft.IconButton(
-                ft.Icons.PUSH_PIN_OUTLINED if not self.owner.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+                ft.Icons.PUSH_PIN_OUTLINED if not self.widget.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
                 self.data.get('color', None),
-                tooltip="Pin Information Display" if not self.owner.data.get('information_display_is_pinned', False) else "Unpin Information Display",
+                tooltip="Pin Information Display" if not self.widget.data.get('information_display_is_pinned', False) else "Unpin Information Display",
                 on_click=self._toggle_pin
             ),
             ft.Container(expand=True),
@@ -331,7 +331,7 @@ class PlotPoint(MiniWidget):
         def _get_involved_characters() -> list[str]:
             char_list = []
             
-            for char_key, char_obj in self.owner.story.characters.items():
+            for char_key, char_obj in self.widget.story.characters.items():
                 char_list.append(
                     ft.Checkbox(
                         char_obj.data.get('title', char_key),
@@ -375,7 +375,7 @@ class PlotPoint(MiniWidget):
             ]
 
             for idx, ic_key in enumerate(self.data.get('Involved Characters', [])):
-                char = self.owner.story.characters.get(ic_key, None)
+                char = self.widget.story.characters.get(ic_key, None)
                 if char is not None:
                     name = char.data.get('title', ic_key)
 
@@ -426,7 +426,7 @@ class PlotPoint(MiniWidget):
             ]
 
             for idx, obj_key in enumerate(self.data.get('Related Objects', [])):
-                char = self.owner.story.objects.get(obj_key, None)
+                char = self.widget.story.objects.get(obj_key, None)
                 if char is not None:
                     name = char.data.get('title', obj_key)
 
@@ -470,7 +470,7 @@ class PlotPoint(MiniWidget):
         def _get_related_objects() -> list[str]:
             char_list = []
             
-            for obj_key, obj_obj in self.owner.story.objects.items():
+            for obj_key, obj_obj in self.widget.story.objects.items():
                 char_list.append(
                     ft.Checkbox(
                         obj_obj.data.get('title', obj_key),

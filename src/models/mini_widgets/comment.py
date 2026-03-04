@@ -12,12 +12,12 @@ from utils.verify_data import verify_data
 class Comment(MiniWidget):
     
     # Constructor
-    def __init__(self, title: str, owner: Widget, page: ft.Page, key: str, data: dict=None):
+    def __init__(self, title: str, widget: Widget, page: ft.Page, key: str, data: dict=None):
 
         # Parent constructor
         super().__init__(
             title=title,        
-            owner=owner,   
+            widget=widget,   
             page=page,          
             key=key,  
             data=data,          
@@ -26,26 +26,24 @@ class Comment(MiniWidget):
         verify_data(
             self,   # Pass in our object so we can access its data and change it
             {   # Pass in the required fields and their types``
-                'tag': "comment",
                 'content': str,
+                'collapsed': bool,
             },
         )
 
-
-        # UI Controls
-        self.title_control = ft.TextField(
-            value=self.title,
-            label=None,
-        )
-
-        self.content_control = ft.TextField(
-            #value=self.data['content'],
-            label="Body",
-            expand=True,
-            multiline=True,
-        )
+        self.visible = True
 
         # Load our widget UI on start after we have loaded our data
+        self.reload_mini_widget()
+
+    def expand_mini_widget(self, e=None):
+        ''' Shows our mini widget on the side of the document '''
+
+        self.change_data(collapsed=False)  # Change our data to not collapsed, which will trigger a reload
+        self.reload_mini_widget()
+
+    def collapse_mini_widget(self, e=None):
+        self.change_data(collapsed=True)  # Change our data to collapsed, which will trigger a reload
         self.reload_mini_widget()
 
 
@@ -53,24 +51,59 @@ class Comment(MiniWidget):
     def reload_mini_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
-        # Our column that will display our header filters and body of our widget
-        self.title_control = ft.TextButton(
-            f"Hello from mini note: {self.title}",
+        title_control = ft.Row([
+            ft.GestureDetector(
+                ft.Text(f"\t{self.data['title']}", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
+                on_double_tap=self._rename_clicked,
+                on_tap=self._rename_clicked,
+                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
+                mouse_cursor="click", on_enter=self._set_menu_coords
+            ),
+            
+            ft.Container(expand=True),
+            ft.GestureDetector(
+                ft.IconButton(
+                    ft.Icons.EXPAND_LESS if self.data.get('collapsed', False) else ft.Icons.EXPAND_MORE,
+                    ft.Colors.OUTLINE,
+                    tooltip=f"Collapse {self.title}" if not self.data.get('collapsed', False) else f"Expand {self.title}",
+                    on_click=self.expand_mini_widget if not self.data.get('collapsed', False) else self.collapse_mini_widget,
+                ),
+                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
+                on_enter=self._set_menu_coords
+            ),
+        ], spacing=0)
+
+        content_tf = ft.TextField(
+            self.data['content'], expand=True, 
+            multiline=True, on_blur=lambda e: self.change_data(**{'content': e.control.value}),
+            focused_border_color=self.data.get('color', ft.Colors.PRIMARY),
+            cursor_color=self.data.get('color', ft.Colors.PRIMARY),
         )
 
-        self.content_control = ft.TextField(
-            #value=self.data['content'],
-            label="Body",
-            expand=True,
-            multiline=True,
+        content = ft.Column(
+            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, spacing=6,
+            controls=[
+                ft.Container(height=1),  # Little padding
+                content_tf,
+            ]
         )
 
-        self.content = ft.Column(
-            spacing=6,
-            controls=[self.title_control, self.content_control],
-        )
+        column = ft.Column([
+            title_control,
+        ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START, spacing=0)
 
-        self.p.update()
+
+        # If we are not collapsed, show the content, otherwise just show the title
+        if not self.data.get('collapsed', False):
+            column.controls.append(ft.Divider(height=2, thickness=2))
+            column.controls.append(content)
+        
+        self.content = column
+
+        try:
+            self.update()
+        except Exception as _:
+            pass
 
 
 

@@ -13,7 +13,7 @@ class Arc(MiniWidget):
     def __init__(
         self, 
         title: str, 
-        owner: Widget, 
+        widget: Widget, 
         page: ft.Page, 
         key: str, 
         x_alignment: float = None,          # Position of center of arc on plotline if we pass one in (between -1 and 1)
@@ -24,7 +24,7 @@ class Arc(MiniWidget):
         # Parent constructor
         super().__init__(
             title=title,        
-            owner=owner,                    # Top most plotline this arc belongs too
+            widget=widget,                    # Top most plotline this arc belongs too
             page=page,          
             key=key,  
             data=data,         
@@ -34,7 +34,7 @@ class Arc(MiniWidget):
         if x_alignment is not None:
 
             # Calculate pixel values we need
-            x_align_pixel = int((x_alignment + 1) / 2 * owner.plotline_width)
+            x_align_pixel = int((x_alignment + 1) / 2 * widget.plotline_width)
             
             # Left and right pixel values
             left = x_align_pixel - 50
@@ -43,14 +43,14 @@ class Arc(MiniWidget):
                 left = 0
                 x_align_pixel = 50
 
-            rp = owner.plotline_width - x_align_pixel
+            rp = widget.plotline_width - x_align_pixel
             right = rp - 50
             
-            if right >= owner.plotline_width:
+            if right >= widget.plotline_width:
                 right = 0
 
-            left_ratio = left / max(owner.plotline_width, 1)
-            right_ratio = right / max(owner.plotline_width, 1)
+            left_ratio = left / max(widget.plotline_width, 1)
+            right_ratio = right / max(widget.plotline_width, 1)
 
             if x_alignment <= 0:
                 side_location = "right"
@@ -105,14 +105,14 @@ class Arc(MiniWidget):
         self.left_drag_handle = ft.GestureDetector(
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR, self.data.get('color', 'secondary'), 20), 
             on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
-            on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
+            on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
             on_enter=self._highlight,      # Highlight container
             visible=False, on_pan_update=self.change_x_positions, on_pan_start=self.start_dragging, on_pan_end=self.finished_dragging
         ) 
         self.right_drag_handle = ft.GestureDetector(
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR, self.data.get('color', 'secondary'), 20), 
             on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
-            on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
+            on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
             on_enter=self._highlight,      # Highlight container
             visible=False, on_pan_update=self.change_x_positions, on_pan_start=self.start_dragging, on_pan_end=self.finished_dragging
         )    
@@ -187,7 +187,7 @@ class Arc(MiniWidget):
         self.is_dragging = True
 
         # Hide all other info displays while dragging
-        for mw in self.owner.mini_widgets:
+        for mw in self.widget.mini_widgets:
             mw.visible = False
             if isinstance(mw, Arc) and mw != self:
                 mw.plotline_control.ignore_interactions = True
@@ -200,9 +200,9 @@ class Arc(MiniWidget):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
 
         # Check to make sure we are wide enough (100px)
-        width = self.owner.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
+        width = self.widget.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
         
-        ratio = width / max(self.owner.plotline_width, 1)
+        ratio = width / max(self.widget.plotline_width, 1)
         
         # If we're dragging the left handle, update left position
         if e.control == self.left_drag_handle:
@@ -211,8 +211,8 @@ class Arc(MiniWidget):
             # Clamp edges
             if new_left < 10:
                 new_left = 10
-            if new_left > self.owner.plotline_width - 10:     # Make sure we don't drag past the plotline
-                new_left = self.owner.plotline_width - 10
+            if new_left > self.widget.plotline_width - 10:     # Make sure we don't drag past the plotline
+                new_left = self.widget.plotline_width - 10
 
             # Width check that we're not too small
             if width >= 100:
@@ -230,8 +230,8 @@ class Arc(MiniWidget):
             # Clamp edges
             if new_right < 10:     # Make sure we don't drag past the plotline
                 new_right = 10
-            if new_right > self.owner.plotline_width:
-                new_right = self.owner.plotline_width
+            if new_right > self.widget.plotline_width:
+                new_right = self.widget.plotline_width
 
             # Width check that we're not too small
             if width >= 100:
@@ -242,11 +242,11 @@ class Arc(MiniWidget):
                 self.data['right'] = new_right
                 self.plotline_control.right = new_right
 
-        #new_height = (self.owner.plotline_height / 2) * (ratio) - 40
+        #new_height = (self.widget.plotline_height / 2) * (ratio) - 40
         new_height = width * 0.5
 
-        if new_height >= self.owner.plotline_height / 2 -70:
-            new_height = self.owner.plotline_height / 2 -70
+        if new_height >= self.widget.plotline_height / 2 -70:
+            new_height = self.widget.plotline_height / 2 -70
         if new_height < 50:
             new_height = 50
 
@@ -267,22 +267,22 @@ class Arc(MiniWidget):
         self.is_dragging = False                # No longer dragging
 
         # Update our x alignment based on our new left and right positions, and save it to our data
-        x_align_pixel = self.data.get('left', 0) + ((self.owner.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)) / 2)
-        self.data['x_alignment'] = ((x_align_pixel) / max(self.owner.plotline_width, 1)) * 2 - 1
+        x_align_pixel = self.data.get('left', 0) + ((self.widget.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)) / 2)
+        self.data['x_alignment'] = ((x_align_pixel) / max(self.widget.plotline_width, 1)) * 2 - 1
 
         if self.data.get('x_alignment', 0) <= 0:
             self.data['side_location'] = "right"
         else:
             self.data['side_location'] = "left"
             
-        width = self.owner.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
+        width = self.widget.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
         self.data['width'] = width
 
-        self.data['left_ratio'] = self.data.get('left', 0) / max(self.owner.plotline_width, 1)
-        self.data['right_ratio'] = self.data.get('right', 0) / max(self.owner.plotline_width, 1)
+        self.data['left_ratio'] = self.data.get('left', 0) / max(self.widget.plotline_width, 1)
+        self.data['right_ratio'] = self.data.get('right', 0) / max(self.widget.plotline_width, 1)
 
         # Make all other plot points visible again
-        for pp in self.owner.plot_points.values():
+        for pp in self.widget.plot_points.values():
             if pp.data.get('is_shown_on_widget', True):
                 pp.plotline_control.visible = True
             
@@ -290,17 +290,17 @@ class Arc(MiniWidget):
         self.save_dict()
 
         # Make other arcs work again
-        for mw in self.owner.mini_widgets:
+        for mw in self.widget.mini_widgets:
             if mw.data.get('visible', True):
                 mw.visible = True
             if isinstance(mw, Arc):
                 mw.plotline_control.ignore_interactions = False
 
         # Apply changes and make sure update plotline info
-        if self.owner.information_display.visible:
-            self.owner.information_display.reload_mini_widget(no_update=True)
-        self.owner.reload_widget()
-        self.owner.story.active_rail.content.reload_rail()
+        if self.widget.information_display.visible:
+            self.widget.information_display.reload_mini_widget(no_update=True)
+        self.widget.reload_widget()
+        self.widget.story.active_rail.content.reload_rail()
 
     # Called when toggling whether this plot point is shown on the plotline in the plotline filters
     def toggle_plotline_control(self, value: bool):
@@ -323,7 +323,7 @@ class Arc(MiniWidget):
     def reload_plotline_control(self):
         ''' Reloads our arc drawing on the plotline based on current/updated data, including page size '''
 
-        width = self.owner.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
+        width = self.widget.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
 
         h = width * 0.5
         if h < 50:
@@ -345,7 +345,7 @@ class Arc(MiniWidget):
                 mouse_cursor=ft.MouseCursor.CLICK,
                 hover_interval=200, expand=True,
                 on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
-                on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
+                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
                 on_enter=self._highlight,      # Highlight container
                 on_exit=self._stop_highlight,        # Stop highlight
                 content=ft.Column([
@@ -376,8 +376,8 @@ class Arc(MiniWidget):
             ft.Container(ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"), padding=ft.padding.only(left=8)),
             on_double_tap=self._rename_clicked,
             on_tap=self._rename_clicked,
-            on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
-            mouse_cursor="click", on_hover=self.owner._hover_tab, hover_interval=500
+            on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
+            mouse_cursor="click", on_hover=self.widget._hover_tab, hover_interval=500
         )
 
         pin_button = ft.IconButton(
@@ -470,7 +470,7 @@ class Arc(MiniWidget):
             ft.Container(width=6),
             ft.IconButton(
                 ft.Icons.ADD, tooltip="Add Event", 
-                on_click=lambda e: self.p.run_task(self.owner.new_item_clicked, e, self), data="event"
+                on_click=lambda e: self.p.run_task(self.widget.new_item_clicked, e, self), data="event"
             ),
         ], spacing=0)
 
@@ -508,7 +508,7 @@ class Arc(MiniWidget):
         def _get_involved_characters() -> list[str]:
             char_list = []
             
-            for char_key, char_obj in self.owner.story.characters.items():
+            for char_key, char_obj in self.widget.story.characters.items():
                 char_list.append(
                     ft.Checkbox(
                         char_obj.data.get('title', char_key),
@@ -552,7 +552,7 @@ class Arc(MiniWidget):
             ]
 
             for idx, ic_key in enumerate(self.data.get('Involved Characters', [])):
-                char = self.owner.story.characters.get(ic_key, None)
+                char = self.widget.story.characters.get(ic_key, None)
                 if char is not None:
                     name = char.data.get('title', ic_key)
 
@@ -603,7 +603,7 @@ class Arc(MiniWidget):
             ]
 
             for idx, obj_key in enumerate(self.data.get('Related Objects', [])):
-                char = self.owner.story.objects.get(obj_key, None)
+                char = self.widget.story.objects.get(obj_key, None)
                 if char is not None:
                     name = char.data.get('title', obj_key)
 
@@ -647,7 +647,7 @@ class Arc(MiniWidget):
         def _get_related_objects() -> list[str]:
             char_list = []
             
-            for obj_key, obj_obj in self.owner.story.objects.items():
+            for obj_key, obj_obj in self.widget.story.objects.items():
                 char_list.append(
                     ft.Checkbox(
                         obj_obj.data.get('title', obj_key),

@@ -83,7 +83,7 @@ class CharacterConnectionMap(Widget):
                 # Create a mini widget for this connection
                 mw = CharacterConnection(
                     title="NONE",       # Not used but needs a value
-                    owner=self,
+                    widget=self,
                     page=self.p,
                     index=idx,
                     data=conn_data,  

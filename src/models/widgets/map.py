@@ -19,7 +19,7 @@ from models.mini_widgets.location import Location
 
 class Map(Widget):
 
-    # Constructor. Requires title, owner widget, page reference, world map owner, and optional data dictionary
+    # Constructor. Requires title, widget widget, page reference, world map widget, and optional data dictionary
     def __init__(
         self, 
         title: str, 
@@ -124,7 +124,7 @@ class Map(Widget):
         
         self.information_display = MapInformationDisplay(
             title=self.title,
-            owner=self,
+            widget=self,
             page=self.p,
             key="map_data",    
             data=self.data.get('map_data'),      
@@ -136,7 +136,7 @@ class Map(Widget):
         
         new_location = Location(
             title=title,
-            owner=self,
+            widget=self,
             page=self.p,
             key="locations",   
             data=data,      
@@ -152,7 +152,7 @@ class Map(Widget):
         for title, data in self.data.get('locations', {}).items():
             self.locations[title] = Location(
                 title=title,
-                owner=self,
+                widget=self,
                 page=self.p,
                 key="locations",     # Not used, but its required so just whatever works
                 data=data,

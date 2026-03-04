@@ -17,7 +17,7 @@ class CanvasInformationDisplay(MiniWidget):
     def __init__(
         self, 
         title: str, 
-        owner: Widget,                  
+        widget: Widget,                  
         page: ft.Page, 
         key: str,                       
         data: dict = None               
@@ -27,7 +27,7 @@ class CanvasInformationDisplay(MiniWidget):
         # Parent constructor
         super().__init__(
             title=title,           
-            owner=owner, 
+            widget=widget, 
             page=page,              
             data=data,              
             key=key     
@@ -73,9 +73,9 @@ class CanvasInformationDisplay(MiniWidget):
     def save_dict(self):
         ''' Overwrites standard mini widget save and save our timelines data instead '''
         try:
-            self.owner.save_dict()
+            self.widget.save_dict()
         except Exception as e:
-            print(f"Error saving canvas information display data to {self.owner.title}: {e}")
+            print(f"Error saving canvas information display data to {self.widget.title}: {e}")
 
     async def toggle_visibility(self, e=None):
         if self.visible:
@@ -98,14 +98,14 @@ class CanvasInformationDisplay(MiniWidget):
 
         # If we entered drawing mode, show our drawing canvas rail. Otherwise, go back to the previous rail
         if self.data.get('drawing_mode', False):
-            self.owner.story.workspaces_rail.change_workspace(None, self.owner.story, force_rail="canvas")
-            self.owner.canvas.content.mouse_cursor = ft.MouseCursor.PRECISE
+            self.widget.story.workspaces_rail.change_workspace(None, self.widget.story, force_rail="canvas")
+            self.widget.canvas.content.mouse_cursor = ft.MouseCursor.PRECISE
         else:
             
-            self.owner.canvas.content.mouse_cursor = ft.MouseCursor.CLICK
+            self.widget.canvas.content.mouse_cursor = ft.MouseCursor.CLICK
 
-        self.owner.canvas.content.page = self.p
-        self.owner.canvas.content.update()
+        self.widget.canvas.content.page = self.p
+        self.widget.canvas.content.update()
 
 
     # Called when we start dragging
@@ -117,7 +117,7 @@ class CanvasInformationDisplay(MiniWidget):
         self.show_info_button.update()
 
         # Hide all other info displays while dragging
-        for mw in self.owner.mini_widgets:
+        for mw in self.widget.mini_widgets:
             mw.visible = False
 
         self.p.update()
@@ -133,12 +133,12 @@ class CanvasInformationDisplay(MiniWidget):
         # Clamp our position to the bounds of our canvas
         if new_left < 30:        
             new_left = 30
-        elif new_left > self.owner.canvas_width - 60:  
-            new_left = self.owner.canvas_width - 60
+        elif new_left > self.widget.canvas_width - 60:  
+            new_left = self.widget.canvas_width - 60
         if new_top < 30:
             new_top = 30
-        elif new_top > self.owner.canvas_height - 60:
-            new_top = self.owner.canvas_height - 60
+        elif new_top > self.widget.canvas_height - 60:
+            new_top = self.widget.canvas_height - 60
         
         # Apply to data
         self.data['left'] = new_left
@@ -157,8 +157,8 @@ class CanvasInformationDisplay(MiniWidget):
 
         self.show_info_button.mouse_cursor = ft.MouseCursor.GRAB
         
-        x_alignment = (self.data.get('left', 0) / (self.owner.canvas_width - 10)) * 2.0 - 1.0
-        y_alignment = (self.data.get('top', 0) / (self.owner.canvas_height - 10)) * 2.0 - 1.0  
+        x_alignment = (self.data.get('left', 0) / (self.widget.canvas_width - 10)) * 2.0 - 1.0
+        y_alignment = (self.data.get('top', 0) / (self.widget.canvas_height - 10)) * 2.0 - 1.0  
 
         self.data['alignment'] = (x_alignment, y_alignment)
 
@@ -172,12 +172,12 @@ class CanvasInformationDisplay(MiniWidget):
         self.save_dict()
 
         # Re-show all the info displays we hid while dragging
-        for mw in self.owner.mini_widgets:
+        for mw in self.widget.mini_widgets:
             if mw.data.get('visible', True):
                 mw.visible = True
 
         self.show_info_button.update()
-        self.owner.reload_widget()
+        self.widget.reload_widget()
     
     # Called when reloading our mini widget UI
     def reload_mini_widget(self, no_update: bool=False):
@@ -185,12 +185,12 @@ class CanvasInformationDisplay(MiniWidget):
         #TODO: Layers
 
         title_control = ft.Row([
-            ft.Icon(ft.Icons.BRUSH, self.owner.data.get('color', None)),
+            ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
             ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE),
             ft.IconButton(
-                ft.Icons.PUSH_PIN_OUTLINED if not self.owner.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
-                self.owner.data.get('color', None),
-                tooltip="Pin Information Display" if not self.owner.data.get('information_display_is_pinned', False) else "Unpin Information Display",
+                ft.Icons.PUSH_PIN_OUTLINED if not self.widget.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+                self.widget.data.get('color', None),
+                tooltip="Pin Information Display" if not self.widget.data.get('information_display_is_pinned', False) else "Unpin Information Display",
                 on_click=self._toggle_pin
             ),
             ft.Container(expand=True),
@@ -227,10 +227,10 @@ class CanvasInformationDisplay(MiniWidget):
             expand=True, label="Description", value=self.data.get('Description', ""), dense=True, multiline=True,
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=lambda e: self.change_data(**{'Description': e.control.value}),   # When we click out of the text field, we save our changes
-            focus_color=self.owner.data.get('color', None),
-            cursor_color=self.owner.data.get('color', None),
-            focused_border_color=self.owner.data.get('color', None),
-            label_style=ft.TextStyle(color=self.owner.data.get('color', None)),
+            focus_color=self.widget.data.get('color', None),
+            cursor_color=self.widget.data.get('color', None),
+            focused_border_color=self.widget.data.get('color', None),
+            label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
         )
         
         content = ft.Column([

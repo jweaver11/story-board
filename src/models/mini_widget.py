@@ -2,7 +2,7 @@
 Parent class for mini widgets, which are extended flet containers used as information displays on the side of the parent widget
 Makes showing detailed information easier without rending and entire widget where it doesn't make sense
 Mini widgets either are exclusive (only they are shown), or shared (additional mini widgets can be shown at same time)
-Mini widgets are stored in their OWNERS (Widget) json file, not their own file
+Mini widgets are stored in their widgetS (Widget) json file, not their own file
 Some mini widgets can have their own files IN ADDITION to normal storage, such as maps or drawings storing images
 '''
 
@@ -17,14 +17,14 @@ from utils.safe_string_checker import return_safe_name
 
 class MiniWidget(ft.Container):
 
-    # Constructor. All mini widgets require a title, owner widget, page reference...
+    # Constructor. All mini widgets require a title, widget widget, page reference...
     # Dictionary path, and optional data dictionary
     def __init__(
         self, 
         title: str,                     # Title of the widget that will show up on its tab
-        owner: Widget,                  # The widget that contains this mini widget.
+        widget: Widget,                  # The widget that contains this mini widget.
         page: ft.Page,                  # Grabs our original page for convenience and consistency
-        key: str,                       # Key to identify this mini widget (by title) within its owners data
+        key: str,                       # Key to identify this mini widget (by title) within its widgets data
         side_location: str = None,      # Side of the widget the mini widget shows on
         data: dict = None               # Data passed in for this mini widget
     ):
@@ -43,7 +43,7 @@ class MiniWidget(ft.Container):
         
         # Set our parameters
         self.title: str = title                      
-        self.owner: Widget = owner                          
+        self.widget: Widget = widget                          
         self.p: ft.Page = page                               
         self.key: str = key     
 
@@ -65,25 +65,30 @@ class MiniWidget(ft.Container):
         # Apply our visibility
         self.visible = self.data.get('visible', True)
         
+    # Called every time the mouse moves over our rail
+    async def _set_menu_coords(self, e: ft.PointerEvent):
+        ''' Stores our mouse positioning so we know where to open menus '''
+        self.widget.story.mouse_x = e.global_position.x 
+        self.widget.story.mouse_y = e.global_position.y
 
-    # Called when saving changes in our mini widgets data to the OWNERS json file
+    # Called when saving changes in our mini widgets data to the widgetS json file
     def save_dict(self):
-        ''' Saves our current data to the OWNERS json file using this objects dictionary path '''
+        ''' Saves our current data to the widgetS json file using this objects dictionary path '''
 
         try:
         
-            # If our data is None (we just got deleted), we don't save ourselves to owners data
+            # If our data is None (we just got deleted), we don't save ourselves to widgets data
             if self.data is None:
-                self.owner.data[self.key].pop(self.title, None)
+                self.widget.data[self.key].pop(self.title, None)
 
             # Otherwise, save like normal
             else:
 
                 # Our data is correct, so we update our immidiate parents data to match
-                self.owner.data[self.key][self.title] = self.data
+                self.widget.data[self.key][self.title] = self.data
 
-            # Recursively updates the parents data until owner=owner (widget), which saves to file
-            self.owner.save_dict()
+            # Recursively updates the parents data until widget=widget (widget), which saves to file
+            self.widget.save_dict()
 
         except Exception as e:
             print(f"Error saving mini widget data to {self.title}: {e}")
@@ -91,27 +96,27 @@ class MiniWidget(ft.Container):
 
     # Called when deleting our mini widget
     def delete_dict(self):
-        ''' Deletes our data from all live widget/mini widget objects that we nest in, and saves the owners file '''
+        ''' Deletes our data from all live widget/mini widget objects that we nest in, and saves the widgets file '''
 
         try:
 
             # Applies the UI changes by removing ourselves from the mini widgets list
-            if self in self.owner.mini_widgets:
-                self.owner.mini_widgets.remove(self)
+            if self in self.widget.mini_widgets:
+                self.widget.mini_widgets.remove(self)
 
             tag = self.data.get('tag', '')  
 
             match tag:
                 case "plot_point":
-                    self.owner.delete_plot_point(self)
+                    self.widget.delete_plot_point(self)
                 case "marker":
-                    self.owner.delete_marker(self)
+                    self.widget.delete_marker(self)
                 case "arc":
-                    self.owner.delete_arc(self)
+                    self.widget.delete_arc(self)
                 case "comment":
-                    self.owner.delete_comment(self)
+                    self.widget.delete_comment(self)
                 case "location":
-                    self.owner.delete_location(self)
+                    self.widget.delete_location(self)
 
                 case _:
                     print("Invalid mw key")
@@ -122,11 +127,11 @@ class MiniWidget(ft.Container):
             self.save_dict()
 
             # Reload the widget if we have to
-            self.owner.reload_widget()
+            self.widget.reload_widget()
 
             # Also reload the active rail to reflect changes
-            self.owner.story.active_rail.content.reload_rail() 
-            self.owner.story.close_menu_instant()
+            self.widget.story.active_rail.content.reload_rail() 
+            self.widget.story.close_menu_instant()
 
         # Catch errors
         except Exception as e:
@@ -178,21 +183,21 @@ class MiniWidget(ft.Container):
             self.title = new_name
             self.data['title'] = new_name
 
-            # Update our owners data to match
-            self.owner.data[self.key][new_name] = self.owner.data[self.key].pop(old_name)
+            # Update our widgets data to match
+            self.widget.data[self.key][new_name] = self.widget.data[self.key].pop(old_name)
 
             tag = self.data.get('tag', '')
             match tag:
                 case "plot_point":
-                    self.owner.plot_points[new_name] = self.owner.plot_points.pop(old_name)
+                    self.widget.plot_points[new_name] = self.widget.plot_points.pop(old_name)
                 case "marker":
-                    self.owner.markers[new_name] = self.owner.markers.pop(old_name)
+                    self.widget.markers[new_name] = self.widget.markers.pop(old_name)
                 case "arc":
-                    self.owner.arcs[new_name] = self.owner.arcs.pop(old_name)
+                    self.widget.arcs[new_name] = self.widget.arcs.pop(old_name)
                 case "comment":
-                    self.owner.comments[new_name] = self.owner.comments.pop(old_name)
+                    self.widget.comments[new_name] = self.widget.comments.pop(old_name)
                 case "location":
-                    self.owner.locations[new_name] = self.owner.locations.pop(old_name)
+                    self.widget.locations[new_name] = self.widget.locations.pop(old_name)
 
                 case _:
                     print("Invalid mw key")
@@ -210,14 +215,14 @@ class MiniWidget(ft.Container):
                 
             if self.visible:
                 self.reload_mini_widget()
-            if hasattr(self.owner, 'information_display'):
-                if self.owner.information_display.visible:
-                    self.owner.information_display.reload_mini_widget() 
-            self.owner.reload_widget()
+            if hasattr(self.widget, 'information_display'):
+                if self.widget.information_display.visible:
+                    self.widget.information_display.reload_mini_widget() 
+            self.widget.reload_widget()
 
 
             # Also reload the active rail to reflect changes
-            self.owner.story.active_rail.content.reload_rail() 
+            self.widget.story.active_rail.content.reload_rail() 
 
         # Catch errors
         except Exception as e:
@@ -246,7 +251,7 @@ class MiniWidget(ft.Container):
         self.visible = True
         self.save_dict()
 
-        for mw in self.owner.mini_widgets:
+        for mw in self.widget.mini_widgets:
             if mw != self and mw.data.get('is_pinned', False) == False:
                 mw.hide_mini_widget() 
             #else:
@@ -255,7 +260,7 @@ class MiniWidget(ft.Container):
         self.update()
 
         #self.reload_mini_widget(no_update=True)
-        #self.owner._render_widget()
+        #self.widget._render_widget()
 
     def hide_mini_widget(self, e=None, update: bool=False):
         ''' Hides our mini widget '''
@@ -282,7 +287,7 @@ class MiniWidget(ft.Container):
         #if update:
 
             #self.reload_mini_widget()
-            #self.owner._render_widget()
+            #self.widget._render_widget()
 
     def _new_custom_field_clicked(self, e=None):
         ''' Called when the new field button is clicked '''
@@ -296,7 +301,7 @@ class MiniWidget(ft.Container):
             field_name = return_safe_name(field_name_input.value)
             
             if not field_name:
-                self.p.close(dlg)
+                self.p.pop_dialog()
                 return  # Don't create if empty
             
             # Add the field to data if it doesn't exist
@@ -305,7 +310,7 @@ class MiniWidget(ft.Container):
             
             # Save and reload
             self.save_dict()
-            self.p.close(dlg)
+            self.p.pop_dialog()
             self.reload_mini_widget()       
             
 
@@ -320,14 +325,14 @@ class MiniWidget(ft.Container):
             title=ft.Text(f"Create New Custom Field"),
             content=field_name_input,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
                 ft.TextButton("Create", on_click=create_field),
             ],
         )
         
         
         dlg.open = True
-        self.p.open(dlg)
+        self.p.show_dialog(dlg)
 
 
     def _delete_custom_field_clicked(self, field_name: str):
@@ -364,25 +369,27 @@ class MiniWidget(ft.Container):
             MenuOptionStyle(
                 on_click=self._rename_clicked,
                 content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
+                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
                     ft.Text(
                         "Rename", 
                         weight=ft.FontWeight.BOLD, 
-                        color=ft.Colors.ON_SURFACE
+                        
                     ), 
                 ]),
             ),
             MenuOptionStyle(
-                content=ft.PopupMenuButton(
-                    expand=True, tooltip="Change this item's color",
-                    padding=ft.Padding(0,0,0,0),
-                    content=ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED), ft.Text("Color", weight=ft.FontWeight.BOLD)]),
-                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
-                    ),
-                    items=self._get_color_options()
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
+                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    self._get_color_options(), 
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    tooltip="Change this widget's color"
                 ),
-                no_padding=True
+                no_padding=True, no_effects=True
             ),
             MenuOptionStyle(
                 on_click=self._delete_clicked,
@@ -433,7 +440,7 @@ class MiniWidget(ft.Container):
             if title.lower() == current_name:
                 return
 
-            for mw in self.owner.mini_widgets:
+            for mw in self.widget.mini_widgets:
                 if mw != self and mw.data.get('key', '') == self.data.get('key', '') and mw.data.get('title', '').lower() == title.lower():
                     is_unique = False
                     error_text = "Name already exists"
@@ -441,13 +448,13 @@ class MiniWidget(ft.Container):
 
             # If we are NOT unique, show our error text
             if not is_unique:
-                text_field.error_text = error_text
+                text_field.error = error_text
 
             # Otherwise remove our error text
             else:
-                text_field.error_text = None
+                text_field.error = None
                 
-            text_field()
+            text_field.update()
 
         # Called when submitting our textfield.
         def _submit_name(e):
@@ -458,7 +465,7 @@ class MiniWidget(ft.Container):
             
             name = text_field.value
             if name == current_name:
-                self.p.close(dlg)
+                self.p.pop_dialog()
                 return
 
             # Set submitting to True
@@ -467,11 +474,11 @@ class MiniWidget(ft.Container):
             # If it is, call the rename function. It will do everything else
             if is_unique:
                 self.rename(name)
-                self.p.close(dlg)
+                self.p.pop_dialog()
                 
             # Otherwise make sure we show our error
             else:
-                text_field.error_text = "Name already exists"
+                text_field.error = "Name already exists"
                 text_field.focus()                                  # Auto focus the textfield
                 
         # Our text field that our functions use for renaming and referencing
@@ -493,21 +500,21 @@ class MiniWidget(ft.Container):
             title=ft.Text(f"Rename {self.title}", weight=ft.FontWeight.BOLD),
             content=text_field,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR), on_click=lambda e: self.p.close(dlg)),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR), on_click=lambda e: self.p.pop_dialog()),
                 rename_button   
             ]
         )
 
         # Clears our popup menu button and applies to the UI
         self.p.overlay.clear()
-        self.p.open(dlg)
+        self.p.show_dialog(dlg)
 
     # Called when color button is clicked
     def _get_color_options(self) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
 
         # Called when a color option is clicked on popup menu to change icon color
-        async def _change_icon_color(color: str):
+        def _change_icon_color(color: str):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
             self.change_data(**{'color': color})
@@ -529,12 +536,12 @@ class MiniWidget(ft.Container):
                 self.map_label.color = color
 
             self.reload_mini_widget()
-            self.owner.reload_widget()
+            #self.widget.reload_widget()
             # Change our icon to match, apply the update
-            self.owner.story.active_rail.content.reload_rail()
+            self.widget.story.active_rail.content.reload_rail()
 
-            await asyncio.sleep(0.3)
-            await self.owner.story.close_menu()
+            #await asyncio.sleep(0.3)
+            self.widget.story.close_menu_instant()
             
             
 
@@ -544,9 +551,10 @@ class MiniWidget(ft.Container):
         # Create our controls for our color options
         for color in colors:
             color_controls.append(
-                ft.PopupMenuItem(
+                ft.MenuItemButton(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                    on_click=lambda e, col=color: self.p.run_task(_change_icon_color, col)
+                    on_click=lambda e, col=color: _change_icon_color(col), close_on_click=True,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
                 )
             )
 
@@ -559,25 +567,25 @@ class MiniWidget(ft.Container):
 
         def _delete_confirmed(e=None):
             ''' Deletes the widget after confirmation '''
-            self.p.close(dlg)
+            self.p.pop_dialog()
             self.delete_dict()
             
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
             title=ft.Text(f"Are you sure you want to delete {self.title} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
-            alignment=ft.alignment.center,
-            title_padding=ft.padding.all(25),
+            alignment=ft.Alignment.CENTER,
+            title_padding=ft.Padding.all(25),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg)),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog()),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
             ]
         )
 
-        self.owner.story.close_menu_instant()
+        self.widget.story.close_menu_instant()
 
         if app.settings.data.get('confirm_item_delete', False):
-            self.p.open(dlg)
+            self.p.show_dialog(dlg)
         else:
             _delete_confirmed()
 

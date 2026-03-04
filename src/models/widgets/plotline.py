@@ -141,7 +141,7 @@ class Plotline(Widget):
         
         self.information_display = PlotlineInformationDisplay(
             title=self.title,
-            owner=self,
+            widget=self,
             page=self.p,
             key="plotline_data",     # Not used, but its required so just whatever works
             data=self.data.get('plotline_data'),      # Uses our dataa 
@@ -157,12 +157,12 @@ class Plotline(Widget):
         for key, data in self.data['arcs'].items():
             self.arcs[key] = Arc(
                 title=key, 
-                owner=self, 
+                widget=self, 
                 page=self.p, 
                 key="arcs",
                 data=data
             )
-            self.mini_widgets.append(self.arcs[key])  # Branches need to be in the owners mini widgets list to show up in the UI
+            self.mini_widgets.append(self.arcs[key])  # Branches need to be in the widgets mini widgets list to show up in the UI
     
     # Called in the constructor
     def _load_plot_points(self):
@@ -173,12 +173,12 @@ class Plotline(Widget):
         for key, data in self.data['plot_points'].items():
             self.plot_points[key] = PlotPoint(
                 title=key, 
-                owner=self, 
+                widget=self, 
                 page=self.p, 
                 key="plot_points", 
                 data=data
             )
-            self.mini_widgets.append(self.plot_points[key])  # Plot points need to be in the owners mini widgets list to show up in the UI
+            self.mini_widgets.append(self.plot_points[key])  # Plot points need to be in the widgets mini widgets list to show up in the UI
 
     def _load_markers(self):
         from models.mini_widgets.marker import Marker
@@ -187,12 +187,12 @@ class Plotline(Widget):
         for key, data in self.data['markers'].items():
             self.markers[key] = Marker(
                 title=key, 
-                owner=self, 
+                widget=self, 
                 page=self.p, 
                 key="markers", 
                 data=data
             )
-            self.mini_widgets.append(self.markers[key])  # Markers need to be in the owners mini widgets list to show up in the UI
+            self.mini_widgets.append(self.markers[key])  # Markers need to be in the widgets mini widgets list to show up in the UI
 
 
     # Called when clicking on our canvas
@@ -210,14 +210,14 @@ class Plotline(Widget):
 
         new_arc = Arc(
             title=title, 
-            owner=self, 
+            widget=self, 
             page=self.p, 
             key="arcs", 
             x_alignment=self.x_alignment,
             data=None
         )
 
-        # Add our new Arc mini widget object to our arcs dict, and to our owners mini widgets
+        # Add our new Arc mini widget object to our arcs dict, and to our widgets mini widgets
         self.arcs[new_arc.title] = new_arc
         self.mini_widgets.append(new_arc)
         new_arc.show_mini_widget()
@@ -236,14 +236,14 @@ class Plotline(Widget):
 
         new_plot_point = PlotPoint(
             title=title, 
-            owner=self, 
+            widget=self, 
             page=self.p, 
             key="plot_points", 
             x_alignment=self.x_alignment,
             left=self.left_position,
             data=None
         )
-        # Add our new Plot Point mini widget object to our plot_points dict, and to our owners mini widgets
+        # Add our new Plot Point mini widget object to our plot_points dict, and to our widgets mini widgets
         self.plot_points[new_plot_point.title] = new_plot_point
         self.mini_widgets.append(new_plot_point)
         new_plot_point.show_mini_widget()
@@ -260,14 +260,14 @@ class Plotline(Widget):
 
         new_marker = Marker(
             title=title, 
-            owner=self, 
+            widget=self, 
             page=self.p, 
             key="markers", 
             x_alignment=self.x_alignment,
             left=self.left_position,
             data=None
         )
-        # Add our new Marker mini widget object to our markers dict, and to our owners mini widgets
+        # Add our new Marker mini widget object to our markers dict, and to our widgets mini widgets
         self.data['dropdown_is_expanded'] = True 
         self.markers[new_marker.title] = new_marker
         self.mini_widgets.append(new_marker)

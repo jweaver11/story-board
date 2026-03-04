@@ -1,6 +1,6 @@
 ''' 
 Our widget class that displays our world and lore information. Essentially, all information not displayed visually on the maps goes here
-Maps can tie into one owner 'world' widget
+Maps can tie into one widget 'world' widget
 '''
 
 import os

@@ -141,7 +141,7 @@ class Canvas(Widget):
         
         self.information_display = CanvasInformationDisplay(
             title=self.title,
-            owner=self,
+            widget=self,
             page=self.p,
             key="canvas_data",     
             data=self.data.get('canvas_data'),      

@@ -15,11 +15,11 @@ import flet.canvas as cv
 # Plotpoint mini widget object that appear on plotlines and arcs
 class Marker(MiniWidget):
 
-    # Constructor. Requires title, owner widget, page reference, and optional data dictionary
+    # Constructor. Requires title, widget widget, page reference, and optional data dictionary
     def __init__(
         self, 
         title: str, 
-        owner: Widget, 
+        widget: Widget, 
         page: ft.Page, 
         key: str,                           # Key is markers for plotlines
         x_alignment: float = 0.0,           # Float from -1 to 1 representing where we are on the plotline. -1 is left, 0 is center, 1 is right
@@ -28,14 +28,14 @@ class Marker(MiniWidget):
     ):
         
         if left is not None:
-            side_location = 'right' if left <= owner.plotline_width // 2 else 'left'
+            side_location = 'right' if left <= widget.plotline_width // 2 else 'left'
         else:
             side_location = data.get('side_location', 'right') if data is not None else 'right'
         
         # Parent constructor
         super().__init__(
             title=title,        
-            owner=owner,        
+            widget=widget,        
             page=page,          
             key=key,  
             side_location=side_location,
@@ -69,7 +69,7 @@ class Marker(MiniWidget):
 
     def delete_dict(self, e=None):
 
-        self.owner.plot_points.pop(self.data.get('title', None), None)
+        self.widget.plot_points.pop(self.data.get('title', None), None)
         super().delete_dict()
 
     async def _drag_start(self, e=None):
@@ -79,7 +79,7 @@ class Marker(MiniWidget):
         self.is_dragging = True
 
         # Hide all other info displays while dragging
-        for mw in self.owner.mini_widgets:
+        for mw in self.widget.mini_widgets:
             mw.visible = False
 
         self.p.update()
@@ -102,8 +102,8 @@ class Marker(MiniWidget):
         # Clamp sides and use timeline padding
         if new_left < 0:        # Padding on left because canvas draws in middle (5px)
             new_left = 0
-        elif new_left > self.owner.plotline_width - 10:  # No padding needed on right
-            new_left = self.owner.plotline_width - 10
+        elif new_left > self.widget.plotline_width - 10:  # No padding needed on right
+            new_left = self.widget.plotline_width - 10
         
         # Set our new left position within our stack
         self.plotline_control.left = new_left
@@ -123,7 +123,7 @@ class Marker(MiniWidget):
 
         await self.highlight()
 
-        x_alignment = (self.data.get('left', 0) / (self.owner.plotline_width - 10)) * 2.0 - 1.0
+        x_alignment = (self.data.get('left', 0) / (self.widget.plotline_width - 10)) * 2.0 - 1.0
 
         self.data['x_alignment'] = x_alignment
 
@@ -134,15 +134,15 @@ class Marker(MiniWidget):
 
         self.save_dict()
 
-        for mw in self.owner.mini_widgets:
+        for mw in self.widget.mini_widgets:
             if mw.data.get('visible', True):
                 mw.visible = True
 
-        if self.owner.information_display.visible:
-            self.owner.information_display.reload_mini_widget(no_update=True)
-        await self.owner.rebuild_plotline_canvas(no_update=False)
+        if self.widget.information_display.visible:
+            self.widget.information_display.reload_mini_widget(no_update=True)
+        await self.widget.rebuild_plotline_canvas(no_update=False)
 
-        self.owner.story.active_rail.content.reload_rail()
+        self.widget.story.active_rail.content.reload_rail()
         
         
     # Called when hovering over our plot point to show the slider
@@ -189,7 +189,7 @@ class Marker(MiniWidget):
                 on_tap_down=self._drag_start,
                 on_pan_start=self._drag_start, on_pan_end=self._drag_end,
                 on_pan_update=self.move_marker, drag_interval=20, 
-                on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
+                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
                 on_tap=self.show_mini_widget,
                 content=cv.Canvas(
                     width=10, opacity=.7, resize_interval=20,    
@@ -212,7 +212,7 @@ class Marker(MiniWidget):
             self.data['is_pinned'] = not is_pinned
             self.save_dict()
             self.reload_mini_widget()
-            self.owner.reload_widget()
+            self.widget.reload_widget()
 
         # Reload our plotline control
         self._rebuild_plotline_control()
@@ -223,8 +223,8 @@ class Marker(MiniWidget):
                 ft.Container(ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"), padding=ft.padding.only(left=8)),
                 on_double_tap=self._rename_clicked,
                 on_tap=self._rename_clicked,
-                on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", on_hover=self.owner._hover_tab, hover_interval=500
+                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
+                mouse_cursor="click", on_hover=self.widget._hover_tab, hover_interval=500
             ),
             ft.IconButton(
                 ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,

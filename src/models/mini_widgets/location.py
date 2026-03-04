@@ -25,11 +25,11 @@ from styles.icons import icons
 # Locations that appear on our map
 class Location(MiniWidget):
 
-    # Constructor. Requires title, owner widget, page reference, and optional data dictionary
+    # Constructor. Requires title, widget widget, page reference, and optional data dictionary
     def __init__(
         self, 
         title: str, 
-        owner: Widget, 
+        widget: Widget, 
         page: ft.Page, 
         key: str,                          
         alignment: float = None,          
@@ -39,7 +39,7 @@ class Location(MiniWidget):
     ):
         
         if left is not None:
-            side_location = 'right' if left <= owner.map_width // 2 else 'left'
+            side_location = 'right' if left <= widget.map_width // 2 else 'left'
         else:
             side_location = data.get('side_location', 'right') if data is not None else 'right'
 
@@ -47,7 +47,7 @@ class Location(MiniWidget):
         # Parent constructor
         super().__init__(
             title=title,        
-            owner=owner,        
+            widget=widget,        
             page=page,          
             key=key,  
             side_location=side_location,
@@ -122,12 +122,12 @@ class Location(MiniWidget):
         # Clamp our position to the bounds of our map
         if new_left < 20:        
             new_left = 20
-        elif new_left > self.owner.map_width - 20:  
-            new_left = self.owner.map_width - 20
+        elif new_left > self.widget.map_width - 20:  
+            new_left = self.widget.map_width - 20
         if new_top < 20:
             new_top = 20
-        elif new_top > self.owner.map_height - 20:
-            new_top = self.owner.map_height - 20
+        elif new_top > self.widget.map_height - 20:
+            new_top = self.widget.map_height - 20
         
         # Apply to data
         self.data['left'] = new_left
@@ -157,7 +157,7 @@ class Location(MiniWidget):
         self.is_dragging = True
 
         # Hide all other info displays while dragging
-        for mw in self.owner.mini_widgets:
+        for mw in self.widget.mini_widgets:
             mw.visible = False
 
         self.p.update()
@@ -176,7 +176,7 @@ class Location(MiniWidget):
         if not self.visible:        # Turn of highlight if we're not visilbe
             self.map_control.shadow = None
         
-        x_alignment = (self.data.get('left', 0) / (self.owner.map_width - 10)) * 2.0 - 1.0
+        x_alignment = (self.data.get('left', 0) / (self.widget.map_width - 10)) * 2.0 - 1.0
 
         self.data['x_alignment'] = x_alignment
 
@@ -188,15 +188,15 @@ class Location(MiniWidget):
         self.save_dict()
 
         # Re-show all the info displays we hid while dragging
-        for mw in self.owner.mini_widgets:
+        for mw in self.widget.mini_widgets:
             if mw.data.get('visible', True):
                 mw.visible = True
 
-        if self.owner.information_display.visible:
-            self.owner.information_display.reload_mini_widget(no_update=True)
+        if self.widget.information_display.visible:
+            self.widget.information_display.reload_mini_widget(no_update=True)
         self.map_control.page = self.p
         self.map_control.update()
-        await self.owner._rebuild_map_canvas()
+        await self.widget._rebuild_map_canvas()
 
     # Called when hovering over our plot point to show the slider
     async def _highlight(self, e=None):
@@ -231,10 +231,10 @@ class Location(MiniWidget):
             self.data['icon'] = icon
             self.save_dict()
 
-            # Update the UI to match. Map control needs owner to reload as well
+            # Update the UI to match. Map control needs widget to reload as well
             self.icon_button.icon = icon
             self.reload_map_control()
-            self.owner.reload_widget()
+            self.widget.reload_widget()
 
         # List for our icons when formatted
         icon_controls = [] 
@@ -273,7 +273,7 @@ class Location(MiniWidget):
                 mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
                 on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
                 on_pan_update=self.move_location, drag_interval=20, on_pan_end=self._drag_end,
-                on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
+                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
                 on_tap=self.show_mini_widget, on_tap_down=self._drag_start,
                 content=ft.Icon(self.data.get('icon', 'location_pin'), self.data.get('color', None))
             ),
@@ -291,13 +291,13 @@ class Location(MiniWidget):
                 ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
                 on_double_tap=self._rename_clicked,
                 on_tap=self._rename_clicked,
-                on_secondary_tap=lambda e: self.owner.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", on_hover=self.owner._hover_tab, hover_interval=500
+                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
+                mouse_cursor="click", on_hover=self.widget._hover_tab, hover_interval=500
             ),
             ft.IconButton(
-                ft.Icons.PUSH_PIN_OUTLINED if not self.owner.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+                ft.Icons.PUSH_PIN_OUTLINED if not self.widget.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
                 self.data.get('color', None),
-                tooltip="Pin Information Display" if not self.owner.data.get('information_display_is_pinned', False) else "Unpin Information Display",
+                tooltip="Pin Information Display" if not self.widget.data.get('information_display_is_pinned', False) else "Unpin Information Display",
                 on_click=self._toggle_pin
             ),
             ft.Container(expand=True),
