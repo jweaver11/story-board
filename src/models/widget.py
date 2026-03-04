@@ -74,16 +74,12 @@ class Widget(ft.Container):
         self.visible = self.data.get('visible', True)
 
         # Canvas and state trackers for sizing our widget
-        self.w: int = 0                                         # Width of our widget
-        self.h: int = 0                                         # Height of our widget
-        self.l: int = 0      # Values to pass into locations for left and top coordinates
-        self.t: int = 0
-        self.is_renaming: bool = False                          # Whether we are currently renaming this widget or not
-        self.mini_widgets_displayed_overtop: bool = True        # If miniwidgets are displayed overtop the content inside the stack, or to the side (shrinking the content)
-        self.force_size_render: bool = True                      # Forces a reload when widgets get their size for the first time, but not every time
-        self.left_mw_column = ft.Column()           # Mini widget columns who's width we'll adjust when resizing
-        self.right_mw_column = ft.Column()
-        self.skip_update = False     # Used to skip unnecessary updates when resizing document
+        self.w: int = 0          # Width of content space of the widget
+        self.h: int = 0          # Height of content space of the widget
+        self.l: int = 0          # Left position to pass into mini widgets
+        self.t: int = 0          # Top position to pass into mini widgets
+        self.mini_widgets_displayed_overtop: bool = True        # Set to true for widgets that display info overtop content (plotline, map, canvas, etc.)
+        self.skip_update = False                # Skips applying an update on resizes to prevent update loops
 
         # UI ELEMENTS - Tab
         self.tabs: ft.Tabs = None # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
@@ -315,7 +311,7 @@ class Widget(ft.Container):
         self.story.active_rail.content.reload_rail()   
         self.story.active_rail.update()
 
-    def create_comment_clicked(self, e, side_location: str="left"):
+    def create_comment_clicked(self, e=None, side_location: str="left"):
         ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
 
         # Checks that the name in the textfield does not match any of the existing mini widgets of that type, and updates visually to reflect
@@ -817,7 +813,7 @@ class Widget(ft.Container):
             # Add the columns so long as they are showing anything
             
             #self.master_stack.controls.append(self.left_mw_column)
-            #print(f"MW's in left column for {self.title}: ", len(left_mini_widgets))
+            print(f"MW's in left column for {self.title}: ", len(left_mini_widgets))
             
         
             #self.master_stack.controls.append(self.right_mw_column) 
@@ -834,7 +830,6 @@ class Widget(ft.Container):
 
         # If we have a header, add it to the stack. Headers are be immune to scrolling
         self.master_stack.controls.append(self.header) if self.header is not None else None
-
 
         # Tabs stuff
         self.tabs = ft.Tabs(

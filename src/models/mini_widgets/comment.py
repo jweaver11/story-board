@@ -35,6 +35,7 @@ class Comment(MiniWidget):
 
         self.visible = True
         self.padding=ft.Padding.only(left=8, right=8, bottom=8)
+        self.animate=ft.Animation(200, ft.AnimationCurve.DECELERATE)
 
         # Load our widget UI on start after we have loaded our data
         self.reload_mini_widget()
@@ -118,6 +119,7 @@ class Comment(MiniWidget):
             multiline=True, on_blur=lambda e: self.change_data(**{'content': e.control.value}),
             focused_border_color=self.data.get('color', ft.Colors.PRIMARY),
             cursor_color=self.data.get('color', ft.Colors.PRIMARY),
+            dense=True, capitalization=ft.TextCapitalization.SENTENCES
         )
 
         content = ft.Column(

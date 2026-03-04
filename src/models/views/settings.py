@@ -365,7 +365,8 @@ class Settings(ft.View):
                 ft.Container(expand=True),   # Spacer to push title to left
                 ft.IconButton(
                     ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
-                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
+                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                    mouse_cursor="click", tooltip="Close Settings"
                 )
             ]),
             ft.Text("Settings to change the interface visibility and comfort", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
@@ -498,7 +499,8 @@ class Settings(ft.View):
                 ft.Container(expand=True),   # Spacer to push title to left
                 ft.IconButton(
                     ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
-                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
+                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                    mouse_cursor="click", tooltip="Close Settings"
                 ),
             ]),
             ft.Text("Default Settings for widgets across all your stories.", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
@@ -865,7 +867,8 @@ class Settings(ft.View):
                 ft.Container(expand=True),   # Spacer to push close button to the right
                 ft.IconButton(
                     ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
-                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
+                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                    mouse_cursor="click", tooltip="Close Settings"
                 )
             ]),            
             ft.Text(f"Settings for your current story: {self.story.title}", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
@@ -1297,7 +1300,8 @@ class Settings(ft.View):
                 ft.Container(expand=True),   # Spacer to push title to left
                 ft.IconButton(
                     ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
-                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
+                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                    mouse_cursor="click", tooltip="Close Settings"
                 )
             ]),
             ft.Text(f"Edit your character and world templates", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
@@ -1326,7 +1330,8 @@ class Settings(ft.View):
                 ft.Container(expand=True),   # Spacer to push title to left
                 ft.IconButton(
                     ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
-                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT
+                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                    mouse_cursor="click", tooltip="Close Settings"
                 )
             ]),
             ft.Text(f"Resources to help with your masterpiece!", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),

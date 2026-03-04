@@ -43,15 +43,20 @@ class Document(Widget):
             }
         )
 
+        # We render our own mini widgets (comments), so we don't need parent class to render them as well
+        self.mini_widgets_displayed_overtop = False     
+
         self.comments: dict = {}
         self.load_comments()
 
         # Hold our comments on left and right side of the document
         self.left_comments = IsolatedColumn([], expand=1, scroll="none", horizontal_alignment=ft.CrossAxisAlignment.END)
         self.right_comments = IsolatedColumn([], expand=1, scroll="none")
+
+        # Holds our flet quill
         self.document_container = ft.Container(
             ft.TextField(hint_text="Temp doc textfield instead of quill for now", expand=True),
-            expand=3, margin=ft.Margin.symmetric(vertical=20),
+            expand=3, margin=ft.Margin.symmetric(vertical=40, horizontal=40),
             border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
             border_radius=ft.BorderRadius.all(10),
             alignment=ft.Alignment.TOP_CENTER, padding=ft.Padding.all(72),
@@ -72,9 +77,10 @@ class Document(Widget):
         self.h = int(e.height)
 
         if self.skip_update:
-            print("Skipping update")
             self.skip_update = False
             return
+        
+        self.skip_update = True
         return
 
         min_document_height = 1000        # Minimum doument height to maintain readability and usability
@@ -88,7 +94,6 @@ class Document(Widget):
             self.document_container.aspect_ratio = None
 
             # Only update every other time this is called, or updating re-calls this function
-            #if not self.skip_update:
             self.document_container.update()
             self.skip_update = True
                 
@@ -116,13 +121,7 @@ class Document(Widget):
                 self.comments[title]
             )
     
-
-    def submit_comment(self, e):
-        title = e.control.value
-        self.create_comment(title)
-        e.control.value = ""
-        self.reload_widget()
-
+    # Will be called when we have a flet quill
     def _save_document(self, text_data: list):
         ''' Saves our document text data to our data dictionary '''
         self.data['document_data'] = text_data
@@ -136,50 +135,98 @@ class Document(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
+        # clear mini widgets from the sides and re-add them
         self.left_comments.controls.clear()
         self.right_comments.controls.clear()
+        self.left_comments.controls.append(ft.Container(height=20))
+        self.right_comments.controls.append(ft.Container(height=20))
 
-        self.left_comments.controls.append(ft.Container(height=10))
-        self.right_comments.controls.append(ft.Container(height=10))
-
-        # Add comment buttons go here
+        # Add buttons to create comments on left or right side of the document
         self.left_comments.controls.append(
-            ft.IconButton(
-                ft.Icons.ADD_COMMENT_OUTLINED,
-                self.data.get('color', "primary"),
-                tooltip="Create a new comment",
-                on_click=self.create_comment_clicked,
-                data="left"
+            ft.MenuBar(
+                [
+                    ft.SubmenuButton(
+                        ft.Container(
+                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', "primary")),
+                            padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
+                            width=40, height=40, alignment=ft.Alignment.CENTER
+                        ),
+                        tooltip="Create new comment or reference image", expand=False,
+                        #style=ft.ButtonStyle(mouse_cursor="click"),
+                        controls=[
+                            ft.MenuItemButton(
+                                "Comment",
+                                leading=ft.Icon(ft.Icons.ADD_COMMENT_OUTLINED, self.data.get('color', "primary")), 
+                                on_click=lambda e: self.create_comment_clicked(e, "left"),
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            ),
+                            ft.MenuItemButton(
+                                "Reference Image", 
+                                leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), 
+                                on_click=lambda e: self.create_comment_clicked(e, "left"),
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            ),
+                        ],
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                    )
+                ],
+                style=ft.MenuStyle(
+                    bgcolor="transparent", shadow_color="transparent",
+                    shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding.all(0)
+                ),
+                
             )
         )
         self.right_comments.controls.append(
-            ft.IconButton(
-                ft.Icons.ADD_COMMENT_OUTLINED,
-                self.data.get('color', "primary"),
-                tooltip="Create a new comment",
-                on_click=lambda e: self.create_comment_clicked(e, "right"),
-                flip=ft.Flip(flip_x=True)
+            ft.MenuBar(
+                [
+                    ft.SubmenuButton(
+                        ft.Container(
+                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', "primary")),
+                            padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
+                            width=40, height=40, alignment=ft.Alignment.CENTER
+                        ),
+                        tooltip="Create new comment or reference image", expand=False,
+                        #style=ft.ButtonStyle(mouse_cursor="click"),
+                        controls=[
+                            ft.MenuItemButton(
+                                "Comment",
+                                leading=ft.Icon(ft.Icons.ADD_COMMENT_OUTLINED, self.data.get('color', "primary")), 
+                                on_click=lambda e: self.create_comment_clicked(e, "right"),
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            ),
+                            ft.MenuItemButton(
+                                "Reference Image", 
+                                leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), 
+                                on_click=lambda e: self.create_comment_clicked(e, "right"),
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            ),
+                        ],
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                    )
+                ],
+                style=ft.MenuStyle(
+                    bgcolor="transparent", shadow_color="transparent",
+                    shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding.all(0)
+                ),
+                
             )
         )
 
+        
 
+        # Add our comments to the correct side
         for mw in self.mini_widgets:
             if mw.data.get('side_location', 'left') == 'left':
                 self.left_comments.controls.append(mw)
             else:
                 self.right_comments.controls.append(mw)
 
-
-
-
-
-
-
+        # Re-set our document content to a flet quill
         self.document_container.content = ft.TextField("Quill goes here", expand=True, multiline=True)
-
-
         
-
         # Will hold our comments on left and right side
         doc_row = IsolatedRow([
             self.left_comments,
