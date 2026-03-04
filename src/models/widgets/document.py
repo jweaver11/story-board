@@ -8,6 +8,7 @@ from models.app import app
 from models.isolated_controls.row import IsolatedRow
 from models.isolated_controls.column import IsolatedColumn
 import math
+from models.mini_widgets.reference_image import ReferenceImage
 
 # Class that holds our text document objects
 class Document(Widget):
@@ -37,6 +38,7 @@ class Document(Widget):
                 'comments': {           
                     'Summary': dict,      # Default comment for summaries.
                 },       
+                'reference_images': {},   # Reference images 
 
                 # The text as json list data that is loaded and saved
                 'document_data': list,       
@@ -46,8 +48,10 @@ class Document(Widget):
         # We render our own mini widgets (comments), so we don't need parent class to render them as well
         self.mini_widgets_displayed_overtop = False     
 
-        self.comments: dict = {}
+        self.comments = {}
+        self.reference_images = {}
         self.load_comments()
+        self.load_reference_images()
 
         # Hold our comments on left and right side of the document
         self.left_comments = IsolatedColumn([], expand=1, scroll="none", horizontal_alignment=ft.CrossAxisAlignment.END)
@@ -120,12 +124,63 @@ class Document(Widget):
             self.mini_widgets.append(
                 self.comments[title]
             )
+
+    def load_reference_images(self):
+        for title, image_data in self.data['reference_images'].items():
+            self.reference_images[title] = ReferenceImage(
+                title=title, 
+                widget=self, 
+                page=self.p, 
+                key="reference_images",
+                data=image_data
+            )
+            self.mini_widgets.append(
+                self.reference_images[title]
+            )
+
+    def _create_reference_image(self, title: str, side_location: str, image_str: str):
+        reference_image = ReferenceImage(
+            title=title,
+            widget=self,
+            page=self.p,
+            key="reference_images",
+            data={
+                'image': image_str,
+                'side_location': side_location
+            }
+        )
+        self.reference_images[title] = reference_image
+        self.mini_widgets.append(reference_image)
     
     # Will be called when we have a flet quill
     def _save_document(self, text_data: list):
         ''' Saves our document text data to our data dictionary '''
         self.data['document_data'] = text_data
         self.save_dict()
+
+    async def _create_reference_image_clicked(self, e):
+
+        side_location = e.control.data  
+
+        files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+        if files:
+
+            file_path = files[0].path
+            file_name = files[0].name.split(".")[0]
+            try:
+                import base64
+
+                with open(file_path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+
+                self._create_reference_image(title=file_name, side_location=side_location, image_str=encoded_string)
+                self.save_dict()  # Save to our data
+                self.reload_widget()
+                    
+
+            except Exception as e:
+                pass
+                #print(f"Error loading image: {e}")
 
 
     # Called after any changes happen to the data that need to be reflected in the UI
@@ -163,7 +218,8 @@ class Document(Widget):
                             ft.MenuItemButton(
                                 "Reference Image", 
                                 leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), 
-                                on_click=lambda e: self.create_comment_clicked(e, "left"),
+                                on_click=self._create_reference_image_clicked,
+                                data="left",
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                             ),
                         ],
@@ -199,7 +255,8 @@ class Document(Widget):
                             ft.MenuItemButton(
                                 "Reference Image", 
                                 leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), 
-                                on_click=lambda e: self.create_comment_clicked(e, "right"),
+                                on_click=self._create_reference_image_clicked,
+                                data="right",
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                             ),
                         ],

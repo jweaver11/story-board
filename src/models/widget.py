@@ -40,10 +40,6 @@ class Widget(ft.Container):
             data=data,                              # Sets our data. 
             border_radius=ft.BorderRadius.all(10),
             gradient=dark_gradient,
-            #bgcolor=ft.Colors.SURFACE_CONTAINER,
-            #margin=ft.Margin.all(0),
-            #padding=ft.Padding.only(top=0, bottom=8, left=8, right=8),
-            #on_size_change=self._get_size if data.get('pin_location', "main") != "main" else None,   # Only track size changes if we are not in the main pin, since main pin widgets have a different resizing behavior that causes issues with the sizing canvas
         )
 
         # Set our parameters we passed in (data set in super())

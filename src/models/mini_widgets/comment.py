@@ -94,14 +94,13 @@ class Comment(MiniWidget):
 
         title_control = ft.Row([
             ft.GestureDetector(
-                ft.Text(f"\t{self.data['title']}", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
+                ft.Text(f"\t{self.data['title']}", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}", expand=True, overflow=ft.TextOverflow.ELLIPSIS),
                 on_double_tap=self._rename_clicked,
                 on_tap=self._rename_clicked,
                 on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", on_enter=self._set_menu_coords
+                mouse_cursor="click", on_enter=self._set_menu_coords, expand=True
             ),
             
-            ft.Container(expand=True),
             ft.GestureDetector(
                 ft.IconButton(
                     ft.Icons.EXPAND_LESS if self.data.get('collapsed', False) else ft.Icons.EXPAND_MORE,
