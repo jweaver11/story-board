@@ -25,69 +25,61 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
         ''' Opens a dialog to create a new story. Checks story is unique or not '''
 
 
-        # Variable to track if the title is unique
-        is_unique = True
+        
 
-        def submit_new_story(e):
+        async def submit_new_story(e):
             ''' Creates a new story with the given title '''
 
             # Import our variable if it is unique or nah
-            nonlocal is_unique
+            is_unique = not create_button.disabled
+            if not is_unique:
+                await story_title_field.focus()   # refocus the text field since the title was not unique
+                story_title_field.update()
+                return
 
-            if isinstance(e, ft.TextField):
-                #print("Received the text field. title is e.value")
-                title = e.value
-            else:
-                #print("received the event, title is e.control.value")
-                title = e.control.value
-
-            print(title)
-
-            for story in app.stories.values():
-                if story.title == title:
-                    is_unique = False
-                    break
+            title = story_title_field.value.strip()
 
             # Check if the title is unique
             if is_unique:
                 #print("title is unique, story being created: ", title)
                 app.create_new_story(title, page, "default") # Needs the story object
-                dlg.open = False
-                page.update()
+                page.pop_dialog()
             else:
-                #print("Title not unique, no story created")
-                story_title_field.error_text = "Title must be unique"
-                story_title_field.focus()   # refocus the text field since the title was not unique
-                page.update()
+                story_title_field.error = "Story Title must be unique"
+                await story_title_field.focus()   # refocus the text field since the title was not unique
+                story_title_field.update()
 
 
         # Called everytime the user enters a new letter in the text box
-        def textbox_value_changed(e):
+        async def textbox_value_changed(e):
             ''' Called when the text in the text box changes '''
 
-            nonlocal is_unique
+            is_unique = story_is_unique(story_title_field.value)
 
-            is_unique = story_is_unique(e.control.value, e.control)
+            if story_title_field.value.strip() == "":   # Disable the button if the text box is empty
+                is_unique = False
 
-            if is_unique and e.control.value.strip() != "":
-                create_button.disabled = False
-            else:
-                create_button.disabled = True
+            create_button.disabled = not is_unique
+            story_title_field.error = None if is_unique else "Story Title must be unique"
+            
                 
-            page.update()
+            create_button.update()
+            await story_title_field.focus()   # refocus the text field so user can keep typing without clicking back in
+            story_title_field.update()
 
 
         # Create a reference to the text field so we can access its value
         story_title_field = ft.TextField(
             label="Story Title",
-            autofocus=True, capitalization=ft.TextCapitalization.SENTENCES,
+            autofocus=True, capitalization=ft.TextCapitalization.WORDS,
             on_submit=submit_new_story,
             on_change=textbox_value_changed,
         )
 
-        create_button = ft.TextButton("Create", on_click=lambda e: submit_new_story(story_title_field), disabled=True)
+        create_button = ft.TextButton(
+            "Create", on_click=lambda e: submit_new_story(story_title_field), disabled=True, style=ft.ButtonStyle(mouse_cursor="click")
+        )
 
-            
         # The dialog that will pop up whenever the new story button is clicked
         dlg = ft.AlertDialog(
 
@@ -103,13 +95,10 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
 
             # Our two action buttons at the bottom of the dialog
             actions=[
-                ft.TextButton("Cancel", on_click=page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                 create_button,
             ],
         )
-        
-        # Add cancel button. Sometimes adding it ^^ first breaks and idk y
-        dlg.actions.insert(0, ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)))
 
         # Open our dialog in the overlay
         page.show_dialog(dlg)
@@ -237,54 +226,60 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                     alignment=ft.Alignment.CENTER
                 ), 
                 #style=menubar_style,    # styling for the button
-                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10),),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                 menu_style=ft.MenuStyle(padding=ft.Padding.all(0)),
                 
                 controls=[      # The options shown inside of our button
                     ft.MenuItemButton(
                         content=ft.Text("New Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                        # Options: Blank Story, From Template, but clicking also just creates blank
                         leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, ft.Colors.PRIMARY),
-                        style=menubar_style,
+                        close_on_click=True,
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
                         on_click=_create_new_story_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Open Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.MENU_BOOK_OUTLINED, ft.Colors.PRIMARY),
-                        style=menubar_style,
+                        close_on_click=True,
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
                         on_click=_open_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Rename Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY),
-                        style=menubar_style,
+                        close_on_click=True,
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
                         on_click=_rename_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Upload", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         # Options: story, chapter, map, drawing, character, note
                         leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
-                        style=menubar_style,
+                        close_on_click=True,
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
                         on_click=_open_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Export", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         # Options: story, chapter, map, drawing, character, note
                         leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
-                        style=menubar_style,
+                        close_on_click=True,
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
                         on_click=_open_clicked,
                     ),
                     
                     ft.MenuItemButton(
                         content=ft.Text("Settings", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
-                        style=menubar_style,
+                        close_on_click=True,
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
                         on_click=_settings_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Delete Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.DELETE_FOREVER_ROUNDED, ft.Colors.ERROR),
-                        style=menubar_style,
+                        close_on_click=True,
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
                         #on_click=_delete_clicked,
                     ),
                 ],

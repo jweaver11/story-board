@@ -69,13 +69,15 @@ class Widget(ft.Container):
         # Apply our visibility
         self.visible = self.data.get('visible', True)
 
-        # Canvas and state trackers for sizing our widget
+        # State tracking for widgets
         self.w: int = 0          # Width of content space of the widget
         self.h: int = 0          # Height of content space of the widget
         self.l: int = 0          # Left position to pass into mini widgets
         self.t: int = 0          # Top position to pass into mini widgets
-        self.mini_widgets_displayed_overtop: bool = True        # Set to true for widgets that display info overtop content (plotline, map, canvas, etc.)
         self.skip_update = False                # Skips applying an update on resizes to prevent update loops
+
+        # If widgets display info overtop content rather than next to it (plotline, map, canvas, etc.)
+        self.mini_widgets_displayed_overtop: bool = True       # Widgets that set this false need to set their own mini widgets in reload_widget
 
         # UI ELEMENTS - Tab
         self.tabs: ft.Tabs = None # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
@@ -90,7 +92,6 @@ class Widget(ft.Container):
         self.body_container = ft.Container(
             expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(16), 
             on_size_change=self._get_size, size_change_interval=500,
-            on_hover=self._update,
         ) 
 
         # Holds our sizing canvas, body container, header, and mini widgets all under the tab
@@ -228,17 +229,8 @@ class Widget(ft.Container):
             return 
         self.w = int(e.width)
         self.h = int(e.height)
-
         #print("New size: ", self.w, "x", self.h)
 
-    async def _update(self, e=None):
-        try:
-            if not self.skip_update:
-
-                self.skip_update = True
-                #self.update()
-        except Exception as e:
-            pass
         
     # Called when renaming a widget
     def rename(self, title: str):
