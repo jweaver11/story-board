@@ -606,9 +606,7 @@ class Story(ft.View):
         # Apply the UI changes
         self.active_rail.content.reload_rail()
         self.active_rail.update()
-        print("Before reload")
         self.workspace.reload_workspace()
-        print("After reload")
 
     def rebuild_widget(self, widget) -> ft.Control:
         ''' Delcares the widget as a new object to refresh its page reference. '''

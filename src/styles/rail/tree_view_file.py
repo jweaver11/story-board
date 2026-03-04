@@ -86,7 +86,7 @@ class TreeViewFile(ft.GestureDetector):
                     ], expand=True),
                     self._get_color_options(), 
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                     tooltip="Change this widget's color"
                 ),
                 no_padding=True, no_effects=True
@@ -243,7 +243,7 @@ class TreeViewFile(ft.GestureDetector):
                 ft.MenuItemButton(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
                     on_click=lambda e, col=color: _change_icon_color(col), close_on_click=True,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
                 )
             )
 

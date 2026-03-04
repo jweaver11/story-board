@@ -231,31 +231,13 @@ class Widget(ft.Container):
 
     # Called when our canvas resizes
     async def _get_size(self, e: ft.LayoutSizeChangeEvent[ft.Container]):
-        ''' Updates our w and h variables when sizing canvas resizes '''
+        ''' Updates our w and h when our widgets body container resizes. Widgets who need to run logic override this '''
         if e.width <= 0 or e.height <= 0:
             return 
-        self.w = e.width
-        self.h = e.height
+        self.w = int(e.width)
+        self.h = int(e.height)
 
-        #print("New size for ", self.title, ": ", self.w, self.h)
-        self.left_mw_column.width = self.w / 3
-        self.right_mw_column.width = self.w / 3
-
-        try:
-            if self.left_mw_column.visible:
-                self.left_mw_column.update()
-            if self.right_mw_column.visible:
-                self.right_mw_column.update()
-        except Exception as e:
-            pass
-
-        self.should_update = True
-
-
-        # Mini widgets won't show unless we re-render on launch since first render has no size reference to grab them with
-        #if self.force_size_render:
-            #self.force_size_render = False
-            #self._render_widget()
+        #print("New size: ", self.w, "x", self.h)
 
     async def _update(self, e=None):
         try:
@@ -333,7 +315,8 @@ class Widget(ft.Container):
         self.story.active_rail.content.reload_rail()   
         self.story.active_rail.update()
 
-
+    def create_comment_clicked(self, e):
+        pass
 
     # Called when a new mini note is created inside a widget
     def create_comment(self, title: str):
@@ -406,25 +389,27 @@ class Widget(ft.Container):
             MenuOptionStyle(
                 on_click=self._rename_clicked,
                 content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
+                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
                     ft.Text(
                         "Rename", 
                         weight=ft.FontWeight.BOLD, 
-                        color=ft.Colors.ON_SURFACE
+                        
                     ), 
                 ]),
             ),
             MenuOptionStyle(
-                content=ft.PopupMenuButton(
-                    expand=True, tooltip=f"Change {self.title}'s color",
-                    padding=ft.Padding(0,0,0,0),
-                    content=ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED), ft.Text("Color", weight=ft.FontWeight.BOLD)]),
-                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
-                    ),
-                    items=self._get_color_options()
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
+                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    self._get_color_options(), 
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    tooltip="Change this widget's color"
                 ),
-                no_padding=True
+                no_padding=True, no_effects=True
             ),
             MenuOptionStyle(
                 on_click=self._delete_clicked,
@@ -485,13 +470,13 @@ class Widget(ft.Container):
 
             # If we are NOT unique, show our error text
             if not is_unique:
-                text_field.error_text = error_text
+                text_field.error = error_text
 
             # Otherwise remove our error text
             else:
-                text_field.error_text = None
+                text_field.error = None
                 
-            self.p.update()
+            text_field.update()   # Update our text field to show error or not
 
         # Called when submitting our textfield.
         def _submit_name(e):
@@ -515,7 +500,7 @@ class Widget(ft.Container):
                 
             # Otherwise make sure we show our error
             else:
-                text_field.error_text = "Name already exists"
+                text_field.error = "Name already exists"
                 text_field.focus()                                  # Auto focus the textfield
                 
         # Our text field that our functions use for renaming and referencing
@@ -542,7 +527,7 @@ class Widget(ft.Container):
             title=ft.Text(f"Rename {self.title}", weight=ft.FontWeight.BOLD),
             content=text_field,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR), on_click=lambda e: self.p.close(dlg)),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR), on_click=lambda e: self.p.pop_dialog()),
                 rename_button   
             ]
         )
@@ -552,22 +537,23 @@ class Widget(ft.Container):
         self.p.show_dialog(dlg)
         
     
-    # Called when color button is clicked
     def _get_color_options(self) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
 
         # Called when a color option is clicked on popup menu to change icon color
-        async def _change_icon_color(color: str):
+        def _change_icon_color(color: str):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
+            # Change the data
             self.change_data(**{'color': color})
             
             # Change our icon to match, apply the update
-            self.story.active_rail.content.reload_rail()
             self.reload_widget()
-            #if self.data.get('pin_location', '') == 'main':
+            self.story.active_rail.content.reload_rail()   # Reload the rail to reflect the color change
+            self.story.active_rail.update()
+
+            #if self.data.get('pin_location', "main") == "main":
                 #self.story.workspace.reload_workspace()
-            
 
         # List for our colors when formatted
         color_controls = [] 
@@ -575,9 +561,10 @@ class Widget(ft.Container):
         # Create our controls for our color options
         for color in colors:
             color_controls.append(
-                ft.PopupMenuItem(
+                ft.MenuItemButton(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                    on_click=lambda e, col=color: self.p.run_task(_change_icon_color, col)
+                    on_click=lambda e, col=color: _change_icon_color(col), close_on_click=True,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
                 )
             )
 
@@ -601,8 +588,8 @@ class Widget(ft.Container):
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
             title=ft.Text(f"Are you sure you want to delete {self.title} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
-            alignment=ft.alignment.center,
-            title_padding=ft.padding.all(25),
+            alignment=ft.Alignment.CENTER,
+            title_padding=ft.Padding.all(25),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog()),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),

@@ -5,6 +5,8 @@ from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 #from flet_quill import FletQuill
 from models.app import app
+from models.isolated_controls.row import IsolatedRow
+from models.isolated_controls.column import IsolatedColumn
 
 
 # Class that holds our text document objects
@@ -37,16 +39,74 @@ class Document(Widget):
                 },       
 
                 # The text as json list data that is loaded and saved
-                'document_text': list,       
+                'document_data': list,       
             }
         )
 
         self.comments: dict = {}
         self.load_comments()
 
+        # Hold our comments on left and right side of the document
+        self.left_comments = IsolatedColumn([], expand=1, scroll="none")
+        self.right_comments = IsolatedColumn([], expand=1, scroll="none")
+        self.document_container = ft.Container(
+            ft.TextField(hint_text="Temp doc textfield instead of quill for now", expand=True),
+            expand=3, margin=ft.Margin.symmetric(vertical=20),
+            border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
+            border_radius=ft.BorderRadius.all(10),
+            alignment=ft.Alignment.TOP_CENTER, padding=ft.Padding.all(72),
+            height=1200,
+            #aspect_ratio=8.5/11.0,  # paper-like ratio
+        )
+
+        # State management
+        self.skip_update = False     # Used to skip unnecessary updates when resizing document
+
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
 
+    # Called when our canvas resizes
+    async def _get_size(self, e: ft.LayoutSizeChangeEvent[ft.Container]):
+        ''' Updates our w and h variables when sizing canvas resizes '''
+        if e.width <= 0 or e.height <= 0:
+            print("No size, skipping")
+            return 
+        self.w = int(e.width)
+        self.h = int(e.height)
+
+        if self.skip_update:
+            print("Skipping update")
+            self.skip_update = False
+            return
+        return
+
+        min_document_height = 1000        # Minimum doument height to maintain readability and usability
+        actual_document_height = self.h - 32    # Actual Document height
+
+        # Check we're tall enough
+        if actual_document_height < min_document_height:
+
+            # If not, set our height unset aspect ratio, since its used over height
+            self.document_container.height = min_document_height
+            self.document_container.aspect_ratio = None
+
+            # Only update every other time this is called, or updating re-calls this function
+            #if not self.skip_update:
+            self.document_container.update()
+            self.skip_update = True
+                
+        else:
+
+            # If we're already tall enough ignore an update
+            self.document_container.aspect_ratio = 8.5/11.0
+            self.document_container.height = None
+            self.document_container.update()
+            self.skip_update = True
+            
+        
+
+        
+            
 
     def load_comments(self):
         ''' Loads our mini notes from our data into live objects '''
@@ -68,45 +128,12 @@ class Document(Widget):
         e.control.value = ""
         self.reload_widget()
 
-    # Called when right clicking our controls for either timeline or an arc
-    def get_menu_options(self) -> list[ft.Control]:
-
-        # Color, rename
-        return [
-            MenuOptionStyle(
-                #on_click=self.rename_clicked,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
-                    ft.Text(
-                        "Rename", 
-                        weight=ft.FontWeight.BOLD, 
-                        color=ft.Colors.ON_SURFACE
-                    ), 
-                ]),
-            ),
-            # Color changing popup menu
-            MenuOptionStyle(
-                content=ft.PopupMenuButton(
-                    expand=True,
-                    tooltip="",
-                    padding=None,
-                    content=ft.Row(
-                        expand=True,
-                        controls=[
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=ft.Colors.PRIMARY),
-                            ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
-                            ft.Icon(ft.Icons.ARROW_DROP_DOWN_OUTLINED, color=ft.Colors.ON_SURFACE, size=16),
-                        ]
-                    ),
-                    items=self.get_color_options()
-                )
-            ),
-        ]
+    
 
 
     def _save_document(self, text_data: list):
         ''' Saves our document text data to our data dictionary '''
-        self.data['document_text'] = text_data
+        self.data['document_data'] = text_data
         self.save_dict()
 
 
@@ -117,6 +144,36 @@ class Document(Widget):
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
+
+        self.left_comments.controls.clear()
+        self.right_comments.controls.clear()
+
+        self.document_container.content = ft.TextField("Quill goes here", expand=True, multiline=True)
+
+
+        
+
+        # Will hold our comments on left and right side
+        doc_row = IsolatedRow([
+            self.left_comments,
+            self.document_container,
+            self.right_comments
+        ], expand=True)
+
+        # Column that holds our row with the comments and document for scrolling
+        master_column = IsolatedColumn(
+            [
+                ft.Text("Toolbar goes here"), ft.Divider(height=1, thickness=1), doc_row
+            ], 
+            scroll="auto", expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0
+        )
+
+        self.body_container.content = master_column
+
+
+        self._render_widget()
+
+
         
         # BUILDING BODY - the inside the body container of our widget
         '''
@@ -128,16 +185,16 @@ class Document(Widget):
                     save_method=self._save_document,
                     #file_path=f"{self.directory_path}/{self.title}_text.json",
 
-                    border_visible=True,
-                    border_width=1.0,       # Defaults to 1.0
+                    
 
-                    # Set paddings around the editor. Defaults to 10.0
-                    padding_left=72.0,
-                    padding_top=72.0,
-                    padding_right=72.0,
-                    padding_bottom=72.0,
-
-                    aspect_ratio=8.5/11.0,  # paper-like ratio
+                    # OLD
+                    #border_visible=True,
+                    #border_width=1.0,       # Defaults to 1.0
+                    #padding_left=72.0,
+                    #padding_top=72.0,
+                    #padding_right=72.0,
+                    #padding_bottom=72.0,
+                    #aspect_ratio=8.5/11.0,  # paper-like ratio
 
                     show_toolbar_divider=False,  # Show divider below toolbar
                     placeholder_text=f"{self.title} begins here"
@@ -147,6 +204,6 @@ class Document(Widget):
         '''
         
 
-        self._render_widget()
+        
 
         

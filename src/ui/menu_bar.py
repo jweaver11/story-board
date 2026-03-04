@@ -203,17 +203,12 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
         ''' Goes to the settings page '''
         if page.route != "/settings":
             await page.push_route("/settings")
-            print("Pushed settings route")
         else:
             # Get the active story title and find its route
             if story is not None:
-                
-
                 await page.push_route(story.route)
-                print("Pushing story route: ", story.route)
             else:
                 await page.push_route("/")
-                print("Pushing home route")
 
 
     # Styling used by lots of menu bar items
@@ -249,46 +244,46 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                     ft.MenuItemButton(
                         content=ft.Text("New Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         # Options: Blank Story, From Template, but clicking also just creates blank
-                        leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, color=ft.Colors.ON_SURFACE,),
+                        leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, ft.Colors.PRIMARY),
                         style=menubar_style,
                         on_click=_create_new_story_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Open Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                        leading=ft.Icon(ft.Icons.MENU_BOOK_OUTLINED),
+                        leading=ft.Icon(ft.Icons.MENU_BOOK_OUTLINED, ft.Colors.PRIMARY),
                         style=menubar_style,
                         on_click=_open_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Rename Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                        leading=ft.Icon(ft.Icons.EDIT_OUTLINED),
+                        leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY),
                         style=menubar_style,
                         on_click=_rename_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Upload", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         # Options: story, chapter, map, drawing, character, note
-                        leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED),
+                        leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
                         style=menubar_style,
                         on_click=_open_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Export", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         # Options: story, chapter, map, drawing, character, note
-                        leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED),
+                        leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
                         style=menubar_style,
                         on_click=_open_clicked,
                     ),
                     
                     ft.MenuItemButton(
                         content=ft.Text("Settings", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                        leading=ft.Icon(ft.Icons.SETTINGS_OUTLINED),
+                        leading=ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
                         style=menubar_style,
                         on_click=_settings_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Delete Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                        leading=ft.Icon(ft.Icons.DELETE_FOREVER_ROUNDED),
+                        leading=ft.Icon(ft.Icons.DELETE_FOREVER_ROUNDED, ft.Colors.ERROR),
                         style=menubar_style,
                         #on_click=_delete_clicked,
                     ),
