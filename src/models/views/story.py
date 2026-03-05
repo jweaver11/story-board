@@ -265,7 +265,7 @@ class Story(ft.View):
 
             self.active_rail.content.reload_rail()
             self.active_rail.update()
-            self.workspace.reload_workspace()
+            #self.workspace.reload_workspace()
             self.close_menu_instant()
 
         # Handle errors
@@ -609,7 +609,8 @@ class Story(ft.View):
         # Apply the UI changes
         self.active_rail.content.reload_rail()
         self.active_rail.update()
-        self.workspace.reload_workspace()
+        widget.show_widget()
+        #self.workspace.reload_workspace()
 
     def rebuild_widget(self, widget) -> ft.Control:
         ''' Delcares the widget as a new object to refresh its page reference. '''
@@ -626,6 +627,7 @@ class Story(ft.View):
         from models.mini_widgets.plot_point import PlotPoint
 
         tag = widget.data.get('tag', None)
+        self.widgets.remove(widget)
         match tag:
             case "document":
                 new_widget = Document(
@@ -728,7 +730,7 @@ class Story(ft.View):
 
             case _:
                 print("Widget tag not valid Tag: ", tag)
-
+        self.widgets.append(new_widget)
         return new_widget
 
 

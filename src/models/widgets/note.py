@@ -113,7 +113,7 @@ class Note(Widget):
         add_segment_button = ft.IconButton(
             ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
             tooltip="Add New Segment to Note",
-            on_click=self._add_new_segment
+            on_click=self._add_new_segment, mouse_cursor="click"
         )
         
         body = ft.Column(

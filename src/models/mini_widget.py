@@ -62,6 +62,9 @@ class MiniWidget(ft.Container):
             },
         )
 
+        if data is None:
+            self.p.run_task(self.save_dict)
+
         # Apply our visibility
         self.visible = self.data.get('visible', True)
         

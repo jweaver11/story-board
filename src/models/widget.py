@@ -66,6 +66,9 @@ class Widget(ft.Container):
                 }
             )
 
+        if data is None:
+            self.p.run_task(self.save_dict)
+
         # Apply our visibility
         self.visible = self.data.get('visible', True)
 
@@ -131,7 +134,7 @@ class Widget(ft.Container):
         # Our icon button that will hide the widget when clicked in the workspace
         hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
             scale=0.8,
-            on_click=lambda e: self.toggle_visibility(),
+            on_click=lambda e: self.hide_widget(),
             icon=ft.Icons.CLOSE_ROUNDED,
             icon_color=ft.Colors.OUTLINE,
             tooltip="Hide",
@@ -323,9 +326,6 @@ class Widget(ft.Container):
     # Called when renaming a widget
     def rename(self, title: str):
         ''' Renames our widget in live title, data, and json file '''
-        
-        # Hides the widget while renaming to make sure pointers are updated as well
-        self.toggle_visibility() 
 
         # Save our old file path for renaming later
         old_file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json")  
@@ -378,9 +378,6 @@ class Widget(ft.Container):
 
             case _:
                 print(f"Unknown tag {tag} when renaming widget {self.title}")
-
-        # Re-applies visibility to what it was before rename
-        self.toggle_visibility()                
 
         # Reload our widget ui and rail to reflect changes 
         self.reload_widget()           
@@ -497,24 +494,30 @@ class Widget(ft.Container):
         e.control.icon_color = ft.Colors.OUTLINE
         e.control.update()
 
-    # Called when app clicks the hide icon in the tab
-    def toggle_visibility(self, e=None, value: bool=None):
-        ''' Hides the widget from our workspace and updates the json to reflect the change '''
+    # Called to hide the widget from the workspace
+    def hide_widget(self):
+        ''' Hides this widget from the workspace but keeps it in the story and rail '''
+        if not self.visible:
+            return
+        
+        pin_location = self.data.get('pin_location', "main")
+        match pin_location:
+            case "left":
+                self.story.workspace.left_pin.controls.remove(self)
+            case "right":
+                self.story.workspace.right_pin.controls.remove(self)
+            case "top":
+                self.story.workspace.top_pin.controls.remove(self)
+            case "bottom":
+                self.story.workspace.bottom_pin.controls.remove(self)
 
-        # If we want to specify we're visible or not, we can pass it in
-        if value is not None:
-            self.data['visible'] = value
-        else:
-            # Change our visibility data, save it, then apply it
-            self.data['visible'] = not self.data['visible']
-
-        # Make us not the active tab if we were the one
-        if self.data.get('is_active_tab', False) and not self.data.get('visible'):
-            self.data['is_active_tab'] = False
-
-        # Save our changes and reload the UI
-        self.p.run_task(self.save_dict)
-        self.story.workspace.reload_workspace()     # No matter what we are getting rebuilt, so just reload teh workspace
+    # Called to show the widget in the workspace
+    def show_widget(self):
+        ''' Shows this widget in the workspace if it is hidden '''
+        if self.visible:
+            return
+        
+        # LOGIC HERE
 
     # Called when right clicking our tab
     def _get_menu_options(self) -> list[ft.Control]:
