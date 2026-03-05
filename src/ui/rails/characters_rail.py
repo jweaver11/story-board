@@ -26,53 +26,75 @@ class CharactersRail(Rail):
 
         # UI elements
         self.top_row_buttons = [
-            ft.IconButton(ft.Icons.CONNECT_WITHOUT_CONTACT, tooltip="Edit Character Templates", on_click=self._open_templates_editor),
-            ft.PopupMenuButton(
-                icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                tooltip="New", menu_padding=0,
-                items=[
-                    ft.PopupMenuItem(
-                        "Character", icon=ft.Icons.PERSON_ADD_ALT_OUTLINED,
-                        on_click=self.new_item_clicked, data="character"
-                    ),
-                    ft.PopupMenuItem(
-                        "Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
-                        on_click=self.new_item_clicked, data="character_connection_map"
-                    ),
-                ]
+            ft.Container(
+                ft.IconButton(
+                    ft.Icons.CONNECT_WITHOUT_CONTACT, "primary", mouse_cursor="click",  
+                    tooltip="Edit Character Templates", on_click=self._open_templates_editor
+                ), margin=ft.Margin.only(right=8)
             ),
-            ft.IconButton(
-                icon=ft.Icons.FILE_UPLOAD_OUTLINED,
-                tooltip="Upload Character",
+            ft.SubmenuButton(
+                ft.Container(
+                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
+                    shape=ft.BoxShape.CIRCLE,
+                    alignment=ft.Alignment.CENTER
+                ),
+                [
+                    ft.SubmenuButton(
+                        ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
+                        self.get_template_options("character"), 
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        tooltip="Create a new character for your story. Choose from templates or create a default character."
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
+                        data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                        tooltip="Visualize the connections between the characters in your story"
+                    ),  
+                ],
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
             ),
-            ft.IconButton(ft.Icons.MANAGE_SEARCH_OUTLINED, tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)),
+            ft.SubmenuButton(
+                ft.Container(
+                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
+                    shape=ft.BoxShape.CIRCLE,
+                    alignment=ft.Alignment.CENTER
+                ),
+                [     
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), content="Character", 
+                        data="character", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new character for your story. Choose from templates or create a default character.",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
+                        data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                        tooltip="Visualize the connections between the characters in your story"
+                    ),  
+                ],
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            ),
+            ft.Container(
+                ft.IconButton(
+                    ft.Icons.MANAGE_SEARCH_OUTLINED, "primary", mouse_cursor="click",
+                    tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)
+                ), margin=ft.Margin.only(left=8)
+            )
         ]
 
-        # Sort buttons right after the top row
-        self.sort_button = ft.Dropdown(
-            f"Sorting by: {self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")}", 
-            label="Sort method", leading_icon=ft.Icons.SORT_ROUNDED, dense=True, expand=True,
-            tooltip="Sort Characters By", on_select=self._new_sort_method_selected,
-            options=[
-                ft.DropdownOption("Age"), 
-                ft.DropdownOption("Alphabetical"), 
-                ft.DropdownOption("Morality", disabled=True),
-                ft.DropdownOption("Nationality", disabled=True), 
-                ft.DropdownOption("Occupation", disabled=True), 
-                ft.DropdownOption("Role"), 
-                ft.DropdownOption("Tag", disabled=True), 
-                ft.DropdownOption("None"),
-            ],
-        )
-        self.sort_button.value = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
 
 
     # Open our settings to the templates tab
-    def _open_templates_editor(self, e):    
+    async def _open_templates_editor(self, e):    
         from models.app import app
         app.settings.selected_index = 3     # Set settings to open on the character templates tab
         self.p.overlay.clear()              # If opened from menu, make sure its closed
-        self.p.go("/settings")
+        await self.p.push_route("/settings")
         
 
     # Called to return our list of menu options for the content rail
@@ -134,70 +156,29 @@ class CharactersRail(Rail):
             )
         ]
     
-    
-    # Called when our sort method dropdown is changed
-    def _new_sort_method_selected(self, e=None):
-        ''' Changes our sort method based on the selected menu item '''
-        self.story.data['settings']['character_rail_sort_by'] = self.sort_button.value
-        self.story.save_dict()
-        self.reload_rail()
 
-    def _on_drag_accept(self, e):
-        # Update whatever piece of character data to empty string and reload the rail
-        # Load our data (draggables can't just pass in simple data for some reason)
-        event_data = json.loads(e.data)
-        
-        # Grab our draggable from the event
-        draggable = e.page.get_control(event_data.get("src_id"))
-            
-        # Grab our key and set the widget
-        widget_key = draggable.data
-
-        widget = None
-
-        for w in self.story.widgets:
-            if w.data.get('key', "") == widget_key:
-                widget = w
-                break
-
-        if widget is None:
-            print("Error: Widget not found for drag accept")
-            return
-        
-        # Set our sort method
-        sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
-
-        match sort_method:
-            case "Role":
-                widget.data['character_data']['Role'] = "None"
-                widget.save_dict()
-                widget.reload_widget()
-                self.reload_rail()
-            case _:
-                pass
-
-        # However we are sorting, lets set that field to an empty string for this character
-        pass
 
 
     # Called on startup and when we have changes to the rail that have to be reloaded 
     def reload_rail(self):
         ''' Builds or rebuilds the character rail content '''
 
+        menubar = ft.MenuBar(
+            self.top_row_buttons,
+            expand=True,
+            style=ft.MenuStyle(
+                bgcolor="transparent", shadow_color="transparent",
+                shape=ft.RoundedRectangleBorder(radius=10),
+                alignment=ft.Alignment.CENTER
+            ),
+        )
+
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.SPACE_EVENLY, wrap=True,
-            controls=self.top_row_buttons
+            alignment=ft.MainAxisAlignment.CENTER,
+            controls=menubar
         )
         
-        header_2 = ft.Row(
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.CENTER,
-            controls=[self.sort_button],
-        )
-
-             
-
         # Build the content of our rail
         content = ft.Column(
             scroll=ft.ScrollMode.AUTO,
@@ -205,71 +186,7 @@ class CharactersRail(Rail):
             controls=[]
         )
 
-
-        
-        # Grab our sort method for readability
-        sort_method = self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")
-
-        # Intialize our lists
-        characters_list = list(self.story.characters.values())
-        non_specified_list = []
-
-        # Build our rail depending on our sort method
-        match sort_method:
-            case "Age":
-                # For sorting our list, sort by age. If no age specified, add to the non-specified list
-                def get_age(character):
-                    age = character.data.get('character_data', {}).get('Basic Info', {}).get('Age', None)
-                    if age is None or age == "":
-                        non_specified_list.append(character)
-                    return age
-                characters_list.sort(key=get_age)   # Returns not set values, then youngest -> oldest
-
-                for character in characters_list:
-                    if character not in non_specified_list:
-                        content.controls.append(TreeViewFile(character, self.story))
-                
-                content.controls.append(ft.Text("Non-specified Age:", theme_style=ft.TextThemeStyle.LABEL_LARGE))
-                for character in non_specified_list:
-                    content.controls.append(TreeViewFile(character))
-
-            case "Alphabetical":
-                characters_list.sort(key=lambda c: c.data.get('title', '').lower())
-                for character in characters_list:
-                    content.controls.append(TreeViewFile(character, self.story))
-
-
-            case "Role":
-                different_roles = set()
-                def get_role(character):
-                    role = character.data.get('character_data', {}).get('Basic Info', {}).get('Role', None)
-                    if role is None or role == "" or role == "None":
-                        non_specified_list.append(character)
-                    else:
-                        different_roles.add(role)
-                    return role
-            
-                #characters_list.sort(key=get_role)   # Returns not set values, then alphabetically by role
-
-                for role in sorted(different_roles):   # Future implimentation use custom roles. For now we just have 3 so we will hardcode it
-                    content.controls.append(ft.Text(f"{role}:", theme_style=ft.TextThemeStyle.LABEL_LARGE))
-                    for character in characters_list:
-                        if role == character.data.get('character_data', {}).get('Basic Info', {}).get('Role', None):
-                            content.controls.append(TreeViewFile(character, self.story))
-
-                
-
-                content.controls.append(ft.Text("Non-specified Role:", theme_style=ft.TextThemeStyle.LABEL_LARGE))
-                for character in non_specified_list:
-                    content.controls.append(TreeViewFile(character, self.story))
-
-
-            # Otherwise just add them however they were loaded 
-            case _:
-                for character in characters_list:
-                    content.controls.append(TreeViewFile(character, self.story))
-        
-
+   
         content.controls.append(ft.Container(height=6))
         # Append our hidden textfield for creating new items
         content.controls.append(self.new_item_textfield)
@@ -277,37 +194,14 @@ class CharactersRail(Rail):
         # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space
         content.controls.append(ft.Container(expand=True))
 
-        # Wrap the gd in a drag target so we can move characters here
-        dt = ft.DragTarget(
-            group="widgets",
-            content=content,     # Our content is the content we built above
-            on_accept=self._on_drag_accept
-        )
-
         menu_gesture_detector = ft.GestureDetector(
-            content=dt, expand=True, on_hover=self.on_hovers,
+            content=content, expand=True, on_hover=self.on_hovers,
             on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()), hover_interval=20,
-        )
-
-        # Set our content to be a column
-        self.content = ft.Column(
-            spacing=0,
-            expand=True,
-            controls=[
-                header,
-                ft.Divider(),
-                ft.Container(height=6),
-                header_2,
-                ft.Container(height=6),
-                menu_gesture_detector
-            ]
         )
 
         self.controls = [
             header,
             ft.Divider(),
-            ft.Container(height=6),
-            header_2,
             menu_gesture_detector
         ]
         

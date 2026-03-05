@@ -278,7 +278,7 @@ def new_character_connection_clicked(story):
             if ccm.visible:
                 ccm.reload_widget()     
 
-        story.p.close(dlg)
+        story.p.show_dialog(dlg)
         story.p.update()
 
 
@@ -318,11 +318,11 @@ def new_character_connection_clicked(story):
         title=ft.Text(f"Character Connections Editor"),
         content=content,
         actions=[
-            ft.TextButton("Cancel", on_click=lambda e: story.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
+            ft.TextButton("Cancel", on_click=lambda e: story.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
             ft.Container(width=12),   # Spacer
             ft.TextButton("Save", on_click=_save_and_close, scale=1.2),   # Start enabled to just save existing connections
         ],
     )
     
 
-    story.p.open(dlg)
+    story.p.show_dialog(dlg)

@@ -394,22 +394,15 @@ class ContentRail(Rail):
     def reload_rail(self) -> ft.Control:
         ''' Reloads the content rail '''
 
-        # Depending on story type, we can have different content creation options
-        # Categories get colors as well??
-        # Creating a document for comics creates a folder to store images and drawings
-        # Creating a document for novels creates a text document for writing, and allows
-        # Right clicking allows to upload
-
         menubar = ft.MenuBar(
             self.top_row_buttons,
+            #expand=True,
             style=ft.MenuStyle(
                 bgcolor="transparent", shadow_color="transparent",
                 shape=ft.RoundedRectangleBorder(radius=10),
             ),
-            #alignment=ft.MainAxisAlignment.CENTER,
         )
 
-        # TODO: Should be 2 buttons: New and upload. Each has all those options
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER,
