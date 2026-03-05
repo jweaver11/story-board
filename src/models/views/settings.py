@@ -139,6 +139,9 @@ class Settings(ft.View):
             }, 
         )
 
+        if data is None:
+            self.p.run_task(self.save_dict)
+
     def before_update(self):
         print(f"Successful update for settings")
         return super().before_update()

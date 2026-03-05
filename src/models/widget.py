@@ -500,22 +500,19 @@ class Widget(ft.Container):
         if not self.visible:
             return
         
-        pin_location = self.data.get('pin_location', "main")
-        match pin_location:
-            case "left":
-                self.story.workspace.left_pin.controls.remove(self)
-            case "right":
-                self.story.workspace.right_pin.controls.remove(self)
-            case "top":
-                self.story.workspace.top_pin.controls.remove(self)
-            case "bottom":
-                self.story.workspace.bottom_pin.controls.remove(self)
+        self.data['visible'] = False
+        self.visible = False
+        self.story.workspace.reload_workspace()   # Reload workspace to hide the widget and show the placeholder in its pin location
 
     # Called to show the widget in the workspace
     def show_widget(self):
         ''' Shows this widget in the workspace if it is hidden '''
         if self.visible:
             return
+        
+        self.data['visible'] = True
+        self.visible = True
+        self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
         
         # LOGIC HERE
 

@@ -79,6 +79,9 @@ class Story(ft.View):
             },
         )
 
+        if data is None:
+            self.save_dict()
+
         self.template = template
 
         # Variables to store our mouse position for opening menus

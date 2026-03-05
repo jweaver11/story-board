@@ -402,7 +402,7 @@ class Character(Widget):
         async def _change_about_data(e):
             ''' Called when the about section is changed in edit mode '''
             self.data['About'] = e.control.value
-            self.save_dict()
+            await self.save_dict()
 
         about_section = ft.Column([
             ft.Row([
@@ -416,7 +416,7 @@ class Character(Widget):
                 border_radius=ft.BorderRadius.all(10), expand=True,
                 border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(left=6),   
                 content=ft.TextField(
-                    self.data.get('char_data', {}).get('About', ""), on_blur=_change_about_data, expand=True, 
+                    self.data.get('About', ""), on_blur=_change_about_data, expand=True, 
                     dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
                     focus_color="transparent", focused_border_color="transparent", 
                     cursor_color=self.data.get('color', "primary"), border_color="transparent"
