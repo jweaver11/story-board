@@ -118,10 +118,6 @@ class Story(ft.View):
     def is_isolated(self): 
         return True
     
-    def before_update(self):
-        print(f"Successful update for story: {self.title}")
-        return super().before_update()
-    
     # Called from main when our program starts up. Needs a page reference, thats why not called here
     def startup(self):
 

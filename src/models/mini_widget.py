@@ -64,10 +64,6 @@ class MiniWidget(ft.Container):
 
         # Apply our visibility
         self.visible = self.data.get('visible', True)
-
-    def before_update(self):
-        print(f"Successful update for mini widget {self.title}")
-        return super().before_update()
         
     # Called every time the mouse moves over our rail
     async def _set_menu_coords(self, e: ft.PointerEvent):
@@ -78,8 +74,6 @@ class MiniWidget(ft.Container):
     # Called when saving changes in our mini widgets data to the widgetS json file
     async def save_dict(self):
         ''' Saves our current data to the widgetS json file using this objects dictionary path '''
-
-        print(f"Saving mini widget: {self.title}")
 
         try:
         

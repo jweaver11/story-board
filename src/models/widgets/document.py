@@ -151,6 +151,7 @@ class Document(Widget):
         )
         self.reference_images[title] = reference_image
         self.mini_widgets.append(reference_image)
+        reference_image.save_dict()
     
     # Will be called when we have a flet quill
     def _save_document(self, text_data: list):

@@ -464,6 +464,7 @@ class Widget(ft.Container):
         self.mini_widgets.append(
             new_comment
         )
+        await new_comment.save_dict()
 
         self.reload_widget()
 
