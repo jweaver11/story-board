@@ -17,7 +17,6 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
     page.views.clear()
 
     
-
     match page.route:
         case "/":
             # Append the view manually since its just a function to return the view
@@ -63,5 +62,4 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
             page.controls.append(create_home_view(page))
             page.update()
             page.show_dialog(SnackBar(f"Error loading story for route: {page.route}"))     
-            page.update()
             return
