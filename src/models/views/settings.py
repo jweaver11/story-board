@@ -138,11 +138,17 @@ class Settings(ft.View):
                 }
             }, 
         )
+
+    def before_update(self):
+        print(f"Successful update for settings")
+        return super().before_update()
         
 
     # Called whenever there are changes in our data
-    def save_dict(self):
+    async def save_dict(self):
         ''' Saves our current data to the json file '''
+
+        print("Saved settings")
 
         try:
             
@@ -167,7 +173,7 @@ class Settings(ft.View):
             for key, value in kwargs.items():
                 self.data.update({key: value})
 
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
         # Handle errors
         except Exception as e:
@@ -192,7 +198,7 @@ class Settings(ft.View):
             'title': template_name,
             'template_data': data,
         }
-        self.save_dict()
+        self.p.run_task(self.save_dict)
         
 
     # Called when the page is resized
@@ -211,7 +217,7 @@ class Settings(ft.View):
         # If we maximized the page, just save that, not the size
         if self.p.window.maximized:
             self.data['page_is_maximized'] = True
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             return
         
         # If page not maximized or minimized, save the size
@@ -219,7 +225,7 @@ class Settings(ft.View):
             self.data['page_is_maximized'] = False
             self.data['page_width'] = self.p.width
             self.data['page_height'] = self.p.height
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             return
 
         
@@ -293,7 +299,7 @@ class Settings(ft.View):
             self.p.dark_theme = ft.Theme(color_scheme_seed=self.data.get('theme_color', "blue"))
 
             # Save the updated settings to the JSON file and update the page
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             self.p.update()
 
         # Dropdown so app can change their color scheme
@@ -327,7 +333,7 @@ class Settings(ft.View):
                     self.dark_theme_button.border = ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT)
 
             self.data['theme_mode'] = new_theme_mode
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             self.p.theme_mode = self.data['theme_mode']
             self.p.update()
 
@@ -339,7 +345,7 @@ class Settings(ft.View):
             self.data['default_category_color'] = new_color
 
             # Save our updated settings
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             e.control.color = new_color   # Changes the dropdown text color to match the selected color
             e.control.update()
 
@@ -439,7 +445,7 @@ class Settings(ft.View):
                     self.data['default_world_color'] = new_color
 
             # Save our updated settings
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             e.control.color = new_color   # Changes the dropdown text color to match the selected color
             e.control.update()
 
@@ -452,7 +458,7 @@ class Settings(ft.View):
             self.data['show_empty_character_fields'] = new_value
 
             # Save our updated settings
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             e.control.update()
 
             for story in app.stories.values():
@@ -1152,8 +1158,8 @@ class Settings(ft.View):
 
                     existing_templates[name] = default_character_template_data_dict()       # Create a new empty template
                     self.data['character_templates'] = existing_templates     # Update our main data dict with the new template
-                    self.save_dict()
-                    self.p.close(dlg)
+                    self.p.run_task(self.save_dict)
+                    self.p.pop_dialog()
                     self._settings_category_changed()
 
                 else: 

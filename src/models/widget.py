@@ -20,7 +20,7 @@ import asyncio
 
 
 
-
+@ft.control
 class Widget(ft.Container):
     
     # Constructor. All widgets require a title,  page reference, directory path, and story reference
@@ -75,14 +75,11 @@ class Widget(ft.Container):
         self.l: int = 0          # Left position to pass into mini widgets
         self.t: int = 0          # Top position to pass into mini widgets
         self.skip_update = False                # Skips applying an update on resizes to prevent update loops
+        self.ignore_update = False     # Return and ignore updates, such as when hiding??
 
         # If widgets display info overtop content rather than next to it (plotline, map, canvas, etc.)
         self.mini_widgets_displayed_overtop: bool = True       # Widgets that set this false need to set their own mini widgets in reload_widget
 
-        # UI ELEMENTS - Tab
-        self.tabs: ft.Tabs = None # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
-        self.tab: ft.Tab = ft.Tab()  # Tab that holds our title and hide icon button. Nests inside of a ft.Tabs control
-        self.icon: ft.Icon = None
 
         # UI ELEMENTS - Body                     
         self.header: ft.Control = None              # Optional header control to display above our body and mini widgets
@@ -98,15 +95,106 @@ class Widget(ft.Container):
         self.master_stack: ft.Stack = ft.Stack(expand=True)   # Master stack that holds all our elements together. Gets added to our tab content in reload_widget
         self.mini_widgets = []                      # List of mini widgets that belong to this widget
 
+        # UI ELEMENTS - Tab
+        self.tabs: ft.Tabs # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
+        self.tab: ft.Tab  # Tab that holds our title and hide icon button. Nests inside of a ft.Tabs control
+        self.icon: ft.Icon
+        self.tab_text: ft.Text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
+
+
+        # Grabs our tag to determine the icon we'll use
+        tag = self.data.get('tag', '')
+
+        # Set our icon based on what type of widget we are using tag
+        match tag:
+            case "document": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
+            case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
+            case "canvas_board": self.icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
+            case "note": self.icon = ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED)
+            case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
+            case "character_connection_map": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
+            case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)
+            case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
+            case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
+            case "object": self.icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
+            case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
+
+
+        # Set the color and size
+        self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
+
+        tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
+
+        # Initialize our tabs control that will hold our tab. We only have one tab, but this is needed for it to render
+        
+
+        # Our icon button that will hide the widget when clicked in the workspace
+        hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
+            scale=0.8,
+            on_click=lambda e: self.toggle_visibility(),
+            icon=ft.Icons.CLOSE_ROUNDED,
+            icon_color=ft.Colors.OUTLINE,
+            tooltip="Hide",
+            mouse_cursor=ft.MouseCursor.CLICK,
+        )
+
+
+        # Tab that holds our widget title and 'body'.
+        # Since this is a ft.Tab, it needs to be nested in a ft.Tabs control or it wont render.
+        self.tab = ft.Tab(
+
+            # Content of the tab itself. Has widgets name and hide widget icon, and functionality for dragging
+            label=ft.Draggable(   # Draggable is the control so we can drag and drop to different pin locations
+                group="widgets",    # Group for draggables (and receiving drag targets) to accept each other
+                data=self.data['key'],  # Pass ourself through the data (of our tab, NOT our object) so we can move ourself around
+
+                # Drag event utils
+                on_drag_start=self._start_drag,    # Shows our pin targets when we start dragging
+
+                # Content when we are dragging the follows the mouse
+                content_feedback=ft.TextButton(self.title), # Normal text won't restrict its own size, so we use a button
+
+                # The content of our draggable. We use a gesture detector so we have more events
+                content=ft.GestureDetector(
+                    ft.Row([self.icon, tab_text, hide_tab_icon_button]),
+                    mouse_cursor=ft.MouseCursor.CLICK,
+                    hover_interval=100,
+                    on_enter=self._enter_tab,
+                    on_hover=self._hover_tab,
+                    on_exit=self._exit_tab,
+                    on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
+                )
+            )                    
+        )
+
+        # Tabs stuff
+        self.tabs = ft.Tabs(
+            expand=True,  
+            length=1,
+            selected_index=0,
+            content=ft.Column([
+                ft.TabBar(tabs=[self.tab]),     # Holds our tab at the top of the widget
+                ft.TabBarView([self.master_stack], expand=True)# Holds our body
+            ], expand=True),
+            
+        )   
+        self.content = self.tabs
+
+        
+
         # Called at end of constructor for all child widgets to build their view (not here tho since we're not on page yet)
         #self.reload_widget()
 
+    def before_update(self):
+        print(f"Successful update for widget {self.title}")
+        return super().before_update()
 
     # Called whenever there are changes in our data
-    def save_dict(self):
+    async def save_dict(self):
         ''' Saves our current data to the json file '''
 
         # TODO: Find matching widget type and save to normal data dict (not widget dict)
+        print(f"Saving widget: {self.title}")
 
         try:
 
@@ -142,7 +230,7 @@ class Widget(ft.Container):
             for key, value in kwargs.items():
                 self.data.update({key: value})
 
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
         # Handle errors
         except Exception as e:
@@ -157,7 +245,7 @@ class Widget(ft.Container):
             for key, value in kwargs.items():
                 self.data['custom_fields'].update({key: value})
 
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
         # Handle errors
         except Exception as e:
@@ -214,7 +302,7 @@ class Widget(ft.Container):
             self.directory_path = new_directory
             self.data['directory_path'] = new_directory
             self.data['key'] = new_key
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
             # Reload the rail to apply changes
             self.story.active_rail.display_active_rail(self.story)
@@ -252,7 +340,7 @@ class Widget(ft.Container):
         os.rename(old_file_path, self.data['key'] + ".json")  
 
         # Save our data to this new file
-        self.save_dict()                                
+        self.p.run_task(self.save_dict)                                
 
         # Remove from our live dict wherever we are stored
         tag = self.data.get('tag', '')
@@ -424,7 +512,7 @@ class Widget(ft.Container):
             self.data['is_active_tab'] = False
 
         # Save our changes and reload the UI
-        self.save_dict()
+        self.p.run_task(self.save_dict)
         self.story.workspace.reload_workspace()     # No matter what we are getting rebuilt, so just reload teh workspace
 
     # Called when right clicking our tab
@@ -597,6 +685,7 @@ class Widget(ft.Container):
             self.reload_widget()
             self.story.active_rail.content.reload_rail()   # Reload the rail to reflect the color change
             self.story.active_rail.update()
+            self.story.close_menu_instant()
 
             #if self.data.get('pin_location', "main") == "main":
                 #self.story.workspace.reload_workspace()
@@ -656,9 +745,9 @@ class Widget(ft.Container):
         for w in self.story.widgets:
             if w != self:
                 w.data['is_active_tab'] = False
-                w.save_dict()
+                await w.save_dict()
 
-        self.save_dict()
+        await self.save_dict()
         #self.story.workspace.reload_workspace()
 
     # Called when mouse hovers over the map
@@ -670,73 +759,21 @@ class Widget(ft.Container):
         self.t = e.local_position.y
     
     # Called at end of constructor
-    def reload_tab(self):
+    def reload_tab(self, update: bool=False):
         ''' Creates our tab for our widget that has the title and hide icon '''
-
-        # Grabs our tag to determine the icon we'll use
-        tag = self.data.get('tag', '')
-
-        # Set our icon based on what type of widget we are using tag
-        match tag:
-            case "document": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
-            case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
-            case "canvas_board": self.icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
-            case "note": self.icon = ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED)
-            case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
-            case "character_connection_map": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
-            case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)
-            case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
-            case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
-            case "object": self.icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
-            case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
 
 
         # Set the color and size
         self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
 
-        tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
+        self.tab_text.value = self.title
 
-        # Initialize our tabs control that will hold our tab. We only have one tab, but this is needed for it to render
-        
+        if update:
+            try:
+                self.tab.update()
+            except Exception as _:
+                pass
 
-        # Our icon button that will hide the widget when clicked in the workspace
-        hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
-            scale=0.8,
-            on_click=lambda e: self.toggle_visibility(),
-            icon=ft.Icons.CLOSE_ROUNDED,
-            icon_color=ft.Colors.OUTLINE,
-            tooltip="Hide",
-            mouse_cursor=ft.MouseCursor.CLICK,
-        )
-
-
-        # Tab that holds our widget title and 'body'.
-        # Since this is a ft.Tab, it needs to be nested in a ft.Tabs control or it wont render.
-        self.tab = ft.Tab(
-
-            # Content of the tab itself. Has widgets name and hide widget icon, and functionality for dragging
-            label=ft.Draggable(   # Draggable is the control so we can drag and drop to different pin locations
-                group="widgets",    # Group for draggables (and receiving drag targets) to accept each other
-                data=self.data['key'],  # Pass ourself through the data (of our tab, NOT our object) so we can move ourself around
-
-                # Drag event utils
-                on_drag_start=self._start_drag,    # Shows our pin targets when we start dragging
-
-                # Content when we are dragging the follows the mouse
-                content_feedback=ft.TextButton(self.title), # Normal text won't restrict its own size, so we use a button
-
-                # The content of our draggable. We use a gesture detector so we have more events
-                content=ft.GestureDetector(
-                    ft.Row([self.icon, tab_text, hide_tab_icon_button]),
-                    mouse_cursor=ft.MouseCursor.CLICK,
-                    hover_interval=100,
-                    on_enter=self._enter_tab,
-                    on_hover=self._hover_tab,
-                    on_exit=self._exit_tab,
-                    on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
-                )
-            )                    
-        )
                          
     
 
@@ -774,8 +811,6 @@ class Widget(ft.Container):
         left_mini_widgets = []
         right_mini_widgets = []
 
-        
-
         # Go through our mini widgets and separate them into left and right lists based on their side location data
         for mw in self.mini_widgets:
             if mw.data.get('side_location', 'right') == 'left':
@@ -801,9 +836,8 @@ class Widget(ft.Container):
             # Add the columns so long as they are showing anything
             
             #self.master_stack.controls.append(self.left_mw_column)
-            print(f"MW's in left column for {self.title}: ", len(left_mini_widgets))
+            #print(f"MW's in left column for {self.title}: ", len(left_mini_widgets))
             
-        
             #self.master_stack.controls.append(self.right_mw_column) 
             #print(f"MW's in right column for {self.title}: ", len(right_mini_widgets))
             
@@ -819,18 +853,7 @@ class Widget(ft.Container):
         # If we have a header, add it to the stack. Headers are be immune to scrolling
         self.master_stack.controls.append(self.header) if self.header is not None else None
 
-        # Tabs stuff
-        self.tabs = ft.Tabs(
-            expand=True,  
-            length=1,
-            selected_index=0,
-            content=ft.Column([
-                ft.TabBar(tabs=[self.tab]),     # Holds our tab at the top of the widget
-                ft.TabBarView([self.master_stack], expand=True)# Holds our body
-            ], expand=True),
-            
-        )   
-        self.content = self.tabs
+        
 
         try:
 

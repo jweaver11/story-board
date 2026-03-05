@@ -118,6 +118,10 @@ class Story(ft.View):
     def is_isolated(self): 
         return True
     
+    def before_update(self):
+        print(f"Successful update for story: {self.title}")
+        return super().before_update()
+    
     # Called from main when our program starts up. Needs a page reference, thats why not called here
     def startup(self):
 
@@ -136,16 +140,19 @@ class Story(ft.View):
         self.build_view()
 
         # After the story has been loaded, make sure this is no longer a new story
-        self.data['is_new_story'] = False 
-        self.save_dict()
+        if self.data.get('is_new_story', True):
+            self.data['is_new_story'] = False 
+            self.p.run_task(self.save_dict)
 
         # Declare the story loaded for loading purposes
         self.is_initialized = True
 
 
     # Called whenever there are changes in our data that need to be saved
-    def save_dict(self):
+    async def save_dict(self):
         ''' Saves the data of our story to its JSON File, and all its folders as well '''
+
+        print("Saved story: ", self.title)
 
         try:
             # Makes sure our directory path is always right. 
@@ -175,7 +182,7 @@ class Story(ft.View):
             for key, value in kwargs.items():
                 self.data.update({key: value})
 
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
         # Handle errors
         except Exception as e:
@@ -202,7 +209,7 @@ class Story(ft.View):
             os.makedirs(folder_path, exist_ok=True)     # Checks if they exist or not, so they won't be overwritten
 
             # Save our data
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
             def _create_template_name():
 
@@ -231,7 +238,7 @@ class Story(ft.View):
 
             # Add this folder to our folders data so we can save stuff like colors
             self.data['folders'].update({folder_path: {'name': name, 'color': app.settings.data.get('default_category_color', "primary"), 'is_expanded': True}})
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
 
             self.active_rail.content.reload_rail()
@@ -254,7 +261,7 @@ class Story(ft.View):
             # Remove it from data
             self.data['folders'].pop(full_path, None)
 
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
             for widget in self.widgets:
                 if widget.directory_path.startswith(full_path):
@@ -278,7 +285,7 @@ class Story(ft.View):
             # Check if the folder exists in our data
             if full_path in self.data.get('folders', {}):
                 self.data['folders'][full_path][key] = value
-                self.save_dict()
+                self.p.run_task(self.save_dict)
                 #print("Changed folder data:", full_path, key, value)
             else:
                 print(f"Folder {full_path} not found in story data.")
@@ -299,7 +306,7 @@ class Story(ft.View):
         if old_path in self.data['folders']:
             #print("Updating old path in story data")
             self.data['folders'][new_path] = self.data['folders'].pop(old_path)
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
         # TODO: Update all folders and widgets that used the old path to the new path
 
@@ -311,7 +318,7 @@ class Story(ft.View):
                 widget.directory_path = new_path + relative_path
                 widget.data['directory_path'] = widget.directory_path  # Update its data
                 widget.data['key'] = f"{widget.directory_path}\\{return_safe_name(self.title)}_{self.data.get('tag', '')}"
-                widget.save_dict()  # Save the updated widget data
+                self.p.run_task(widget.save_dict)  # Save the updated widget data
                 #print("Updated widget directory path to ", widget.title, " to ", widget.directory_path)
         
 
@@ -573,7 +580,7 @@ class Story(ft.View):
                 key = widget.data.get('key', '')
                 self.plotlines[key] = widget
                 widget.data['plotline_order_index'] = len(self.plotlines.keys()) - 1   # Set the order index to the end of the list
-                widget.save_dict()
+                self.p.run_task(widget.save_dict)
                 self.widgets.append(self.plotlines[key])
 
             case "map":
@@ -733,59 +740,47 @@ class Story(ft.View):
     async def close_menu(self, e=None):
         ''' Closes our right click menu when clicking outside of it '''
         
-        self.p.overlay.clear()
-        self.p.update()
+        self.menu.visible = False
+        self.close_menu_detector.visible = False
+        self.close_menu_detector.update()
+        self.menu.update()
+        
+        
 
     def close_menu_instant(self, e=None):
         ''' Closes our right click menu when clicking outside of it '''
-        
-        self.p.overlay.clear()
-        self.p.update()
-
-        
-
-    # Called when we right click our object on the tree view
+       
+        self.menu.visible = False
+        self.close_menu_detector.visible = False
+        self.close_menu_detector.update()
+        self.menu.update()
+ 
+    # Called to open a right click menu in the page overlay
     def open_menu(self, menu_options: list):
-        ''' Pops open our menu options when right clicking an object on a rail '''
+        ''' Sets our menu and close menu detector to visible, sets their content and position '''
 
+        # Skip if no options to show, cuz why bother
         if len(menu_options) == 0:
             return
 
-        page_width = self.p.width
-        page_height = self.p.height
-
         # Adjust mouse positions if the menu would go off screen
-        if self.mouse_x + 160 > page_width:
+        if self.mouse_x + 160 > self.p.width:
             self.mouse_x -= 160
-        if self.mouse_y + 230 > page_height:
+        if self.mouse_y + 230 > self.p.height:
             self.mouse_y -= 115
 
-        # Our container that contains a column of our options. Need to use container for positioning
-        self.menu = ft.Container(
-            left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
-            border_radius=ft.BorderRadius.all(10),
-            bgcolor=ft.Colors.with_opacity(.65, ft.Colors.ON_INVERSE_SURFACE),
-            width=160, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-            shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=2, blur_style=ft.BlurStyle.NORMAL),
-            content=ft.Column(
-                spacing=0,
-                controls=menu_options
-            ),
-        )
+        # Set the content and position
+        self.menu.content.controls = menu_options
+        self.menu.left = self.mouse_x
+        self.menu.top = self.mouse_y
 
-        # Outside gesture detector to close the menu when clicking outside the menu container
-        self.close_menu_detector = ft.GestureDetector(
-            expand=True,
-            on_tap=self.close_menu,
-            on_secondary_tap=self.close_menu,
-        )
+        # Set visible
+        self.menu.visible = True
+        self.close_menu_detector.visible = True
+        self.close_menu_detector.update()
+        self.menu.update()
+
         
-
-        # Overlay is a stack, so add the detector, then the menu container
-        self.p.overlay.append(self.close_menu_detector)
-        self.p.overlay.append(self.menu)
-        self.p.update()
-
 
     # Called when new story object is created, either by program or by being loaded from storage
     def build_view(self) -> list[ft.Control]:
@@ -831,7 +826,7 @@ class Story(ft.View):
             ''' Saves our new width that will be loaded next time app opens the app '''
 
             app.settings.data['active_rail_width'] = active_rail_stack.width
-            app.settings.save_dict()
+            await app.settings.save_dict()
 
         # The actual resizer for the active rail (gesture detector)
         active_rail_resizer = ft.GestureDetector(
@@ -880,4 +875,31 @@ class Story(ft.View):
         # Views render like columns, so we add elements top-down
         self.controls = [self.menubar, row]
 
+
+        # Our container that sits on top of the page overlay when right clicking options. Starts invisible
+        self.menu = ft.Container(
+            left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
+            border_radius=ft.BorderRadius.all(10), visible=False,
+            bgcolor=ft.Colors.with_opacity(.65, ft.Colors.ON_INVERSE_SURFACE),
+            width=160, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
+            shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=2, blur_style=ft.BlurStyle.NORMAL),
+            content=ft.Column(
+                spacing=0,
+                controls=[]
+            ),
+        )
+
+        # Outside gesture detector to close the menu when clicking outside the menu container
+        self.close_menu_detector = ft.GestureDetector(
+            expand=True, visible=False,
+            on_tap=self.close_menu,
+            on_secondary_tap=self.close_menu,
+        )
+        
+
+        # Overlay is a stack, so add the detector, then the menu container
+        self.p.overlay.append(self.close_menu_detector)
+        self.p.overlay.append(self.menu)
+
+        # Apply everything to the page
         page.update()

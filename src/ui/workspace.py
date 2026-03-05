@@ -226,7 +226,7 @@ class Workspace(ft.Container):
         if not widget.visible:
             widget.toggle_visibility(value=True)      # This will save dict as well
         else:
-            widget.save_dict()  
+            self.p.run_task(widget.save_dict)  
 
         # Apply to UI
         self.reload_workspace()     
@@ -289,7 +289,7 @@ class Workspace(ft.Container):
 
                     case _:     # Should be impossible, but catch errors
                         widget.data['pin_location'] = "main"
-                        widget.save_dict()
+                        self.p.run_task(widget.save_dict)
                         self.main_pin.append(widget)
                         continue                
 
@@ -319,34 +319,34 @@ class Workspace(ft.Container):
             # If we stole a widget, make its data match its new location
             if stolen_widget is not None:
                 stolen_widget.data['pin_location'] = "main"
-                stolen_widget.save_dict()
+                self.p.run_task(stolen_widget.save_dict)
 
             
         for idx, w in enumerate(self.main_pin):
             old_index = w.data.get('index', 0)
             w.data['index'] = idx
             if old_index != w.data['index']:
-                w.save_dict()
+                self.p.run_task(w.save_dict)
         for idx, w in enumerate(self.left_pin.controls):
             old_index = w.data.get('index', 0)
             w.data['index'] = idx
             if old_index != w.data['index']:
-                w.save_dict()
+                self.p.run_task(w.save_dict)
         for idx, w in enumerate(self.right_pin.controls):
             old_index = w.data.get('index', 0)
             w.data['index'] = idx
             if old_index != w.data['index']:
-                w.save_dict()
+                self.p.run_task(w.save_dict)
         for idx, w in enumerate(self.top_pin.controls):
             old_index = w.data.get('index', 0)
             w.data['index'] = idx
             if old_index != w.data['index']:
-                w.save_dict()
+                self.p.run_task(w.save_dict)
         for idx, w in enumerate(self.bottom_pin.controls):
             old_index = w.data.get('index', 0)
             w.data['index'] = idx
             if old_index != w.data['index']:
-                w.save_dict()
+                self.p.run_task(w.save_dict)
         
 
 
@@ -467,7 +467,7 @@ class Workspace(ft.Container):
                     w.data['is_active_tab'] = False
 
                 if old_is_active_tab != w.data['is_active_tab']:    # Only save changes
-                    w.save_dict()
+                    self.p.run_task(w.save_dict)
 
 
         

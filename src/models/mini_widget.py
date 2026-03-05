@@ -64,6 +64,10 @@ class MiniWidget(ft.Container):
 
         # Apply our visibility
         self.visible = self.data.get('visible', True)
+
+    def before_update(self):
+        print(f"Successful update for mini widget {self.title}")
+        return super().before_update()
         
     # Called every time the mouse moves over our rail
     async def _set_menu_coords(self, e: ft.PointerEvent):
@@ -72,8 +76,10 @@ class MiniWidget(ft.Container):
         self.widget.story.mouse_y = e.global_position.y
 
     # Called when saving changes in our mini widgets data to the widgetS json file
-    def save_dict(self):
+    async def save_dict(self):
         ''' Saves our current data to the widgetS json file using this objects dictionary path '''
+
+        print(f"Saving mini widget: {self.title}")
 
         try:
         
@@ -88,7 +94,7 @@ class MiniWidget(ft.Container):
                 self.widget.data[self.key][self.title] = self.data
 
             # Recursively updates the parents data until widget=widget (widget), which saves to file
-            self.widget.save_dict()
+            self.p.run_task(self.widget.save_dict)
 
         except Exception as e:
             print(f"Error saving mini widget data to {self.title}: {e}")
@@ -124,7 +130,7 @@ class MiniWidget(ft.Container):
 
             # Remove our data.
             self.data = None
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
             # Reload the widget if we have to
             self.widget.reload_widget()
@@ -147,7 +153,7 @@ class MiniWidget(ft.Container):
             for key, value in kwargs.items():
                 self.data.update({key: value})
 
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
         # Handle errors
         except Exception as e:
@@ -162,7 +168,7 @@ class MiniWidget(ft.Container):
             for key, value in kwargs.items():
                 self.data['custom_fields'].update({key: value})
 
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
         # Handle errors
         except Exception as e:
@@ -203,7 +209,7 @@ class MiniWidget(ft.Container):
                     print("Invalid mw key")
 
             # Save the changes up the chain
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
             # Reload the UI to reflect changes
             if hasattr(self, 'reload_plotline_control'):
@@ -233,7 +239,7 @@ class MiniWidget(ft.Container):
         ''' Pins or unpins our information display '''
             
         self.data['is_pinned'] = not self.data.get('is_pinned', False)
-        self.save_dict()
+        await self.save_dict()
         e.control.icon = ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED
         e.control.tooltip = "Pin Connection" if not self.data.get('is_pinned', False) else "Unpin Connection"
         e.control.update()
@@ -249,7 +255,7 @@ class MiniWidget(ft.Container):
 
         self.data['visible'] = True
         self.visible = True
-        self.save_dict()
+        self.p.run_task(self.save_dict)
 
         for mw in self.widget.mini_widgets:
             if mw != self and mw.data.get('is_pinned', False) == False:

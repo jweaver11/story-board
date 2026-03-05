@@ -14,6 +14,8 @@ import asyncio
 from models.app import app
 from models.isolated_controls.column import IsolatedColumn
 
+
+@ft.control
 class Rail(ft.Column):
 
     # Constructor

@@ -182,7 +182,6 @@ class Document(Widget):
                 pass
                 #print(f"Error loading image: {e}")
 
-
     # Called after any changes happen to the data that need to be reflected in the UI
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''

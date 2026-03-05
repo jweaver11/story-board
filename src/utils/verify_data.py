@@ -72,7 +72,7 @@ def verify_data(object, required_data: dict) -> bool:
         _verify_data(object.data, required_data)
 
         # Save our updated data back to the file
-        object.save_dict()      
+        #object.p.run_task(object.save_dict)      
         return True
     
     # Catch errors

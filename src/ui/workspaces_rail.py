@@ -41,7 +41,7 @@ class WorkspacesRail(ft.Container):
             story.data['selected_rail'] = e.control.destinations[0].data
 
         # Save data and apply the rail updates
-        story.save_dict()
+        self.p.run_task(story.save_dict)
         story.active_rail.display_active_rail(story) 
         self.reload_rail(story)  
 
@@ -54,7 +54,7 @@ class WorkspacesRail(ft.Container):
 
         # Toggle our collapsed state
         app.settings.data['workspaces_rail_is_collapsed'] = not app.settings.data['workspaces_rail_is_collapsed']
-        app.settings.save_dict()
+        self.p.run_task(app.settings.save_dict)
         
         self.reload_rail(story)  # Reload the rail to apply changes
 
@@ -72,7 +72,7 @@ class WorkspacesRail(ft.Container):
 
         # Save the new order to settings
         app.settings.data['workspaces_rail_order'] = workspaces_rail_order
-        app.settings.save_dict()
+        self.p.run_task(app.settings.save_dict)
 
         self.reload_rail(story)  # Reload the rail to apply changes
 

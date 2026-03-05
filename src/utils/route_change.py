@@ -49,7 +49,7 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
                     new_story = story
                     app.settings.data['active_story'] = story.route
                     app.settings.story = story
-                    app.settings.save_dict()
+                    page.run_task(app.settings.save_dict)
 
                     new_story.startup()
                     app.settings.story = new_story  # Gives our settings widget the story reference it needs
