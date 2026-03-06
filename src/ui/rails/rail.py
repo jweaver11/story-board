@@ -180,7 +180,8 @@ class Rail(ft.Column):
 
         # Open the textfield early since we have to wait for async close menu
         self.new_item_textfield.update()
-        self.story.active_rail.update()
+        #self.story.active_rail.update()
+        print("Showing tf")
         
         # Close the menu (if ones is open)
         #await asyncio.sleep(.3)     # Wait for popupmenu's animations to close if we have issues

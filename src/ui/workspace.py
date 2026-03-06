@@ -14,6 +14,7 @@ from styles.snack_bar import SnackBar
 from models.isolated_controls.row import IsolatedRow
 from models.isolated_controls.column import IsolatedColumn
 from models.isolated_controls.tab_bar_view import IsolatedTabBarView
+import asyncio
 
 # Our workspace object that is stored in our story object
 class Workspace(ft.Container):
@@ -51,23 +52,27 @@ class Workspace(ft.Container):
         self.top_pin_drag_target = ft.DragTarget(
             group="widgets", 
             content=ft.Container(expand=True, height=self.story.data.get('top_pin_height', int(self.p.height/5)), bgcolor=ft.Colors.ON_SURFACE, opacity=0, border_radius=8, margin=ft.Margin.only(left=8, right=8),), 
-            on_accept=lambda e: self.pin_drag_accept(e, "top"), on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+            on_accept=self.pin_drag_accept, on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+            data="top"
         )
         self.left_pin_drag_target = ft.DragTarget(
             group="widgets",
             content=ft.Container(expand=True, width=self.story.data.get('left_pin_width', int(self.p.width/10)), bgcolor=ft.Colors.ON_SURFACE, border_radius=8, opacity=0), 
-            on_accept=lambda e: self.pin_drag_accept(e, "left"), on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+            on_accept=self.pin_drag_accept, on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+            data="left"
         )
 
         self.right_pin_drag_target = ft.DragTarget(
             group="widgets", 
             content=ft.Container(expand=True, width=self.story.data.get('right_pin_width', int(self.p.width/10)), bgcolor=ft.Colors.ON_SURFACE, border_radius=8, opacity=0), 
-            on_accept=lambda e: self.pin_drag_accept(e, "right"), on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+            on_accept=self.pin_drag_accept, on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+            data="right"
         )
         self.bottom_pin_drag_target = ft.DragTarget(
             group="widgets", 
             content=ft.Container(expand=True, height=self.story.data.get('bottom_pin_height', int(self.p.height/5)), margin=ft.Margin.only(left=8, right=8), bgcolor=ft.Colors.ON_SURFACE, opacity=0, border_radius=ft.BorderRadius.all(8)),
-            on_accept=lambda e: self.pin_drag_accept(e, "bottom"), on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+            on_accept=self.pin_drag_accept, on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+            data="bottom"
         )
 
         # Weird flet rendering logic, this one needs a container around the drag target to work properly
@@ -76,8 +81,9 @@ class Workspace(ft.Container):
             padding=ft.Padding.all(8),
             content=ft.DragTarget(
                 group="widgets", 
-                on_accept=lambda e: self.pin_drag_accept(e, "main"), on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
-                content=ft.Container(expand=True,  bgcolor=ft.Colors.ON_SURFACE, opacity=0, border_radius=ft.BorderRadius.all(8))
+                on_accept=self.pin_drag_accept, on_will_accept=self.on_hover_pin_drag_target, on_leave=self.on_stop_hover_drag_target,
+                content=ft.Container(expand=True,  bgcolor=ft.Colors.ON_SURFACE, opacity=0, border_radius=ft.BorderRadius.all(8)),
+                data="main"
             )
         )
 
@@ -103,10 +109,12 @@ class Workspace(ft.Container):
             )
         )
 
-        self.blocker = ft.Container(expand=True, ignore_interactions=True)     # Blocks events during a rebuild
+        
 
         # Our master row that holds all our widgets
         self.master_widgets_row = IsolatedRow(spacing=0, expand=True, controls=[])
+
+        self.blocker = ft.Container(ft.ProgressRing(scale=.5, stroke_width=15), expand=True, visible=False, blur=1, left=0, right=0, top=0, bottom=0)     # Blocks events during a rebuild
 
         # Master stack that holds our widgets ^ row, and drag targets overtop. TransparentPointer allows the targets to be physical but not block widgets underneath
         self.master_stack = ft.Stack(expand=True, controls=[self.master_widgets_row, ft.TransparentPointer(self.pin_drag_targets), self.blocker])
@@ -158,11 +166,14 @@ class Workspace(ft.Container):
         
 
     # Accepting drags for our five pin locations
-    def pin_drag_accept(self, e: ft.DragTargetEvent, pin_location: str):
+    async def pin_drag_accept(self, e: ft.DragTargetEvent):
 
-        self.blocker.ignore_interactions = False   # Block events during the rearrange and reload process to prevent weird bugs
+        # Put our blocker on the page to block events during longer reloads
+        self.blocker.visible = True
         self.blocker.update()
+        await asyncio.sleep(0)
 
+        pin_location = e.control.data
 
         # Reset our container to be invisible again
         e.control.content.opacity = 0
@@ -183,7 +194,7 @@ class Workspace(ft.Container):
 
         if widget is None:
             print("Error: Widget not found for drag accept")
-            self.p.open(SnackBar("Error: Widget not found for drag accept"))
+            self.p.show_dialog(SnackBar("Error: Widget not found for drag accept"))
             return
 
         old_pin_location = widget.data['pin_location']
@@ -219,20 +230,22 @@ class Workspace(ft.Container):
             widget.data['index'] = len(self.bottom_pin.controls)
 
 
-        widget.force_size_render = True     # Force a reload in our new pin because our size changes
 
         
         # Make sure our widget is visible if it was dragged from the rail
         if not widget.visible:
-            widget.toggle_visibility(value=True)      # This will save dict as well
+            await widget.show_widget()      # This will save dict as well
+            self.blocker.visible = False
+            self.blocker.update()
+            return
         else:
             self.p.run_task(widget.save_dict)  
 
-        # Apply to UI
-        self.reload_workspace()     
+            # Apply to UI
+            self.reload_workspace()     
 
-        self.blocker.ignore_interactions = True   # Unblock events after the rearrange and reload process is done
-        self.blocker.update()
+            self.blocker.visible = False   # Unblock events
+            self.blocker.update()
 
 
     # Called when we drag a widget from one pin location to another

@@ -453,8 +453,6 @@ class ContentRail(Rail):
             hover_interval=20,
         )
 
-       
-
         self.controls = [
             header,
             ft.Divider(),

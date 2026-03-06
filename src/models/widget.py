@@ -134,13 +134,23 @@ class Widget(ft.Container):
         # Our icon button that will hide the widget when clicked in the workspace
         hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
             scale=0.8,
-            on_click=lambda e: self.hide_widget(),
+            on_click=self.hide_widget,
             icon=ft.Icons.CLOSE_ROUNDED,
             icon_color=ft.Colors.OUTLINE,
             tooltip="Hide",
             mouse_cursor=ft.MouseCursor.CLICK,
         )
 
+
+        self.tab_gd = ft.GestureDetector(
+            ft.Row([self.icon, tab_text, hide_tab_icon_button]),
+            mouse_cursor=ft.MouseCursor.CLICK,
+            hover_interval=100,
+            on_enter=self._enter_tab,
+            on_hover=self._hover_tab,
+            on_exit=self._exit_tab,
+            on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
+        )
 
         # Tab that holds our widget title and 'body'.
         # Since this is a ft.Tab, it needs to be nested in a ft.Tabs control or it wont render.
@@ -149,7 +159,7 @@ class Widget(ft.Container):
             # Content of the tab itself. Has widgets name and hide widget icon, and functionality for dragging
             label=ft.Draggable(   # Draggable is the control so we can drag and drop to different pin locations
                 group="widgets",    # Group for draggables (and receiving drag targets) to accept each other
-                data=self.data['key'],  # Pass ourself through the data (of our tab, NOT our object) so we can move ourself around
+                data=self.data.get('key', ""),  # Pass ourself through the data (of our tab, NOT our object) so we can move ourself around
 
                 # Drag event utils
                 on_drag_start=self._start_drag,    # Shows our pin targets when we start dragging
@@ -158,15 +168,7 @@ class Widget(ft.Container):
                 content_feedback=ft.TextButton(self.title), # Normal text won't restrict its own size, so we use a button
 
                 # The content of our draggable. We use a gesture detector so we have more events
-                content=ft.GestureDetector(
-                    ft.Row([self.icon, tab_text, hide_tab_icon_button]),
-                    mouse_cursor=ft.MouseCursor.CLICK,
-                    hover_interval=100,
-                    on_enter=self._enter_tab,
-                    on_hover=self._hover_tab,
-                    on_exit=self._exit_tab,
-                    on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
-                )
+                content=self.tab_gd
             )                    
         )
 
@@ -495,30 +497,46 @@ class Widget(ft.Container):
         e.control.update()
 
     # Called to hide the widget from the workspace
-    def hide_widget(self):
+    async def hide_widget(self, e=None):
         ''' Hides this widget from the workspace but keeps it in the story and rail '''
         if not self.visible:
             return
         
+        
+        self.tab_gd.on_enter = None
+        self.tab_gd.on_hover = None
+        self.tab_gd.on_exit = None
+        self.tab_gd.on_secondary_tap = None
+        self.tab_gd.update()
+        await asyncio.sleep(0)  # Spaces update so the page won't batch them
+        
+        self.story.workspace.blocker.visible = True
+        self.story.workspace.blocker.update()
+        await asyncio.sleep(0)
+        
         self.data['visible'] = False
-        self.visible = False
-        self.update()
         self.story.workspace.reload_workspace()   # Reload workspace to hide the widget and show the placeholder in its pin location
 
+        self.story.workspace.blocker.visible = False
+        self.story.workspace.blocker.update()
+
     # Called to show the widget in the workspace
-    def show_widget(self):
+    async def show_widget(self, e=None):
         ''' Shows this widget in the workspace if it is hidden '''
         #if self.visible:
             #return
 
         #self.story.workspace.content = self
         #self.story.workspace.update()
+
+        self.story.workspace.blocker.visible = True
+        self.story.workspace.blocker.update()
+        await asyncio.sleep(0)
         
         self.data['visible'] = True
         self.visible = True
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
         
-        # LOGIC HERE
 
     # Called when right clicking our tab
     def _get_menu_options(self) -> list[ft.Control]:
