@@ -347,40 +347,6 @@ class Widget(ft.Container):
         # Remove from our live dict wherever we are stored
         tag = self.data.get('tag', '')
 
-        match tag:
-            case "document":
-                self.story.documents.pop(old_key, None)
-                self.story.documents[self.data['key']] = self
-            case "canvas":
-                self.story.canvases.pop(old_key, None)
-                self.story.canvases[self.data['key']] = self
-            case "note":
-                self.story.notes.pop(old_key, None)
-                self.story.notes[self.data['key']] = self
-            case "character":
-                self.story.characters.pop(old_key, None)
-                self.story.characters[self.data['key']] = self
-            case "map":
-                self.story.maps.pop(old_key, None)
-                self.story.maps[self.data['key']] = self
-            case "plotline":
-                self.story.plotlines.pop(old_key, None)
-                self.story.plotlines[self.data['key']] = self
-                self.information_display.change_data(**{'title': self.title})   # Passes in our name change to the information display so it can update any references to this plotline
-                self.information_display.reload_mini_widget(no_update=True)
-            case "world":
-                self.story.worlds.pop(old_key, None)
-                self.story.worlds[self.data['key']] = self
-            case "canvas_board":
-                self.story.canvas_boards.pop(old_key, None)
-                self.story.canvas_boards[self.data['key']] = self
-            case "character_connection_map":
-                self.story.character_connection_maps.pop(old_key, None)
-                self.story.character_connection_maps[self.data['key']] = self
-
-            case _:
-                print(f"Unknown tag {tag} when renaming widget {self.title}")
-
         # Reload our widget ui and rail to reflect changes 
         self.reload_widget()           
         self.story.active_rail.content.reload_rail()   
@@ -510,8 +476,8 @@ class Widget(ft.Container):
         self.tab_gd.update()
         await asyncio.sleep(0)  # Spaces update so the page won't batch them
         
-        self.story.workspace.blocker.visible = True
-        self.story.workspace.blocker.update()
+        self.story.blocker.visible = True
+        self.story.blocker.update()
         await asyncio.sleep(0)
           
         
@@ -519,8 +485,8 @@ class Widget(ft.Container):
         self.story.workspace.reload_workspace()   # Reload workspace to hide the widget and show the placeholder in its pin location
         await self.save_dict() 
 
-        self.story.workspace.blocker.visible = False
-        self.story.workspace.blocker.update()
+        self.story.blocker.visible = False
+        self.story.blocker.update()
 
     # Called to show the widget in the workspace
     async def show_widget(self, e=None):
@@ -530,12 +496,12 @@ class Widget(ft.Container):
         #if self.visible:
             #return
 
-        # Could set for heaview widgets??
+        # Could set for heavier widgets??
         #self.story.workspace.content = self
         #self.story.workspace.update()
 
-        self.story.workspace.blocker.visible = True
-        self.story.workspace.blocker.update()
+        self.story.blocker.visible = True
+        self.story.blocker.update()
         await asyncio.sleep(0)
         
         self.data['visible'] = True
@@ -544,9 +510,9 @@ class Widget(ft.Container):
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
         await asyncio.sleep(0)
 
-        if self.story.workspace.blocker.visible:
-            self.story.workspace.blocker.visible = False
-            self.story.workspace.blocker.update()
+        if self.story.blocker.visible:
+            self.story.blocker.visible = False
+            self.story.blocker.update()
         
 
     # Called when right clicking our tab
@@ -709,17 +675,26 @@ class Widget(ft.Container):
         ''' Returns a list of all available colors for icon changing '''
 
         # Called when a color option is clicked on popup menu to change icon color
-        def _change_icon_color(color: str):
+        async def _change_icon_color(e=None):
             ''' Passes in our kwargs to the widget, and applies the updates '''
+            color = e.control.data
 
             # Change the data
             self.change_data(**{'color': color})
+
+            self.story.blocker.visible = True
+            self.story.blocker.update()
+            await asyncio.sleep(0)
             
             # Change our icon to match, apply the update
             self.reload_widget()
             self.story.active_rail.content.reload_rail()   # Reload the rail to reflect the color change
             self.story.active_rail.update()
-            self.story.close_menu_instant()
+            await self.story.close_menu()
+
+            if self.story.blocker.visible:
+                self.story.blocker.visible = False
+                self.story.blocker.update()
 
             #if self.data.get('pin_location', "main") == "main":
                 #self.story.workspace.reload_workspace()
@@ -732,7 +707,7 @@ class Widget(ft.Container):
             color_controls.append(
                 ft.MenuItemButton(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                    on_click=lambda e, col=color: _change_icon_color(col), close_on_click=True,
+                    on_click=_change_icon_color, close_on_click=True, data=color,
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
                 )
             )
@@ -747,12 +722,14 @@ class Widget(ft.Container):
         async def _delete_confirmed(e=None):
             ''' Deletes the widget after confirmation '''
 
-            #self.widget.story.close_menu_instant()
             self.p.pop_dialog()
             asyncio.sleep(0)
-            self.story.delete_widget(self) 
-            self.story.workspace.blocker.visible = True
-            self.story.workspace.blocker.update()
+            if self.delete_file():
+                if self in self.story.widgets:
+                    print("Deleted: ", self.title)
+                    self.story.widgets.remove(self)   
+            self.story.workspace.visible = True
+            self.story.workspace.update()
             await asyncio.sleep(0)
             self.story.active_rail.content.reload_rail()    # Reload the rail to reflect the deletion
             self.story.active_rail.update()
@@ -762,9 +739,9 @@ class Widget(ft.Container):
             self.story.workspace.reload_workspace()
             asyncio.sleep(0)
 
-            if self.story.workspace.blocker.visible:
-                self.story.workspace.blocker.visible = False
-                self.story.workspace.blocker.update()
+            if self.story.workspace.visible:
+                self.story.workspace.visible = False
+                self.story.workspace.update()
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(

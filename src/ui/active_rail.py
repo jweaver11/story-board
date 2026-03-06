@@ -27,9 +27,7 @@ class Active_Rail(ft.Container):
         # Consistent styling for all our rails
         super().__init__(
             alignment=ft.Alignment.TOP_CENTER,
-            #animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             padding=ft.Padding.only(top=10, bottom=10, right=8, left=8),
-            #width=app.settings.data['active_rail_width'],  # Sets the width
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             expand=True
         )
@@ -41,6 +39,13 @@ class Active_Rail(ft.Container):
         self.world_building_rail = WorldBuildingRail(page, story)
         self.canvas_rail = CanvasRail(page, story)
         self.planning_rail = PlanningRail(page, story)
+
+        self.content_first_launch = True
+        self.characters_first_launch = True 
+        self.plotlines_first_launch = True
+        self.world_building_first_launch = True
+        self.canvas_first_launch = True
+        self.planning_first_launch = True
 
         # Displays our active rail on startup
         # All other rails have reload rail functions, but this one just displays the correct one
@@ -61,24 +66,43 @@ class Active_Rail(ft.Container):
         else:
             selected_rail = story.data.get('selected_rail', "content")
 
-
         match selected_rail:
             case "content":
                 self.content = self.content_rail
+                if self.content_first_launch:
+                    self.content_first_launch = False
+                    self.content.reload_rail()
             case "characters":
                 self.content = self.characters_rail
+                if self.characters_first_launch:
+                    self.characters_first_launch = False
+                    self.characters_rail.reload_rail()
             case "plotlines":
                 self.content = self.plotlines_rail
+                if self.plotlines_first_launch:
+                    self.plotlines_first_launch = False
+                    self.plotlines_rail.reload_rail()
             case "world_building":
                 self.content = self.world_building_rail
+                if self.world_building_first_launch:
+                    self.world_building_first_launch = False
+                    self.world_building_rail.reload_rail()
             case "canvas":
                 self.content = self.canvas_rail
+                if self.canvas_first_launch:
+                    self.canvas_first_launch = False
+                    self.canvas_rail.reload_rail()
             case "planning":
                 self.content = self.planning_rail
+                if self.planning_first_launch:
+                    self.planning_first_launch = False
+                    self.planning_rail.reload_rail()
             case _:
                 self.content = self.content_rail
-       
-        self.content.reload_rail()
+                if self.content_first_launch:
+                    self.content_first_launch = False
+                    self.content.reload_rail()
+
         try:
             self.update()
         except Exception as e:

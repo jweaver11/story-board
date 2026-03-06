@@ -119,7 +119,8 @@ class PlotlinesRail(Rail):
         reorderable_plotlines = ft.ReorderableListView(show_default_drag_handles=False, on_reorder=self._handle_plotline_reorder)
 
         # Sort our plotlines by their index
-        sorted_plotlines = dict(sorted(self.story.plotlines.items(), key=lambda item: item[1].data.get('plotline_order_index', 0)))  
+        plotlines_list = [w for w in self.story.widgets if w.data.get('tag', "") == "plotline"]
+        sorted_plotlines = dict(sorted(plotlines_list, key=lambda item: item[1].data.get('plotline_order_index', 0)))  
 
         i = 0   # Start index for our plotlines
 

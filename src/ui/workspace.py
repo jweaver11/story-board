@@ -114,10 +114,9 @@ class Workspace(ft.Container):
         # Our master row that holds all our widgets
         self.master_widgets_row = IsolatedRow(spacing=0, expand=True, controls=[])
 
-        self.blocker = ft.Container(ft.ProgressRing(scale=.5, stroke_width=15), expand=True, visible=False, blur=1, left=0, right=0, top=0, bottom=0)     # Blocks events during a rebuild
 
         # Master stack that holds our widgets ^ row, and drag targets overtop. TransparentPointer allows the targets to be physical but not block widgets underneath
-        self.master_stack = ft.Stack(expand=True, controls=[self.master_widgets_row, ft.TransparentPointer(self.pin_drag_targets), self.blocker])
+        self.master_stack = ft.Stack(expand=True, controls=[self.master_widgets_row, ft.TransparentPointer(self.pin_drag_targets)])
 
         self.content = self.master_stack
 
@@ -171,8 +170,8 @@ class Workspace(ft.Container):
         # TODO: Update index of stolen widget, and any effected widgets from old pin location, and save them
 
         # Put our blocker on the page to block events during longer reloads
-        self.blocker.visible = True
-        self.blocker.update()
+        self.story.blocker.visible = True
+        self.story.blocker.update()
         await asyncio.sleep(0)
 
         pin_location = e.control.data
@@ -237,8 +236,8 @@ class Workspace(ft.Container):
         # Make sure our widget is visible if it was dragged from the rail
         if not widget.visible:
             await widget.show_widget()      # This will save dict as well
-            self.blocker.visible = False
-            self.blocker.update()
+            self.story.blocker.visible = False
+            self.story.blocker.update()
             return
         else:
             self.p.run_task(widget.save_dict)  
@@ -246,8 +245,8 @@ class Workspace(ft.Container):
             # Apply to UI
             self.reload_workspace()     
 
-            self.blocker.visible = False   # Unblock events
-            self.blocker.update()
+            self.story.blocker.visible = False   # Unblock events
+            self.story.blocker.update()
 
 
     # Called when we drag a widget from one pin location to another

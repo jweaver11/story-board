@@ -13,6 +13,7 @@ from constants import data_paths
 from utils.verify_data import verify_data
 from styles.snack_bar import SnackBar
 from utils.safe_string_checker import return_safe_name
+import asyncio
 
  
 class Story(ft.View):
@@ -97,19 +98,10 @@ class Story(ft.View):
         self.active_rail: ft.Container    # Rail showing whichever workspace is selected
         self.workspace: ft.Container       # Main workspace area where our pins display our widgets
 
-        # Our Widget Objects. These are loaded initially and then manipulated, never cleared
-        self.documents: dict = dict()        # Text based chapters only
-        self.notes: dict = dict()           # Notes stored in our story
-        self.canvases: dict = dict()        # canvases by the user for comic documents, or to store images (as backgrounds)
-        self.canvas_boards: dict = dict()   # Canvas boards that store multiple canvases inside of them 
-        self.characters: dict = dict()      # Characters in the story
-        self.plotlines: dict = dict()       # plotlines for our story
-        self.maps: dict = dict()            # Maps created inside of world building
-        self.character_connection_maps: dict = dict()   # Family tree views for tracking character relationships
-        self.worlds: dict = dict()     # World building widget that contains our maps, lore, governments, history, etc
-        self.objects: dict = dict()    # Objects that don't fit into the other categories, like vehicles, items, etc. Can be used for both novels and comics
+        # Block the app from any interactions during rebuilds
+        self.blocker = ft.Container(ft.ProgressRing(scale=.6, stroke_width=20), expand=True, visible=False, blur=5, left=0, right=0, top=0, bottom=0)
 
-
+        
         # Store all our widgets above in a master list for easier rendering in the UI
         self.widgets: list = []    
 
@@ -321,57 +313,6 @@ class Story(ft.View):
                 #print("Updated widget directory path to ", widget.title, " to ", widget.directory_path)
         
 
-    # Called when deleting a widget from our story
-    def delete_widget(self, widget, update: bool=True) -> bool:
-        ''' Deletes the object from our live story object and its reference in the pins.
-        We then remove its storage file from our file storage as well. '''
-
-        from models.widget import Widget
-
-        # Called if file is successfully deleted. Then we remove the widget from its live storage
-        def _delete_live_widget(widget: Widget):
-
-            # Grab our widgets tag to see what type of object it is
-            tag = widget.data.get('tag', None)
-
-            match tag:
-                case "document":
-                    del self.documents[widget.data.get('key', '')]
-                case "canvas":
-                    del self.canvases[widget.data.get('key', '')]
-                case "note":
-                    del self.notes[widget.data.get('key', '')]
-                case "character":
-                    del self.characters[widget.data.get('key', '')]
-                case "plotline":
-                    del self.plotlines[widget.data.get('key', '')]
-                case "map":
-                    del self.maps[widget.data.get('key', '')]
-                case "world":
-                    del self.worlds[widget.data.get('key', '')]
-                case "character_connection_map":
-                    del self.character_connection_maps[widget.data.get('key', '')]
-                case "canvas_board":
-                    del self.canvas_boards[widget.data.get('key', '')]
-
-                case _:
-                    self.p.show_dialog(SnackBar(f"Error deleting widget: Unknown tag {tag}"))
-                    return
-            
-            
-            # Remove from our master widgets list so it won't be rendered anymore
-            if widget in self.widgets:
-                self.widgets.remove(widget)
-        
-        # If we successfully deleted the widget file, remove the live widget object as well
-        if widget.delete_file():
-            _delete_live_widget(widget)
-
-            #if update:
-               # self.active_rail.content.reload_rail()
-                #self.workspace.reload_workspace()
-                #self.close_menu_instant()
-
     # Called on story startup to load all our content objects
     def load_widgets(self):
         ''' Loads our content from our content folder inside of our story folder '''
@@ -389,18 +330,7 @@ class Story(ft.View):
 
         # If we are being re-loaded after settings or another story, clear our content so we can load it fresh
         self.widgets.clear()
-        self.documents.clear()
-        self.notes.clear()
-        self.canvases.clear()
-        self.canvas_boards.clear()
-        self.characters.clear()
-        self.plotlines.clear()
-        self.maps.clear()
-        self.character_connection_maps.clear()
-        self.worlds.clear()
-        self.objects.clear()
         
-
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder
         if not os.path.exists(self.data['content_directory_path']):
             os.makedirs(self.data['content_directory_path'])    
@@ -429,90 +359,86 @@ class Story(ft.View):
                         tag = widget_data.get("tag", "")
                         dir_path = widget_data.get("directory_path", "")
 
+                        widget = None
+
                         match tag:
                             case "document": 
-                                self.documents[key] = Document(     # Create the object in its dict
+                                widget = Document(     # Create the object in its dict
                                     title=widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
-                                self.widgets.append(self.documents[key])        # Add it to widgets list for rendering
                             case "canvas":
-                                self.canvases[key] = Canvas(
+                                widget = Canvas(
                                     title=widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
-                                self.widgets.append(self.canvases[key])
                             case "canvas_board":
-                                self.canvas_boards[key] = CanvasBoard(
+                                widget = CanvasBoard(
                                     widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
-                                self.widgets.append(self.canvas_boards[key])
                             case "note":
-                                self.notes[key] = Note(
+                                widget = Note(
                                     title=widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
-                                self.widgets.append(self.notes[key])
                             case "character":
-                                self.characters[key] = Character(
+                                widget = Character(
                                     widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
-                                self.widgets.append(self.characters[key])
                             case "plotline":
-                                self.plotlines[key] = Plotline(
+                                widget = Plotline(
                                     title=widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
-                                self.widgets.append(self.plotlines[key])
                             case "map":
-                                self.maps[key] = Map(
+                                widget = Map(
                                     title=widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
-                                self.widgets.append(self.maps[key])
                             case "world":
-                                self.worlds[key] = World(
+                                widget = World(
                                     title=widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
-                                self.widgets.append(self.worlds[key])
                             case "character_connection_map":
-                                self.character_connection_maps[key] = CharacterConnectionMap(
+                                widget = CharacterConnectionMap(
                                     widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
                                 )
-                                self.widgets.append(self.character_connection_maps[key])
                             case _:
                                 print("Widget tag not valid Tag: ", tag)
+
+                        if widget is not None:
+                            self.widgets.append(widget)
                             
         
                             
@@ -539,83 +465,51 @@ class Story(ft.View):
 
         from models.app import app
 
+        self.blocker.visible = True
+        self.blocker.update()
+
         if directory_path is None:
             directory_path = self.data.get('content_directory_path',  '')
 
-
+        widget = None
         match tag:
             case "document":
                 widget = Document(title, self.p, directory_path, self, data)
-                key = widget.data.get('key', '')
-                self.documents[key] = widget
-                self.widgets.append(self.documents[key])
-
             case "note":
                 widget = Note(title, self.p, directory_path, self, data)
-                key = widget.data.get('key', '')
-                self.notes[key] = widget
-                self.widgets.append(self.notes[key])
-
             case "canvas":
                 d = {'canvas': data} if data is not None else None
                 widget = Canvas(title, self.p, directory_path, self, d)
-                key = widget.data.get('key', '')
-                self.canvases[key] = widget
-                self.widgets.append(self.canvases[key])
-
             case "character":
                 if app.settings.data.get('active_character_template', "None") != "None":
                     data = app.settings.data['character_templates'].get(app.settings.data['active_character_template'], {}).copy()
                     data = {'character_data': data}
                 widget = Character(title, self.p, directory_path, self, data)
-                key = widget.data.get('key', '')
-                self.characters[key] = widget
-                self.widgets.append(self.characters[key])
-                
-
             case "plotline":
                 widget = Plotline(title, self.p, directory_path, self, data)
-                key = widget.data.get('key', '')
-                self.plotlines[key] = widget
-                widget.data['plotline_order_index'] = len(self.plotlines.keys()) - 1   # Set the order index to the end of the list
-                self.p.run_task(widget.save_dict)
-                self.widgets.append(self.plotlines[key])
-
             case "map":
                 widget = Map(title, self.p, directory_path, self, data)
-                key = widget.data.get('key', '')
-                self.maps[key] = widget
-                self.widgets.append(self.maps[key])
-
             case "character_connection_map":
                 widget = CharacterConnectionMap(title, self.p, directory_path, self, data)
-                key = widget.data.get('key', '')
-                self.character_connection_maps[key] = widget
-                self.widgets.append(self.character_connection_maps[key])
-
             case "world":
                 widget = World(title, self.p, directory_path, self, data)
-                key = widget.data.get('key', '')
-                self.worlds[key] = widget
-                self.widgets.append(self.worlds[key])
-
             case "canvas_board":
-                widget = CanvasBoard(title, self.p, directory_path, self, data)
-                key = widget.data.get('key', '')
-                self.canvas_boards[key] = widget
-                self.widgets.append(self.canvas_boards[key])
-     
+                widget = CanvasBoard(title, self.p, directory_path, self, data)     
             case _:
-                print("Widget tag not valid. Tag:", tag)
+                self.p.show_dialog(SnackBar(f"Error creating widget {title}: Invalid tag {tag}"))
+
+        if widget is not None:
+            self.widgets.append(widget)
 
         # Apply the UI changes
         self.active_rail.content.reload_rail()
         self.active_rail.update()
+        
         self.workspace.reload_workspace()
-
-        if self.workspace.blocker.visible:
-            self.workspace.blocker.visible = False
-            self.workspace.blocker.update()
+    
+        if self.blocker.visible:
+            self.blocker.visible = False
+            self.blocker.update()
 
     def rebuild_widget(self, widget) -> ft.Control:
         ''' Delcares the widget as a new object to refresh its page reference. '''
@@ -632,7 +526,7 @@ class Story(ft.View):
         from models.mini_widgets.plot_point import PlotPoint
 
         tag = widget.data.get('tag', None)
-        self.widgets.remove(widget)
+        new_widget = None
         match tag:
             case "document":
                 new_widget = Document(
@@ -643,8 +537,7 @@ class Story(ft.View):
                     data=widget.data,
                     is_rebuilt=True
                 )
-                self.documents[widget.data.get('key', '')] = new_widget
-
+                
             case "canvas":
                 new_widget = Canvas(
                     title=widget.data.get('title', 'Untitled Document'),
@@ -654,8 +547,7 @@ class Story(ft.View):
                     data=widget.data,
                     is_rebuilt=True
                 )
-                self.canvases[widget.data.get('key', '')] = new_widget
-
+                
             case "note":
                 new_widget = Note(
                     title=widget.data.get('title', 'Untitled Document'),
@@ -665,8 +557,7 @@ class Story(ft.View):
                     data=widget.data,
                     is_rebuilt=True
                 )
-                self.notes[widget.data.get('key', '')] = new_widget
-
+                
             case "character":
                 new_widget = Character(
                     widget.data.get('title', 'Untitled Document'),
@@ -676,8 +567,7 @@ class Story(ft.View):
                     data=widget.data,
                     is_rebuilt=True
                 )
-                self.characters[widget.data.get('key', '')] = new_widget
-
+                
             case "plotline":
                 new_widget = Plotline(
                     title=widget.data.get('title', 'Untitled Document'),
@@ -687,8 +577,7 @@ class Story(ft.View):
                     data=widget.data,
                     is_rebuilt=True
                 )
-                self.plotlines[widget.data.get('key', '')] = new_widget
-
+                
             case "map":
                 new_widget = Map(
                     title=widget.data.get('title', 'Untitled Document'),
@@ -698,8 +587,7 @@ class Story(ft.View):
                     data=widget.data,
                     is_rebuilt=True
                 )
-                self.maps[widget.data.get('key', '')] = new_widget
-
+                
             case "world":
                 new_widget = World(
                     title=widget.data.get('title', 'Untitled Document'),
@@ -709,8 +597,7 @@ class Story(ft.View):
                     data=widget.data,
                     is_rebuilt=True
                 )
-                self.worlds[widget.data.get('key', '')] = new_widget
-
+                
             case "character_connection_map":
                 new_widget = CharacterConnectionMap(
                     widget.data.get('title', 'Untitled Document'),
@@ -720,8 +607,7 @@ class Story(ft.View):
                     data=widget.data,
                     is_rebuilt=True
                 )
-                self.character_connection_maps[widget.data.get('key', '')] = new_widget
-
+                
             case "canvas_board":
                 new_widget = CanvasBoard(
                     widget.data.get('title', 'Untitled Document'),
@@ -731,10 +617,15 @@ class Story(ft.View):
                     data=widget.data,
                     is_rebuilt=True
                 )
-                self.canvas_boards[widget.data.get('key', '')] = new_widget
-
+                
             case _:
-                print("Widget tag not valid Tag: ", tag)
+                self.p.show_dialog(SnackBar(f"Error rebuilding widget {widget.title}: Invalid tag {tag}"))
+
+        for w in self.widgets:
+            if w.data.get('key', None) == widget.data.get('key', None):
+                self.widgets.remove(w)
+                break
+
         self.widgets.append(new_widget)
         return new_widget
 
@@ -743,12 +634,12 @@ class Story(ft.View):
     async def close_menu(self, e=None):
         ''' Closes our right click menu when clicking outside of it '''
         
-        self.menu.visible = False
-        self.close_menu_detector.visible = False
-        self.close_menu_detector.update()
-        self.menu.update()
-        
-        
+        if self.menu.visible:
+            self.menu.visible = False
+            self.menu.update()
+        if self.close_menu_detector.visible:
+            self.close_menu_detector.visible = False
+            self.close_menu_detector.update()
 
     def close_menu_instant(self, e=None):
         ''' Closes our right click menu when clicking outside of it '''
@@ -903,6 +794,7 @@ class Story(ft.View):
         # Overlay is a stack, so add the detector, then the menu container
         self.p.overlay.append(self.close_menu_detector)
         self.p.overlay.append(self.menu)
+        self.p.overlay.append(self.blocker)   # Add our blocker to the overlay as well, so it sits on top of everything when visible
 
         # Apply everything to the page
         page.update()
