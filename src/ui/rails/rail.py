@@ -327,7 +327,7 @@ class Rail(IsolatedColumn):
                 # All other cases are widgets
                 case _:
                     # Create the widget and reload all our rails
-                    self.story.create_widget(title, tag)
+                    await self.story.create_widget(title, tag)
 
             if self.story.blocker.visible:
                 self.story.blocker.visible = False

@@ -447,7 +447,7 @@ class Story(ft.View):
 
         
     # Called to create a new widget based on tag (document, note, character, etc)
-    def create_widget(self, title: str, tag: str=None, directory_path: str=None, data: dict=None):
+    async def create_widget(self, title: str, tag: str=None, directory_path: str=None, data: dict=None):
         ''' Creates our new widget based on the tag passed in and directory_path passed in'''
         from models.widgets.document import Document
         from models.widgets.note import Note
@@ -501,9 +501,11 @@ class Story(ft.View):
         if widget is not None:
             self.widgets.append(widget)
 
+        # Finish tasks creating widget to make sure the file has enough time to save
+        await asyncio.sleep(0.2)   
+
         # Apply the UI changes
-        self.active_rail.content.reload_rail()
-        self.active_rail.update()
+        self.active_rail.reload_rail()
         
         self.workspace.reload_workspace()
     
@@ -799,3 +801,5 @@ class Story(ft.View):
 
         # Apply everything to the page
         page.update()
+
+        self.active_rail.reload_rail()

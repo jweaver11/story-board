@@ -91,6 +91,8 @@ class CanvasRail(Rail):
             tooltip="Current blend effects applied to your brush strokes. Select to change."
         )
 
+        self.reload_rail()
+
     # Get our color picker and saved custom color options
     def _get_color_options(self) -> list[ft.PopupMenuItem]:
 

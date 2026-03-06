@@ -25,6 +25,8 @@ class PlanningRail(Rail):
             directory_path=story.data.get('content_directory_path', '')
         )
 
+        self.reload_rail()
+
         
     # Reload the rail whenever we need
     def reload_rail(self) -> ft.Control:

@@ -87,6 +87,8 @@ class CharactersRail(Rail):
             )
         ]
 
+        self.reload_rail()
+
 
 
     # Open our settings to the templates tab
@@ -155,6 +157,7 @@ class CharactersRail(Rail):
                 on_click=lambda e: new_character_connection_clicked(self.story),
             )
         ]
+    
     
 
 

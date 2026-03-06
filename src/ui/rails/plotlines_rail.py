@@ -39,6 +39,8 @@ class PlotlinesRail(Rail):
             ),
         ]
 
+        self.reload_rail()
+
     # Called when we reorder our plotlines on the rail
     async def _handle_plotline_reorder(self, e):
         ''' Handles the reordering and reloading of plotlines based on their new positions on the rail when we drag and drop them '''

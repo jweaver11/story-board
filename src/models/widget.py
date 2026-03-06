@@ -192,7 +192,7 @@ class Widget(ft.Container):
         return super().before_update()
 
     # Called whenever there are changes in our data
-    async def save_dict(self):
+    async def save_dict(self) -> bool:
         ''' Saves our current data to the json file '''
 
         # TODO: Find matching widget type and save to normal data dict (not widget dict)
@@ -201,8 +201,8 @@ class Widget(ft.Container):
         try:
 
             # Protect on initialization from creating two files
-            if self.data.get('tag', '') == '':
-                return
+            #if self.data.get('tag', '') == '':
+                #return
             
             # Update our key
             self.data['key'] = f"{self.directory_path}\\{self.title}_{self.data.get('tag', '')}"
@@ -216,10 +216,13 @@ class Widget(ft.Container):
             # Save the data to the file (creates file if doesnt exist)
             with open(file_path, "w", encoding='utf-8') as f:   
                 json.dump(self.data, f, indent=4)
+
+            return True
         
         # Handle errors
         except Exception as e:
             print(f"Error saving widget to {file_path}: {e}") 
+            return False
             #print("Data that failed to save: ", self.data)
 
     # Called for little data changes

@@ -198,6 +198,8 @@ class ContentRail(Rail):
             ),
         ]
 
+        self.reload_rail()
+
     async def on_will_accepts(self, e):
         ''' Changes our rails background to a transparent color on hover '''
         e.control.content.bgcolor = ft.Colors.with_opacity(0.05, ft.Colors.ON_SURFACE_VARIANT)

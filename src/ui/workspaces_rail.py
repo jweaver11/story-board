@@ -42,7 +42,7 @@ class WorkspacesRail(ft.Container):
 
         # Save data and apply the rail updates
         self.p.run_task(story.save_dict)
-        story.active_rail.display_active_rail(story) 
+        story.active_rail.reload_rail() 
         self.reload_rail(story)  
 
 

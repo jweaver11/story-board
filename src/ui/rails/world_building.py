@@ -51,6 +51,8 @@ class WorldBuildingRail(Rail):
             ),
         ]
 
+        self.reload_rail()
+
     # Called when new character button or menu option is clicked
     def new_map_clicked(self, e=None, is_sub_map: bool = None):
         ''' Handles setting our textfield for new character creation '''
