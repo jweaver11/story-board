@@ -80,7 +80,7 @@ class Story(ft.View):
         )
 
         if data is None:
-            self.save_dict()
+            page.run_task(self.save_dict)
 
         self.template = template
 
@@ -367,10 +367,10 @@ class Story(ft.View):
         if widget.delete_file():
             _delete_live_widget(widget)
 
-            if update:
-                self.active_rail.content.reload_rail()
-                self.workspace.reload_workspace()
-                self.close_menu_instant()
+            #if update:
+               # self.active_rail.content.reload_rail()
+                #self.workspace.reload_workspace()
+                #self.close_menu_instant()
 
     # Called on story startup to load all our content objects
     def load_widgets(self):
@@ -575,7 +575,6 @@ class Story(ft.View):
 
             case "plotline":
                 widget = Plotline(title, self.p, directory_path, self, data)
-                
                 key = widget.data.get('key', '')
                 self.plotlines[key] = widget
                 widget.data['plotline_order_index'] = len(self.plotlines.keys()) - 1   # Set the order index to the end of the list
@@ -612,8 +611,11 @@ class Story(ft.View):
         # Apply the UI changes
         self.active_rail.content.reload_rail()
         self.active_rail.update()
-        widget.show_widget()
-        #self.workspace.reload_workspace()
+        self.workspace.reload_workspace()
+
+        if self.workspace.blocker.visible:
+            self.workspace.blocker.visible = False
+            self.workspace.blocker.update()
 
     def rebuild_widget(self, widget) -> ft.Control:
         ''' Delcares the widget as a new object to refresh its page reference. '''
@@ -816,8 +818,8 @@ class Story(ft.View):
             ''' Responsible for altering the width of the active rail '''
 
             active_rail_stack.width += int(e.local_delta.x)    # Apply the change to our rail
-            if active_rail_stack.width < 125:
-                active_rail_stack.width = 125
+            if active_rail_stack.width < 150:
+                active_rail_stack.width = 150
             elif active_rail_stack.width > page.width / 2:
                 active_rail_stack.width = page.width / 2
             active_rail_stack.update()
@@ -841,7 +843,7 @@ class Story(ft.View):
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging
             on_pan_end=save_active_rail_width,  # Save the resize when app is done dragging
-            drag_interval=20,
+            drag_interval=50,
         )
 
         # Isolates the row containing our active rail resizing doesnt lag heckin bac
@@ -893,8 +895,8 @@ class Story(ft.View):
         # Outside gesture detector to close the menu when clicking outside the menu container
         self.close_menu_detector = ft.GestureDetector(
             expand=True, visible=False,
-            on_tap=self.close_menu,
-            on_secondary_tap=self.close_menu,
+            on_tap_down=self.close_menu,
+            on_secondary_tap_down=self.close_menu,
         )
         
 

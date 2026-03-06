@@ -168,6 +168,8 @@ class Workspace(ft.Container):
     # Accepting drags for our five pin locations
     async def pin_drag_accept(self, e: ft.DragTargetEvent):
 
+        # TODO: Update index of stolen widget, and any effected widgets from old pin location, and save them
+
         # Put our blocker on the page to block events during longer reloads
         self.blocker.visible = True
         self.blocker.update()
@@ -333,34 +335,6 @@ class Workspace(ft.Container):
             if stolen_widget is not None:
                 stolen_widget.data['pin_location'] = "main"
                 self.p.run_task(stolen_widget.save_dict)
-
-            
-        for idx, w in enumerate(self.main_pin):
-            old_index = w.data.get('index', 0)
-            w.data['index'] = idx
-            if old_index != w.data['index']:
-                self.p.run_task(w.save_dict)
-        for idx, w in enumerate(self.left_pin.controls):
-            old_index = w.data.get('index', 0)
-            w.data['index'] = idx
-            if old_index != w.data['index']:
-                self.p.run_task(w.save_dict)
-        for idx, w in enumerate(self.right_pin.controls):
-            old_index = w.data.get('index', 0)
-            w.data['index'] = idx
-            if old_index != w.data['index']:
-                self.p.run_task(w.save_dict)
-        for idx, w in enumerate(self.top_pin.controls):
-            old_index = w.data.get('index', 0)
-            w.data['index'] = idx
-            if old_index != w.data['index']:
-                self.p.run_task(w.save_dict)
-        for idx, w in enumerate(self.bottom_pin.controls):
-            old_index = w.data.get('index', 0)
-            w.data['index'] = idx
-            if old_index != w.data['index']:
-                self.p.run_task(w.save_dict)
-        
 
 
     # Called when we need to reload our workspace content, especially after pin drags
@@ -579,7 +553,6 @@ class Workspace(ft.Container):
             self.master_widgets_row.update()
         except Exception as e:
             pass
-
 
 
         

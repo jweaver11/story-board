@@ -513,9 +513,11 @@ class Widget(ft.Container):
         self.story.workspace.blocker.visible = True
         self.story.workspace.blocker.update()
         await asyncio.sleep(0)
+          
         
         self.data['visible'] = False
         self.story.workspace.reload_workspace()   # Reload workspace to hide the widget and show the placeholder in its pin location
+        await self.save_dict() 
 
         self.story.workspace.blocker.visible = False
         self.story.workspace.blocker.update()
@@ -523,9 +525,12 @@ class Widget(ft.Container):
     # Called to show the widget in the workspace
     async def show_widget(self, e=None):
         ''' Shows this widget in the workspace if it is hidden '''
+
+        # Not working??
         #if self.visible:
             #return
 
+        # Could set for heaview widgets??
         #self.story.workspace.content = self
         #self.story.workspace.update()
 
@@ -535,7 +540,13 @@ class Widget(ft.Container):
         
         self.data['visible'] = True
         self.visible = True
+        await self.save_dict()
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
+        await asyncio.sleep(0)
+
+        if self.story.workspace.blocker.visible:
+            self.story.workspace.blocker.visible = False
+            self.story.workspace.blocker.update()
         
 
     # Called when right clicking our tab
@@ -733,15 +744,27 @@ class Widget(ft.Container):
         ''' Deletes this file from the story '''
         from models.app import app
 
-        def _delete_confirmed(e=None):
+        async def _delete_confirmed(e=None):
             ''' Deletes the widget after confirmation '''
 
             #self.widget.story.close_menu_instant()
             self.p.pop_dialog()
+            asyncio.sleep(0)
             self.story.delete_widget(self) 
+            self.story.workspace.blocker.visible = True
+            self.story.workspace.blocker.update()
+            await asyncio.sleep(0)
             self.story.active_rail.content.reload_rail()    # Reload the rail to reflect the deletion
             self.story.active_rail.update()
+
+            
+
             self.story.workspace.reload_workspace()
+            asyncio.sleep(0)
+
+            if self.story.workspace.blocker.visible:
+                self.story.workspace.blocker.visible = False
+                self.story.workspace.blocker.update()
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
@@ -749,8 +772,8 @@ class Widget(ft.Container):
             alignment=ft.Alignment.CENTER,
             title_padding=ft.Padding.all(25),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog()),
-                ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
+                ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
             ]
         )
 

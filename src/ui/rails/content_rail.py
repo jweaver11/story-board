@@ -8,6 +8,7 @@ from utils.tree_view import load_directory_data
 from styles.menu_option_style import MenuOptionStyle
 from utils.alert_dialogs.new_canvas import new_canvas_alert_dlg
 from models.isolated_controls.column import IsolatedColumn
+from models.isolated_controls.list_view import IsolatedListView
 import math
 
 
@@ -411,9 +412,10 @@ class ContentRail(Rail):
                  
 
         # Build the content of our rail
-        content = ft.ListView(
+        content = IsolatedListView(
             scroll=ft.ScrollMode.AUTO,
             spacing=0,
+            expand=True,
             controls=[],
         )
 
@@ -461,6 +463,10 @@ class ContentRail(Rail):
         
         
         # Apply our update
-        self.p.update()
+        try:
+            self.update()
+        except Exception as _:
+            pass
+        #self.p.update()
         
 

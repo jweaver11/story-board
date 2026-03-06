@@ -171,7 +171,7 @@ class App:
         asyncio.create_task(page.push_route(story.route))
         self.settings.data['active_story'] = story.route
         self.settings.story = story
-        self.settings.save_dict()
+        page.run_task(self.settings.save_dict)
 
         
     

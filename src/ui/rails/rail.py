@@ -13,10 +13,11 @@ from utils.alert_dialogs.new_canvas import new_canvas_alert_dlg
 import asyncio
 from models.app import app
 from models.isolated_controls.column import IsolatedColumn
+from models.isolated_controls.list_view import IsolatedListView
 
 
 @ft.control
-class Rail(ft.Column):
+class Rail(IsolatedColumn):
 
     # Constructor
     def __init__(
@@ -139,12 +140,7 @@ class Rail(ft.Column):
     async def new_item_clicked(self, e):
         ''' Handles setting our textfield for new category creation '''
 
-        # Make sure our textfield is visible when we open template menu, since it hides itself
-        def _show_textfield(e=None):
-            self.new_item_textfield.visible = True
-            self.new_item_textfield.focus()
             
-
         tag = e.control.data
         
         # Make textfield visible, reset its value, and give it right data for logic
@@ -271,7 +267,7 @@ class Rail(ft.Column):
             # Otherwise its not unique, re-focus our textfield
             else:
                 self.new_item_textfield.visible = True
-                self.new_item_textfield.focus()
+                self.p.run_task(self.new_item_textfield.focus)
                 self.new_item_textfield.update()
         
         # If we're not submitting, just hide Textfield
