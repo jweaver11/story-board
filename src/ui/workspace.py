@@ -195,7 +195,7 @@ class Workspace(ft.Container):
 
         if widget is None:
             print("Error: Widget not found for drag accept")
-            self.p.show_dialog(SnackBar("Error: Widget not found for drag accept"))
+            print(f"Widget key: {widget_key}")
             return
 
         old_pin_location = widget.data['pin_location']

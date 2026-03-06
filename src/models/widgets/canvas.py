@@ -45,6 +45,11 @@ class Canvas(Widget):
         is_rebuilt: bool = False
     ):
         
+        # Check if we're new and need to create file
+        is_new = False
+        if data is None:
+            is_new = True
+        
         # Parent constructor
         super().__init__(
             title=title,           
@@ -90,6 +95,10 @@ class Canvas(Widget):
 
             },
         )
+
+        # Saving creates the file if we're new
+        if is_new:
+            self.p.run_task(self.save_dict)
 
         # TODO: When saving capture, set most recent one as a snapshot for Canvas Boards to
 

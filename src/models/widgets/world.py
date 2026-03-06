@@ -12,10 +12,16 @@ from models.app import app
 from utils.safe_string_checker import return_safe_name
 
 
+
 class World(Widget):
 
     # Constructor
     def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
+
+        # Check if we're new and need to create file
+        is_new = False
+        if data is None:
+            is_new = True
         
         # Initialize from our parent class 'Widget'. 
         super().__init__(
@@ -55,6 +61,10 @@ class World(Widget):
                 },
             }
         )
+
+        # Saving creates the file if we're new
+        if is_new:
+            self.p.run_task(self.save_dict)
       
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init

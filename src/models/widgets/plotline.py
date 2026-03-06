@@ -20,6 +20,11 @@ class Plotline(Widget):
 
     # Constructor
     def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
+
+        # Check if we're new and need to create file
+        is_new = False
+        if data is None:
+            is_new = True
         
         # Parent constructor
         super().__init__(
@@ -77,6 +82,10 @@ class Plotline(Widget):
                 'plotline_data': dict
             },
         ) 
+
+        # Saving creates the file if we're new
+        if is_new:
+            self.p.run_task(self.save_dict)
                 
         # Declare dicts of our data types   
         self.arcs: dict = {}       

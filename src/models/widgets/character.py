@@ -26,6 +26,11 @@ class Character(Widget):
     # Constructor
     def __init__(self, name: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
 
+        # Check if we're new and need to create file
+        is_new = False
+        if data is None:
+            is_new = True
+
         # Parent class constructor
         super().__init__(
             title = name,  
@@ -57,6 +62,10 @@ class Character(Widget):
                 if data is None or 'character_data' not in data else data['character_data'],
             },
         ) 
+
+        # Saving creates the file if we're new
+        if is_new:
+            self.p.run_task(self.save_dict)
  
 
         if self.visible:

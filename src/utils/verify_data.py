@@ -5,15 +5,6 @@ def verify_data(object, required_data: dict) -> bool:
     Verifys an object's data has all required keys and sub keys passed in. Accepts default values or types.
     So long as the key exists, it will not override it or do type checking, else it will set it to the default value passed in
     Objects MUST have a save_dict() method, and a data attribute thats a dict.
-
-    example: _verify_data(
-        object=object, 
-        required_data = {
-            key1, "value1", 
-            key2: int, 
-            key3: {subkey1: str, subkey2: [1, 2, 3]}
-        }
-    )
     '''
 
     # Internal recursive function to handle nested dicts, typing, and values all in one
@@ -58,6 +49,8 @@ def verify_data(object, required_data: dict) -> bool:
                     #current_data[key] = value
                 elif key =='mini_widgets_displayed_overtop': 
                     current_data[key] = value  
+                elif key == 'key':    # Unique key for each widget, based on directory path + title. If the title changes, we need to update the key
+                    current_data[key] = value
                
         
 

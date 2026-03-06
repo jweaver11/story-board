@@ -49,7 +49,7 @@ class Story(ft.View):
                 'directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}_story")),
                 'tag': "story",
                 'selected_rail': "content",
-                'content_directory_path': os.path.join(data_paths.stories_directory_path, self.route, "content"),
+                'content_directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}"), "content"),
                 'top_pin_height': 200,
                 'left_pin_width': 230,
                 'main_pin_height': int,
@@ -355,7 +355,6 @@ class Story(ft.View):
                             widget_data = json.load(f)
                         
                         # Extract the title from the data
-                        key = widget_data.get("key", None)
                         tag = widget_data.get("tag", "")
                         dir_path = widget_data.get("directory_path", "")
 
@@ -472,6 +471,7 @@ class Story(ft.View):
             directory_path = self.data.get('content_directory_path',  '')
 
         widget = None
+
         match tag:
             case "document":
                 widget = Document(title, self.p, directory_path, self, data)
@@ -510,6 +510,7 @@ class Story(ft.View):
         if self.blocker.visible:
             self.blocker.visible = False
             self.blocker.update()
+
 
     def rebuild_widget(self, widget) -> ft.Control:
         ''' Delcares the widget as a new object to refresh its page reference. '''

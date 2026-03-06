@@ -416,8 +416,12 @@ class ContentRail(Rail):
             scroll=ft.ScrollMode.AUTO,
             spacing=0,
             expand=True,
-            controls=[],
+            controls=[
+                ft.Container(height=6),
+                self.new_item_textfield
+            ],
         )
+
 
         # Load our content directory data into the rail
         load_directory_data(
@@ -429,11 +433,7 @@ class ContentRail(Rail):
             #additional_directory_menu_options=self.get_menu_options()
         )
 
-        content.controls.append(ft.Container(height=6)) # Padding
-
-        # Append our hiddent textfields for creating new categories, documents, and notes
-        content.controls.append(self.new_item_textfield)
-
+        
         # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space
         content.controls.append(ft.Container(expand=True))
 

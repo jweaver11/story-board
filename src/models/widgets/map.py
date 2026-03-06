@@ -15,6 +15,7 @@ from models.app import app
 from styles.menu_option_style import MenuOptionStyle
 import asyncio
 from models.mini_widgets.location import Location
+from utils.safe_string_checker import return_safe_name
 
 
 class Map(Widget):
@@ -29,6 +30,11 @@ class Map(Widget):
         data: dict = None,
         is_rebuilt: bool = False
     ):
+        
+        # Check if we're new and need to create file
+        is_new = False
+        if data is None:
+            is_new = True
         
                 
         # Parent constructor
@@ -47,6 +53,7 @@ class Map(Widget):
             self,   
             {
                 # Widget data
+                'key': f"{self.directory_path}\\{return_safe_name(self.title)}_map",
                 'tag': "map", 
                 'color': app.settings.data.get('default_map_color'),
                 'icon': "map_outlined",     # What icon to render on a parent map (if we have one)
@@ -65,6 +72,10 @@ class Map(Widget):
                 
             },  
         )
+
+        # Saving creates the file if we're new
+        if is_new:
+            self.p.run_task(self.save_dict)
 
         
         # Drawing elements

@@ -9,11 +9,17 @@ from models.isolated_controls.row import IsolatedRow
 from models.isolated_controls.column import IsolatedColumn
 import math
 from models.mini_widgets.reference_image import ReferenceImage
+from utils.safe_string_checker import return_safe_name
 
 # Class that holds our text document objects
 class Document(Widget):
     # Constructor
     def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
+
+        # Check if we're new and need to create file
+        is_new = False
+        if data is None:
+            is_new = True
 
         # Initialize from our parent class 'Widget'. 
         super().__init__(
@@ -44,6 +50,10 @@ class Document(Widget):
                 'document_data': list,       
             }
         )
+
+        # Saving creates the file if we're new
+        if is_new:
+            self.p.run_task(self.save_dict)
 
         # We render our own mini widgets (comments), so we don't need parent class to render them as well
         self.mini_widgets_displayed_overtop = False     

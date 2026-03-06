@@ -115,6 +115,8 @@ def load_directory_data(
             
             if widget is not None:
 
+                
+
                 # Create the file item
                 item = TreeViewFile(
                     widget,
@@ -129,6 +131,7 @@ def load_directory_data(
                 pass
 
             else:
+                print("Widget is none")
                 continue
 
         # Return the parent expansion tile or column depending on what was provided

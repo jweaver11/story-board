@@ -122,6 +122,7 @@ class Rail(IsolatedColumn):
 
         if widget is None:
             print("Error: Widget not found for drag accept")
+            print(f"Widget key: {widget_key}")
             return
 
         # Call the move file using the new directory path
@@ -176,8 +177,9 @@ class Rail(IsolatedColumn):
 
         # Open the textfield early since we have to wait for async close menu
         self.new_item_textfield.update()
+        # Works with content rail, others wont
+        await self.controls[2].content.content.content.scroll_to(0)
         #self.story.active_rail.update()
-        print("Showing tf")
         
         # Close the menu (if ones is open)
         #await asyncio.sleep(.3)     # Wait for popupmenu's animations to close if we have issues

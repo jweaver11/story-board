@@ -6,12 +6,18 @@ from models.widget import Widget
 from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 from models.app import app
+from utils.safe_string_checker import return_safe_name
     
 
 class Note(Widget):
 
     # Constructor
     def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict = None, is_rebuilt: bool = False):
+
+        # Check if we're new and need to create file
+        is_new = False
+        if data is None:
+            is_new = True
 
         # Initialize from our parent class 'Widget'. 
         super().__init__(
@@ -30,6 +36,7 @@ class Note(Widget):
             self,   # Pass in our own data so the function can see the actual data we loaded
             {
                 # Widget data
+                'key': f"{self.directory_path}\\{return_safe_name(self.title)}_note", 
                 'tag': "note",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('default_note_color'),
                 'pin_location': "right" if data is None else data.get('pin_location', "right"),   # Default pin location for notes
@@ -38,6 +45,11 @@ class Note(Widget):
                 'note_data': {}
             },
         )
+
+        # Saving creates the file if we're new
+        if is_new:
+            self.p.run_task(self.save_dict)
+            print(self.title, " Key while saveing new note: ", self.data.get('key'))
 
         
         if self.visible:

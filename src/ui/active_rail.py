@@ -50,9 +50,6 @@ class Active_Rail(ft.Container):
         # Displays our active rail on startup
         # All other rails have reload rail functions, but this one just displays the correct one
         self.display_active_rail(story)
-
-    
-
         
     # Called when other workspaces are selected
     def display_active_rail(self, story: Story, rail: str = None):

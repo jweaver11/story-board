@@ -53,7 +53,7 @@ class Widget(ft.Container):
             verify_data(
                 self,   # Pass in our own data so the function can see the actual data we loaded
                 {
-                    'key': f"{self.directory_path}\\{return_safe_name(self.title)}_tag",  # Unique key for this widget based on directory path + title
+                    #'key': f"{self.directory_path}\\{return_safe_name(self.title)}_tag",  # Unique key for this widget based on directory path + title
                     'title': self.title,                            # Title of our widget  
                     'directory_path': self.directory_path,          # Directory path to the file this widget's data is stored in
                     'tag': str,                                     # Tag to identify what type of widget this is
@@ -65,9 +65,6 @@ class Widget(ft.Container):
                     'custom_fields': dict,                          # Dictionary for any custom fields the widget wants to store
                 }
             )
-
-        if data is None:
-            self.p.run_task(self.save_dict)
 
         # Apply our visibility
         self.visible = self.data.get('visible', True)
