@@ -469,6 +469,5 @@ class ContentRail(Rail):
             self.update()
         except Exception as _:
             pass
-        #self.p.update()
         
 

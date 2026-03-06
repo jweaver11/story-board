@@ -506,9 +506,9 @@ class Story(ft.View):
 
         # Apply the UI changes
         self.active_rail.reload_rail()
-        
         self.workspace.reload_workspace()
     
+        # Unhide the blocker
         if self.blocker.visible:
             self.blocker.visible = False
             self.blocker.update()
@@ -801,5 +801,3 @@ class Story(ft.View):
 
         # Apply everything to the page
         page.update()
-
-        self.active_rail.reload_rail()

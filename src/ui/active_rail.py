@@ -32,9 +32,8 @@ class Active_Rail(ft.Container):
             expand=True
         )
 
-        # Displays our active rail on startup
-        # All other rails have reload rail functions, but this one just displays the correct one
-        #self.display_active_rail(story)
+        # Loads the active rail
+        self.reload_rail()
         
     # Called when other workspaces are selected
     def reload_rail(self, rail: str = None):

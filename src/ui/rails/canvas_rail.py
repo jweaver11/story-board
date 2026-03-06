@@ -525,13 +525,11 @@ class CanvasRail(Rail):
                         e.control.error_text = "A brush with this name already exists. It will be overwritten if you save."
                         save_button.text = "Overwrite"
                         self.update()
-                        #self.p.update()
                         return
                     
                 save_button.text = "Save"
                 e.control.error_text = None
                 self.update()
-                #self.p.update()
 
             # Deletes a color
             def _delete_brush(e):
@@ -543,7 +541,6 @@ class CanvasRail(Rail):
 
                 dlg.content.controls = [ctrl for ctrl in dlg.content.controls if not (isinstance(ctrl, ft.GestureDetector) and ctrl.data == name)]
                 self.update()
-                #self.p.update()
                     
             # Sets an existing custom color to be overwritten by the current color
             def _set_brush_override(e):
@@ -554,7 +551,6 @@ class CanvasRail(Rail):
                     name = None
                     save_button.text = "Save"
                     self.update()
-                    #self.p.update()
                     return
 
                 name = e.control.data
@@ -567,7 +563,6 @@ class CanvasRail(Rail):
                         ctrl.content.bgcolor = ft.Colors.TRANSPARENT
                 
                 self.update()
-                #self.p.update()
 
             # Textfield for naming custom color
             text_field = ft.TextField(
