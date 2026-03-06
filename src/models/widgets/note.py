@@ -66,7 +66,7 @@ class Note(Widget):
     # Saves content when text field is unfocused
     async def save_segment(self, key: str, value: str, should_reload: bool=False):
         self.data['note_data'][key] = value
-        self.save_dict()
+        await self.save_dict()
 
         if should_reload:
             self.reload_widget()
@@ -74,7 +74,7 @@ class Note(Widget):
     def delete_segment(self, key: str):
         if key in self.data['note_data']:
             del self.data['note_data'][key]
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             self.reload_widget()
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild

@@ -502,13 +502,17 @@ class Widget(ft.Container):
         
         self.data['visible'] = False
         self.visible = False
+        self.update()
         self.story.workspace.reload_workspace()   # Reload workspace to hide the widget and show the placeholder in its pin location
 
     # Called to show the widget in the workspace
     def show_widget(self):
         ''' Shows this widget in the workspace if it is hidden '''
-        if self.visible:
-            return
+        #if self.visible:
+            #return
+
+        #self.story.workspace.content = self
+        #self.story.workspace.update()
         
         self.data['visible'] = True
         self.visible = True

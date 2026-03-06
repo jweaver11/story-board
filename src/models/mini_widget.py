@@ -509,7 +509,7 @@ class MiniWidget(ft.Container):
         )
 
         # Clears our popup menu button and applies to the UI
-        self.p.overlay.clear()
+        self.widget.story.close_menu_instant()
         self.p.show_dialog(dlg)
 
     # Called when color button is clicked

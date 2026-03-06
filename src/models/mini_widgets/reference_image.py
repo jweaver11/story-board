@@ -100,20 +100,20 @@ class ReferenceImage(MiniWidget):
                 on_double_tap=self._rename_clicked,
                 on_tap=self._rename_clicked,
                 on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", on_enter=self._set_menu_coords, expand=True
+                mouse_cursor="click", on_enter=self._set_menu_coords, 
             ),
             
             ft.GestureDetector(
                 ft.IconButton(
                     ft.Icons.EXPAND_LESS if self.data.get('collapsed', False) else ft.Icons.EXPAND_MORE,
-                    ft.Colors.OUTLINE,
+                    ft.Colors.OUTLINE, mouse_cursor="click",
                     tooltip=f"Collapse {self.title}" if not self.data.get('collapsed', False) else f"Expand {self.title}",
                     on_click=self.expand_mini_widget if self.data.get('collapsed', False) else self.collapse_mini_widget,
                 ),
                 on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
                 on_enter=self._set_menu_coords
             ),
-        ], spacing=0)
+        ], spacing=0, alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
 
         image = ft.Image(
             self.data.get('image', ''),

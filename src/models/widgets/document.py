@@ -151,13 +151,13 @@ class Document(Widget):
         )
         self.reference_images[title] = reference_image
         self.mini_widgets.append(reference_image)
-        reference_image.save_dict()
+        self.p.run_task(reference_image.save_dict)
     
     # Will be called when we have a flet quill
     def _save_document(self, text_data: list):
         ''' Saves our document text data to our data dictionary '''
         self.data['document_data'] = text_data
-        self.save_dict()
+        self.p.run_task(self.save_dict)
 
     async def _create_reference_image_clicked(self, e):
 
@@ -175,7 +175,7 @@ class Document(Widget):
                     encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
 
                 self._create_reference_image(title=file_name, side_location=side_location, image_str=encoded_string)
-                self.save_dict()  # Save to our data
+                await self.save_dict()  # Save to our data
                 self.reload_widget()
                     
 

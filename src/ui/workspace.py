@@ -362,7 +362,7 @@ class Workspace(ft.Container):
             self.story.data['left_pin_width'] = self.left_pin.width
             self.story.data['right_pin_width'] = self.right_pin.width
             self.story.data['bottom_pin_height'] = self.bottom_pin.height
-            self.story.save_dict()
+            await self.story.save_dict()
 
         
         # Method called wn our divider (inside a gesture detector) is dragged
