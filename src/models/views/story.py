@@ -99,7 +99,9 @@ class Story(ft.View):
         self.workspace: ft.Container       # Main workspace area where our pins display our widgets
 
         # Block the app from any interactions during rebuilds
-        self.blocker = ft.Container(ft.ProgressRing(scale=.6, stroke_width=20), expand=True, visible=False, blur=5, left=0, right=0, top=0, bottom=0)
+        self.blocker = ft.Container(
+            ft.Row([ft.ProgressRing(width=100, height=100)], alignment=ft.MainAxisAlignment.CENTER), 
+            expand=True, visible=False, blur=5, left=0, right=0, top=0, bottom=0)
 
         
         # Store all our widgets above in a master list for easier rendering in the UI
