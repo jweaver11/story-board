@@ -432,7 +432,6 @@ class ContentRail(Rail):
             directory=self.directory_path,
             rail=self,
             column=content,
-            #additional_directory_menu_options=self.get_menu_options()
         )
 
         
