@@ -136,7 +136,7 @@ class Plotline(Widget):
             for key, value in kwargs.items():
                 self.data.update({key: value})
 
-            self.save_dict()
+            await self.save_dict()
             await self.rebuild_plotline_canvas()
 
         # Handle errors
@@ -295,7 +295,7 @@ class Plotline(Widget):
         if plot_point.title in self.plot_points:
             self.plot_points.pop(plot_point.title)
             self.data['plot_points'].pop(plot_point.title, None)
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
         # Apply changes
         if self.information_display.visible:
@@ -308,7 +308,7 @@ class Plotline(Widget):
         if arc.title in self.arcs:
             self.arcs.pop(arc.title)
             self.data['arcs'].pop(arc.title, None)
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
         if self.information_display.visible:
             self.information_display.reload_mini_widget(no_update=True)
@@ -321,7 +321,7 @@ class Plotline(Widget):
         if marker.title in self.markers:
             self.markers.pop(marker.title)
             self.data['markers'].pop(marker.title, None)
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
         if self.information_display.visible:
             self.information_display.reload_mini_widget(no_update=True)
@@ -559,7 +559,7 @@ class Plotline(Widget):
             self.plotline_height = int(e.height)
             self.data['old_plotline_width'] = self.plotline_width
             self.data['old_plotline_height'] = self.plotline_height
-            self.save_dict()   # Save our new size to our data
+            await self.save_dict()   # Save our new size to our data
 
         
         # Draw our plotline on the canvas with its two end markers ------------------------------------------------

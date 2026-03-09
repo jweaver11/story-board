@@ -101,7 +101,6 @@ class Widget(ft.Container):
         self.icon: ft.Icon
         self.tab_text: ft.Text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
 
-
         # Grabs our tag to determine the icon we'll use
         tag = self.data.get('tag', '')
 
@@ -124,10 +123,7 @@ class Widget(ft.Container):
         self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
 
         tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
-
-        # Initialize our tabs control that will hold our tab. We only have one tab, but this is needed for it to render
         
-
         # Our icon button that will hide the widget when clicked in the workspace
         hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
             scale=0.8,
@@ -143,10 +139,10 @@ class Widget(ft.Container):
             ft.Row([self.icon, tab_text, hide_tab_icon_button]),
             mouse_cursor=ft.MouseCursor.CLICK,
             hover_interval=100,
-            on_enter=self._enter_tab,
-            on_hover=self._hover_tab,
-            on_exit=self._exit_tab,
-            on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
+            #on_enter=self._set_coords,
+            on_hover=self._set_coords,
+            #on_exit=self._exit_tab,
+            on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
         )
 
         # Tab that holds our widget title and 'body'.
@@ -182,8 +178,6 @@ class Widget(ft.Container):
         )   
         self.content = self.tabs
 
-        
-
         # Called at end of constructor for all child widgets to build their view (not here tho since we're not on page yet)
         #self.reload_widget()
 
@@ -199,10 +193,6 @@ class Widget(ft.Container):
         print(f"Saving widget: {self.title}")
 
         try:
-
-            # Protect on initialization from creating two files
-            #if self.data.get('tag', '') == '':
-                #return
             
             # Update our key
             self.data['key'] = f"{self.directory_path}\\{self.title}_{self.data.get('tag', '')}"
@@ -222,8 +212,11 @@ class Widget(ft.Container):
         # Handle errors
         except Exception as e:
             print(f"Error saving widget to {file_path}: {e}") 
+            print("Widget data that failed to save:\n")
+            for key, value in self.data.items():
+                print(f"{key}: {value}")
+            print("\n")
             return False
-            #print("Data that failed to save: ", self.data)
 
     # Called for little data changes
     def change_data(self, **kwargs):
@@ -310,7 +303,7 @@ class Widget(ft.Container):
             self.p.run_task(self.save_dict)
 
             # Reload the rail to apply changes
-            self.story.active_rail.display_active_rail(self.story)
+            self.story.active_rail.reload_rail()
             return True
         else:
             return False
@@ -322,8 +315,6 @@ class Widget(ft.Container):
             return 
         self.w = int(e.width)
         self.h = int(e.height)
-        #print("New size: ", self.w, "x", self.h)
-
         
     # Called when renaming a widget
     def rename(self, title: str):
@@ -331,7 +322,6 @@ class Widget(ft.Container):
 
         # Save our old file path for renaming later
         old_file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json")  
-        old_key = f"{self.directory_path}\\{self.title}_{self.data.get('tag', '')}"  
                                                  
         # Update our live title, and associated data
         self.title = title.capitalize()                              
@@ -343,9 +333,6 @@ class Widget(ft.Container):
 
         # Save our data to this new file
         self.p.run_task(self.save_dict)                                
-
-        # Remove from our live dict wherever we are stored
-        tag = self.data.get('tag', '')
 
         # Reload our widget ui and rail to reflect changes 
         self.reload_widget()           
@@ -440,27 +427,14 @@ class Widget(ft.Container):
     # Called when a draggable starts dragging.
     async def _start_drag(self, e: ft.DragStartEvent):
         ''' Shows our pin drag targets. Needs its own function or story is not initialized on first launch, causing crash '''
-        self.story.workspace.show_pin_drag_targets()
-        
-    # Called when mouse enters the tab part of the widget
-    async def _enter_tab(self, e: ft.PointerEvent):
-        ''' Changes the hide icon button color slightly for more interactivity '''
-        e.control.icon_color = ft.Colors.ON_SURFACE
-        e.control.update()
-        
+        self.story.workspace.show_pin_drag_targets() 
 
     # Called when mouse hovers over the tab part of the widget
-    async def _hover_tab(self, e: ft.PointerEvent):
+    async def _set_coords(self, e: ft.PointerEvent):
         ''' Updates our mouse x/y state for opening menu at mouse position '''
         self.story.mouse_x = e.global_position.x
         self.story.mouse_y = e.global_position.y
         
-
-    # Called when mouse stops hovering over the tab part of the widget
-    async def _exit_tab(self, e):
-        ''' Reverts the color change of the hide icon button '''
-        e.control.icon_color = ft.Colors.OUTLINE
-        e.control.update()
 
     # Called to hide the widget from the workspace
     async def hide_widget(self, e=None):
@@ -468,18 +442,15 @@ class Widget(ft.Container):
         if not self.visible:
             return
         
-        
-        self.tab_gd.on_enter = None
-        self.tab_gd.on_hover = None
-        self.tab_gd.on_exit = None
-        self.tab_gd.on_secondary_tap = None
-        self.tab_gd.update()
-        await asyncio.sleep(0)  # Spaces update so the page won't batch them
-        
         self.story.blocker.visible = True
         self.story.blocker.update()
         await asyncio.sleep(0)
-          
+             
+        self.tab_gd.on_enter = None
+        self.tab_gd.on_secondary_tap = None
+        self.tab_gd.disabled = True
+        self.tab_gd.update()
+        await asyncio.sleep(0)  # Spaces update so the page won't batch them
         
         self.data['visible'] = False
         self.story.workspace.reload_workspace()   # Reload workspace to hide the widget and show the placeholder in its pin location
@@ -495,10 +466,6 @@ class Widget(ft.Container):
         # Not working??
         #if self.visible:
             #return
-
-        # Could set for heavier widgets??
-        #self.story.workspace.content = self
-        #self.story.workspace.update()
 
         self.story.blocker.visible = True
         self.story.blocker.update()
@@ -546,7 +513,7 @@ class Widget(ft.Container):
                 no_padding=True, no_effects=True
             ),
             MenuOptionStyle(
-                on_click=self._delete_clicked,
+                on_click=self.delete_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
                     ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
@@ -688,8 +655,7 @@ class Widget(ft.Container):
             
             # Change our icon to match, apply the update
             self.reload_widget()
-            self.story.active_rail.content.reload_rail()   # Reload the rail to reflect the color change
-            self.story.active_rail.update()
+            self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
             await self.story.close_menu()
 
             if self.story.blocker.visible:
@@ -715,21 +681,22 @@ class Widget(ft.Container):
         return color_controls
     
     # Called when the delete button is clicked in the menu options
-    def _delete_clicked(self, e):
+    def delete_clicked(self, e):
         ''' Deletes this file from the story '''
         from models.app import app
 
         async def _delete_confirmed(e=None):
             ''' Deletes the widget after confirmation '''
+            self.story.blocker.visible = True
+            self.story.blocker.update()
+            await asyncio.sleep(0)
 
             self.p.pop_dialog()
-            asyncio.sleep(0)
             if self.delete_file():
                 if self in self.story.widgets:
                     print("Deleted: ", self.title)
                     self.story.widgets.remove(self)   
-            self.story.workspace.visible = True
-            self.story.workspace.update()
+            
             await asyncio.sleep(0)
             self.story.active_rail.content.reload_rail()    # Reload the rail to reflect the deletion
             self.story.active_rail.update()
@@ -737,11 +704,11 @@ class Widget(ft.Container):
             
 
             self.story.workspace.reload_workspace()
-            asyncio.sleep(0)
+            await asyncio.sleep(0)
 
-            if self.story.workspace.visible:
-                self.story.workspace.visible = False
-                self.story.workspace.update()
+            if self.story.blocker.visible:
+                self.story.blocker.visible = False
+                self.story.blocker.update()
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
@@ -785,7 +752,6 @@ class Widget(ft.Container):
     def reload_tab(self, update: bool=False):
         ''' Creates our tab for our widget that has the title and hide icon '''
 
-
         # Set the color and size
         self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
 
@@ -796,10 +762,6 @@ class Widget(ft.Container):
                 self.tab.update()
             except Exception as _:
                 pass
-
-                         
-    
-
 
     # Called by child classes at the end of their constructor, or when they need UI update to reflect changes
     def reload_widget(self):
@@ -830,53 +792,8 @@ class Widget(ft.Container):
         # Add our sizing canvas and body container to the stack first
         self.master_stack.controls = [self.body_container]
 
-        # Separate our mini widgets into left and right side lists
-        left_mini_widgets = []
-        right_mini_widgets = []
-
-        # Go through our mini widgets and separate them into left and right lists based on their side location data
-        for mw in self.mini_widgets:
-            if mw.data.get('side_location', 'right') == 'left':
-                left_mini_widgets.append(mw)
-            elif mw.data.get('side_location', 'right') == 'right':
-                right_mini_widgets.append(mw)
-            else:
-                right_mini_widgets.append(mw)   # Default to right side if no location specified
-            
-        # If we show our mini widgets overtop the content, build them here. 
-        if self.mini_widgets_displayed_overtop:     # Widgets: Plotline, Map, Character Connection Map, ...
-
-            # Format a column to hold left and right side
-            self.left_mw_column = ft.Column(
-                left_mini_widgets, spacing=4, tight=True, width=self.w / 3,
-                top=50 if self.header is not None else 0, left=0, bottom=0, expand=True, 
-            )
-            self.right_mw_column = ft.Column(
-                right_mini_widgets, spacing=4, tight=True, width=self.w / 3, 
-                top=50 if self.header is not None else 0, right=0, bottom=0, expand=True, 
-            )
-
-            # Add the columns so long as they are showing anything
-            
-            #self.master_stack.controls.append(self.left_mw_column)
-            #print(f"MW's in left column for {self.title}: ", len(left_mini_widgets))
-            
-            #self.master_stack.controls.append(self.right_mw_column) 
-            #print(f"MW's in right column for {self.title}: ", len(right_mini_widgets))
-            
-            # Set the tab content
-            self.tab.content = self.master_stack  
-
-        
-        # Mini widgets that shrink the body container to make room for themselves
-        else:       # Widgets: Canvas?, document
-            pass
-
-
         # If we have a header, add it to the stack. Headers are be immune to scrolling
         self.master_stack.controls.append(self.header) if self.header is not None else None
-
-        
 
         try:
 
@@ -890,5 +807,5 @@ class Widget(ft.Container):
             # If not in the main pin, we are directly on the page, so just update ourselves
             else:
                 self.update()
-        except Exception as e:
+        except Exception as _:
             pass

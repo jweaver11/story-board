@@ -91,7 +91,7 @@ class MiniWidget(ft.Container):
                 self.widget.data[self.key][self.title] = self.data
 
             # Recursively updates the parents data until widget=widget (widget), which saves to file
-            self.p.run_task(self.widget.save_dict)
+            await self.widget.save_dict()
 
         except Exception as e:
             print(f"Error saving mini widget data to {self.title}: {e}")
@@ -268,7 +268,7 @@ class MiniWidget(ft.Container):
     def hide_mini_widget(self, e=None, update: bool=False):
         ''' Hides our mini widget '''
 
-        print("Hide called for", self.title)
+        #print("Hide called for", self.title)
         
         # Return early if we are already hidden or pin
         if not self.visible:
@@ -281,7 +281,7 @@ class MiniWidget(ft.Container):
         if self.data.get('is_pinned', False):   # If we are pinned, unpin ourselves when hiding
             self.data['is_pinned'] = False
 
-        self.save_dict()
+        self.p.run_task(self.save_dict)
 
         self.update()
 
@@ -342,7 +342,7 @@ class MiniWidget(ft.Container):
 
         if field_name in self.data.get('custom_fields', {}):
             del self.data['custom_fields'][field_name]
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             self.reload_mini_widget()
 
     def _build_custom_fields_column(self) -> ft.Column:
@@ -605,11 +605,13 @@ class MiniWidget(ft.Container):
             expand=True,
         )
 
-        if no_update:
-            return
-        else:
-            self.p.update()
-            
+        try:
+            if no_update:
+                return
+            else:
+                self.update()
+        except Exception as _:
+            pass
 
     
         

@@ -92,7 +92,7 @@ class TreeViewFile(ft.GestureDetector):
                 no_padding=True, no_effects=True
             ),
             MenuOptionStyle(
-                on_click=self.delete_clicked,
+                on_click=self.widget.delete_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
                     ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
@@ -249,35 +249,7 @@ class TreeViewFile(ft.GestureDetector):
 
         return color_controls
     
-    # Called when the delete button is clicked in the menu options
-    def delete_clicked(self, e):
-        ''' Deletes this file from the story '''
-
-        def _delete_confirmed(e=None):
-            ''' Deletes the widget after confirmation '''
-
-            self.widget.p.pop_dialog()
-            self.widget.story.delete_widget(self.widget) 
-            self.widget.story.active_rail.content.reload_rail()    # Reload the rail to reflect the deletion
-            self.widget.story.active_rail.update()
-
-        # Append an overlay to confirm the deletion
-        dlg = ft.AlertDialog(
-            title=ft.Text(f"Are you sure you want to delete {self.widget.title} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
-            alignment=ft.Alignment.CENTER,
-            title_padding=ft.Padding.all(25),
-            actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.widget.p.pop_dialog()),
-                ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
-            ]
-        )
-
-        self.widget.story.close_menu_instant()
-
-        if app.settings.data.get('confirm_item_delete', False):
-            self.widget.p.show_dialog(dlg)
-        else:
-            _delete_confirmed()
+    
 
 
     # Called to reload our tree view file display

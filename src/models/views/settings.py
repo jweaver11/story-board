@@ -29,6 +29,11 @@ class Settings(ft.View):
         selected_index: int = 0,   # Which category to show when opening settings. 0 = Appearance, 1 = Widgets, 2 = Story, 3 = Templates, 4 = Resources
     ):
         
+        # Check if we're new and need to create file
+        is_new = False
+        if data is None:
+            is_new = True
+        
         # Constructor the parent widget class
         super().__init__(
             route=f"/settings",                                      # Sets our route for our new story
@@ -60,7 +65,7 @@ class Settings(ft.View):
                 'paint_settings': {
 
                     # Stroke styles
-                    'color': "#FFFFFF,1.0" if self.p.theme_mode == "dark" else "#000000,1.0",     # Hex color folowed by opacity
+                    'color': "#FFFFFF,1.0",     # Hex color folowed by opacity
                     'stroke_width': 3,
                     'style': "stroke",
                     'stroke_cap': "round",
@@ -139,7 +144,7 @@ class Settings(ft.View):
             }, 
         )
 
-        if data is None:
+        if is_new:
             self.p.run_task(self.save_dict)
 
     def before_update(self):

@@ -3,21 +3,6 @@ The canvas class for all canvases inside our story
 Canvases are drawings and images
 '''
 
-#TODO: 
-# Option for transparent background/no brackground
-# Option to upload image as background
-# Option to export canvas as image file (png, jpg, etc). Option to change how image fits on canvas (stretch, fit, fill, tile, center, etc)
-# Add ft.DecorationImage options to the canvas container for background images??
-# Add color_filter for both decoration image and container ?
-# Fill tool??
-# Ability to Lock (no drawing mode) for images
-# Little Info Display Button in the bottom right that can be dragged around and shows canvas info display
-# Manage saving so not at the end of every stroke.
-# Add undo/redo based on capture list
-# Remove old items from the undo/redo list after like 30 or so 
-# Open drawings and maps in their own window to not lag?????
-# Always use aspect ratio when renderng canvas, height and width are just for exporting them
-
 from flet_color_pickers import ColorPicker
 import flet as ft
 from models.widget import Widget
@@ -69,29 +54,19 @@ class Canvas(Widget):
                 "tag": "canvas",
                 'color': app.settings.data.get('default_canvas_color'),
 
-                'capture_list': list,     # Capture list of our canvas, used for undo/redo stuff
+                # Info display and general canvas data
+                'canvas_data': {},       
+
+                'capture': str,             # Capture of what we currently look like
+                'snapshot': str,            # Most recent completed snapshot of our canvas used by other widgets
 
                 # Canvas drawing data we save and load from
                 "canvas": {
-
-                    # Drawing data
-                    #'paths': list,              # All our shapes, lines, dashed lines, curves, etc.
-                    #'shadow_paths': list,       # All paths but with shadows
-                    #'points': list,             # All our points
-
-                    #'capture_list': list,
-
-                    # Sizing of the canvas
+                    'layers': list,     # {'name': str, 'is_visible': bool, 'capture': str}   
                     
-
-                    # Background settings
-                    #'bgcolor': str,                 # If its a color
-                    #'image_base64': str,            # If an image is used. Color ignored if this is set
-                    #'bg_blend_mode': "src_over",    # Blend mode for background. Starts default
-                    #'bg_is_transparent': True,    
                 },
 
-                'canvas_data': {}       # Information display data for its mini widget
+                
 
             },
         )
@@ -100,13 +75,11 @@ class Canvas(Widget):
         if is_new:
             self.p.run_task(self.save_dict)
 
-        # TODO: When saving capture, set most recent one as a snapshot for Canvas Boards to
-
-
-        decoded_capture_list = [base64.b64decode(capture) for capture in self.data.get('capture_list', [])]
+        self.information_display: ft.Container = None
+        self._create_information_display()
 
         # State tracking for canvas drawing info
-        self.state = State(capture_list = decoded_capture_list)         # Used for our coordinates and how to apply things
+        self.state = State()         # Used for our coordinates and how to apply things
         self.canvas_width = 0
         self.canvas_height = 0
         self.undo_idx = 0       #??
@@ -116,8 +89,11 @@ class Canvas(Widget):
                 mouse_cursor=ft.MouseCursor.PRECISE,
                 on_pan_start=self.start_drawing,
                 on_pan_update=self.is_drawing,
-                on_pan_end=lambda e: self.p.run_task(self.save_canvas),
+                on_pan_end=lambda _: self.p.run_task(self.save_canvas),
                 on_tap_up=self.add_point,      # Handles so we can add points
+                on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
+                on_hover=self._set_coords,
+                hover_interval=20,
                 drag_interval=10,
                 expand=True,
             ),
@@ -130,19 +106,130 @@ class Canvas(Widget):
         self.canvas_container = ft.Container(
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
             border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
-            aspect_ratio=self.data.get('canvas_data', {}).get('aspect_ratio'),       # If set, ignores width and height
-            content=self.canvas
+            aspect_ratio=self.data.get('canvas_data', {}).get('aspect_atio'),       # If set, ignores width and height
+            content=self.canvas, 
         )
 
-        self.current_path= cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
-       
+        # Set our canvas containers background based on our data
+        if self.data.get('canvas_data', {}).get('bg_type') == "color":
+            self.canvas_container.bgcolor = self.data.get('canvas_data', {}).get('background', None)
+        elif self.data.get('canvas_data', {}).get('bg_type') == "image":
+            self.canvas_container.image = ft.Image(self.data.get('canvas_data', {}).get('background', None))
+
+
+
+        
         #self.load_canvas()     OUTDATED
 
-        self.information_display: ft.Container = None
-        self._create_information_display()
+        
+        self.current_path= cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
+
+
+        # Canvas has a custom tab, so it re-uses almost everything from widget
+        # UI ELEMENTS - Tab
+        self.tabs: ft.Tabs 
+        self.tab: ft.Tab  
+        self.icon: ft.Icon
+        self.tab_text: ft.Text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
+
+        # Grabs our tag to determine the icon we'll use
+        tag = self.data.get('tag', '')
+
+        # Set our icon based on what type of widget we are using tag
+        match tag:
+            case "document": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
+            case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
+            case "canvas_board": self.icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
+            case "note": self.icon = ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED)
+            case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
+            case "character_connection_map": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
+            case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)
+            case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
+            case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
+            case "object": self.icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
+            case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
+
+
+        # Set the color and size
+        self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
+
+        tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS)
+        
+        # Our icon button that will hide the widget when clicked in the workspace
+        hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
+            scale=0.8,
+            on_click=self.hide_widget,
+            icon=ft.Icons.CLOSE_ROUNDED,
+            icon_color=ft.Colors.OUTLINE,
+            tooltip="Hide",
+            mouse_cursor=ft.MouseCursor.CLICK,
+        )
+
+        self.toggle_info_button = ft.IconButton(
+            ft.Icons.INFO_OUTLINE, self.data.get('color', "primary"), scale=0.8,
+            mouse_cursor=ft.MouseCursor.CLICK,
+            tooltip="Show Canvas Info",
+            on_click=self.information_display.show_mini_widget,
+            # on_click here
+        )
+
+
+        self.tab_gd = ft.GestureDetector(
+            ft.Row(
+                [self.icon, ft.Container(width=10), tab_text, self.toggle_info_button, ft.Container(expand=True), hide_tab_icon_button],
+                spacing=0
+            ),     # Changes here to add show info button
+            mouse_cursor=ft.MouseCursor.CLICK,
+            hover_interval=100,
+            #on_enter=self._set_coords,
+            on_hover=self._set_coords,
+            #on_exit=self._exit_tab,
+            on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
+        )
+
+        # Tab that holds our widget title and 'body'.
+        # Since this is a ft.Tab, it needs to be nested in a ft.Tabs control or it wont render.
+        self.tab = ft.Tab(
+
+            # Content of the tab itself. Has widgets name and hide widget icon, and functionality for dragging
+            label=ft.Draggable(   # Draggable is the control so we can drag and drop to different pin locations
+                group="widgets",    # Group for draggables (and receiving drag targets) to accept each other
+                data=self.data.get('key', ""),  # Pass ourself through the data (of our tab, NOT our object) so we can move ourself around
+
+                # Drag event utils
+                on_drag_start=self._start_drag,    # Shows our pin targets when we start dragging
+
+                # Content when we are dragging the follows the mouse
+                content_feedback=ft.TextButton(self.title), # Normal text won't restrict its own size, so we use a button
+
+                # The content of our draggable. We use a gesture detector so we have more events
+                content=self.tab_gd
+            )                    
+        )
+
+        # Tabs stuff
+        self.tabs = ft.Tabs(
+            expand=True,  
+            length=1,
+            selected_index=0,
+            content=ft.Column([
+                ft.TabBar(tabs=[self.tab]),     # Holds our tab at the top of the widget
+                ft.TabBarView([self.master_stack], expand=True)# Holds our body
+            ], expand=True),
+            
+        )   
+        self.content = self.tabs
 
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
+
+    # Special color changes for this one
+    def reload_tab(self):
+        self.toggle_info_button.icon_color = self.data.get('color', "primary")
+        self.information_display.reload_mini_widget()
+        super().reload_tab()     
+        
+
 
     # Called in the constructor
     def _create_information_display(self):
@@ -158,6 +245,17 @@ class Canvas(Widget):
         # Add to our mini widgets so it shows up in the UI
         self.mini_widgets.append(self.information_display)
 
+    def _get_menu_options(self):
+        ''' Gets the menu options for when we right click on the canvas '''
+
+        options = [
+            # Show info
+            # Set background image
+        ]
+
+        options.extend(super()._get_menu_options())     # Get the default menu options for widgets and add them to our information display options
+        return options
+        
 
     # Called on launch to load our drawing from data into our canvas
     def load_canvas_OUTDATED(self):
@@ -165,19 +263,7 @@ class Canvas(Widget):
 
         # Clear our canvas, and load our shapes stored in data
         self.canvas.shapes.clear()
-        shapes = self.data.get('canvas_data', {})
-
-        # Load our background color if we have one
-        bgcolor = self.data.get('canvas_data', {}).get('bgcolor', None)
-        if bgcolor is not None:
-            if bgcolor != "":
-                blend_mode = self.data.get('canvas_data', {}).get('bg_blend_mode', 'src_over')
-                self.canvas.shapes.append(
-                    cv.Color(       # Can use effects here as well
-                        color=bgcolor,
-                        blend_mode=blend_mode,
-                    )
-                )
+        shapes = self.data.get('canvas', {})
 
         # Loading points
         for point in shapes.get('points', []):
@@ -251,14 +337,15 @@ class Canvas(Widget):
                 
                 else:
                     print("Unknown path element type while loading: ", element)
-                    self.p.open(SnackBar(f"Error loading {self.title}"))
+                    self.p.show_dialog(SnackBar(f"Error loading {self.title}"))
 
             self.canvas.shapes.append(new_path)
 
 
         
-
-        
+    # Called when changing our bg color from the info display
+    async def set_canvas_bg_clicked(self, e):
+        ''' '''
     
 
     # Called when we click the canvas and don't initiate a drag
@@ -278,7 +365,7 @@ class Canvas(Widget):
         # After dragging canvas widget, it loses page reference and can't update, so the exception handles that.
         try:
             self.canvas.update()
-        except Exception as e:
+        except Exception as _:
             print("Failed to update canvas")
 
         #print(self.state.points)
@@ -363,6 +450,7 @@ class Canvas(Widget):
 
         # Add the path to the canvas so we can see it
         self.canvas.shapes.append(self.current_path)
+        self.canvas.update()
 
 
         
@@ -402,7 +490,7 @@ class Canvas(Widget):
                     self.current_path.update()
                     #self.canvas.update()
                 # This re-sets the canvas page, which all paths need to update correctly. This should only catch one time per stroke
-                except Exception as e:
+                except Exception as _:
                     self.canvas.update()
                 return
         
@@ -431,8 +519,7 @@ class Canvas(Widget):
                 # Update the page and return early
                 try:
                     self.current_path.update()
-                    #self.canvas.update()
-                except Exception as ex:
+                except Exception as _:
                     self.canvas.update()
                 return
         
@@ -452,8 +539,7 @@ class Canvas(Widget):
                 try:
                     # Page reference gets lost after dragging widget to new canvas, so we reset it and update
                     self.current_path.update()
-                    #self.canvas.update()
-                except Exception as ex:
+                except Exception as _:
                     self.canvas.update()
                 return
         
@@ -467,13 +553,13 @@ class Canvas(Widget):
 
                 # Add the declared element to our current path and state paths
                 self.current_path.elements.append(path_element)
+                print("Path element added: ", path_element)
                 self.state.paths[0]['elements'].append((path_element.__dict__))  
 
                 # After dragging canvas widget, it loses page reference and can't update
                 try:
                     self.current_path.update()
-                    #self.canvas.update()
-                except Exception as ex:
+                except Exception as _:
                     self.canvas.update()
                 
 
@@ -487,22 +573,28 @@ class Canvas(Widget):
 
         print("Saving canvas: ", self.title)
         try:
-            await self.canvas.capture()
-            cc = await self.canvas.get_capture()
-                
 
-            self.state.capture_list.append(cc)
-
-            encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
-            self.data['capture_list'].append(encoded_capture)
-
+            #await self.canvas.capture()
+            #cc = await self.canvas.get_capture()
+            #encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
             #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}_capture.png")
 
-            self.save_dict()
+            #await self.save_dict()
+
+            # TODO: When saving capture, set most recent one as a snapshot for Canvas Boards to
+
+            #self.canvas.shapes.clear()
+            #Add all layers captures here
+
+
+            #decoded_capture_list = [base64.b64decode(capture) for capture in self.data.get('capture_list', [])]
 
             # Clear the current state
             self.state.paths.clear()
             self.state.points.clear()
+
+
+            # Set canvas to new capture here??
         except Exception as e:
             print("failed to save canvas")
 
@@ -520,25 +612,18 @@ class Canvas(Widget):
 
         # Reload our most recent capture to fit the new canvas size
         self.canvas.shapes.clear()
-        str_bgimage = self.data.get('capture_list', [])[-1] if self.data.get('capture_list', []) else None
-        if str_bgimage is not None:
-            bgimage = cv.Image(str_bgimage, 0, 0, self.canvas_width, self.canvas_height)
-            self.canvas.shapes.append(bgimage)
 
-        print("length canvas shapes: ", len(self.canvas.shapes))
+        #str_bgimage = self.data.get('capture_list', [])[-1] if self.data.get('capture_list', []) else None
+        #if str_bgimage is not None:
+            #bgimage = cv.Image(str_bgimage, 0, 0, self.canvas_width, self.canvas_height)
+            #self.canvas.shapes.append(bgimage)
     
         try:
             self.canvas.update()    # Update the canvas
         except Exception as _:
             pass
 
-        if self.information_display.data.get('left', None) is None or self.information_display.data.get('top', None) is None:
-            self.information_display.data['left'] = 30
-            self.information_display.data['top'] = self.canvas_height - 30
-            self.information_display.show_info_button.left = 30
-            self.information_display.show_info_button.top = self.canvas_height - 30
-            self.information_display.show_info_button.update()
-            #self.information_display.save_dict()
+        
 
 
     def _set_canvas_background(self, e):
@@ -562,9 +647,22 @@ class Canvas(Widget):
             # Open file dialog to select image
 
 
-    # TODO: NOT TESTED ----------------------------------
+    # TODO
     def export_canvas(self):
         """Exports the canvas as an image at desired size, computing bounds if no meta exists."""
+
+
+        # Get correct size that we are, and see what we need to upscale the resolution too
+
+        # Capture and get it using desired size
+        #await self.canvas.capture()
+        #cc = await self.canvas.get_capture()
+        #encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
+
+        #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}.png")
+
+    async def _create_layer_clicked(self, e=None):
+        pass
         
 
     # Called when we need to rebuild out plotline UI
@@ -574,19 +672,38 @@ class Canvas(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        iv = ft.InteractiveViewer(
-            content=self.canvas_container, expand=True,
-            scale_factor=750, boundary_margin=50,
-            min_scale=0.5, max_scale=2.0, scale=1.0,
-        )
+
+        # Each layer is:
+        # {
+            # 'name': str,
+            # 'is_visible': bool,
+            # 'capture': "",    # Only rendered capture for this layer  
+        #}  
+
+        # Load our canvas from the ground up
+        # Canvas just loads each layer on top of each other
 
         canvas_stack = ft.Stack([
-            ft.Container(expand=True, ignore_interactions=True),
-            iv,
-            self.information_display.show_info_button,
-        ], expand=True)
+            ft.Container(expand=True),      # Make sure we're expanded
+            self.canvas_container,
+        ],  expand=False, alignment=ft.Alignment(0, 0))   # Stack so we can have a background that doesn't get captured, and an interactive viewer to zoom and pan without affecting our coordinates
 
-        self.body_container.content = canvas_stack
+
+        interactive_viewer = ft.InteractiveViewer(
+            content=canvas_stack, expand=True,
+            scale_factor=500, boundary_margin=50,
+            min_scale=0.5, max_scale=3.0, scale=1.0,
+        )
+
+        container = ft.Container(interactive_viewer, expand=3)
+
+        row = ft.Row([
+            container, self.information_display
+        ], scroll="none", expand=True, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+
+
+
+        self.body_container.content = row
 
         self._render_widget()
 
