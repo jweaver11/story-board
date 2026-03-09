@@ -143,10 +143,10 @@ class Widget(ft.Container):
             ft.Row([self.icon, tab_text, hide_tab_icon_button]),
             mouse_cursor=ft.MouseCursor.CLICK,
             hover_interval=100,
-            on_enter=self._enter_tab,
-            on_hover=self._hover_tab,
-            on_exit=self._exit_tab,
-            on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
+            #on_enter=self._set_coords,
+            on_hover=self._set_coords,
+            #on_exit=self._exit_tab,
+            on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
         )
 
         # Tab that holds our widget title and 'body'.
@@ -181,8 +181,6 @@ class Widget(ft.Container):
             
         )   
         self.content = self.tabs
-
-        
 
         # Called at end of constructor for all child widgets to build their view (not here tho since we're not on page yet)
         #self.reload_widget()
@@ -310,7 +308,7 @@ class Widget(ft.Container):
             self.p.run_task(self.save_dict)
 
             # Reload the rail to apply changes
-            self.story.active_rail.display_active_rail(self.story)
+            self.story.active_rail.reload_rail()
             return True
         else:
             return False
@@ -322,8 +320,6 @@ class Widget(ft.Container):
             return 
         self.w = int(e.width)
         self.h = int(e.height)
-        #print("New size: ", self.w, "x", self.h)
-
         
     # Called when renaming a widget
     def rename(self, title: str):
@@ -331,7 +327,6 @@ class Widget(ft.Container):
 
         # Save our old file path for renaming later
         old_file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json")  
-        old_key = f"{self.directory_path}\\{self.title}_{self.data.get('tag', '')}"  
                                                  
         # Update our live title, and associated data
         self.title = title.capitalize()                              
@@ -343,9 +338,6 @@ class Widget(ft.Container):
 
         # Save our data to this new file
         self.p.run_task(self.save_dict)                                
-
-        # Remove from our live dict wherever we are stored
-        tag = self.data.get('tag', '')
 
         # Reload our widget ui and rail to reflect changes 
         self.reload_widget()           
@@ -440,27 +432,14 @@ class Widget(ft.Container):
     # Called when a draggable starts dragging.
     async def _start_drag(self, e: ft.DragStartEvent):
         ''' Shows our pin drag targets. Needs its own function or story is not initialized on first launch, causing crash '''
-        self.story.workspace.show_pin_drag_targets()
-        
-    # Called when mouse enters the tab part of the widget
-    async def _enter_tab(self, e: ft.PointerEvent):
-        ''' Changes the hide icon button color slightly for more interactivity '''
-        e.control.icon_color = ft.Colors.ON_SURFACE
-        e.control.update()
-        
+        self.story.workspace.show_pin_drag_targets() 
 
     # Called when mouse hovers over the tab part of the widget
-    async def _hover_tab(self, e: ft.PointerEvent):
+    async def _set_coords(self, e: ft.PointerEvent):
         ''' Updates our mouse x/y state for opening menu at mouse position '''
         self.story.mouse_x = e.global_position.x
         self.story.mouse_y = e.global_position.y
         
-
-    # Called when mouse stops hovering over the tab part of the widget
-    async def _exit_tab(self, e):
-        ''' Reverts the color change of the hide icon button '''
-        e.control.icon_color = ft.Colors.OUTLINE
-        e.control.update()
 
     # Called to hide the widget from the workspace
     async def hide_widget(self, e=None):
@@ -468,18 +447,17 @@ class Widget(ft.Container):
         if not self.visible:
             return
         
-        
-        self.tab_gd.on_enter = None
-        self.tab_gd.on_hover = None
-        self.tab_gd.on_exit = None
-        self.tab_gd.on_secondary_tap = None
-        self.tab_gd.update()
-        await asyncio.sleep(0)  # Spaces update so the page won't batch them
-        
         self.story.blocker.visible = True
         self.story.blocker.update()
         await asyncio.sleep(0)
-          
+             
+        self.tab_gd.on_enter = None
+        #self.tab_gd.on_hover = None
+        #self.tab_gd.on_exit = None
+        self.tab_gd.on_secondary_tap = None
+        self.tab_gd.disabled = True
+        self.tab_gd.update()
+        await asyncio.sleep(0)  # Spaces update so the page won't batch them
         
         self.data['visible'] = False
         self.story.workspace.reload_workspace()   # Reload workspace to hide the widget and show the placeholder in its pin location
@@ -688,8 +666,7 @@ class Widget(ft.Container):
             
             # Change our icon to match, apply the update
             self.reload_widget()
-            self.story.active_rail.content.reload_rail()   # Reload the rail to reflect the color change
-            self.story.active_rail.update()
+            self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
             await self.story.close_menu()
 
             if self.story.blocker.visible:

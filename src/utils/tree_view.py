@@ -95,7 +95,6 @@ def load_directory_data(
         # Now go through our files
         for file_name in files:
             widget = None
-            print("Found file name: ", file_name)
 
             try:
                 # Load the file data to see if it's valid

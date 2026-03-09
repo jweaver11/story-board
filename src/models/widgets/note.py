@@ -42,15 +42,15 @@ class Note(Widget):
                 'pin_location': "right" if data is None else data.get('pin_location', "right"),   # Default pin location for notes
 
                 # Note data
-                'note_data': {}
+                'note_data': {
+                    "": ""
+                }
             },
         )
 
         # Saving creates the file if we're new
         if is_new:
             self.p.run_task(self.save_dict)
-            print(self.title, " Key while saveing new note: ", self.data.get('key'))
-
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
