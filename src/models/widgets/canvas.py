@@ -85,10 +85,10 @@ class Canvas(Widget):
                     
 
                     # Background settings
-                    #'bgcolor': str,                 # If its a color
-                    #'image_base64': str,            # If an image is used. Color ignored if this is set
-                    #'bg_blend_mode': "src_over",    # Blend mode for background. Starts default
-                    #'bg_is_transparent': True,    
+                    # Background can be an image, color, or left empty for transparent. 
+                    'background': None,             # We display it using a container, but manually create it when exporting
+                    'bg_type': None,            # "color", "image", or None so we know how to display it
+                    'bg_blend_mode': "src_over",    # Blend mode for background. Starts default src_over (none)
                 },
 
                 'canvas_data': {}       # Information display data for its mini widget
@@ -99,6 +99,7 @@ class Canvas(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.p.run_task(self.save_dict)
+
 
         # TODO: When saving capture, set most recent one as a snapshot for Canvas Boards to
 
@@ -116,7 +117,7 @@ class Canvas(Widget):
                 mouse_cursor=ft.MouseCursor.PRECISE,
                 on_pan_start=self.start_drawing,
                 on_pan_update=self.is_drawing,
-                on_pan_end=lambda e: self.p.run_task(self.save_canvas),
+                on_pan_end=lambda _: self.p.run_task(self.save_canvas),
                 on_tap_up=self.add_point,      # Handles so we can add points
                 drag_interval=10,
                 expand=True,
@@ -140,6 +141,101 @@ class Canvas(Widget):
 
         self.information_display: ft.Container = None
         self._create_information_display()
+
+        # Canvas has a custom tab, so it re-uses almost everything from widget
+        # UI ELEMENTS - Tab
+        self.tabs: ft.Tabs 
+        self.tab: ft.Tab  
+        self.icon: ft.Icon
+        self.tab_text: ft.Text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
+
+        # Grabs our tag to determine the icon we'll use
+        tag = self.data.get('tag', '')
+
+        # Set our icon based on what type of widget we are using tag
+        match tag:
+            case "document": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
+            case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
+            case "canvas_board": self.icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
+            case "note": self.icon = ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED)
+            case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
+            case "character_connection_map": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
+            case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)
+            case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
+            case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
+            case "object": self.icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
+            case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
+
+
+        # Set the color and size
+        self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
+
+        tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS)
+        
+        # Our icon button that will hide the widget when clicked in the workspace
+        hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
+            scale=0.8,
+            on_click=self.hide_widget,
+            icon=ft.Icons.CLOSE_ROUNDED,
+            icon_color=ft.Colors.OUTLINE,
+            tooltip="Hide",
+            mouse_cursor=ft.MouseCursor.CLICK,
+        )
+
+        self.toggle_info_button = ft.IconButton(
+            ft.Icons.INFO_OUTLINE, self.data.get('color', "primary"), scale=0.8,
+            mouse_cursor=ft.MouseCursor.CLICK,
+            tooltip="Show Canvas Info",
+            on_click=self.information_display.show_mini_widget,
+            # on_click here
+        )
+
+
+        self.tab_gd = ft.GestureDetector(
+            ft.Row(
+                [self.icon, ft.Container(width=10), tab_text, self.toggle_info_button, ft.Container(expand=True), hide_tab_icon_button],
+                spacing=0
+            ),     # Changes here to add show info button
+            mouse_cursor=ft.MouseCursor.CLICK,
+            hover_interval=100,
+            #on_enter=self._set_coords,
+            on_hover=self._set_coords,
+            #on_exit=self._exit_tab,
+            on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
+        )
+
+        # Tab that holds our widget title and 'body'.
+        # Since this is a ft.Tab, it needs to be nested in a ft.Tabs control or it wont render.
+        self.tab = ft.Tab(
+
+            # Content of the tab itself. Has widgets name and hide widget icon, and functionality for dragging
+            label=ft.Draggable(   # Draggable is the control so we can drag and drop to different pin locations
+                group="widgets",    # Group for draggables (and receiving drag targets) to accept each other
+                data=self.data.get('key', ""),  # Pass ourself through the data (of our tab, NOT our object) so we can move ourself around
+
+                # Drag event utils
+                on_drag_start=self._start_drag,    # Shows our pin targets when we start dragging
+
+                # Content when we are dragging the follows the mouse
+                content_feedback=ft.TextButton(self.title), # Normal text won't restrict its own size, so we use a button
+
+                # The content of our draggable. We use a gesture detector so we have more events
+                content=self.tab_gd
+            )                    
+        )
+
+        # Tabs stuff
+        self.tabs = ft.Tabs(
+            expand=True,  
+            length=1,
+            selected_index=0,
+            content=ft.Column([
+                ft.TabBar(tabs=[self.tab]),     # Holds our tab at the top of the widget
+                ft.TabBarView([self.master_stack], expand=True)# Holds our body
+            ], expand=True),
+            
+        )   
+        self.content = self.tabs
 
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -251,7 +347,7 @@ class Canvas(Widget):
                 
                 else:
                     print("Unknown path element type while loading: ", element)
-                    self.p.open(SnackBar(f"Error loading {self.title}"))
+                    self.p.show_dialog(SnackBar(f"Error loading {self.title}"))
 
             self.canvas.shapes.append(new_path)
 
@@ -431,7 +527,6 @@ class Canvas(Widget):
                 # Update the page and return early
                 try:
                     self.current_path.update()
-                    #self.canvas.update()
                 except Exception as ex:
                     self.canvas.update()
                 return
@@ -452,7 +547,6 @@ class Canvas(Widget):
                 try:
                     # Page reference gets lost after dragging widget to new canvas, so we reset it and update
                     self.current_path.update()
-                    #self.canvas.update()
                 except Exception as ex:
                     self.canvas.update()
                 return
@@ -472,7 +566,6 @@ class Canvas(Widget):
                 # After dragging canvas widget, it loses page reference and can't update
                 try:
                     self.current_path.update()
-                    #self.canvas.update()
                 except Exception as ex:
                     self.canvas.update()
                 
@@ -498,7 +591,7 @@ class Canvas(Widget):
 
             #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}_capture.png")
 
-            self.save_dict()
+            await self.save_dict()
 
             # Clear the current state
             self.state.paths.clear()
@@ -574,19 +667,30 @@ class Canvas(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        iv = ft.InteractiveViewer(
+        background_container = ft.Container(expand=True, ignore_interactions=True)
+
+        # Set the background here just for user viewing so it wont be in the capture
+
+
+        interactive_viewer = ft.InteractiveViewer(
             content=self.canvas_container, expand=True,
             scale_factor=750, boundary_margin=50,
             min_scale=0.5, max_scale=2.0, scale=1.0,
         )
 
         canvas_stack = ft.Stack([
-            ft.Container(expand=True, ignore_interactions=True),
-            iv,
-            self.information_display.show_info_button,
-        ], expand=True)
+            background_container,
+            interactive_viewer,
+            #self.information_display.show_info_button,
+        ], expand=3)
 
-        self.body_container.content = canvas_stack
+        row = ft.Row([
+            canvas_stack, self.information_display
+        ])
+
+
+
+        self.body_container.content = row
 
         self._render_widget()
 

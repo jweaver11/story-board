@@ -28,6 +28,11 @@ class Story(ft.View):
         type: str=None          # Type of story (novel, comic, etc.)
     ):
         
+        # Check if we're new and need to create file
+        is_new = False
+        if data is None:
+            is_new = True
+        
         # Parent constructor
         super().__init__(
             route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
@@ -80,7 +85,7 @@ class Story(ft.View):
             },
         )
 
-        if data is None:
+        if is_new:
             page.run_task(self.save_dict)
 
         self.template = template

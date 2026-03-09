@@ -50,7 +50,7 @@ class ContentRail(Rail):
                         leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
                         data="canvas", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new Canvas for sketching drawing, or visual note taking",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), #disabled=True
                     ),
                     ft.MenuItemButton(      
                         leading=ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED, ft.Colors.PRIMARY), content="Note", 
@@ -451,8 +451,10 @@ class ContentRail(Rail):
         menu_gesture_detector = ft.GestureDetector(
             content=dt,
             expand=True,
+
+            # TOO SLOW WHEN MORE THAN 5 Widgets
             on_hover=self.on_hovers,
-            on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
+            #on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
             hover_interval=20,
         )
 
@@ -468,6 +470,5 @@ class ContentRail(Rail):
             self.update()
         except Exception as _:
             pass
-        #self.p.update()
         
 
