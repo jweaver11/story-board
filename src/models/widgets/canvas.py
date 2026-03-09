@@ -54,7 +54,10 @@ class Canvas(Widget):
                 "tag": "canvas",
                 'color': app.settings.data.get('default_canvas_color'),
 
-                'capture_list': list,       # Capture list of our canvas, used for undo/redo stuff
+                # Info display and general canvas data
+                'canvas_data': {},       
+
+                'capture': str,       # Capture of what we currently look like
                 'snapshot': str,            # Most recent completed snapshot of our canvas used by other widgets
 
                 # Canvas drawing data we save and load from
@@ -74,7 +77,7 @@ class Canvas(Widget):
                     
                 },
 
-                'canvas_data': {}       # Information display data for its mini widget
+                
 
             },
         )
@@ -90,10 +93,10 @@ class Canvas(Widget):
         # TODO: When saving capture, set most recent one as a snapshot for Canvas Boards to
 
 
-        decoded_capture_list = [base64.b64decode(capture) for capture in self.data.get('capture_list', [])]
+        #decoded_capture_list = [base64.b64decode(capture) for capture in self.data.get('capture_list', [])]
 
         # State tracking for canvas drawing info
-        self.state = State(capture_list = decoded_capture_list)         # Used for our coordinates and how to apply things
+        self.state = State()         # Used for our coordinates and how to apply things
         self.canvas_width = 0
         self.canvas_height = 0
         self.undo_idx = 0       #??
@@ -105,6 +108,9 @@ class Canvas(Widget):
                 on_pan_update=self.is_drawing,
                 on_pan_end=lambda _: self.p.run_task(self.save_canvas),
                 on_tap_up=self.add_point,      # Handles so we can add points
+                on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
+                on_hover=self._set_coords,
+                hover_interval=20,
                 drag_interval=10,
                 expand=True,
             ),
@@ -234,6 +240,14 @@ class Canvas(Widget):
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
 
+    # Special color changes for this one
+    def reload_tab(self):
+        self.toggle_info_button.icon_color = self.data.get('color', "primary")
+        self.information_display.reload_mini_widget()
+        super().reload_tab()     
+        
+
+
     # Called in the constructor
     def _create_information_display(self):
         ''' Creates our plotline information display mini widget '''
@@ -248,6 +262,17 @@ class Canvas(Widget):
         # Add to our mini widgets so it shows up in the UI
         self.mini_widgets.append(self.information_display)
 
+    def _get_menu_options(self):
+        ''' Gets the menu options for when we right click on the canvas '''
+
+        options = [
+            # Show info
+            # Set background image
+        ]
+
+        options.extend(super()._get_menu_options())     # Get the default menu options for widgets and add them to our information display options
+        return options
+        
 
     # Called on launch to load our drawing from data into our canvas
     def load_canvas_OUTDATED(self):
@@ -255,19 +280,7 @@ class Canvas(Widget):
 
         # Clear our canvas, and load our shapes stored in data
         self.canvas.shapes.clear()
-        shapes = self.data.get('canvas_data', {})
-
-        # Load our background color if we have one
-        bgcolor = self.data.get('canvas_data', {}).get('bgcolor', None)
-        if bgcolor is not None:
-            if bgcolor != "":
-                blend_mode = self.data.get('canvas_data', {}).get('bg_blend_mode', 'src_over')
-                self.canvas.shapes.append(
-                    cv.Color(       # Can use effects here as well
-                        color=bgcolor,
-                        blend_mode=blend_mode,
-                    )
-                )
+        shapes = self.data.get('canvas', {})
 
         # Loading points
         for point in shapes.get('points', []):
@@ -369,7 +382,7 @@ class Canvas(Widget):
         # After dragging canvas widget, it loses page reference and can't update, so the exception handles that.
         try:
             self.canvas.update()
-        except Exception as e:
+        except Exception as _:
             print("Failed to update canvas")
 
         #print(self.state.points)
@@ -454,6 +467,7 @@ class Canvas(Widget):
 
         # Add the path to the canvas so we can see it
         self.canvas.shapes.append(self.current_path)
+        self.canvas.update()
 
 
         
@@ -493,7 +507,7 @@ class Canvas(Widget):
                     self.current_path.update()
                     #self.canvas.update()
                 # This re-sets the canvas page, which all paths need to update correctly. This should only catch one time per stroke
-                except Exception as e:
+                except Exception as _:
                     self.canvas.update()
                 return
         
@@ -522,7 +536,7 @@ class Canvas(Widget):
                 # Update the page and return early
                 try:
                     self.current_path.update()
-                except Exception as ex:
+                except Exception as _:
                     self.canvas.update()
                 return
         
@@ -542,7 +556,7 @@ class Canvas(Widget):
                 try:
                     # Page reference gets lost after dragging widget to new canvas, so we reset it and update
                     self.current_path.update()
-                except Exception as ex:
+                except Exception as _:
                     self.canvas.update()
                 return
         
@@ -561,7 +575,7 @@ class Canvas(Widget):
                 # After dragging canvas widget, it loses page reference and can't update
                 try:
                     self.current_path.update()
-                except Exception as ex:
+                except Exception as _:
                     self.canvas.update()
                 
 
@@ -575,22 +589,20 @@ class Canvas(Widget):
 
         print("Saving canvas: ", self.title)
         try:
-            await self.canvas.capture()
-            cc = await self.canvas.get_capture()
-                
-
-            self.state.capture_list.append(cc)
-
-            encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
-            self.data['capture_list'].append(encoded_capture)
+            #await self.canvas.capture()
+            #cc = await self.canvas.get_capture()
+            #encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
 
             #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}_capture.png")
 
-            await self.save_dict()
+            #await self.save_dict()
 
             # Clear the current state
             self.state.paths.clear()
             self.state.points.clear()
+
+
+            # Set canvas to new capture here??
         except Exception as e:
             print("failed to save canvas")
 
@@ -645,9 +657,19 @@ class Canvas(Widget):
             # Open file dialog to select image
 
 
-    # TODO: NOT TESTED ----------------------------------
+    # TODO
     def export_canvas(self):
         """Exports the canvas as an image at desired size, computing bounds if no meta exists."""
+
+        # Capture and get it using desired size
+        #await self.canvas.capture()
+        #cc = await self.canvas.get_capture()
+        #encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
+
+        #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}_capture.png")
+
+    async def _create_layer_clicked(self, e=None):
+        pass
         
 
     # Called when we need to rebuild out plotline UI
@@ -656,6 +678,17 @@ class Canvas(Widget):
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
+
+
+        # Each layer is:
+        # {
+            # 'name': str,
+            # 'is_visible': bool,
+            # 'capture': "",
+            # 'elements': list,   
+        #}  
+
+        # Load our canvas from the ground up
 
         canvas_stack = ft.Stack([
             ft.Container(expand=True),      # Make sure we're expanded

@@ -687,15 +687,16 @@ class Widget(ft.Container):
 
         async def _delete_confirmed(e=None):
             ''' Deletes the widget after confirmation '''
+            self.story.blocker.visible = True
+            self.story.blocker.update()
+            await asyncio.sleep(0)
 
             self.p.pop_dialog()
-            await asyncio.sleep(0)
             if self.delete_file():
                 if self in self.story.widgets:
                     print("Deleted: ", self.title)
                     self.story.widgets.remove(self)   
-            self.story.workspace.visible = True
-            self.story.workspace.update()
+            
             await asyncio.sleep(0)
             self.story.active_rail.content.reload_rail()    # Reload the rail to reflect the deletion
             self.story.active_rail.update()
@@ -705,9 +706,9 @@ class Widget(ft.Container):
             self.story.workspace.reload_workspace()
             await asyncio.sleep(0)
 
-            if self.story.workspace.visible:
-                self.story.workspace.visible = False
-                self.story.workspace.update()
+            if self.story.blocker.visible:
+                self.story.blocker.visible = False
+                self.story.blocker.update()
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(

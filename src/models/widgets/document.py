@@ -314,35 +314,6 @@ class Document(Widget):
 
         self._render_widget()
 
-
-        
-        # BUILDING BODY - the inside the body container of our widget
-        '''
-        self.body_container.content = ft.Column(
-            expand=True,
-            controls=[
-                FletQuill(
-                    text_data=self.data['document_text'],
-                    save_method=self._save_document,
-                    #file_path=f"{self.directory_path}/{self.title}_text.json",
-
-                    
-
-                    # OLD
-                    #border_visible=True,
-                    #border_width=1.0,       # Defaults to 1.0
-                    #padding_left=72.0,
-                    #padding_top=72.0,
-                    #padding_right=72.0,
-                    #padding_bottom=72.0,
-                    #aspect_ratio=8.5/11.0,  # paper-like ratio
-
-                    show_toolbar_divider=False,  # Show divider below toolbar
-                    placeholder_text=f"{self.title} begins here"
-                )
-            ]
-        )
-        '''
         
 
         

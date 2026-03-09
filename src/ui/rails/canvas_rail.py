@@ -61,14 +61,15 @@ class CanvasRail(Rail):
 
         # Color picker for changing brush color
         color_only = app.settings.data.get('paint_settings', {}).get('color', "#000000").split(",", 1)[0]     # Set color without opacity for the color picker
-        self.color_picker = ColorPicker(color=color_only)   # Set our color pickers color 
+        self.color_picker = ColorPicker(color=color_only, on_color_change=self._set_color)   # Set our color pickers color 
 
         self.color_selector = ft.PopupMenuButton(
             icon=ft.Icons.COLOR_LENS_OUTLINED, tooltip="The color of your brush strokes.",
             icon_color=app.settings.data.get('paint_settings', {}).get('color', ft.Colors.PRIMARY),
             menu_padding=ft.Padding.all(0), size_constraints=ft.BoxConstraints(min_width=310),
-            on_cancel=self._set_color,
-            items=self._get_color_options()
+            on_cancel=self._save_color,
+            items=self._get_color_options(),
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
         )
 
         self.brush_label = ft.Text(
@@ -78,11 +79,12 @@ class CanvasRail(Rail):
         self.brush_selector = ft.PopupMenuButton(
             tooltip="Change brush style",
             menu_padding=ft.Padding.all(0),
-            items=self._get_brush_options()
+            items=self._get_brush_options(),
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
         )
         self.brush_selector.content = ft.Container(
             ft.Row([self.brush_label, self._build_preview_canvas(app.settings.data.get('paint_settings', {}))], spacing=20),
-            clip_behavior=ft.ClipBehavior.HARD_EDGE,
+            clip_behavior=ft.ClipBehavior.HARD_EDGE, on_hover=lambda e: None
         )
 
         self.paint_blend_mode_selector: ft.PopupMenuButton = None   
@@ -109,26 +111,30 @@ class CanvasRail(Rail):
 
 
         return colors
+    
+    async def _set_color(self, e):
+        self.color_picker.color = e.data
+    
 
 
     # Called when color picker is closed
-    def _set_color(self, e):
+    async def _save_color(self, e=None):
 
-        selected_color = self.color_picker.color    # Our new selected color
-           
-        # Our story data needs the opacity, but color picker can't have it
-        opacity = app.settings.data.get('paint_settings', {}).get('color', "1.0").split(",", 1)[1].strip()
-        color_with_opacity = f"{selected_color},{opacity}"
-        app.settings.data['paint_settings']['color'] = color_with_opacity
-        app.settings.save_dict()
+        print("Setting color from picker to ", self.color_picker.color)
 
-        self.color_selector.icon_color = selected_color
+         
+        
+        app.settings.data['paint_settings']['color'] = self.color_picker.color
+        await app.settings.save_dict()
+
+        self.color_selector.icon_color = self.color_picker.color
+        self.color_selector.update()
         self.brush_selector.items = self._get_brush_options()   # Update our brush options to show the new color in the previews
         self.brush_selector.content = ft.Container(
             ft.Row([self.brush_label, self._build_preview_canvas(app.settings.data.get('paint_settings', {}))], spacing=20),
-            clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=ft.border_radius.all(4)
+            clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=ft.BorderRadius.all(4)
         )   # Update our brush selector preview to show the new color
-        self.update()
+        self.brush_selector.update()
 
 
         
@@ -138,17 +144,16 @@ class CanvasRail(Rail):
 
         app.settings.data['paint_settings'].update(brush_settings)
         app.settings.data['canvas_settings']['current_brush_name'] = name
-        app.settings.save_dict()
+        self.p.run_task(app.settings.save_dict)
 
         self.brush_label.value = name.capitalize()
         self.brush_selector.content = ft.Container(
             ft.Row([self.brush_label, self._build_preview_canvas(brush_settings)], spacing=20),
-            clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=ft.border_radius.all(4), expand=True,
+            clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=ft.BorderRadius.all(4), expand=True,
         )
         self.color_picker.color = brush_settings.get('color', "#000000").split(",", 1)[0].strip()   # Update color picker to match new brush color (without opacity)
         self.color_selector.icon_color = brush_settings.get('color', ft.Colors.PRIMARY).split(",", 1)[0].strip()   # Update selector icon color to match new brush color (without opacity)
 
-        self.paint_opacity_slider.value = float(brush_settings.get('color', "1.0").split(",", 1)[1].strip()) * 100
         stroke_cap = brush_settings.get('stroke_cap', 'butt')
         if stroke_cap == "round":
             self.paint_stroke_cap_selector.icon = ft.Icons.CIRCLE_OUTLINED
@@ -228,7 +233,7 @@ class CanvasRail(Rail):
             "blend_mode": None,             # Default no blend mode
             "stroke_dash_pattern": None,    # Default no dash pattern
         }
-        app.settings.save_dict()
+        self.p.run_task(app.settings.save_dict)
 
         # Since we can't call reload_rail, manually update all controls :(
         self.paint_anti_alias_toggle.value = True
@@ -421,28 +426,13 @@ class CanvasRail(Rail):
             new_width = int(e.control.value)
             # Change the data directly
             app.settings.data['paint_settings']['stroke_width'] = new_width
-            app.settings.save_dict()
-
-        # Called when changing paint opacity
-        def _paint_opacity_changed(e):
-            new_opacity = float(e.control.value)/100
-
-            # Get our current color without opacity
-            current_color = app.settings.data.get('paint_settings', {}).get('color', "#000000").split(",", 1)[0].strip()
-            color_with_opacity = f"{current_color},{new_opacity}"
-
-            # Change the data directly
-            app.settings.data['paint_settings']['color'] = color_with_opacity
-            app.settings.save_dict()
-
-        
-            
+            self.p.run_task(app.settings.save_dict)
 
         # Called when changing paint anti-aliasing
         def _paint_anti_alias_changed(e):
             new_anti_alias = e.control.value
             app.settings.data['paint_settings']['anti_alias'] = new_anti_alias
-            app.settings.save_dict()
+            self.p.run_task(app.settings.save_dict)
 
         def _paint_stroke_cap_changed(e):
             new_stroke_cap = e.control.text.lower()
@@ -453,7 +443,7 @@ class CanvasRail(Rail):
             else:
                 e.control.parent.icon = ft.Icons.SQUARE_OUTLINED
             app.settings.data['paint_settings']['stroke_cap'] = new_stroke_cap
-            app.settings.save_dict()
+            self.p.run_task(app.settings.save_dict)
             self.update()
 
         def _paint_stroke_join_changed(e):
@@ -466,13 +456,13 @@ class CanvasRail(Rail):
             else:
                 e.control.parent.icon = ft.Icons.SQUARE_OUTLINED
             app.settings.data['paint_settings']['stroke_join'] = new_stroke_join
-            app.settings.save_dict()
+            self.p.run_task(app.settings.save_dict)
             self.update()
 
         # Called when changing paint stroke blur
         def _paint_stroke_blur_changed(e):
             app.settings.data['paint_settings']['blur_image'] = int(e.control.value)
-            app.settings.save_dict()
+            self.p.run_task(app.settings.save_dict)
             
 
         def _paint_blend_mode_changed(e):
@@ -490,7 +480,7 @@ class CanvasRail(Rail):
             app.settings.data['paint_settings']['blend_mode'] = mode
             self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
 
-            app.settings.save_dict()
+            self.p.run_task(app.settings.save_dict)
             self.update()
 
 
@@ -504,12 +494,12 @@ class CanvasRail(Rail):
                 # Save current brush settings as a new custom brush
                 brush_settings = app.settings.data['paint_settings'].copy()
                 app.settings.data['canvas_settings']['saved_brushes'][name] = brush_settings
-                app.settings.save_dict()
+                self.p.run_task(app.settings.save_dict)
 
                 # Update our selector to include the new option
                 self.brush_selector.items = self._get_brush_options() 
                 self.brush_selector.update()        # Requires direct update to work
-                self.p.close(dlg)
+                self.p.pop_dialog()
 
             # Sets the name value when typing in the textfield. Checks if it exists and de-selects any existing ones
             def _set_name(e):
@@ -539,11 +529,10 @@ class CanvasRail(Rail):
 
                 if name in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}):
                     del app.settings.data['canvas_settings']['saved_brushes'][name]
-                    app.settings.save_dict()
+                    self.p.run_task(app.settings.save_dict)
 
                 dlg.content.controls = [ctrl for ctrl in dlg.content.controls if not (isinstance(ctrl, ft.GestureDetector) and ctrl.data == name)]
                 self.update()
-                #self.p.update()
                     
             # Sets an existing custom color to be overwritten by the current color
             def _set_brush_override(e):
@@ -567,7 +556,6 @@ class CanvasRail(Rail):
                         ctrl.content.bgcolor = ft.Colors.TRANSPARENT
                 
                 self.update()
-                #self.p.update()
 
             # Textfield for naming custom color
             text_field = ft.TextField(
@@ -608,13 +596,13 @@ class CanvasRail(Rail):
                                 ft.Text(name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
                                 self._build_preview_canvas(existing_brush),
                                 ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, data=name, on_click=_delete_brush, tooltip="Delete this saved brush"),
-                            ], spacing=20), border_radius=ft.border_radius.all(4), clip_behavior=ft.ClipBehavior.HARD_EDGE, padding=ft.padding.only(left=6)
+                            ], spacing=20), border_radius=ft.BorderRadius.all(4), clip_behavior=ft.ClipBehavior.HARD_EDGE, padding=ft.Padding.only(left=6)
                         ),
                         on_tap=_set_brush_override, data=name, mouse_cursor=ft.MouseCursor.CLICK
                     )
                 )
 
-            self.p.open(dlg)
+            self.p.show_dialog()
 
 
         # Our header at the top of the rail
@@ -622,15 +610,6 @@ class CanvasRail(Rail):
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER,
             controls=self.top_row_buttons,
-        )
-
-        # Opacity slider
-        opacity_value = float(app.settings.data.get('paint_settings', {}).get('color', "1.0").split(",", 1)[1].strip()) * 100
-        self.paint_opacity_slider = ft.Slider(
-            min=0, max=100,  tooltip="The opacity of your brush strokes. (How see through they are)",
-            divisions=100, value=opacity_value, expand=True,
-            label="Opacity: {value}%",
-            on_change_end=_paint_opacity_changed
         )
 
         # Width/Size of brush
@@ -761,7 +740,6 @@ class CanvasRail(Rail):
                 # Custom saved colors and custom brushes
 
                 ft.Row([ft.Text("Size", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Size of your strokes"), self.paint_width_slider]),      # Size slider
-                ft.Row([ft.Text("Opacity", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Opacity of your strokes (How see through they are)"), self.paint_opacity_slider]),     # Opacity slider
 
                 ft.Row([ft.Text("Stroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="End shape of your strokes"), self.paint_stroke_cap_selector]),     # Stroke cap shape selector
                 ft.Container(height=10),   # Spacer
@@ -782,22 +760,18 @@ class CanvasRail(Rail):
         )
         
 
-        # Build the content of our rail
-        self.content = IsolatedColumn(
-            spacing=0,
-            expand=True,
-            controls=[
-                header,
-                ft.Divider(),
-                content
-            ]
-        )
+       
 
         self.controls = [
-            #header,
-            #ft.Divider(),
-            ft.Text("Coming Soon")
-            #menu_gesture_detector
+            IsolatedColumn(
+                spacing=0,
+                expand=True,
+                controls=[
+                    header,
+                    ft.Divider(),
+                    content
+                ]
+            )
         ]
         
 

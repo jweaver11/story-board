@@ -92,7 +92,6 @@ class WorkspacesRail(ft.Container):
             bgcolor=ft.Colors.TRANSPARENT,  # Make rail background transparent
             selected_index=None,    # All rails start unselected, we set the right one later
             on_change=lambda e: self.change_workspace(e, story),    # When the rail is clicked
-
             destinations=[  # Each rail only has one destination
                 # We do it this way so we can change the order when re-ordering the rail
                 ft.NavigationRailDestination(
@@ -100,7 +99,7 @@ class WorkspacesRail(ft.Container):
                     selected_icon=ft.Icon(ft.Icons.LIBRARY_BOOKS_ROUNDED, color=ft.Colors.PRIMARY), # Selected icon on the rail
                     padding=ft.Padding.only(top=10, bottom=10), # Padding for spacing
                     # Label underneath the icon and the data we will use to identify the rail
-                    data="content", 
+                    data="content",
                     label=ft.Text(
                         "Content" if app.settings.data.get('workspaces_rail_is_collapsed', False) == False else " ", 
                         no_wrap=True, 
@@ -211,17 +210,17 @@ class WorkspacesRail(ft.Container):
         # We do it this way so when the app re-orders the rail, it will save their changes
         for workspace in app.settings.data['workspaces_rail_order']:     # Just a list of strings
             if workspace == "content":
-                workspaces_rail.append(ft.ReorderableDragHandle(content_rail))   # Add our corresponding workspace selector rail to the list
+                workspaces_rail.append(ft.ReorderableDragHandle(content_rail, "click"))   # Add our corresponding workspace selector rail to the list
             elif workspace == "characters":
-                workspaces_rail.append(ft.ReorderableDragHandle(characters_rail)) 
+                workspaces_rail.append(ft.ReorderableDragHandle(characters_rail, "click")) 
             elif workspace == "plotlines":
-                workspaces_rail.append(ft.ReorderableDragHandle(plotlines_rail))
+                workspaces_rail.append(ft.ReorderableDragHandle(plotlines_rail, "click"))
             elif workspace == "world_building":
-                workspaces_rail.append(ft.ReorderableDragHandle(world_building_rail))
+                workspaces_rail.append(ft.ReorderableDragHandle(world_building_rail, "click"))
             elif workspace == "canvas":
-                workspaces_rail.append(ft.ReorderableDragHandle(canvas_rail))
+                workspaces_rail.append(ft.ReorderableDragHandle(canvas_rail, "click"))
             elif workspace == "planning":
-                workspaces_rail.append(ft.ReorderableDragHandle(planning_rail))
+                workspaces_rail.append(ft.ReorderableDragHandle(planning_rail, "click"))
 
             idx += 1
 
@@ -231,13 +230,7 @@ class WorkspacesRail(ft.Container):
 
             self.width = 50     # Make the rail less wide
             
-            # Remove our labels below the icons
-            content_rail.destinations[0].label_content = None
-            characters_rail.destinations[0].label_content = None
-            plotlines_rail.destinations[0].label_content = None
-            world_building_rail.destinations[0].label_content = None
-            canvas_rail.destinations[0].label_content = None
-            planning_rail.destinations[0].label_content = None
+            
 
             # Set our collapsed icon buttons icon depending on collapsed state
             collapse_icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED

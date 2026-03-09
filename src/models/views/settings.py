@@ -65,7 +65,7 @@ class Settings(ft.View):
                 'paint_settings': {
 
                     # Stroke styles
-                    'color': "#FFFFFF,1.0" if self.p.theme_mode == "dark" else "#000000,1.0",     # Hex color folowed by opacity
+                    'color': "#FFFFFF,1.0",     # Hex color folowed by opacity
                     'stroke_width': 3,
                     'style': "stroke",
                     'stroke_cap': "round",

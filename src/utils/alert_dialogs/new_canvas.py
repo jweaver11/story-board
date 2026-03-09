@@ -126,7 +126,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
             return True
             
       
-    def _create_button_clicked(e):
+    async def _create_button_clicked(e=None):
         ''' Handles creating a new canvas when create is clicked '''
         nonlocal canvas_data
         nonlocal submitting
@@ -140,7 +140,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
 
         title = title_textfield.value if title_textfield.value != "" else f"Canvas {len(story.canvases) + 1}"
 
-        story.create_widget(
+        await story.create_widget(
             title=title,
             tag="canvas",
             directory_path=directory_path,
@@ -148,7 +148,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         )
 
         story.data['selected_rail'] = 'canvas'
-        story.save_dict()
+        page.run_task(story.save_dict)
         story.workspaces_rail.reload_rail(story)
         story.active_rail.reload_rail()
 

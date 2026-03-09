@@ -45,10 +45,6 @@ class CanvasInformationDisplay(MiniWidget):
                 'title': self.title,          # Title of the mini widget, should match the object title
                 'tag': "canvas_information_display",        
 
-                # Undo and re-do state tracking for captures
-                'undo_list': list,
-                'redo_list': list,
-
                 # Background can be an image, color, or left empty for transparent. 
                 'background': None,             # We display it using a container, but manually create it when exporting
                 'bg_type': None,            # "color", "image", or None so we know how to display it
@@ -112,12 +108,11 @@ class CanvasInformationDisplay(MiniWidget):
         # Option to export canvas as image file (png, jpg, etc). 
         # Add color_filter for both decoration image and container ?
         # Fill tool??
-        # Little Info Display Button in the bottom right that can be dragged around and shows canvas info display
         # Manage saving so not at the end of every stroke.
         # Add undo/redo based on capture list
         # Remove old items from the undo/redo list after like 30 or so 
-        # Open drawings and maps in their own window to not lag?????
-        # Always use aspect ratio when renderng canvas, height and width are just for exporting them
+        # Height ad width just for exporting
+        # Set dark and light transparent bg images for all canvases
 
         title_control = ft.Row([
             ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
