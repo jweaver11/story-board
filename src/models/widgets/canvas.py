@@ -3,21 +3,6 @@ The canvas class for all canvases inside our story
 Canvases are drawings and images
 '''
 
-#TODO: 
-# Option for transparent background/no brackground
-# Option to upload image as background
-# Option to export canvas as image file (png, jpg, etc). Option to change how image fits on canvas (stretch, fit, fill, tile, center, etc)
-# Add ft.DecorationImage options to the canvas container for background images??
-# Add color_filter for both decoration image and container ?
-# Fill tool??
-# Ability to Lock (no drawing mode) for images
-# Little Info Display Button in the bottom right that can be dragged around and shows canvas info display
-# Manage saving so not at the end of every stroke.
-# Add undo/redo based on capture list
-# Remove old items from the undo/redo list after like 30 or so 
-# Open drawings and maps in their own window to not lag?????
-# Always use aspect ratio when renderng canvas, height and width are just for exporting them
-
 from flet_color_pickers import ColorPicker
 import flet as ft
 from models.widget import Widget
@@ -69,7 +54,8 @@ class Canvas(Widget):
                 "tag": "canvas",
                 'color': app.settings.data.get('default_canvas_color'),
 
-                'capture_list': list,     # Capture list of our canvas, used for undo/redo stuff
+                'capture_list': list,       # Capture list of our canvas, used for undo/redo stuff
+                'snapshot': str,            # Most recent completed snapshot of our canvas used by other widgets
 
                 # Canvas drawing data we save and load from
                 "canvas": {
@@ -85,10 +71,7 @@ class Canvas(Widget):
                     
 
                     # Background settings
-                    # Background can be an image, color, or left empty for transparent. 
-                    'background': None,             # We display it using a container, but manually create it when exporting
-                    'bg_type': None,            # "color", "image", or None so we know how to display it
-                    'bg_blend_mode': "src_over",    # Blend mode for background. Starts default src_over (none)
+                    
                 },
 
                 'canvas_data': {}       # Information display data for its mini widget
@@ -99,6 +82,9 @@ class Canvas(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.p.run_task(self.save_dict)
+
+        self.information_display: ft.Container = None
+        self._create_information_display()
 
 
         # TODO: When saving capture, set most recent one as a snapshot for Canvas Boards to
@@ -131,16 +117,24 @@ class Canvas(Widget):
         self.canvas_container = ft.Container(
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
             border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
-            aspect_ratio=self.data.get('canvas_data', {}).get('aspect_ratio'),       # If set, ignores width and height
-            content=self.canvas
+            aspect_ratio=self.data.get('canvas_data', {}).get('aspect_atio'),       # If set, ignores width and height
+            content=self.canvas, 
         )
 
-        self.current_path= cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
-       
+        # Set our canvas containers background based on our data
+        if self.data.get('canvas_data', {}).get('bg_type') == "color":
+            self.canvas_container.bgcolor = self.data.get('canvas_data', {}).get('background', None)
+        elif self.data.get('canvas_data', {}).get('bg_type') == "image":
+            self.canvas_container.image = ft.Image(self.data.get('canvas_data', {}).get('background', None))
+
+
+
+        
         #self.load_canvas()     OUTDATED
 
-        self.information_display: ft.Container = None
-        self._create_information_display()
+        
+        self.current_path= cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
+
 
         # Canvas has a custom tab, so it re-uses almost everything from widget
         # UI ELEMENTS - Tab
@@ -353,8 +347,9 @@ class Canvas(Widget):
 
 
         
-
-        
+    # Called when changing our bg color from the info display
+    async def set_canvas_bg_clicked(self, e):
+        ''' '''
     
 
     # Called when we click the canvas and don't initiate a drag
@@ -613,10 +608,11 @@ class Canvas(Widget):
 
         # Reload our most recent capture to fit the new canvas size
         self.canvas.shapes.clear()
-        str_bgimage = self.data.get('capture_list', [])[-1] if self.data.get('capture_list', []) else None
-        if str_bgimage is not None:
-            bgimage = cv.Image(str_bgimage, 0, 0, self.canvas_width, self.canvas_height)
-            self.canvas.shapes.append(bgimage)
+
+        #str_bgimage = self.data.get('capture_list', [])[-1] if self.data.get('capture_list', []) else None
+        #if str_bgimage is not None:
+            #bgimage = cv.Image(str_bgimage, 0, 0, self.canvas_width, self.canvas_height)
+            #self.canvas.shapes.append(bgimage)
 
         print("length canvas shapes: ", len(self.canvas.shapes))
     
@@ -625,13 +621,7 @@ class Canvas(Widget):
         except Exception as _:
             pass
 
-        if self.information_display.data.get('left', None) is None or self.information_display.data.get('top', None) is None:
-            self.information_display.data['left'] = 30
-            self.information_display.data['top'] = self.canvas_height - 30
-            self.information_display.show_info_button.left = 30
-            self.information_display.show_info_button.top = self.canvas_height - 30
-            self.information_display.show_info_button.update()
-            #self.information_display.save_dict()
+        
 
 
     def _set_canvas_background(self, e):
@@ -667,26 +657,23 @@ class Canvas(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        background_container = ft.Container(expand=True, ignore_interactions=True)
-
-        # Set the background here just for user viewing so it wont be in the capture
+        canvas_stack = ft.Stack([
+            ft.Container(expand=True),      # Make sure we're expanded
+            self.canvas_container,
+        ],  expand=False, alignment=ft.Alignment(0, 0))   # Stack so we can have a background that doesn't get captured, and an interactive viewer to zoom and pan without affecting our coordinates
 
 
         interactive_viewer = ft.InteractiveViewer(
-            content=self.canvas_container, expand=True,
-            scale_factor=750, boundary_margin=50,
-            min_scale=0.5, max_scale=2.0, scale=1.0,
+            content=canvas_stack, expand=True,
+            scale_factor=500, boundary_margin=50,
+            min_scale=0.5, max_scale=3.0, scale=1.0,
         )
 
-        canvas_stack = ft.Stack([
-            background_container,
-            interactive_viewer,
-            #self.information_display.show_info_button,
-        ], expand=3)
+        container = ft.Container(interactive_viewer, expand=3)
 
         row = ft.Row([
-            canvas_stack, self.information_display
-        ])
+            container, self.information_display
+        ], scroll="none", expand=True, vertical_alignment=ft.CrossAxisAlignment.CENTER)
 
 
 

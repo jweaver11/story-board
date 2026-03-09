@@ -44,17 +44,21 @@ class CanvasInformationDisplay(MiniWidget):
             {   
                 'title': self.title,          # Title of the mini widget, should match the object title
                 'tag': "canvas_information_display",        
-                'left': 40,     # Position of our button
-                'top': 40,
-                'alignment': None,      # Saved alignment of our button for easier resizing
 
-                'drawing_mode': True,
+                # Undo and re-do state tracking for captures
+                'undo_list': list,
+                'redo_list': list,
+
+                # Background can be an image, color, or left empty for transparent. 
+                'background': None,             # We display it using a container, but manually create it when exporting
+                'bg_type': None,            # "color", "image", or None so we know how to display it
+                'bg_blend_mode': "src_over",    # Blend mode for background. Starts default src_over (none)
 
                 # Canvas info
                 'Description': str,
                 "Width": None,
                 "Height": None,
-                "Aspect Ratio": None,      # Used over height and width if set
+                "aspect_ratio": None,      # Used over height and width if set
                 'Is Locked': False, # Lock state tracking. When locked, no changes can be made (no drawing)
                 'Layers': [], #??
             },
@@ -98,31 +102,22 @@ class CanvasInformationDisplay(MiniWidget):
         self.visible = True
         self.update()
 
-    # Called to toggle our drawing mode on/off
-    def _toggle_drawing_mode(self, e=None):
-        ''' Toggles our drawing mode on/off '''
-
-        # Change our data value for drawing mode and save it
-        self.data['drawing_mode'] = not self.data.get('drawing_mode', False)
-        self.p.run_task(self.save_dict)
-
-        e.control.icon = ft.Icons.DRAW_OUTLINED if not self.data['drawing_mode'] else ft.Icons.DONE
-
-        # If we entered drawing mode, show our drawing canvas rail. Otherwise, go back to the previous rail
-        if self.data.get('drawing_mode', False):
-            self.widget.story.workspaces_rail.change_workspace(None, self.widget.story, force_rail="canvas")
-            self.widget.canvas.content.mouse_cursor = ft.MouseCursor.PRECISE
-        else:
-            
-            self.widget.canvas.content.mouse_cursor = ft.MouseCursor.CLICK
-
-        self.widget.canvas.content.update()
-
+    #
     
     # Called when reloading our mini widget UI
     def reload_mini_widget(self):
 
         #TODO: Layers, add reference images in the body
+        #TODO: Layer option to upload an image
+        # Option to export canvas as image file (png, jpg, etc). 
+        # Add color_filter for both decoration image and container ?
+        # Fill tool??
+        # Little Info Display Button in the bottom right that can be dragged around and shows canvas info display
+        # Manage saving so not at the end of every stroke.
+        # Add undo/redo based on capture list
+        # Remove old items from the undo/redo list after like 30 or so 
+        # Open drawings and maps in their own window to not lag?????
+        # Always use aspect ratio when renderng canvas, height and width are just for exporting them
 
         title_control = ft.Row([
             ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
@@ -136,27 +131,7 @@ class CanvasInformationDisplay(MiniWidget):
             ),
         ])
 
-        # Create our header
-        header = ft.Row([
-            ft.IconButton(
-                ft.Icons.DRAW_OUTLINED if not self.data.get('drawing_mode') else ft.Icons.DONE,
-                tooltip="Enter Drawing Mode" if not self.data.get('drawing_mode') else "Exit Drawing Mode",
-                on_click=self._toggle_drawing_mode,
-            ),
-            # Undo and redo buttons
-            ft.PopupMenuButton(
-                icon=ft.Icons.IMAGE_ASPECT_RATIO_OUTLINED, tooltip="Set the background of your canvas. If one is set, it will be exported with the canvas",
-                menu_padding=ft.Padding.all(0), 
-                #on_cancel=self._set_color,
-                items=[
-                    #ft.PopupMenuItem("None", on_click=self._set_canvas_background, tooltip="No background"),
-                    #ft.PopupMenuItem("Color", on_click=self._set_canvas_background, tooltip="Set a solid color background"),
-                    #ft.PopupMenuItem("Image", on_click=self._set_canvas_background, tooltip="Set an image as the background"),
-                ]
-            ),
-           
-            # Button to hide markers
-        ])
+        
 
         description_tf = ft.TextField(
             expand=True, label="Description", value=self.data.get('Description', ""), dense=True, multiline=True,
@@ -170,7 +145,6 @@ class CanvasInformationDisplay(MiniWidget):
         
         content = ft.Column([
             ft.Container(height=1),  # Spacing 
-            header,
             description_tf
         ], expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START)
 

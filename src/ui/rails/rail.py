@@ -165,6 +165,11 @@ class Rail(IsolatedColumn):
                 if tag == "character":
                     template_name = str(e.control.content)
                     self.new_item_textfield.label = f"{template_name} Template"
+
+            case "canvas":
+                await self.story.close_menu()
+                self.p.show_dialog(new_canvas_alert_dlg(self.p, self.story))
+                return
                         
             case "canvas_board":
                 self.new_item_textfield.hint_text = "Canvas Board Title"
@@ -177,12 +182,8 @@ class Rail(IsolatedColumn):
 
         # Open the textfield early since we have to wait for async close menu
         self.new_item_textfield.update()
-        # Works with content rail, others wont
-        await self.controls[2].content.content.content.scroll_to(0)
-        #self.story.active_rail.update()
+        await self.controls[2].content.content.content.scroll_to(0) # Scroll to top of rail
         
-        # Close the menu (if ones is open)
-        #await asyncio.sleep(.3)     # Wait for popupmenu's animations to close if we have issues
         await self.story.close_menu()
         
 
