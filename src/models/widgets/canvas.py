@@ -57,23 +57,12 @@ class Canvas(Widget):
                 # Info display and general canvas data
                 'canvas_data': {},       
 
-                'capture': str,       # Capture of what we currently look like
+                'capture': str,             # Capture of what we currently look like
                 'snapshot': str,            # Most recent completed snapshot of our canvas used by other widgets
 
                 # Canvas drawing data we save and load from
                 "canvas": {
-
-                    # Drawing data
-                    #'paths': list,              # All our shapes, lines, dashed lines, curves, etc.
-                    #'shadow_paths': list,       # All paths but with shadows
-                    #'points': list,             # All our points
-
-                    #'capture_list': list,
-
-                    # Sizing of the canvas
-                    
-
-                    # Background settings
+                    'layers': list,     # {'name': str, 'is_visible': bool, 'capture': str}   
                     
                 },
 
@@ -88,12 +77,6 @@ class Canvas(Widget):
 
         self.information_display: ft.Container = None
         self._create_information_display()
-
-
-        # TODO: When saving capture, set most recent one as a snapshot for Canvas Boards to
-
-
-        #decoded_capture_list = [base64.b64decode(capture) for capture in self.data.get('capture_list', [])]
 
         # State tracking for canvas drawing info
         self.state = State()         # Used for our coordinates and how to apply things
@@ -570,6 +553,7 @@ class Canvas(Widget):
 
                 # Add the declared element to our current path and state paths
                 self.current_path.elements.append(path_element)
+                print("Path element added: ", path_element)
                 self.state.paths[0]['elements'].append((path_element.__dict__))  
 
                 # After dragging canvas widget, it loses page reference and can't update
@@ -589,13 +573,21 @@ class Canvas(Widget):
 
         print("Saving canvas: ", self.title)
         try:
+
             #await self.canvas.capture()
             #cc = await self.canvas.get_capture()
             #encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
-
             #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}_capture.png")
 
             #await self.save_dict()
+
+            # TODO: When saving capture, set most recent one as a snapshot for Canvas Boards to
+
+            #self.canvas.shapes.clear()
+            #Add all layers captures here
+
+
+            #decoded_capture_list = [base64.b64decode(capture) for capture in self.data.get('capture_list', [])]
 
             # Clear the current state
             self.state.paths.clear()
@@ -625,8 +617,6 @@ class Canvas(Widget):
         #if str_bgimage is not None:
             #bgimage = cv.Image(str_bgimage, 0, 0, self.canvas_width, self.canvas_height)
             #self.canvas.shapes.append(bgimage)
-
-        print("length canvas shapes: ", len(self.canvas.shapes))
     
         try:
             self.canvas.update()    # Update the canvas
@@ -661,12 +651,15 @@ class Canvas(Widget):
     def export_canvas(self):
         """Exports the canvas as an image at desired size, computing bounds if no meta exists."""
 
+
+        # Get correct size that we are, and see what we need to upscale the resolution too
+
         # Capture and get it using desired size
         #await self.canvas.capture()
         #cc = await self.canvas.get_capture()
         #encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
 
-        #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}_capture.png")
+        #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}.png")
 
     async def _create_layer_clicked(self, e=None):
         pass
@@ -684,11 +677,11 @@ class Canvas(Widget):
         # {
             # 'name': str,
             # 'is_visible': bool,
-            # 'capture': "",
-            # 'elements': list,   
+            # 'capture': "",    # Only rendered capture for this layer  
         #}  
 
         # Load our canvas from the ground up
+        # Canvas just loads each layer on top of each other
 
         canvas_stack = ft.Stack([
             ft.Container(expand=True),      # Make sure we're expanded
