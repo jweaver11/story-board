@@ -34,6 +34,8 @@ class Canvas(Widget):
         is_new = False
         if data is None:
             is_new = True
+        elif data.get('tag') is None:
+            is_new = True
         
         # Parent constructor
         super().__init__(
@@ -62,11 +64,6 @@ class Canvas(Widget):
 
                 # Canvas drawing data we save and load from
                 "canvas": {},
-
-                
-
-                
-
             },
         )
 
@@ -216,7 +213,9 @@ class Canvas(Widget):
                         expand=True,
                     ),
                     expand=True, 
-                    shapes=[cv.Image(capture, 0, 0)],
+                    shapes=[
+                        cv.Image(capture, 0, 0)     # Set the capture of the layer for all but background
+                    ],
                 ),
                 expand=True, data=name,
                 visible=visible,    # Set visibility
@@ -546,7 +545,9 @@ class Canvas(Widget):
 
     # TODO
     def export_canvas(self):
-        """Exports the canvas as an image at desired size, computing bounds if no meta exists."""
+        """ Exports canvas to correct file type based on selection with optional upscaling """
+
+        # TODO: Make sure to build extra background canvas to export image/color background, as they are currently rendered not captured
 
 
         # Get correct size that we are, and see what we need to upscale the resolution too
@@ -575,7 +576,9 @@ class Canvas(Widget):
             ft.Container(
                 expand=True, ignore_interactions=True,
                 bgcolor=self.data.get('canvas_data', {}).get('background', None) if self.data.get('canvas_data', {}).get('bg_type') == "color" else None,
-                image=ft.DecorationImage(self.data.get('canvas_data', {}).get('background', None), fit=ft.BoxFit.FILL) if self.data.get('canvas_data', {}).get('bg_type') == "image" else None,
+                image=ft.DecorationImage(
+                    self.data.get('canvas_data', {}).get('background', None), fit=ft.BoxFit.FILL
+                ) if self.data.get('canvas_data', {}).get('bg_type') == "image" else None,
             ),      # Make sure we're expanded
         ],  expand=False, alignment=ft.Alignment(0, 0))   # Stack so we can have a background that doesn't get captured, and an interactive viewer to zoom and pan without affecting our coordinates
 

@@ -30,6 +30,8 @@ class Character(Widget):
         is_new = False
         if data is None:
             is_new = True
+        elif data.get('tag', None) is None:   # Since chars have data passed in from templates, check something else to determine if new or not
+            is_new = True
 
         # Parent class constructor
         super().__init__(
@@ -98,7 +100,7 @@ class Character(Widget):
                 self.data['character_data'][section][field_name] = ""
             
             # Save and reload
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             self.p.pop_dialog()
             self.reload_widget()
                                 
@@ -140,7 +142,7 @@ class Character(Widget):
                         self.data['character_data'][sub_key][key] = value
                         break
         
-        self.save_dict()
+        self.p.run_task(self.save_dict)
 
     # Deletes a field from our character data dict
     def _delete_character_data(self, **kwargs):
@@ -159,7 +161,7 @@ class Character(Widget):
                         del self.data['character_data'][sub_key][key]
                         break
                 
-        self.save_dict()
+        self.p.run_task(self.save_dict)
         self.reload_widget()
 
     # Called when clicking our upload image button
@@ -176,7 +178,7 @@ class Character(Widget):
                     encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                     # Save to our data
                     self.data['image_base64'] = f"{encoded_string}"
-                    self.save_dict()
+                    await self.save_dict()
                     self.reload_widget()
 
             except Exception as _:
@@ -301,7 +303,7 @@ class Character(Widget):
 
         # Change our edit mode data flag, and save it to file
         self.data['edit_mode'] = not self.data['edit_mode']
-        self.save_dict()
+        self.p.run_task(self.save_dict)
 
         # Reload the widget. The reload widget should load differently depending on if we're in edit mode or not
         self.reload_widget()
@@ -402,7 +404,7 @@ class Character(Widget):
                     width=80,
                     height=80,
                     fit=ft.BoxFit.FILL,
-                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
             )
         else:
             img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)

@@ -63,11 +63,20 @@ class CanvasInformationDisplay(MiniWidget):
                 'Is Locked': False, # Lock state tracking. When locked, no changes can be made (no drawing)
 
                 # Layer info for our canvases
-                'Layers': [{
-                    'name': "Layer 1", 
-                    'visible': True, 
-                    'capture': "",   # Base64 string of capture of the layers drawing
-                }],     # {'name': str, 'visible': bool, 'index': int, 'capture': str
+                'Layers': [
+                    {
+                        'name': "Background",       
+                        'visible': True, 
+                        'blur': 0,          # Blur strength effect fo this layer
+                        'capture': "",   # Base64 string of capture of the layers drawing
+                    },
+                    {
+                        'name': "Layer 1", 
+                        'visible': True, 
+                        'blur': 0,
+                        'capture': "",   # Base64 string of capture of the layers drawing
+                    }
+                ],     # {'name': str, 'visible': bool, 'index': int, 'capture': str
                 'Active Layer': 0,   # Index of our active layer we are drawing on
             },
         )
@@ -121,14 +130,16 @@ class CanvasInformationDisplay(MiniWidget):
                 color_picker.color = e.data
 
             async def _set_confirmed(e=None):
+
                 self.data['background'] = color_picker.color
                 self.data['bg_type'] = "color"
+
                 await self.save_dict()
                 self.p.pop_dialog()
 
                 self.widget.story.blocker.visible = True
                 self.widget.story.blocker.update()
-                await asyncio.sleep(0)
+                await asyncio.sleep(0.1)
 
                 self.widget.reload_widget()
                 self.widget.story.blocker.visible = False
@@ -176,6 +187,27 @@ class CanvasInformationDisplay(MiniWidget):
 
                 except Exception as _:
                     pass
+
+    async def _set_layer_blur(self, e):
+        blur_strength = e.control.value
+        name = e.control.data
+
+
+
+        #self.data['bg_blur'] = blur_strength
+        #await self.save_dict()
+
+        # TODO: Update the blur of first shape on bg layer
+        #self.widget.layer_stack.controls[0].blur = self.data.get('bg_blur', 0)   # Set the blur of our background layer, which is always at index 0
+        #self.widget.layer_stack.controls[0].update()
+
+        #self.widget.story.blocker.visible = True
+        #self.widget.story.blocker.update()
+        #await asyncio.sleep(0)
+
+        #self.widget.reload_widget()
+        #self.widget.story.blocker.visible = False
+        #self.widget.story.blocker.update()
 
     async def _clear_background(self, e):
         self.data['background'] = None
@@ -320,7 +352,7 @@ class CanvasInformationDisplay(MiniWidget):
             self.widget.story.blocker.visible = False
             self.widget.story.blocker.update()
 
-        new_layer_tf = ft.TextField(capitalization=ft.TextCapitalization.WORDS, on_submit=_create_layer_confirmed, autofocus=True, dense=True)
+        new_layer_tf = ft.TextField(capitalization=ft.TextCapitalization.WORDS, on_submit=_create_layer_confirmed, autofocus=True)
         dlg = ft.AlertDialog(
             title="Layer Name",
             content=new_layer_tf,
@@ -394,6 +426,7 @@ class CanvasInformationDisplay(MiniWidget):
                 )
             ], style=ft.MenuStyle(mouse_cursor="click", padding=ft.Padding.all(0))
         )
+
            
 
 
