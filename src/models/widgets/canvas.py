@@ -86,8 +86,7 @@ class Canvas(Widget):
 
         
         self.layers = [{}]    # List of our layers, which are each their own canvas
-        #self.active_layer: cv.Canvas    # Index of our active layer we are drawing on
-        #self._load_layers()
+        self.layer_stack: ft.Stack  # Stack to hold our layers on top of each other
         
         self.current_path= cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
 
@@ -197,7 +196,6 @@ class Canvas(Widget):
             
 
             name = layer.get('name', f"Layer {idx + 1}")
-            print("Loaded layer: ", name)
             visible = layer.get('visible', True)
             capture = layer.get('capture', None)
 
@@ -206,7 +204,7 @@ class Canvas(Widget):
             
             new_layer = cv.Canvas(
                 visible=visible,    # Set visibility
-                data=idx,        # Save the index of this layer so we know where to save it in our data
+                data=name,        # Save the index of this layer so we know where to save it in our data
                 content=ft.GestureDetector(
                     mouse_cursor=ft.MouseCursor.PRECISE,
                     on_pan_start=self.start_drawing,
@@ -225,7 +223,13 @@ class Canvas(Widget):
                 
             )
             self.layers.append({'name': name, 'visible': visible, 'canvas': new_layer})
-        
+
+        # Remove our active layer from the list and add it to the top
+        active_layer_idx = self.data.get('canvas_data', {}).get('Active Layer', 0)
+        if self.layers and len(self.layers) > active_layer_idx:
+            active_layer = self.layers[active_layer_idx]
+            self.layers.pop(active_layer_idx)
+            self.layers.append(active_layer)
 
     # Special color changes for this one
     def reload_tab(self):
@@ -502,7 +506,7 @@ class Canvas(Widget):
             cc = await canvas.get_capture()
             encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
             if cc:
-                print("Got capture of canvas for layer index: ", canvas.data)
+                print("Got capture of canvas for layer name: ", canvas.data)
             #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}_capture.png")
 
             #await self.save_dict()
@@ -616,20 +620,20 @@ class Canvas(Widget):
         # Load our canvas from the ground up
         # Canvas just loads each layer on top of each other
 
-        canvas_stack = ft.Stack([
+        self.layer_stack = ft.Stack([
             ft.Container(expand=True, ignore_interactions=True),      # Make sure we're expanded
         ],  expand=False, alignment=ft.Alignment(0, 0))   # Stack so we can have a background that doesn't get captured, and an interactive viewer to zoom and pan without affecting our coordinates
 
         # Add our layers to the stack in order
         for layer in self.layers:
-            canvas_stack.controls.append(layer.get('canvas', ft.Container(ft.Text("Failed to grab layer"))))
-            print("Added canvas")
+            self.layer_stack.controls.append(layer.get('canvas', ft.Container(ft.Text("Failed to grab layer"))))
+            #print("Added canvas")
 
         layers_container = ft.Container(
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
             border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
             aspect_ratio=self.data.get('canvas_data', {}).get('aspect_atio'),       # If set, ignores width and height
-            content=canvas_stack, 
+            content=self.layer_stack, 
         )
 
         # Set our canvas containers background based on our data
