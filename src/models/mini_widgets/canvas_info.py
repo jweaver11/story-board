@@ -9,6 +9,9 @@ import flet as ft
 from models.widget import Widget
 from models.mini_widget import MiniWidget
 from utils.verify_data import verify_data
+import asyncio
+from styles.snack_bar import SnackBar
+
 
 
 class CanvasInformationDisplay(MiniWidget):
@@ -106,6 +109,53 @@ class CanvasInformationDisplay(MiniWidget):
         self.visible = True
         self.update()
 
+    async def _set_background(self, e):
+        type = e.control.data
+
+        if type == "color":
+            pass
+        else:
+            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            if files:
+
+                file_path = files[0].path
+                try:
+                    import base64
+
+                    with open(file_path, "rb") as image_file:
+                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                        # Save to our data
+                        self.data['background'] = f"{encoded_string}"
+                        self.data['bg_type'] = "image"
+                        await self.save_dict()
+                        await asyncio.sleep(0.1)
+
+                        self.widget.story.blocker.visible = True
+                        self.widget.story.blocker.update()
+                        await asyncio.sleep(0)
+
+                        self.widget.reload_widget()
+
+                        self.widget.story.blocker.visible = False
+                        self.widget.story.blocker.update()
+
+                except Exception as _:
+                    pass
+
+    async def _clear_background(self, e):
+        self.data['background'] = None
+        self.data['bg_type'] = None
+        await self.save_dict()
+
+        self.widget.story.blocker.visible = True
+        self.widget.story.blocker.update()
+        await asyncio.sleep(0)
+
+        self.widget.reload_widget()
+        self.widget.story.blocker.visible = False
+        self.widget.story.blocker.update()
+
+    # Called when we reorder our layers list and updates to new positions
     async def _reorder_layers(self, e: ft.OnReorderEvent):
         new_index = e.new_index
         old_index = e.old_index
@@ -117,8 +167,16 @@ class CanvasInformationDisplay(MiniWidget):
         self.data['Layers'] = layers
         
         await self.save_dict()
-        self.widget.reload_widget()
 
+        self.widget.story.blocker.visible = True
+        self.widget.story.blocker.update()
+        await asyncio.sleep(0)
+
+        self.widget.reload_widget()
+        self.widget.story.blocker.visible = False
+        self.widget.story.blocker.update()
+
+    # Called when deleting a layer
     async def _delete_layer_clicked(self, e):
 
         async def _delete_layer_confirmed(e=None):
@@ -128,7 +186,14 @@ class CanvasInformationDisplay(MiniWidget):
                     break
             await self.save_dict()
             self.p.pop_dialog()
+
+            self.widget.story.blocker.visible = True
+            self.widget.story.blocker.update()
+            await asyncio.sleep(0)
+
             self.widget.reload_widget()
+            self.widget.story.blocker.visible = False
+            self.widget.story.blocker.update()
 
         name = e.control.data   
 
@@ -144,12 +209,27 @@ class CanvasInformationDisplay(MiniWidget):
 
     # Sets the new active layer
     async def _toggle_selected_layer_visibility(self, e):
+
         name = e.control.data
-        for layer in self.data.get('Layers', []):
+
+        for idx, layer in enumerate(self.data.get('Layers', [])):
             if layer.get('name') == name:
+
+                # Can't hide active layer, show snackbar
+                if idx == self.data.get('Active Layer', 0) and layer.get('visible', True):
+                    self.p.show_dialog(SnackBar("Cannot hide active layer"))
+                    return
                 layer['visible'] = not layer.get('visible', True)
                 await self.save_dict()
-                self.widget.reload_widget()
+
+                # Update that canvases visibility and edit our icon to match
+                for ctrl in self.widget.layer_stack.controls:
+                    if isinstance(ctrl, ft.Container) and ctrl.data == name:
+                        ctrl.visible = layer['visible']
+                        e.control.icon = ft.Icons.VISIBILITY if layer['visible'] else ft.Icons.VISIBILITY_OFF   
+                        e.control.update()
+                        ctrl.update()
+
                 return
         
 
@@ -157,9 +237,35 @@ class CanvasInformationDisplay(MiniWidget):
     async def _set_active_layer(self, e):
         for idx, layer in enumerate(self.data.get('Layers', [])):
             if layer.get('name') == e.control.data:
+
+                # Error catch for setting an invisible layer as active
+                if layer.get('visible', True) == False:
+                    self.p.show_dialog(SnackBar("Cannot make a hidden layer the active layer"))
+                    return
+
                 self.data['Active Layer'] = idx
+                layer['visible'] = True   # Make sure layer is visible when we set it to active
                 await self.save_dict()
-                self.widget.reload_widget()
+
+                reorderable_list = e.control.parent.parent    # Grab expansion tile
+
+                for ctrl in reorderable_list.controls:   # Loop through layers and update bg color to show active layer
+                    if isinstance(ctrl, ft.ReorderableDragHandle):
+                        if ctrl.data == e.control.data:
+                            ctrl.content.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGH
+                            ctrl.content.leading.icon = ft.Icons.VISIBILITY
+                        else:
+                            ctrl.content.bgcolor = None
+                        ctrl.content.update()  # Update each layer control to reflect bg color change
+
+                for ctrl in self.widget.layer_stack.controls:
+                    if isinstance(ctrl, ft.Container) and ctrl.data == e.control.data:
+                        ctrl.ignore_interactions = False   # Active layer can interact
+                        ctrl.update()
+                    elif isinstance(ctrl, ft.Container):
+                        if ctrl.ignore_interactions == False:
+                            ctrl.ignore_interactions = True    # Non active layers can't interact
+                            ctrl.update()
                 return
         
     # Creates a new layer
@@ -170,9 +276,16 @@ class CanvasInformationDisplay(MiniWidget):
             self.data['Layers'].append({'name': name, 'visible': True, 'capture': ""})
             await self.save_dict()
             self.p.pop_dialog()
-            self.widget.reload_widget()
 
-        new_layer_tf = ft.TextField(capitalization=ft.TextCapitalization.WORDS, on_submit=_create_layer_confirmed, autofocus=True)
+            self.widget.story.blocker.visible = True
+            self.widget.story.blocker.update()
+            await asyncio.sleep(0)
+
+            self.widget.reload_widget()
+            self.widget.story.blocker.visible = False
+            self.widget.story.blocker.update()
+
+        new_layer_tf = ft.TextField(capitalization=ft.TextCapitalization.WORDS, on_submit=_create_layer_confirmed, autofocus=True, dense=True)
         dlg = ft.AlertDialog(
             title="Layer Name",
             content=new_layer_tf,
@@ -186,8 +299,6 @@ class CanvasInformationDisplay(MiniWidget):
     # Called when reloading our mini widget UI
     def reload_mini_widget(self):
 
-        #TODO: Layers, add reference images in the body
-        #TODO: Layer option to upload an image
         # Option to export canvas as image file (png, jpg, etc). 
         # Add color_filter for both decoration image and container ?
         # Fill tool??
@@ -221,6 +332,36 @@ class CanvasInformationDisplay(MiniWidget):
         )
 
 
+        # Set and clear bg buttons
+        # TODO: Set, clear, manage effect, strenght, blur, 
+        edit_bg_options = ft.MenuBar(
+            [
+                ft.SubmenuButton(
+                    "Set Background",
+                    [
+                        ft.PopupMenuButton(     # Set a color
+                            icon=ft.Icons.COLOR_LENS_OUTLINED, tooltip="Set color background", style=ft.ButtonStyle(mouse_cursor="click"),
+                            icon_color=self.data.get('background', "primary") if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
+                            data="color",
+                        ),
+                        ft.IconButton(      # Set an image
+                            ft.Icons.IMAGE_OUTLINED, tooltip="Set image background", mouse_cursor="click", data="image",
+                            on_click=self._set_background,
+                        ),
+                        ft.IconButton(  # Clear background
+                            tooltip="Clear Background", icon=ft.Icons.HIDE_IMAGE, mouse_cursor="click",
+                            on_click=self._clear_background
+                        ),
+                    ],
+                    style=ft.ButtonStyle(mouse_cursor="click"),
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0))
+                )
+            ], style=ft.MenuStyle(mouse_cursor="click", padding=ft.Padding.all(0))
+        )
+           
+
+
+        # Button for creating new layers
         create_new_layer_button = ft.IconButton(
             ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, mouse_cursor="click",
             tooltip="Add new layer",
@@ -257,7 +398,7 @@ class CanvasInformationDisplay(MiniWidget):
                     bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH if self.data.get('Active Layer', 0) == idx else None,  # Lighter bg for selected layer
                     on_click=self._set_active_layer, data=name,
                     content_padding=ft.Padding.only(right=30),
-                )
+                ), data=name
             )
             layer_expansion_tile.controls[0].controls.append(layer_tile)
 
@@ -266,6 +407,12 @@ class CanvasInformationDisplay(MiniWidget):
         content = ft.Column([
             ft.Container(height=1),  # Spacing 
             description_tf,
+
+            ft.Text("Background", weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE, color=self.widget.data.get('color', None)),
+            edit_bg_options,
+
+            
+
             layer_expansion_tile
         ], expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START)
 

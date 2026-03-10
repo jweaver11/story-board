@@ -87,6 +87,8 @@ class Canvas(Widget):
         
         self.layers = [{}]    # List of our layers, which are each their own canvas
         self.layer_stack: ft.Stack  # Stack to hold our layers on top of each other
+
+        self.bg_image: ft.DecorationImage   # Hold our background image
         
         self.current_path= cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
 
@@ -199,45 +201,41 @@ class Canvas(Widget):
             visible = layer.get('visible', True)
             capture = layer.get('capture', None)
 
-
             # TODO: Load layer capture into canvas here
             
-            new_layer = cv.Canvas(
-                visible=visible,    # Set visibility
-                data=name,        # Save the index of this layer so we know where to save it in our data
-                content=ft.GestureDetector(
-                    mouse_cursor=ft.MouseCursor.PRECISE,
-                    on_pan_start=self.start_drawing,
-                    on_pan_update=self.is_drawing,
-                    on_pan_end=self.save_canvas,
-                    on_tap_up=self.add_point,      # Handles so we can add points
-                    on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
-                    on_hover=self._set_coords,
-                    hover_interval=20,
-                    drag_interval=10,
-                    expand=True,
+            
+            new_layer = ft.Container(
+                cv.Canvas(
+                    data=name,        # Save the index of this layer so we know where to save it in our data
+                    content=ft.GestureDetector(
+                        mouse_cursor=ft.MouseCursor.PRECISE,
+                        on_pan_start=self.start_drawing,
+                        on_pan_update=self.is_drawing,
+                        on_pan_end=self.save_canvas,
+                        on_tap_up=self.add_point,      # Handles so we can add points
+                        on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
+                        on_hover=self._set_coords,
+                        hover_interval=20,
+                        drag_interval=10,
+                        expand=True,
+                    ),
+                    expand=True, shapes=[],
+                    resize_interval=500,
                 ),
-                expand=True, shapes=[],
-                #on_resize=self.rebuild_canvas, 
-                resize_interval=500,
-                
+                expand=True, data=name,
+                visible=visible,    # Set visibility
+                # Only active layer can draw
+                ignore_interactions=True if self.data.get('canvas_data', {}).get('Active Layer', 0) != idx else False,   
             )
+            
             self.layers.append({'name': name, 'visible': visible, 'canvas': new_layer})
 
-        # Remove our active layer from the list and add it to the top
-        active_layer_idx = self.data.get('canvas_data', {}).get('Active Layer', 0)
-        if self.layers and len(self.layers) > active_layer_idx:
-            active_layer = self.layers[active_layer_idx]
-            self.layers.pop(active_layer_idx)
-            self.layers.append(active_layer)
 
     # Special color changes for this one
     def reload_tab(self):
         self.toggle_info_button.icon_color = self.data.get('color', "primary")
         self.information_display.reload_mini_widget()
         super().reload_tab()     
-        
-
 
     # Called in the constructor
     def _create_information_display(self):
@@ -531,34 +529,6 @@ class Canvas(Widget):
         except Exception as _:
             print("failed to save canvas")
 
-        
-
-
-    # Called when the canvas control is resized
-    async def rebuild_canvas(self, e: cv.CanvasResizeEvent=None):
-        """ Rescales stored drawing coordinates to match the new canvas size """
-
-        
-        if e is not None:
-            self.canvas_width = int(e.width)
-            self.canvas_height = int(e.height)
-
-        # Reload our most recent capture to fit the new canvas size
-        self.canvas.shapes.clear()
-
-        #str_bgimage = self.data.get('capture_list', [])[-1] if self.data.get('capture_list', []) else None
-        #if str_bgimage is not None:
-            #bgimage = cv.Image(str_bgimage, 0, 0, self.canvas_width, self.canvas_height)
-            #self.canvas.shapes.append(bgimage)
-    
-        try:
-            self.canvas.update()    # Update the canvas
-        except Exception as _:
-            pass
-
-        
-
-
     def _set_canvas_background(self, e):
         """ Sets the canvas background based on menu selection. """
 
@@ -607,21 +577,12 @@ class Canvas(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        
-
-
-        # Each layer is:
-        # {
-            # 'name': str,
-            # 'is_visible': bool,
-            # 'capture': "",    # Only rendered capture for this layer  
-        #}  
-
-        # Load our canvas from the ground up
-        # Canvas just loads each layer on top of each other
-
         self.layer_stack = ft.Stack([
-            ft.Container(expand=True, ignore_interactions=True),      # Make sure we're expanded
+            ft.Container(
+                expand=True, ignore_interactions=True,
+                bgcolor=self.data.get('canvas_data', {}).get('background', None) if self.data.get('canvas_data', {}).get('bg_type') == "color" else None,
+                image=ft.DecorationImage(self.data.get('canvas_data', {}).get('background', None), fit=ft.BoxFit.FILL) if self.data.get('canvas_data', {}).get('bg_type') == "image" else None,
+            ),      # Make sure we're expanded
         ],  expand=False, alignment=ft.Alignment(0, 0))   # Stack so we can have a background that doesn't get captured, and an interactive viewer to zoom and pan without affecting our coordinates
 
         # Add our layers to the stack in order
@@ -636,12 +597,7 @@ class Canvas(Widget):
             content=self.layer_stack, 
         )
 
-        # Set our canvas containers background based on our data
-        if self.data.get('canvas_data', {}).get('bg_type') == "color":
-            layers_container.bgcolor = self.data.get('canvas_data', {}).get('background', None)
-        elif self.data.get('canvas_data', {}).get('bg_type') == "image":
-            layers_container.image = ft.Image(self.data.get('canvas_data', {}).get('background', None))
-
+        
 
 
         interactive_viewer = ft.InteractiveViewer(

@@ -12,6 +12,6 @@ class SnackBar(ft.SnackBar):
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
             content=ft.Text(error_text, theme_style=ft.TextThemeStyle.BODY_LARGE, color=ft.Colors.ON_SURFACE, expand=True),
             padding=None,
-            shape=ft.RoundedRectangleBorder(radius=8),
+            shape=ft.RoundedRectangleBorder(ft.BorderSide(2, ft.Colors.PRIMARY), radius=8),
         )
         
