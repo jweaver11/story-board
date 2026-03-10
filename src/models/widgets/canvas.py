@@ -202,6 +202,7 @@ class Canvas(Widget):
             capture = layer.get('capture', None)
 
             # TODO: Load layer capture into canvas here
+            bytes_capture = base64.b64decode(capture) if capture else None
             
             
             new_layer = ft.Container(
@@ -219,11 +220,12 @@ class Canvas(Widget):
                         drag_interval=10,
                         expand=True,
                     ),
-                    expand=True, shapes=[],
-                    resize_interval=500,
+                    expand=True, 
+                    shapes=[cv.Image(bytes_capture, 0, 0)],
                 ),
                 expand=True, data=name,
                 visible=visible,    # Set visibility
+
                 # Only active layer can draw
                 ignore_interactions=True if self.data.get('canvas_data', {}).get('Active Layer', 0) != idx else False,   
             )
@@ -494,6 +496,8 @@ class Canvas(Widget):
     async def save_canvas(self, e: ft.DragEndEvent):
         """ Saves our paths to our canvas data for storage """
 
+        # TODO: Set a shapes limit on canvas to clear shapes and re-set background after 15 or so
+
         canvas: cv.Canvas = e.control.parent
 
         print("Saving canvas: ", self.title)
@@ -503,19 +507,16 @@ class Canvas(Widget):
     
             cc = await canvas.get_capture()
             encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
-            if cc:
+            if encoded_capture:
                 print("Got capture of canvas for layer name: ", canvas.data)
-            #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}_capture.png")
 
-            #await self.save_dict()
-
-            # TODO: When saving capture, set most recent one as a snapshot for Canvas Boards to
-
-            #self.canvas.shapes.clear()
-            #Add all layers captures here
+                # Save the capture, but we don't use it until a reload_widget is called
+                self.data['canvas_data']['Layers'][self.data.get('canvas_data', {}).get('Active Layer', 0)]['capture'] = encoded_capture
 
 
-            #decoded_capture_list = [base64.b64decode(capture) for capture in self.data.get('capture_list', [])]
+                await self.save_dict()     # Save our data with the new capture
+
+            # TODO: Set snapshot for canvas boards to use??
 
             # Must clear the capture or weird UI bugs
             await canvas.clear_capture()
@@ -524,8 +525,6 @@ class Canvas(Widget):
             self.state.paths.clear()
             self.state.points.clear()
 
-
-            # Set canvas to new capture here??
         except Exception as _:
             print("failed to save canvas")
 
