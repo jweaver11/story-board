@@ -611,7 +611,7 @@ class CanvasRail(Rail):
 
         # Width/Size of brush
         self.paint_width_slider = ft.Slider(
-            min=1, max=50,  tooltip="The size of your brush strokes.", expand=True,
+            min=1, max=50, tooltip="The size of your brush strokes.", expand=True,
             divisions=49, value=app.settings.data.get('paint_settings', {}).get('stroke_width', 5),
             label="Brush Size: {value}px",
             on_change_end=_paint_width_changed
@@ -721,7 +721,7 @@ class CanvasRail(Rail):
                         ft.Icons.RESTART_ALT_OUTLINED, on_click=self._reset_to_defaults,
                         tooltip="Resets current brush settings to defaults (Except color and opacity). Will NOT effect any saved brush",
                     )
-                ],),
+                ]),
 
                 # Brush Selector and Save custom brush button
                 ft.Text("Current Brush", opacity=0.6, theme_style=ft.TextThemeStyle.LABEL_SMALL, tooltip="The current brush you have selected. Click to change or select a saved custom brush."),

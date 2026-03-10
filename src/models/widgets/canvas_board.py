@@ -170,7 +170,7 @@ class CanvasBoard(Widget):
                 
                 else:
                     print("Unknown path element type while loading: ", element)
-                    self.p.open(SnackBar(f"Error loading {self.title}"))
+                    self.p.show_dialog(SnackBar(f"Error loading {self.title}"))
 
             shapes.append(new_path)
 

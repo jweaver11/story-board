@@ -592,6 +592,10 @@ class MiniWidget(ft.Container):
         else:
             _delete_confirmed()
 
+    def before_update(self):
+        print(f"Successful update for mini widget {self.title}")
+        return super().before_update()
+
     # Called after any changes happen to the data that need to be reflected in the UI
     def reload_mini_widget(self, no_update: bool=False):
         ''' Reloads our mini widget UI based on our data '''
