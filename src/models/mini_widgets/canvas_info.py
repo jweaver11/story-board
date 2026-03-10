@@ -56,7 +56,13 @@ class CanvasInformationDisplay(MiniWidget):
                 "Height": None,
                 "aspect_ratio": None,      # Used over height and width if set
                 'Is Locked': False, # Lock state tracking. When locked, no changes can be made (no drawing)
-                'Layers': [], #??
+
+                # Layer info for our canvases
+                'Layers': [{
+                    'name': "Layer 1", 
+                    'visible': True, 
+                    'capture': "",   # Base64 string of capture of the layers drawing
+                }],     # {'name': str, 'visible': bool, 'index': int, 'capture': str
             },
         )
 
