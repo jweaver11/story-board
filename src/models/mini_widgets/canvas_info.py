@@ -11,6 +11,8 @@ from models.mini_widget import MiniWidget
 from utils.verify_data import verify_data
 import asyncio
 from styles.snack_bar import SnackBar
+from flet_color_pickers import ColorPicker
+
 
 
 
@@ -52,7 +54,6 @@ class CanvasInformationDisplay(MiniWidget):
                 # Background can be an image, color, or left empty for transparent. 
                 'background': None,             # We display it using a container, but manually create it when exporting
                 'bg_type': None,            # "color", "image", or None so we know how to display it
-                'bg_blend_mode': "src_over",    # Blend mode for background. Starts default src_over (none)
 
                 # Canvas info
                 'Description': str,
@@ -110,10 +111,44 @@ class CanvasInformationDisplay(MiniWidget):
         self.update()
 
     async def _set_background(self, e):
+
         type = e.control.data
 
+        # Set a color as the background
         if type == "color":
-            pass
+
+            async def _color_change(e):     # Set the color to the picked one
+                color_picker.color = e.data
+
+            async def _set_confirmed(e=None):
+                self.data['background'] = color_picker.color
+                self.data['bg_type'] = "color"
+                await self.save_dict()
+                self.p.pop_dialog()
+
+                self.widget.story.blocker.visible = True
+                self.widget.story.blocker.update()
+                await asyncio.sleep(0)
+
+                self.widget.reload_widget()
+                self.widget.story.blocker.visible = False
+                self.widget.story.blocker.update()
+
+            color_picker = ColorPicker(
+                self.data.get('background', ft.Colors.PRIMARY) if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
+                on_color_change=_color_change
+            )
+            dlg = ft.AlertDialog(
+                ft.Column([color_picker], tight=True, expand=False),
+                title=f"Set background color for {self.title}",
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                    ft.TextButton("Set", on_click=_set_confirmed, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
+                ]
+            )
+            self.p.show_dialog(dlg)
+
+        # If its not a color, its an image
         else:
             files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
             if files:
@@ -300,8 +335,8 @@ class CanvasInformationDisplay(MiniWidget):
     def reload_mini_widget(self):
 
         # Option to export canvas as image file (png, jpg, etc). 
-        # Add color_filter for both decoration image and container ?
-        # Fill tool??
+        
+       
         # Manage saving so not at the end of every stroke.
         # Add undo/redo based on capture list
         # Remove old items from the undo/redo list after like 30 or so 
@@ -339,17 +374,18 @@ class CanvasInformationDisplay(MiniWidget):
                 ft.SubmenuButton(
                     "Set Background",
                     [
-                        ft.PopupMenuButton(     # Set a color
-                            icon=ft.Icons.COLOR_LENS_OUTLINED, tooltip="Set color background", style=ft.ButtonStyle(mouse_cursor="click"),
-                            icon_color=self.data.get('background', "primary") if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
-                            data="color",
+                        ft.IconButton(     # Set a color
+                            ft.Icons.COLOR_LENS_OUTLINED, 
+                            self.data.get('background', "primary") if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
+                            tooltip="Set color background", mouse_cursor="click", data="color",
+                            on_click=self._set_background,
                         ),
                         ft.IconButton(      # Set an image
                             ft.Icons.IMAGE_OUTLINED, tooltip="Set image background", mouse_cursor="click", data="image",
                             on_click=self._set_background,
                         ),
                         ft.IconButton(  # Clear background
-                            tooltip="Clear Background", icon=ft.Icons.HIDE_IMAGE, mouse_cursor="click",
+                            tooltip="Clear Background (Transparent)", icon=ft.Icons.HIDE_IMAGE_OUTLINED, mouse_cursor="click",
                             on_click=self._clear_background
                         ),
                     ],
@@ -408,7 +444,6 @@ class CanvasInformationDisplay(MiniWidget):
             ft.Container(height=1),  # Spacing 
             description_tf,
 
-            ft.Text("Background", weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE, color=self.widget.data.get('color', None)),
             edit_bg_options,
 
             

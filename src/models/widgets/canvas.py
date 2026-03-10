@@ -195,16 +195,11 @@ class Canvas(Widget):
     def _load_layers(self):
         self.layers.clear()
         for idx, layer in enumerate(self.data.get('canvas_data', {}).get('Layers', [])):
-            
 
             name = layer.get('name', f"Layer {idx + 1}")
             visible = layer.get('visible', True)
             capture = layer.get('capture', None)
 
-            # TODO: Load layer capture into canvas here
-            bytes_capture = base64.b64decode(capture) if capture else None
-            
-            
             new_layer = ft.Container(
                 cv.Canvas(
                     data=name,        # Save the index of this layer so we know where to save it in our data
@@ -221,7 +216,7 @@ class Canvas(Widget):
                         expand=True,
                     ),
                     expand=True, 
-                    shapes=[cv.Image(bytes_capture, 0, 0)],
+                    shapes=[cv.Image(capture, 0, 0)],
                 ),
                 expand=True, data=name,
                 visible=visible,    # Set visibility
