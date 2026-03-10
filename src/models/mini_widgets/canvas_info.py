@@ -226,6 +226,12 @@ class CanvasInformationDisplay(MiniWidget):
     async def _reorder_layers(self, e: ft.OnReorderEvent):
         new_index = e.new_index
         old_index = e.old_index
+        if new_index == old_index:
+            return
+        if new_index == 0 or old_index == 0:   # Don't allow reordering the background layer
+            self.reload_mini_widget()   # Just reload to reset the order in the UI
+            self.p.show_dialog(SnackBar("Background layer cannot be reordered"))
+            return
         layers = self.data.get('Layers', [])
         if new_index < 0 or old_index < 0 or new_index >= len(layers) or old_index >= len(layers):
             print("Invalid layer reorder indices: ", new_index, old_index)

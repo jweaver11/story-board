@@ -9,9 +9,8 @@ class SnackBar(ft.SnackBar):
 
         # Parent constructor
         super().__init__(
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
             content=ft.Text(error_text, theme_style=ft.TextThemeStyle.BODY_LARGE, color=ft.Colors.ON_SURFACE, expand=True),
-            padding=None,
             shape=ft.RoundedRectangleBorder(ft.BorderSide(2, ft.Colors.PRIMARY), radius=8),
         )
         

@@ -594,9 +594,6 @@ class Canvas(Widget):
             content=self.layer_stack, 
         )
 
-        
-
-
         interactive_viewer = ft.InteractiveViewer(
             content=layers_container, expand=True,
             scale_factor=500, boundary_margin=50,
