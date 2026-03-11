@@ -392,8 +392,7 @@ class CanvasInformationDisplay(MiniWidget):
 
         title_control = ft.Row([
             ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
-            ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE),
-            ft.Container(expand=True),
+            ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE, expand=True),
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
                 tooltip=f"Close {self.title}",

@@ -11,6 +11,7 @@ import flet.canvas as cv
 from models.dataclasses.state import State
 import math
 from styles.snack_bar import SnackBar
+import asyncio
 
 
 class CanvasBoard(Widget):
@@ -47,7 +48,10 @@ class CanvasBoard(Widget):
                 # Our main data matrix for this canvas board
                 'matrix': [
                     [           # First row
-                        "",         # Preview. This will key to a specific canvas later and show a live preview
+                        {       # Preview. This will key to a specific canvas later and show a live preview
+                            'canvas_key': "",      # Key to the canvas we are tied too
+                            "snapshot": [],         # Snapshot of the canvas for previewing
+                        },         
                         {           # Sketch canvas data
                             'paths': [],            # All our shapes, lines, dashed lines, curves, etc.
                             'shadow_paths': [],     # All paths but with shadows
@@ -56,7 +60,10 @@ class CanvasBoard(Widget):
                         ""           # Concept description text
                     ],      
                     [           # Second row
-                        "",         
+                        {
+                            'canvas_key': "",
+                            "snapshot": [],
+                        },         
                         {
                             'paths': [],            # All our shapes, lines, dashed lines, curves, etc.
                             'shadow_paths': [],     # All paths but with shadows
@@ -85,7 +92,7 @@ class CanvasBoard(Widget):
 
         if isinstance(value, str):
             self.data['matrix'][row][column] = value
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
     # Called on launch to load our drawing from data into our canvas
     def _load_canvas(self, row: int, column: int) -> list:
@@ -408,7 +415,7 @@ class CanvasBoard(Widget):
         canvas_data['paths'].extend(self.state.paths)
         canvas_data['points'].extend(self.state.points)
 
-        self.save_dict()
+        self.p.run_task(self.save_dict)
 
         # Clear the current state, otherwise it constantly grows and lags the program
         self.state.paths.clear()
@@ -435,7 +442,7 @@ class CanvasBoard(Widget):
 
         # Add the new row to our matrix data
         self.data['matrix'].append(new_row)
-        self.save_dict()
+        self.p.run_task(self.save_dict)
 
         # Reload our widget to reflect changes
         self.reload_widget()
@@ -445,7 +452,7 @@ class CanvasBoard(Widget):
 
         if 0 <= row < len(self.data['matrix']):
             del self.data['matrix'][row]
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             self.reload_widget()
 
     def _new_column_clicked(self, e=None):  
@@ -461,8 +468,8 @@ class CanvasBoard(Widget):
                 row.append("")   # Default empty string for new column
             
             # Save and reload
-            self.save_dict()
-            self.p.close(dlg)
+            self.p.run_task(self.save_dict)
+            self.p.pop_dialog()
             self.reload_widget()
         
         # Create a dialog to ask for the field name
@@ -476,13 +483,12 @@ class CanvasBoard(Widget):
             title=ft.Text(f"Create New Column"),
             content=field_name_input,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
                 ft.TextButton("Create", on_click=_create_field),
             ],
         )
         
-        dlg.open = True
-        self.p.open(dlg)
+        self.p.show_dialog(dlg)
 
     def _delete_column_clicked(self, column: int):
         ''' Deletes a specific column from our matrix data and reloads the widget '''
@@ -496,16 +502,99 @@ class CanvasBoard(Widget):
                 if 0 <= column < len(row):
                     del row[column]
 
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             self.reload_widget()
     
+    async def _show_preview_buttons(self, e: ft.PointerEvent):
+
+        gd = e.control
+        for control in gd.content.controls:
+            if not control.visible:
+                control.visible = True
+        gd.update()
+
+    async def _hide_preview_buttons(self, e: ft.PointerEvent):
+        gd = e.control
+        for control in gd.content.controls:
+            if isinstance(control, cv.Canvas):
+                continue
+            if control.visible:
+                control.visible = False
+        gd.update()
+
+    def _connect_canvas_clicked(self, row: int, column: int):
+
+        async def _set_new_canvas_key(e):
+            nonlocal canvas_key
+            canvas_key = e.data
+
+        def _load_canvases() -> list[ft.Control]:
+            canvases_list = []
+
+            for widget in self.story.widgets:
+                if widget.data['tag'] == 'canvas':
+                    
+                    canvases_list.append(
+                        ft.Radio(
+                            widget.title, value=widget.data['key'], 
+                            toggleable=True, mouse_cursor=ft.MouseCursor.CLICK,
+                            label_style=ft.TextStyle(color=widget.data.get('color', None), weight=ft.FontWeight.BOLD)
+                        )
+                    )
+            
+
+            if len(canvases_list) == 0:
+                canvases_list.append(ft.Text("No canvases found. Create one to get started", color=ft.Colors.ON_SURFACE_VARIANT, italic=True))
+
+            return canvases_list
+
+        async def _connect_confirmed(e=None):
+
+            self.story.blocker.visible = True
+            self.story.blocker.update()
+            await asyncio.sleep(0)
+            self.p.pop_dialog()
+
+            # Set the new key to our data and save
+            self.data['matrix'][row][column]['canvas_key'] = canvas_key
+            self.data['matrix'][row][column]['snapshot'] = self._set_canvas_snapshot(canvas_key)
+            await self.save_dict()
+
+            self.reload_widget()
+
+            self.story.blocker.visible = False
+            self.story.blocker.update()
+
+        canvas_key = ""
+        confirm_button = ft.TextButton("Confirm", on_click=_connect_confirmed, style=ft.ButtonStyle(mouse_cursor="click"))
+        dlg = ft.AlertDialog(
+            title=ft.Text("Choose a Canvas"),
+            content=ft.RadioGroup(ft.Column(_load_canvases(), tight=True, scroll="auto"), on_change=_set_new_canvas_key),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                confirm_button
+            ]
+        )
+        self.p.show_dialog(dlg)
+
+    # Called to find a canvas and load a snapshot from all its layers
+    def _set_canvas_snapshot(self, canvas_key: str) -> list:
+
+        capture_list = []
+        for widget in self.story.widgets:
+            if widget.data['key'] == canvas_key:
+                for layer in widget.data.get('canvas_data', {}).get('Layers', []):
+                    if layer.get('capture', ""):
+                        capture_list.append(layer['capture'])
+                break
+
+        return capture_list
+    
+
 
     # Called after any changes happen to the data that need to be reflected in the UI
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
-
-        # TODO: Show filters at top for our characters to show
-        # PURPOSE: To show a family tree view of our characters and their connections to one another
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
@@ -558,7 +647,7 @@ class CanvasBoard(Widget):
             for idx, row in enumerate(self.data['matrix']):
                 
                 # Establish a row control we will add our cells to
-                row_control = ft.Row(spacing=0, expand=True, controls=[ft.Container(width=38)], height=200)
+                row_control = ft.Row(spacing=0, expand=True, controls=[ft.Container(width=38)], height=180)
 
                 for sub_idx, cell in enumerate(row):
 
@@ -569,12 +658,63 @@ class CanvasBoard(Widget):
                     # Either image with preview of canvas, sketch canvas, or text area for concept
                     match label:
                         case "Preview":     # Preview of the canvas we're tied too
-                            row_control.controls.append(
-                                ft.Container(
-                                    ft.Text("Coming Soon!"),
-                                    width=200, margin=ft.Margin.all(12),
-                                    alignment=ft.Alignment.TOP_CENTER, border_radius=ft.BorderRadius.all(6),
+
+                            canvas = cv.Canvas(
+                                height=180, width=180
+                            )
+                            for capture in cell.get('snapshot', []):
+                                canvas.shapes.append(
+                                    cv.Image(capture, 0, 0, 200, 200)
                                 )
+                            widget_key = cell.get('canvas_key', "")
+                            for widget in self.story.widgets:
+                                if widget.data['key'] == widget_key:
+                                    canvas_title = widget.title
+                                    canvas_color = widget.data.get('color', None)
+                                    break
+                            row_control.controls.append(
+                                ft.Column([
+                                    ft.Text(canvas_title if canvas_title else "", color=canvas_color if canvas_color else None, height=20),
+                                    ft.Container(
+                                        ft.GestureDetector(
+                                            ft.Stack([
+                                                # Canvas preview
+                                                canvas if cell.get('canvas_key', "") else ft.Container(ignore_interactions=True, height=180, width=180), 
+
+
+                                                
+                                                # Connect button to tie this cell to a specific canvas
+                                                ft.TextButton(
+                                                    "Connect Canvas", top=10,
+                                                    style=ft.ButtonStyle(color=ft.Colors.ON_SURFACE, mouse_cursor=ft.MouseCursor.CLICK),
+                                                    visible=False, on_click=lambda e, r=idx, c=sub_idx: self._connect_canvas_clicked(r, c)
+                                                ),
+                                            
+                                                # Refresh the preview button
+                                                ft.IconButton(
+                                                    ft.Icons.REFRESH, ft.Colors.PRIMARY,
+                                                    tooltip="Refresh preview", #on_click=lambda e, r=idx, c=sub_idx: self.reload_widget()
+                                                    mouse_cursor="click",
+                                                    visible=False,
+                                                ) if cell.get('canvas_key', "") else ft.Container(ignore_interactions=True),   # Only show refresh button if we're already tied to a canvas
+
+                                                # Disconnect the canvas button
+                                                ft.TextButton(
+                                                    "Disconnect Canvas", bottom=10,
+                                                    style=ft.ButtonStyle(color=ft.Colors.ON_SURFACE, mouse_cursor=ft.MouseCursor.CLICK),
+                                                    visible=False,
+                                                ) if cell.get('canvas_key', "") else ft.Container(ignore_interactions=True),
+                                            ], alignment=ft.Alignment.CENTER),
+                                            on_enter=self._show_preview_buttons, on_exit=self._hide_preview_buttons
+                                            
+                                        ),
+                                        alignment=ft.Alignment.CENTER,
+                                        margin=ft.Margin.only(bottom=12, left=12, right=12),
+                                        border_radius=ft.BorderRadius.all(6),
+                                        width=180,  height=180,
+                                        border=ft.Border.all(1, ft.Colors.OUTLINE),
+                                    )
+                                ], spacing=0)
                             )
                         case "Sketch":      # Sketch canvas for rough thumbnails
                             canvas = cv.Canvas(
@@ -586,9 +726,9 @@ class CanvasBoard(Widget):
                                     on_tap_up=lambda e, r=idx, c=sub_idx: self.add_point(r, c, e),      # Handles so we can add points
                                     drag_interval=10, expand=True
                                 ),
-                                expand=True, width=200,
-                                resize_interval=100,
-                                shapes=[], on_resize=self._on_canvas_resize, 
+                                expand=True, width=180,
+                                #resize_interval=100,
+                                shapes=[], #on_resize=self._on_canvas_resize, 
                             )
                             row_control.controls.append(
                                 ft.Container(

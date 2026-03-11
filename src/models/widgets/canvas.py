@@ -505,7 +505,8 @@ class Canvas(Widget):
             cc = await canvas.get_capture()
             encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
             if encoded_capture:
-                print("Got capture of canvas for layer name: ", canvas.data)
+
+                #print("Got capture of canvas for layer name: ", canvas.data)
 
                 # Save the capture, but we don't use it until a reload_widget is called
                 self.data['canvas_data']['Layers'][self.data.get('canvas_data', {}).get('Active Layer', 0)]['capture'] = encoded_capture
@@ -649,16 +650,6 @@ class Canvas(Widget):
                 src_bytes=merged_bytes, file_name=f"{self.title}.png", 
                 file_type=ft.FilePickerFileType.IMAGE, allowed_extensions=["png"]
             )
-
-        
-        
-        
-
-
-        
-
-    async def _create_layer_clicked(self, e=None):
-        pass
         
 
     # Called when we need to rebuild out plotline UI
