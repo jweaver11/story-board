@@ -68,13 +68,11 @@ class CanvasInformationDisplay(MiniWidget):
                     {
                         'name': "Background",       
                         'visible': True, 
-                        'blur': 0,          # Blur strength effect fo this layer
                         'capture': "",   # Base64 string of capture of the layers drawing
                     },
                     {
                         'name': "Layer 1", 
                         'visible': True, 
-                        'blur': 0,
                         'capture': "",   # Base64 string of capture of the layers drawing
                     }
                 ],     # {'name': str, 'visible': bool, 'index': int, 'capture': str
@@ -124,6 +122,8 @@ class CanvasInformationDisplay(MiniWidget):
 
         type = e.control.data
 
+        # TODO: Create a new background layer when this is clicked
+
         # Set a color as the background
         if type == "color":
 
@@ -143,7 +143,7 @@ class CanvasInformationDisplay(MiniWidget):
                 self.widget.story.blocker.update()
                 await asyncio.sleep(0.1)
 
-                self.widget.reload_widget()
+                self.widget.story.workspace.reload_workspace()
                 self.widget.story.blocker.visible = False
                 self.widget.story.blocker.update()
 
@@ -192,7 +192,7 @@ class CanvasInformationDisplay(MiniWidget):
                     pass
 
     async def _set_layer_blur(self, e):
-        blur_strength = e.control.value
+        #blur_strength = e.control.value
         name = e.control.data
 
 
@@ -208,7 +208,7 @@ class CanvasInformationDisplay(MiniWidget):
         #self.widget.story.blocker.update()
         #await asyncio.sleep(0)
 
-        #self.widget.reload_widget()
+        #self.widget.story.workspace.reload_workspace()
         #self.widget.story.blocker.visible = False
         #self.widget.story.blocker.update()
 
@@ -381,7 +381,7 @@ class CanvasInformationDisplay(MiniWidget):
     def reload_mini_widget(self):
 
         # Option to export canvas as image file (png, jpg, etc). 
-        # TODO: Give every layer a blur effect
+        # TODO: Give every layer a blur effect, renameable, deletable by right click
         
        
         # Manage saving so not at the end of every stroke.
@@ -425,7 +425,7 @@ class CanvasInformationDisplay(MiniWidget):
                             "Color", ft.Icons.COLOR_LENS_OUTLINED, 
                             self.data.get('background', "primary") if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
                             tooltip="Set color background", data="color",
-                            on_click=self._set_background, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)
+                            on_click=self._set_background, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(color=ft.Colors.ON_SURFACE))
                         ),
                         ft.TextButton(      # Set an image
                             "Image ", ft.Icons.IMAGE_OUTLINED, data="image",
@@ -438,7 +438,7 @@ class CanvasInformationDisplay(MiniWidget):
                     ],
                     trailing=ft.Icon(
                         ft.Icons.INFO_OUTLINE, ft.Colors.ON_SURFACE, scale=.6,
-                        tooltip="Warning: Setting a background will override any content on the background layer"
+                        tooltip="Setting or cleariing your background will NOT affect any drawing already done on the background layer."
                     ),
                     style=ft.ButtonStyle(mouse_cursor="click"),
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0))
@@ -465,7 +465,7 @@ class CanvasInformationDisplay(MiniWidget):
         layer_expansion_tile = ft.ExpansionTile(
             "Layers",
             [
-                ft.ReorderableListView(on_reorder=self._reorder_layers, scroll="auto", expand=True, controls=[]),   # This will hold our layers and allow us to reorder them
+                ft.ReorderableListView(on_reorder=self._reorder_layers, scroll="auto", expand=True, controls=[], show_default_drag_handles=False),   # This will hold our layers and allow us to reorder them
                 create_new_layer_button 
             ],
             leading=ft.Icons.LAYERS_OUTLINED,
@@ -485,12 +485,28 @@ class CanvasInformationDisplay(MiniWidget):
                         ft.Icons.VISIBILITY if visible else ft.Icons.VISIBILITY_OFF, mouse_cursor="click",
                         on_click=self._toggle_selected_layer_visibility, data=name
                     ),  
-                    trailing=ft.IconButton(     # Delete button
-                        ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, mouse_cursor="click", data=name, on_click=self._delete_layer_clicked
+                    trailing=ft.PopupMenuButton(     # Delete button
+                        data=name, menu_padding=ft.Padding.all(0),
+                        style=ft.ButtonStyle(mouse_cursor="click"),
+                        tooltip=f"{name} options",
+                        items=[
+                            ft.PopupMenuItem(
+                                ft.Row([ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED), ft.Text("Rename")]), data=name,
+                                mouse_cursor=ft.MouseCursor.CLICK,# on_click=self._rename_layer_clicked, 
+                            ),
+                            ft.PopupMenuItem(
+                                ft.Row([ft.Icon(ft.Icons.BLUR_ON_OUTLINED), ft.Text("Blur Strength")]), data=name, 
+                                mouse_cursor=ft.MouseCursor.CLICK, on_click=self._set_layer_blur,
+                            ),
+                            ft.PopupMenuItem(
+                                ft.Row([ft.Icon(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR), ft.Text("Delete")]), data=name, 
+                                on_click=self._delete_layer_clicked, mouse_cursor=ft.MouseCursor.CLICK, 
+                            )
+                        ]
                     ) if idx != 0 else None,    # Don't allow deleting the first layer
                     bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH if self.data.get('Active Layer', 0) == idx else None,  # Lighter bg for selected layer
                     on_click=self._set_active_layer, data=name,
-                    content_padding=ft.Padding.only(right=30),
+                    #content_padding=ft.Padding.only(right=30),
                 ), data=name
             )
             layer_expansion_tile.controls[0].controls.append(layer_tile)

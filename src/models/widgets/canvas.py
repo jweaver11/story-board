@@ -218,6 +218,7 @@ class Canvas(Widget):
                     shapes=[
                         cv.Image(capture, 0, 0)     # Set the capture of the layer for all but background
                     ],
+                    on_resize=self._set_size if idx == 0 else None,  
                 ),
                 expand=True, data=name,
                 visible=visible,    # Set visibility
@@ -233,7 +234,11 @@ class Canvas(Widget):
     def reload_tab(self):
         self.toggle_info_button.icon_color = self.data.get('color', "primary")
         self.information_display.reload_mini_widget()
-        super().reload_tab()     
+        super().reload_tab()    
+
+    async def _set_size(self, e: cv.CanvasResizeEvent):
+        self.canvas_width = int(e.width)
+        self.canvas_height = int(e.height)
 
     # Called in the constructor
     def _create_information_display(self):
@@ -259,10 +264,6 @@ class Canvas(Widget):
 
         options.extend(super()._get_menu_options())     # Get the default menu options for widgets and add them to our information display options
         return options
-        
-    # Called when changing our bg color from the info display
-    async def set_canvas_bg_clicked(self, e):
-        ''' '''
     
 
     # Called when we click the canvas and don't initiate a drag
@@ -529,86 +530,121 @@ class Canvas(Widget):
     async def export_canvas_clicked(self, e=None):
         """ Exports canvas to correct file type based on selection with optional upscaling """
 
-        async def _export_confirmed(e=None):
+        # Convert colors for color background to rgba format
+        def hex_to_rgba(hex_color: str):
+            hex_color = hex_color.lstrip("#")
 
+            if len(hex_color) == 8:  # AARRGGBB
+                a = int(hex_color[0:2], 16)
+                r = int(hex_color[2:4], 16)
+                g = int(hex_color[4:6], 16)
+                b = int(hex_color[6:8], 16)
+                return (r, g, b, a)
+
+            if len(hex_color) == 6:  # RRGGBB
+                r = int(hex_color[0:2], 16)
+                g = int(hex_color[2:4], 16)
+                b = int(hex_color[4:6], 16)
+                return (r, g, b, 255)
+
+            raise ValueError("Invalid hex color format")
+
+        # Merge all our layer/canvas captures together into one image at the right size
+        def _merge_captures(captures_list: list, target_width: int, target_height: int):
+
+            images = []     # Start with an images list
+
+            # Go through our captures list
+            for capture in captures_list:
+                image = Image.open(BytesIO(capture)).convert("RGBA")        # Create the image for each capture
+
+                # Resize if necessary
+                if target_width and target_height:
+                    if image.size != (target_width, target_height):
+                        image = image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+
+                images.append(image)        # Add to list
+
+            if not images:      # Catch errors
+                return
             
+            # Determine our background type and create an image for it
+            bg_type = self.data.get('canvas_data', {}).get('bg_type', None)
 
-            #TODO: Calc upscaling based on what resolution should be vs what it actually is
+            match bg_type:
+                case "color":       # Color backgrounds
+                    hex_color = self.data.get('canvas_data', {}).get('background', "#00000000")
+                    rgba_color = hex_to_rgba(hex_color) 
+                    merged = Image.new("RGBA", (target_width, target_height), rgba_color)
+                case "image":       # Images
+                    bg_image_data = self.data.get('canvas_data', {}).get('background', None)
+                    merged = Image.open(BytesIO(base64.b64decode(bg_image_data))).convert("RGBA")
+                    merged = merged.resize((target_width, target_height))
+                case _:     # All others are just invisible
+                    merged = Image.new("RGBA", (target_width, target_height), (0, 0, 0, 0))
+            
+            # Put all the images together
+            for image in images:
+                merged = Image.alpha_composite(merged, image)
 
-            def _merge_captures(captures_list: list):
-                images = [Image.open(BytesIO(capture)).convert("RGBA") for capture in captures_list]
+            # Gives us the output we want
+            output = BytesIO()
+            merged.save(output, format="PNG")
+            file_output = output.getvalue()
+            return file_output
 
-                if not images:
-                    return
+        # List to store our captures for each layer of our canvas
+        captures_list = []
 
-                width, height = images[0].size      # Actual current size of the image
+        # Expected size the user wants the canvas to be exported at, which they set upon creation
+        target_width = self.data.get('canvas_data', {}).get('width', 0)
+        target_height = self.data.get('canvas_data', {}).get('height', 0)
+        pixel_ratio = None  # Scale the capture up or down based on expected exported size
 
-                #TODO: Remove this and just use normal layers
-                bg_type = self.data.get('canvas_data', {}).get('bg_type', None)
-                match bg_type:
-                    case "color":
-                        merged = Image.new("RGBA", (width, height), self.data.get('canvas_data', {}).get('background', "#00000000"))
-                    case "image":
-                        bg_image_data = self.data.get('canvas_data', {}).get('background', None)
-                        merged = Image.new(BytesIO(base64.b64decode(bg_image_data))).convert("RGBA") if bg_image_data else Image.new("RGBA", (width, height), (0, 0, 0, 0))
-                    case _:
-                        merged = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-                
-                for image in images:
-                    merged = Image.alpha_composite(merged, image)
+        # Check the current width
+        current_width = self.canvas_width
+        current_height = self.canvas_height
 
-                output = BytesIO()
-                merged.save(output, format="PNG")
-                file_output = output.getvalue()
-                return file_output
+        # If target size != current size, upscale or downscale the capture
+        if target_width != current_width or target_height != current_height:
+            width_ratio = target_width / current_width
+            height_ratio = target_height / current_height
+            pixel_ratio = min(width_ratio, height_ratio)  # Use the smaller ratio to maintain aspect ratio
 
+        # Go through our layers now
+        for layer in self.layers:
 
-            captures_list = []
+            # Grab container to check if actually visible. Not visible, not exporting
+            container = layer.get('canvas', None)
+            if not container.visible:   
+                continue
 
+            # Grab canvas our canvas for that layer
+            canvas: cv.Canvas = layer.get('canvas', None).content
 
-            for layer in self.layers:
-                # Grab container to check if actually visible
-                container = layer.get('canvas', None)
-                if not container.visible:
-                    continue
+            # Capture and add that capture to the list
+            if canvas is not None:
+                await canvas.capture(pixel_ratio)       # Upscale/downscale the capture based on size
+                cc = await canvas.get_capture()
+                captures_list.append(cc)         # Add the capture to the list
+                await canvas.clear_capture()     # Clear the capture to prevent bugs
 
-                # Grab canvas and capture it
-                canvas: cv.Canvas = layer.get('canvas', None).content
-                if canvas is not None:
-                    await canvas.capture()
-                    cc = await canvas.get_capture()
-                    captures_list.append(cc)        # Add it to the list
-                    await canvas.clear_capture()     # Clear the capture to prevent bugs
+        # Our exportable image bytes from merging all our layers captures together with any scaling needed
+        merged_bytes = _merge_captures(captures_list, target_width, target_height)
 
-            merged_bytes = _merge_captures(captures_list)
-            self.p.pop_dialog()
-            if merged_bytes:
-                await ft.FilePicker().save_file(
-                    src_bytes=merged_bytes, file_name=f"{self.title}.png", 
-                    file_type=ft.FilePickerFileType.IMAGE
-                )
+        # Open file dialog to save that capture
+        if merged_bytes:
+            await ft.FilePicker().save_file(
+                src_bytes=merged_bytes, file_name=f"{self.title}.png", 
+                file_type=ft.FilePickerFileType.IMAGE, allowed_extensions=["png"]
+            )
 
         
-        dlg = ft.AlertDialog(
-            title=ft.Text("Export Canvas"),
-            content=ft.Text("Non-visible layers are not exported"),
-            actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                ft.TextButton("Export", on_click=_export_confirmed, style=ft.ButtonStyle(mouse_cursor="click")),
-            ]
-        )
-        self.p.show_dialog(dlg)
-        # TODO: Make sure to build extra background canvas to export image/color background, as they are currently rendered not captured
+        
+        
 
 
-        # Get correct size that we are, and see what we need to upscale the resolution too
-
-        # Capture and get it using desired size
-        #await self.canvas.capture()
-        #cc = await self.canvas.get_capture()
-        #encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
-
-        #await self.file_picker.save_file(src_bytes=cc, file_name=f"{self.title}.png")
+        
 
     async def _create_layer_clicked(self, e=None):
         pass
@@ -673,6 +709,6 @@ class Canvas(Widget):
 
         self._render_widget()
 
-        
- 
+
+
 
