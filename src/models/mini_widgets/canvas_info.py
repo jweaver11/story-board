@@ -58,9 +58,9 @@ class CanvasInformationDisplay(MiniWidget):
 
                 # Canvas info
                 'Description': str,
-                "width": None,
+                "width": None,              # Resolution size used for exporting
                 "height": None,
-                "aspect_ratio": None,      # Used over height and width if set
+                "aspect_ratio": None,       # Actually used for displaying the canvas, and we scale up when exporting
                 'Is Locked': False, # Lock state tracking. When locked, no changes can be made (no drawing)
 
                 # Layer info for our canvases
@@ -129,6 +129,7 @@ class CanvasInformationDisplay(MiniWidget):
 
             async def _color_change(e):     # Set the color to the picked one
                 color_picker.color = e.data
+                print(color_picker.color)
 
             async def _set_confirmed(e=None):
 
@@ -181,7 +182,8 @@ class CanvasInformationDisplay(MiniWidget):
                         self.widget.story.blocker.update()
                         await asyncio.sleep(0)
 
-                        self.widget.reload_widget()
+                        # Works ways faster than reloading the widgetfor some reason
+                        self.widget.story.workspace.reload_workspace()
 
                         self.widget.story.blocker.visible = False
                         self.widget.story.blocker.update()
@@ -219,7 +221,8 @@ class CanvasInformationDisplay(MiniWidget):
         self.widget.story.blocker.update()
         await asyncio.sleep(0)
 
-        self.widget.reload_widget()
+        #self.widget.reload_widget()
+        self.widget.story.workspace.reload_workspace()
         self.widget.story.blocker.visible = False
         self.widget.story.blocker.update()
 
@@ -246,7 +249,8 @@ class CanvasInformationDisplay(MiniWidget):
         self.widget.story.blocker.update()
         await asyncio.sleep(0)
 
-        self.widget.reload_widget()
+        #self.widget.reload_widget()
+        self.widget.story.workspace.reload_workspace()
         self.widget.story.blocker.visible = False
         self.widget.story.blocker.update()
 
@@ -265,7 +269,8 @@ class CanvasInformationDisplay(MiniWidget):
             self.widget.story.blocker.update()
             await asyncio.sleep(0)
 
-            self.widget.reload_widget()
+            #self.widget.reload_widget()
+            self.widget.story.workspace.reload_workspace()
             self.widget.story.blocker.visible = False
             self.widget.story.blocker.update()
 
@@ -346,16 +351,18 @@ class CanvasInformationDisplay(MiniWidget):
     async def _create_new_layer_clicked(self, e):
 
         async def _create_layer_confirmed(e=None):
+            self.widget.story.blocker.visible = True
+            self.widget.story.blocker.update()
+            await asyncio.sleep(0.1)
+
             name = new_layer_tf.value or f"Layer {len(self.data.get('Layers', []))+1}"
             self.data['Layers'].append({'name': name, 'visible': True, 'capture': ""})
             await self.save_dict()
             self.p.pop_dialog()
+            await asyncio.sleep(0.1)
 
-            self.widget.story.blocker.visible = True
-            self.widget.story.blocker.update()
-            await asyncio.sleep(0)
-
-            self.widget.reload_widget()
+            #self.widget.reload_widget()
+            self.widget.story.workspace.reload_workspace()
             self.widget.story.blocker.visible = False
             self.widget.story.blocker.update()
 
@@ -374,6 +381,7 @@ class CanvasInformationDisplay(MiniWidget):
     def reload_mini_widget(self):
 
         # Option to export canvas as image file (png, jpg, etc). 
+        # TODO: Give every layer a blur effect
         
        
         # Manage saving so not at the end of every stroke.
@@ -407,31 +415,40 @@ class CanvasInformationDisplay(MiniWidget):
 
 
         # Set and clear bg buttons
-        # TODO: Set, clear, manage effect, strenght, blur, 
+        
         edit_bg_options = ft.MenuBar(
             [
                 ft.SubmenuButton(
                     "Set Background",
                     [
-                        ft.IconButton(     # Set a color
-                            ft.Icons.COLOR_LENS_OUTLINED, 
+                        ft.TextButton(     # Set a color
+                            "Color", ft.Icons.COLOR_LENS_OUTLINED, 
                             self.data.get('background', "primary") if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
-                            tooltip="Set color background", mouse_cursor="click", data="color",
-                            on_click=self._set_background,
+                            tooltip="Set color background", data="color",
+                            on_click=self._set_background, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)
                         ),
-                        ft.IconButton(      # Set an image
-                            ft.Icons.IMAGE_OUTLINED, tooltip="Set image background", mouse_cursor="click", data="image",
-                            on_click=self._set_background,
+                        ft.TextButton(      # Set an image
+                            "Image ", ft.Icons.IMAGE_OUTLINED, data="image",
+                            on_click=self._set_background, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)
                         ),
-                        ft.IconButton(  # Clear background
-                            tooltip="Clear Background (Transparent)", icon=ft.Icons.HIDE_IMAGE_OUTLINED, mouse_cursor="click",
-                            on_click=self._clear_background
+                        ft.TextButton(  # Clear background
+                            "Clear", icon=ft.Icons.HIDE_IMAGE_OUTLINED,
+                            on_click=self._clear_background, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)
                         ),
                     ],
+                    trailing=ft.Icon(
+                        ft.Icons.INFO_OUTLINE, ft.Colors.ON_SURFACE, scale=.6,
+                        tooltip="Warning: Setting a background will override any content on the background layer"
+                    ),
                     style=ft.ButtonStyle(mouse_cursor="click"),
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0))
                 )
             ], style=ft.MenuStyle(mouse_cursor="click", padding=ft.Padding.all(0))
+        )
+
+        export_button = ft.TextButton(
+            "Export", ft.Icons.FILE_DOWNLOAD_OUTLINED, tooltip="Export canvas as image",
+            on_click=self.widget.export_canvas_clicked, style=ft.ButtonStyle(mouse_cursor="click")
         )
 
            
@@ -484,7 +501,7 @@ class CanvasInformationDisplay(MiniWidget):
             ft.Container(height=1),  # Spacing 
             description_tf,
 
-            edit_bg_options,
+            ft.Row([edit_bg_options, export_button], ft.MainAxisAlignment.SPACE_EVENLY, wrap=True),
 
             
 

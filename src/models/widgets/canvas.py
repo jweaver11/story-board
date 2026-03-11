@@ -16,6 +16,8 @@ from models.app import app
 from models.mini_widgets.canvas_info import CanvasInformationDisplay
 import json
 import base64
+from io import BytesIO
+from PIL import Image
 
 
 
@@ -522,31 +524,80 @@ class Canvas(Widget):
         except Exception as _:
             print("failed to save canvas")
 
-    def _set_canvas_background(self, e):
-        """ Sets the canvas background based on menu selection. """
 
-        cp = ColorPicker()
-
-        choice = e.control.text
-
-        if choice == "None":
-            pass
-
-
-        elif choice == "Color":
-            pass
-            # Pop up color picker with opacity slider to the right of it
-            # When hitting apply, set the data and color
-
-        elif choice == "Image":
-            pass
-            # Open file dialog to select image
-
-
-    # TODO
-    def export_canvas(self):
+    # Called when we click to export a canvas
+    async def export_canvas_clicked(self, e=None):
         """ Exports canvas to correct file type based on selection with optional upscaling """
 
+        async def _export_confirmed(e=None):
+
+            
+
+            #TODO: Calc upscaling based on what resolution should be vs what it actually is
+
+            def _merge_captures(captures_list: list):
+                images = [Image.open(BytesIO(capture)).convert("RGBA") for capture in captures_list]
+
+                if not images:
+                    return
+
+                width, height = images[0].size      # Actual current size of the image
+
+                #TODO: Remove this and just use normal layers
+                bg_type = self.data.get('canvas_data', {}).get('bg_type', None)
+                match bg_type:
+                    case "color":
+                        merged = Image.new("RGBA", (width, height), self.data.get('canvas_data', {}).get('background', "#00000000"))
+                    case "image":
+                        bg_image_data = self.data.get('canvas_data', {}).get('background', None)
+                        merged = Image.new(BytesIO(base64.b64decode(bg_image_data))).convert("RGBA") if bg_image_data else Image.new("RGBA", (width, height), (0, 0, 0, 0))
+                    case _:
+                        merged = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+                
+                for image in images:
+                    merged = Image.alpha_composite(merged, image)
+
+                output = BytesIO()
+                merged.save(output, format="PNG")
+                file_output = output.getvalue()
+                return file_output
+
+
+            captures_list = []
+
+
+            for layer in self.layers:
+                # Grab container to check if actually visible
+                container = layer.get('canvas', None)
+                if not container.visible:
+                    continue
+
+                # Grab canvas and capture it
+                canvas: cv.Canvas = layer.get('canvas', None).content
+                if canvas is not None:
+                    await canvas.capture()
+                    cc = await canvas.get_capture()
+                    captures_list.append(cc)        # Add it to the list
+                    await canvas.clear_capture()     # Clear the capture to prevent bugs
+
+            merged_bytes = _merge_captures(captures_list)
+            self.p.pop_dialog()
+            if merged_bytes:
+                await ft.FilePicker().save_file(
+                    src_bytes=merged_bytes, file_name=f"{self.title}.png", 
+                    file_type=ft.FilePickerFileType.IMAGE
+                )
+
+        
+        dlg = ft.AlertDialog(
+            title=ft.Text("Export Canvas"),
+            content=ft.Text("Non-visible layers are not exported"),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                ft.TextButton("Export", on_click=_export_confirmed, style=ft.ButtonStyle(mouse_cursor="click")),
+            ]
+        )
+        self.p.show_dialog(dlg)
         # TODO: Make sure to build extra background canvas to export image/color background, as they are currently rendered not captured
 
 

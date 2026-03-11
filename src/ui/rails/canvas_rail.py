@@ -427,7 +427,7 @@ class CanvasRail(Rail):
         for name, brush_settings in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}).items():
             options.append(
                 ft.PopupMenuItem(
-                    text=name, data=brush_settings,
+                    data=brush_settings,
                     content=ft.Container(
                         ft.Row([ft.Text(name, expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(brush_settings)], spacing=20),
                         clip_behavior=ft.ClipBehavior.HARD_EDGE
