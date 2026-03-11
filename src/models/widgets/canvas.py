@@ -550,20 +550,27 @@ class Canvas(Widget):
             raise ValueError("Invalid hex color format")
 
         # Merge all our layer/canvas captures together into one image at the right size
-        def _merge_captures(captures_list: list, target_width: int, target_height: int):
+        def _merge_captures(captures_list: list, target_width: int=None, target_height: int=None):
 
             images = []     # Start with an images list
 
-            # Go through our captures list
-            for capture in captures_list:
-                image = Image.open(BytesIO(capture)).convert("RGBA")        # Create the image for each capture
+            if target_width is None or target_height is None:
+                images = [Image.open(BytesIO(capture)).convert("RGBA") for capture in captures_list]
+                width, height = images[0].size      # Set the width and height we use based on actual size
 
-                # Resize if necessary
-                if target_width and target_height:
-                    if image.size != (target_width, target_height):
-                        image = image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+            else:
+                width, height = target_width, target_height     # Set width and height to target size
 
-                images.append(image)        # Add to list
+                # Go through our captures list
+                for capture in captures_list:
+                    image = Image.open(BytesIO(capture)).convert("RGBA")        # Create the image for each capture
+
+                    # Resize if necessary
+                    if target_width and target_height:
+                        if image.size != (target_width, target_height):
+                            image = image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+
+                    images.append(image)        # Add to list
 
             if not images:      # Catch errors
                 return
@@ -575,13 +582,13 @@ class Canvas(Widget):
                 case "color":       # Color backgrounds
                     hex_color = self.data.get('canvas_data', {}).get('background', "#00000000")
                     rgba_color = hex_to_rgba(hex_color) 
-                    merged = Image.new("RGBA", (target_width, target_height), rgba_color)
+                    merged = Image.new("RGBA", (width, height), rgba_color)
                 case "image":       # Images
                     bg_image_data = self.data.get('canvas_data', {}).get('background', None)
                     merged = Image.open(BytesIO(base64.b64decode(bg_image_data))).convert("RGBA")
-                    merged = merged.resize((target_width, target_height))
+                    merged = merged.resize((width, height))
                 case _:     # All others are just invisible
-                    merged = Image.new("RGBA", (target_width, target_height), (0, 0, 0, 0))
+                    merged = Image.new("RGBA", (width, height), (0, 0, 0, 0))
             
             # Put all the images together
             for image in images:
@@ -597,16 +604,20 @@ class Canvas(Widget):
         captures_list = []
 
         # Expected size the user wants the canvas to be exported at, which they set upon creation
-        target_width = self.data.get('canvas_data', {}).get('width', 0)
-        target_height = self.data.get('canvas_data', {}).get('height', 0)
+        target_width = self.data.get('canvas_data', {}).get('width', None)
+        target_height = self.data.get('canvas_data', {}).get('height', None)
         pixel_ratio = None  # Scale the capture up or down based on expected exported size
 
         # Check the current width
         current_width = self.canvas_width
         current_height = self.canvas_height
 
+        
+        if target_width is None or target_height is None:
+            pass
+
         # If target size != current size, upscale or downscale the capture
-        if target_width != current_width or target_height != current_height:
+        elif target_width != current_width or target_height != current_height:
             width_ratio = target_width / current_width
             height_ratio = target_height / current_height
             pixel_ratio = min(width_ratio, height_ratio)  # Use the smaller ratio to maintain aspect ratio
