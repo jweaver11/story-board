@@ -12,6 +12,7 @@ from utils.verify_data import verify_data
 import asyncio
 from styles.snack_bar import SnackBar
 from flet_color_pickers import ColorPicker
+import flet.canvas as cv
 
 
 
@@ -57,8 +58,8 @@ class CanvasInformationDisplay(MiniWidget):
 
                 # Canvas info
                 'Description': str,
-                "Width": None,
-                "Height": None,
+                "width": None,
+                "height": None,
                 "aspect_ratio": None,      # Used over height and width if set
                 'Is Locked': False, # Lock state tracking. When locked, no changes can be made (no drawing)
 

@@ -63,7 +63,7 @@ class Canvas(Widget):
                 'snapshot': str,            # Most recent completed snapshot of our canvas used by other widgets
 
                 # Canvas drawing data we save and load from
-                "canvas": {},
+                #"canvas": {},
             },
         )
 
@@ -567,19 +567,21 @@ class Canvas(Widget):
     def reload_widget(self):       
         ''' Rebuilds/reloads our Canvas '''
 
+        # TODO: Need a way to show blur and effect for background layer since its unique
+
         self._load_layers()
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
         self.layer_stack = ft.Stack([
-            ft.Container(
+            ft.Container(   # Make sure we're expanded
                 expand=True, ignore_interactions=True,
                 bgcolor=self.data.get('canvas_data', {}).get('background', None) if self.data.get('canvas_data', {}).get('bg_type') == "color" else None,
                 image=ft.DecorationImage(
                     self.data.get('canvas_data', {}).get('background', None), fit=ft.BoxFit.FILL
                 ) if self.data.get('canvas_data', {}).get('bg_type') == "image" else None,
-            ),      # Make sure we're expanded
+            ),      
         ],  expand=False, alignment=ft.Alignment(0, 0))   # Stack so we can have a background that doesn't get captured, and an interactive viewer to zoom and pan without affecting our coordinates
 
         # Add our layers to the stack in order
@@ -590,20 +592,28 @@ class Canvas(Widget):
         layers_container = ft.Container(
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
             border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
-            aspect_ratio=self.data.get('canvas_data', {}).get('aspect_atio'),       # If set, ignores width and height
+            aspect_ratio=self.data.get('canvas_data', {}).get('aspect_ratio'),       # If set, ignores width and height
             content=self.layer_stack, 
         )
 
-        interactive_viewer = ft.InteractiveViewer(
-            content=layers_container, expand=True,
-            scale_factor=500, boundary_margin=50,
-            min_scale=0.5, max_scale=3.0, scale=1.0,
+        
+        # Hold layers container to make sure our interactive viewer fills the whole page
+        layers_wrapper = ft.Container(
+            layers_container, expand=True, 
+            alignment=ft.Alignment.CENTER
         )
 
-        container = ft.Container(interactive_viewer, expand=3)
+        # Holds our drawing so we can interact with it, zoom, pan, etc.
+        interactive_viewer = ft.InteractiveViewer(
+            content=layers_wrapper,
+            expand=3,
+            scale_factor=500, boundary_margin=50,
+            min_scale=0.5, max_scale=3.0,
+        )
 
+        # Align our drawing and info display side by side
         row = ft.Row([
-            container, self.information_display
+            interactive_viewer, self.information_display
         ], scroll="none", expand=True, vertical_alignment=ft.CrossAxisAlignment.CENTER)
 
 

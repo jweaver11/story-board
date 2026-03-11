@@ -30,43 +30,66 @@ class CanvasRail(Rail):
         # UI elements ---------------------------------------------
         # Buttons at the top of the rail
         self.top_row_buttons = [
-            ft.PopupMenuButton(
-                icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                tooltip="New", menu_padding=0,
-                items=[
-                    ft.PopupMenuItem(
-                        "Canvas", icon=ft.Icons.BRUSH_OUTLINED,
-                        on_click=self.new_canvas_clicked, data="canvas"
+            ft.SubmenuButton(
+                ft.Container(
+                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
+                    padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
+                    width=40, height=40, alignment=ft.Alignment.CENTER
+                ),
+                [
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
+                        data="canvas", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Canvas for sketching drawing, or visual note taking",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), #disabled=True
                     ),
-                    ft.PopupMenuItem(
-                        "Canvas Board", icon=ft.Icons.SPACE_DASHBOARD_OUTLINED,
-                        on_click=self.new_item_clicked, data="canvas_board"
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
+                        data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                     ),
-                ]
+                ],
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
             ),
-            ft.PopupMenuButton(
-                icon=ft.Icons.FILE_UPLOAD_OUTLINED,
-                tooltip="Upload",
-                menu_padding=0,
-                items=[
-                    ft.PopupMenuItem(
-                        "Image", icon=ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED,
+            ft.SubmenuButton(
+                ft.Container(
+                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
+                    padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
+                    width=40, height=40, alignment=ft.Alignment.CENTER
+                ),
+                [     
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
+                        data="canvas", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Canvas for sketching drawing, or visual note taking",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True
                     ),
-                    ft.PopupMenuItem(
-                        "Canvas", icon=ft.Icons.BRUSH_OUTLINED,
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
+                        data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                     ),
-                ]
-            )
+                ],
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            ),
         ]
 
         # Color picker for changing brush color
         color_only = app.settings.data.get('paint_settings', {}).get('color', "#000000").split(",", 1)[0]     # Set color without opacity for the color picker
-        self.color_picker = ColorPicker(color=color_only, on_color_change=self._set_color)   # Set our color pickers color 
+        self.color_picker = ColorPicker(
+            color=color_only, on_color_change=self._set_color, 
+            scale=.8, 
+            picker_area_border_radius=ft.BorderRadius.all(6)
+        )   # Set our color pickers color 
 
         self.color_selector = ft.PopupMenuButton(
             icon=ft.Icons.COLOR_LENS_OUTLINED, tooltip="The color of your brush strokes.",
             icon_color=app.settings.data.get('paint_settings', {}).get('color', ft.Colors.PRIMARY),
-            menu_padding=ft.Padding.all(0), size_constraints=ft.BoxConstraints(min_width=310),
+            menu_padding=ft.Padding.all(0), size_constraints=ft.BoxConstraints(min_width=240),
             on_cancel=self._save_color,
             items=self._get_color_options(),
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
@@ -103,9 +126,10 @@ class CanvasRail(Rail):
             ft.PopupMenuItem(
                 disabled=True,
                 content=ft.Container(
-                    padding=ft.Padding(left=10, right=10, top=10, bottom=20),
+                    #padding=ft.Padding(left=10, right=10, top=10, bottom=20),
                     content=self.color_picker,
                 ), 
+                padding=ft.Padding.all(0)
             ),
         ]
 
@@ -579,7 +603,7 @@ class CanvasRail(Rail):
                     ], scroll="auto"
                 ),
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda e: self.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
+                    ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
                     ft.Container(width=12),   # Spacer
                     save_button
                 ]
@@ -599,14 +623,22 @@ class CanvasRail(Rail):
                     )
                 )
 
-            self.p.show_dialog()
+            self.p.show_dialog(dlg)
 
 
-        # Our header at the top of the rail
+        menubar = ft.MenuBar(
+            self.top_row_buttons,
+            #expand=True,
+            style=ft.MenuStyle(
+                bgcolor="transparent", shadow_color="transparent",
+                shape=ft.RoundedRectangleBorder(radius=10),
+            ),
+        )
+
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER,
-            controls=self.top_row_buttons,
+            controls=[menubar]
         )
 
         # Width/Size of brush

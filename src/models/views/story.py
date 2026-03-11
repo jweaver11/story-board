@@ -485,7 +485,7 @@ class Story(ft.View):
             case "note":
                 widget = Note(title, self.p, directory_path, self, data)
             case "canvas":
-                d = {'canvas': data} if data is not None else None
+                d = {'canvas_data': data} if data is not None else None
                 widget = Canvas(title, self.p, directory_path, self, d)
             case "character":
                 if app.settings.data.get('active_character_template', "None") != "None":
@@ -719,8 +719,8 @@ class Story(ft.View):
             ''' Responsible for altering the width of the active rail '''
 
             active_rail_stack.width += int(e.local_delta.x)    # Apply the change to our rail
-            if active_rail_stack.width < 150:
-                active_rail_stack.width = 150
+            if active_rail_stack.width < 200:
+                active_rail_stack.width = 200
             elif active_rail_stack.width > page.width / 2:
                 active_rail_stack.width = page.width / 2
             active_rail_stack.update()
