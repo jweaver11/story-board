@@ -19,7 +19,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 import asyncio
-
+from styles.menu_option_style import MenuOptionStyle
 
 
 class Canvas(Widget):
@@ -81,6 +81,7 @@ class Canvas(Widget):
         self.canvas_width = 0
         self.canvas_height = 0
         self.needs_redraw = False     # Used to track if we need to redraw canvas after a resize
+        self.skip_first_resize = True
         self.initial_resize = True     # Initial resize needs rebuild
         self.undo_idx = 0       #??
 
@@ -123,9 +124,14 @@ class Canvas(Widget):
 
 
         # Set the color and size
-        self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
+        self.icon = ft.IconButton(
+            ft.Icons.BRUSH_OUTLINED, self.data.get('color', ft.Colors.PRIMARY), 
+            mouse_cursor=ft.MouseCursor.CLICK, on_click=self.information_display.show_mini_widget,
+            tooltip="Show Canvas Info",
+        )
+        
 
-        tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS)
+        tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
         
         # Our icon button that will hide the widget when clicked in the workspace
         hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
@@ -137,18 +143,10 @@ class Canvas(Widget):
             mouse_cursor=ft.MouseCursor.CLICK,
         )
 
-        self.toggle_info_button = ft.IconButton(
-            ft.Icons.INFO_OUTLINE, self.data.get('color', "primary"), scale=0.8,
-            mouse_cursor=ft.MouseCursor.CLICK,
-            tooltip="Show Canvas Info",
-            on_click=self.information_display.show_mini_widget,
-            # on_click here
-        )
-
 
         self.tab_gd = ft.GestureDetector(
             ft.Row(
-                [self.icon, ft.Container(width=10), tab_text, self.toggle_info_button, ft.Container(expand=True), hide_tab_icon_button],
+                [self.icon, tab_text, hide_tab_icon_button],
                 spacing=0
             ),     # Changes here to add show info button
             mouse_cursor=ft.MouseCursor.CLICK,
@@ -240,7 +238,7 @@ class Canvas(Widget):
 
     # Special color changes for this one
     def reload_tab(self):
-        self.toggle_info_button.icon_color = self.data.get('color', "primary")
+        self.icon.icon_color = self.data.get('color', "primary")
         self.information_display.reload_mini_widget()
         super().reload_tab()    
 
@@ -252,6 +250,7 @@ class Canvas(Widget):
             if self.initial_resize:
                 self.initial_resize = False
                 self.needs_redraw = False
+
                 self.story.blocker.visible = True
                 self.story.blocker.update()
                 await asyncio.sleep(0)
@@ -262,7 +261,6 @@ class Canvas(Widget):
                     self.story.blocker.update()
 
                 await asyncio.sleep(0)
-                self.needs_redraw = False
                 
             return
 
@@ -284,7 +282,17 @@ class Canvas(Widget):
         ''' Gets the menu options for when we right click on the canvas '''
 
         options = [
-            # Show info
+            MenuOptionStyle(
+                on_click=self.information_display.show_mini_widget,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.INFO_OUTLINE, self.data.get('color', 'primary'),),
+                    ft.Text(
+                        "Show Info", 
+                        weight=ft.FontWeight.BOLD, 
+                        
+                    ), 
+                ]),
+            ),
             # Set background
         ]
 
@@ -516,7 +524,15 @@ class Canvas(Widget):
                 self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
     async def _redraw_canvas(self, e=ft.PointerEvent):
+        #print("Needs redraw: ", self.needs_redraw)
         if self.story.workspace.is_resizing:    # If we're resizing just ignore this call
+            self.needs_redraw = True
+            return
+        
+        # Skip unneccesary redraw on first launch since it fixes itself
+        if self.skip_first_resize:
+            self.skip_first_resize = False
+            self.needs_redraw = False
             return
         
         # If we're not resizing but don't need to redraw, set our coords

@@ -451,6 +451,7 @@ class Workspace(ft.Container):
         )
 
         async def tab_change(e: ft.Event):
+            from models.widgets.canvas import Canvas
 
             for idx, w in enumerate(self.main_pin):
                 old_is_active_tab = w.data.get('is_active_tab', False)
@@ -461,6 +462,10 @@ class Workspace(ft.Container):
 
                 if old_is_active_tab != w.data['is_active_tab']:    # Only save changes
                     self.p.run_task(w.save_dict)
+
+                # Make it so canvases don't redraw unneccesarily when switching tabs
+                if isinstance(w, Canvas):
+                    w.skip_first_resize = True
 
 
         
