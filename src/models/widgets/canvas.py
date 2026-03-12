@@ -82,6 +82,7 @@ class Canvas(Widget):
         self.canvas_width = 0
         self.canvas_height = 0
         self.needs_redraw = False     # Used to track if we need to redraw canvas after a resize
+        self.initial_resize = True     # Initial resize needs rebuild
         self.undo_idx = 0       #??
 
 
@@ -193,6 +194,7 @@ class Canvas(Widget):
 
     def _load_layers(self):
         self.layers.clear()
+        
         for idx, layer in enumerate(self.data.get('canvas_data', {}).get('Layers', [])):
 
             name = layer.get('name', f"Layer {idx + 1}")
@@ -216,7 +218,11 @@ class Canvas(Widget):
                     ),
                     expand=True, 
                     shapes=[
-                        cv.Image(capture, 0, 0)     # Set the capture of the layer for all but background
+                        cv.Image(
+                            capture, 0, 0, 
+                            self.canvas_width if self.canvas_width != 0 else None, # Not working
+                            self.canvas_height if self.canvas_height != 0 else None 
+                        )     # Set the capture of the layer for all but background
                     ],
                     on_resize=self._set_size if idx == 0 else None,  
                 ),
@@ -241,6 +247,21 @@ class Canvas(Widget):
             self.canvas_width = int(e.width)
             self.canvas_height = int(e.height)
             self.needs_redraw = True
+            if self.initial_resize:
+                self.initial_resize = False
+                self.needs_redraw = False
+                self.story.blocker.visible = True
+                self.story.blocker.update()
+                await asyncio.sleep(0)
+                self.reload_widget()     # Initial resize needs to build the canvases with the right size
+                
+                if self.story.blocker.visible:
+                    self.story.blocker.visible = False
+                    self.story.blocker.update()
+
+                await asyncio.sleep(0)
+                self.needs_redraw = False
+                
             return
 
     # Called in the constructor

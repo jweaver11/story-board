@@ -251,6 +251,7 @@ class CanvasInformationDisplay(MiniWidget):
 
         #self.widget.reload_widget()
         self.widget.story.workspace.reload_workspace()
+        await asyncio.sleep(0.1)
         self.widget.story.blocker.visible = False
         self.widget.story.blocker.update()
 
@@ -350,6 +351,22 @@ class CanvasInformationDisplay(MiniWidget):
     # Creates a new layer
     async def _create_new_layer_clicked(self, e):
 
+        async def _check_name_unique(e):
+            name = new_layer_tf.value
+            for layer in self.data.get('Layers', []):
+                if layer.get('name') == name:
+                    new_layer_tf.error = "Layer name must be unique"
+                    new_layer_tf.update()
+                    create_button.disabled = True
+                    create_button.update()
+                    return False
+                
+            new_layer_tf.error = None
+            new_layer_tf.update()
+            create_button.disabled = False
+            create_button.update()
+            return True
+
         async def _create_layer_confirmed(e=None):
             self.widget.story.blocker.visible = True
             self.widget.story.blocker.update()
@@ -366,13 +383,73 @@ class CanvasInformationDisplay(MiniWidget):
             self.widget.story.blocker.visible = False
             self.widget.story.blocker.update()
 
-        new_layer_tf = ft.TextField(capitalization=ft.TextCapitalization.WORDS, on_submit=_create_layer_confirmed, autofocus=True)
+        new_layer_tf = ft.TextField(capitalization=ft.TextCapitalization.WORDS, on_submit=_create_layer_confirmed, on_change=_check_name_unique, autofocus=True)
+        create_button = ft.TextButton("Create", on_click=_create_layer_confirmed, style=ft.ButtonStyle(mouse_cursor="click"), disabled=True)
         dlg = ft.AlertDialog(
             title="Layer Name",
             content=new_layer_tf,
             actions=[
                 ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                ft.TextButton("Create", on_click=_create_layer_confirmed, style=ft.ButtonStyle(mouse_cursor="click")),
+                create_button
+            ]
+        )
+        self.p.show_dialog(dlg)
+
+    async def _rename_layer_clicked(self, e):
+
+        async def _check_name_unique(e):
+            name = rename_layer_tf.value
+            if name == old_name:
+                rename_layer_tf.error = None
+                rename_layer_tf.update()
+                rename_button.disabled = False
+                rename_button.update()
+                return True
+            for layer in self.data.get('Layers', []):
+                if layer.get('name') == name:
+                    rename_layer_tf.error = "Layer name must be unique"
+                    rename_layer_tf.update()
+                    rename_button.disabled = True
+                    rename_button.update()
+                    return False
+                
+            rename_layer_tf.error = None
+            rename_layer_tf.update()
+            rename_button.disabled = False
+            rename_button.update()
+            return True
+        
+        async def _rename_layer_confirmed(e=None):
+            self.widget.story.blocker.visible = True
+            self.widget.story.blocker.update()
+            await asyncio.sleep(0.1)
+
+            new_name = rename_layer_tf.value or f"Layer {len(self.data.get('Layers', []))+1}"
+            for layer in self.data.get('Layers', []):
+                if layer.get('name') == old_name:
+                    layer['name'] = new_name
+                    break
+            await self.save_dict()
+            self.p.pop_dialog()
+            await asyncio.sleep(0.1)
+
+            #self.widget.reload_widget()
+            self.widget.story.workspace.reload_workspace()
+            await asyncio.sleep(0.1)
+            #self.widget.story.blocker.visible = False
+            #self.widget.story.blocker.update()
+
+        old_name = e.control.data
+
+        rename_layer_tf = ft.TextField(old_name, capitalization=ft.TextCapitalization.WORDS, on_submit=_rename_layer_confirmed, on_change=_check_name_unique, autofocus=True)
+        rename_button = ft.TextButton("Rename", on_click=_rename_layer_confirmed, style=ft.ButtonStyle(mouse_cursor="click"), disabled=True)
+
+        dlg = ft.AlertDialog(
+            title="Layer Name",
+            content=rename_layer_tf,
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                rename_button
             ]
         )
         self.p.show_dialog(dlg)
@@ -491,12 +568,12 @@ class CanvasInformationDisplay(MiniWidget):
                         items=[
                             ft.PopupMenuItem(
                                 ft.Row([ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED), ft.Text("Rename")]), data=name,
-                                mouse_cursor=ft.MouseCursor.CLICK,# on_click=self._rename_layer_clicked, 
+                                mouse_cursor=ft.MouseCursor.CLICK, on_click=self._rename_layer_clicked, 
                             ),
-                            ft.PopupMenuItem(
-                                ft.Row([ft.Icon(ft.Icons.BLUR_ON_OUTLINED), ft.Text("Blur Strength")]), data=name, 
-                                mouse_cursor=ft.MouseCursor.CLICK, on_click=self._set_layer_blur,
-                            ),
+                            #ft.PopupMenuItem(
+                                #ft.Row([ft.Icon(ft.Icons.BLUR_ON_OUTLINED), ft.Text("Blur Strength")]), data=name, 
+                                #mouse_cursor=ft.MouseCursor.CLICK, on_click=self._set_layer_blur,
+                            #),
                             ft.PopupMenuItem(
                                 ft.Row([ft.Icon(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR), ft.Text("Delete")]), data=name, 
                                 on_click=self._delete_layer_clicked, mouse_cursor=ft.MouseCursor.CLICK, 
