@@ -293,7 +293,6 @@ class Canvas(Widget):
                     ), 
                 ]),
             ),
-            # Set background
         ]
 
         options.extend(super()._get_menu_options())     # Get the default menu options for widgets and add them to our information display options

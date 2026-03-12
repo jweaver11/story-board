@@ -134,6 +134,8 @@ class CanvasInformationDisplay(MiniWidget):
 
     async def _set_background(self, e):
 
+        await self.widget.story.close_menu()
+
         type = e.control.data
 
         # TODO: Create a new background layer when this is clicked
@@ -227,13 +229,16 @@ class CanvasInformationDisplay(MiniWidget):
         #self.widget.story.blocker.update()
 
     async def _clear_background(self, e):
+        
+        self.widget.story.blocker.visible = True
+        self.widget.story.blocker.update()
+        await asyncio.sleep(0)
+        await self.widget.story.close_menu()
         self.data['background'] = None
         self.data['bg_type'] = None
         await self.save_dict()
 
-        self.widget.story.blocker.visible = True
-        self.widget.story.blocker.update()
-        await asyncio.sleep(0)
+        
 
         #self.widget.reload_widget()
         self.widget.story.workspace.reload_workspace()
@@ -596,19 +601,19 @@ class CanvasInformationDisplay(MiniWidget):
                     "Set Background",
                     [
                         ft.TextButton(     # Set a color
-                            "Color", ft.Icons.COLOR_LENS_OUTLINED, 
+                            "Color\t\t", ft.Icons.COLOR_LENS_OUTLINED, 
                             self.data.get('background', "primary") if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
                             tooltip="Set background as a color", data="color",
                             on_click=self._set_background, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ON_SURFACE)
                         ),
                         ft.TextButton(      # Set an image
-                            "Image ", ft.Icons.IMAGE_OUTLINED, 
+                            "Image", ft.Icons.IMAGE_OUTLINED, 
                             self.data.get('background', "primary") if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
                             tooltip="Set background as an image", data="image",
                             on_click=self._set_background, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ON_SURFACE)
                         ),
                         ft.TextButton(  # Clear background
-                            "Clear", ft.Icons.HIDE_IMAGE_OUTLINED,
+                            "Clear\t\t", ft.Icons.HIDE_IMAGE_OUTLINED,
                             self.data.get('background', "primary") if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
                             tooltip="Clear/Reset background",
                             on_click=self._clear_background, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ON_SURFACE)
