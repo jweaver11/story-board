@@ -105,18 +105,28 @@ class CanvasInformationDisplay(MiniWidget):
     async def hide_mini_widget(self, e=None):
         if not self.visible:
             return
+        self.widget.story.blocker.visible = True
+        self.widget.story.blocker.update()
+        await asyncio.sleep(0.1)
         self.data['visible'] = False
         await self.save_dict()
         self.visible = False
         self.update()
+        self.widget.story.blocker.visible = False
+        self.widget.story.blocker.update()
 
     async def show_mini_widget(self, e=None):
         if self.visible:
             return
+        self.widget.story.blocker.visible = True
+        self.widget.story.blocker.update()
+        await asyncio.sleep(0.1)
         self.data['visible'] = True
         await self.save_dict()
         self.visible = True
         self.update()
+        self.widget.story.blocker.visible = False
+        self.widget.story.blocker.update()
 
     async def _set_background(self, e):
 
@@ -453,13 +463,88 @@ class CanvasInformationDisplay(MiniWidget):
             ]
         )
         self.p.show_dialog(dlg)
+
+    # Called when undoing a stroke on the canvas
+    async def undo(self, e=None):
+        if len(self.widget.state.undo_list) == 0:
+            return
+        
+        # Hitting undo needs to grab current state of canvas and add that to redo list
+        
+        # Grab the task we're going to carry out and its name and capture
+        task = self.widget.state.undo_list.pop()    
+        layer_name = task.get('layer_name', None)
+        capture = task.get('capture', None)
+
+
+        # Set data back to old capture state
+        for layer in self.data.get('Layers', []):
+            if layer.get('name', None) == layer_name:
+                previous_capture = layer.get('capture', None)   # Grab current capture of the layer and add it to the redo list
+                self.widget.state.redo_list.append({'layer_name': layer_name, 'capture': previous_capture}) 
+                layer['capture'] = capture     
+                await self.save_dict()
+                break
+
+        # Set canvas back to old capture state
+        for ctrl in self.widget.layer_stack.controls:
+            if isinstance(ctrl, ft.Container) and isinstance(ctrl.content, cv.Canvas) and ctrl.data == layer_name:
+                ctrl.content.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
+                ctrl.content.shapes.append(cv.Image(capture, 0, 0, self.widget.canvas_width, self.widget.canvas_height))   # Re-add most reccent capture
+                try:
+                    self.widget.story.blocker.visible = True
+                    self.widget.story.blocker.update()
+                    await asyncio.sleep(0)
+                    ctrl.content.update()
+                    self.widget.story.blocker.visible = False
+                    self.widget.story.blocker.update()
+                except Exception as _:
+                    if self.widget.story.blocker.visible:
+                        self.widget.story.blocker.visible = False
+                        self.widget.story.blocker.update()
+                break
+
+    # Called when redoing a stroke on the canvas after a previous undo
+    async def redo(self, e=None):
+        if len(self.widget.state.redo_list) == 0:
+            return
+           
+        # Most recent task we want to redo
+        task = self.widget.state.redo_list.pop()    
+        layer_name = task.get('layer_name', None)
+        capture = task.get('capture', None)
+
+        # Set data back to old capture state
+        for layer in self.data.get('Layers', []):
+            if layer.get('name', None) == layer_name:
+                previous_capture = layer.get('capture', None)   # Grab current capture of the layer and add it to undo list
+                self.widget.state.undo_list.append({'layer_name': layer_name, 'capture': previous_capture})
+                layer['capture'] = capture     # Set the capture of the layer to the one from our undo task
+                await self.save_dict()
+                break
+
+        for ctrl in self.widget.layer_stack.controls:
+            if isinstance(ctrl, ft.Container) and isinstance(ctrl.content, cv.Canvas) and ctrl.data == layer_name:
+                ctrl.content.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
+                ctrl.content.shapes.append(cv.Image(capture, 0, 0, self.widget.canvas_width, self.widget.canvas_height))   # Re-add most reccent capture
+                try:
+                    self.widget.story.blocker.visible = True
+                    self.widget.story.blocker.update()
+                    await asyncio.sleep(0)
+                    ctrl.content.update()
+                    self.widget.story.blocker.visible = False
+                    self.widget.story.blocker.update()
+                except Exception as _:
+                    if self.widget.story.blocker.visible:
+                        self.widget.story.blocker.visible = False
+                        self.widget.story.blocker.update()
+                break
+
+        
+        
     
     # Called when reloading our mini widget UI
     def reload_mini_widget(self):
-
-        # Option to export canvas as image file (png, jpg, etc). 
-        # TODO: renameable, deletable by right click
-        
        
         # Manage saving so not at the end of every stroke.
         # Add undo/redo based on capture list
@@ -469,14 +554,23 @@ class CanvasInformationDisplay(MiniWidget):
 
         title_control = ft.Row([
             ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
-            ft.Text(self.data['title'], weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE, expand=True),
+            ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE, ),
+            ft.IconButton(
+                ft.Icons.UNDO, self.widget.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
+                on_click=self.undo, #disabled=True if len(self.widget.state.undo_list) == 0 else False
+            ),
+            ft.IconButton(
+                ft.Icons.REDO_OUTLINED, self.widget.data.get('color', None), tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
+                on_click=self.redo, #disabled=True if len(self.widget.state.redo_list) == 0 else False
+            ),
+            #ft.Container(expand=True),
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
                 tooltip=f"Close {self.title}",
                 mouse_cursor=ft.MouseCursor.CLICK,
                 on_click=self.hide_mini_widget,
             ),
-        ])
+        ], spacing=0)
 
         # Textfield of our canvas description
         description_tf = ft.TextField(

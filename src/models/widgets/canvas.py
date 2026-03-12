@@ -74,8 +74,7 @@ class Canvas(Widget):
         if is_new:
             self.p.run_task(self.save_dict)
 
-        self.information_display: ft.Container = None
-        self._create_information_display()
+        
 
         # State tracking for canvas drawing info
         self.state = State()         # Used for our coordinates and how to apply things
@@ -84,6 +83,9 @@ class Canvas(Widget):
         self.needs_redraw = False     # Used to track if we need to redraw canvas after a resize
         self.initial_resize = True     # Initial resize needs rebuild
         self.undo_idx = 0       #??
+
+        self.information_display: ft.Container = None
+        self._create_information_display()
 
 
         
@@ -317,7 +319,7 @@ class Canvas(Widget):
         #print(self.canvas.shapes)
             
         # Save our canvas data
-        #self.save_canvas()
+        await self.save_canvas(e)
         
     # Called when we start drawing on the canvas
     async def start_drawing(self, e: ft.DragStartEvent):
@@ -557,8 +559,19 @@ class Canvas(Widget):
         # TODO: Set a shapes limit on canvas to clear shapes and re-set background after 15 or so
 
         canvas: cv.Canvas = e.control.parent
+        layer_name = canvas.data
 
-        print("Saving canvas: ", self.title)
+        # Grab the old capture for this layer and add it as an undo task
+        for layer in self.data.get('canvas_data', {}).get('Layers', []):
+            if layer.get('name', None) == layer_name:
+
+                if layer.get('capture', None):
+                    old_capture = layer.get('capture')
+                    self.state.undo_list.append({'layer_name': layer_name, 'capture': old_capture})
+
+        if len(self.state.undo_list) > 30:   # Limit our undo/redo list to 30 items to save memory
+            self.state.undo_list.pop(0)
+        
         try:
 
             await canvas.capture()
@@ -574,8 +587,6 @@ class Canvas(Widget):
 
 
                 await self.save_dict()     # Save our data with the new capture
-
-            # TODO: Set snapshot for canvas boards to use??
 
             # Must clear the capture or weird UI bugs
             await canvas.clear_capture()
@@ -711,6 +722,8 @@ class Canvas(Widget):
                 src_bytes=merged_bytes, file_name=f"{self.title}.png", 
                 file_type=ft.FilePickerFileType.IMAGE, allowed_extensions=["png"]
             )
+
+    
         
 
     # Called when we need to rebuild out plotline UI

@@ -15,6 +15,6 @@ class State:
     # Our list of captures for undo/redo
     undo_list = []
     redo_list = []
-    # Each undo/redo item {'layer_name': "capture_str"}}    # Set that layer to a previous or now-future capture state
+    # Each undo/redo item {'layer_name': "", 'capture': ""}    # Set that layer to a previous or now-future capture state
 
         
