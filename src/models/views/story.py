@@ -717,6 +717,7 @@ class Story(ft.View):
         # Called when resizing the active rail by dragging the resizer
         async def move_active_rail_divider(e: ft.DragUpdateEvent):
             ''' Responsible for altering the width of the active rail '''
+            self.workspace.is_resizing = True
 
             active_rail_stack.width += int(e.local_delta.x)    # Apply the change to our rail
             if active_rail_stack.width < 200:
@@ -728,6 +729,7 @@ class Story(ft.View):
         # Called when app stops dragging the resizer to resize the active rail
         async def save_active_rail_width(e: ft.DragEndEvent):
             ''' Saves our new width that will be loaded next time app opens the app '''
+            self.workspace.is_resizing = False
 
             app.settings.data['active_rail_width'] = active_rail_stack.width
             await app.settings.save_dict()

@@ -18,6 +18,7 @@ import json
 import base64
 from io import BytesIO
 from PIL import Image
+import asyncio
 
 
 
@@ -80,6 +81,7 @@ class Canvas(Widget):
         self.state = State()         # Used for our coordinates and how to apply things
         self.canvas_width = 0
         self.canvas_height = 0
+        self.needs_redraw = False     # Used to track if we need to redraw canvas after a resize
         self.undo_idx = 0       #??
 
 
@@ -148,9 +150,7 @@ class Canvas(Widget):
             ),     # Changes here to add show info button
             mouse_cursor=ft.MouseCursor.CLICK,
             hover_interval=100,
-            #on_enter=self._set_coords,
             on_hover=self._set_coords,
-            #on_exit=self._exit_tab,
             on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
         )
 
@@ -209,7 +209,7 @@ class Canvas(Widget):
                         on_pan_end=self.save_canvas,
                         on_tap_up=self.add_point,      # Handles so we can add points
                         on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
-                        on_hover=self._set_coords,
+                        on_hover=self._redraw_canvas,       # Redraws canvas if it needs it from resizing, otherwise just sets coords
                         hover_interval=20,
                         drag_interval=10,
                         expand=True,
@@ -237,8 +237,11 @@ class Canvas(Widget):
         super().reload_tab()    
 
     async def _set_size(self, e: cv.CanvasResizeEvent):
-        self.canvas_width = int(e.width)
-        self.canvas_height = int(e.height)
+        if e: 
+            self.canvas_width = int(e.width)
+            self.canvas_height = int(e.height)
+            self.needs_redraw = True
+            return
 
     # Called in the constructor
     def _create_information_display(self):
@@ -259,12 +262,13 @@ class Canvas(Widget):
 
         options = [
             # Show info
-            # Set background image
+            # Set background
         ]
 
         options.extend(super()._get_menu_options())     # Get the default menu options for widgets and add them to our information display options
         return options
-    
+        
+
 
     # Called when we click the canvas and don't initiate a drag
     async def add_point(self, e: ft.TapEvent):
@@ -487,6 +491,42 @@ class Canvas(Widget):
 
                 # Update our state x and y for the next segment
                 self.state.x, self.state.y = e.local_position.x, e.local_position.y
+
+    async def _redraw_canvas(self, e=ft.PointerEvent):
+        if self.story.workspace.is_resizing:    # If we're resizing just ignore this call
+            return
+        
+        # If we're not resizing but don't need to redraw, set our coords
+        self.story.mouse_x = e.global_position.x
+        self.story.mouse_y = e.global_position.y
+        
+        # If we need to redraw, do that
+        if self.needs_redraw:
+            self.story.blocker.visible = True
+            self.story.blocker.update()
+            await asyncio.sleep(0)   
+
+            for ctrl in self.layer_stack.controls:
+                if isinstance(ctrl, ft.Container) and isinstance(ctrl.content, cv.Canvas):
+                    
+                    # If any changes had been made, clear the shapes on screen and set the most recent capture
+                    if len(ctrl.content.shapes) > 1:   
+                        for layer in self.data.get('canvas_data', {}).get('Layers', []):
+                            if layer.get('name', None) == ctrl.data:
+                                capture = layer.get('capture', None)
+                                if capture:
+                                    ctrl.content.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
+                                    ctrl.content.shapes.append(cv.Image(capture, 0, 0, self.canvas_width, self.canvas_height))   # Re-add most reccent capture
+                                    continue        
+
+                    # Run logic here to resize the canvas capture
+                    ctrl.content.shapes[0].width = self.canvas_width
+                    ctrl.content.shapes[0].height = self.canvas_height
+
+            self.layer_stack.update()
+            self.story.blocker.visible = False
+            self.story.blocker.update()
+            self.needs_redraw = False
         
 
     # Called when we release the mouse to stop drawing a line

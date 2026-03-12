@@ -32,6 +32,8 @@ class Workspace(ft.Container):
         self.p = page
         self.story = story
 
+        self.is_resizing = False # State tracking if we're resizing a canvas
+
         self.minimum_pin_height = int(self.p.height / 5)
         self.minimum_pin_width = int(self.p.width / 8)
         self.maximum_pin_height = int(self.p.height / 2)   
@@ -344,6 +346,7 @@ class Workspace(ft.Container):
         self.arrange_widgets()
 
         async def save_pin_sizes(e: ft.DragEndEvent=None):
+            self.is_resizing = False
             self.story.data['top_pin_height'] = self.top_pin.height
             self.story.data['left_pin_width'] = self.left_pin.width
             self.story.data['right_pin_width'] = self.right_pin.width
@@ -354,6 +357,7 @@ class Workspace(ft.Container):
         # Method called wn our divider (inside a gesture detector) is dragged
         # Updates the size of our pin in the story object
         async def move_top_pin_divider(e: ft.DragUpdateEvent):
+            self.is_resizing = True
             self.top_pin.height += e.local_delta.y
 
             if self.top_pin.height < self.minimum_pin_height:
@@ -378,6 +382,7 @@ class Workspace(ft.Container):
 
         # Left pin reisizer method and variable
         async def move_left_pin_divider(e: ft.DragUpdateEvent):
+            self.is_resizing = True
             self.left_pin.width += e.local_delta.x
             if self.left_pin.width < self.minimum_pin_width:
                 self.left_pin.width = self.minimum_pin_width
@@ -401,6 +406,7 @@ class Workspace(ft.Container):
 
         # Right pin resizer method and variable
         async def move_right_pin_divider(e: ft.DragUpdateEvent):
+            self.is_resizing = True
             self.right_pin.width -= e.local_delta.x
             if self.right_pin.width < self.minimum_pin_width:
                 self.right_pin.width = self.minimum_pin_width
@@ -423,6 +429,7 @@ class Workspace(ft.Container):
 
         # Bottom pin resizer method and variable
         async def move_bottom_pin_divider(e: ft.DragUpdateEvent):
+            self.is_resizing = True
             self.bottom_pin.height -= e.local_delta.y
             if self.bottom_pin.height < self.minimum_pin_height:
                 self.bottom_pin.height = self.minimum_pin_height

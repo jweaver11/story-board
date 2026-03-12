@@ -381,7 +381,7 @@ class CanvasInformationDisplay(MiniWidget):
     def reload_mini_widget(self):
 
         # Option to export canvas as image file (png, jpg, etc). 
-        # TODO: Give every layer a blur effect, renameable, deletable by right click
+        # TODO: renameable, deletable by right click
         
        
         # Manage saving so not at the end of every stroke.
