@@ -251,7 +251,14 @@ class CharactersRail(Rail):
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=0)]
         )
 
-        characters = [w for w in self.story.widgets if w.data.get('tag', "") == "character"]
+        characters = []
+        character_connection_maps = []
+
+        for w in self.story.widgets:
+            if w.data.get('tag', "") == "character":
+                characters.append(w)
+            elif w.data.get('tag', "") == "character_connection_map":
+                character_connection_maps.append(w)
 
    
         

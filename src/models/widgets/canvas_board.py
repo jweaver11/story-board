@@ -43,33 +43,30 @@ class CanvasBoard(Widget):
                 'summary': str, # Description of this canvas board. Some could be for chapters (multiple canvas) or just one board
 
                 # Labels on the top part of our grid. Users can add onto these as needed
-                'matrix_labels': ["Preview", "Sketch", "Concept"],   # Preview -> Ties to a specific Canvas and shows a preview of that Canvas in real time
+                # Preview -> Ties to a specific Canvas and shows a preview of that Canvas in real time
+                'matrix_labels': ["Preview", "Sketch", "Concept"],   
 
                 # Our main data matrix for this canvas board
                 'matrix': [
                     [           # First row
-                        {       # Preview. This will key to a specific canvas later and show a live preview
-                            'canvas_key': "",      # Key to the canvas we are tied too
-                            "snapshot": [],         # Snapshot of the canvas for previewing
+                        {       # First Column
+                            'preview_canvas_key': "",      # Key to the canvas we are tied too
+                            'preview_canvas_title': "",    # Title of the canvas we're tied to, for easy reference
+                            'preview_canvas_color': "",    # Color of the canvas we're tied to, for easy reference
+                            "preview_canvas_snapshot": "",         # Snapshot of the canvas for previewing
                         },         
-                        {           # Sketch canvas data
-                            'paths': [],            # All our shapes, lines, dashed lines, curves, etc.
-                            'shadow_paths': [],     # All paths but with shadows
-                            'points': [],           # All our points
-                        }, 
-                        ""           # Concept description text
+                        "",             # Sketch capture to be loaded into canvas
+                        ""              # Concept description text
                     ],      
                     [           # Second row
-                        {
-                            'canvas_key': "",
-                            "snapshot": [],
+                        {       # First Column
+                            'preview_canvas_key': "",      
+                            'preview_canvas_title': "",    
+                            'preview_canvas_color': "",    
+                            "preview_canvas_snapshot": "",         
                         },         
-                        {
-                            'paths': [],            # All our shapes, lines, dashed lines, curves, etc.
-                            'shadow_paths': [],     # All paths but with shadows
-                            'points': [],           # All our points
-                        }, 
-                        ""
+                        "",   # Second column
+                        ""      # Third column
                     ]
                 ]
             },
@@ -94,115 +91,29 @@ class CanvasBoard(Widget):
             self.data['matrix'][row][column] = value
             self.p.run_task(self.save_dict)
 
-    # Called on launch to load our drawing from data into our canvas
-    def _load_canvas(self, row: int, column: int) -> list:
-        """Loads our drawing from our saved map drawing file."""
 
-        # Clear our canvas, and load our shapes stored in data
-        shapes = []
-        
-        
-
-        #print("Data to load: ", self.data['matrix'][row][column])
-
-        # Loading points
-        for point in self.data['matrix'][row][column].get('points', []):
-            px, py, point_mode, paint_settings = point
-            shapes.append(
-                cv.Points(
-                    points=[(px, py)],
-                    point_mode=point_mode,
-                    paint=ft.Paint(**paint_settings),
-                )
-            )
-
-        # Loading our paths, which most of the drawing
-        for path in self.data['matrix'][row][column].get('paths', []):
-            
-            elements = path.get('elements', [])         # List of the elements in this path
-            paint_settings = path.get('paint', {})      # Paint settings for this path
-
-            # Grab our style for simple logic
-            style = path.get('paint', {}).get('style', 'stroke')
-
-            # Make a copy of our paint settings to modify for drawing
-            safe_paint_settings = path.get('paint', {}).copy()
-
-            # If in erase mode, we have to set blur_image to 0 and
-            if safe_paint_settings.get('blend_mode', 'src_over') == 'clear':
-                safe_paint_settings['blur_image'] = 0
-
-            # Set stroke or fill based on custom styles
-            safe_stroke = 'fill' if style.endswith('fill') else 'stroke'
-            safe_paint_settings['style'] = safe_stroke
-
-            new_path = cv.Path(elements=[], paint=ft.Paint(**safe_paint_settings))   # Set a new path for this path with our paint settings
-
-            # Iterate through each element for its type, and create a new path element based on that
-            for element in elements:
-
-                # MoveTo just has x and y
-                if element['type'] == 'moveto':
-                    new_path.elements.append(cv.Path.MoveTo(element['x'], element['y']))
-
-                # Lineto jjust has x and y
-                elif element['type'] == 'lineto':
-                    new_path.elements.append(cv.Path.LineTo(element['x'], element['y']))
-
-                elif element['type'] == 'arc':
-                    new_path.elements.append(
-                        cv.Path.Arc(
-                            width=element['width'],
-                            height=element['height'],
-                            x=element['x'],
-                            y=element['y'],
-                            start_angle=element['start_angle'],
-                            sweep_angle=element['sweep_angle'],
-                        )
-                    )
-                        
-
-                # QuadraticTo has cp1x, cp1y, x, y, w
-                elif element['type'] == 'arcto':
-                    new_path.elements.append(
-                        cv.Path.ArcTo(
-                            radius=element['radius'],
-                            rotation=element['rotation'],
-                            large_arc=element['large_arc'],
-                            x=element['x'],
-                            y=element['y'],
-                        )
-                    )
-
-                
-                else:
-                    print("Unknown path element type while loading: ", element)
-                    self.p.show_dialog(SnackBar(f"Error loading {self.title}"))
-
-            shapes.append(new_path)
-
-        return shapes
-
-
-        # Called when we click the canvas and don't initiate a drag
-    def add_point(self, row: int, column: int, e: ft.TapEvent):
+    # Called when we click the canvas and don't initiate a drag
+    async def add_point(self, e: ft.TapEvent):
         ''' Adds a point to the canvas if we just clicked and didn't initiate a drag '''
+
+        row = e.control.data.get('row')
+        column = e.control.data.get('column')
 
         # Create the point using our paint settings and point mode
         point = cv.Points(
-            points=[(e.local_x, e.local_y)],
+            points=[(e.local_position.x, e.local_position.y)],
             paint=ft.Paint(**app.settings.data.get('paint_settings', {})),
         )
         
         # Add point to the canvas and our state data
         e.control.parent.shapes.append(point)
-        self.state.points.append((e.local_x, e.local_y, point.point_mode, point.paint.__dict__))
+        self.state.points.append((e.local_position.x, e.local_position.y, point.point_mode, point.paint.__dict__))
 
         # After dragging canvas widget, it loses page reference and can't update
         try:
             e.control.parent.update()
             
-        except Exception as ex:
+        except Exception as _:
             print("Failed to update e.control")
             self.p.update()
             
@@ -218,10 +129,10 @@ class CanvasBoard(Widget):
         style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
 
         # Make a copy of our paint settings to modify it, since some of the styles are not built in
-        safe_paint_settings = app.settings.data.get('paint_settings', {}).copy()
+        safe_paint_settings = ft.Paint(ft.Colors.ON_SURFACE, stroke_width=2, stroke_cap=ft.StrokeCap.ROUND)
 
         # Copy of our paint settings for our state tracking and data storage (only erase mode needs this)
-        state_paint_settings = app.settings.data.get('paint_settings', {}).copy()
+        state_paint_settings = ft.Paint(ft.Colors.ON_SURFACE, stroke_width=2, stroke_cap=ft.StrokeCap.ROUND)
 
         # Set either stroke or fill based on custom styles
         safe_stroke = 'fill' if style.endswith('fill') else 'stroke'
@@ -236,15 +147,15 @@ class CanvasBoard(Widget):
         
 
         # Update state x and y coordinates
-        self.state.x, self.state.y = e.local_x, e.local_y
+        self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
         # Clear and set our current path and state to match it
-        self.current_path = cv.Path(elements=[], paint=ft.Paint(**safe_paint_settings))
+        self.current_path = cv.Path(elements=[], paint=ft.Paint(ft.Colors.ON_SURFACE, stroke_width=2, stroke_cap=ft.StrokeCap.ROUND))
         self.state.paths.clear()
         self.state.paths.append({'elements': list(), 'paint': state_paint_settings})
 
         # Set move to element at our starting position that the mouse is at for the path to start from
-        move_to_element = cv.Path.MoveTo(e.local_x, e.local_y)
+        move_to_element = cv.Path.MoveTo(e.local_position.x, e.local_position.y)
 
         # Add that element to current paths elements and our state paths
         self.current_path.elements.append(move_to_element)
@@ -254,7 +165,7 @@ class CanvasBoard(Widget):
 
         # If we're using lineto (straight lines), add that element to the current path and state right away
         if style == "lineto":
-            line_element = cv.Path.LineTo(e.local_x, e.local_y)
+            line_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
             self.current_path.elements.append(line_element)
             self.state.paths[0]['elements'].append((line_element.__dict__))
 
@@ -263,8 +174,8 @@ class CanvasBoard(Widget):
                 width=20,
                 height=20,
                 
-                x=e.local_x,
-                y=e.local_y,
+                x=e.local_position.x,
+                y=e.local_position.y,
                 start_angle=math.pi,
                 sweep_angle=-math.pi,
             )
@@ -277,8 +188,8 @@ class CanvasBoard(Widget):
                 radius=12,
                 rotation=0,
                 large_arc=False,
-                x=e.local_x,
-                y=e.local_y,
+                x=e.local_position.x,
+                y=e.local_position.y,
                 clockwise=True,
             )
             self.current_path.elements.append(arc_element)
@@ -293,122 +204,34 @@ class CanvasBoard(Widget):
     async def is_drawing(self, e: ft.DragUpdateEvent):
         ''' Creates our line to add to the canvas as we draw, and saves that paths data to self.state '''
 
-        # Grab our style so we can compare it
-        style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
-
-
-        # Handle lineto (Straight lines). Grab the element we created on start drawing, update its data
-        if style == "lineto":
-            
-            # Set the element and its data
-            line_element = self.current_path.elements[-1]
-            line_dict = line_element.__dict__
-
-            # Update the elements position
-            line_element.x = e.local_x
-            line_element.y = e.local_y
-
-            # Update the dict to match
-            line_dict['x'] = line_element.x
-            line_dict['y'] = line_element.y
-
-            # Update the page and return early
-            try:
-                # Page reference gets lost after dragging widget to new canvas, so we reset it and update
-                e.control.parent.update()
-            except Exception as ex:
-                print("Failed to update e.control")
-                self.p.update()
-            return
-        
-        if style == "arc" or style == "arcfill":
-            
-            # Set the element and its data
-            arc_element = self.current_path.elements[-1]
-            arc_dict = arc_element.__dict__
-
+        ft.Paint(ft.Colors.ON_SURFACE, stroke_width=2, stroke_cap=ft.StrokeCap.ROUND)
         
 
-            # Swap directions of arc depending if we drag up or down from starting point
-            if e.local_y - self.state.y >= 0:   # Dragging down
-                arc_element.sweep_angle = -math.pi
-                arc_element.height = abs(self.state.y - e.local_y)
-                arc_element.y = self.state.y - (arc_element.height / 2)
-                
-            else:       # Dragging up
-                
-                arc_element.sweep_angle = math.pi
-                arc_element.height = abs(e.local_y - self.state.y)
-                arc_element.y = abs(self.state.y - (arc_element.height / 2))
+        #TODO: Add check here to reduce num of lines based on previous start and edn
+        # Set the path element based on what kind of path we're adding, add it to our current path and our state paths
+        path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
 
-            arc_element.width = abs(e.local_x - self.state.x) 
-        
-            # Update the page and return early
-            try:
-                # Page reference gets lost after dragging widget to new canvas, so we reset it and update
-                e.control.parent.update()   
-            except Exception as ex:
-                print("Failed to update e.control")
-                self.p.update()
+        # Add the declared element to our current path and state paths
+        self.current_path.elements.append(path_element)
+        self.state.paths[0]['elements'].append((path_element.__dict__))  
 
-
-            return
-        
-        # Handle arcs
-        if style == 'arcto' or style == 'arctofill':
-            
-            arc_element = self.current_path.elements[-1]
-            arc_dict = arc_element.__dict__
-
-            arc_element.x = e.local_x
-            arc_element.y = e.local_y
+        # After dragging canvas widget, it loses page reference and can't update
+        try:
+            # Page reference gets lost after dragging widget to new canvas, so we reset it and update
+            self.current_path.update()
+        except Exception as _:
+            e.control.parent.update()
         
 
-            arc_dict['x'] = arc_element.x
-            arc_dict['y'] = arc_element.y
-
-            # Update the page and return early
-            try:
-                # Page reference gets lost after dragging widget to new canvas, so we reset it and update
-                e.control.parent.update()
-            except Exception as ex:
-                print("Failed to update e.control")
-                self.p.update()
-            return
-        
-        
-        # If its not one of our custom styles, use free-draw stroke, which is constantly adding line_to segements
-        else:
-
-            #TODO: Add check here to reduce num of lines based on previous start and edn
-            # Set the path element based on what kind of path we're adding, add it to our current path and our state paths
-            path_element = cv.Path.LineTo(e.local_x, e.local_y)
-
-            # Add the declared element to our current path and state paths
-            self.current_path.elements.append(path_element)
-            self.state.paths[0]['elements'].append((path_element.__dict__))  
-
-            # After dragging canvas widget, it loses page reference and can't update
-            try:
-                # Page reference gets lost after dragging widget to new canvas, so we reset it and update
-                e.control.parent.update()
-            except Exception as ex:
-                print("Failed to update e.control")
-                self.p.update()
-            
-
-            # Update our state x and y for the next segment
-            self.state.x, self.state.y = e.local_x, e.local_y
-
-    def _on_canvas_resize(self, e: cv.CanvasResizeEvent):
-        ''' Called when our canvas resizes '''
-
-        #print("Canvas resized to: ", e.width, e.height)
+        # Update our state x and y for the next segment
+        self.state.x, self.state.y = e.local_position.x, e.local_position.y
         
 
     # Called when we release the mouse to stop drawing a line
-    def save_canvas(self, row: int, column: int):
+    async def save_canvas(self, e: ft.DragEndEvent):
         """ Saves our paths to our canvas data for storage """
+        row = e.control.data.get('row')
+        column = e.control.data.get('column')
 
         # Save our paths annd points to the correct cell in our matrix
         canvas_data = self.data['matrix'][row][column]
@@ -422,7 +245,7 @@ class CanvasBoard(Widget):
         self.state.points.clear()
 
     # Called when we click to add a new row at the bottom of our matrix
-    def _new_row_clicked(self, e=None):
+    async def _new_row_clicked(self, e=None):
         ''' Adds an empty new row to our matrix data and reloads the widget '''
 
         # Create a new row with default values for each column
@@ -431,16 +254,12 @@ class CanvasBoard(Widget):
             match label:
                 case "Preview":
                     new_row.append({
-                        'canvas_key': "",
-                        "snapshot": [],
+                        'preview_canvas_key': "",     
+                        'preview_canvas_title': "",   
+                        "preview_canvas_snapshot": [],     
                     })    
-                case "Sketch":
-                    new_row.append({
-                        'paths': [],
-                        'shadow_paths': [],
-                        'points': [],
-                    })
-                case "Concept" | _:
+                
+                case "Concept" | "Sketch" | _:
                     new_row.append("")
 
         # Add the new row to our matrix data
@@ -450,15 +269,17 @@ class CanvasBoard(Widget):
         # Reload our widget to reflect changes
         self.reload_widget()
 
-    def _delete_row_clicked(self, row: int):
+    async def _delete_row_clicked(self, e):
         ''' Deletes a specific row from our matrix data and reloads the widget '''
+
+        row = e.control.data.get('row') 
 
         if 0 <= row < len(self.data['matrix']):
             del self.data['matrix'][row]
             self.p.run_task(self.save_dict)
             self.reload_widget()
 
-    def _new_column_clicked(self, e=None):  
+    async def _new_column_clicked(self, e=None):  
         ''' Adds a new column to our matrix data and reloads the widget '''
 
         def _create_field(e): #show in edit view
@@ -525,7 +346,10 @@ class CanvasBoard(Widget):
                 control.visible = False
         gd.update()
 
-    def _connect_canvas_clicked(self, row: int, column: int):
+    async def _connect_canvas_clicked(self, e):
+
+        row = e.control.data.get('row')
+        column = e.control.data.get('column')
 
         async def _set_new_canvas_key(e):
             nonlocal canvas_key
@@ -615,30 +439,33 @@ class CanvasBoard(Widget):
 
         def _get_label_controls() -> list[ft.Control]:
             ''' Formats our labels insto text controls above our grid '''
-            controls = [ft.Container(width=38)]
 
+            # Start with invisible button to keep spacing
+            controls = [ft.IconButton(ft.Icons.ADD, opacity=0, disabled=True)]
+
+            # Add each label as a text control
             for idx, label in enumerate(self.data['matrix_labels']):
                 controls.append(
-                    ft.Container(
-                        ft.Text(
-                            label, style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")), selectable=True,
-                            tooltip="Connect to one of your canvases and show a live preview of your progress!" if label == "Preview" else None,
-                        ),
-                        alignment=ft.Alignment.CENTER, margin=ft.Margin.symmetric(horizontal=12),    
-                        width=201 if idx <=1 else None,
-                        expand=True if idx > 1 else False,
+                    ft.Text(
+                        label, style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")), selectable=True,
+                        tooltip="Connect to one of your canvases and show a live preview of your progress!" if label == "Preview" else None,
+                        width=250, text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS
                     )
                 )
+                if idx < len(self.data['matrix_labels']) - 1:
+                    controls.append(ft.Container(width=1)) # Spacing between labels
+                elif idx == len(self.data['matrix_labels']) - 1:
+                    controls.append(ft.Container(expand=True)) # Push new column button to the end
 
-                if idx == len(self.data['matrix_labels']) - 1:
-                    controls.append(
-                        ft.IconButton(
-                            ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
-                            on_click=self._new_column_clicked,
-                            tooltip="Add new column",
-                        )
-                    )
-                    controls.append(ft.Container(width=12))
+            # Add button for new columns
+            controls.append(
+                ft.IconButton(
+                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
+                    on_click=self._new_column_clicked,
+                    tooltip="Add new column",
+                )
+            )
+            controls.append(ft.Container(width=10)) # Spacing away from scroll bar
                     
             return controls
         
@@ -646,73 +473,84 @@ class CanvasBoard(Widget):
         # Lays out our controls in a nice grid format
         def _get_grid_controls() -> list[ft.Control]:
 
+            # TODO: Popupmenubutton for connect/disconnect, hover/click to refresh
+
             controls = []
+
+            # Go through our "rows" in the matrix data
             for idx, row in enumerate(self.data['matrix']):
                 
                 # Establish a row control we will add our cells to
-                row_control = ft.Row(spacing=0,  controls=[ft.Container(width=38)], height=240, width=240, vertical_alignment=ft.CrossAxisAlignment.END)
+                row_control = ft.Row([ft.IconButton(ft.Icons.ADD, opacity=0, disabled=True)], spacing=0, height=250, vertical_alignment=ft.CrossAxisAlignment.CENTER)
 
+                # For each cell in the row
                 for sub_idx, cell in enumerate(row):
 
-                    # Check our index against our label
+                    # Match our cell for which column it should be under
                     label = self.data['matrix_labels'][sub_idx]
 
-                    # Depending on our label, the content of our container will be differnt.
-                    # Either image with preview of canvas, sketch canvas, or text area for concept
                     match label:
-                        case "Preview":     # Preview of the canvas we're tied too
 
-                            # TODO: Wrap canvas in container that clicking refreshes
-                            canvas = cv.Canvas(
-                                height=180, width=180,
+                        # Build a preview for a connectted canvas
+                        # TODO: Wrap canvas in container that clicking refreshes
+                        case "Preview":     
+                                
+                            # Set a canvas just to display
+                            preview_image = ft.Image(
+                                cell.get('snapshot', ""), ft.Text("Failed to grab preview snapshot"),
+                                height=200, width=200, fit=ft.BoxFit.COVER, #border_radius=ft.BorderRadius.all(6),
+                            ) if cell.get('snapshot', "") else ft.Container(
+                                #ft.Text("No Canvas Connected", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
+                                #border=ft.Border.all(1, ft.Colors.OUTLINE), border_radius=ft.BorderRadius.all(6),
+                               width=200, height=200, alignment=ft.Alignment.TOP_CENTER
                             )
-                            for capture in cell.get('snapshot', []):
-                                canvas.shapes.append(
-                                    cv.Image(capture, 0, 0, 180, 180)
-                                )
-                            widget_key = cell.get('canvas_key', "")
-                            for widget in self.story.widgets:
-                                if widget.data['key'] == widget_key:
-                                    canvas_title = widget.title
-                                    canvas_color = widget.data.get('color', None)
-                                    break
-                            row_control.controls.append(
-                                ft.Column([
-                                    ft.Row([
-                                        # Connect button to tie this cell to a specific canvas
-                                        ft.IconButton(
-                                            ft.Icons.LINK_OUTLINED, 
-                                            style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor=ft.MouseCursor.CLICK),
-                                            on_click=lambda e, r=idx, c=sub_idx: self._connect_canvas_clicked(r, c)
-                                        ),
-                                        ft.Text(
-                                            canvas_title if canvas_title else "", color=canvas_color if canvas_color else None, expand=True,
-                                            text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS, max_lines=1, selectable=True,
-                                            weight=ft.FontWeight.BOLD
-                                        ),
-                                        ft.IconButton(
-                                            ft.Icons.LINK_OFF_OUTLINED,
-                                            style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK),
-                                            
-                                        ) if cell.get('canvas_key', "") else ft.Container(ignore_interactions=True),
-                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, expand=True),
-                                    ft.Container(
-                                        # Canvas preview
-                                        canvas if cell.get('canvas_key', "") else 
-                                        ft.Container(
-                                            ft.Text("Connect a Canvas to see a preview", text_align=ft.TextAlign.CENTER, color=ft.Colors.ON_SURFACE_VARIANT, italic=True), 
-                                            ignore_interactions=True, width=180, height=180, padding=ft.Padding.all(6)
-                                        ), 
-                                        #on_click=lambda e: self._refresh_preview(e, r=idx, c=sub_idx), 
-                                        alignment=ft.Alignment.CENTER,
-                                        margin=ft.Margin.only(bottom=12, left=12, right=12),
-                                        border_radius=ft.BorderRadius.all(6),
-                                        border=ft.Border.all(1, ft.Colors.OUTLINE),
+                            # Other attributes about the canvas we're using
+                            canvas_key = cell.get('canvas_key', "")
+                            canvas_title = cell.get('canvas_title', "")
+                            canvas_color = cell.get('canvas_color', ft.Colors.OUTLINE)
+
+                            connected_canvas_button = ft.PopupMenuButton(
+                                canvas_title if canvas_title else ft.Text("No Canvas Connected", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
+                                [
+                                    ft.PopupMenuItem(
+                                        "Connect Canvas", ft.Icons.LINK_OUTLINED,
+                                        on_click=lambda e, r=idx, c=sub_idx: self._connect_canvas_clicked(r, c),
+                                        mouse_cursor=ft.MouseCursor.CLICK,
+                                    ),
+                                    ft.PopupMenuItem(
+                                        "Refresh Preview", ft.Icons.REFRESH_OUTLINED,
+                                        #on_click=lambda e, r=idx, c=sub_idx: self._refresh_preview(r, c),
+                                        mouse_cursor=ft.MouseCursor.CLICK,
+                                    ),
+                                    ft.PopupMenuItem(
+                                        "Disconnect Canvas", ft.Icons.LINK_OFF_OUTLINED,
+                                        #on_click=lambda e, r=idx, c=sub_idx: self._disconnect_canvas(r, c),
+                                        mouse_cursor=ft.MouseCursor.CLICK,
                                     )
-                                ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+                                ],
+                                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)
                             )
+
+                            preview_image_container = ft.Container(
+                                preview_image, border=ft.Border.all(1, ft.Colors.OUTLINE),
+                                bgcolor="surface", border_radius=ft.BorderRadius.all(6),
+                                alignment=ft.Alignment.CENTER, width=200, height=200,
+                            )
+                            
+                            row_control.controls.append(
+                                ft.Container(
+                                    ft.Column([
+                                        connected_canvas_button,
+                                        preview_image_container,
+                                        
+                                    ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER), 
+                                    padding=ft.Padding.all(12), width=250, height=250, alignment=ft.Alignment.BOTTOM_CENTER
+                                )
+                            )
+
+                        # Build a sketch canvas for this row
                         case "Sketch":      # Sketch canvas for rough thumbnails
-                            canvas = cv.Canvas(
+                            sketch_canvas = cv.Canvas(
                                 content=ft.GestureDetector(
                                     mouse_cursor=ft.MouseCursor.PRECISE,
                                     on_pan_start=self.start_drawing,
@@ -721,36 +559,40 @@ class CanvasBoard(Widget):
                                     on_tap_up=lambda e, r=idx, c=sub_idx: self.add_point(r, c, e),      # Handles so we can add points
                                     drag_interval=10, expand=True
                                 ),
-                                expand=True, width=180, height=180,
-                                #resize_interval=100,
-                                shapes=[], #on_resize=self._on_canvas_resize, 
+                                expand=True, width=200, height=200,
+                                shapes=[ft.Image(cell, 0, 0, 200, 200)],
                             )
                             row_control.controls.append(
                                 ft.Container(
-                                    canvas, margin=ft.Margin.all(12), border=ft.Border.all(1, ft.Colors.OUTLINE),
-                                    bgcolor="surface", border_radius=ft.BorderRadius.all(6),
-                                    #alignment=ft.Alignment.TOP_CENTER, #width=200, height=200,
+                                    ft.Container(
+                                        sketch_canvas, border=ft.Border.all(1, ft.Colors.OUTLINE),
+                                        bgcolor="surface", border_radius=ft.BorderRadius.all(6),
+                                        #alignment=ft.Alignment.TOP_CENTER, #width=200, height=200,
+                                    ), padding=ft.Padding.all(12), width=250, height=250, alignment=ft.Alignment.BOTTOM_CENTER
                                 )
                             )
-                            canvas.shapes.extend(self._load_canvas(idx, sub_idx))   # Load our saved canvas data into the canvas
+                            #preview_canvas.shapes.extend(self._load_canvas(idx, sub_idx))   # Load our saved canvas data into the canvas
 
-                        case "Concept" | _:     # Text description of the idea and any custom fields they added
+                        # Build either textfield for all other types of columns
+                        case "Concept" | _:     
                             row_control.controls.append(
                                 ft.Container(
                                     ft.TextField(
-                                        str(cell), focused_border_color=self.data.get('color', None), cursor_color=self.data.get('color', None),
-                                        dense=True, multiline=True, expand=True, #border=ft.InputBorder.NONE,
+                                        str(cell), #focused_border_color=self.data.get('color', None), cursor_color=self.data.get('color', None),
+                                        dense=True, multiline=True, #expand=True, #border=ft.InputBorder.NONE,
                                         capitalization=ft.TextCapitalization.SENTENCES, smart_dashes_type=True,
                                         on_blur=lambda e, r=idx, c=sub_idx: self._update_matrix_cell(r, c, e.control.value)
                                     ), 
-                                    expand=True, margin=ft.Margin.all(12), alignment=ft.Alignment.TOP_CENTER,
+                                    padding=ft.Padding.all(12), width=250, height=250
                                 )
                             )
                         
                     # Add a divider between columns except for last one
                     if sub_idx != len(row) - 1:
                         row_control.controls.append(ft.VerticalDivider(width=1, thickness=1, color=ft.Colors.OUTLINE))
+                        
                     else:
+                        row_control.controls.append(ft.Container(expand=True)) # Push delete button to the end
                         row_control.controls.append(
                             ft.IconButton(
                                 icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,
