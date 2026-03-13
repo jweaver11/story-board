@@ -62,6 +62,8 @@ class Character(Widget):
                 # If this dict doesn't exist, we create it with our active template data. If we fail to pull that, we use a default template (which has quite a lot)
                 'character_data': app.settings.data.get('character_templates', {}).get(app.settings.get('active_character_template', ""), default_character_template_data_dict()) 
                 if data is None or 'character_data' not in data else data['character_data'],
+
+                'charts': {}
             },
         ) 
 

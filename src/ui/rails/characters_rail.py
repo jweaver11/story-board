@@ -12,6 +12,8 @@ from styles.rail.tree_view_file import TreeViewFile
 import json
 from utils.alert_dialogs.character_connection import new_character_connection_clicked
 from models.isolated_controls.column import IsolatedColumn
+from models.isolated_controls.list_view import IsolatedListView
+
 
 
 class CharactersRail(Rail):
@@ -26,12 +28,7 @@ class CharactersRail(Rail):
 
         # UI elements
         self.top_row_buttons = [
-            ft.Container(
-                ft.IconButton(
-                    ft.Icons.CONNECT_WITHOUT_CONTACT, "primary", mouse_cursor="click",  
-                    tooltip="Edit Character Templates", on_click=self._open_templates_editor
-                ), margin=ft.Margin.only(right=8)
-            ),
+            
             ft.SubmenuButton(
                 ft.Container(
                     ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
@@ -79,12 +76,7 @@ class CharactersRail(Rail):
                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
             ),
-            ft.Container(
-                ft.IconButton(
-                    ft.Icons.MANAGE_SEARCH_OUTLINED, "primary", mouse_cursor="click",
-                    tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)
-                ), margin=ft.Margin.only(left=8)
-            )
+            
         ]
 
         self.reload_rail()
@@ -108,16 +100,16 @@ class CharactersRail(Rail):
                 content=ft.PopupMenuButton(
                     content=ft.Container(
                         ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)], expand=True),
-                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
                     ),
                     tooltip="New", menu_padding=0, expand=True, padding=ft.padding.all(0),
                     items=[
                         ft.PopupMenuItem(
-                            text="Character", icon=ft.Icons.PERSON_OUTLINED,
+                            "Character", ft.Icons.PERSON_OUTLINED,
                             on_click=self.new_item_clicked, data="character"
                         ),  
                         ft.PopupMenuItem(
-                            text="Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                            "Character Connection Map", ft.Icons.FAMILY_RESTROOM_OUTLINED,
                             on_click=self.new_item_clicked, data="character_connection_map"
                         ),
                     ]
@@ -128,7 +120,7 @@ class CharactersRail(Rail):
                 content=ft.PopupMenuButton(
                     content=ft.Container(
                         ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
-                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
                     ),
                     tooltip="Upload", menu_padding=0, expand=True,
                     items=[
@@ -136,7 +128,7 @@ class CharactersRail(Rail):
                             "Character", ft.Icons.PERSON_OUTLINED, 
                         ),
                         ft.PopupMenuItem(
-                            text="Character Connection Map", icon=ft.Icons.FAMILY_RESTROOM_OUTLINED,
+                            "Character Connection Map", ft.Icons.FAMILY_RESTROOM_OUTLINED,
                         ),
                     ]
                 ),
@@ -158,6 +150,55 @@ class CharactersRail(Rail):
             )
         ]
     
+    # Called when the sort method button is clicked at the top of the rail
+    async def _change_sort_method(self, e=None):
+
+        # Grabs our newly selected sort method and enables the confirm button if needed
+        async def _sort_method_change(e):
+            nonlocal sort_method
+            sort_method = e.data
+            if confirm_sort_button.disabled:
+                confirm_sort_button.disabled = False
+                confirm_sort_button.style.color = ft.Colors.ON_SURFACE
+                confirm_sort_button.update()
+
+        # Sets our selected sort method and saves it, reloads the rail
+        async def _confirm_sort_method(e):
+            if sort_method is None:
+                return
+            self.story.data['settings']['character_rail_sort_by'] = sort_method
+            await self.story.save_dict()
+            self.story.active_rail.reload_rail()
+            self.p.pop_dialog()
+
+        # Returns our list of options for sorting characters
+        def _get_sort_options() -> list[ft.Control]:
+            options = [
+                ft.Radio("Default", value="Default", mouse_cursor="click", tooltip="Whatever order they are stored as files in the system. Windows is alphabetical, but Mac is the order they were created in."),
+                ft.Radio("Role", value="Role", mouse_cursor="click"), 
+                ft.Radio("Morality", value="Morality", mouse_cursor="click"), 
+                ft.Radio("Age", value="Age", mouse_cursor="click"), 
+                ft.Radio("Name", value="Name", mouse_cursor="click")
+            ]
+
+            #all_options = self.story.data.get('settings', {}).get('character_rail_sort_options', [])
+
+
+            return options
+
+        column = ft.Column(_get_sort_options(), tight=True)
+        sort_method = None
+
+        dlg = ft.AlertDialog(
+            title=ft.Text("Sort Characters by: "),
+            content=ft.RadioGroup(column, on_change=_sort_method_change),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                confirm_sort_button := ft.TextButton("Confirm", disabled=True, on_click=_confirm_sort_method, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.OUTLINE)),
+            ]
+        )
+        self.p.show_dialog(dlg)
+    
     
 
 
@@ -168,38 +209,59 @@ class CharactersRail(Rail):
 
         menubar = ft.MenuBar(
             self.top_row_buttons,
-            expand=True,
             style=ft.MenuStyle(
                 bgcolor="transparent", shadow_color="transparent",
                 shape=ft.RoundedRectangleBorder(radius=10),
-                alignment=ft.Alignment.CENTER
             ),
         )
 
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER,
-            controls=menubar
+            controls=[menubar]
         )
+
+        
         
         # Build the content of our rail
-        content = ft.Column(
+        content = IsolatedListView(
             scroll=ft.ScrollMode.AUTO,
             spacing=0,
-            controls=[]
+            expand=True,
+            controls=[
+                ft.Container(height=6),
+                self.new_item_textfield,
+                ft.Row([
+                    ft.Container(
+                        ft.IconButton(
+                            ft.Icons.MANAGE_SEARCH_OUTLINED, "primary", mouse_cursor="click",  
+                            tooltip="Edit Character Templates", on_click=self._open_templates_editor
+                        ), margin=ft.Margin.only(right=8)
+                    ),
+                    ft.TextButton(
+                        f"Sort by: {self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")}", on_click=self._change_sort_method, expand=True,
+                        style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ON_SURFACE)
+                    ),
+                    ft.Container(
+                        ft.IconButton(
+                            ft.Icons.CONNECT_WITHOUT_CONTACT, "primary", mouse_cursor="click",
+                            tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)
+                        ), margin=ft.Margin.only(left=8)
+                    )
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=0)]
         )
 
-   
-        content.controls.append(ft.Container(height=6))
-        # Append our hidden textfield for creating new items
-        content.controls.append(self.new_item_textfield)
+        characters = [w for w in self.story.widgets if w.data.get('tag', "") == "character"]
 
+   
+        
         # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space
         content.controls.append(ft.Container(expand=True))
 
         menu_gesture_detector = ft.GestureDetector(
             content=content, expand=True, on_hover=self.on_hovers,
-            on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()), hover_interval=20,
+            #on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()), 
+            hover_interval=20,
         )
 
         self.controls = [

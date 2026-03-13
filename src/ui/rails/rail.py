@@ -82,7 +82,7 @@ class Rail(IsolatedColumn):
             
             for name, template in app.settings.data.get('character_templates', {}).items():
                 template_options.append(
-                    ft.MenuItemButton(name, data=widget_type, on_click=self.new_item_clicked)
+                    ft.MenuItemButton(name, data=widget_type, on_click=self.new_item_clicked, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))
                 )
 
         # Add add button to bottom that opens the settings to the template section

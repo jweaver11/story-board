@@ -607,11 +607,11 @@ class Canvas(Widget):
             await canvas.clear_capture()
 
             # Clear the current state
-            self.state.paths.clear()
+            self.state.paths[0]['elements'].clear()
             self.state.points.clear()
 
-        except Exception as _:
-            print("failed to save canvas")
+        except Exception as e:
+            print("failed to save canvas", e)
 
 
     # Called when we click to export a canvas

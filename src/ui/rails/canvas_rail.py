@@ -198,8 +198,8 @@ class CanvasRail(Rail):
 
         self.paint_anti_alias_toggle.value = brush_settings.get('anti_alias', True)
         self.paint_stroke_blur_slider.value = brush_settings.get('blur_image', 0)
-        self.paint_blend_mode_selector.icon = ft.Icons.BLUR_OFF_OUTLINED if brush_settings.get('blend_mode', None) is None else ft.Icons.BLUR_ON_OUTLINED
-        self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
+        #self.paint_blend_mode_selector.icon = ft.Icons.BLUR_OFF_OUTLINED if brush_settings.get('blend_mode', None) is None else ft.Icons.BLUR_ON_OUTLINED
+        #self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
         self.update()
 
     # Set the blend mode label based on current mode in settings
@@ -704,6 +704,7 @@ class CanvasRail(Rail):
         else:
             paint_blend_mode_icon = ft.Icons.BLUR_OFF_OUTLINED
 
+        '''
         self.paint_blend_mode_selector = ft.PopupMenuButton(
             icon=paint_blend_mode_icon, menu_padding=ft.Padding.all(0),
             tooltip="Current blend effects applied to your brush strokes. Select to change.",
@@ -738,6 +739,7 @@ class CanvasRail(Rail):
                 ft.PopupMenuItem("XOR", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="xor", tooltip="Apply a bitwise xor operator to the source and destination images. This leaves transparency where they would overlap"),
             ]
         )
+        '''
         
         # Build the content of our rail
         content = ft.Column(
@@ -783,7 +785,7 @@ class CanvasRail(Rail):
                 ft.Container(height=10),   # Spacer
                 ft.Row([ft.Text("Blur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider]),
                 ft.Container(height=10),   # Spacer
-                ft.Row([self.paint_blend_mode_label, self.paint_blend_mode_selector])
+                #ft.Row([self.paint_blend_mode_label, self.paint_blend_mode_selector])
 
             ]
         )

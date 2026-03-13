@@ -283,11 +283,13 @@ class CanvasInformationDisplay(MiniWidget):
                     self.data['Layers'].remove(layer)
                     break
             await self.save_dict()
-            self.p.pop_dialog()
+            
 
             self.widget.story.blocker.visible = True
             self.widget.story.blocker.update()
             await asyncio.sleep(0)
+            self.p.pop_dialog()
+            await asyncio.sleep(0.1)
 
             #self.widget.reload_widget()
             self.widget.story.workspace.reload_workspace()
