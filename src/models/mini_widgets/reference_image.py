@@ -118,7 +118,7 @@ class ReferenceImage(MiniWidget):
         image = ft.Image(
             self.data.get('image', ''),
             ft.Text("Error loading image"),
-            fit=ft.BoxFit.COVER, #width=400, height=400
+            fit=ft.BoxFit.COVER,
         )
 
         content = ft.Column(

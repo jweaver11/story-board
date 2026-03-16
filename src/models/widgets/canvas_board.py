@@ -12,6 +12,9 @@ from models.dataclasses.state import State
 import math
 from styles.snack_bar import SnackBar
 import asyncio
+import base64
+from io import BytesIO
+from PIL import Image
 
 
 class CanvasBoard(Widget):
@@ -44,7 +47,7 @@ class CanvasBoard(Widget):
 
                 # Labels on the top part of our grid. Users can add onto these as needed
                 # Preview -> Ties to a specific Canvas and shows a preview of that Canvas in real time
-                'matrix_labels': ["Preview", "Sketch", "Concept"],   
+                'matrix_labels': ["Preview", "Sketch", "Concept", "Notes"],   
 
                 # Our main data matrix for this canvas board
                 'matrix': [
@@ -56,7 +59,8 @@ class CanvasBoard(Widget):
                             "preview_canvas_snapshot": "",         # Snapshot of the canvas for previewing
                         },         
                         "",             # Sketch capture to be loaded into canvas
-                        ""              # Concept description text
+                        "",             # Concept description text
+                        ""              # Notes for is row
                     ],      
                     [           # Second row
                         {       # First Column
@@ -66,7 +70,8 @@ class CanvasBoard(Widget):
                             "preview_canvas_snapshot": "",         
                         },         
                         "",   # Second column
-                        ""      # Third column
+                        "",      # Third column
+                        ""      # Fourth column
                     ]
                 ]
             },
@@ -83,9 +88,12 @@ class CanvasBoard(Widget):
             self.reload_widget()         # Build our widget if it's visible on init
 
     # Called when making changes to the data in a matrix cell
-    def _update_matrix_cell(self, row: int, column: int, value):
+    def _update_matrix_cell(self, e):
         ''' Updates a specific cell in our matrix data '''
         
+        row = e.control.data.get('row')
+        column = e.control.data.get('column')
+        value = e.control.value
 
         if isinstance(value, str):
             self.data['matrix'][row][column] = value
@@ -115,7 +123,6 @@ class CanvasBoard(Widget):
             
         except Exception as _:
             print("Failed to update e.control")
-            self.p.update()
             
             
         # Save our canvas data
@@ -138,12 +145,7 @@ class CanvasBoard(Widget):
         safe_stroke = 'fill' if style.endswith('fill') else 'stroke'
         safe_paint_settings['style'] = safe_stroke
 
-        # Check if we're in erase mode or not. If we are, set blend mode to clear and blur image to 0
-        if self.story.data.get('canvas_settings', {}).get('erase_mode', False):
-            safe_paint_settings['blend_mode'] = "clear"
-            safe_paint_settings['blur_image'] = 0
-            state_paint_settings['blend_mode'] = "clear"
-            state_paint_settings['blur_image'] = 0
+        
         
 
         # Update state x and y coordinates
@@ -254,20 +256,26 @@ class CanvasBoard(Widget):
             match label:
                 case "Preview":
                     new_row.append({
-                        'preview_canvas_key': "",     
-                        'preview_canvas_title': "",   
-                        "preview_canvas_snapshot": [],     
+                        'preview_canvas_key': "",      
+                        'preview_canvas_title': "",    
+                        'preview_canvas_color': "",   
+                        "preview_canvas_snapshot": "", 
                     })    
                 
-                case "Concept" | "Sketch" | _:
+                case _:
                     new_row.append("")
+
+        self.story.blocker.visible = True
+        self.story.blocker.update()
+        await asyncio.sleep(0)
 
         # Add the new row to our matrix data
         self.data['matrix'].append(new_row)
         self.p.run_task(self.save_dict)
 
-        # Reload our widget to reflect changes
-        self.reload_widget()
+        self.story.workspace.reload_workspace()
+        self.story.blocker.visible = False
+        self.story.blocker.update()
 
     async def _delete_row_clicked(self, e):
         ''' Deletes a specific row from our matrix data and reloads the widget '''
@@ -275,46 +283,19 @@ class CanvasBoard(Widget):
         row = e.control.data.get('row') 
 
         if 0 <= row < len(self.data['matrix']):
+            self.story.blocker.visible = True
+            self.story.blocker.update() 
+            await asyncio.sleep(0)
+
             del self.data['matrix'][row]
             self.p.run_task(self.save_dict)
-            self.reload_widget()
 
-    async def _new_column_clicked(self, e=None):  
-        ''' Adds a new column to our matrix data and reloads the widget '''
+            self.story.workspace.reload_workspace()
+            self.story.blocker.visible = False
+            self.story.blocker.update()
 
-        def _create_field(e): #show in edit view
-            '''Called when user confirms the field name'''
-            
-            if field_name_input.value:
-                self.data['matrix_labels'].append(field_name_input.value)
-            
-            for row in self.data['matrix']:
-                row.append("")   # Default empty string for new column
-            
-            # Save and reload
-            self.p.run_task(self.save_dict)
-            self.p.pop_dialog()
-            self.reload_widget()
-        
-        # Create a dialog to ask for the field name
-        field_name_input = ft.TextField(
-            label="Field Name", hint_text=f"New Column Label",
-            autofocus=True, capitalization=ft.TextCapitalization.SENTENCES,
-            on_submit=_create_field,     # Closes the overlay when submitting
-        )
-        
-        dlg = ft.AlertDialog(
-            title=ft.Text(f"Create New Column"),
-            content=field_name_input,
-            actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
-                ft.TextButton("Create", on_click=_create_field),
-            ],
-        )
-        
-        self.p.show_dialog(dlg)
-
-    def _delete_column_clicked(self, column: int):
+    
+    async def _delete_column_clicked(self, column: int):
         ''' Deletes a specific column from our matrix data and reloads the widget '''
 
         if 0 <= column < len(self.data['matrix_labels']):
@@ -326,10 +307,19 @@ class CanvasBoard(Widget):
                 if 0 <= column < len(row):
                     del row[column]
 
+            self.story.blocker.visible = True
+            self.story.blocker.update()
+            await asyncio.sleep(0)
+
+
             self.p.run_task(self.save_dict)
-            self.reload_widget()
+            
+            self.story.workspace.reload_workspace()
+            self.story.blocker.visible = False
+            self.story.blocker.update()
+
     
-    async def _show_preview_buttons(self, e: ft.PointerEvent):
+    async def _show_refresh_button(self, e: ft.PointerEvent):
 
         gd = e.control
         for control in gd.content.controls:
@@ -337,7 +327,7 @@ class CanvasBoard(Widget):
                 control.visible = True
         gd.update()
 
-    async def _hide_preview_buttons(self, e: ft.PointerEvent):
+    async def _hide_refresh_button(self, e: ft.PointerEvent):
         gd = e.control
         for control in gd.content.controls:
             if isinstance(control, cv.Canvas):
@@ -365,6 +355,7 @@ class CanvasBoard(Widget):
                         ft.Radio(
                             widget.title, value=widget.data['key'], 
                             toggleable=True, mouse_cursor=ft.MouseCursor.CLICK,
+                            
                             label_style=ft.TextStyle(color=widget.data.get('color', None), weight=ft.FontWeight.BOLD)
                         )
                     )
@@ -376,23 +367,33 @@ class CanvasBoard(Widget):
             return canvases_list
 
         async def _connect_confirmed(e=None):
+            nonlocal canvas_key 
+            canvas_color = "outline"
+            for w in self.story.widgets:
+                if w.data['key'] == canvas_key:
+                    canvas_color = w.data.get('color', "outline")
+                    canvas_title = w.title
 
             self.story.blocker.visible = True
             self.story.blocker.update()
             await asyncio.sleep(0)
             self.p.pop_dialog()
+            await asyncio.sleep(0)
 
             # Set the new key to our data and save
-            self.data['matrix'][row][column]['canvas_key'] = canvas_key
-            self.data['matrix'][row][column]['snapshot'] = self._set_canvas_snapshot(canvas_key)
+            self.data['matrix'][row][column]['preview_canvas_key'] = canvas_key
+            self.data['matrix'][row][column]['preview_canvas_title'] = canvas_title
+            self.data['matrix'][row][column]['preview_canvas_color'] = canvas_color
+            self.data['matrix'][row][column]['preview_canvas_snapshot'] = self._set_canvas_snapshot(canvas_key)
             await self.save_dict()
 
-            self.reload_widget()
+            self.story.workspace.reload_workspace()
 
             self.story.blocker.visible = False
             self.story.blocker.update()
 
         canvas_key = ""
+        
         confirm_button = ft.TextButton("Confirm", on_click=_connect_confirmed, style=ft.ButtonStyle(mouse_cursor="click"))
         dlg = ft.AlertDialog(
             title=ft.Text("Choose a Canvas"),
@@ -405,7 +406,7 @@ class CanvasBoard(Widget):
         self.p.show_dialog(dlg)
 
     # Called to find a canvas and load a snapshot from all its layers
-    def _set_canvas_snapshot(self, canvas_key: str) -> list:
+    def _set_canvas_snapshot(self, canvas_key: str) -> str:
 
         capture_list = []
         for widget in self.story.widgets:
@@ -415,7 +416,71 @@ class CanvasBoard(Widget):
                         capture_list.append(layer['capture'])
                 break
 
-        return capture_list
+        
+        if not capture_list:
+            return ""
+
+        images = []
+        for capture in capture_list:
+            try:
+                image_bytes = base64.b64decode(capture)
+                image = Image.open(BytesIO(image_bytes)).convert("RGBA")
+                images.append(image)
+            except Exception:
+                continue
+
+        if not images:
+            return ""
+
+        width, height = images[0].size
+        merged = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+
+        for image in images:
+            if image.size != (width, height):
+                image = image.resize((width, height), Image.Resampling.LANCZOS)
+            merged = Image.alpha_composite(merged, image)
+
+        output = BytesIO()
+        merged.save(output, format="PNG")
+        return base64.b64encode(output.getvalue()).decode("utf-8")
+    
+    async def _refresh_preview(self, e):
+        row = e.control.data.get('row')
+        column = e.control.data.get('column')
+        canvas_key = e.control.data.get('canvas_key')
+
+        self.story.blocker.visible = True
+        self.story.blocker.update()
+        await asyncio.sleep(0)
+
+        self.data['matrix'][row][column]['preview_canvas_snapshot'] = self._set_canvas_snapshot(canvas_key)
+        await self.save_dict()
+
+        self.story.workspace.reload_workspace()
+        self.story.blocker.visible = False
+        self.story.blocker.update()
+    
+
+    async def _disconnect_canvas(self, e):
+
+        row = e.control.data.get('row')
+        column = e.control.data.get('column')
+
+        self.story.blocker.visible = True
+        self.story.blocker.update()
+        await asyncio.sleep(0)
+
+        # Remove the canvas key from our data and save
+        self.data['matrix'][row][column]['preview_canvas_key'] = ""
+        self.data['matrix'][row][column]['preview_canvas_snapshot'] = ""
+        self.data['matrix'][row][column]['preview_canvas_title'] = ""
+        self.data['matrix'][row][column]['preview_canvas_color'] = ""
+        await self.save_dict()
+
+        self.story.workspace.reload_workspace()
+
+        self.story.blocker.visible = False
+        self.story.blocker.update()
     
 
 
@@ -428,7 +493,7 @@ class CanvasBoard(Widget):
 
         description_container = ft.Container(            # For Summary
             padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(5), expand=True,
-            border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(right=19),
+            border=ft.Border.all(2, ft.Colors.OUTLINE), #margin=ft.Margin.only(right=19),
             content=ft.TextField(
                 expand=True, value=self.data.get('description', ""), dense=True, multiline=True,
                 capitalization=ft.TextCapitalization.SENTENCES, 
@@ -437,7 +502,7 @@ class CanvasBoard(Widget):
             ),
         )
 
-        def _get_label_controls() -> list[ft.Control]:
+        def _get_matrix_label_controls() -> list[ft.Control]:
             ''' Formats our labels insto text controls above our grid '''
 
             # Start with invisible button to keep spacing
@@ -445,246 +510,225 @@ class CanvasBoard(Widget):
 
             # Add each label as a text control
             for idx, label in enumerate(self.data['matrix_labels']):
-                controls.append(
-                    ft.Text(
-                        label, style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")), selectable=True,
+                text_control = ft.Text(
+                        label, style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")),
                         tooltip="Connect to one of your canvases and show a live preview of your progress!" if label == "Preview" else None,
-                        width=250, text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS
+                        width=225 if idx <= 1 else None,
+                         
+                        text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS
                     )
-                )
-                if idx < len(self.data['matrix_labels']) - 1:
-                    controls.append(ft.Container(width=1)) # Spacing between labels
-                elif idx == len(self.data['matrix_labels']) - 1:
-                    controls.append(ft.Container(expand=True)) # Push new column button to the end
-
-            # Add button for new columns
-            controls.append(
-                ft.IconButton(
-                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
-                    on_click=self._new_column_clicked,
-                    tooltip="Add new column",
-                )
-            )
-            controls.append(ft.Container(width=10)) # Spacing away from scroll bar
+                
+                if idx <= 1:
+                    controls.append(text_control)
+                else:
+                    controls.append(ft.Container(text_control, alignment=ft.Alignment.CENTER, expand=True))
                     
             return controls
         
 
         # Lays out our controls in a nice grid format
-        def _get_grid_controls() -> list[ft.Control]:
+        def _get_matrix_data_controls() -> list[ft.Control]:
 
             # TODO: Popupmenubutton for connect/disconnect, hover/click to refresh
 
             controls = []
 
-            # Go through our "rows" in the matrix data
+            # Go through each row in the matrix data
             for idx, row in enumerate(self.data['matrix']):
                 
                 # Establish a row control we will add our cells to
-                row_control = ft.Row([ft.IconButton(ft.Icons.ADD, opacity=0, disabled=True)], spacing=0, height=250, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+                row_control = ft.Row([ft.IconButton(ft.Icons.ADD, opacity=0, disabled=True)], spacing=0, vertical_alignment=ft.CrossAxisAlignment.CENTER, scroll="auto")
 
-                # For each cell in the row
-                for sub_idx, cell in enumerate(row):
+                # For each column (cell) in the row and add correct control based on its label
+                for sub_idx, cell in enumerate(row):                    
+                    
 
-                    # Match our cell for which column it should be under
-                    label = self.data['matrix_labels'][sub_idx]
+                    # Build a preview for a connectted canvas
+                    # TODO: Wrap canvas in container that clicking refreshes
+                    if sub_idx == 0:
 
-                    match label:
-
-                        # Build a preview for a connectted canvas
-                        # TODO: Wrap canvas in container that clicking refreshes
-                        case "Preview":     
+                        # Other attributes about the canvas we're using
+                        canvas_key = cell.get('preview_canvas_key', "")
+                        canvas_title = cell.get('preview_canvas_title', "")
+                        canvas_color = cell.get('preview_canvas_color', ft.Colors.OUTLINE)
                                 
-                            # Set a canvas just to display
-                            preview_image = ft.Image(
-                                cell.get('snapshot', ""), ft.Text("Failed to grab preview snapshot"),
-                                height=200, width=200, fit=ft.BoxFit.COVER, #border_radius=ft.BorderRadius.all(6),
-                            ) if cell.get('snapshot', "") else ft.Container(
-                                #ft.Text("No Canvas Connected", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
-                                #border=ft.Border.all(1, ft.Colors.OUTLINE), border_radius=ft.BorderRadius.all(6),
-                               width=200, height=200, alignment=ft.Alignment.TOP_CENTER
-                            )
-                            # Other attributes about the canvas we're using
-                            canvas_key = cell.get('canvas_key', "")
-                            canvas_title = cell.get('canvas_title', "")
-                            canvas_color = cell.get('canvas_color', ft.Colors.OUTLINE)
+                        # Set a canvas just to display
+                        preview_image = ft.Image(
+                            cell.get('preview_canvas_snapshot', ""), ft.Text("Failed to grab preview snapshot"),
+                            height=200, width=200, fit=ft.BoxFit.FILL, 
+                        ) if cell.get('preview_canvas_snapshot', "") else ft.Container(
+                            ft.Text("No Canvas Connected", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
+                            width=200, height=200, alignment=ft.Alignment.CENTER
+                        )
+                        
 
-                            connected_canvas_button = ft.PopupMenuButton(
-                                canvas_title if canvas_title else ft.Text("No Canvas Connected", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
+                        connected_canvas_button = ft.MenuBar([
+                            ft.SubmenuButton(
+                                canvas_title if canvas_title else ft.Text("Connect Canvas", color=ft.Colors.ON_SURFACE_VARIANT),
+                                
                                 [
-                                    ft.PopupMenuItem(
-                                        "Connect Canvas", ft.Icons.LINK_OUTLINED,
-                                        on_click=lambda e, r=idx, c=sub_idx: self._connect_canvas_clicked(r, c),
-                                        mouse_cursor=ft.MouseCursor.CLICK,
+                                    ft.MenuItemButton(
+                                        "Connect Canvas", leading=ft.Icon(ft.Icons.LINK_OUTLINED),
+                                        on_click=self._connect_canvas_clicked,
+                                        data={"row": idx, "column": sub_idx},
+                                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10)),
                                     ),
-                                    ft.PopupMenuItem(
-                                        "Refresh Preview", ft.Icons.REFRESH_OUTLINED,
-                                        #on_click=lambda e, r=idx, c=sub_idx: self._refresh_preview(r, c),
-                                        mouse_cursor=ft.MouseCursor.CLICK,
+                                    ft.MenuItemButton(
+                                        "Refresh Preview", leading=ft.Icon(ft.Icons.REFRESH_OUTLINED),
+                                        on_click=self._refresh_preview if canvas_key else None,
+                                        data={"row": idx, "column": sub_idx, "canvas_key": canvas_key},
+                                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10)),
                                     ),
-                                    ft.PopupMenuItem(
-                                        "Disconnect Canvas", ft.Icons.LINK_OFF_OUTLINED,
-                                        #on_click=lambda e, r=idx, c=sub_idx: self._disconnect_canvas(r, c),
-                                        mouse_cursor=ft.MouseCursor.CLICK,
+                                    ft.MenuItemButton(
+                                        "Disconnect Canvas", leading=ft.Icon(ft.Icons.LINK_OFF_OUTLINED),
+                                        on_click=self._disconnect_canvas if canvas_key else None,   
+                                        data={"row": idx, "column": sub_idx},
+                                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10)),
                                     )
                                 ],
-                                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)
+                                style=ft.ButtonStyle(
+                                    mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10),
+                                    color=canvas_color,
+                                ),
+                                menu_style=ft.MenuStyle(padding=ft.Padding.all(0)),
                             )
+                        ], style=ft.MenuStyle(
+                            visual_density=ft.VisualDensity.COMPACT, padding=0,
+                            bgcolor="transparent", shadow_color="transparent",
+                            shape=ft.RoundedRectangleBorder(radius=10),
+                        ))
 
-                            preview_image_container = ft.Container(
-                                preview_image, border=ft.Border.all(1, ft.Colors.OUTLINE),
-                                bgcolor="surface", border_radius=ft.BorderRadius.all(6),
-                                alignment=ft.Alignment.CENTER, width=200, height=200,
+                        preview_image_container = ft.Container(
+                            preview_image, border=ft.Border.all(1, ft.Colors.OUTLINE),
+                            bgcolor="surface", border_radius=ft.BorderRadius.all(6),
+                            alignment=ft.Alignment.CENTER, width=200, height=200,
+                        )
+                        
+                        row_control.controls.append(
+                            ft.Container(
+                                ft.Column([
+                                    connected_canvas_button,
+                                    preview_image_container,
+                                    
+                                ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER), 
+                                padding=ft.Padding.only(left=12, right=12, bottom=12), alignment=ft.Alignment.BOTTOM_CENTER,
                             )
-                            
-                            row_control.controls.append(
-                                ft.Container(
-                                    ft.Column([
-                                        connected_canvas_button,
-                                        preview_image_container,
-                                        
-                                    ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER), 
-                                    padding=ft.Padding.all(12), width=250, height=250, alignment=ft.Alignment.BOTTOM_CENTER
-                                )
-                            )
+                        )
 
                         # Build a sketch canvas for this row
-                        case "Sketch":      # Sketch canvas for rough thumbnails
-                            sketch_canvas = cv.Canvas(
-                                content=ft.GestureDetector(
-                                    mouse_cursor=ft.MouseCursor.PRECISE,
-                                    on_pan_start=self.start_drawing,
-                                    on_pan_update=self.is_drawing,
-                                    on_pan_end=lambda e, r=idx, c=sub_idx: self.save_canvas(r, c),
-                                    on_tap_up=lambda e, r=idx, c=sub_idx: self.add_point(r, c, e),      # Handles so we can add points
-                                    drag_interval=10, expand=True
-                                ),
-                                expand=True, width=200, height=200,
-                                shapes=[ft.Image(cell, 0, 0, 200, 200)],
-                            )
-                            row_control.controls.append(
-                                ft.Container(
+                    elif sub_idx == 1:      # Sketch canvas for rough thumbnails
+                        sketch_canvas = cv.Canvas(
+                            content=ft.GestureDetector(
+                                mouse_cursor=ft.MouseCursor.PRECISE,
+                                on_pan_start=self.start_drawing,
+                                on_pan_update=self.is_drawing,
+                                on_pan_end=self.save_canvas,
+                                on_tap_up=self.add_point,      # Handles so we can add points
+                                drag_interval=10,
+                                data={"row": idx, "column": sub_idx},
+                            ),
+                            width=200, height=200,
+                            shapes=[ft.Image(cell, 0, 0, 200, 200)],
+                        )
+                        row_control.controls.append(
+                            ft.Container(
+                                ft.Column([
+                                    ft.Container(height=40),
                                     ft.Container(
                                         sketch_canvas, border=ft.Border.all(1, ft.Colors.OUTLINE),
                                         bgcolor="surface", border_radius=ft.BorderRadius.all(6),
-                                        #alignment=ft.Alignment.TOP_CENTER, #width=200, height=200,
-                                    ), padding=ft.Padding.all(12), width=250, height=250, alignment=ft.Alignment.BOTTOM_CENTER
-                                )
-                            )
-                            #preview_canvas.shapes.extend(self._load_canvas(idx, sub_idx))   # Load our saved canvas data into the canvas
-
-                        # Build either textfield for all other types of columns
-                        case "Concept" | _:     
-                            row_control.controls.append(
-                                ft.Container(
-                                    ft.TextField(
-                                        str(cell), #focused_border_color=self.data.get('color', None), cursor_color=self.data.get('color', None),
-                                        dense=True, multiline=True, #expand=True, #border=ft.InputBorder.NONE,
-                                        capitalization=ft.TextCapitalization.SENTENCES, smart_dashes_type=True,
-                                        on_blur=lambda e, r=idx, c=sub_idx: self._update_matrix_cell(r, c, e.control.value)
-                                    ), 
-                                    padding=ft.Padding.all(12), width=250, height=250
-                                )
-                            )
-                        
-                    # Add a divider between columns except for last one
-                    if sub_idx != len(row) - 1:
-                        row_control.controls.append(ft.VerticalDivider(width=1, thickness=1, color=ft.Colors.OUTLINE))
-                        
-                    else:
-                        row_control.controls.append(ft.Container(expand=True)) # Push delete button to the end
-                        row_control.controls.append(
-                            ft.IconButton(
-                                icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,
-                                tooltip="Delete row",
-                                on_click=lambda e, r=idx: self._delete_row_clicked(r),
+                                    ),
+                                ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.END), 
+                                padding=ft.Padding.only(left=12, right=12, bottom=12),
                             )
                         )
-                        row_control.controls.append(ft.Container(width=12))  # Spacing at end
-                   
-                # Add our row control
+                        #preview_canvas.shapes.extend(self._load_canvas(idx, sub_idx))   # Load our saved canvas data into the canvas
+
+                    # Build textfield for all other types of columns
+                    else:     
+                        row_control.controls.append(
+                            ft.Container(
+                                ft.Column([
+                                    ft.TextField(
+                                        str(cell), 
+                                        dense=True, multiline=True, 
+                                        capitalization=ft.TextCapitalization.SENTENCES, smart_dashes_type=True,
+                                        data={"row": idx, "column": sub_idx},
+                                        on_blur=self._update_matrix_cell,
+                                    )], 
+                                    scroll="auto", alignment=ft.MainAxisAlignment.CENTER,
+                                    #width=200,  height=225,
+                                    expand=True,
+                                ),
+                            padding=ft.Padding.only(left=12, right=12, bottom=12),
+                            )
+                        )
+
+                row_control.controls.append(
+                    ft.IconButton(
+                        ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, 
+                        on_click=self._delete_row_clicked, data={"row": idx}, tooltip="Delete Row",
+                        mouse_cursor=ft.MouseCursor.CLICK,
+                    )
+                )
+
                 controls.append(row_control)
 
-                # Add a divider between rows except for last one, we add the 'add row' button
-                if idx != len(self.data.get('matrix', [])) - 1: 
-                    controls.append(ft.Divider(height=1, thickness=1, leading_indent=50, trailing_indent=50, color=ft.Colors.OUTLINE))
-                else:
-
-                    # Declare a row for our add and delete buttons
-                    row = ft.Row(
-                        spacing=0, expand=True,
-                        controls=[
-                            ft.IconButton(
-                                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
-                                on_click=self._new_row_clicked,
-                                tooltip="Add new row",
-                            ), 
-                            ft.Container(width=448),     # Spacer over the first two columns, so we don't delete them
-                          
-                        ], 
-                    )
+                # Add divider under each row except the last one
+                if idx < len(self.data['matrix']) - 1:
+                    controls.append(ft.Divider(2, 2))
                     
-                    sub_row = ft.Row(
-                        alignment=ft.MainAxisAlignment.SPACE_AROUND, expand=True, spacing=0,
-                        controls=[]
-                    )
-
-                    # Add delete buttons under each column that is custom (not preview, sketch, or concept)
-                    if len(self.data['matrix_labels']) > 3:
-                        
-                        for i in range(len(self.data['matrix_labels']) - 2):
-                            if i == 0:
-                                sub_row.controls.append(ft.Container(width=38))
-                            
-                            else:
-                                sub_row.controls.append(
-                                ft.IconButton(
-                                    ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,
-                                    tooltip="Delete column", expand=False, width=38,
-                                    on_click=lambda e, c=(i + 2): self._delete_column_clicked(c),
-                                )
-                            )
-
-                            
-                    else:
-                        sub_row.controls.append(ft.Container(expand=True))
-
-                    row.controls.append(sub_row)
-                    # Spacing at the end
-                    row.controls.append(ft.Container(width=50))
-                    
-
-                    # Add our row to the bottom
-                    controls.append(row)
-
-                    
-
             return controls
-
         
 
+        
+        # Labels for our matrix data (columns)
+        matrix_labels = ft.Row(_get_matrix_label_controls(), spacing=0, scroll="none")
+       
+
+
+        matrix_grid_view = ft.Column(_get_matrix_data_controls(), spacing=0, scroll="auto", tight=True, expand=True)
+
+
         # Body of the tab, which is the content of flet container
-        body = ft.Container(
-            expand=True,               
-            padding=6,                 
-            content=ft.Column(
-                spacing=0, expand=True, scroll="auto", 
-                controls=[                 
+        body = ft.Column(
+            expand=True, scroll="none", 
+            controls=[                 
+            
+                ft.Row([
+                    ft.Container(width=6), 
+                    ft.Text("Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                ], spacing=0),
+                #ft.Container(height=10), 
+
+                ft.Row([description_container]),
+                #ft.Container(height=10), 
                 
-                    ft.Row([
-                        ft.Container(width=6), 
-                        ft.Text("Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                    ], spacing=0),
-                    ft.Container(height=10),
+                matrix_labels,
+                ft.Divider(2, 2),
 
-                    ft.Row([description_container]),
-                    ft.Container(height=10),
+               
+                        
+                matrix_grid_view,
+                    
 
-                    ft.Row(_get_label_controls(), expand=True, spacing=0)
+                #ft.Container(height=10), 
+                
+                
+                ft.Row([
+                    ft.IconButton(
+                        ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
+                        ft.Colors.PRIMARY,  
+                        on_click=self._new_row_clicked,
+                        tooltip="Add new row",
+                        mouse_cursor=ft.MouseCursor.CLICK,
+                    ),
+                    ft.Container()
+                ], vertical_alignment=ft.CrossAxisAlignment.START)
+                
+
             ])
-        )    
-
-        body.content.controls.extend(_get_grid_controls())
+    
 
         self.body_container.content = body
 

@@ -259,7 +259,6 @@ class TreeViewFile(ft.GestureDetector):
         # If we're in a sub folder in the directory, make leading contorl also have a line
         if self.father is not None:
             leading_control = ft.Row([ft.VerticalDivider(2, 2), ft.Icon(self.icon, color=self.icon_color)], tight=True)
-            print(self.widget.title)
         else:
             leading_control = ft.Icon(self.icon, color=self.icon_color)
 

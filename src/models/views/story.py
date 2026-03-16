@@ -261,13 +261,12 @@ class Story(ft.View):
 
             self.p.run_task(self.save_dict)
 
-            for widget in self.widgets:
-                if widget.directory_path.startswith(full_path):
-                    self.delete_widget(widget, update=False)
+            #for widget in self.widgets:
+                #if widget.directory_path.startswith(full_path):
+                    #self.delete_widget(widget, update=False)
 
-            self.active_rail.content.reload_rail()
-            self.active_rail.update()
-            #self.workspace.reload_workspace()
+            self.active_rail.reload_rail()
+            self.workspace.reload_workspace()
             self.close_menu_instant()
 
         # Handle errors

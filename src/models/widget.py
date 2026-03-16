@@ -699,13 +699,8 @@ class Widget(ft.Container):
                     self.story.widgets.remove(self)   
             
             await asyncio.sleep(0)
-            self.story.active_rail.content.reload_rail()    # Reload the rail to reflect the deletion
-            self.story.active_rail.update()
-
-            
-
+            self.story.active_rail.reload_rail()    # Reload the rail to reflect the deletion
             self.story.workspace.reload_workspace()
-            await asyncio.sleep(0)
 
             if self.story.blocker.visible:
                 self.story.blocker.visible = False
