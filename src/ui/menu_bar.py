@@ -292,7 +292,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
     # Return our formatted menubar
     return ft.Container(
         border=ft.Border.only(bottom=ft.BorderSide(width=1, color=ft.Colors.OUTLINE_VARIANT)),
-        bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+        bgcolor=ft.Colors.SURFACE,
         content=ft.Row(
             spacing=0,
             controls=[

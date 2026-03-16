@@ -127,7 +127,7 @@ class Rail(IsolatedColumn):
 
         # Call the move file using the new directory path
 
-        if widget.move_file(new_directory=new_directory):
+        if self.p.run_task(widget.move_file, new_directory):
             return
         
         else:

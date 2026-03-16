@@ -6,6 +6,7 @@ from models.app import app
 from styles.colors import colors
 from utils.check_widget_unique import check_widget_unique
 import os
+import math
 
 # Class for items within a tree view on the rail
 class TreeViewFile(ft.GestureDetector):
@@ -28,7 +29,8 @@ class TreeViewFile(ft.GestureDetector):
             case "document": self.icon = ft.Icons.DESCRIPTION_OUTLINED
             case "canvas": self.icon = ft.Icons.BRUSH_OUTLINED
             case "canvas_board": self.icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
-            case "note": self.icon = ft.Icons.STICKY_NOTE_2_OUTLINED
+            #case "note": self.icon = ft.Icons.STICKY_NOTE_2_OUTLINED
+            case "note": self.icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
             case "character": self.icon = ft.Icons.PERSON_OUTLINED
             case "plotline": self.icon = ft.Icons.TIMELINE_OUTLINED
             case "map": self.icon = ft.Icons.MAP_OUTLINED
@@ -215,9 +217,8 @@ class TreeViewFile(ft.GestureDetector):
         self.content.content.title = text_field
 
         # Clears our popup menu button and applies to the UI
-        self.widget.p.overlay.clear()
+        #self.widget.story.close_menu_instant()
         self.update()
-        self.widget.p.update()
 
     def _get_color_options(self) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
@@ -255,13 +256,20 @@ class TreeViewFile(ft.GestureDetector):
     # Called to reload our tree view file display
     def reload(self):
 
+        # If we're in a sub folder in the directory, make leading contorl also have a line
+        if self.father is not None:
+            leading_control = ft.Row([ft.VerticalDivider(2, 2), ft.Icon(self.icon, color=self.icon_color)], tight=True)
+            print(self.widget.title)
+        else:
+            leading_control = ft.Icon(self.icon, color=self.icon_color)
+
         self.content = ft.Draggable(
             group="widgets",
             data=self.widget.data['key'],
             content_feedback=ft.TextButton(ft.Row([ft.Icon(self.icon, expand=True), ft.Text(self.widget.title, style=self.text_style, expand=True)], expand=True)),
             on_drag_start=lambda e: self.widget.story.workspace.show_pin_drag_targets(),
             content=ft.ListTile(
-                leading=ft.Icon(self.icon, color=self.icon_color),
+                leading=leading_control, 
                 title=ft.Text(self.widget.title, style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
                 shape=ft.RoundedRectangleBorder(radius=6),
                 bgcolor=ft.Colors.TRANSPARENT, dense=True,

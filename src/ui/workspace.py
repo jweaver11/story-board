@@ -26,7 +26,7 @@ class Workspace(ft.Container):
             expand=True,
             alignment=ft.Alignment.CENTER,
             padding=ft.Padding.only(top=10, bottom=10, left=2, right=10),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            bgcolor=ft.Colors.SURFACE,
         )
 
         self.p = page

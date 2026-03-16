@@ -109,7 +109,7 @@ class Widget(ft.Container):
             case "document": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
             case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
             case "canvas_board": self.icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
-            case "note": self.icon = ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED)
+            case "note": self.icon = ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED)
             case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
             case "character_connection_map": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
             case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)
@@ -272,7 +272,7 @@ class Widget(ft.Container):
             return False
         
     # Called when moving widget files
-    def move_file(self, new_directory: str) -> bool:
+    async def move_file(self, new_directory: str) -> bool:
         ''' Deletes our old file and updates our directory, then saves the new file there '''
 
         if new_directory == self.data.get('directory_path', ''):
@@ -301,6 +301,7 @@ class Widget(ft.Container):
             self.data['directory_path'] = new_directory
             self.data['key'] = new_key
             self.p.run_task(self.save_dict)
+            await asyncio.sleep(0.2)    # Make sure file has time to save before reload
 
             # Reload the rail to apply changes
             self.story.active_rail.reload_rail()

@@ -17,7 +17,7 @@ import asyncio
 
  
 class Story(ft.View):
-    
+
     # Constructor.
     def __init__(
         self, 
@@ -38,6 +38,7 @@ class Story(ft.View):
             route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
             padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
             spacing=0,                                                      # No spacing between menubar and rest of page
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
         )  
 
         self.title = title              # Gives our story a title when its created
@@ -239,8 +240,7 @@ class Story(ft.View):
             self.p.run_task(self.save_dict)
 
 
-            self.active_rail.content.reload_rail()
-            self.active_rail.update()
+            self.active_rail.reload_rail()
 
         # Handle errors
         except Exception as e:
@@ -275,7 +275,7 @@ class Story(ft.View):
             print(f"Error deleting folder: {e}")
 
     # Called when changing folder metadata, like color or is expanded or not
-    def change_folder_data(self, full_path: str, key: str, value):
+    async def change_folder_data(self, full_path: str, key: str, value):
         ''' Changes our folder metadata inside of our story data '''
         #print("Changing folder data:", full_path, key, value)
 
@@ -283,7 +283,7 @@ class Story(ft.View):
             # Check if the folder exists in our data
             if full_path in self.data.get('folders', {}):
                 self.data['folders'][full_path][key] = value
-                self.p.run_task(self.save_dict)
+                await self.save_dict()
                 #print("Changed folder data:", full_path, key, value)
             else:
                 print(f"Folder {full_path} not found in story data.")
@@ -738,9 +738,9 @@ class Story(ft.View):
         active_rail_resizer = ft.GestureDetector(
             content=ft.Container(
                 width=10,   # Total width of the GD, so its easier to find with mouse
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                bgcolor=ft.Colors.SURFACE,
                 # Thin vertical divider, which is what the app will actually drag
-                content=ft.VerticalDivider(thickness=2, width=2, color=ft.Colors.OUTLINE_VARIANT),     # Original
+                content=ft.VerticalDivider(2, 2),     # Original
                 padding=ft.Padding.only(right=8),  # Push the 2px divider ^ to the right side
             ),
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
@@ -764,14 +764,15 @@ class Story(ft.View):
             expand=True,  # Makes sure it takes up the entire window/screen
 
             controls=[
-                self.workspaces_rail,  # Main rail of all available workspaces
-                ft.VerticalDivider(width=2, thickness=2, color=ft.Colors.OUTLINE_VARIANT),     
+                #self.workspaces_rail,  # Main rail of all available workspaces
+                #ft.VerticalDivider(2, 2),     
                 
                 # OLD
                 #self.active_rail,    # Rail for the selected workspace
                 #active_rail_resizer,   # Divider between rail and work area
 
                 # Holds our active rail container and resizer
+                #ft.Container(width=6),
                 active_rail_stack,
                 
                 self.workspace,    # Work area for widgets

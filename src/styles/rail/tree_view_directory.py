@@ -8,6 +8,7 @@ from styles.snack_bar import SnackBar
 from utils.check_widget_unique import check_widget_unique
 from utils.check_folder_content import return_folder_content
 from models.app import app
+from models.isolated_controls.expansion_tile import IsolatedExpansionTile
 
 # Expansion tile for all sub directories (folders) in a directory
 class TreeViewDirectory(ft.GestureDetector):
@@ -64,13 +65,15 @@ class TreeViewDirectory(ft.GestureDetector):
         # Parent constructor
         super().__init__(
             mouse_cursor=ft.MouseCursor.CLICK,
-            on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
+            on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()),
+            exclude_from_semantics=True
         )
 
         self.expansion_tile: ft.ExpansionTile = None
 
         # Reload our directory tile to set up initial UI
         self.reload()
+
 
     # Called when right clicking over our expansion tile
     def get_menu_options(self) -> list[ft.Control]:
@@ -81,7 +84,11 @@ class TreeViewDirectory(ft.GestureDetector):
             MenuOptionStyle(
                 content=ft.SubmenuButton(
                     ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.color), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True)], expand=True),
+                        ft.Row([
+                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.color), 
+                            ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Icon(ft.Icons.ARROW_RIGHT),
+                        ], expand=True),
                         padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
                     ),
                     [
@@ -104,7 +111,7 @@ class TreeViewDirectory(ft.GestureDetector):
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
                         ),
                         ft.MenuItemButton(      
-                            leading=ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED, ft.Colors.PRIMARY), content="Note", 
+                            leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY), content="Note", 
                             data="note", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
@@ -165,7 +172,11 @@ class TreeViewDirectory(ft.GestureDetector):
             MenuOptionStyle(
                 content=ft.SubmenuButton(
                     ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, self.color), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True)], expand=True),
+                        ft.Row([
+                            ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, self.color), 
+                            ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Icon(ft.Icons.ARROW_RIGHT),
+                        ], expand=True),
                         padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
                     ),
                     [
@@ -188,7 +199,7 @@ class TreeViewDirectory(ft.GestureDetector):
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
                     ),
                     ft.MenuItemButton(      
-                        leading=ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED, ft.Colors.PRIMARY), content="Note", 
+                        leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY), content="Note", 
                         data="note", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
@@ -286,9 +297,9 @@ class TreeViewDirectory(ft.GestureDetector):
     async def toggle_expand(self, e=None):
         ''' Makes sure our state and data match the updated expanded/collapsed state '''
     
-        self.expansion_tile.expanded = not self.expansion_tile.expanded
+        #print(self.expansion_tile.expanded)
 
-        self.story.change_folder_data(
+        await self.story.change_folder_data(
             full_path=self.full_path,
             key='is_expanded', value=self.expansion_tile.expanded
         )
@@ -350,14 +361,15 @@ class TreeViewDirectory(ft.GestureDetector):
 
 
         # Check our expanded state. Rebuild if needed
-        if self.is_expanded == False:
+        #if self.is_expanded == False:
             
-            await self.toggle_expand()
-            self.expansion_tile.update()
-            self.update()
-        else:
-            self.expansion_tile.update()
-            self.update()
+            #self.is_expanded = True
+            
+            #self.reload()
+            #await self.toggle_expand()
+            #self.update()
+        #else:
+            #self.update()
             
             
             
@@ -379,7 +391,7 @@ class TreeViewDirectory(ft.GestureDetector):
                 e.control.visible = False
                 e.control.value = None
                 e.control.error = None
-                self.update()
+                e.control.update()
                 return
             
             # Otherwise its not unique, re-focus our textfield
@@ -392,7 +404,7 @@ class TreeViewDirectory(ft.GestureDetector):
             e.control.visible = False
             e.control.value = None
             e.control.error = None
-            self.update()
+            e.control.update()
 
 
     # Called whenever our user inputs a new key into one of our textfields for new items
@@ -451,9 +463,9 @@ class TreeViewDirectory(ft.GestureDetector):
                 case _:
                     self.story.create_widget(directory_path=self.full_path, title=title, tag=tag)
                 
-        else:
-            self.new_item_textfield.focus()                                  
-            self.update()
+        #else:
+            #self.new_item_textfield.focus()                                  
+            #self.update()
 
     def folder_submit(self, e):
         # Get our name and check if its unique
@@ -470,9 +482,9 @@ class TreeViewDirectory(ft.GestureDetector):
             )
             
         # Otherwise make sure we show our error
-        else:
-            self.new_item_textfield.focus()                                  # Auto focus the textfield
-            self.update()
+        #else:
+            #self.new_item_textfield.focus()                                  # Auto focus the textfield
+            #self.update()
 
     # Called when rename button is clicked
     async def rename_clicked(self, e):
@@ -578,28 +590,34 @@ class TreeViewDirectory(ft.GestureDetector):
             on_blur=_cancel_rename,
         )
 
-        # Replaces our name text with a text field for renaming
-        self.expansion_tile.title = text_field
-        self.update()
+        dlg = ft.AlertDialog(
+            title=ft.Text(f"Rename {self.title}", weight=ft.FontWeight.BOLD),
+            content=text_field,
+            actions=[
+                ft.TextButton("Cancel", on_click=_cancel_rename),
+                ft.TextButton("Submit", on_click=_submit_name),
+            ],
+        )
+
+        self.p.show_dialog(dlg)
 
         # Clears our popup menu button and applies to the UI
         await self.story.close_menu()
 
-    def _get_color_options(self) -> list[ft.Control]:
+    def _get_color_options(self, e=None) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
 
         # Called when a color option is clicked on popup menu to change icon color
-        def _change_icon_color(color: str):
+        async def _change_icon_color(e):
             ''' Passes in our kwargs to the widget, and applies the updates '''
+            color = e.control.data  
 
             # Change the data
-            self.story.change_folder_data(self.full_path, 'color', color)
-            self.color = color
+            await self.story.change_folder_data(self.full_path, 'color', color)
             
             # Change our icon to match, apply the update
-            self.story.active_rail.content.reload_rail()
-            self.story.active_rail.update()
-            self.story.close_menu_instant() 
+            self.story.active_rail.reload_rail()
+            await self.story.close_menu() 
 
         # List for our colors when formatted
         color_controls = [] 
@@ -609,7 +627,7 @@ class TreeViewDirectory(ft.GestureDetector):
             color_controls.append(
                 ft.MenuItemButton(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                    on_click=lambda e, col=color: _change_icon_color(col), close_on_click=True,
+                    on_click=_change_icon_color, data=color, close_on_click=True,
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))
                 )
             )
@@ -620,7 +638,7 @@ class TreeViewDirectory(ft.GestureDetector):
         
     
     # Called when the delete button is clicked in the menu options
-    def _delete_clicked(self, e):
+    async def _delete_clicked(self, e):
         ''' Deletes this file from the story '''
 
         def _delete_confirmed(e=None):
@@ -663,7 +681,7 @@ class TreeViewDirectory(ft.GestureDetector):
             _delete_confirmed()
 
     # Called when a widget is dragged and dropped into this directory
-    def on_drag_accept(self, e):
+    async def on_drag_accept(self, e):
         ''' Moves our widgets into this directory from wherever they were '''
         
         draggable = e.page.get_control(e.src_id)
@@ -683,26 +701,33 @@ class TreeViewDirectory(ft.GestureDetector):
             return
 
         # Call the move file using the new directory path
-        widget.move_file(new_directory=self.full_path)
-
-
+        await widget.move_file(new_directory=self.full_path)
 
     # Called when we need to reload this directory tile
     def reload(self):
-        self.expansion_tile = ft.ExpansionTile(
-            title=ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left"),
-            leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, color=self.color),
+
+        # TODO: Fix menu options to match rest of rail
+        # New items open a text field??
+        self.expansion_tile = IsolatedExpansionTile(
+            title=ft.Row([
+                ft.Icon(ft.Icons.FOLDER_OUTLINED, color=self.color), ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True)], 
+                expand=True
+            ),
             dense=True,
+            affinity=ft.TileAffinity.LEADING,
+            collapsed_shape=ft.RoundedRectangleBorder(radius=10),
             visual_density=ft.VisualDensity.COMPACT,
             expanded=self.is_expanded,
             tile_padding=ft.Padding(0, 0, 0, 0),
+            icon_color=self.color,
             controls_padding=ft.Padding(10, 0, 0, 0),       # Keeps all sub children indented
-            maintain_state=True,
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
             adaptive=True, bgcolor="transparent",
             shape=ft.RoundedRectangleBorder(),
             on_change=self.toggle_expand,
-            controls=[self.new_item_textfield], 
+            controls=[self.new_item_textfield],     
+           
+                
         )
 
         # Re-adds our content controls so we can keep states

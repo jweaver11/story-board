@@ -27,8 +27,8 @@ class Active_Rail(ft.Container):
         # Consistent styling for all our rails
         super().__init__(
             alignment=ft.Alignment.TOP_CENTER,
-            padding=ft.Padding.only(top=10, bottom=10, right=8, left=8),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            padding=ft.Padding.only(top=10, bottom=10, right=10, left=10),
+            bgcolor=ft.Colors.SURFACE,
             expand=True
         )
 

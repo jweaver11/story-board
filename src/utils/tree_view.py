@@ -10,6 +10,7 @@ import json
 from models.views.story import Story
 from styles.rail.tree_view_directory import TreeViewDirectory
 from styles.rail.tree_view_file import TreeViewFile
+import math
 
 
 def load_directory_data(
