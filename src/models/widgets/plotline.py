@@ -100,6 +100,9 @@ class Plotline(Widget):
         self.plotline_height: int = int()           # Height of our plotline canvas
         self.can_open_menu: bool = False            # If we can open the menu when right clicking
         self.show_hover_effects: bool = False   # If we should show hover effects of our plotline. Plot points and markers turn these off when hovering over them
+        self.needs_redraw = False           # Used to track if we need to redraw canvas after a resize
+        self.skip_first_resize = True
+        self.initial_resize = True          # Initial resize needs rebuild
 
         # Our plotline canvas that draws our plotline line and markers
         self.plotline_canvas = cv.Canvas(
@@ -410,6 +413,9 @@ class Plotline(Widget):
     # Called when hovering over our plotline on the canvas
     async def _hover_plotline_canvas(self, e: ft.PointerEvent):
         ''' Sets our coordinated for opening the menu when right clicking and updates our alignment we want to pass in '''
+
+        if self.story.workspace.is_resizing:    # If we're resizing just ignore this call
+            return
 
         # Set coordinates for menu
         self.story.mouse_x = e.global_position.x
@@ -832,7 +838,7 @@ class Plotline(Widget):
                 arc.plotline_control.right = new_right
 
             if not update:
-                self.plotline_canvas.update()
+                #self.plotline_canvas.update()
                 return
            
 
@@ -842,7 +848,7 @@ class Plotline(Widget):
                 arc.plotline_control.bottom = self.plotline_height / 2
 
             if not update:
-                self.plotline_canvas.update()
+                #self.plotline_canvas.update()
                 return
             
 
@@ -1087,8 +1093,8 @@ class Plotline(Widget):
 
         plot_points_filters = ft.Container(
             padding=None,
-            width=170, shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=4, blur_style=ft.BlurStyle.OUTER),
-            border=ft.Border.all(1, ft.Colors.OUTLINE),
+            width=170, shadow=ft.BoxShadow(color=ft.Colors.SURFACE, blur_radius=2, blur_style=ft.BlurStyle.OUTER),
+            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
             border_radius=ft.BorderRadius.all(6),
             content=ft.ExpansionTile(
                 expand=True, dense=True,
@@ -1107,8 +1113,8 @@ class Plotline(Widget):
 
         arcs_filters = ft.Container(
             padding=None,
-            width=170, shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=4, blur_style=ft.BlurStyle.OUTER),
-            border=ft.Border.all(1, ft.Colors.OUTLINE),
+            width=170, shadow=ft.BoxShadow(color=ft.Colors.SURFACE, blur_radius=2, blur_style=ft.BlurStyle.OUTER),
+            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
             border_radius=ft.BorderRadius.all(6),
             content=ft.ExpansionTile(
                 expand=True, dense=True,
@@ -1126,8 +1132,8 @@ class Plotline(Widget):
 
         markers_filters = ft.Container(
             padding=None,
-            width=170, shadow=ft.BoxShadow(color=ft.Colors.BLACK, blur_radius=4, blur_style=ft.BlurStyle.OUTER),
-            border=ft.Border.all(1, ft.Colors.OUTLINE),
+            width=170, shadow=ft.BoxShadow(color=ft.Colors.SURFACE, blur_radius=2, blur_style=ft.BlurStyle.OUTER),
+            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
             border_radius=ft.BorderRadius.all(6),
             content=ft.ExpansionTile(
                 expand=True, dense=True,
@@ -1140,7 +1146,8 @@ class Plotline(Widget):
                 expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
                 shape=ft.RoundedRectangleBorder(),
                 controls=_get_markers_filter_options()
-            )
+            ),
+            
         )
         
     

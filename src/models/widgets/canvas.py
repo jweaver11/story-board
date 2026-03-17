@@ -65,8 +65,7 @@ class Canvas(Widget):
                 'capture': str,             # Capture of what we currently look like
                 'snapshot': str,            # Most recent completed snapshot of our canvas used by other widgets
 
-                # Canvas drawing data we save and load from
-                #"canvas": {},
+                
             },
         )
 
@@ -83,7 +82,6 @@ class Canvas(Widget):
         self.needs_redraw = False     # Used to track if we need to redraw canvas after a resize
         self.skip_first_resize = True
         self.initial_resize = True     # Initial resize needs rebuild
-        self.undo_idx = 0       #??
 
         self.information_display: ft.Container = None
         self._create_information_display()
@@ -523,7 +521,6 @@ class Canvas(Widget):
                 self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
     async def _redraw_canvas(self, e=ft.PointerEvent):
-        #print("Needs redraw: ", self.needs_redraw)
         if self.story.workspace.is_resizing:    # If we're resizing just ignore this call
             self.needs_redraw = True
             return

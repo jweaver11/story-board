@@ -464,10 +464,6 @@ class Widget(ft.Container):
     async def show_widget(self, e=None):
         ''' Shows this widget in the workspace if it is hidden '''
 
-        # Not working??
-        #if self.visible:
-            #return
-
         self.story.blocker.visible = True
         self.story.blocker.update()
         await asyncio.sleep(0)
@@ -634,7 +630,7 @@ class Widget(ft.Container):
         )
 
         # Clears our popup menu button and applies to the UI
-        self.p.overlay.clear()
+        self.story.close_menu_instant()
         self.p.show_dialog(dlg)
         
     
@@ -661,9 +657,6 @@ class Widget(ft.Container):
             if self.story.blocker.visible:
                 self.story.blocker.visible = False
                 self.story.blocker.update()
-
-            #if self.data.get('pin_location', "main") == "main":
-                #self.story.workspace.reload_workspace()
 
         # List for our colors when formatted
         color_controls = [] 
@@ -733,7 +726,6 @@ class Widget(ft.Container):
                 await w.save_dict()
 
         await self.save_dict()
-        #self.story.workspace.reload_workspace()
 
     # Called when mouse hovers over the map
     async def _get_coords(self, e: ft.HoverEvent):

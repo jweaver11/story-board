@@ -315,7 +315,7 @@ class PlotlineInformationDisplay(MiniWidget):
             ft.Container(width=6), 
             ft.Text(
                 "Sequence of Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), 
-                color=self.widget.data.get('color', None), tooltip="The order of events that occur in this plotline"
+                tooltip="The order of events that occur in this plotline"
             ),
             
         ], spacing=0)
@@ -323,11 +323,12 @@ class PlotlineInformationDisplay(MiniWidget):
 
         divisions_label = ft.Row([
             ft.Container(width=6), 
-            ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), color=self.widget.data.get('color', None), tooltip="The number and label of the divisions on this plotline."),
+            ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), tooltip="The number and label of the divisions on this plotline."),
             ft.Container(width=10),
             ft.IconButton(
-                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                tooltip="Add Division", on_click=_new_divisions_clicked
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.widget.data.get('color' "primary"),
+                tooltip="Add Division", on_click=_new_divisions_clicked,
+                mouse_cursor="click"
             )
         ], spacing=0)
 
@@ -401,11 +402,12 @@ class PlotlineInformationDisplay(MiniWidget):
 
         plot_points_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Plot Points", color=self.widget.data.get('color', None), weight=ft.FontWeight.BOLD),
+            ft.Text("Plot Points", weight=ft.FontWeight.BOLD),
             ft.Container(width=6),
             ft.IconButton(
-                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Create New Plot Point", data="plot_point", 
-                on_click=self.widget.new_item_clicked, style=ft.ButtonStyle(padding=ft.Padding.all(0))
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.widget.data.get('color' "primary"), tooltip="Create New Plot Point", data="plot_point", 
+                on_click=self.widget.new_item_clicked, #style=ft.ButtonStyle(padding=ft.Padding.all(0)),
+                mouse_cursor="click"
             )
         ], spacing=0)
 
@@ -413,11 +415,12 @@ class PlotlineInformationDisplay(MiniWidget):
 
         arcs_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Arcs", color=self.widget.data.get('color', None), weight=ft.FontWeight.BOLD),
+            ft.Text("Arcs",  weight=ft.FontWeight.BOLD),
             ft.Container(width=6),
             ft.IconButton(
-                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Create New Arc", data="arc", 
-                on_click=self.widget.new_item_clicked, style=ft.ButtonStyle(padding=ft.Padding.all(0))
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.widget.data.get('color' "primary"), tooltip="Create New Arc", data="arc", 
+                on_click=self.widget.new_item_clicked, #style=ft.ButtonStyle(padding=ft.Padding.all(0)),
+                mouse_cursor="click"
             )
         ], spacing=0)
 
@@ -425,11 +428,12 @@ class PlotlineInformationDisplay(MiniWidget):
 
         markers_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Markers", color=self.widget.data.get('color', None), weight=ft.FontWeight.BOLD),
+            ft.Text("Markers", weight=ft.FontWeight.BOLD),
             ft.Container(width=6),
             ft.IconButton(
-                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Create New Marker", data="marker", 
-                on_click=self.widget.new_item_clicked, style=ft.ButtonStyle(padding=ft.Padding.all(0))
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.widget.data.get('color' "primary"),tooltip="Create New Marker", data="marker", 
+                on_click=self.widget.new_item_clicked, #style=ft.ButtonStyle(padding=ft.Padding.all(0)),
+                mouse_cursor="click"
             )
         ], spacing=0)
 
@@ -467,10 +471,12 @@ class PlotlineInformationDisplay(MiniWidget):
 
         custom_fields_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None), selectable=True),
+            ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True),
             ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Custom Field",
-                on_click=lambda e: self._new_custom_field_clicked())
+                ft.Icons.NEW_LABEL_OUTLINED, self.widget.data.get('color' "primary"), tooltip="Add Custom Field",
+                on_click=lambda e: self._new_custom_field_clicked(),
+                mouse_cursor="click"
+            ),
         ], spacing=0)
 
         custom_fields_column = self._build_custom_fields_column()

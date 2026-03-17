@@ -117,7 +117,7 @@ class Settings(ft.View):
 
                 'default_category_color': "primary",    # Categories thrown in here
 
-                'default_canvas_pin_location': "main",      # Default pin locations for new widgets
+                'default_canvas_pin_location': "main",      # Default pin locations for new widgets (all in main for now)
                 'default_canvas_board_pin_location': "main",
                 'default_chapter_pin_location': "main",   
                 #'default_character_pin_location': "left",
