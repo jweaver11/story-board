@@ -39,7 +39,7 @@ class Note(Widget):
                 'key': f"{self.directory_path}\\{return_safe_name(self.title)}_note", 
                 'tag': "note",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('default_note_color'),
-                'pin_location': "right" if data is None else data.get('pin_location', "right"),   # Default pin location for notes
+                'pin_location': app.settings.data.get('default_note_pin_location', "right") if data is None else data.get('pin_location', "right"),   # Default pin location for notes
 
                 # Note data
                 'note_data': {

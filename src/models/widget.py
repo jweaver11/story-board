@@ -476,8 +476,7 @@ class Widget(ft.Container):
         self.visible = True
         await self.save_dict()
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
-        await asyncio.sleep(0)
-
+        
         if self.story.blocker.visible:
             self.story.blocker.visible = False
             self.story.blocker.update()

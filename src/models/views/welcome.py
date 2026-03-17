@@ -47,7 +47,6 @@ def create_welcome_view(page: ft.Page) -> ft.View:
             ft.Container(expand=4)     # Spacing
         ],
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        alignment=ft.MainAxisAlignment.START,
     )
 
 

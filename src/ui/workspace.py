@@ -118,9 +118,15 @@ class Workspace(ft.Container):
 
 
         # Master stack that holds our widgets ^ row, and drag targets overtop. TransparentPointer allows the targets to be physical but not block widgets underneath
-        self.master_stack = ft.Stack(expand=True, controls=[self.master_widgets_row, ft.TransparentPointer(self.pin_drag_targets)])
+        self.master_stack = ft.Stack(
+            [
+                self.master_widgets_row, 
+                #ft.TransparentPointer(self.pin_drag_targets)
+            ],
+            expand=True,
+        )
 
-        self.content = self.master_stack
+        self.content = self.master_stack 
 
         self.reload_workspace()   # Load our workspace content for the first time without updating the UI, since we're still in the constructor
 
@@ -128,6 +134,7 @@ class Workspace(ft.Container):
     # When a draggable starts dragging, we add our drag targets to the master stack
     def show_pin_drag_targets(self, e=None):
         ''' Adds our drag targets to the master stack so we can drop our widgets into pin locations '''
+        return
 
         # If no visible in the top pin
         if len(self.top_pin.controls) == 0:

@@ -120,13 +120,16 @@ class Settings(ft.View):
                 'default_canvas_pin_location': "main",      # Default pin locations for new widgets
                 'default_canvas_board_pin_location': "main",
                 'default_chapter_pin_location': "main",   
-                'default_character_pin_location': "left",
+                #'default_character_pin_location': "left",
+                'default_character_pin_location': "main",
                 'default_character_connection_map_pin_location': "main",
                 'default_map_pin_location': "main",
-                'default_note_pin_location': "right",
+                #'default_note_pin_location': "right",
+                'default_note_pin_location': "main",
                 'default_planning_pin_location': "main",
                 'default_plotline_pin_location': "main",
-                'default_world_pin_location': "right",
+                #'default_world_pin_location': "right",
+                'default_world_pin_location': "main",
 
                 'active_character_template': "Default",             # Which template is being used for new characters for new stories - they default to this
                 'active_world_template': "Default",                 # Which template is being used for new worlds for new stories - they default to this
