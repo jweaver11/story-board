@@ -210,7 +210,7 @@ class Plotline(Widget):
         
         if self.can_open_menu:
             if not self.information_display.visible:
-                self.information_display.show_mini_widget()
+                await self.information_display.show_mini_widget()
             
     # Called when creating a new arc
     async def create_arc(self, title: str):
@@ -259,7 +259,7 @@ class Plotline(Widget):
 
         # Apply our changes in the UI
         self.data['dropdown_is_expanded'] = True     # Make sure our dropdown is expanded to show the new plot point
-        self.story.active_rail.content.reload_rail()
+        self.story.active_rail.reload_rail()
         await self.rebuild_plotline_canvas()
         self.reload_widget()
 
@@ -283,7 +283,7 @@ class Plotline(Widget):
         new_marker.show_mini_widget()
 
         # Apply our changes in the UI
-        self.story.active_rail.content.reload_rail()
+        self.story.active_rail.reload_rail()
         await self.rebuild_plotline_canvas(no_update=True)
         self.reload_widget()
 
@@ -332,40 +332,47 @@ class Plotline(Widget):
 
         async def _show_info_display(e):
             ''' Shows our information display mini widget '''
-            self.information_display.show_mini_widget()
+            await self.information_display.show_mini_widget()
             await self.story.close_menu()
 
         
         return [
             MenuOptionStyle(
-                content=ft.PopupMenuButton(
-                    content=ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", weight=ft.FontWeight.BOLD)]),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
+                content=ft.SubmenuButton(
+                    ft.Container(
+                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True)], expand=True),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
                     ),
-                    tooltip=f"New Item for {self.title}", menu_padding=0,
-                    items=[
-                        ft.PopupMenuItem(
-                            "Plot Point", icon=ft.Icons.ADD_LOCATION_OUTLINED,
-                            on_click=self.new_item_clicked, data="plot_point"
+                    [
+                        ft.MenuItemButton(
+                            "Plot Point", leading=ft.Icon(ft.Icons.ADD_LOCATION_OUTLINED, self.data.get('color', "primary")),
+                            on_click=self.new_item_clicked, data="plot_point",
+                            tooltip="Mark important, short term events as plot points in your story",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ),
-                        ft.PopupMenuItem(
-                            "Arc", icon=ft.Icons.CIRCLE_OUTLINED,
-                            on_click=self.new_item_clicked, data="arc"
+                        ft.MenuItemButton(
+                            "Arc", leading=ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.data.get('color', "primary")),
+                            on_click=self.new_item_clicked, data="arc",
+                            tooltip="Create extented events in your story as arcs with set start and end points",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ),
-                        ft.PopupMenuItem(
-                            "Marker", icon=ft.Icons.FLAG_OUTLINED,
-                            on_click=self.new_item_clicked, data="marker"
-                        ),
-                    ]
+                        ft.MenuItemButton(
+                            "Marker", leading=ft.Icon(ft.Icons.FLAG_OUTLINED, self.data.get('color', "primary")),
+                            on_click=self.new_item_clicked, data="marker",
+                            tooltip="Create simple markers on the plotline for events or notes to help visualize the flow of your story",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        )
+                    ],
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                 ),
-                
-                no_padding=True
+                no_padding=True, no_effects=True
             ),
+            
             MenuOptionStyle(
                 on_click=_show_info_display,
                 content=ft.Row([
-                    ft.Icon(ft.Icons.INFO_OUTLINE),
+                    ft.Icon(ft.Icons.INFO_OUTLINE, self.data.get('color', 'primary')),
                     ft.Text(
                         "Show Info", 
                         weight=ft.FontWeight.BOLD, 
@@ -376,25 +383,26 @@ class Plotline(Widget):
             MenuOptionStyle(
                 on_click=self._rename_clicked,
                 content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
+                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
                     ft.Text(
                         "Rename", 
                         weight=ft.FontWeight.BOLD, 
-                        color=ft.Colors.ON_SURFACE
                     ), 
                 ]),
             ),
-            # Color changing popup menu
             MenuOptionStyle(
-                content=ft.PopupMenuButton(
-                    content=ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.data.get('color', 'primary'),), ft.Text("Color",  weight=ft.FontWeight.BOLD),]),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
-                    ),
-                    tooltip=f"Change {self.title} Color", menu_padding=0,
-                    items=self._get_color_options()
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
+                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    self._get_color_options(), 
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    tooltip="Change this widget's color"
                 ),
-                no_padding=True
+                no_padding=True, no_effects=True
             ),
         ]
     
@@ -429,7 +437,11 @@ class Plotline(Widget):
             self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
             self.plotline_canvas.content.mouse_cursor = ft.MouseCursor.CLICK      # Change cursor to pointer
 
-            self.plotline_canvas.update()
+            try:
+                self.plotline_canvas.update()
+            except Exception as _:
+                pass
+
 
         # If not, disable right clicking and remove visual feedback
         else:
@@ -438,7 +450,10 @@ class Plotline(Widget):
             self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
             self.plotline_canvas.content.mouse_cursor = None
 
-            self.plotline_canvas.update()
+            try:
+                self.plotline_canvas.update()
+            except Exception as _:
+                pass
 
     async def _exit_canvas(self, e: ft.HoverEvent):
         ''' Called when exiting our plotline canvas '''
@@ -447,7 +462,10 @@ class Plotline(Widget):
         self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
         self.plotline_canvas.content.mouse_cursor = None
 
-        self.plotline_canvas.update()
+        try:
+            self.plotline_canvas.update()
+        except Exception as _:
+            pass
 
 
     # Called when right clicking our plotline on the canvas
@@ -464,25 +482,25 @@ class Plotline(Widget):
         async def _check_name_unique(e):
             name = new_item_tf.value.strip()
             submit_button.disabled = False
-            new_item_tf.error_text = None
+            new_item_tf.error = None
             if not name:
                 submit_button.disabled = True
             elif tag == "plot_point" and name in self.plot_points:
                 submit_button.disabled = True
-                new_item_tf.error_text = "Name must be unique"
+                new_item_tf.error = "Name must be unique"
                 new_item_tf.focus()
             elif tag == "arc" and name in self.arcs:
                 submit_button.disabled = True
-                new_item_tf.error_text = "Name must be unique"
+                new_item_tf.error = "Name must be unique"
                 new_item_tf.focus()
             elif tag == "marker" and name in self.markers:
                 submit_button.disabled = True
-                new_item_tf.error_text = "Name must be unique"
+                new_item_tf.error = "Name must be unique"
                 new_item_tf.focus()
 
             else:
                 submit_button.disabled = False
-                new_item_tf.error_text = None
+                new_item_tf.error = None
             
             new_item_tf.update()
             submit_button.update()
@@ -543,8 +561,10 @@ class Plotline(Widget):
 
 
     # Called for any size changes to our plotline canvas
-    async def rebuild_plotline_canvas(self, e: cv.CanvasResizeEvent=None, no_update: bool=False):
+    async def rebuild_plotline_canvas(self, e: cv.CanvasResizeEvent=None, update: bool=False):
         ''' Redraws our plotline on the canvas when it is resized. Does it on startup as well '''
+
+        print("Rebuild called")
 
         # Check if we just called this to redraw without an event. If we did, skip the size updates
         if e is None:
@@ -811,7 +831,7 @@ class Plotline(Widget):
                 arc.plotline_control.left = new_left   
                 arc.plotline_control.right = new_right
 
-            if no_update:
+            if not update:
                 self.plotline_canvas.update()
                 return
            
@@ -821,7 +841,7 @@ class Plotline(Widget):
             for arc in self.arcs.values():
                 arc.plotline_control.bottom = self.plotline_height / 2
 
-            if no_update:
+            if not update:
                 self.plotline_canvas.update()
                 return
             
@@ -875,6 +895,15 @@ class Plotline(Widget):
             if self.data.get('show_all_markers', False) or marker.data.get('is_shown_on_widget', False):
                 # Add the marker control to the plotline stack
                 plotline_stack.controls.append(marker.plotline_control)
+
+        # Add all our mini widgets to the plotline stack as well
+        plotline_stack.controls.append(
+            ft.Row([
+                ft.Column([mw for mw in self.mini_widgets if mw.data.get('side_location', "") == "left"], expand=1),
+                ft.Container(expand=2, ignore_interactions=True),
+                ft.Column([mw for mw in self.mini_widgets if mw.data.get('side_location', "") == "right"], expand=1)
+            ])
+        )
 
         # Set our content
         self.body_container.content = plotline_stack

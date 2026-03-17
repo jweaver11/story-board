@@ -53,8 +53,8 @@ class TreeViewFile(ft.GestureDetector):
 
         # Parent constructor
         super().__init__(
-            on_enter = self.on_hover,
-            on_exit = self.on_stop_hover,
+            on_enter = self._highlight,
+            on_exit = self._stop_highlight,
             on_secondary_tap = lambda e: self.widget.story.open_menu(self.get_menu_options()),
             on_tap = self.widget.show_widget,
             mouse_cursor = ft.MouseCursor.CLICK,
@@ -103,13 +103,13 @@ class TreeViewFile(ft.GestureDetector):
         ]
 
     # Called when hovering mouse over a tree view item
-    async def on_hover(self, e):
+    async def _highlight(self, e):
         self.content.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
         self.content.content.trailing.visible = True    
         self.update()
 
     # Called when stopping hover over a tree view item
-    async def on_stop_hover(self, e):
+    async def _stop_highlight(self, e):
         self.content.content.bgcolor = ft.Colors.TRANSPARENT
         self.content.content.trailing.visible = False
         self.update()
@@ -271,7 +271,8 @@ class TreeViewFile(ft.GestureDetector):
                 leading=leading_control, 
                 title=ft.Text(self.widget.title, style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
                 shape=ft.RoundedRectangleBorder(radius=6),
-                bgcolor=ft.Colors.TRANSPARENT, dense=True,
+                bgcolor=ft.Colors.TRANSPARENT, 
+                dense=True,
                 content_padding=ft.Padding.all(0),
                 min_vertical_padding=0,
                 mouse_cursor=ft.MouseCursor.CLICK,

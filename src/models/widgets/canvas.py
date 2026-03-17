@@ -745,8 +745,6 @@ class Canvas(Widget):
     def reload_widget(self):       
         ''' Rebuilds/reloads our Canvas '''
 
-        # TODO: Need a way to show blur and effect for background layer since its unique
-
         self._load_layers()
 
         # Rebuild out tab to reflect any changes

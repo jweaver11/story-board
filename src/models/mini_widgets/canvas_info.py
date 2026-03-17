@@ -565,7 +565,15 @@ class CanvasInformationDisplay(MiniWidget):
 
         title_control = ft.Row([
             ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
-            ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, selectable=True, overflow=ft.TextOverflow.FADE, ),
+            
+            ft.GestureDetector(
+                ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.FADE),
+                on_double_tap=self.widget._rename_clicked,
+                on_tap=self.widget._rename_clicked,
+                on_secondary_tap=lambda e: self.widget.story.open_menu(self.widget._get_menu_options()),
+                mouse_cursor="click", hover_interval=500,
+                tooltip=f"Rename {self.title}"
+            ),
             ft.IconButton(
                 ft.Icons.UNDO, self.widget.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
                 on_click=self.undo, #disabled=True if len(self.widget.state.undo_list) == 0 else False
@@ -574,7 +582,7 @@ class CanvasInformationDisplay(MiniWidget):
                 ft.Icons.REDO_OUTLINED, self.widget.data.get('color', None), tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
                 on_click=self.redo, #disabled=True if len(self.widget.state.redo_list) == 0 else False
             ),
-            #ft.Container(expand=True),
+            ft.Container(expand=True),
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
                 tooltip=f"Close {self.title}",

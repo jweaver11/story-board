@@ -22,6 +22,11 @@ class PlotPoint(MiniWidget):
         data: dict = None       
     ):
         
+        # Check if we're new and need to create file
+        is_new = False
+        if data is None:
+            is_new = True
+        
         if left is not None:
             side_location = 'right' if left <= widget.plotline_width // 2 else 'left'
         else:
@@ -72,9 +77,12 @@ class PlotPoint(MiniWidget):
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our plot point
 
-        # Build our slider for moving our plot point
+        if is_new:
+            self.p.run_task(self.save_dict)
+
+        # Reloads the information display of the canvas
         self.reload_plotline_control()
-        #self.reload_mini_widget(no_update=True)
+        self.reload_mini_widget()
 
     
     async def move_plot_point(self, e=None):
@@ -103,7 +111,7 @@ class PlotPoint(MiniWidget):
 
         self.data['left'] = new_left
 
-        self.save_dict()
+        await self.save_dict()
         self.plotline_control.update()
         
             
@@ -114,7 +122,7 @@ class PlotPoint(MiniWidget):
         # Change the control visibility, data, and save it
         self.plotline_control.visible = value
         self.data['is_shown_on_widget'] = value
-        self.save_dict()
+        await self.save_dict()
         
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:
@@ -158,7 +166,7 @@ class PlotPoint(MiniWidget):
         else:
             self.data['side_location'] = "left"
 
-        self.save_dict()
+        await self.save_dict()
 
         # Re-show all the info displays we hid while dragging
         for mw in self.widget.mini_widgets:
@@ -200,7 +208,7 @@ class PlotPoint(MiniWidget):
 
             # Set our data and update our button icon
             self.data['icon'] = icon
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
             # Update the UI to match. Plotline control needs widget to reload as well
             self.icon_button.icon = icon
@@ -222,10 +230,10 @@ class PlotPoint(MiniWidget):
         return icon_controls
     
     # Makes sure we stop highlighting
-    def hide_mini_widget(self, e=None, update: bool=False):
+    def hide_mini_widget(self, e=None):
         self.plotline_control.shadow = None
         self.plotline_control.update()
-        return super().hide_mini_widget(e, update)
+        return super().hide_mini_widget()
 
 
     # Called from reload_mini_widget
@@ -250,13 +258,12 @@ class PlotPoint(MiniWidget):
 
         try:
             self.plotline_control.update()
-            print("Success updating plotline control")
         except Exception as e:
-            print("Error updating plotline control: ", e)
+            pass
 
 
     # Called when reloading changes to our plot point and in constructor
-    def reload_mini_widget(self, no_update: bool=False):
+    def reload_mini_widget(self):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
         title_control = ft.Row([
@@ -266,7 +273,7 @@ class PlotPoint(MiniWidget):
                 on_double_tap=self._rename_clicked,
                 on_tap=self._rename_clicked,
                 on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", on_hover=self.widget._hover_tab, hover_interval=500
+                mouse_cursor="click", hover_interval=500
             ),
             ft.IconButton(
                 ft.Icons.PUSH_PIN_OUTLINED if not self.widget.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
@@ -278,7 +285,7 @@ class PlotPoint(MiniWidget):
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.OUTLINE,
                 tooltip=f"Close {self.title}",
-                on_click=lambda e: self.hide_mini_widget(update=True),
+                on_click=self.hide_mini_widget,
             ),
         ], spacing=0)
 
@@ -318,10 +325,10 @@ class PlotPoint(MiniWidget):
 
             # If we went through the list and didn't find them, add them to the list
             if should_add_key:
-                print("Adding key")
+                #print("Adding key")
                 self.data.get('Involved Characters', []).append(char_key)
 
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
             involved_characters_row.controls = _set_involved_characters_controls()
             involved_characters_selector.controls = _get_involved_characters()
@@ -331,16 +338,18 @@ class PlotPoint(MiniWidget):
         def _get_involved_characters() -> list[str]:
             char_list = []
             
-            for char_key, char_obj in self.widget.story.characters.items():
-                char_list.append(
-                    ft.Checkbox(
-                        char_obj.data.get('title', char_key),
-                        True if char_key in self.data.get('Involved Characters', []) else False,
-                        data=char_key,
-                        label_style=ft.TextStyle(color=char_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
-                        on_change=_toggle_involved_characters
+            for widget in self.widget.story.widgets:
+                if widget.data.get('tag', None) == 'character':
+                    
+                    char_list.append(
+                        ft.Checkbox(
+                            widget.title,
+                            #True if char_key in self.data.get('Involved Characters', []) else False,
+                            #data=char_key,
+                            #label_style=ft.TextStyle(color=char_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
+                            on_change=_toggle_involved_characters
+                        )
                     )
-                )
 
             if len(char_list) == 0:
                 char_list.append(ft.Text("No characters in story yet", color=ft.Colors.OUTLINE))
@@ -461,7 +470,7 @@ class PlotPoint(MiniWidget):
             if should_add_key:
                 self.data.get('Related Objects', []).append(obj_key)
 
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
             related_objects_row.controls = _set_related_objects_controls()
             related_objects_selector.controls = _get_related_objects()
@@ -470,16 +479,18 @@ class PlotPoint(MiniWidget):
         def _get_related_objects() -> list[str]:
             char_list = []
             
-            for obj_key, obj_obj in self.widget.story.objects.items():
-                char_list.append(
-                    ft.Checkbox(
-                        obj_obj.data.get('title', obj_key),
-                        True if obj_key in self.data.get('Involved Characters', []) else False,
-                        data=obj_key,
-                        label_style=ft.TextStyle(color=obj_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
-                        on_change=_toggle_related_objects
+            for widget in self.widget.story.widgets:
+                if widget.data.get('tag', None) == 'object':
+                    
+                    char_list.append(
+                        ft.Checkbox(
+                            widget.title,
+                            #True if obj_key in self.data.get('Involved Characters', []) else False,
+                            #data=obj_key,
+                            #label_style=ft.TextStyle(color=obj_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
+                            on_change=_toggle_related_objects
+                        )
                     )
-                )
 
             if len(char_list) == 0:
                 char_list.append(ft.Text("No objects in story yet", color=ft.Colors.OUTLINE))
@@ -534,7 +545,7 @@ class PlotPoint(MiniWidget):
       
             
 
-        if no_update:
-            return
-        else:
+        try:
             self.update()
+        except Exception as _:
+            pass

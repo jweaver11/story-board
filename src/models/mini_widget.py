@@ -242,30 +242,33 @@ class MiniWidget(ft.Container):
         e.control.update()
         
 
-    def show_mini_widget(self, e=None):
+    async def show_mini_widget(self, e=None):
         ''' Shows our mini widget '''
 
-        print("Show called for", self.title)
+        #print("Show called for", self.title)
 
         if self.visible:
             return
+        
+        self.widget.story.blocker.visible = True
+        self.widget.story.blocker.update()
+        await asyncio.sleep(0)
 
         self.data['visible'] = True
         self.visible = True
-        self.p.run_task(self.save_dict)
+        await self.save_dict()
 
+        # If we show this mini widget, hide all other mini widgets that are not pinned
         for mw in self.widget.mini_widgets:
             if mw != self and mw.data.get('is_pinned', False) == False:
-                mw.hide_mini_widget() 
-            #else:
-                #print(f"Not hiding pinned mini widget {mw.title} becuase its pinned or just clicked to show itself")
+                await mw.hide_mini_widget() 
 
         self.update()
+        self.widget.story.blocker.visible = False
+        self.widget.story.blocker.update()
 
-        #self.reload_mini_widget(no_update=True)
-        #self.widget._render_widget()
 
-    def hide_mini_widget(self, e=None, update: bool=False):
+    async def hide_mini_widget(self, e=None):
         ''' Hides our mini widget '''
 
         #print("Hide called for", self.title)
@@ -274,23 +277,20 @@ class MiniWidget(ft.Container):
         if not self.visible:
             return
         
+        self.widget.story.blocker.visible = True
+        self.widget.story.blocker.update()
+        await asyncio.sleep(0)
+        
         # Update our visibility
         self.data['visible'] = False
         self.visible = False
+        self.data['is_pinned'] = False # Make sure to unpin us if we are pinned
 
-        if self.data.get('is_pinned', False):   # If we are pinned, unpin ourselves when hiding
-            self.data['is_pinned'] = False
-
-        self.p.run_task(self.save_dict)
-
+        await self.save_dict()
         self.update()
+        self.widget.story.blocker.visible = False
+        self.widget.story.blocker.update()
 
-
-
-        #if update:
-
-            #self.reload_mini_widget()
-            #self.widget._render_widget()
 
     def _new_custom_field_clicked(self, e=None):
         ''' Called when the new field button is clicked '''
@@ -312,7 +312,7 @@ class MiniWidget(ft.Container):
                 self.data['custom_fields'][field_name] = ""
             
             # Save and reload
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             self.p.pop_dialog()
             self.reload_mini_widget()       
             

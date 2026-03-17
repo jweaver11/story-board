@@ -709,14 +709,9 @@ class CanvasBoard(Widget):
                 
                 matrix_labels,
                 ft.Divider(2, 2),
-
-               
                         
                 matrix_grid_view,
-                    
-
                 ft.Container(height=10), 
-                
                 
                 ft.Row([
                     ft.IconButton(

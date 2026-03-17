@@ -12,14 +12,19 @@ class PlotlineInformationDisplay(MiniWidget):
     # Constructor. Requires title, widget widget, page reference, and optional data dictionary
     def __init__(self, title: str, widget: Plotline,  page: ft.Page, key: str, data: dict=None):
 
+        # Check if we're new and need to create file
+        is_new = False
+        if data is None:
+            is_new = True
+
         # Parent constructor
         super().__init__(
             title=title,        
             widget=widget,                    
             page=page,          
-            key=key,  # Not used, but its required so just whatever works
-            data=data,      # No data is used here, so NEVER reference it. Use self.widget.data instead
-        ) 
+            key=key,  
+            data=data,      
+        )  
         
         # Verifies this object has the required data fields, and creates them if not
         verify_data(
@@ -40,19 +45,26 @@ class PlotlineInformationDisplay(MiniWidget):
         # Holds our row controls for our divisions so we can add/remove without rebuilding
         self.divisions_column = ft.Column(spacing=0, scroll="none")
 
-        #self.reload_mini_widget()
+        if is_new:
+            self.p.run_task(self.save_dict)
 
-    
+        # Reloads the information display of the canvas
+        self.reload_mini_widget()
 
-    # Called when saving changes to our Plotline object
-    def save_dict(self):
-        ''' Overwrites standard mini widget save and save our Plotlines data instead '''
+    # Called when saving changes in our mini widgets data to the widgetS json file
+    async def save_dict(self):
+        ''' Saves our current data to the widgetS json file using this objects dictionary path '''
+
         try:
-            self.widget.save_dict()
-        except Exception as e:
-            print(f"Error saving Plotline information display data to {self.widget.title}: {e}")
+            # Our data is correct, so we update our immidiate parents data to match
+            self.widget.data[self.key] = self.data
 
-    
+            # Recursively updates the parents data until widget=widget (widget), which saves to file
+            await self.widget.save_dict()
+
+        except Exception as e:
+            print(f"Error saving mini widget data to {self.title}: {e}")
+
 
     # Called when changing our widgets data from some event
     async def _change_our_data(self, e):
@@ -66,7 +78,7 @@ class PlotlineInformationDisplay(MiniWidget):
             # If we're deleting from a list, we'll need a reload
             if delete_idx:
                 self.data.get(key, []).pop(idx)
-                self.save_dict()
+                await self.save_dict()
 
                 # Rebuild our canvas
                 await self.widget.rebuild_plotline_canvas(no_update=True)
@@ -89,11 +101,11 @@ class PlotlineInformationDisplay(MiniWidget):
                             text_control.data[1] -= 1
                             delete_button.data[1] -= 1
 
-                self.p.update()
+                #self.p.update()
 
             else:
                 self.data.get(key, [])[idx] = e.control.value
-                self.save_dict()
+                await self.save_dict()
                 await self.widget.rebuild_plotline_canvas(no_update=True)
                 
         else:
@@ -106,11 +118,11 @@ class PlotlineInformationDisplay(MiniWidget):
     def _change_our_data_instant(self, key, value):
         ''' Changes our widgets data instantly '''
         self.data[key] = value
-        self.widget.save_dict()
+        self.p.run_task(self.widget.save_dict)
         
 
     # Called when reloading our mini widget UI
-    def reload_mini_widget(self, no_update: bool=False):
+    def reload_mini_widget(self):
 
         async def _new_divisions_clicked(e=None):
             ''' Called to add a new division to the bottom of the divisions list '''
@@ -143,8 +155,8 @@ class PlotlineInformationDisplay(MiniWidget):
             current_divisions.append(str(len(current_divisions) + 1))
 
             self.data['Divisions'] = current_divisions
-            self.save_dict()
-            self.p.update()
+            await self.save_dict()
+            self.update()
 
         timeline_icon = ft.Icon(ft.Icons.TIMELINE, self.widget.data.get('color', None))
         plotline_title_text = ft.GestureDetector(
@@ -152,20 +164,22 @@ class PlotlineInformationDisplay(MiniWidget):
             on_double_tap=self.widget._rename_clicked,
             on_tap=self.widget._rename_clicked,
             on_secondary_tap=lambda e: self.widget.story.open_menu(self.widget._get_menu_options()),
-            mouse_cursor="click", on_hover=self.widget._hover_tab, hover_interval=500
+            mouse_cursor="click", hover_interval=500
         )
 
         pin_button = ft.IconButton(
             ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
             self.widget.data.get('color', None),
             tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
-            on_click=self._toggle_pin
+            on_click=self._toggle_pin,
+            mouse_cursor="click"
         )
 
         close_button = ft.IconButton(
             ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
             tooltip=f"Close {self.title}",
-            on_click=lambda e: self.hide_mini_widget(update=True),
+            on_click=self.hide_mini_widget,
+            mouse_cursor="click"
         )
 
             
@@ -175,7 +189,7 @@ class PlotlineInformationDisplay(MiniWidget):
             pin_button,
             ft.Container(expand=True),      # Spacer
             close_button
-        ])
+        ], spacing=0)
         
 
           # Start with some spacing at the top
@@ -502,7 +516,7 @@ class PlotlineInformationDisplay(MiniWidget):
         
         self.content = column
 
-        if no_update:
-            return
-        else:
-            self.p.update()
+        try:
+            self.update()
+        except Exception as _:
+            pass

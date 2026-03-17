@@ -68,7 +68,7 @@ class ContentRail(Rail):
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
                         data="plotline", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
                         tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
                     ),
                     ft.MenuItemButton(
@@ -367,7 +367,7 @@ class ContentRail(Rail):
 
         # Wrap the gd in a drag target so we can move characters here
         dt = ft.DragTarget(
-            group="widgets", on_will_accept=self._highlight_rail, on_leave=self._stop_highlight_rail,
+            group="widgets", #on_will_accept=self._highlight_rail, on_leave=self._stop_highlight_rail,
             content=ft.Container(content=content, bgcolor=ft.Colors.with_opacity(0, ft.Colors.ON_SURFACE), border_radius=ft.BorderRadius.all(8)),     # Our content is the content we built above
             on_accept=lambda e: self.on_drag_accept(e, self.directory_path)
         )
