@@ -106,7 +106,7 @@ class Plotline(Widget):
 
         # Our plotline canvas that draws our plotline line and markers
         self.plotline_canvas = cv.Canvas(
-            on_resize=self.rebuild_plotline_canvas, 
+            on_resize=self._set_size, 
             resize_interval=500, expand=True, 
             content=ft.GestureDetector(
                 expand=True, on_secondary_tap=self._open_menu,
@@ -287,7 +287,7 @@ class Plotline(Widget):
 
         # Apply our changes in the UI
         self.story.active_rail.reload_rail()
-        await self.rebuild_plotline_canvas(no_update=True)
+        await self.rebuild_plotline_canvas()
         self.reload_widget()
 
 
@@ -416,6 +416,10 @@ class Plotline(Widget):
 
         if self.story.workspace.is_resizing:    # If we're resizing just ignore this call
             return
+        
+        if self.needs_redraw:
+            await self.rebuild_plotline_canvas()
+            self.needs_redraw = False
 
         # Set coordinates for menu
         self.story.mouse_x = e.global_position.x
@@ -564,28 +568,29 @@ class Plotline(Widget):
         self.p.show_dialog(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
         
 
+    async def _set_size(self, e: cv.CanvasResizeEvent):
+        self.plotline_width = int(e.width)
+        self.plotline_height = int(e.height)
+        self.needs_redraw = True
+
+        # If first launch, rebuild,
+        if self.initial_resize:
+            await self.rebuild_plotline_canvas()
+            self.needs_redraw = False
+            self.initial_resize = False
+
+
 
 
     # Called for any size changes to our plotline canvas
-    async def rebuild_plotline_canvas(self, e: cv.CanvasResizeEvent=None, update: bool=False):
+    async def rebuild_plotline_canvas(self):
         ''' Redraws our plotline on the canvas when it is resized. Does it on startup as well '''
 
         print("Rebuild called")
 
-        # Check if we just called this to redraw without an event. If we did, skip the size updates
-        if e is None:
-            update_arcs = False
-    
-        else:
-            
-            update_arcs = True
-
-            # Update our page reference and size
-            self.plotline_width = int(e.width)
-            self.plotline_height = int(e.height)
-            self.data['old_plotline_width'] = self.plotline_width
-            self.data['old_plotline_height'] = self.plotline_height
-            await self.save_dict()   # Save our new size to our data
+        self.data['old_plotline_width'] = self.plotline_width
+        self.data['old_plotline_height'] = self.plotline_height
+        await self.save_dict()   # Save our new size to our data
 
         
         # Draw our plotline on the canvas with its two end markers ------------------------------------------------
@@ -798,58 +803,50 @@ class Plotline(Widget):
                 self.plotline_canvas.shapes.append(label_path)
 
         # Go through our arcs and update their size --------------------------------------------------
-        if update_arcs:
+        
 
-            # TODO: Add width check, make sure their new left and right are 100px wide at least. 
+        # TODO: Add width check, make sure their new left and right are 100px wide at least. 
+        
+        for arc in self.arcs.values():
+            # Make sure heights and widths r updated
+            arc.plotline_control.bottom = self.plotline_height // 2       # Make sure plot point is in middle of the line
+
+            width = self.plotline_width - arc.data.get('left', 0) - arc.data.get('right', 0)
             
-            for arc in self.arcs.values():
-                # Make sure heights and widths r updated
-                arc.plotline_control.bottom = self.plotline_height // 2       # Make sure plot point is in middle of the line
-
-                width = self.plotline_width - arc.data.get('left', 0) - arc.data.get('right', 0)
                 
-                    
-                lr = arc.data.get('left_ratio', 0)
-                rr = arc.data.get('right_ratio', 0)            
+            lr = arc.data.get('left_ratio', 0)
+            rr = arc.data.get('right_ratio', 0)            
 
-                new_left = int(lr * self.plotline_width)
-                new_right = int(rr * self.plotline_width)
+            new_left = int(lr * self.plotline_width)
+            new_right = int(rr * self.plotline_width)
 
-                new_width = self.plotline_width - new_left - new_right
-                if new_width < 100:
-                    continue
+            new_width = self.plotline_width - new_left - new_right
+            if new_width < 100:
+                continue
 
-                height = new_width * 0.5
+            height = new_width * 0.5
 
-                if height >= self.plotline_height / 2 -70:
-                    height = self.plotline_height / 2 -70
-                #width_ratio = width / max(self.plotline_width, 1)
+            if height >= self.plotline_height / 2 -70:
+                height = self.plotline_height / 2 -70
+            #width_ratio = width / max(self.plotline_width, 1)
 
-                #height = (self.plotline_height / 2) * (width_ratio) - 40
-                if height < 50:
-                    height = 50
+            #height = (self.plotline_height / 2) * (width_ratio) - 40
+            if height < 50:
+                height = 50
 
-                arc.data['left'] = new_left
-                arc.data['right'] = new_right
-                arc.data['width'] = new_width
-                arc.plotline_control.height = int(height) 
+            arc.data['left'] = new_left
+            arc.data['right'] = new_right
+            arc.data['width'] = new_width
+            arc.plotline_control.height = int(height) 
 
-                arc.plotline_control.left = new_left   
-                arc.plotline_control.right = new_right
+            arc.plotline_control.left = new_left   
+            arc.plotline_control.right = new_right
+            arc.plotline_control.bottom = self.plotline_height / 2
 
-            if not update:
-                #self.plotline_canvas.update()
-                return
-           
-
-        # If we didn't rebuild our arcs (not a resize, just a redraw), just update the canvas
-        else:
-            for arc in self.arcs.values():
-                arc.plotline_control.bottom = self.plotline_height / 2
-
-            if not update:
-                #self.plotline_canvas.update()
-                return
+        try:
+            self.update()
+        except Exception as _:
+            pass
             
 
             

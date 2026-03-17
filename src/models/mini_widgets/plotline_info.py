@@ -81,7 +81,7 @@ class PlotlineInformationDisplay(MiniWidget):
                 await self.save_dict()
 
                 # Rebuild our canvas
-                await self.widget.rebuild_plotline_canvas(no_update=True)
+                await self.widget.rebuild_plotline_canvas()
 
                 # Remove the control for this division. Reloading would fix, but lose our scroll placement
                 for control in self.divisions_column.controls:
@@ -106,13 +106,13 @@ class PlotlineInformationDisplay(MiniWidget):
             else:
                 self.data.get(key, [])[idx] = e.control.value
                 await self.save_dict()
-                await self.widget.rebuild_plotline_canvas(no_update=True)
+                await self.widget.rebuild_plotline_canvas()
                 
         else:
             key = e.control.data
             value = e.control.value
             self._change_our_data_instant(key, value)
-            await self.widget.rebuild_plotline_canvas(no_update=True)
+            await self.widget.rebuild_plotline_canvas()
 
     
     def _change_our_data_instant(self, key, value):
@@ -395,10 +395,6 @@ class PlotlineInformationDisplay(MiniWidget):
                     column.controls.append(ft.Text("No markers added yet.", color=ft.Colors.OUTLINE))
             return column
 
-
-       
-
-        
 
         plot_points_label = ft.Row([
             ft.Container(width=6),
