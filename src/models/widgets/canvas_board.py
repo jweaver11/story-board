@@ -522,6 +522,8 @@ class CanvasBoard(Widget):
                     controls.append(text_control)
                 else:
                     controls.append(ft.Container(text_control, alignment=ft.Alignment.CENTER, expand=True))
+
+            controls.append(ft.IconButton(ft.Icons.ADD, opacity=0, disabled=True))
                     
             return controls
         
@@ -537,7 +539,7 @@ class CanvasBoard(Widget):
             for idx, row in enumerate(self.data['matrix']):
                 
                 # Establish a row control we will add our cells to
-                row_control = ft.Row([ft.IconButton(ft.Icons.ADD, opacity=0, disabled=True)], spacing=0, vertical_alignment=ft.CrossAxisAlignment.CENTER, scroll="auto")
+                row_control = ft.Row([ft.IconButton(ft.Icons.ADD, opacity=0, disabled=True)], spacing=0, vertical_alignment=ft.CrossAxisAlignment.CENTER)
 
                 # For each column (cell) in the row and add correct control based on its label
                 for sub_idx, cell in enumerate(row):                    
@@ -609,7 +611,6 @@ class CanvasBoard(Widget):
                                 ft.Column([
                                     connected_canvas_button,
                                     preview_image_container,
-                                    
                                 ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER), 
                                 padding=ft.Padding.only(left=12, right=12, bottom=12), alignment=ft.Alignment.BOTTOM_CENTER,
                             )
@@ -654,13 +655,15 @@ class CanvasBoard(Widget):
                                         dense=True, multiline=True, 
                                         capitalization=ft.TextCapitalization.SENTENCES, smart_dashes_type=True,
                                         data={"row": idx, "column": sub_idx},
-                                        on_blur=self._update_matrix_cell,
+                                        on_blur=self._update_matrix_cell, #expand=True,
+                                        width=2000, height=225,
                                     )], 
-                                    scroll="auto", alignment=ft.MainAxisAlignment.CENTER,
-                                    #width=200,  height=225,
+                                    scroll="auto", alignment=ft.MainAxisAlignment.START,
+                                    
                                     expand=True,
                                 ),
                             padding=ft.Padding.only(left=12, right=12, bottom=12),
+                            expand=True,
                             )
                         )
 
@@ -692,17 +695,17 @@ class CanvasBoard(Widget):
 
         # Body of the tab, which is the content of flet container
         body = ft.Column(
-            expand=True, scroll="none", 
+            expand=True, scroll="none", spacing=0,
             controls=[                 
             
                 ft.Row([
                     ft.Container(width=6), 
                     ft.Text("Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
                 ], spacing=0),
-                #ft.Container(height=10), 
+                ft.Container(height=10), 
 
                 ft.Row([description_container]),
-                #ft.Container(height=10), 
+                ft.Container(height=10), 
                 
                 matrix_labels,
                 ft.Divider(2, 2),
@@ -712,7 +715,7 @@ class CanvasBoard(Widget):
                 matrix_grid_view,
                     
 
-                #ft.Container(height=10), 
+                ft.Container(height=10), 
                 
                 
                 ft.Row([

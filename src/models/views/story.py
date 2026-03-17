@@ -763,8 +763,8 @@ class Story(ft.View):
             expand=True,  # Makes sure it takes up the entire window/screen
 
             controls=[
-                #self.workspaces_rail,  # Main rail of all available workspaces
-                #ft.VerticalDivider(2, 2),     
+                self.workspaces_rail,  # Main rail of all available workspaces
+                ft.VerticalDivider(2, 2),     
                 
                 # OLD
                 #self.active_rail,    # Rail for the selected workspace
