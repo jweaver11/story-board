@@ -232,7 +232,7 @@ class Plotline(Widget):
         # Add our new Arc mini widget object to our arcs dict, and to our widgets mini widgets
         self.arcs[new_arc.title] = new_arc
         self.mini_widgets.append(new_arc)
-        new_arc.show_mini_widget()
+        #new_arc.show_mini_widget()
 
         # Apply our changes in the UI
         self.data['dropdown_is_expanded'] = True 
@@ -258,7 +258,7 @@ class Plotline(Widget):
         # Add our new Plot Point mini widget object to our plot_points dict, and to our widgets mini widgets
         self.plot_points[new_plot_point.title] = new_plot_point
         self.mini_widgets.append(new_plot_point)
-        new_plot_point.show_mini_widget()
+        #new_plot_point.show_mini_widget()
 
         # Apply our changes in the UI
         self.data['dropdown_is_expanded'] = True     # Make sure our dropdown is expanded to show the new plot point
@@ -283,7 +283,7 @@ class Plotline(Widget):
         self.data['dropdown_is_expanded'] = True 
         self.markers[new_marker.title] = new_marker
         self.mini_widgets.append(new_marker)
-        new_marker.show_mini_widget()
+        #await new_marker.show_mini_widget()
 
         # Apply our changes in the UI
         self.story.active_rail.reload_rail()
@@ -583,7 +583,7 @@ class Plotline(Widget):
 
 
     # Called for any size changes to our plotline canvas
-    async def rebuild_plotline_canvas(self):
+    async def rebuild_plotline_canvas(self, update: bool = False):
         ''' Redraws our plotline on the canvas when it is resized. Does it on startup as well '''
 
         print("Rebuild called")
@@ -843,11 +843,20 @@ class Plotline(Widget):
             arc.plotline_control.right = new_right
             arc.plotline_control.bottom = self.plotline_height / 2
 
-        try:
-            self.update()
-        except Exception as _:
-            pass
-            
+        # If we forced an update
+        if update:
+            try:
+                self.plotline_canvas.update()
+            except Exception as _:
+                pass
+
+        # Only update the first time this is called, as all other times also have to update anyway
+        if self.initial_resize:
+            try:
+                self.plotline_canvas.update()
+            except Exception as _:
+                pass
+                
 
             
 
@@ -871,7 +880,6 @@ class Plotline(Widget):
 
         # Handler for plotline resize events
         for arc in sorted_arcs.values():
-
             if self.data.get('hide_all_arcs', False):
                 break
             if self.data.get('show_all_arcs', False) or arc.data.get('is_shown_on_widget', False):
@@ -880,18 +888,15 @@ class Plotline(Widget):
 
         # Add our plot points to the plotline (They position themselves)
         for plot_point in self.plot_points.values():    
-
             if self.data.get('hide_all_plot_points', False):
                 break
             if self.data.get('show_all_plot_points', False) or plot_point.data.get('is_shown_on_widget', False):
-                plot_point.plotline_control.top = self.plotline_height // 2 - 10    # Center it on the plotline, adjust as needed based on your design
 
                 # Add the plot point control to the plotline stack
                 plotline_stack.controls.append(plot_point.plotline_control)
 
         # Add our markers to the plotline (They position themselves)
         for marker in self.markers.values():    
-            #break
             if self.data.get('hide_all_markers', False):
                 break
 

@@ -76,6 +76,7 @@ class PlotPoint(MiniWidget):
 
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our plot point
+        self.is_first_launch: bool = True            # If this is the first time we're loading this plot point, used to trigger animations on first load
 
         if is_new:
             self.p.run_task(self.save_dict)
@@ -85,13 +86,14 @@ class PlotPoint(MiniWidget):
         self.reload_mini_widget()
 
     
-    async def move_plot_point(self, e=None):
+    async def move_plot_point(self, e: ft.DragUpdateEvent):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
 
+       
         if e is None:
             delta_x = 0
         else:
-            delta_x = e.delta_x
+            delta_x = e.local_delta.x
 
         if not isinstance(delta_x, (int, float)):
             delta_x = 0
@@ -111,7 +113,6 @@ class PlotPoint(MiniWidget):
 
         self.data['left'] = new_left
 
-        await self.save_dict()
         self.plotline_control.update()
         
             
@@ -131,17 +132,18 @@ class PlotPoint(MiniWidget):
         self.widget.reload_widget()
           
     # Called when we start dragging
-    async def _drag_start(self, e=None):
+    async def _drag_start(self, e: ft.DragStartEvent):
         ''' Called when we start dragging our plot point. Sets our state to dragging and changes our mouse cursor '''
 
         self.plotline_control.content.mouse_cursor = ft.MouseCursor.RESIZE_LEFT_RIGHT
+        self.plotline_control.update()
         self.is_dragging = True
 
         # Hide all other info displays while dragging
-        for mw in self.widget.mini_widgets:
-            mw.visible = False
+        #for mw in self.widget.mini_widgets:
+            #mw.visible = False
 
-        self.update()
+        #self.update()
 
     # Quick fixer for the mouse cursor and highlight is we just clicked the plotpoint without dragging
     async def _tap_up(self, e=None):
@@ -174,10 +176,10 @@ class PlotPoint(MiniWidget):
                 mw.visible = True
 
         if self.widget.information_display.visible:
-            self.widget.information_display.reload_mini_widget(no_update=True)
-        await self.widget.rebuild_plotline_canvas(no_update=False)
+            self.widget.information_display.reload_mini_widget()
+        await self.widget.rebuild_plotline_canvas(update=True)
 
-        self.widget.story.active_rail.content.reload_rail()
+        #self.widget.story.active_rail.content.reload_rail()
 
     # Called when hovering over our plot point to show the slider
     async def _highlight(self, e=None):
@@ -230,10 +232,10 @@ class PlotPoint(MiniWidget):
         return icon_controls
     
     # Makes sure we stop highlighting
-    def hide_mini_widget(self, e=None):
+    async def hide_mini_widget(self, e=None):
         self.plotline_control.shadow = None
         self.plotline_control.update()
-        return super().hide_mini_widget()
+        return await super().hide_mini_widget()
 
 
     # Called from reload_mini_widget
@@ -242,8 +244,9 @@ class PlotPoint(MiniWidget):
 
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
         self.plotline_control = ft.Container(
-            margin=ft.Margin(16, 0, 16, 0), expand=False, 
+            margin=ft.Margin(16, 0, 16, 0), 
             opacity=1.0, shape=ft.BoxShape.CIRCLE,
+            bgcolor="red", width=24, height=24,
             alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.GestureDetector(
@@ -252,13 +255,16 @@ class PlotPoint(MiniWidget):
                 on_pan_update=self.move_plot_point, drag_interval=20, on_pan_end=self._drag_end,
                 on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
                 on_tap=self.show_mini_widget, on_tap_down=self._drag_start,
-                content=ft.Icon(self.data.get('icon', 'circle'), self.data.get('color', None))
+                #content=ft.Icon(self.data.get('icon', 'circle'), self.data.get('color', None))
             ),
         )
+        
+
 
         try:
             self.plotline_control.update()
-        except Exception as e:
+        except Exception as _:
+            print("Failed update plotline control")
             pass
 
 
@@ -544,8 +550,8 @@ class PlotPoint(MiniWidget):
         
       
             
-
-        try:
-            self.update()
-        except Exception as _:
-            pass
+        if not self.is_first_launch:
+            try:
+                self.update()
+            except Exception as _:
+                pass

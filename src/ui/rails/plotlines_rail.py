@@ -48,9 +48,9 @@ class PlotlinesRail(Rail):
         new_idx = e.new_index
 
         # Find which plotline we dragged
-        for plotline in self.story.plotlines.values():
-            if plotline.data.get('plotline_order_index', 0) == old_index:
-                dragged_plotline = plotline
+        for widget in self.story.widgets:
+            if widget.data.get('tag', "") == "plotline" and widget.data.get('plotline_order_index', 0) == old_index:
+                dragged_plotline = widget
                 break
         # Set its new index
         dragged_plotline.data['plotline_order_index'] = new_idx
@@ -62,17 +62,17 @@ class PlotlinesRail(Rail):
         
         # If we dragged down
         elif old_index < new_idx:
-            for plotline in self.story.plotlines.values():
-                if plotline.data.get('plotline_order_index', 0) > old_index and plotline.data.get('plotline_order_index', 0) <= new_idx and plotline != dragged_plotline:
-                    plotline.data['plotline_order_index'] -= 1
-                    plotline.save_dict()
+            for widget in self.story.widgets:
+                if widget.data.get('plotline_order_index', 0) > old_index and widget.data.get('plotline_order_index', 0) <= new_idx and widget != dragged_plotline:
+                    widget.data['plotline_order_index'] -= 1
+                    widget.save_dict()
         
         # If we dragged up
         elif old_index > new_idx:
-            for plotline in self.story.plotlines.values():
-                if plotline.data.get('plotline_order_index', 0) >= new_idx and plotline.data.get('plotline_order_index', 0) < old_index and plotline != dragged_plotline:
-                    plotline.data['plotline_order_index'] += 1
-                    plotline.save_dict()
+            for widget in self.story.widgets:
+                if widget.data.get('plotline_order_index', 0) >= new_idx and widget.data.get('plotline_order_index', 0) < old_index and widget != dragged_plotline:
+                    widget.data['plotline_order_index'] += 1
+                    widget.save_dict()
                 
         # Apply our changes
         self.reload_rail()
@@ -122,12 +122,12 @@ class PlotlinesRail(Rail):
 
         # Sort our plotlines by their index
         plotlines_list = [w for w in self.story.widgets if w.data.get('tag', "") == "plotline"]
-        sorted_plotlines = dict(sorted(plotlines_list, key=lambda item: item[1].data.get('plotline_order_index', 0)))  
+        sorted_plotlines = sorted(plotlines_list, key=lambda plotline: plotline.data.get('plotline_order_index', 0))
 
         i = 0   # Start index for our plotlines
 
         # Run through each plotline in the story
-        for plotline in sorted_plotlines.values():
+        for plotline in sorted_plotlines:
             
             # Build a column for our dropdown, and a divider under it to seperate each plotline
             column = ft.Column(expand=False, spacing=0)
@@ -242,4 +242,4 @@ class PlotlinesRail(Rail):
             pass
 
 
-    
+
