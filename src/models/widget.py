@@ -59,6 +59,7 @@ class Widget(ft.Container):
                     'tag': str,                                     # Tag to identify what type of widget this is
                     'pin_location': "main" if data is None else data.get('pin_location', "main"),       # Pin location this widget is rendered in the workspace (main, left, right, top, or bottom)
                     'index': 999,                                   # Index of this widget in its pin location (start at end)
+                    'rail_index': 999,                                 # Index of this widget in the rail for sorting
                     'visible': True,                                # Whether this widget is visible in the workspace or not
                     'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
                     #'color': str,                                  # Color of the icon and tab divider for this widget. Child classes set this on creation  

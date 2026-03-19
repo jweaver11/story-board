@@ -44,7 +44,6 @@ class Plotline(Widget):
                 # Widget Data
                 'tag': "plotline",
                 'color': app.settings.data.get('default_plotline_color'),
-                'plotline_order_index': 0,         # Order of our plotlines
                 'old_plotline_width': 0,        # Stores previous width and height so inital loads have the right size for the mini widgets to use
                 'old_plotline_height': 0,       
 

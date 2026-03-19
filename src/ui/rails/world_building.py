@@ -145,6 +145,9 @@ class WorldBuildingRail(Rail):
     def reload_rail(self):
         ''' Reloads/Rebuilds our rail based on current data '''
 
+        #TODO: Add charts to this section
+        # Add items to this section
+
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER, 

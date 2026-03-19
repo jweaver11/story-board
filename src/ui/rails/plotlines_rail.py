@@ -49,11 +49,11 @@ class PlotlinesRail(Rail):
 
         # Find which plotline we dragged
         for widget in self.story.widgets:
-            if widget.data.get('tag', "") == "plotline" and widget.data.get('plotline_order_index', 0) == old_index:
+            if widget.data.get('tag', "") == "plotline" and widget.data.get('rail_index', 0) == old_index:
                 dragged_plotline = widget
                 break
         # Set its new index
-        dragged_plotline.data['plotline_order_index'] = new_idx
+        dragged_plotline.data['rail_index'] = new_idx
         dragged_plotline.save_dict()
 
         # If we didn't move, return out
@@ -63,15 +63,15 @@ class PlotlinesRail(Rail):
         # If we dragged down
         elif old_index < new_idx:
             for widget in self.story.widgets:
-                if widget.data.get('plotline_order_index', 0) > old_index and widget.data.get('plotline_order_index', 0) <= new_idx and widget != dragged_plotline:
-                    widget.data['plotline_order_index'] -= 1
+                if widget.data.get('rail_index', 0) > old_index and widget.data.get('rail_index', 0) <= new_idx and widget != dragged_plotline:
+                    widget.data['rail_index'] -= 1
                     widget.save_dict()
         
         # If we dragged up
         elif old_index > new_idx:
             for widget in self.story.widgets:
-                if widget.data.get('plotline_order_index', 0) >= new_idx and widget.data.get('plotline_order_index', 0) < old_index and widget != dragged_plotline:
-                    widget.data['plotline_order_index'] += 1
+                if widget.data.get('rail_index', 0) >= new_idx and widget.data.get('rail_index', 0) < old_index and widget != dragged_plotline:
+                    widget.data['rail_index'] += 1
                     widget.save_dict()
                 
         # Apply our changes
@@ -122,7 +122,7 @@ class PlotlinesRail(Rail):
 
         # Sort our plotlines by their index
         plotlines_list = [w for w in self.story.widgets if w.data.get('tag', "") == "plotline"]
-        sorted_plotlines = sorted(plotlines_list, key=lambda plotline: plotline.data.get('plotline_order_index', 0))
+        sorted_plotlines = sorted(plotlines_list, key=lambda plotline: plotline.data.get('rail_index', 0))
 
         i = 0   # Start index for our plotlines
 

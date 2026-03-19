@@ -198,15 +198,50 @@ class CharactersRail(Rail):
             ]
         )
         self.p.show_dialog(dlg)
-    
-    
 
+
+    # Called when we reorder our characters on the rail
+    async def _handle_character_reorder(self, e):
+        ''' Handles the reordering and reloading of characters based on their new positions on the rail when we drag and drop them '''
+        old_index = e.old_index
+        new_idx = e.new_index
+
+        # If we didn't move, return out
+        if old_index == new_idx:
+            return
+
+        # Grab which character we dragged and update its index
+        rlv = e.control
+        dragged_character = rlv.controls[old_index].widget
+        dragged_character.data['rail_index'] = new_idx
+        await dragged_character.save_dict()
+
+        # If we dragged down
+        if old_index < new_idx:
+            for widget in self.story.widgets:
+                if widget.data.get('tag', "") == "character":
+                    if widget.data.get('rail_index', 0) > old_index and widget.data.get('rail_index', 0) <= new_idx and widget != dragged_character:
+                        widget.data['rail_index'] -= 1
+                        await widget.save_dict()
+        
+        # If we dragged up
+        elif old_index > new_idx:
+            for widget in self.story.widgets:
+                if widget.data.get('tag', "") == "character":
+                    if widget.data.get('rail_index', 0) >= new_idx and widget.data.get('rail_index', 0) < old_index and widget != dragged_character:
+                        widget.data['rail_index'] += 1
+                        await widget.save_dict()
+                    
+        # Reload the rail
+        self.story.active_rail.reload_rail()
+        
 
 
     # Called on startup and when we have changes to the rail that have to be reloaded 
     def reload_rail(self):
         ''' Builds or rebuilds the character rail content '''
 
+        # Top menu bar for creating characters or character connection maps
         menubar = ft.MenuBar(
             self.top_row_buttons,
             style=ft.MenuStyle(
@@ -215,59 +250,80 @@ class CharactersRail(Rail):
             ),
         )
 
+        # Hold the menubar for formatting
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER,
             controls=[menubar]
         )
 
+        # Button to open our character (and world) templates settings page
+        character_templates_button = ft.IconButton(
+            ft.Icons.MANAGE_SEARCH_OUTLINED, "primary", mouse_cursor="click",  
+            tooltip="Edit Character Templates", on_click=self._open_templates_editor
+        )
+        
+        # Button to change our sort by method
+        sort_by_button = ft.TextButton(
+            f"Sort by: {self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")}", on_click=self._change_sort_method, expand=True,
+            style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ON_SURFACE)
+        )
+        
+        # Button to open our character connections editor
+        character_connections_button = ft.IconButton(
+            ft.Icons.CONNECT_WITHOUT_CONTACT, "primary", mouse_cursor="click",
+            tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)
+        )
+                    
+        # Hold our Tree View File controls for our two widget types
+        characters = []
+        character_connection_maps = []
+
+        for widget in self.story.widgets:
+            if widget.data.get('tag', "") == "character":
+                characters.append(widget)
+            elif widget.data.get('tag', "") == "character_connection_map":
+                character_connection_maps.append(TreeViewFile(widget))       
+        
+
+        characters.sort(key=lambda c: c.data.get('rail_index', 0))
+        reorderable_sorted_characters = [TreeViewFile(char) for char in characters]
         
         
+
         # Build the content of our rail
         content = IsolatedListView(
             scroll=ft.ScrollMode.AUTO,
             spacing=0,
             expand=True,
             controls=[
+                # Spacer and new item text field
                 ft.Container(height=6),
                 self.new_item_textfield,
+
+                # Top row buttons for char templates, sort method, and character connections
                 ft.Row([
-                    ft.Container(
-                        ft.IconButton(
-                            ft.Icons.MANAGE_SEARCH_OUTLINED, "primary", mouse_cursor="click",  
-                            tooltip="Edit Character Templates", on_click=self._open_templates_editor
-                        ), margin=ft.Margin.only(right=8)
-                    ),
-                    ft.TextButton(
-                        f"Sort by: {self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")}", on_click=self._change_sort_method, expand=True,
-                        style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ON_SURFACE)
-                    ),
-                    ft.Container(
-                        ft.IconButton(
-                            ft.Icons.CONNECT_WITHOUT_CONTACT, "primary", mouse_cursor="click",
-                            tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)
-                        ), margin=ft.Margin.only(left=8)
-                    )
-            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=0)]
+                    character_templates_button,
+                    #sort_by_button,
+                    character_connections_button,
+                ], alignment=ft.MainAxisAlignment.SPACE_EVENLY, spacing=0),
+
+                ft.ReorderableListView(reorderable_sorted_characters, on_reorder=self._handle_character_reorder, show_default_drag_handles=False)
+                # TODO: Use drag handlers to remove drag handle
+
+            ] + [
+
+                # Spacer and label for Character Connection Maps Section
+                ft.Divider(),
+                ft.Text("Character Connection Maps", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
+                
+            ] + [ccm for ccm in character_connection_maps] 
+                
         )
-
-        characters = []
-        character_connection_maps = []
-
-        for w in self.story.widgets:
-            if w.data.get('tag', "") == "character":
-                characters.append(w)
-            elif w.data.get('tag', "") == "character_connection_map":
-                character_connection_maps.append(w)
-
-   
-        
-        # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space
-        content.controls.append(ft.Container(expand=True))
 
         menu_gesture_detector = ft.GestureDetector(
             content=content, expand=True, on_hover=self.on_hovers,
-            #on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()), 
+            on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()), 
             hover_interval=20,
         )
 
