@@ -41,10 +41,10 @@ class Note(Widget):
                 'color': app.settings.data.get('default_note_color'),
                 'pin_location': app.settings.data.get('default_note_pin_location', "right") if data is None else data.get('pin_location', "right"),   # Default pin location for notes
 
-                # Note data
-                'note_data': {
-                    "": ""
-                }
+                # Note data - list of segments with title and string
+                'note_data': [
+                    {"title": "", "content": ""} #{}, ...
+                ]
             },
         )
 
@@ -55,10 +55,12 @@ class Note(Widget):
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
 
-    async def _add_new_segment(self, e=None):
+    async def _create_new_segment(self, e=None):
 
         async def create_segment(e=None):
-            await self.save_segment(new_segment_tf.value, "", True)
+            self.data['note_data'].append({"title": new_segment_tf.value, "content": ""})
+            await self.save_dict()
+            self.reload_widget()
             self.p.pop_dialog()
 
         new_segment_tf = ft.TextField(label="Segment Title", autofocus=True, capitalization=ft.TextCapitalization.WORDS, on_submit=create_segment)
@@ -76,28 +78,23 @@ class Note(Widget):
         self.p.show_dialog(dlg)
 
     # Saves content when text field is unfocused
-    async def save_segment(self, key: str, value: str, should_reload: bool=False):
-        self.data['note_data'][key] = value
-        await self.save_dict()
+    async def save_segment(self, e):
+        index = e.control.data
+        if len(self.data['note_data']) > index:
+            self.data['note_data'][index]['content'] = e.control.value
+            await self.save_dict()
 
-        if should_reload:
-            self.reload_widget()
-
-    def delete_segment(self, key: str):
-        if key in self.data['note_data']:
-            del self.data['note_data'][key]
-            self.p.run_task(self.save_dict)
+    # Deletes a segment from the note
+    async def delete_segment(self, e):
+        index = e.control.data
+        if len(self.data['note_data']) > index:
+            del self.data['note_data'][index]
+            await self.save_dict()
             self.reload_widget()
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
-
-
-        async def _save_segment(e):
-            key = e.control.label
-            value = e.control.value
-            await self.save_segment(key, value)
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
@@ -106,18 +103,22 @@ class Note(Widget):
         segments_list = []
 
         # Go through the note data and load the segments
-        for key, value in self.data.get('note_data', {}).items():
+        for idx, segment in enumerate(self.data.get('note_data', [])):
+            key = segment.get('title', '')
+            value = segment.get('content', '')
             segments_list.append(
                 ft.Row([
                     ft.TextField(
                         value, expand=True,
                         multiline=True, label=key, dense=True, capitalization=ft.TextCapitalization.SENTENCES, 
-                        on_blur=_save_segment,
+                        on_blur=self.save_segment,
+                        data=idx
                     ),
                     ft.IconButton(
                         ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
                         tooltip=f"Delete segment {key}",
-                        on_click=lambda e, k=key: self.delete_segment(k)
+                        on_click=self.delete_segment,
+                        mouse_cursor="click", data=idx
                     )
                 ])
             )
@@ -125,7 +126,7 @@ class Note(Widget):
         add_segment_button = ft.IconButton(
             ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
             tooltip="Add New Segment to Note",
-            on_click=self._add_new_segment, mouse_cursor="click"
+            on_click=self._create_new_segment, mouse_cursor="click",
         )
         
         body = ft.Column(
