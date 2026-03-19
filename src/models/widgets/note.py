@@ -55,8 +55,10 @@ class Note(Widget):
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
 
+    # Opens a dialog to create a new segment in the note and then saves and reloads
     async def _create_new_segment(self, e=None):
 
+        # Adds our new segment to the bottom of the list
         async def create_segment(e=None):
             self.data['note_data'].append({"title": new_segment_tf.value, "content": ""})
             await self.save_dict()
@@ -69,8 +71,8 @@ class Note(Widget):
             title=ft.Text("Add New Note Segment"),
             content=new_segment_tf,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
-                ft.TextButton("Create", on_click=create_segment)
+                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Create", on_click=create_segment, style=ft.ButtonStyle(mouse_cursor="click"))
             ],
             actions_alignment=ft.MainAxisAlignment.END
         )
@@ -78,14 +80,14 @@ class Note(Widget):
         self.p.show_dialog(dlg)
 
     # Saves content when text field is unfocused
-    async def save_segment(self, e):
+    async def _save_segment(self, e):
         index = e.control.data
         if len(self.data['note_data']) > index:
             self.data['note_data'][index]['content'] = e.control.value
             await self.save_dict()
 
     # Deletes a segment from the note
-    async def delete_segment(self, e):
+    async def _delete_segment(self, e):
         index = e.control.data
         if len(self.data['note_data']) > index:
             del self.data['note_data'][index]
@@ -111,13 +113,13 @@ class Note(Widget):
                     ft.TextField(
                         value, expand=True,
                         multiline=True, label=key, dense=True, capitalization=ft.TextCapitalization.SENTENCES, 
-                        on_blur=self.save_segment,
+                        on_blur=self._save_segment,
                         data=idx
                     ),
                     ft.IconButton(
                         ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
                         tooltip=f"Delete segment {key}",
-                        on_click=self.delete_segment,
+                        on_click=self._delete_segment,
                         mouse_cursor="click", data=idx
                     )
                 ])

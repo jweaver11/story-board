@@ -308,6 +308,7 @@ class Widget(ft.Container):
             self.directory_path = new_directory
             self.data['directory_path'] = new_directory
             self.data['key'] = new_key
+            self.save_counter = 100         # Force a save to file call
             self.p.run_task(self.save_dict)
             await asyncio.sleep(0.2)    # Make sure file has time to save before reload
 
@@ -341,6 +342,7 @@ class Widget(ft.Container):
         os.rename(old_file_path, self.data['key'] + ".json")  
 
         # Save our data to this new file
+        self.save_counter = 100         # Force a save to file call
         self.p.run_task(self.save_dict)                                
 
         # Reload our widget ui and rail to reflect changes 
@@ -451,14 +453,14 @@ class Widget(ft.Container):
         if not self.visible:
             return
         
-        self.story.blocker.visible = True
-        self.story.blocker.update()
-        await asyncio.sleep(0)
-             
         self.tab_gd.on_enter = None
         self.tab_gd.on_secondary_tap = None
         self.tab_gd.disabled = True
         self.tab_gd.update()
+        await asyncio.sleep(0.1)
+        
+        self.story.blocker.visible = True
+        self.story.blocker.update()
         await asyncio.sleep(0)  # Spaces update so the page won't batch them
         
         self.data['visible'] = False

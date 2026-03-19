@@ -9,6 +9,7 @@ from utils.check_widget_unique import check_widget_unique
 from utils.check_folder_content import return_folder_content
 from models.app import app
 from models.isolated_controls.expansion_tile import IsolatedExpansionTile
+import asyncio
 
 # Expansion tile for all sub directories (folders) in a directory
 class TreeViewDirectory(ft.GestureDetector):
@@ -66,13 +67,25 @@ class TreeViewDirectory(ft.GestureDetector):
         super().__init__(
             mouse_cursor=ft.MouseCursor.CLICK,
             on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()),
-            exclude_from_semantics=True
+            exclude_from_semantics=True,
+            on_enter=self._highlight,
+            on_exit=self._stop_highlight,
         )
 
-        self.expansion_tile: ft.ExpansionTile = None
+        self.expansion_tile: ft.ExpansionTile
 
         # Reload our directory tile to set up initial UI
         self.reload()
+
+    # Show our button to show options when we enter this folder
+    async def _highlight(self, e=None):
+        self.expansion_tile.trailing.visible = True
+        self.expansion_tile.update()
+
+    # Hide our button to show options when we exit this folder
+    async def _stop_highlight(self, e=None):
+        self.expansion_tile.trailing.visible = False
+        self.expansion_tile.update()
 
 
     # Called when right clicking over our expansion tile
@@ -85,7 +98,7 @@ class TreeViewDirectory(ft.GestureDetector):
                 content=ft.SubmenuButton(
                     ft.Container(
                         ft.Row([
-                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.color), 
+                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), 
                             ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
@@ -96,74 +109,91 @@ class TreeViewDirectory(ft.GestureDetector):
                             leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, ft.Colors.PRIMARY), content="Folder", 
                             data="folder", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new folder to organize your story",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ), 
                         ft.MenuItemButton(      # Documents
                             leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY), content="Document", 
                             data="document", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new document for text chapters or scenes in your story",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ), 
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
                             data="canvas", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new Canvas for sketching drawing, or visual note taking",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True
                         ),
                         ft.MenuItemButton(      
                             leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY), content="Note", 
                             data="note", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ), 
                         ft.SubmenuButton(
                             ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                             self.get_template_options("character"), 
                             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10),),
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                             tooltip="Create a new character for your story. Choose from templates or create a default character."
                         ),
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
                             data="plotline", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
                             tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
                         ),
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
                             data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ),
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
                             data="map", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True
                         ),
                         ft.SubmenuButton(
                             ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                             self.get_template_options("world"), 
                             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10)),
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                             tooltip="Create a new world for your story. Choose from templates or create a default world."
                         ),
                         ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.SHIELD_OUTLINED, ft.Colors.PRIMARY), content="Item", 
+                            data="item", on_click=self.new_item_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                            tooltip="New Items and Equipment for your story"
+                        ),  
+                        ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.SHIELD_OUTLINED, ft.Colors.PRIMARY), content="Object", 
                             data="object", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
                             tooltip="New Objects or Items for your story"
+                        ),  
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.ADD_CHART_OUTLINED, ft.Colors.PRIMARY), content="Chart", 
+                            data="chart", on_click=self.new_item_clicked, close_on_click=True, 
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                            tooltip="New Charts for your story"
                         ),  
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
                             data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
                             tooltip="Visualize the connections between the characters in your story"
+                        ),
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.PERSONAL_VIDEO_ROUNDED, ft.Colors.PRIMARY), content="Video", 
+                            data="video", on_click=self.new_item_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                            tooltip="New video references for your story"
                         ),
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
-                    
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                 ),
                 no_padding=True, no_effects=True
             ),
@@ -173,85 +203,19 @@ class TreeViewDirectory(ft.GestureDetector):
                 content=ft.SubmenuButton(
                     ft.Container(
                         ft.Row([
-                            ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, self.color), 
+                            ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY), 
                             ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
                         padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
                     ),
                     [
-                        ft.MenuItemButton(      # Folders
-                        leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, ft.Colors.PRIMARY), content="Folder", 
-                        data="folder", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new folder to organize your story",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
-                    ), 
-                    ft.MenuItemButton(      # Documents
-                        leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY), content="Document", 
-                        data="document", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new document for text chapters or scenes in your story",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
-                    ), 
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
-                        data="canvas", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new Canvas for sketching drawing, or visual note taking",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
-                    ),
-                    ft.MenuItemButton(      
-                        leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY), content="Note", 
-                        data="note", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
-                    ), 
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), content="Character", 
-                        data="character", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new character for your story. Choose from templates or create a default character.",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
-                    ),
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
-                        data="plotline", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
-                        tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
-                    ),
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
-                        data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
-                    ),
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
-                        data="map", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True
-                    ),
-                    
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY), content="World", 
-                        data="world", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new world for your story. Choose from templates or create a default world.",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
-                    ),
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.SHIELD_OUTLINED, ft.Colors.PRIMARY), content="Object", 
-                        data="object", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
-                        tooltip="New Objects or Items for your story"
-                    ),  
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
-                        data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), disabled=True,
-                        tooltip="Visualize the connections between the characters in your story"
-                    ),  
+                        
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                 ),
-                no_padding=True, no_effects=True
+                no_padding=True, no_effects=True, 
             ),
 
         
@@ -276,8 +240,8 @@ class TreeViewDirectory(ft.GestureDetector):
                     ], expand=True),
                     self._get_color_options(), 
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10)),
-                    tooltip="Change this folder's color"
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    tooltip="Change this widget's color"
                 ),
                 no_padding=True, no_effects=True
             ),
@@ -349,9 +313,9 @@ class TreeViewDirectory(ft.GestureDetector):
         self.new_item_textfield.visible = True
         self.new_item_textfield.data = tag
 
+        
+        # TODO: Make hint text match rail
         match tag:
-            case "family_tree":
-                self.new_item_textfield.hint_text = "Family Tree Name"
             case "world_building":
                 self.new_item_textfield.hint_text = "World Building Name"
             case "character" | "folder":
@@ -359,22 +323,25 @@ class TreeViewDirectory(ft.GestureDetector):
             case _:
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
 
+        # If we're not expanded, we'll open a dialog to input the name
+        if not self.expansion_tile.expanded:
 
-        # Check our expanded state. Rebuild if needed
-        #if self.is_expanded == False:
-            
-            #self.is_expanded = True
-            
-            #self.reload()
-            #await self.toggle_expand()
-            #self.update()
-        #else:
-            #self.update()
-            
-            
-            
-        # Close the menu, which will also update the page
-        await self.story.close_menu()
+            dlg = ft.AlertDialog(
+                title=self.new_item_textfield.hint_text, 
+                content=self.new_item_textfield,
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                    ft.TextButton("Submit", on_click=self.new_item_textfield_submit, style=ft.ButtonStyle(mouse_cursor="click")),
+                ]
+            )
+            await self.story.close_menu()
+            self.p.show_dialog(dlg)
+            return
+        
+        # If we are expanded, just show the textfield in the expansion tile
+        self.new_item_textfield.update()
+        await self.new_item_textfield.focus()
+        await self.story.close_menu()       # Close the menu
 
     # Called when clicking off the textfield and after submission
     def on_new_item_blur(self, e):
@@ -397,7 +364,7 @@ class TreeViewDirectory(ft.GestureDetector):
             # Otherwise its not unique, re-focus our textfield
             else:
                 e.control.visible = True
-                e.control.focus()
+                self.p.run_task(e.control.focus)
         
         # If we're not submitting, just hide the textfield and reset values
         else:
@@ -463,9 +430,11 @@ class TreeViewDirectory(ft.GestureDetector):
                 case _:
                     self.story.create_widget(directory_path=self.full_path, title=title, tag=tag)
                 
-        #else:
-            #self.new_item_textfield.focus()                                  
-            #self.update()
+        else:
+            self.p.run_task(self.new_item_textfield.focus)                                  
+            self.update()
+
+    
 
     def folder_submit(self, e):
         # Get our name and check if its unique
@@ -504,8 +473,7 @@ class TreeViewDirectory(ft.GestureDetector):
             
             # Otherwise we're not submitting (just clicking off the textbox), so we cancel the rename
             else:
-                self.story.active_rail.content.reload_rail()
-                self.story.active_rail.update()
+                self.story.active_rail.reload_rail()
        
 
         # Called everytime a change in textbox occurs
@@ -568,9 +536,13 @@ class TreeViewDirectory(ft.GestureDetector):
                     new_path=new_path
                 )
 
-
-                self.story.active_rail.content.reload_rail()
-                self.story.active_rail.update()
+                self.story.blocker.visible = True
+                self.story.blocker.update()
+                await asyncio.sleep(0)
+                self.story.active_rail.reload_rail()
+                self.p.pop_dialog()
+                self.story.blocker.visible = False
+                self.story.blocker.update()
                 
                 
             # Otherwise make sure we show our error
@@ -594,8 +566,8 @@ class TreeViewDirectory(ft.GestureDetector):
             title=ft.Text(f"Rename {self.title}", weight=ft.FontWeight.BOLD),
             content=text_field,
             actions=[
-                ft.TextButton("Cancel", on_click=_cancel_rename),
-                ft.TextButton("Submit", on_click=_submit_name),
+                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Submit", on_click=_submit_name, style=ft.ButtonStyle(mouse_cursor="click")),
             ],
         )
 
@@ -628,7 +600,8 @@ class TreeViewDirectory(ft.GestureDetector):
                 ft.MenuItemButton(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
                     on_click=_change_icon_color, data=color, close_on_click=True,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                
                 )
             )
 
@@ -706,12 +679,17 @@ class TreeViewDirectory(ft.GestureDetector):
     # Called when we need to reload this directory tile
     def reload(self):
 
-        # TODO: Fix menu options to match rest of rail
-        # New items open a text field??
         self.expansion_tile = IsolatedExpansionTile(
             title=ft.Row([
                 ft.Icon(ft.Icons.FOLDER_OUTLINED, color=self.color), ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True)], 
                 expand=True
+            ),
+            trailing=ft.IconButton(
+                icon=ft.Icons.MORE_VERT_ROUNDED,
+                icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                visible=False,
+                on_click=lambda e: self.story.open_menu(self.get_menu_options()),
+                mouse_cursor=ft.MouseCursor.CLICK,
             ),
             dense=True,
             affinity=ft.TileAffinity.LEADING,

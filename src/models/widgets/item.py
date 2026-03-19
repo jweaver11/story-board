@@ -1,0 +1,1 @@
+# Simple widget class for items, more so for fantasy stories

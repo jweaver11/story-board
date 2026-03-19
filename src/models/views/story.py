@@ -55,7 +55,7 @@ class Story(ft.View):
                 'directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}_story")),
                 'tag': "story",
                 'selected_rail': "content",
-                'content_directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}"), "content"),
+                'content_directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}_story"), "content"),
                 'top_pin_height': 200,
                 'left_pin_width': 230,
                 'main_pin_height': int,
@@ -104,10 +104,14 @@ class Story(ft.View):
         self.active_rail: ft.Container    # Rail showing whichever workspace is selected
         self.workspace: ft.Container       # Main workspace area where our pins display our widgets
 
+        self.menu: ft.Container         # Container that sits in the overlay and gets menu options passed into it
+        self.outside_menu_detector: ft.GestureDetector      # Sets under the menu to handle closing and opening the menu
+
         # Block the app from any interactions during rebuilds
         self.blocker = ft.Container(
             ft.Row([ft.ProgressRing(width=100, height=100)], alignment=ft.MainAxisAlignment.CENTER), 
-            expand=True, visible=False, blur=5, left=0, right=0, top=0, bottom=0)
+            expand=True, visible=False, blur=5, left=0, right=0, top=0, bottom=0
+        )
 
         
         # Store all our widgets above in a master list for easier rendering in the UI
@@ -261,13 +265,28 @@ class Story(ft.View):
 
             self.p.run_task(self.save_dict)
 
-            #for widget in self.widgets:
-                #if widget.directory_path.startswith(full_path):
-                    #self.delete_widget(widget, update=False)
+            for widget in self.widgets:
+                if widget.directory_path.startswith(full_path):
+                    print("Deleting widget ", widget.title, " in deleted folder")
+                    widget.delete_file()
+                    if widget in self.widgets:
+                        self.widgets.remove(widget)
+
+            # Delete any sub folders from inside our storhy data. Technically not needed
+            for folder in self.data['folders'].copy():
+                if folder.startswith(full_path):
+                    print("Deleting folder ", folder, " in deleted folder")
+                    self.data['folders'].pop(folder, None)
+
+            self.blocker.visible = True
+            self.blocker.update()
+            self.p.run_task(asyncio.sleep, 0)
 
             self.active_rail.reload_rail()
             self.workspace.reload_workspace()
             self.close_menu_instant()
+            self.blocker.visible = False
+            self.blocker.update()
 
         # Handle errors
         except Exception as e:
@@ -298,14 +317,12 @@ class Story(ft.View):
         os.rename(old_path, new_path)
 
         
-
         # Update the old key in our folders data
         if old_path in self.data['folders']:
             #print("Updating old path in story data")
             self.data['folders'][new_path] = self.data['folders'].pop(old_path)
             self.p.run_task(self.save_dict)
 
-        # TODO: Update all folders and widgets that used the old path to the new path
 
         # Go through each widget and update its directory path if it was in the renamed folder
         for widget in self.widgets:
@@ -316,7 +333,15 @@ class Story(ft.View):
                 widget.data['directory_path'] = widget.directory_path  # Update its data
                 widget.data['key'] = f"{widget.directory_path}\\{return_safe_name(self.title)}_{self.data.get('tag', '')}"
                 self.p.run_task(widget.save_dict)  # Save the updated widget data
-                #print("Updated widget directory path to ", widget.title, " to ", widget.directory_path)
+
+        # Go through each folder, and if its a sub folder change it to match our new parent path
+        for folder in self.data['folders'].copy():
+            if folder.startswith(old_path):
+                relative_path = folder[len(old_path):]
+                new_folder_path = new_path + relative_path
+                self.data['folders'][new_folder_path] = self.data['folders'].pop(folder)
+
+        self.p.run_task(self.save_dict)
         
 
     # Called on story startup to load all our content objects
@@ -504,7 +529,13 @@ class Story(ft.View):
             case _:
                 self.p.show_dialog(SnackBar(f"Error creating widget {title}: Invalid tag {tag}"))
 
+        
+        
+
+        # Force a file save and write
         if widget is not None:
+            widget.save_counter = 100
+            await widget.save_dict()
             self.widgets.append(widget)
 
         # Finish tasks creating widget to make sure the file has enough time to save
@@ -665,6 +696,10 @@ class Story(ft.View):
         # Skip if no options to show, cuz why bother
         if len(menu_options) == 0:
             return
+        
+        # If we already have a menu open, close it before opening the new menu
+        if self.menu.visible:
+            self.close_menu_instant()
 
         # Adjust mouse positions if the menu would go off screen
         if self.mouse_x + 160 > self.p.width:
@@ -799,6 +834,7 @@ class Story(ft.View):
         self.close_menu_detector = ft.GestureDetector(
             expand=True, visible=False,
             on_tap_down=self.close_menu,
+            #on_secondary_tap=lambda _: self.open_menu()
             on_secondary_tap_down=self.close_menu,
         )
         

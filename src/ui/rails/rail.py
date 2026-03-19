@@ -182,6 +182,7 @@ class Rail(IsolatedColumn):
 
         # Open the textfield early since we have to wait for async close menu
         self.new_item_textfield.update()
+        await self.new_item_textfield.focus()
         await self.controls[2].content.content.content.scroll_to(0) # Scroll to top of rail
         
         await self.story.close_menu()
