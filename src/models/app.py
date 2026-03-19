@@ -86,6 +86,7 @@ class App:
 
         # Set our logic when page window is resized
         page.on_resize = app.settings.page_resized
+        page.on_close = app.settings.page_closed
 
 
       # Called on app startup in main
@@ -163,11 +164,9 @@ class App:
         # Create a new story object and add it to our stories dict
         self.stories[title.title()] = story
 
-        print("new story route:", story.route)
-
+        #print("new story route:", story.route)
 
         # Opens this new story as the active one on screen
-        #page.go(story.route)
         asyncio.create_task(page.push_route(story.route))
         self.settings.data['active_story'] = story.route
         self.settings.story = story

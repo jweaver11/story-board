@@ -76,6 +76,7 @@ class Widget(ft.Container):
         self.t: int = 0          # Top position to pass into mini widgets
         self.skip_update = False                # Skips applying an update on resizes to prevent update loops
         self.ignore_update = False     # Return and ignore updates, such as when hiding??
+        self.save_counter = 0      # Used to check how often we write saving to a file to prevent saving constantly
 
         # If widgets display info overtop content rather than next to it (plotline, map, canvas, etc.)
         self.mini_widgets_displayed_overtop: bool = True       # Widgets that set this false need to set their own mini widgets in reload_widget
@@ -189,34 +190,41 @@ class Widget(ft.Container):
     async def save_dict(self) -> bool:
         ''' Saves our current data to the json file '''
 
-        # TODO: Find matching widget type and save to normal data dict (not widget dict)
         print(f"Saving widget: {self.title}")
 
-        try:
-            
-            # Update our key
-            self.data['key'] = f"{self.directory_path}\\{self.title}_{self.data.get('tag', '')}"
-            
-            # File path to save our json data to
-            file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json")
+        self.save_counter += 1      # Increiment the save counter
 
-            # Create the directory if it doesn't exist. Catches errors from users deleting folders
-            os.makedirs(self.directory_path, exist_ok=True)
-            
-            # Save the data to the file (creates file if doesnt exist)
-            with open(file_path, "w", encoding='utf-8') as f:   
-                json.dump(self.data, f, indent=4)
+        # Check if we need to write to file so we're not making constant writes
+        if self.save_counter >= 15:
 
-            return True
-        
-        # Handle errors
-        except Exception as e:
-            print(f"Error saving widget to {file_path}: {e}") 
-            print("Widget data that failed to save:\n")
-            for key, value in self.data.items():
-                print(f"{key}: {value}")
-            print("\n")
-            return False
+            try:
+                print("Saving widget to file: ", self.title)
+
+                # Make sure our key is accurate if it changed (renamed or moved)
+                self.data['key'] = f"{self.directory_path}\\{self.title}_{self.data.get('tag', '')}"
+
+                # File path to save our json data to
+                file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json")
+
+                # Create the directory if it doesn't exist. Catches errors from users deleting folders
+                os.makedirs(self.directory_path, exist_ok=True)
+                
+                # Save the data to the file (creates file if doesnt exist)
+                with open(file_path, "w", encoding='utf-8') as f:   
+                    json.dump(self.data, f, indent=4)
+
+                self.save_counter = 0   # Reset the save counter
+
+                return True
+            
+            # Handle errors
+            except Exception as e:
+                print(f"Error saving widget to {file_path}: {e}") 
+                print("Widget data that failed to save:\n")
+                for key, value in self.data.items():
+                    print(f"{key}: {value}")
+                print("\n")
+                return False
 
     # Called for little data changes
     def change_data(self, **kwargs):

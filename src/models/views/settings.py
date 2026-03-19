@@ -194,6 +194,15 @@ class Settings(ft.View):
     async def _close_settings(self, e=None):
         ''' Closes the settings view and returns to the story or home view '''
         await self.p.push_route(self.story.route if self.story is not None else "/")
+
+    async def page_closed(self, e=None):
+        ''' Called when the page is closed. Saves any last changes to settings before exit '''
+
+        for widget in self.story.widgets:
+            if widget.save_counter > 0:
+                widget.save_counter = 15   # Will force a file write to widgets who have unwritten changes to their file
+                await widget.save_dict()
+        
         
 
 
