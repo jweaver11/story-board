@@ -8,7 +8,7 @@ import flet as ft
 from styles.menu_option_style import MenuOptionStyle
 from ui.rails.rail import Rail
 from models.views.story import Story
-from styles.rail.tree_view_file import TreeViewFile
+from styles.rail.widget_rail_item import WidgetRailItem
 import json
 from utils.alert_dialogs.character_connection import new_character_connection_clicked
 from models.isolated_controls.column import IsolatedColumn
@@ -212,7 +212,7 @@ class CharactersRail(Rail):
 
         # Grab which character we dragged and update its index
         rlv = e.control
-        dragged_character = rlv.controls[old_index].widget
+        dragged_character = rlv.controls[old_index].content.widget
         dragged_character.data['rail_index'] = new_idx
         await dragged_character.save_dict()
 
@@ -283,11 +283,11 @@ class CharactersRail(Rail):
             if widget.data.get('tag', "") == "character":
                 characters.append(widget)
             elif widget.data.get('tag', "") == "character_connection_map":
-                character_connection_maps.append(TreeViewFile(widget))       
+                character_connection_maps.append(WidgetRailItem(widget))       
         
 
         characters.sort(key=lambda c: c.data.get('rail_index', 0))
-        reorderable_sorted_characters = [TreeViewFile(char) for char in characters]
+        reorderable_sorted_characters = [ft.ReorderableDragHandle(WidgetRailItem(char)) for char in characters]
         
         
 
@@ -309,7 +309,6 @@ class CharactersRail(Rail):
                 ], alignment=ft.MainAxisAlignment.SPACE_EVENLY, spacing=0),
 
                 ft.ReorderableListView(reorderable_sorted_characters, on_reorder=self._handle_character_reorder, show_default_drag_handles=False)
-                # TODO: Use drag handlers to remove drag handle
 
             ] + [
 

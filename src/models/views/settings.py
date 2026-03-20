@@ -1123,7 +1123,7 @@ class Settings(ft.View):
                     #print(f"{key}: {value}")
                 #print("\n")
 
-                self.content = ft.ReorderableDraggable(
+                self.content = ft.ReorderableDragHandle(
                     self.index,
                     content=ft.Column([
                         ft.Row([
@@ -1161,10 +1161,10 @@ class Settings(ft.View):
                 can_create_template = is_unique and name != ""
 
                 if not is_unique:
-                    e.control.error_text = "Template name already exists"
+                    e.control.error = "Template name already exists"
                     submit_button.disabled = True
                 else:
-                    e.control.error_text = None
+                    e.control.error = None
                     submit_button.disabled = False
                     
                 self.p.update()
@@ -1198,12 +1198,12 @@ class Settings(ft.View):
                 title=ft.Text("Name Your Template"),
                 content=new_template_tf,
                 actions=[
-                    ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda e: self.p.close(dlg)),
+                    ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda e: self.p.pop_dialog()),
                     submit_button
                 ],
             )
 
-            self.p.open(dlg)
+            self.p.show_dialog(dlg)
 
 
         def load_template(name: str = None) -> ft.Control:
