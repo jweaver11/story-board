@@ -97,53 +97,63 @@ class CharactersRail(Rail):
         # Builds our buttons that are our options in the menu
         return [
             MenuOptionStyle(
-                content=ft.PopupMenuButton(
-                    content=ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)], expand=True),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
+                content=ft.SubmenuButton(
+                    ft.Container(
+                        ft.Row([
+                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), 
+                            ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Icon(ft.Icons.ARROW_RIGHT),
+                        ], expand=True),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
                     ),
-                    tooltip="New", menu_padding=0, expand=True, padding=ft.padding.all(0),
-                    items=[
-                        ft.PopupMenuItem(
-                            "Character", ft.Icons.PERSON_OUTLINED,
-                            on_click=self.new_item_clicked, data="character"
-                        ),  
-                        ft.PopupMenuItem(
-                            "Character Connection Map", ft.Icons.FAMILY_RESTROOM_OUTLINED,
-                            on_click=self.new_item_clicked, data="character_connection_map"
+                    [
+                        ft.SubmenuButton(
+                            ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
+                            self.get_template_options("character"), 
+                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            tooltip="Create a new character for your story. Choose from templates or create a default character."
                         ),
-                    ]
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
+                            data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                            tooltip="Visualize the connections between the characters in your story"
+                        ),
+                    ],
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                 ),
-                no_padding=True
+                no_padding=True, no_effects=True
             ),
             MenuOptionStyle(
-                content=ft.PopupMenuButton(
-                    content=ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED), ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)]),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
+                content=ft.SubmenuButton(
+                    ft.Container(
+                        ft.Row([
+                            ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY), 
+                            ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Icon(ft.Icons.ARROW_RIGHT),
+                        ], expand=True),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
                     ),
-                    tooltip="Upload", menu_padding=0, expand=True,
-                    items=[
-                        ft.PopupMenuItem(
-                            "Character", ft.Icons.PERSON_OUTLINED, 
-                        ),
-                        ft.PopupMenuItem(
-                            "Character Connection Map", ft.Icons.FAMILY_RESTROOM_OUTLINED,
-                        ),
-                    ]
+                    [
+                        
+                    ],
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                 ),
-                no_padding=True
+                no_padding=True, no_effects=True, 
             ),
             MenuOptionStyle(
                 ft.Row([
-                    ft.Icon(ft.Icons.CONNECT_WITHOUT_CONTACT),
+                    ft.Icon(ft.Icons.CONNECT_WITHOUT_CONTACT, ft.Colors.PRIMARY),
                     ft.Text(f"Edit Character\nTemplates", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ]),
                 on_click=self._open_templates_editor
             ),      
             MenuOptionStyle(
                 ft.Row([
-                    ft.Icon(ft.Icons.MANAGE_SEARCH_OUTLINED, tooltip="Edit Character Connections"),
+                    ft.Icon(ft.Icons.MANAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY, tooltip="Edit Character Connections"),
                     ft.Text("Edit Character\nConnections", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 ]),
                 on_click=lambda e: new_character_connection_clicked(self.story),
@@ -250,18 +260,26 @@ class CharactersRail(Rail):
             ),
         )
 
-        # Hold the menubar for formatting
-        header = ft.Row(
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.CENTER,
-            controls=[menubar]
-        )
-
         # Button to open our character (and world) templates settings page
         character_templates_button = ft.IconButton(
             ft.Icons.MANAGE_SEARCH_OUTLINED, "primary", mouse_cursor="click",  
             tooltip="Edit Character Templates", on_click=self._open_templates_editor
         )
+
+        # Button to open our character connections editor
+        character_connections_button = ft.IconButton(
+            ft.Icons.CONNECT_WITHOUT_CONTACT, "primary", mouse_cursor="click",
+            tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)
+        )
+
+        # Hold the menubar for formatting
+        header = ft.Row(
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN, scroll="auto",
+            controls=[character_templates_button, menubar, character_connections_button]
+        )
+
+        
         
         # Button to change our sort by method
         sort_by_button = ft.TextButton(
@@ -269,11 +287,7 @@ class CharactersRail(Rail):
             style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ON_SURFACE)
         )
         
-        # Button to open our character connections editor
-        character_connections_button = ft.IconButton(
-            ft.Icons.CONNECT_WITHOUT_CONTACT, "primary", mouse_cursor="click",
-            tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)
-        )
+        
                     
         # Hold our Tree View File controls for our two widget types
         characters = []
@@ -283,11 +297,14 @@ class CharactersRail(Rail):
             if widget.data.get('tag', "") == "character":
                 characters.append(widget)
             elif widget.data.get('tag', "") == "character_connection_map":
-                character_connection_maps.append(WidgetRailItem(widget))       
+                character_connection_maps.append(widget)       
         
 
         characters.sort(key=lambda c: c.data.get('rail_index', 0))
         reorderable_sorted_characters = [ft.ReorderableDragHandle(WidgetRailItem(char)) for char in characters]
+
+        character_connection_maps.sort(key=lambda c: c.data.get('rail_index', 0))
+        reorderable_sorted_ccms = [WidgetRailItem(ccm) for ccm in character_connection_maps]
         
         
 
@@ -301,22 +318,16 @@ class CharactersRail(Rail):
                 ft.Container(height=6),
                 self.new_item_textfield,
 
-                # Top row buttons for char templates, sort method, and character connections
-                ft.Row([
-                    character_templates_button,
-                    #sort_by_button,
-                    character_connections_button,
-                ], alignment=ft.MainAxisAlignment.SPACE_EVENLY, spacing=0),
-
-                ft.ReorderableListView(reorderable_sorted_characters, on_reorder=self._handle_character_reorder, show_default_drag_handles=False)
-
-            ] + [
+                # Our characters
+                ft.ReorderableListView(reorderable_sorted_characters, on_reorder=self._handle_character_reorder, show_default_drag_handles=False),
 
                 # Spacer and label for Character Connection Maps Section
                 ft.Divider(),
                 ft.Text("Character Connection Maps", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
                 
-            ] + [ccm for ccm in character_connection_maps] 
+                # Our CCM's
+                ft.ReorderableListView(reorderable_sorted_ccms, on_reorder=self._handle_character_reorder, show_default_drag_handles=False),
+            ] 
                 
         )
 

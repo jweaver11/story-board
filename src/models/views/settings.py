@@ -93,10 +93,10 @@ class Settings(ft.View):
                 'change_name_colors_based_on_morality': True,   # If characters names change colors in char based on morality
                 'workspaces_rail_order': [      # Order of the workspace rail
                     "content",
+                    "canvas",
                     "characters",
                     "plotlines",
                     "world_building",
-                    "canvas",
                     "planning",
                 ],
                 
@@ -297,9 +297,10 @@ class Settings(ft.View):
             case 4:
                 self.body_container.content = self._load_resources_settings()
                 
-
-        self.p.update()
-        #self.update()
+        try:
+            self.update()
+        except Exception as _:
+            pass
         
     # Called when appearance settings category is selected
     def _load_appearance_settings(self) -> ft.Container:
@@ -957,14 +958,14 @@ class Settings(ft.View):
             def _check_section_name_unique(self, e):
                 name = e.control.value.strip() or ""
                 if name == "":
-                    self.new_section_tf.error_text = "Section name cannot be empty"
+                    self.new_section_tf.error = "Section name cannot be empty"
                     self.new_section_tf.update()
                     return
                 
                 for key in self.data.keys():
                     if key == name:   # Check if any existing section matches this name 
                         self.can_create_section = False
-                        self.new_section_tf.error_text = "Section name must be unique"
+                        self.new_section_tf.error = "Section name must be unique"
                         self.new_section_tf.update()
                         return
                 self.can_create_section = True
@@ -973,7 +974,7 @@ class Settings(ft.View):
             def _blur_new_section_tf(self, e):
                 self.new_section_tf.visible = False
                 self.new_section_tf.value = ""
-                self.new_section_tf.error_text = None
+                self.new_section_tf.error = None
                 self.new_section_tf.update()
 
             # Called when we submit a new section name. Checks if we can create it and creates it if we can
@@ -1003,6 +1004,7 @@ class Settings(ft.View):
 
                 self.data = new_data
                 existing_templates[self.name] = self.data     # Update our existing templates with the new data
+
                 self.reload()
                 
 
@@ -1045,7 +1047,7 @@ class Settings(ft.View):
                     ft.Divider(height=2, thickness=2),
                     ft.Container(height=6),
                     ft.ReorderableListView(
-                        on_reorder=self._reorder_sections, padding=ft.padding.only(right=10), expand=True,
+                        on_reorder=self._reorder_sections, padding=ft.Padding.only(right=10), expand=True,
                         show_default_drag_handles=False, 
                         
                         #footer=add new section button?
@@ -1066,8 +1068,10 @@ class Settings(ft.View):
                     
                     idx += 1
 
-
-                page.update()
+                try:
+                    self.update()
+                except Exception as _:
+                    pass
 
         # Simple section class for each section in our template so we can remove and reorder them easily
         class SectionCtrl(ft.Container):
@@ -1077,10 +1081,10 @@ class Settings(ft.View):
                 self.template_name = template_name  
                 self.index = index
 
-                self.border_radius = ft.border_radius.all(10)
-                self.border = ft.border.all(1, ft.Colors.ON_SURFACE_VARIANT)
-                self.padding = ft.padding.all(10)
-                self.margin = ft.margin.only(bottom=10, top=10)
+                self.border_radius = ft.BorderRadius.all(10)
+                self.border = ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT)
+                self.padding = ft.Padding.all(10)
+                self.margin = ft.Margin.only(bottom=10, top=10)
 
                 self.reload()
 
@@ -1124,7 +1128,7 @@ class Settings(ft.View):
                 #print("\n")
 
                 self.content = ft.ReorderableDragHandle(
-                    self.index,
+                    #sself.index,
                     content=ft.Column([
                         ft.Row([
                             ft.Text(self.name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True),
@@ -1143,6 +1147,7 @@ class Settings(ft.View):
                             ft.Text(str(value))
                         ])
                     )
+            
 
         async def _save_and_close(e):
             pass
@@ -1167,7 +1172,8 @@ class Settings(ft.View):
                     e.control.error = None
                     submit_button.disabled = False
                     
-                self.p.update()
+                e.control.update()  
+                submit_button.update()
 
             def _create_new_template(name: str):
                 nonlocal existing_templates, edit_container, editing_current_template, content
@@ -1191,14 +1197,14 @@ class Settings(ft.View):
                 label="Template Name", dense=True, expand=True, capitalization=ft.TextCapitalization.WORDS, 
                 on_change=_check_template_name_unique, on_submit=_create_new_template, autofocus=True
             )
-            submit_button = ft.TextButton("Create", on_click=_create_new_template, disabled=True)
+            submit_button = ft.TextButton("Create", on_click=_create_new_template, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
 
             
             dlg = ft.AlertDialog(
                 title=ft.Text("Name Your Template"),
                 content=new_template_tf,
                 actions=[
-                    ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda e: self.p.pop_dialog()),
+                    ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda _: self.p.pop_dialog()),
                     submit_button
                 ],
             )
@@ -1255,7 +1261,10 @@ class Settings(ft.View):
                 # Load the template into our edit container
                 edit_container.content = load_template(name)
                 edit_container.update()
-                self.p.update()
+                try:
+                    self.update()
+                except Exception as _:
+                    pass
             
 
             # Delete the template
@@ -1272,7 +1281,10 @@ class Settings(ft.View):
                         edit_container.content = load_template()
                         editing_current_template = ""
 
-                    self.p.update()
+                    try:
+                        self.update()
+                    except Exception as _:
+                        pass
                 
             
             # Create a nameplace for each template
@@ -1285,13 +1297,20 @@ class Settings(ft.View):
                                     template_name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True,
                                     tooltip=f"Edit {template_name}", overflow=ft.TextOverflow.ELLIPSIS, 
                                 ),
-                                ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Template", on_click=lambda e, name=template_name: _delete_template(name))
+                                ft.IconButton(
+                                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Template", 
+                                    on_click=lambda _, name=template_name: _delete_template(name),
+                                    mouse_cursor="click"
+                                )
                             ]),
                             on_click=lambda e, name=template_name: _edit_template(name, e), padding=ft.Padding.only(left=6), border_radius=6
                         )
                     )
 
-            new_template_button = ft.TextButton("Create New Template", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, on_click=_new_template_clicked)
+            new_template_button = ft.TextButton(
+                "Create New Template", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
+                on_click=_new_template_clicked, style=ft.ButtonStyle(mouse_cursor="click")
+            )
 
             
                 
@@ -1322,8 +1341,8 @@ class Settings(ft.View):
         # Sets our templates
         content = ft.Column([
             ft.Row([
-                ft.Text("Templates", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
-                ft.Container(expand=True),   # Spacer to push title to left
+                ft.Text("Templates", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
+                #ft.Container(expand=True),   # Spacer to push title to left
                 ft.IconButton(
                     ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
