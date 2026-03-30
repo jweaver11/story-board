@@ -114,7 +114,7 @@ class Note(Widget):
                         value, expand=True,
                         multiline=True, label=key, dense=True, capitalization=ft.TextCapitalization.SENTENCES, 
                         on_blur=self._save_segment,
-                        data=idx
+                        data=idx,
                     ),
                     ft.IconButton(
                         ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,

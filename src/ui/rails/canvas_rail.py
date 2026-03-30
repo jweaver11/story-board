@@ -260,14 +260,20 @@ class CanvasRail(Rail):
         self.p.run_task(app.settings.save_dict)
 
         # Since we can't call reload_rail, manually update all controls :(
+        self.paint_width_slider.value = 3
         self.paint_anti_alias_toggle.value = True
         self.paint_stroke_cap_selector.icon = ft.Icons.CIRCLE_OUTLINED
         self.paint_stroke_join_selector.icon = ft.Icons.CIRCLE_OUTLINED
         self.paint_stroke_blur_slider.value = 0
-        self.paint_blend_mode_selector.icon = ft.Icons.BLUR_OFF_OUTLINED
-        self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
 
-        self.update()   # Apply update
+        self.paint_width_slider.update()
+        self.paint_anti_alias_toggle.update()
+        self.paint_stroke_cap_selector.update()
+        self.paint_stroke_join_selector.update()
+        self.paint_stroke_blur_slider.update()
+        #self.paint_blend_mode_selector.icon = ft.Icons.BLUR_OFF_OUTLINED
+        #self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
+        #self.update()   # Apply update
 
         
 
@@ -459,7 +465,7 @@ class CanvasRail(Rail):
             self.p.run_task(app.settings.save_dict)
 
         def _paint_stroke_cap_changed(e):
-            new_stroke_cap = e.control.text.lower()
+            new_stroke_cap = e.control.content.lower()
             if new_stroke_cap == "butt":
                 e.control.parent.icon = ft.Icons.CROP_SQUARE_OUTLINED
             elif new_stroke_cap == "round":
@@ -468,10 +474,11 @@ class CanvasRail(Rail):
                 e.control.parent.icon = ft.Icons.SQUARE_OUTLINED
             app.settings.data['paint_settings']['stroke_cap'] = new_stroke_cap
             self.p.run_task(app.settings.save_dict)
-            self.update()
+            e.control.update()  
+            e.control.parent.update()
 
         def _paint_stroke_join_changed(e):
-            new_stroke_join = e.control.text.lower()
+            new_stroke_join = e.control.content.lower()
             # Update icon based on stroke join type if desired
             if new_stroke_join == "miter":
                 e.control.parent.icon = ft.Icons.CROP_SQUARE_OUTLINED
@@ -481,7 +488,8 @@ class CanvasRail(Rail):
                 e.control.parent.icon = ft.Icons.SQUARE_OUTLINED
             app.settings.data['paint_settings']['stroke_join'] = new_stroke_join
             self.p.run_task(app.settings.save_dict)
-            self.update()
+            e.control.update()  
+            e.control.parent.update()  
 
         # Called when changing paint stroke blur
         def _paint_stroke_blur_changed(e):
@@ -536,13 +544,13 @@ class CanvasRail(Rail):
 
                 for key in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}).keys():
                     if key == name:
-                        e.control.error_text = "A brush with this name already exists. It will be overwritten if you save."
+                        e.control.error = "A brush with this name already exists. It will be overwritten if you save."
                         save_button.text = "Overwrite"
                         self.update()
                         return
                     
                 save_button.text = "Save"
-                e.control.error_text = None
+                e.control.error = None
                 self.update()
 
             # Deletes a color
@@ -668,10 +676,11 @@ class CanvasRail(Rail):
         self.paint_stroke_cap_selector = ft.PopupMenuButton(
             icon=paint_stroke_icon, menu_padding=ft.Padding.all(0),
             tooltip="The shape that your brush strokes will have at the end of each line segment.",
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
             items=[
-                ft.PopupMenuItem("Butt", on_click=_paint_stroke_cap_changed, icon=ft.Icons.CROP_SQUARE_OUTLINED, tooltip="Flat cut ends"),
-                ft.PopupMenuItem("Round", on_click=_paint_stroke_cap_changed, icon=ft.Icons.CIRCLE_OUTLINED, tooltip="Rounded ends"),
-                ft.PopupMenuItem("Square", on_click=_paint_stroke_cap_changed, icon=ft.Icons.SQUARE_OUTLINED, tooltip="Sharp cut ends"),
+                ft.PopupMenuItem("Butt", on_click=_paint_stroke_cap_changed, icon=ft.Icons.CROP_SQUARE_OUTLINED, tooltip="Flat cut ends", mouse_cursor="click"),
+                ft.PopupMenuItem("Round", on_click=_paint_stroke_cap_changed, icon=ft.Icons.CIRCLE_OUTLINED, tooltip="Rounded ends", mouse_cursor="click"),
+                ft.PopupMenuItem("Square", on_click=_paint_stroke_cap_changed, icon=ft.Icons.SQUARE_OUTLINED, tooltip="Sharp cut ends", mouse_cursor="click"),
             ]
         )
 
@@ -684,10 +693,11 @@ class CanvasRail(Rail):
         self.paint_stroke_join_selector = ft.PopupMenuButton(
             icon=stroke_cap_icon, menu_padding=ft.Padding.all(0),
             tooltip="The shape that your brush strokes will have at the join of two line segments.",
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
             items=[
-                ft.PopupMenuItem("Miter", icon=ft.Icons.CROP_SQUARE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Sharp corners"),
-                ft.PopupMenuItem("Round", icon=ft.Icons.CIRCLE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Rounded corners"),
-                ft.PopupMenuItem("Bevel", icon=ft.Icons.SQUARE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Flat cut corners"),
+                ft.PopupMenuItem("Miter", icon=ft.Icons.CROP_SQUARE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Sharp corners", mouse_cursor="click"),
+                ft.PopupMenuItem("Round", icon=ft.Icons.CIRCLE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Rounded corners", mouse_cursor="click"),
+                ft.PopupMenuItem("Bevel", icon=ft.Icons.SQUARE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Flat cut corners", mouse_cursor="click"),
             ]
         )
 
@@ -740,6 +750,18 @@ class CanvasRail(Rail):
             ]
         )
         '''
+
+        save_custom_brush_button = ft.IconButton(      
+            ft.Icons.SAVE_ROUNDED, ft.Colors.PRIMARY,
+            tooltip="Save current brush settings as a custom brush", 
+            on_click=_save_custom_brush, mouse_cursor=ft.MouseCursor.CLICK
+        )  
+
+        reset_brush_to_default_button = ft.IconButton(
+            ft.Icons.RESTART_ALT_OUTLINED, ft.Colors.PRIMARY,
+            on_click=self._reset_to_defaults, mouse_cursor=ft.MouseCursor.CLICK,
+            tooltip="Resets current brush settings to defaults (Except color and opacity). Will NOT effect any saved brush",
+        )
         
         # Build the content of our rail
         content = ft.Column(
@@ -749,12 +771,9 @@ class CanvasRail(Rail):
 
                 # Label for Paint settings and reset to default button
                 ft.Row([
-                    ft.IconButton(ft.Icons.SAVE_ROUNDED, tooltip="Save current brush settings as a custom brush", on_click=_save_custom_brush),     # Save custom brush button
+                    save_custom_brush_button,   
                     ft.Text("Brush Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER, expand=True),
-                    ft.IconButton(
-                        ft.Icons.RESTART_ALT_OUTLINED, on_click=self._reset_to_defaults,
-                        tooltip="Resets current brush settings to defaults (Except color and opacity). Will NOT effect any saved brush",
-                    )
+                    reset_brush_to_default_button
                 ]),
 
                 # Brush Selector and Save custom brush button
@@ -770,11 +789,21 @@ class CanvasRail(Rail):
                 # Add shadow effect option for paths
                 # Custom saved colors and custom brushes
 
-                ft.Row([ft.Text("Size", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Size of your strokes"), self.paint_width_slider]),      # Size slider
+                ft.Row([
+                    ft.Text("Size", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Size of your strokes"), 
+                    self.paint_width_slider
+                ]),      # Size slider
 
-                ft.Row([ft.Text("Stroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="End shape of your strokes"), self.paint_stroke_cap_selector]),     # Stroke cap shape selector
+                ft.Row([
+                    ft.Text("Stroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="End shape of your strokes"), 
+                    self.paint_stroke_cap_selector
+                ]),     # Stroke cap shape selector
                 ft.Container(height=10),   # Spacer
-                ft.Row([ft.Text("Stroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Shape taken at point of two strokes connecting"), self.paint_stroke_join_selector]),   # Stroke join shape selector
+
+                ft.Row([
+                    ft.Text("Stroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Shape taken at point of two strokes connecting"), 
+                    self.paint_stroke_join_selector
+                ]),   # Stroke join shape selector
                 ft.Container(height=10),   # Spacer
  
                 # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
@@ -785,7 +814,9 @@ class CanvasRail(Rail):
                 ft.Container(height=10),   # Spacer
                 ft.Row([ft.Text("Blur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider]),
                 ft.Container(height=10),   # Spacer
-                #ft.Row([self.paint_blend_mode_label, self.paint_blend_mode_selector])
+
+
+                #ft.Row([self.paint_blend_mode_label, self.paint_blend_mode_selector])  # Not rendering correctly so disabled
 
             ]
         )
