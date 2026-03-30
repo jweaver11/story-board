@@ -10,6 +10,7 @@ from models.isolated_controls.column import IsolatedColumn
 import math
 from models.mini_widgets.reference_image import ReferenceImage
 from utils.safe_string_checker import return_safe_name
+import asyncio
 
 # Class that holds our text document objects
 class Document(Widget):
@@ -186,10 +187,11 @@ class Document(Widget):
 
                 self._create_reference_image(title=file_name, side_location=side_location, image_str=encoded_string)
                 await self.save_dict()  # Save to our data
-                self.reload_widget()
+                await asyncio.sleep(0.2)  # Small delay to ensure data is saved before reloading
+                self.reload_widget() # Reload workspace to update the UI with our new image
                     
 
-            except Exception as e:
+            except Exception as _:
                 pass
                 #print(f"Error loading image: {e}")
 

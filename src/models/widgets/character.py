@@ -119,8 +119,8 @@ class Character(Widget):
             title=ft.Text(f"Create New Field in {section}"),
             content=field_name_input,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
-                ft.TextButton("Create", on_click=create_field),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Create", on_click=create_field, style=ft.ButtonStyle(mouse_cursor="click")),
             ],
         )
      
@@ -347,14 +347,14 @@ class Character(Widget):
                     ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                     ft.IconButton(
                         tooltip="Add New Field", icon=ft.Icons.NEW_LABEL_OUTLINED, mouse_cursor="click",
-                        on_click=lambda e, s=section:self._new_field_clicked(s), icon_color=self.data.get('color', None)
+                        on_click=lambda _, s=section:self._new_field_clicked(s), icon_color=self.data.get('color', None)
                     ),
                 ])
                 # Container to hold the text control of our section info
                 container = ft.Container(         # For template data
                     padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
                     border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(bottom=10),
-                    content=ft.Column(expand=True, spacing=6, controls=[]) # Forces container to take up space
+                    content=ft.Column(expand=True, spacing=8, controls=[]) # Forces container to take up space
                 )
 
                 # Go through every key/value pair in this section and add it to our text span list with formatting
@@ -384,7 +384,8 @@ class Character(Widget):
                             ft.Text("No fields to display", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
                             ft.TextButton(
                                 ft.Text("Delete Section?", color=ft.Colors.ERROR),
-                                on_click=lambda e, s=section: self._delete_character_data(**{s: ""})
+                                on_click=lambda e, s=section: self._delete_character_data(**{s: ""}),
+                                style=ft.ButtonStyle(mouse_cursor="click")
                             )
                         ])
                     )
@@ -403,8 +404,8 @@ class Character(Widget):
             img = ft.Container(
                 ft.Image(
                     src=self.data.get('image_base64', ""),
-                    width=80,
-                    height=80,
+                    width=100,
+                    height=100,
                     fit=ft.BoxFit.FILL,
                 ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
             )
@@ -424,6 +425,7 @@ class Character(Widget):
                     tooltip="Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, icon_color=self.data.get('color', None), 
                     on_click=self._edit_mode_clicked, mouse_cursor="click"
                 ),
+                
             ]),
             ft.Container(
                 border_radius=ft.BorderRadius.all(10), expand=True,
@@ -445,10 +447,16 @@ class Character(Widget):
         ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
 
         body = ft.Column([
-            header
+            header,
+            ft.TextButton(
+                "Add New Section", #on_click=self._new_section_clicked,
+                style=ft.ButtonStyle(mouse_cursor="click", color=self.data.get('color', None), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=24)),
+            ),
         ], scroll="auto", expand=True, spacing=4)
 
         body.controls.extend(_load_character_data_controls())   
+
+        
 
         self.body_container.content = body
 
@@ -536,8 +544,8 @@ class Character(Widget):
             img = ft.Container(
                 ft.Image(
                     src=self.data.get('image_base64', ""),
-                    width=80,
-                    height=80,
+                    width=100,
+                    height=100,
                     fit=ft.BoxFit.FILL,
                 ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
             )

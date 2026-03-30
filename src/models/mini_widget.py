@@ -497,13 +497,13 @@ class MiniWidget(ft.Container):
             on_blur=_cancel_rename,
         )
 
-        rename_button = ft.TextButton("Rename", on_click=_submit_name, style=ft.ButtonStyle(color=ft.Colors.PRIMARY))
+        rename_button = ft.TextButton("Rename", on_click=_submit_name, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click"))
 
         dlg = ft.AlertDialog(
             title=ft.Text(f"Rename {self.title}", weight=ft.FontWeight.BOLD),
             content=text_field,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR), on_click=lambda e: self.p.pop_dialog()),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.p.pop_dialog()),
                 rename_button   
             ]
         )

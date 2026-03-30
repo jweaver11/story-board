@@ -82,7 +82,10 @@ class Rail(IsolatedColumn):
             
             for name, template in app.settings.data.get('character_templates', {}).items():
                 template_options.append(
-                    ft.MenuItemButton(name, data=widget_type, on_click=self.new_item_clicked, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))
+                    ft.MenuItemButton(
+                        name, data=widget_type, on_click=self.new_item_clicked, 
+                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10))
+                    )
                 )
 
         # Add add button to bottom that opens the settings to the template section
@@ -91,9 +94,13 @@ class Rail(IsolatedColumn):
         elif widget_type == "world":
             for name, template in app.settings.data.get('world_templates', {}).items():
                 template_options.append(
-                    ft.MenuItemButton(name, data=widget_type, on_click=self.new_item_clicked)
+                    ft.MenuItemButton(
+                        name, data=widget_type, on_click=self.new_item_clicked, 
+                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10))
+                    )
                 )
 
+        # Not used
         else:
             template_options = [
                 ft.MenuItemButton("Blank", data=widget_type, on_click=self.new_item_clicked),
@@ -164,7 +171,7 @@ class Rail(IsolatedColumn):
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
                 if tag == "character":
                     template_name = str(e.control.content)
-                    self.new_item_textfield.label = f"{template_name} Template"
+                    self.new_item_textfield.label = template_name
 
             case "canvas":
                 await self.story.close_menu()
@@ -248,7 +255,6 @@ class Rail(IsolatedColumn):
             e.control.error = None
             
         e.control.update()
-        #self.new_item_textfield.update()
 
 
     # Called when clicking off the textfield and after submission

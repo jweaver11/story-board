@@ -398,14 +398,14 @@ class Widget(ft.Container):
         )
 
         # Button for creating new mw. Can also press enter in the textfield
-        submit_button = ft.TextButton("Create", on_click=_create_new_mw, disabled=True)
+        submit_button = ft.TextButton("Create", on_click=_create_new_mw, disabled=True, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click"))
 
         # Dialog we open onto the page
         dlg = ft.AlertDialog(
             title=ft.Text(f"New {tag.replace('_', ' ').title()} Name"),
             content=new_item_tf,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda e: self.p.pop_dialog()),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.p.pop_dialog()),
                 submit_button
             ],
         )
@@ -429,6 +429,7 @@ class Widget(ft.Container):
             new_comment
         )
         await new_comment.save_dict()
+        await asyncio.sleep(0.2)
 
         self.reload_widget()
 

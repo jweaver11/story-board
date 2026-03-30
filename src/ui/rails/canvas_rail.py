@@ -327,7 +327,7 @@ class CanvasRail(Rail):
 
         # Start by building our default brush options
         options = [
-            ft.Text("\tDefault Brushes", color=ft.Colors.OUTLINE, italic=True),   # Placeholder for shapes section
+            ft.Text("\tDefault Brushes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
             ft.MenuItemButton(
                 data=default_brush_settings,
                 content=ft.Container(
@@ -358,7 +358,7 @@ class CanvasRail(Rail):
             
 
             ft.Divider(),   # Placeholder for shapes section
-            ft.Text("\tTools & Shapes", color=ft.Colors.OUTLINE, italic=True),   # Placeholder for shapes section
+            ft.Text("\tTools & Shapes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
            
             
             ft.MenuItemButton(
@@ -384,7 +384,7 @@ class CanvasRail(Rail):
             # TODO: Add more built in options here
 
             ft.Divider(),   # Placeholder for shapes section
-            ft.Text("\tSaved Brushes", color=ft.Colors.OUTLINE, italic=True),   # Placeholder for shapes section
+            ft.Text("\tSaved Brushes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
         ]
 
         # Go through our saved brushes and add options to select them
@@ -732,10 +732,11 @@ class CanvasRail(Rail):
                     ft.Text("Brush Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER, expand=True),
                     reset_brush_to_default_button
                 ]),
+                ft.Container(height=10),
 
                 # Brush Selector and Save custom brush button
                 ft.Text(
-                    "\tCurrent Brush", color=ft.Colors.OUTLINE, 
+                    "\tCurrent Brush", color=ft.Colors.ON_SURFACE_VARIANT, 
                     theme_style=ft.TextThemeStyle.LABEL_LARGE, 
                     italic=True,
                     tooltip="The current brush you have selected. Click to change or select a saved custom brush."
@@ -750,10 +751,11 @@ class CanvasRail(Rail):
                     )
                     ], scroll=ft.ScrollMode.HIDDEN,
                 ),
+                ft.Container(height=10),
             
    
                 ft.Text(
-                    "\tCurrent Color", color=ft.Colors.OUTLINE, 
+                    "\tCurrent Color", color=ft.Colors.ON_SURFACE_VARIANT, 
                     theme_style=ft.TextThemeStyle.LABEL_LARGE, 
                     italic=True,
                     tooltip="The color of your brush strokes"
@@ -790,11 +792,11 @@ class CanvasRail(Rail):
                 # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
                 ft.Divider(),
                 ft.Row([ft.Text("Effects", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
-                ft.Container(height=10),   # Spacer
+                #ft.Container(height=10),   # Spacer
                 self.paint_anti_alias_toggle,
-                ft.Container(height=10),   # Spacer
+                #ft.Container(height=10),   # Spacer
                 ft.Row([ft.Text("Blur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider]),
-                ft.Container(height=10),   # Spacer
+                #ft.Container(height=10),   # Spacer
 
 
                 #ft.Row([self.paint_blend_mode_label, self.paint_blend_mode_selector])  # Not rendering correctly so disabled
