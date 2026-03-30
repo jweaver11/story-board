@@ -13,6 +13,7 @@ from flet_color_pickers import ColorPicker
 from models.app import app
 import flet.canvas as cv
 from models.isolated_controls.column import IsolatedColumn
+from utils.safe_string_checker import return_safe_name
 
 
 # Class for our Canvas Board rail
@@ -546,15 +547,18 @@ class CanvasRail(Rail):
 
 
         # Called to save our active brush settings as a custom brush we can load later (Excludes color and opacity)
-        def _save_custom_brush(e=None):
+        def _save_custom_brush_clicked(e=None):
             ''' Shows our existing brush options and allows us to override or save as a new brush '''
 
             # Saves the current name and closes the dialog
             def _save_and_close(e=None): 
+
+                #TODO: Add str check for names
                 nonlocal name
+                safe_name = return_safe_name(name)
                 # Save current brush settings as a new custom brush
                 brush_settings = app.settings.data['paint_settings'].copy()
-                app.settings.data['canvas_settings']['saved_brushes'][name] = brush_settings
+                app.settings.data['canvas_settings']['saved_brushes'][safe_name] = brush_settings
                 self.p.run_task(app.settings.save_dict)
 
                 # Update our selector to include the new option
@@ -562,101 +566,116 @@ class CanvasRail(Rail):
                 self.brush_selector.update()        # Requires direct update to work
                 self.p.pop_dialog()
 
-            # Sets the name value when typing in the textfield. Checks if it exists and de-selects any existing ones
-            def _set_name(e):
-                nonlocal name
-                name = e.control.value.strip()  
-
-                for ctrl in dlg.content.controls:
-                    if isinstance(ctrl, ft.GestureDetector):
-                        ctrl.content.bgcolor = ft.Colors.TRANSPARENT
-
-                for key in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}).keys():
-                    if key == name:
-                        e.control.error = "A brush with this name already exists. It will be overwritten if you save."
-                        save_button.text = "Overwrite"
-                        self.update()
-                        return
-                    
-                save_button.text = "Save"
-                e.control.error = None
-                self.update()
-
             # Deletes a color
-            def _delete_brush(e):
+            async def _delete_custom_brush(e):
+                nonlocal content
                 name = e.control.data
 
+
+                # Remove it from data
                 if name in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}):
                     del app.settings.data['canvas_settings']['saved_brushes'][name]
                     self.p.run_task(app.settings.save_dict)
 
-                dlg.content.controls = [ctrl for ctrl in dlg.content.controls if not (isinstance(ctrl, ft.GestureDetector) and ctrl.data == name)]
-                self.update()
+                dlg.content.controls = [ctrl for ctrl in content.controls if ctrl.data != name]   
+                content.update()
+
+                if name == new_custom_brush_name_text_field.value:
+                    #new_custom_brush_name_text_field.value = ""
+                    new_custom_brush_name_text_field.error = None
+                    new_custom_brush_name_text_field.update()
+                    save_button.content = "Save"
+                    save_button.update()
+                    await new_custom_brush_name_text_field.focus()
                     
             # Sets an existing custom color to be overwritten by the current color
-            def _set_active_brush_override(e):
-                nonlocal name
+            def _select_active_brush_override(e):
+                nonlocal name, content
                 
-                if e.control.content.bgcolor == ft.Colors.with_opacity(.1, ft.Colors.ON_SURFACE):
-                    e.control.content.bgcolor = ft.Colors.TRANSPARENT
-                    name = None
-                    save_button.text = "Save"
-                    self.update()
-                    return
-
+                # Show visual effects that the brush will be overwritten
                 name = e.control.data
-                e.control.content.bgcolor = ft.Colors.with_opacity(.1, ft.Colors.ON_SURFACE)
+                e.control.bgcolor = ft.Colors.OUTLINE_VARIANT
                 e.control.update()
-                save_button.text = "Overwrite"
+                save_button.content = "Overwrite"
+                save_button.update()
 
+                # Textfield
+                new_custom_brush_name_text_field.value = name
+                new_custom_brush_name_text_field.error = f"Saving will overwrite {name}"
+                new_custom_brush_name_text_field.update()
+
+                # Deselect any other options that are selected
                 for ctrl in dlg.content.controls:
-                    if isinstance(ctrl, ft.GestureDetector) and ctrl != e.control:
-                        ctrl.content.bgcolor = ft.Colors.TRANSPARENT
-                
-                self.update()
+                    if isinstance(ctrl, ft.Container) and ctrl != e.control:
+                        if ctrl.bgcolor == ft.Colors.OUTLINE_VARIANT:
+                            ctrl.bgcolor = ft.Colors.TRANSPARENT
+                            ctrl.update()
+
+            # If newly changed name already exists, show that it will be overwritten
+            def _check_name_change(e):
+                nonlocal content, name
+                name = e.control.value
+                new_name = e.control.value  
+
+                for ctrl in content.controls:
+                    if isinstance(ctrl, ft.Container) and ctrl.data == new_name:
+                        ctrl.bgcolor = ft.Colors.OUTLINE_VARIANT
+                        ctrl.update()
+                        save_button.content = "Overwrite"
+                        save_button.update()
+                        e.control.error = f"Saving will overwrite {e.control.value}"
+                        e.control.update()
+                        return
+                    
+                for ctrl in content.controls:
+                    if isinstance(ctrl, ft.Container):
+                        ctrl.bgcolor = ft.Colors.TRANSPARENT
+                        ctrl.update()
+                save_button.content = "Save"
+                save_button.update()
+                e.control.error = None
+                e.control.update()
 
             # Textfield for naming custom color
-            text_field = ft.TextField(
-                label="Brush Name", autofocus=True, on_submit=lambda e: _save_and_close(), dense=True,
-                capitalization=ft.TextCapitalization.SENTENCES, on_change=_set_name, expand=True
+            new_custom_brush_name_text_field = ft.TextField(
+                label="Brush Name", autofocus=True, on_submit=lambda _: _save_and_close(), dense=True,
+                capitalization=ft.TextCapitalization.SENTENCES, expand=True,
+                on_change=_check_name_change,
             )
 
             name: str = None
 
             # Our save button that just changes text from save to overwrite
-            save_button = ft.TextButton("Save", on_click=_save_and_close, scale=1.2)  
+            save_button = ft.TextButton("Save", on_click=_save_and_close, style=ft.ButtonStyle(mouse_cursor="click")) 
+
+            content = ft.Column(
+                tight=True,
+                scroll="auto",
+                controls=[new_custom_brush_name_text_field], 
+            ) 
 
             dlg = ft.AlertDialog(
                 title=ft.Text("Name your custom brush"), 
-                content=ft.Column(
-                    width=self.p.width * 0.25, expand=False,
-                    height=self.p.height * 0.6,
-                    controls=[
-                        ft.Divider(),
-                        ft.Row([
-                            text_field,
-                            ft.Icon(ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, tooltip="Select a brush below to overwrite instead of saving as a new brush."),
-                        ], spacing=0),
-                    ], scroll="auto"
-                ),
+                content=content,
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
-                    ft.Container(width=12),   # Spacer
+                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                     save_button
                 ]
             )
 
             for name, existing_brush in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}).items():
-                dlg.content.controls.append(
-                    ft.GestureDetector(
-                        ft.Container(
-                            ft.Row([
-                                ft.Text(name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
-                                self._build_preview_canvas(existing_brush),
-                                ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, data=name, on_click=_delete_brush, tooltip="Delete this saved brush"),
-                            ], spacing=20), border_radius=ft.BorderRadius.all(4), clip_behavior=ft.ClipBehavior.HARD_EDGE, padding=ft.Padding.only(left=6)
-                        ),
-                        on_tap=_set_active_brush_override, data=name, mouse_cursor=ft.MouseCursor.CLICK
+                content.controls.append(
+                    ft.Container(
+                        ft.Row([
+                            ft.Text(name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                            self._build_preview_canvas(existing_brush),
+                            ft.IconButton(
+                                ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 
+                                data=name, on_click=_delete_custom_brush, tooltip="Delete this saved brush",
+                                mouse_cursor=ft.MouseCursor.CLICK
+                            ),
+                        ], spacing=20), border_radius=ft.BorderRadius.all(4), clip_behavior=ft.ClipBehavior.HARD_EDGE, padding=ft.Padding.only(left=6),
+                        on_click=_select_active_brush_override, data=name,
                     )
                 )
 
@@ -783,7 +802,7 @@ class CanvasRail(Rail):
         save_custom_brush_button = ft.IconButton(      
             ft.Icons.SAVE_ROUNDED, ft.Colors.PRIMARY,
             tooltip="Save current brush settings as a custom brush", 
-            on_click=_save_custom_brush, mouse_cursor=ft.MouseCursor.CLICK
+            on_click=_save_custom_brush_clicked, mouse_cursor=ft.MouseCursor.CLICK
         )  
 
         reset_brush_to_default_button = ft.IconButton(
