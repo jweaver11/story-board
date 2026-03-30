@@ -612,19 +612,21 @@ class CanvasInformationDisplay(MiniWidget):
                     [
                         ft.TextButton(     # Set a color
                             "Color\t\t", ft.Icons.COLOR_LENS_OUTLINED, 
-                            self.data.get('background', "primary") if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
-                            tooltip="Set background as a color", data="color",
+                            ft.Colors.PRIMARY,
+                            #tooltip="Set background as a color", 
+                            data="color",
                             on_click=self._set_background, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ON_SURFACE)
                         ),
                         ft.TextButton(      # Set an image
                             "Image", ft.Icons.IMAGE_OUTLINED, 
-                            self.data.get('background', "primary") if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
-                            tooltip="Set background as an image", data="image",
+                            ft.Colors.PRIMARY,
+                            #tooltip="Set background as an image", 
+                            data="image",
                             on_click=self._set_background, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ON_SURFACE)
                         ),
                         ft.TextButton(  # Clear background
                             "Clear\t\t", ft.Icons.HIDE_IMAGE_OUTLINED,
-                            self.data.get('background', "primary") if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
+                            ft.Colors.PRIMARY,
                             tooltip="Clear/Reset background",
                             on_click=self._clear_background, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ON_SURFACE)
                         ),
@@ -634,7 +636,10 @@ class CanvasInformationDisplay(MiniWidget):
                         tooltip="Setting/Clearing your background will NOT affect any drawing already done on the background layer."
                     ),
                     style=ft.ButtonStyle(mouse_cursor="click"),
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0))
+                    menu_style=ft.MenuStyle(
+                        alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), 
+                        shape=ft.RoundedRectangleBorder(radius=10), bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+                    )
                 )
             ], style=ft.MenuStyle(mouse_cursor="click", padding=ft.Padding.all(0))
         )

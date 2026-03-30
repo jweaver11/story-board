@@ -454,19 +454,14 @@ class Widget(ft.Container):
         if not self.visible:
             return
         
-        self.tab_gd.on_enter = None
-        self.tab_gd.on_secondary_tap = None
-        self.tab_gd.disabled = True
-        self.tab_gd.update()
-        await asyncio.sleep(0.1)
-        
         self.story.blocker.visible = True
         self.story.blocker.update()
         await asyncio.sleep(0)  # Spaces update so the page won't batch them
         
         self.data['visible'] = False
-        self.story.workspace.reload_workspace()   # Reload workspace to hide the widget and show the placeholder in its pin location
         await self.save_dict() 
+
+        self.story.workspace.reload_workspace()   # Reload workspace to hide the widget and show the placeholder in its pin location
 
         self.story.blocker.visible = False
         self.story.blocker.update()
@@ -481,7 +476,9 @@ class Widget(ft.Container):
         
         self.data['visible'] = True
         self.visible = True
+        self.save_counter = 100     # Force a file save
         await self.save_dict()
+
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
         
         if self.story.blocker.visible:
@@ -629,13 +626,13 @@ class Widget(ft.Container):
             on_blur=_cancel_rename,
         )
 
-        rename_button = ft.TextButton("Rename", on_click=_submit_name, style=ft.ButtonStyle(color=ft.Colors.PRIMARY))
+        rename_button = ft.TextButton("Rename", on_click=_submit_name, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click"))
 
         dlg = ft.AlertDialog(
             title=ft.Text(f"Rename {self.title}", weight=ft.FontWeight.BOLD),
             content=text_field,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR), on_click=lambda e: self.p.pop_dialog()),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.p.pop_dialog()),
                 rename_button   
             ]
         )

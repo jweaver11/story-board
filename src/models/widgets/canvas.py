@@ -244,7 +244,7 @@ class Canvas(Widget):
         if e: 
             self.canvas_width = int(e.width)
             self.canvas_height = int(e.height)
-            self.needs_redraw = True
+            #self.needs_redraw = True           # Prevent resizing for now
             if self.initial_resize:
                 self.initial_resize = False
                 self.needs_redraw = False

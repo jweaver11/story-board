@@ -88,13 +88,21 @@ class CanvasRail(Rail):
             picker_area_border_radius=ft.BorderRadius.all(6)
         )   # Set our color pickers color 
 
-        self.color_selector = ft.PopupMenuButton(
-            icon=ft.Icons.COLOR_LENS_OUTLINED, tooltip="The color of your brush strokes.",
-            icon_color=app.settings.data.get('paint_settings', {}).get('color', ft.Colors.PRIMARY),
-            menu_padding=ft.Padding.all(0), size_constraints=ft.BoxConstraints(min_width=240),
-            on_cancel=self._save_color,
-            items=self._get_color_options(),
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+        self.color_selector = ft.SubmenuButton(
+            content=ft.Icon(ft.Icons.COLOR_LENS_ROUNDED, app.settings.data.get('paint_settings', {}).get('color', ft.Colors.PRIMARY)), 
+            tooltip="The color of your brush strokes.",
+            on_close=self._save_color, expand=True,
+            controls=[self.color_picker],
+            style=ft.ButtonStyle(
+                mouse_cursor=ft.MouseCursor.CLICK,  
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
+                shape=ft.RoundedRectangleBorder(radius=10),
+            ),
+            menu_style=ft.MenuStyle(
+                alignment=ft.Alignment.TOP_RIGHT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                shape=ft.RoundedRectangleBorder(radius=10)
+            ),
         )
 
         self.brush_label = ft.Text(
@@ -104,23 +112,24 @@ class CanvasRail(Rail):
         
 
         self.brush_selector = ft.SubmenuButton(
-                    ft.Row([
-                        self.brush_label, 
-                        self._build_preview_canvas(app.settings.data.get('paint_settings', {}))], 
-                        expand=True, scroll=ft.ScrollMode.HIDDEN
-                    ),
-                    self._get_brush_options(),
-                    style=ft.ButtonStyle(
-                        mouse_cursor=ft.MouseCursor.CLICK,  
-                        bgcolor=ft.Colors.SURFACE_CONTAINER,
-                        shape=ft.RoundedRectangleBorder(radius=6),
-                    ),
-                    menu_style=ft.MenuStyle(
-                        alignment=ft.Alignment.TOP_RIGHT,
-                        bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
-                        shape=ft.RoundedRectangleBorder(radius=10)
-                    ),
-                )
+            ft.Row([
+                self.brush_label, 
+                self._build_preview_canvas(app.settings.data.get('paint_settings', {}))], 
+                expand=True, scroll=ft.ScrollMode.HIDDEN
+            ),
+            self._get_brush_options(),
+            style=ft.ButtonStyle(
+                mouse_cursor=ft.MouseCursor.CLICK,  
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
+                shape=ft.RoundedRectangleBorder(radius=10),
+            ),
+            menu_style=ft.MenuStyle(
+                alignment=ft.Alignment.TOP_RIGHT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                shape=ft.RoundedRectangleBorder(radius=10)
+            ),
+            expand=True,
+        )
            
 
         self.paint_blend_mode_selector: ft.PopupMenuButton = None   
@@ -130,49 +139,18 @@ class CanvasRail(Rail):
         )
 
         self.reload_rail()
-
-    # Get our color picker and saved custom color options
-    def _get_color_options(self) -> list[ft.PopupMenuItem]:
-
-        # Add our color picker and custom colors label
-        colors = [
-            ft.PopupMenuItem(
-                disabled=True,
-                content=ft.Container(
-                    #padding=ft.Padding(left=10, right=10, top=10, bottom=20),
-                    content=self.color_picker,
-                ), 
-                padding=ft.Padding.all(0)
-            ),
-        ]
-
-
-        return colors
     
+    # Set the color pickers color
     async def _set_color(self, e):
         self.color_picker.color = e.data
     
 
-
     # Called when color picker is closed
     async def _save_color(self, e=None):
-
-        print("Setting color from picker to ", self.color_picker.color)
-
-         
-        
         app.settings.data['paint_settings']['color'] = self.color_picker.color
         await app.settings.save_dict()
 
-        self.color_selector.icon_color = self.color_picker.color
-        self.color_selector.update()
-        #self.brush_selector.items = self._get_brush_options()   # Update our brush options to show the new color in the previews
-        self.brush_selector.content = ft.Container(
-            ft.Row([self.brush_label, self._build_preview_canvas(app.settings.data.get('paint_settings', {}))], spacing=20),
-            clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=ft.BorderRadius.all(4)
-        )   # Update our brush selector preview to show the new color
-        self.brush_selector.update()
-
+        self.story.active_rail.reload_rail()
 
         
     # Called when selecting one of our brushes
@@ -183,37 +161,7 @@ class CanvasRail(Rail):
         app.settings.data['canvas_settings']['current_brush_name'] = name
         self.p.run_task(app.settings.save_dict)
 
-        self.brush_label.value = name.capitalize()
-        self.brush_selector.content = ft.Container(
-            ft.Row([self.brush_label, self._build_preview_canvas(brush_settings)], spacing=20),
-            clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=ft.BorderRadius.all(4), expand=True,
-        )
-        self.color_picker.color = brush_settings.get('color', "#000000").split(",", 1)[0].strip()   # Update color picker to match new brush color (without opacity)
-        self.color_selector.icon_color = brush_settings.get('color', ft.Colors.PRIMARY).split(",", 1)[0].strip()   # Update selector icon color to match new brush color (without opacity)
-
-        stroke_cap = brush_settings.get('stroke_cap', 'butt')
-        if stroke_cap == "round":
-            self.paint_stroke_cap_selector.icon = ft.Icons.CIRCLE_OUTLINED
-        elif stroke_cap == "square":
-            self.paint_stroke_cap_selector.icon = ft.Icons.SQUARE_OUTLINED
-        else:
-            self.paint_stroke_cap_selector.icon = ft.Icons.CROP_SQUARE_OUTLINED
-
-        stroke_join = brush_settings.get('stroke_join', 'miter') 
-        if stroke_join == "round":
-            self.paint_stroke_join_selector.icon = ft.Icons.CIRCLE_OUTLINED
-        elif stroke_join == "bevel":
-            self.paint_stroke_join_selector.icon = ft.Icons.SQUARE_OUTLINED
-        else:
-            self.paint_stroke_join_selector.icon = ft.Icons.CROP_SQUARE_OUTLINED
-
-        
-
-        self.paint_anti_alias_toggle.value = brush_settings.get('anti_alias', True)
-        self.paint_stroke_blur_slider.value = brush_settings.get('blur_image', 0)
-        #self.paint_blend_mode_selector.icon = ft.Icons.BLUR_OFF_OUTLINED if brush_settings.get('blend_mode', None) is None else ft.Icons.BLUR_ON_OUTLINED
-        #self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
-        self.update()
+        self.story.active_rail.reload_rail()
 
     # Set the blend mode label based on current mode in settings
     def _set_blend_mode_label(self) -> str:
@@ -254,7 +202,7 @@ class CanvasRail(Rail):
             case _: return mode.replace("_", " ").title()
 
     # Reset our paint settings to their defaults. Unload any selected brushes.
-    def _reset_to_defaults(self, e):
+    def _reset_paint_to_defaults(self, e):
         ''' Resets all paint settings to their default values (except color and opacity) '''
 
         current_color = app.settings.data.get('paint_settings', {}).get('color', "#000000") 
@@ -271,25 +219,9 @@ class CanvasRail(Rail):
             "stroke_dash_pattern": None,    # Default no dash pattern
         }
         self.p.run_task(app.settings.save_dict)
-
-        # Since we can't call reload_rail, manually update all controls :(
-        self.paint_width_slider.value = 3
-        self.paint_anti_alias_toggle.value = True
-        self.paint_stroke_cap_selector.icon = ft.Icons.CIRCLE_OUTLINED
-        self.paint_stroke_join_selector.icon = ft.Icons.CIRCLE_OUTLINED
-        self.paint_stroke_blur_slider.value = 0
-
-        self.paint_width_slider.update()
-        self.paint_anti_alias_toggle.update()
-        self.paint_stroke_cap_selector.update()
-        self.paint_stroke_join_selector.update()
-        self.paint_stroke_blur_slider.update()
-        #self.paint_blend_mode_selector.icon = ft.Icons.BLUR_OFF_OUTLINED
-        #self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
-        #self.update()   # Apply update
+        self.story.active_rail.reload_rail()
 
         
-
 
     # Called to build a small preview canvas of our brush strokes for visual distinction
     def _build_preview_canvas(self, paint_settings: dict) -> cv.Canvas:
@@ -316,7 +248,7 @@ class CanvasRail(Rail):
                 ps.update({'style': 'stroke'})  # Give it a usable style so it actually draws something
                 preview_canvas.shapes = [
                     cv.Path([
-                        cv.Path.MoveTo(0, 15),
+                        cv.Path.MoveTo(5, 15),
                         cv.Path.LineTo(100, 15)
                     ], ps)
                 ]
@@ -325,7 +257,7 @@ class CanvasRail(Rail):
                 ps.update({'style': 'stroke'})
                 preview_canvas.shapes = [
                     cv.Path([
-                        cv.Path.Arc(0, 3, 30, 40, math.pi, math.pi)
+                        cv.Path.Arc(5, 3, 30, 40, math.pi, math.pi)
                     ], ps)
                 ]
 
@@ -333,7 +265,7 @@ class CanvasRail(Rail):
                 ps.update({'style': 'stroke'})
                 preview_canvas.shapes = [
                     cv.Path([
-                        cv.Path.MoveTo(0, 30),
+                        cv.Path.MoveTo(5, 30),
                         cv.Path.ArcTo(30, 30, 15, 90)
                     ], ps)
                 ]
@@ -343,8 +275,8 @@ class CanvasRail(Rail):
             case _:
                 preview_canvas.shapes = [
                     cv.Path([
-                        cv.Path.MoveTo(0, 25),
-                        cv.Path.CubicTo(0, 25, 10, 16, 50, 15),
+                        cv.Path.MoveTo(5, 25),
+                        cv.Path.CubicTo(5, 25, 10, 16, 50, 15),
                         cv.Path.CubicTo(50, 15, 90, 14, 100, 5)
                     ], ps)
                 ]
@@ -371,6 +303,11 @@ class CanvasRail(Rail):
             'blend_mode': "src_over",
         }
 
+        default_brush_settings = app.settings.data.get('paint_settings', {}).copy()
+
+        stroke_brush_settings = default_brush_settings.copy()
+        stroke_brush_settings['style'] = 'stroke'
+
         # Edited brush settings depending on the style
         fill_brush_settings = default_brush_settings.copy()
         fill_brush_settings['style'] = 'fill'
@@ -394,10 +331,10 @@ class CanvasRail(Rail):
             ft.MenuItemButton(
                 data=default_brush_settings,
                 content=ft.Container(
-                    ft.Row([ft.Text("Stroke", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(default_brush_settings)], spacing=20),
+                    ft.Row([ft.Text("Stroke", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(stroke_brush_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
                 ),
-                on_click=lambda e: self._set_active_brush(default_brush_settings, name="Stroke"),
+                on_click=lambda _: self._set_active_brush(stroke_brush_settings, name="Stroke"),
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ),
             ft.MenuItemButton(
@@ -406,7 +343,7 @@ class CanvasRail(Rail):
                     ft.Row([ft.Text("Line", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(line_brush_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
                 ),
-                on_click=lambda e: self._set_active_brush(line_brush_settings, "Line"),
+                on_click=lambda _: self._set_active_brush(line_brush_settings, "Line"),
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ),
             ft.MenuItemButton(
@@ -415,21 +352,14 @@ class CanvasRail(Rail):
                     ft.Row([ft.Text("Lasso Fill", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(fill_brush_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
                 ),
-                on_click=lambda e: self._set_active_brush(fill_brush_settings, name="Lasso Fill"),
+                on_click=lambda _: self._set_active_brush(fill_brush_settings, name="Lasso Fill"),
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ), 
             
 
             ft.Divider(),   # Placeholder for shapes section
             ft.Text("\tTools & Shapes", color=ft.Colors.OUTLINE, italic=True),   # Placeholder for shapes section
-            #ft.MenuItemButton(
-                #data=fill_brush_settings,
-                #content=ft.Container(
-                    #ft.Row([ft.Text("Erase", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(fill_brush_settings)], spacing=20),
-                    #clip_behavior=ft.ClipBehavior.HARD_EDGE
-                #),
-                #on_click=lambda e: self._set_active_brush(fill_brush_settings, name="Lasso Fill")
-            #),
+           
             
             ft.MenuItemButton(
                 data=default_brush_settings,
@@ -437,19 +367,19 @@ class CanvasRail(Rail):
                     ft.Row([ft.Text("Arc", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(arc_brush_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
                 ),
-                on_click=lambda e: self._set_active_brush(arc_brush_settings, "Arc"),
+                on_click=lambda _: self._set_active_brush(arc_brush_settings, "Arc"),
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ),
             ft.MenuItemButton(
                 data=default_brush_settings,
                 content=ft.Container(
-                    ft.Row([ft.Text("Half Circle", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(half_circle_brush_settings)], spacing=20),
+                    ft.Row([ft.Text("Semi-Circle", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(half_circle_brush_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
                 ),
-                on_click=lambda e: self._set_active_brush(half_circle_brush_settings, "Half Circle"),
+                on_click=lambda _: self._set_active_brush(half_circle_brush_settings, "Semi-Circle"),
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ),
-            #TODO: Add more shapes here
+            # TODO: Add more shapes here
             
             # TODO: Add more built in options here
 
@@ -457,6 +387,7 @@ class CanvasRail(Rail):
             ft.Text("\tSaved Brushes", color=ft.Colors.OUTLINE, italic=True),   # Placeholder for shapes section
         ]
 
+        # Go through our saved brushes and add options to select them
         for name, brush_settings in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}).items():
             options.append(
                 ft.MenuItemButton(
@@ -465,13 +396,10 @@ class CanvasRail(Rail):
                         ft.Row([ft.Text(name.capitalize(), expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(brush_settings)], spacing=20),
                         clip_behavior=ft.ClipBehavior.HARD_EDGE
                     ),
-                    on_click=lambda e, bs=brush_settings, n=name: self._set_active_brush(bs, n),
+                    on_click=lambda _, bs=brush_settings, n=name: self._set_active_brush(bs, n),
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
                 )
             )
-
-        
-
 
         return options
 
@@ -487,63 +415,43 @@ class CanvasRail(Rail):
             # Change the data directly
             app.settings.data['paint_settings']['stroke_width'] = new_width
             self.p.run_task(app.settings.save_dict)
+            self.story.active_rail.reload_rail()
 
         # Called when changing paint anti-aliasing
         def _paint_anti_alias_changed(e):
             new_anti_alias = e.control.value
             app.settings.data['paint_settings']['anti_alias'] = new_anti_alias
             self.p.run_task(app.settings.save_dict)
+            self.story.active_rail.reload_rail()
 
         def _paint_stroke_cap_changed(e):
             new_stroke_cap = e.control.content.lower()
-            if new_stroke_cap == "butt":
-                e.control.parent.icon = ft.Icons.CROP_SQUARE_OUTLINED
-            elif new_stroke_cap == "round":
-                e.control.parent.icon = ft.Icons.CIRCLE_OUTLINED
-            else:
-                e.control.parent.icon = ft.Icons.SQUARE_OUTLINED
             app.settings.data['paint_settings']['stroke_cap'] = new_stroke_cap
             self.p.run_task(app.settings.save_dict)
-            e.control.update()  
-            e.control.parent.update()
+            self.story.active_rail.reload_rail()
 
         def _paint_stroke_join_changed(e):
             new_stroke_join = e.control.content.lower()
-            # Update icon based on stroke join type if desired
-            if new_stroke_join == "miter":
-                e.control.parent.icon = ft.Icons.CROP_SQUARE_OUTLINED
-            elif new_stroke_join == "round":
-                e.control.parent.icon = ft.Icons.CIRCLE_OUTLINED
-            else:
-                e.control.parent.icon = ft.Icons.SQUARE_OUTLINED
             app.settings.data['paint_settings']['stroke_join'] = new_stroke_join
             self.p.run_task(app.settings.save_dict)
-            e.control.update()  
-            e.control.parent.update()  
+            self.story.active_rail.reload_rail() 
 
         # Called when changing paint stroke blur
         def _paint_stroke_blur_changed(e):
             app.settings.data['paint_settings']['blur_image'] = int(e.control.value)
             self.p.run_task(app.settings.save_dict)
+            self.story.active_rail.reload_rail()
             
 
         def _paint_blend_mode_changed(e):
             mode = e.control.data
-
-            # Set the icon
-            if mode is None:
-                self.paint_blend_mode_selector.icon = ft.Icons.BLUR_OFF_OUTLINED
-                print("Mode is none")
-                
-            else:
-                self.paint_blend_mode_selector.icon = ft.Icons.BLUR_ON_OUTLINED
 
             # Set the new mode and label
             app.settings.data['paint_settings']['blend_mode'] = mode
             self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
 
             self.p.run_task(app.settings.save_dict)
-            self.update()
+            self.story.active_rail.reload_rail()
 
 
         # Called to save our active brush settings as a custom brush we can load later (Excludes color and opacity)
@@ -551,19 +459,18 @@ class CanvasRail(Rail):
             ''' Shows our existing brush options and allows us to override or save as a new brush '''
 
             # Saves the current name and closes the dialog
-            def _save_and_close(e=None): 
+            async def _save_and_close(e=None): 
 
-                #TODO: Add str check for names
                 nonlocal name
                 safe_name = return_safe_name(name)
+
                 # Save current brush settings as a new custom brush
                 brush_settings = app.settings.data['paint_settings'].copy()
                 app.settings.data['canvas_settings']['saved_brushes'][safe_name] = brush_settings
                 self.p.run_task(app.settings.save_dict)
 
-                # Update our selector to include the new option
-                #self.brush_selector.items = self._get_brush_options() 
-                self.brush_selector.update()        # Requires direct update to work
+                # Just rebuild the rail so we can select our newly saved brush
+                self.story.active_rail.reload_rail()
                 self.p.pop_dialog()
 
             # Deletes a color
@@ -571,17 +478,17 @@ class CanvasRail(Rail):
                 nonlocal content
                 name = e.control.data
 
-
                 # Remove it from data
                 if name in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}):
                     del app.settings.data['canvas_settings']['saved_brushes'][name]
                     self.p.run_task(app.settings.save_dict)
 
+                # Remove the control from the dialog
                 dlg.content.controls = [ctrl for ctrl in content.controls if ctrl.data != name]   
                 content.update()
 
+                # If we were going to override it but instead deleted it, apply that UI change
                 if name == new_custom_brush_name_text_field.value:
-                    #new_custom_brush_name_text_field.value = ""
                     new_custom_brush_name_text_field.error = None
                     new_custom_brush_name_text_field.update()
                     save_button.content = "Save"
@@ -599,7 +506,7 @@ class CanvasRail(Rail):
                 save_button.content = "Overwrite"
                 save_button.update()
 
-                # Textfield
+                # Textfield UI changes
                 new_custom_brush_name_text_field.value = name
                 new_custom_brush_name_text_field.error = f"Saving will overwrite {name}"
                 new_custom_brush_name_text_field.update()
@@ -638,7 +545,7 @@ class CanvasRail(Rail):
 
             # Textfield for naming custom color
             new_custom_brush_name_text_field = ft.TextField(
-                label="Brush Name", autofocus=True, on_submit=lambda _: _save_and_close(), dense=True,
+                label="Brush Name", autofocus=True, on_submit=_save_and_close, dense=True,
                 capitalization=ft.TextCapitalization.SENTENCES, expand=True,
                 on_change=_check_name_change,
             )
@@ -699,8 +606,8 @@ class CanvasRail(Rail):
 
         # Width/Size of brush
         self.paint_width_slider = ft.Slider(
-            min=1, max=50, tooltip="The size of your brush strokes.", expand=True,
-            divisions=49, value=app.settings.data.get('paint_settings', {}).get('stroke_width', 5),
+            min=1, max=100, tooltip="The size of your brush strokes.", expand=True,
+            divisions=99, value=app.settings.data.get('paint_settings', {}).get('stroke_width', 5),
             label="Brush Size: {value}px",
             on_change_end=_paint_width_changed
         )
@@ -742,6 +649,7 @@ class CanvasRail(Rail):
             icon=stroke_cap_icon, menu_padding=ft.Padding.all(0),
             tooltip="The shape that your brush strokes will have at the join of two line segments.",
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+            bgcolor=ft.Colors.SURFACE_CONTAINER,
             items=[
                 ft.PopupMenuItem("Miter", icon=ft.Icons.CROP_SQUARE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Sharp corners", mouse_cursor="click"),
                 ft.PopupMenuItem("Round", icon=ft.Icons.CIRCLE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Rounded corners", mouse_cursor="click"),
@@ -807,7 +715,7 @@ class CanvasRail(Rail):
 
         reset_brush_to_default_button = ft.IconButton(
             ft.Icons.RESTART_ALT_OUTLINED, ft.Colors.PRIMARY,
-            on_click=self._reset_to_defaults, mouse_cursor=ft.MouseCursor.CLICK,
+            on_click=self._reset_paint_to_defaults, mouse_cursor=ft.MouseCursor.CLICK,
             tooltip="Resets current brush settings to defaults (Except color and opacity). Will NOT effect any saved brush",
         )
         
@@ -838,23 +746,25 @@ class CanvasRail(Rail):
                         style=ft.MenuStyle(
                             bgcolor="transparent", shadow_color="transparent",
                         ),
+                        expand=True,
                     )
                     ], scroll=ft.ScrollMode.HIDDEN,
                 ),
             
-                
-
-                ft.Row([
+   
+                ft.Text(
+                    "\tCurrent Color", color=ft.Colors.OUTLINE, 
+                    theme_style=ft.TextThemeStyle.LABEL_LARGE, 
+                    italic=True,
+                    tooltip="The color of your brush strokes"
+                ),
+                ft.MenuBar(
+                    [self.color_selector],
+                    style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent"),
+                    expand=True,
+                ),
                     
-                    ft.Text(
-                        "\tCurrent Color", color=ft.Colors.OUTLINE, 
-                        theme_style=ft.TextThemeStyle.LABEL_LARGE, 
-                        italic=True,
-                        tooltip="The color of your brush strokes"
-                    ),
-                    self.color_selector,
-                ], wrap=True),
-
+   
                 # TODO: 
                 # Add shapes and shapefill drawing modes. Path will use paint.style.paintingstyle fill or stroke.
                 # Add shadow effect option for paths
@@ -863,19 +773,19 @@ class CanvasRail(Rail):
                 ft.Row([
                     ft.Text("Size", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Size of your strokes"), 
                     self.paint_width_slider
-                ]),      # Size slider
+                ], spacing=0),      # Size slider
 
                 ft.Row([
                     ft.Text("Stroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="End shape of your strokes"), 
-                    self.paint_stroke_cap_selector
+                    ft.Container(self.paint_stroke_cap_selector, bgcolor=ft.Colors.SURFACE_CONTAINER, shape=ft.BoxShape.CIRCLE)
                 ]),     # Stroke cap shape selector
-                ft.Container(height=10),   # Spacer
+                #ft.Container(height=10),   # Spacer
 
                 ft.Row([
                     ft.Text("Stroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Shape taken at point of two strokes connecting"), 
-                    self.paint_stroke_join_selector
+                    ft.Container(self.paint_stroke_join_selector, bgcolor=ft.Colors.SURFACE_CONTAINER, shape=ft.BoxShape.CIRCLE)
                 ]),   # Stroke join shape selector
-                ft.Container(height=10),   # Spacer
+                #ft.Container(height=10),   # Spacer
  
                 # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
                 ft.Divider(),
