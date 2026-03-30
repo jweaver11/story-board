@@ -28,7 +28,8 @@ class Active_Rail(ft.Container):
         super().__init__(
             alignment=ft.Alignment.TOP_CENTER,
             padding=ft.Padding.only(top=10, bottom=10, right=10, left=10),
-            bgcolor=ft.Colors.SURFACE,
+            #bgcolor=ft.Colors.SURFACE,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             expand=True
         )
 

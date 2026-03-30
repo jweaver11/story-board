@@ -11,7 +11,7 @@ authors = [
 dependencies = [
   #"flet-quill @ git+https://github.com/jweaver11/flet_quill",
   "flet-color-pickers",
-  "flet==0.81.0",
+  "flet==0.83.0",
   "Pillow"
 ]
 

@@ -754,8 +754,8 @@ class Story(ft.View):
             self.workspace.is_resizing = True
 
             active_rail_stack.width += int(e.local_delta.x)    # Apply the change to our rail
-            if active_rail_stack.width < 200:
-                active_rail_stack.width = 200
+            if active_rail_stack.width < 210:
+                active_rail_stack.width = 210
             elif active_rail_stack.width > page.width / 2:
                 active_rail_stack.width = page.width / 2
             active_rail_stack.update()
@@ -772,7 +772,7 @@ class Story(ft.View):
         active_rail_resizer = ft.GestureDetector(
             content=ft.Container(
                 width=10,   # Total width of the GD, so its easier to find with mouse
-                bgcolor=ft.Colors.SURFACE,
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                 # Thin vertical divider, which is what the app will actually drag
                 content=ft.VerticalDivider(2, 2),     # Original
                 padding=ft.Padding.only(right=8),  # Push the 2px divider ^ to the right side
