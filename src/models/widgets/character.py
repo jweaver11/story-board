@@ -88,7 +88,7 @@ class Character(Widget):
         if section not in self.data['character_data']:
             self.data['character_data'][section] = {}
 
-        def create_field(e): #show in edit view
+        async def create_field(e=None): #show in edit view
             '''Called when user confirms the field name'''
             
             field_name = return_safe_name(field_name_input.value)
@@ -102,9 +102,9 @@ class Character(Widget):
                 self.data['character_data'][section][field_name] = ""
             
             # Save and reload
-            self.p.run_task(self.save_dict)
-            self.p.pop_dialog()
+            await self.save_dict()
             self.reload_widget()
+            self.p.pop_dialog()
                                 
             
 
@@ -299,6 +299,47 @@ class Character(Widget):
                     ])
                 )
 
+    async def _new_section_clicked(self, e=None):
+
+        # Called to create the new section
+        async def _create_new_section(e=None):
+            nonlocal new_section_tf
+            section_name = return_safe_name(new_section_tf.value)
+            if not section_name:
+                self.p.pop_dialog()
+                return  # Don't create if empty
+            
+            # Don't create if already exists
+            if 'character_data' not in self.data:
+                self.data['character_data'] = {}
+            if section_name in self.data['character_data']:
+                self.p.pop_dialog()
+                return  
+            
+            self.data['character_data'][section_name] = {}
+            await self.save_dict()
+            self.p.pop_dialog()
+            self.reload_widget()
+
+        new_section_tf = ft.TextField(label="Section Name", autofocus=True, capitalization=ft.TextCapitalization.WORDS, on_submit=_create_new_section)
+
+        dlg = ft.AlertDialog(
+            title=ft.Text("New Section Name"),
+            content=new_section_tf,
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Create", on_click=_create_new_section, style=ft.ButtonStyle(mouse_cursor="click")),
+            ]
+        )
+        self.p.show_dialog(dlg)
+
+    # Save our scroll position for rebuilds
+    async def _save_scroll_position(self, e: ft.OnScrollEvent):
+        return
+        self.scroll_position = e.pixels
+        self.data['scroll_position'] = self.scroll_position
+        await self.save_dict()
+
     # Called when clicking the edit mode button
     def _edit_mode_clicked(self, e=None):
         ''' Switches between edit mode and not for the character '''
@@ -391,13 +432,11 @@ class Character(Widget):
                     )
     
 
-
                 # Add the label and container with our text spans to the control list for this section
                 control_list.append(label)
                 control_list.append(container)
 
             return control_list
-
 
         
         if self.data.get('image_base64', ""):
@@ -449,16 +488,17 @@ class Character(Widget):
         body = ft.Column([
             header,
             ft.TextButton(
-                "Add New Section", #on_click=self._new_section_clicked,
-                style=ft.ButtonStyle(mouse_cursor="click", color=self.data.get('color', None), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=24)),
+                "Add New Section", ft.Icons.PLAYLIST_ADD_ROUNDED,
+                on_click=self._new_section_clicked,
+                style=ft.ButtonStyle(mouse_cursor="click", color=self.data.get('color', None), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
             ),
-        ], scroll="auto", expand=True, spacing=4)
+        ], scroll="auto", expand=True, spacing=4, on_scroll=self._save_scroll_position)
 
         body.controls.extend(_load_character_data_controls())   
 
-        
-
         self.body_container.content = body
+
+        
 
     # Called after any changes happen to the data that need to be reflected in the UI
     def reload_widget(self): #this is the edit view currently

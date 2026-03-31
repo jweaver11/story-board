@@ -305,12 +305,10 @@ class Rail(IsolatedColumn):
         # If our new title unique (check from on_new_item_change), create the new item
         if self.item_is_unique:
 
-            self.p.pop_dialog()   # Close the textfield dialog
-            await asyncio.sleep(0)   # Wait for the dialog to close before creating the new
-
             self.story.blocker.visible = True 
             self.story.blocker.update()
-            await asyncio.sleep(0)   # Wait for blocker to update before creating the new item, which will update the UI again
+            self.p.pop_dialog()   # Close the textfield dialog
+            await asyncio.sleep(0)   # Wait for the dialog to close before creating the new
 
             match tag:
                 # New categories

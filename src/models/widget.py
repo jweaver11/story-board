@@ -64,6 +64,7 @@ class Widget(ft.Container):
                     'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
                     #'color': str,                                  # Color of the icon and tab divider for this widget. Child classes set this on creation  
                     'custom_fields': dict,                          # Dictionary for any custom fields the widget wants to store
+                    'scroll_position': 0,                           # Used to save scroll positions upon rebuilds
                 }
             )
 
@@ -78,6 +79,7 @@ class Widget(ft.Container):
         self.skip_update = False                # Skips applying an update on resizes to prevent update loops
         self.ignore_update = False     # Return and ignore updates, such as when hiding??
         self.save_counter = 0      # Used to check how often we write saving to a file to prevent saving constantly
+        self.scroll_position = self.data.get('scroll_position', 0)   # Used to save scroll positions upon rebuilds
 
         # If widgets display info overtop content rather than next to it (plotline, map, canvas, etc.)
         self.mini_widgets_displayed_overtop: bool = True       # Widgets that set this false need to set their own mini widgets in reload_widget

@@ -495,8 +495,10 @@ class Story(ft.View):
 
         from models.app import app
 
-        self.blocker.visible = True
-        self.blocker.update()
+        if not self.blocker.visible:
+            self.blocker.visible = True
+            self.blocker.update()
+            await asyncio.sleep(0)   # Wait for blocker to update before creating the new item, which will update the UI again
 
         if directory_path is None:
             directory_path = self.data.get('content_directory_path',  '')
@@ -539,11 +541,12 @@ class Story(ft.View):
             self.widgets.append(widget)
 
         # Finish tasks creating widget to make sure the file has enough time to save
+        self.workspace.reload_workspace()
         await asyncio.sleep(0.2)   
 
         # Apply the UI changes
         self.active_rail.reload_rail()
-        self.workspace.reload_workspace()
+        
     
         # Unhide the blocker
         if self.blocker.visible:
