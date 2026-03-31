@@ -67,7 +67,7 @@ class ContentRail(Rail):
                     ),
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
-                        data="plotline", on_click=self.new_item_clicked, close_on_click=True, disabled=True,
+                        data="plotline", on_click=self.new_item_clicked, close_on_click=True, 
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
                         tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
                     ),

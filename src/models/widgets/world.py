@@ -89,7 +89,7 @@ class World(Widget):
                         self.data['world_data'][sub_key][key] = value
                         break
         
-        self.save_dict()
+        self.p.run_task(self.save_dict)
 
     
 
@@ -110,8 +110,42 @@ class World(Widget):
                         del self.data['world_data'][sub_key][key]
                         break
                 
-        self.save_dict()
+        self.p.run_task(self.save_dict)
         self.reload_widget()
+
+    async def _new_section_clicked(self, e=None):
+
+        # Called to create the new section
+        async def _create_new_section(e=None):
+            nonlocal new_section_tf
+            section_name = return_safe_name(new_section_tf.value)
+            if not section_name:
+                self.p.pop_dialog()
+                return  # Don't create if empty
+            
+            # Don't create if already exists
+            if 'world_data' not in self.data:
+                self.data['world_data'] = {}
+            if section_name in self.data['world_data']:
+                self.p.pop_dialog()
+                return  
+            
+            self.data['world_data'][section_name] = {}
+            await self.save_dict()
+            self.p.pop_dialog()
+            self.reload_widget()
+
+        new_section_tf = ft.TextField(label="Section Name", autofocus=True, capitalization=ft.TextCapitalization.WORDS, on_submit=_create_new_section)
+
+        dlg = ft.AlertDialog(
+            title=ft.Text("New Section Name"),
+            content=new_section_tf,
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Create", on_click=_create_new_section, style=ft.ButtonStyle(mouse_cursor="click")),
+            ]
+        )
+        self.p.show_dialog(dlg)
 
     # Called when adding a new field to a section
     def _new_field_clicked(self, section: str):
@@ -137,7 +171,7 @@ class World(Widget):
                 self.data['world_data'][section][field_name] = ""
             
             # Save and reload
-            self.save_dict()
+            self.p.run_task(self.save_dict)
             self.p.pop_dialog()
             self.reload_widget()
                                 
@@ -175,19 +209,19 @@ class World(Widget):
                     encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                     # Save to our data
                     self.data['image_base64'] = f"{encoded_string}"
-                    self.save_dict()
+                    await self.save_dict()
                     self.reload_widget()
 
             except Exception as _:
                 pass
     
     # Called when clicking the edit mode button
-    def _edit_mode_clicked(self, e=None):
+    async def _edit_mode_clicked(self, e=None):
         ''' Switches between edit mode and not for the world '''
 
         # Change our edit mode data flag, and save it to file
         self.data['edit_mode'] = not self.data['edit_mode']
-        self.save_dict()
+        await self.save_dict()
 
         # Reload the widget. The reload widget should load differently depending on if we're in edit mode or not
         self.reload_widget()
@@ -267,7 +301,8 @@ class World(Widget):
                             ft.Text("No fields to display", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
                             ft.TextButton(
                                 ft.Text("Delete Section?", color=ft.Colors.ERROR),
-                                on_click=lambda e, s=section: self._delete_world_data(**{s: ""})
+                                on_click=lambda e, s=section: self._delete_world_data(**{s: ""}),
+                                style=ft.ButtonStyle(mouse_cursor="click")
                             )
                         ])
                     )
@@ -283,19 +318,19 @@ class World(Widget):
             img = ft.Container(
                 ft.Image(
                     src=self.data.get('image_base64', ""),
-                    width=80,
-                    height=80,
+                    width=100,
+                    height=100,
                     fit=ft.BoxFit.FILL,
                 ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             )
         else:
-            img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
+            img = ft.Icon(ft.Icons.PUBLIC_OUTLINED, size=100, color=self.data.get('color', "primary"), expand=False)
 
         # Changes for the about section
         async def _change_about_data(e):
             ''' Called when the about section is changed in edit mode '''
             self.data['About'] = e.control.value
-            self.save_dict()
+            await self.save_dict()
 
         about_section = ft.Column([
             ft.Row([
@@ -325,7 +360,12 @@ class World(Widget):
         ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
 
         body = ft.Column([
-            header
+            header,
+            ft.TextButton(
+                "Add New Section", ft.Icons.PLAYLIST_ADD_ROUNDED,
+                on_click=self._new_section_clicked,
+                style=ft.ButtonStyle(mouse_cursor="click", color=self.data.get('color', None), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
+            ),
         ], scroll="auto", expand=True, spacing=4)
 
         body.controls.extend(_load_world_data_controls())   
@@ -423,7 +463,7 @@ class World(Widget):
                 ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
             )
         else:
-            img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
+            img = ft.Icon(ft.Icons.PUBLIC_OUTLINED, size=100, color=self.data.get('color', "primary"), expand=False)
 
         about_section = ft.Column([
             ft.Row([
