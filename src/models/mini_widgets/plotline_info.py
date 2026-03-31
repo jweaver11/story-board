@@ -143,6 +143,7 @@ class PlotlineInformationDisplay(MiniWidget):
                         ft.IconButton(
                             ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
                             tooltip="Delete Division", 
+                            mouse_cursor="click",
                             on_click=self._change_our_data,
                             data=['Divisions', len(self.data.get('Divisions', [])), True],
                         ),
@@ -348,7 +349,7 @@ class PlotlineInformationDisplay(MiniWidget):
                             ft.Container(
                                 ft.IconButton(
                                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda e, p=pp: p._delete_clicked(),
-                                    tooltip="Delete Plot Point", style=ft.ButtonStyle(padding=ft.Padding.all(0))
+                                    tooltip="Delete Plot Point", style=ft.ButtonStyle(padding=ft.Padding.all(0), mouse_cursor="click")
                                 ), margin=ft.Margin.only(right=20)
                             )
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
@@ -367,7 +368,7 @@ class PlotlineInformationDisplay(MiniWidget):
                             ft.Container(
                                 ft.IconButton(
                                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda e, a=arc: a._delete_clicked(),
-                                    tooltip="Delete Arc", style=ft.ButtonStyle(padding=ft.Padding.all(0))
+                                    tooltip="Delete Arc", style=ft.ButtonStyle(padding=ft.Padding.all(0), mouse_cursor="click")
                                 ), margin=ft.Margin.only(right=20)
                             )
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
@@ -386,7 +387,7 @@ class PlotlineInformationDisplay(MiniWidget):
                             ft.Container(
                                 ft.IconButton(
                                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda e, m=marker: m._delete_clicked(),
-                                    tooltip="Delete Marker", style=ft.ButtonStyle(padding=ft.Padding.all(0))
+                                    tooltip="Delete Marker", style=ft.ButtonStyle(padding=ft.Padding.all(0), mouse_cursor="click")
                                 ), margin=ft.Margin.only(right=20)
                             )
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
@@ -460,6 +461,7 @@ class PlotlineInformationDisplay(MiniWidget):
                         tooltip="Delete Division", 
                         on_click=self._change_our_data,
                         data=['Divisions', idx, True],
+                        mouse_cursor="click"
                     ),
                 ])
             )

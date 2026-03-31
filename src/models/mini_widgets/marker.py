@@ -149,11 +149,12 @@ class Marker(MiniWidget):
         if self.widget.information_display.visible:
             self.widget.information_display.reload_mini_widget()
 
-        await self.widget.rebuild_plotline_canvas(update=True)
 
         # If we changed sides, rebuild everything. Otherwise, just update the canvas for labels n stuff
         if old_side_location != self.data['side_location']:
-            self.reload_plotline_control()
+            for mw in self.widget.mini_widgets:
+                if hasattr(mw, 'plotline_control'):
+                    mw.reload_plotline_control()        # Fix sync issues with plotline controls after having to reload
             await self.widget.rebuild_plotline_canvas()
             self.widget.reload_widget()
         else:

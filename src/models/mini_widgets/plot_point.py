@@ -171,15 +171,20 @@ class PlotPoint(MiniWidget):
             if mw.data.get('visible', True):
                 mw.visible = True
 
+        if self.widget.information_display.visible:
+            self.widget.information_display.reload_mini_widget()
+
         # If we changed sides, rebuild everything. Otherwise, just update the canvas for labels n stuff
         if old_side_location != self.data['side_location']:
-            self.reload_plotline_control()
+            for mw in self.widget.mini_widgets:
+                if hasattr(mw, 'plotline_control'):
+                    mw.reload_plotline_control()
             await self.widget.rebuild_plotline_canvas()
             self.widget.reload_widget()
         else:
             await self.widget.rebuild_plotline_canvas(update=True)
 
-        #self.widget.story.active_rail.content.reload_rail()
+        #self.widget.story.active_rail.reload_rail()
 
     # Called when hovering over our plot point to show the slider
     async def _highlight(self, e=None):
