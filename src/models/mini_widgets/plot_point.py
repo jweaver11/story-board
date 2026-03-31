@@ -67,12 +67,6 @@ class PlotPoint(MiniWidget):
 
         # UI elements
         self.plotline_control: ft.Container = None    # Circle container to show our plot point on the plotline
-        self.icon_button = ft.PopupMenuButton(      # Button to change the plot points icon on the plotline
-            icon=self.data.get('icon', 'circle'),
-            tooltip="Plot Point Icon", icon_color=self.data.get('color', 'secondary'),
-            menu_padding=ft.Padding(0,0,0,0), 
-            items=self._get_icon_options()
-        )
 
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our plot point
@@ -161,6 +155,8 @@ class PlotPoint(MiniWidget):
         
         x_alignment = (self.data.get('left', 0) / (self.widget.plotline_width - 10)) * 2.0 - 1.0
 
+        old_side_location = self.data.get('side_location', 'right')
+
         self.data['x_alignment'] = x_alignment
 
         if self.data.get('x_alignment', 0) <= 0:
@@ -175,9 +171,13 @@ class PlotPoint(MiniWidget):
             if mw.data.get('visible', True):
                 mw.visible = True
 
-        if self.widget.information_display.visible:
-            self.widget.information_display.reload_mini_widget()
-        await self.widget.rebuild_plotline_canvas(update=True)
+        # If we changed sides, rebuild everything. Otherwise, just update the canvas for labels n stuff
+        if old_side_location != self.data['side_location']:
+            self.reload_plotline_control()
+            await self.widget.rebuild_plotline_canvas()
+            self.widget.reload_widget()
+        else:
+            await self.widget.rebuild_plotline_canvas(update=True)
 
         #self.widget.story.active_rail.content.reload_rail()
 
@@ -205,16 +205,15 @@ class PlotPoint(MiniWidget):
         ''' Returns a list of all available icons for icon changing '''
 
         # Called when an icon option is clicked on popup menu to change icon
-        def _change_icon(icon: str, e):
+        async def _change_icon(e):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
             # Set our data and update our button icon
-            self.data['icon'] = icon
-            self.p.run_task(self.save_dict)
+            self.data['icon'] = e.control.data
+            await self.save_dict()
 
             # Update the UI to match. Plotline control needs widget to reload as well
-            self.icon_button.icon = icon
-            self.reload_plotline_control()
+            self.reload_mini_widget()
             self.widget.reload_widget()
 
         # List for our icons when formatted
@@ -223,9 +222,11 @@ class PlotPoint(MiniWidget):
         # Create our controls for our icon options
         for icon in icons:
             icon_controls.append(
-                ft.PopupMenuItem(
+                ft.MenuItemButton(
                     content=ft.Icon(icon, self.data.get('color', 'secondary')),
-                    on_click=lambda e, ic=icon: _change_icon(ic, e)
+                    on_click=_change_icon,
+                    data=icon,
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)
                 )
             )
 
@@ -246,7 +247,8 @@ class PlotPoint(MiniWidget):
         self.plotline_control = ft.Container(
             margin=ft.Margin(16, 0, 16, 0), 
             opacity=1.0, shape=ft.BoxShape.CIRCLE,
-            bgcolor="red", width=24, height=24,
+            #bgcolor="red", 
+            width=24, height=24,
             alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.GestureDetector(
@@ -255,7 +257,7 @@ class PlotPoint(MiniWidget):
                 on_pan_update=self.move_plot_point, drag_interval=20, on_pan_end=self._drag_end,
                 on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
                 on_tap=self.show_mini_widget, on_tap_down=self._drag_start,
-                #content=ft.Icon(self.data.get('icon', 'circle'), self.data.get('color', None))
+                content=ft.Icon(ft.Icons.CIRCLE, self.data.get('color', None))
             ),
         )
         
@@ -264,7 +266,6 @@ class PlotPoint(MiniWidget):
         try:
             self.plotline_control.update()
         except Exception as _:
-            print("Failed update plotline control")
             pass
 
 
@@ -272,8 +273,16 @@ class PlotPoint(MiniWidget):
     def reload_mini_widget(self):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
+        #self.reload_plotline_control()
+
+        select_icon_button = ft.SubmenuButton(      # Button to change the plot points icon on the plotline
+            content=ft.Icon(ft.Icons.CIRCLE, self.data.get('color', None)),
+            tooltip="Plot Point Icon", 
+            controls=self._get_icon_options()
+        )
+
         title_control = ft.Row([
-            self.icon_button,
+            #ft.MenuBar([select_icon_button]),
             ft.GestureDetector(
                 ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
                 on_double_tap=self._rename_clicked,
@@ -282,16 +291,18 @@ class PlotPoint(MiniWidget):
                 mouse_cursor="click", hover_interval=500
             ),
             ft.IconButton(
-                ft.Icons.PUSH_PIN_OUTLINED if not self.widget.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
+                ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
                 self.data.get('color', None),
-                tooltip="Pin Information Display" if not self.widget.data.get('information_display_is_pinned', False) else "Unpin Information Display",
-                on_click=self._toggle_pin
+                tooltip="Pin Plot Point" if not self.data.get('is_pinned', False) else "Unpin Plot Point",
+                on_click=self._pin if not self.data.get('is_pinned', False) else self._unpin,
+                mouse_cursor="click"
             ),
             ft.Container(expand=True),
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.OUTLINE,
                 tooltip=f"Close {self.title}",
                 on_click=self.hide_mini_widget,
+                mouse_cursor="click"
             ),
         ], spacing=0)
 
@@ -346,19 +357,21 @@ class PlotPoint(MiniWidget):
             
             for widget in self.widget.story.widgets:
                 if widget.data.get('tag', None) == 'character':
+                    char_key = widget.data.get('key', "")
                     
                     char_list.append(
                         ft.Checkbox(
                             widget.title,
-                            #True if char_key in self.data.get('Involved Characters', []) else False,
-                            #data=char_key,
-                            #label_style=ft.TextStyle(color=char_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
-                            on_change=_toggle_involved_characters
+                            True if char_key in self.data.get('Involved Characters', []) else False,
+                            data=char_key,
+                            label_style=ft.TextStyle(color=widget.data.get('color', None), weight=ft.FontWeight.BOLD),
+                            on_change=_toggle_involved_characters,
+                            mouse_cursor="click"
                         )
                     )
 
             if len(char_list) == 0:
-                char_list.append(ft.Text("No characters in story yet", color=ft.Colors.OUTLINE))
+                char_list.append(ft.Text("No characters in story yet", color=ft.Colors.OUTLINE, italic=True))
             return char_list
 
         def _toggle_involved_characters_selector(e=None):
@@ -372,10 +385,12 @@ class PlotPoint(MiniWidget):
 
             self.update()
 
-        add_involved_characters_button = ft.IconButton(
+        add_involved_characters_button = ft.TextButton(
+            "Involved Characters",
             ft.Icons.EDIT_OUTLINED,
-            tooltip="Connect Involved Characters",
-            on_click=_toggle_involved_characters_selector
+            style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor="click", color=ft.Colors.ON_SURFACE),
+            on_click=_toggle_involved_characters_selector,
+            
         )
 
         involved_characters_selector = ft.Column(
@@ -386,35 +401,39 @@ class PlotPoint(MiniWidget):
         def _set_involved_characters_controls(e=None) -> list[ft.Control]:
 
             controls = [
-                ft.Text("Involved Characters:\t\t\t", theme_style=ft.TextThemeStyle.LABEL_LARGE, color=self.data.get('color', None)),
+                add_involved_characters_button,
             ]
 
             for idx, ic_key in enumerate(self.data.get('Involved Characters', [])):
-                char = self.widget.story.characters.get(ic_key, None)
+                for widget in self.widget.story.widgets:
+                    if widget.data.get('key', "") == ic_key and widget.data.get('tag', None) == 'character':
+                        char = widget
+                        break
                 if char is not None:
                     name = char.data.get('title', ic_key)
 
+
                     # Add the control now
-                    controls.append(ft.Text(name, color=char.data.get('color', None), weight=ft.FontWeight.BOLD))
                     controls.append(
-                        ft.IconButton(
-                            ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
-                            data=ic_key,
-                            on_click=_toggle_involved_characters
-                        )
+                        ft.Row([
+                            ft.Text(name, color=char.data.get('color', None), weight=ft.FontWeight.BOLD),
+                            ft.IconButton(
+                                ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
+                                data=ic_key, mouse_cursor="click",
+                                on_click=_toggle_involved_characters,
+                            )
+                        ], spacing=0, tight=True)
                     )
+                    
                     if idx < len(self.data.get('Involved Characters', [])) - 1: # Skip adding container to last character
                         controls.append(ft.Container(width=10))
                            
-                    
 
-            controls.append(add_involved_characters_button)
             return controls
 
-        
-        involved_characters_row = ft.Row(
+        involved_characters_row = ft.Column(
             _set_involved_characters_controls(),
-            wrap=True, spacing=0,
+            spacing=0,
         )
 
         def _toggle_related_objects_selector(e=None):
@@ -428,16 +447,17 @@ class PlotPoint(MiniWidget):
 
             self.update()
 
-        add_related_objects_button = ft.IconButton(
+        add_related_objects_button = ft.TextButton(
+            "Related Objects",
             ft.Icons.EDIT_OUTLINED,
-            tooltip="Add Related Object by Key",
-            on_click=_toggle_related_objects_selector
+            style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor="click", color=ft.Colors.ON_SURFACE),
+            on_click=_toggle_related_objects_selector,
         )
 
         def _set_related_objects_controls(e=None) -> list[ft.Control]:
 
             controls = [
-                ft.Text("Related Objects:\t\t\t", theme_style=ft.TextThemeStyle.LABEL_LARGE, color=self.data.get('color', None)),
+                add_related_objects_button
             ]
 
             for idx, obj_key in enumerate(self.data.get('Related Objects', [])):
@@ -451,6 +471,7 @@ class PlotPoint(MiniWidget):
                         ft.IconButton(
                             ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
                             data=obj_key,
+                            mouse_cursor="click"
                             #on_click=_toggle_related_objects
                         )
                     )
@@ -459,7 +480,6 @@ class PlotPoint(MiniWidget):
                            
                     
 
-            controls.append(add_related_objects_button)
             return controls
         
         def _toggle_related_objects(e):
@@ -499,12 +519,12 @@ class PlotPoint(MiniWidget):
                     )
 
             if len(char_list) == 0:
-                char_list.append(ft.Text("No objects in story yet", color=ft.Colors.OUTLINE))
+                char_list.append(ft.Text("No objects in story yet", color=ft.Colors.OUTLINE, italic=True))
             return char_list
 
-        related_objects_row = ft.Row(
+        related_objects_row = ft.Column(
             _set_related_objects_controls(),
-            wrap=True, spacing=0,
+            spacing=0,
         )
         
         related_objects_selector = ft.Column(
@@ -514,10 +534,12 @@ class PlotPoint(MiniWidget):
 
         custom_fields_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+            ft.Text("Custom Fields", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD),
             ft.IconButton(
                 ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Custom Field",
-                on_click=lambda e: self._new_custom_field_clicked())
+                on_click=lambda e: self._new_custom_field_clicked(),
+                mouse_cursor="click"
+            )
         ], spacing=0)
 
         custom_fields_column = self._build_custom_fields_column()
@@ -549,9 +571,7 @@ class PlotPoint(MiniWidget):
         self.content = column
         
       
-            
-        if not self.is_first_launch:
-            try:
-                self.update()
-            except Exception as _:
-                pass
+        try:
+            self.update()
+        except Exception as _:
+            pass

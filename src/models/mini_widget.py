@@ -62,6 +62,8 @@ class MiniWidget(ft.Container):
             },
         )
 
+        self.first_load: bool = True    # State tracking
+
         if data is None:
             self.p.run_task(self.save_dict)
 
@@ -240,6 +242,24 @@ class MiniWidget(ft.Container):
         e.control.icon = ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED
         e.control.tooltip = "Pin Connection" if not self.data.get('is_pinned', False) else "Unpin Connection"
         e.control.update()
+
+    async def _pin(self, e):
+        self.data['is_pinned'] = True
+        await self.save_dict()
+        e.control.icon = ft.Icons.PUSH_PIN_ROUNDED
+        e.control.tooltip = "Unpin Connection"
+        e.control.on_click = self._unpin
+        e.control.update()
+        
+        
+
+    async def _unpin(self, e):
+        self.data['is_pinned'] = False
+        await self.save_dict()
+        e.control.icon = ft.Icons.PUSH_PIN_OUTLINED
+        e.control.tooltip = "Pin Connection"
+        e.control.on_click = self._pin
+        e.control.update()
         
 
     async def show_mini_widget(self, e=None):
@@ -257,13 +277,16 @@ class MiniWidget(ft.Container):
         self.data['visible'] = True
         self.visible = True
         await self.save_dict()
+        self.reload_mini_widget()
 
         # If we show this mini widget, hide all other mini widgets that are not pinned
         for mw in self.widget.mini_widgets:
             if mw != self and mw.data.get('is_pinned', False) == False:
+                #print("Hiding mini widget", mw.title, "because it is not pinned")
                 await mw.hide_mini_widget() 
+            #else:
+                #print("Not hiding mini widget", mw.title, "because it is pinned or focused mini widget")
 
-        self.update()
         self.widget.story.blocker.visible = False
         self.widget.story.blocker.update()
 
@@ -298,7 +321,7 @@ class MiniWidget(ft.Container):
         if 'custom_fields' not in self.data:
             self.data['custom_fields'] = {} 
 
-        def create_field(e): #show in edit view
+        async def create_field(e): #show in edit view
             '''Called when user confirms the field name'''
             
             field_name = return_safe_name(field_name_input.value)
@@ -310,11 +333,12 @@ class MiniWidget(ft.Container):
             # Add the field to data if it doesn't exist
             if field_name not in self.data['custom_fields']:
                 self.data['custom_fields'][field_name] = ""
+
             
             # Save and reload
-            self.p.run_task(self.save_dict)
-            self.p.pop_dialog()
-            self.reload_mini_widget()       
+            await self.save_dict()
+            self.reload_mini_widget()      
+            self.p.pop_dialog() 
             
 
         # Create a dialog to ask for the field name
@@ -353,11 +377,12 @@ class MiniWidget(ft.Container):
                 ft.Row([
                     ft.TextField(
                         value=field_value, expand=True, label=field_name, capitalization=ft.TextCapitalization.SENTENCES,   
-                        on_blur=lambda e, fn=field_name: self.change_custom_field(**{fn: e.control.value})
+                        on_blur=lambda e, fn=field_name: self.change_custom_field(**{fn: e.control.value}), dense=True
                     ),
                     ft.IconButton(
                         ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Custom Field",
-                        on_click=lambda e, fn=field_name: self._delete_custom_field_clicked(fn)
+                        on_click=lambda e, fn=field_name: self._delete_custom_field_clicked(fn),
+                        mouse_cursor="click"
                     ),
                 
                 ],)
@@ -517,34 +542,27 @@ class MiniWidget(ft.Container):
         ''' Returns a list of all available colors for icon changing '''
 
         # Called when a color option is clicked on popup menu to change icon color
-        def _change_icon_color(color: str):
+        async def _change_icon_color(e):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
-            self.change_data(**{'color': color})
+            self.data['color'] = e.control.data
+            await self.save_dict()
 
-            if hasattr(self, 'icon_button'):        # Locations and plotpoints have this
-                self.icon_button.icon_color = color
-
-            if hasattr(self, 'left_drag_handle') and hasattr(self, 'right_drag_handle'):     # Arcs have these
-                self.left_drag_handle.content.color = color
-                self.right_drag_handle.content.color = color
-
-            if hasattr(self, 'reload_plotline_control'):
-                self.reload_plotline_control()
-
-            if hasattr(self, 'map_control'):
-                self.reload_map_control()
-
-            if hasattr(self, 'map_label'):
-                self.map_label.color = color
-
+            
             self.reload_mini_widget()
-            #self.widget.reload_widget()
+            if hasattr(self.widget, 'rebuild_plotline_canvas'):
+                await self.widget.rebuild_plotline_canvas()
+            self.widget.reload_widget()
+            
+
             # Change our icon to match, apply the update
-            self.widget.story.active_rail.content.reload_rail()
+            #self.widget.story.active_rail.reload_rail()
 
             #await asyncio.sleep(0.3)
-            self.widget.story.close_menu_instant()
+            await self.widget.story.close_menu()
+            if self.widget.story.blocker.visible:
+                self.widget.story.blocker.visible = False
+                self.widget.story.blocker.update()
             
             
 
@@ -556,7 +574,8 @@ class MiniWidget(ft.Container):
             color_controls.append(
                 ft.MenuItemButton(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                    on_click=lambda e, col=color: _change_icon_color(col), close_on_click=True,
+                    on_click=_change_icon_color, close_on_click=True,
+                    data=color,
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
                 )
             )

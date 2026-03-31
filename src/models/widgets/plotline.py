@@ -342,7 +342,11 @@ class Plotline(Widget):
             MenuOptionStyle(
                 content=ft.SubmenuButton(
                     ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True)], expand=True),
+                        ft.Row([
+                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), 
+                            ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Icon(ft.Icons.ARROW_RIGHT),
+                        ], expand=True),
                         padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
                     ),
                     [
@@ -417,7 +421,7 @@ class Plotline(Widget):
             return
         
         if self.needs_redraw:
-            await self.rebuild_plotline_canvas()
+            await self.rebuild_plotline_canvas(update=True)
             self.needs_redraw = False
 
         # Set coordinates for menu
@@ -585,8 +589,6 @@ class Plotline(Widget):
     async def rebuild_plotline_canvas(self, update: bool = False):
         ''' Redraws our plotline on the canvas when it is resized. Does it on startup as well '''
 
-        print("Rebuild called")
-
         self.data['old_plotline_width'] = self.plotline_width
         self.data['old_plotline_height'] = self.plotline_height
         await self.save_dict()   # Save our new size to our data
@@ -749,6 +751,11 @@ class Plotline(Widget):
                     )
                 )
 
+                try:
+                    plot_point.plotline_control.update()
+                except Exception as _:
+                    pass
+
 
         # Add our markers on the plotline ------------------------------------------------
         for marker in self.markers.values():
@@ -775,6 +782,8 @@ class Plotline(Widget):
                 marker_height = self.plotline_height // 2 #- y_pos
                 marker.plotline_control.height = marker_height
                 marker.plotline_control.top = y_pos
+
+                
     
                 # Re-paint its shapes (dashed line) if needed (Only first load)
                 marker.plotline_control.content.content.shapes = [
@@ -801,46 +810,58 @@ class Plotline(Widget):
                 # Add the text label for the plot point
                 self.plotline_canvas.shapes.append(label_path)
 
-        # Go through our arcs and update their size --------------------------------------------------
-        
+                try:
+                    marker.plotline_control.update()
+                except Exception as _:
+                    print("Failed update")
+                    pass
 
-        # TODO: Add width check, make sure their new left and right are 100px wide at least. 
-        
+        # Go through our arcs and update their size --------------------------------------------------        
         for arc in self.arcs.values():
-            # Make sure heights and widths r updated
-            arc.plotline_control.bottom = self.plotline_height // 2       # Make sure plot point is in middle of the line
 
-            width = self.plotline_width - arc.data.get('left', 0) - arc.data.get('right', 0)
-            
+            if self.data.get('hide_all_arcs', False):
+                break
+
+            if arc.data.get('is_shown_on_widget', False):
+                # Make sure heights and widths r updated
+                arc.plotline_control.bottom = self.plotline_height // 2       # Make sure plot point is in middle of the line
+
+                width = self.plotline_width - arc.data.get('left', 0) - arc.data.get('right', 0)
                 
-            lr = arc.data.get('left_ratio', 0)
-            rr = arc.data.get('right_ratio', 0)            
+                    
+                lr = arc.data.get('left_ratio', 0)
+                rr = arc.data.get('right_ratio', 0)            
 
-            new_left = int(lr * self.plotline_width)
-            new_right = int(rr * self.plotline_width)
+                new_left = int(lr * self.plotline_width)
+                new_right = int(rr * self.plotline_width)
 
-            new_width = self.plotline_width - new_left - new_right
-            if new_width < 100:
-                continue
+                new_width = self.plotline_width - new_left - new_right
+                if new_width < 100:
+                    continue
 
-            height = new_width * 0.5
+                height = new_width * 0.5
 
-            if height >= self.plotline_height / 2 -70:
-                height = self.plotline_height / 2 -70
-            #width_ratio = width / max(self.plotline_width, 1)
+                if height >= self.plotline_height / 2 -70:
+                    height = self.plotline_height / 2 -70
+                #width_ratio = width / max(self.plotline_width, 1)
 
-            #height = (self.plotline_height / 2) * (width_ratio) - 40
-            if height < 50:
-                height = 50
+                #height = (self.plotline_height / 2) * (width_ratio) - 40
+                if height < 50:
+                    height = 50
 
-            arc.data['left'] = new_left
-            arc.data['right'] = new_right
-            arc.data['width'] = new_width
-            arc.plotline_control.height = int(height) 
+                arc.data['left'] = new_left
+                arc.data['right'] = new_right
+                arc.data['width'] = new_width
+                arc.plotline_control.height = int(height) 
 
-            arc.plotline_control.left = new_left   
-            arc.plotline_control.right = new_right
-            arc.plotline_control.bottom = self.plotline_height / 2
+                arc.plotline_control.left = new_left   
+                arc.plotline_control.right = new_right
+                arc.plotline_control.bottom = self.plotline_height / 2
+
+                try:
+                    arc.plotline_control.update()
+                except Exception as _:
+                    pass
 
         # If we forced an update
         if update:
@@ -890,17 +911,13 @@ class Plotline(Widget):
             if self.data.get('hide_all_plot_points', False):
                 break
             if self.data.get('show_all_plot_points', False) or plot_point.data.get('is_shown_on_widget', False):
-
-                # Add the plot point control to the plotline stack
                 plotline_stack.controls.append(plot_point.plotline_control)
 
         # Add our markers to the plotline (They position themselves)
         for marker in self.markers.values():    
             if self.data.get('hide_all_markers', False):
                 break
-
             if self.data.get('show_all_markers', False) or marker.data.get('is_shown_on_widget', False):
-                # Add the marker control to the plotline stack
                 plotline_stack.controls.append(marker.plotline_control)
 
         # Add all our mini widgets to the plotline stack as well

@@ -63,9 +63,11 @@ class Marker(MiniWidget):
 
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our plot point
+        
 
         # Build our slider for moving our plot point
-        #self.reload_mini_widget()
+        self.reload_plotline_control()
+        self.reload_mini_widget()
 
     def delete_dict(self, e=None):
 
@@ -77,21 +79,23 @@ class Marker(MiniWidget):
 
         self.plotline_control.content.mouse_cursor = ft.MouseCursor.RESIZE_LEFT_RIGHT
         self.is_dragging = True
+        self.plotline_control.update()
 
         # Hide all other info displays while dragging
-        for mw in self.widget.mini_widgets:
-            mw.visible = False
+        #for mw in self.widget.mini_widgets:
+            #mw.visible = False
+            #mw.update()
 
-        self.p.update()
+        
 
     # Called when actively dragging our slider thumb to change our x position
-    async def move_marker(self, e=None):
+    async def move_marker(self, e: ft.DragUpdateEvent):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
 
         if e is None:
             delta_x = 0
         else:
-            delta_x = e.delta_x
+            delta_x = e.local_delta.x
 
         if not isinstance(delta_x, (int, float)):
             delta_x = 0
@@ -109,10 +113,9 @@ class Marker(MiniWidget):
         self.plotline_control.left = new_left
 
         self.data['left'] = new_left
+        print("Updating left to", new_left)
 
-        #self.plotline_control.page = self.p
-        #self.plotline_control.update()
-        self.p.update()
+        self.plotline_control.update()
 
     # Called when we finish dragging our plotline_marker to save our position
     async def _drag_end(self, e=None):
@@ -127,22 +130,36 @@ class Marker(MiniWidget):
 
         self.data['x_alignment'] = x_alignment
 
+        old_side_location = self.data.get('side_location', 'right')
+
         if self.data.get('x_alignment', 0) <= 0:
             self.data['side_location'] = "right"
         else:
             self.data['side_location'] = "left"
 
-        self.save_dict()
+        
+
+        await self.save_dict()
 
         for mw in self.widget.mini_widgets:
             if mw.data.get('visible', True):
                 mw.visible = True
+                mw.update()
 
         if self.widget.information_display.visible:
-            self.widget.information_display.reload_mini_widget(no_update=True)
-        await self.widget.rebuild_plotline_canvas(no_update=False)
+            self.widget.information_display.reload_mini_widget()
 
-        self.widget.story.active_rail.content.reload_rail()
+        await self.widget.rebuild_plotline_canvas(update=True)
+
+        # If we changed sides, rebuild everything. Otherwise, just update the canvas for labels n stuff
+        if old_side_location != self.data['side_location']:
+            self.reload_plotline_control()
+            await self.widget.rebuild_plotline_canvas()
+            self.widget.reload_widget()
+        else:
+            await self.widget.rebuild_plotline_canvas(update=True)
+
+        #self.widget.story.active_rail.reload_rail()
         
         
     # Called when hovering over our plot point to show the slider
@@ -152,9 +169,10 @@ class Marker(MiniWidget):
             return
 
         self.plotline_control.content.content.opacity = .7 if self.plotline_control.content.content.opacity != .7 else 1
+        self.plotline_control.update()
 
         # Apply it to the UI
-        self.p.update()
+        #self.p.update()
 
             
     # Called when toggling whether this plot point is shown on the plotline in the plotline filters
@@ -164,24 +182,26 @@ class Marker(MiniWidget):
         # Change the control visibility, data, and save it
         self.plotline_control.visible = value
         self.data['is_shown_on_widget'] = value
-        self.save_dict()
+        self.p.run_task(self.save_dict)
         
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:
-            self.hide_mini_widget(update=True)
+            self.hide_mini_widget()
         # Otherwise, just update the page
-        else:
-            self.p.update()
+        #else:
+            #self.p.update()
           
 
     # Called from reload_mini_widget
-    def _rebuild_plotline_control(self):
+    def reload_plotline_control(self):
         """ Rebuilds our plotline control that holds our plot point and slider """
 
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
         self.plotline_control = ft.Container(
-            margin=ft.Margin(16, 0, 16, 0), expand=False,
-            width=10, alignment=ft.alignment.center, clip_behavior=ft.ClipBehavior.HARD_EDGE,
+            margin=ft.Margin(16, 0, 16, 0), expand=True,
+            width=10, alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.HARD_EDGE,
+            #bgcolor="red",
+            border=ft.Border.all(2, self.data.get('color', None), ft.BorderSide(style=ft.BorderStyle.SOLID)),
             left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.GestureDetector(
                 width=10, mouse_cursor=ft.MouseCursor.CLICK,
@@ -199,44 +219,43 @@ class Marker(MiniWidget):
             ),
         )
 
+        #self.plotline_control = ft.Container(width=30, height=30, bgcolor="red")
+
+        try:
+            self.plotline_control.update()
+        except Exception as _:
+            pass
+
         
 
 
     # Called when reloading changes to our plot point and in constructor
-    def reload_mini_widget(self, no_update: bool=False):
+    def reload_mini_widget(self):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
-        async def _toggle_pin(e):
-            ''' Pins or unpins our information display '''
-            is_pinned = self.data.get('is_pinned', False)
-            self.data['is_pinned'] = not is_pinned
-            self.save_dict()
-            self.reload_mini_widget()
-            self.widget.reload_widget()
-
-        # Reload our plotline control
-        self._rebuild_plotline_control()
 
         title_control = ft.Row([
-            ft.Icon(ft.Icons.FLAG_OUTLINED, self.data.get('color', None)),
+            #ft.Icon(ft.Icons.FLAG_OUTLINED, self.data.get('color', None)),
             ft.GestureDetector(
-                ft.Container(ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"), padding=ft.padding.only(left=8)),
+                ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
                 on_double_tap=self._rename_clicked,
                 on_tap=self._rename_clicked,
                 on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", on_hover=self.widget._hover_tab, hover_interval=500
+                mouse_cursor="click", hover_interval=500
             ),
             ft.IconButton(
                 ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
                 self.data.get('color', None),
-                tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
-                on_click=_toggle_pin
+                tooltip="Pin Marker" if not self.data.get('is_pinned', False) else "Unpin Marker",
+                on_click=self._pin if not self.data.get('is_pinned', False) else self._unpin,
+                mouse_cursor="click"
             ),
             ft.Container(expand=True),
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.OUTLINE,
                 tooltip=f"Close {self.title}",
-                on_click=lambda e: self.hide_mini_widget(update=True),
+                on_click=self.hide_mini_widget,
+                mouse_cursor="click"
             ),
         ], spacing=0)
 
@@ -254,7 +273,9 @@ class Marker(MiniWidget):
             ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
             ft.IconButton(
                 ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Custom Field",
-                on_click=lambda e: self._new_custom_field_clicked())
+                on_click=lambda e: self._new_custom_field_clicked(),
+                mouse_cursor="click"
+            )
         ], spacing=0)
 
         custom_fields_column = self._build_custom_fields_column()
@@ -266,7 +287,7 @@ class Marker(MiniWidget):
                 description_tf,
 
                 custom_fields_label,
-                ft.Container(custom_fields_column, margin=ft.margin.symmetric(horizontal=20)),
+                ft.Container(custom_fields_column, margin=ft.Margin.symmetric(horizontal=20)),
             ]
         )
 
@@ -279,7 +300,7 @@ class Marker(MiniWidget):
         self.content = column
             
 
-        if no_update:
-            return
-        else:
-            self.p.update()
+        try:
+            self.update()
+        except Exception as _:
+            pass
