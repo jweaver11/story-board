@@ -82,9 +82,10 @@ class Marker(MiniWidget):
         self.plotline_control.update()
 
         # Hide all other info displays while dragging
-        #for mw in self.widget.mini_widgets:
-            #mw.visible = False
-            #mw.update()
+        for mw in self.widget.mini_widgets:
+            if mw.data.get('visible', True):
+                mw.visible = False
+                mw.update()
 
         
 
@@ -113,7 +114,6 @@ class Marker(MiniWidget):
         self.plotline_control.left = new_left
 
         self.data['left'] = new_left
-        print("Updating left to", new_left)
 
         self.plotline_control.update()
 
@@ -142,7 +142,7 @@ class Marker(MiniWidget):
         await self.save_dict()
 
         for mw in self.widget.mini_widgets:
-            if mw.data.get('visible', True):
+            if mw.data.get('visible', True) and mw.visible == False:
                 mw.visible = True
                 mw.update()
 
@@ -154,7 +154,7 @@ class Marker(MiniWidget):
         if old_side_location != self.data['side_location']:
             for mw in self.widget.mini_widgets:
                 if hasattr(mw, 'plotline_control'):
-                    mw.reload_plotline_control()        # Fix sync issues with plotline controls after having to reload
+                    mw.reload_plotline_control(no_update=True)        # Fix sync issues with plotline controls after having to reload
             await self.widget.rebuild_plotline_canvas()
             self.widget.reload_widget()
         else:

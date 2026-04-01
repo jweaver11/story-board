@@ -92,7 +92,7 @@ class Arc(MiniWidget):
                 'Start': str,                          
                 'End': str, 
                 'Where': str, 
-                'Involved Characters': list,
+                'Relevant Characters': list,
                 'Related Objects': list,
             },
         )
@@ -132,9 +132,9 @@ class Arc(MiniWidget):
 
         # Add this new event to our data and save it
         events = self.data.get('Events', [])
-        events.append(title)
+        events.append({'title': title, 'description': ""})
         self.data['Events'] = events
-        self.save_dict()
+        await self.save_dict()
 
         # Reload our mini widget to show this new event
         self.reload_mini_widget()
@@ -283,13 +283,17 @@ class Arc(MiniWidget):
         self.data['left_ratio'] = self.data.get('left', 0) / max(self.widget.plotline_width, 1)
         self.data['right_ratio'] = self.data.get('right', 0) / max(self.widget.plotline_width, 1)
 
-        # Make all other plot points visible again
-        #for pp in self.widget.plot_points.values():
-            #if pp.data.get('is_shown_on_widget', True):
-                #pp.plotline_control.visible = True
+        # Hide all other info displays while dragging
+        for mw in self.widget.mini_widgets:
+            if mw.data.get('visible', False):
+                mw.visible = True
+                mw.update()
+            if isinstance(mw, Arc) and mw != self:
+                mw.plotline_control.ignore_interactions = False
+                mw.plotline_control.update()
             
         # Save our new positions to file
-        self.save_dict()
+        await self.save_dict()
 
         if self.widget.information_display.visible:
             self.widget.information_display.reload_mini_widget()
@@ -298,7 +302,7 @@ class Arc(MiniWidget):
         if old_side_location != self.data['side_location']:
             for mw in self.widget.mini_widgets:
                 if hasattr(mw, 'plotline_control'):
-                    mw.reload_plotline_control()
+                    mw.reload_plotline_control(no_update=False)
             await self.widget.rebuild_plotline_canvas()
             self.widget.reload_widget()
         else:
@@ -313,7 +317,7 @@ class Arc(MiniWidget):
         # Change the control visibility, data, and save it
         self.plotline_control.visible = value
         self.data['is_shown_on_widget'] = value
-        self.save_dict()
+        await self.save_dict()
         
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:
@@ -446,28 +450,51 @@ class Arc(MiniWidget):
 
         def _get_events_controls() -> list[ft.Control]:
 
-            def _change_cursor(e, tag: str):
-                if tag == "down":
-                    e.control.mouse_cursor = ft.MouseCursor.GRABBING
-                elif tag == "up":
-                    e.control.mouse_cursor = ft.MouseCursor.GRAB
-                self.update()
+            async def _change_event_description(e):
+                
+                new_description = e.control.value
+                event_idx = e.control.data
+                print("Index: ", event_idx)
+
+                events = self.data.get('Events', [])
+                if event_idx < len(events):
+                    event = events[event_idx]
+                    if isinstance(event, dict):
+                        event['description'] = new_description
+                        self.data['Events'][event_idx] = event
+                        await self.save_dict()
+
+            async def _delete_event(e):
+                event_idx = e.control.data
+                events = self.data.get('Events', [])
+                if event_idx < len(events):
+                    events.pop(event_idx)
+                    self.data['Events'] = events
+                    await self.save_dict()
+                    self.reload_mini_widget()
+
 
             controls = []
             for idx, event in enumerate(self.data.get('Events', [])):
-                event_tf = ft.ReorderableDraggable(
-                    idx, 
-                    ft.GestureDetector(
-                        ft.Container(ft.Text(event), margin=ft.margin.only(bottom=6, top=6, left=20, right=10)),
-                        mouse_cursor=ft.MouseCursor.GRAB, 
-                        on_tap_down=lambda e: _change_cursor(e, "down"),
-                        on_tap_up=lambda e: _change_cursor(e, "up"),
-                    )
+                event_title = event.get('title', "") if isinstance(event, dict) else event
+                event_description = event.get('description', "") if isinstance(event, dict) else ""
+                event_tf = ft.ReorderableDragHandle(
+                    ft.Container(
+                        ft.ListTile(
+                            leading=ft.Text(event_title),
+                            title=ft.TextField(
+                                value=event_description, label="Description", dense=True, data=idx, 
+                                on_blur=_change_event_description, capitalization=ft.TextCapitalization.SENTENCES, multiline=True
+                            ),
+                            trailing=ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, data=idx, on_click=_delete_event, mouse_cursor="click"),
+                            dense=True, data=idx, mouse_cursor=ft.MouseCursor.GRAB,
+                        ), 
+                        margin=ft.Margin.only(left=10, right=10)),
                 )
                 controls.append(event_tf)
             return controls
         
-        def _reorder_events(e):
+        async def _reorder_events(e):
             ''' Reorders our events list based on the new order after a drag and drop reorder '''
             events = self.data.get('Events', [])
             event = events.pop(e.old_index)
@@ -475,16 +502,20 @@ class Arc(MiniWidget):
 
             events_list.controls = _get_events_controls()
             self.data['Events'] = events
-            self.save_dict()
+            await self.save_dict()
             self.update()
         
         events_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Events", color=self.data.get('color', 'secondary'), weight=ft.FontWeight.BOLD, tooltip="List of events that happened during this arc"),
+            ft.Text(
+                "Events", weight=ft.FontWeight.BOLD, 
+                tooltip="List of events (plot points) that happened during this arc. Drag to reorder them"
+            ),
             ft.Container(width=6),
             ft.IconButton(
                 ft.Icons.ADD, tooltip="Add Event", 
-                on_click=lambda e: self.p.run_task(self.widget.new_item_clicked, e, self), data="event"
+                on_click=lambda e: self.p.run_task(self.widget.new_item_clicked, e, self), data="event",
+                mouse_cursor="click"
             ),
         ], spacing=0)
 
@@ -495,111 +526,116 @@ class Arc(MiniWidget):
         )
 
 
-        # Adds or removes characters from our involved characters list
-        def _toggle_involved_characters(e):
+        # Adds or removes characters from our Relevant characters list
+        def _toggle_Relevant_characters(e):
             
             should_add_key = True   # Flag to check if we need to remove or not
             char_key = e.control.data   # Key of the character
 
-            for key in self.data.get('Involved Characters', []):
+            for key in self.data.get('Relevant Characters', []):
                 if char_key == key:     # If the character is in there, remove them and break
-                    self.data['Involved Characters'].remove(key)
+                    self.data['Relevant Characters'].remove(key)
                     should_add_key = False      # Make sure we don't re-add them after
                     break
 
             # If we went through the list and didn't find them, add them to the list
             if should_add_key:
-                print("Adding key")
-                self.data.get('Involved Characters', []).append(char_key)
+                #print("Adding key")
+                self.data.get('Relevant Characters', []).append(char_key)
 
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
-            involved_characters_row.controls = _set_involved_characters_controls()
-            involved_characters_selector.controls = _get_involved_characters()
+            Relevant_characters_row.controls = _set_Relevant_characters_controls()
+            Relevant_characters_selector.controls = _get_Relevant_characters()
             self.update()
 
-        # Called to check our list of characters involved on this plotpoint. They are stored as keys and returned as names for display
-        def _get_involved_characters() -> list[str]:
+        # Called to check our list of characters Relevant on this plotpoint. They are stored as keys and returned as names for display
+        def _get_Relevant_characters() -> list[str]:
             char_list = []
             
             for widget in self.widget.story.widgets:
                 if widget.data.get('tag', None) == 'character':
                     char_key = widget.data.get('key', "")
+                    
                     char_list.append(
                         ft.Checkbox(
-                            widget.data.get('title', char_key),
-                            True if char_key in self.data.get('Involved Characters', []) else False,
+                            widget.title,
+                            True if char_key in self.data.get('Relevant Characters', []) else False,
                             data=char_key,
                             label_style=ft.TextStyle(color=widget.data.get('color', None), weight=ft.FontWeight.BOLD),
-                            on_change=_toggle_involved_characters
+                            on_change=_toggle_Relevant_characters,
+                            mouse_cursor="click"
                         )
                     )
 
             if len(char_list) == 0:
-                char_list.append(ft.Text("No characters in story yet", color=ft.Colors.OUTLINE))
+                char_list.append(ft.Text("No characters in story yet", color=ft.Colors.OUTLINE, italic=True))
             return char_list
 
-        def _toggle_involved_characters_selector(e=None):
-            involved_characters_selector.visible = not involved_characters_selector.visible
-            involved_characters_selector.controls = _get_involved_characters()
+        def _toggle_Relevant_characters_selector(e=None):
+            Relevant_characters_selector.visible = not Relevant_characters_selector.visible
+            Relevant_characters_selector.controls = _get_Relevant_characters()
 
-            if involved_characters_selector.visible:
-                add_involved_characters_button.icon = ft.Icons.EDIT_OFF_OUTLINED
+            if Relevant_characters_selector.visible:
+                add_Relevant_characters_button.icon = ft.Icons.EDIT_OFF_OUTLINED
             else:
-                add_involved_characters_button.icon = ft.Icons.EDIT_OUTLINED
+                add_Relevant_characters_button.icon = ft.Icons.EDIT_OUTLINED
 
             self.update()
 
-        add_involved_characters_button = ft.IconButton(
+        add_Relevant_characters_button = ft.TextButton(
+            "Relevant Characters",
             ft.Icons.EDIT_OUTLINED,
-            tooltip="Connect Involved Characters",
-            on_click=_toggle_involved_characters_selector
+            style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor="click", color=ft.Colors.ON_SURFACE),
+            on_click=_toggle_Relevant_characters_selector,
+            
         )
 
-        involved_characters_selector = ft.Column(
-            _get_involved_characters(),
+        Relevant_characters_selector = ft.Column(
+            _get_Relevant_characters(),
             visible=False,
         )
 
-        def _set_involved_characters_controls(e=None) -> list[ft.Control]:
+        def _set_Relevant_characters_controls(e=None) -> list[ft.Control]:
 
             controls = [
-                ft.Text("Involved Characters:\t\t\t", theme_style=ft.TextThemeStyle.LABEL_LARGE, color=self.data.get('color', None)),
+                add_Relevant_characters_button,
             ]
 
-            for idx, ic_key in enumerate(self.data.get('Involved Characters', [])):
+            for idx, ic_key in enumerate(self.data.get('Relevant Characters', [])):
                 for widget in self.widget.story.widgets:
-                    if widget.data.get('tag', None) == 'character':
-                        char_key = widget.data.get('key', "")
+                    if widget.data.get('key', "") == ic_key and widget.data.get('tag', None) == 'character':
                         char = widget
-                    if char is not None:
-                        name = char.data.get('title', ic_key)
+                        break
+                if char is not None:
+                    name = char.data.get('title', ic_key)
 
-                        # Add the control now
-                        controls.append(ft.Text(name, color=char.data.get('color', None), weight=ft.FontWeight.BOLD))
-                        controls.append(
+
+                    # Add the control now
+                    controls.append(
+                        ft.Row([
+                            ft.Text(name, color=char.data.get('color', None), weight=ft.FontWeight.BOLD),
                             ft.IconButton(
                                 ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
-                                data=ic_key,
-                                on_click=_toggle_involved_characters
+                                data=ic_key, mouse_cursor="click",
+                                on_click=_toggle_Relevant_characters,
                             )
-                        )
-                if idx < len(self.data.get('Involved Characters', [])) - 1: # Skip adding container to last character
-                    controls.append(ft.Container(width=10))
-                           
+                        ], spacing=0, tight=True)
+                    )
                     
+                    if idx < len(self.data.get('Relevant Characters', [])) - 1: # Skip adding container to last character
+                        controls.append(ft.Container(width=10))
+                           
 
-            controls.append(add_involved_characters_button)
             return controls
 
-        
-        involved_characters_row = ft.Row(
-            _set_involved_characters_controls(),
-            wrap=True, spacing=0,
+        Relevant_characters_row = ft.Column(
+            _set_Relevant_characters_controls(),
+            spacing=0,
         )
 
         def _toggle_related_objects_selector(e=None):
-            # For simplicity, we'll just use a text field to add related objects by key. In the future, we could make a dropdown selector similar to involved characters if needed
+            # For simplicity, we'll just use a text field to add related objects by key. In the future, we could make a dropdown selector similar to Relevant characters if needed
             related_objects_selector.visible = not related_objects_selector.visible
 
             if related_objects_selector.visible:
@@ -609,16 +645,17 @@ class Arc(MiniWidget):
 
             self.update()
 
-        add_related_objects_button = ft.IconButton(
+        add_related_objects_button = ft.TextButton(
+            "Related Objects",
             ft.Icons.EDIT_OUTLINED,
-            tooltip="Add Related Object by Key",
-            on_click=_toggle_related_objects_selector
+            style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor="click", color=ft.Colors.ON_SURFACE),
+            on_click=_toggle_related_objects_selector,
         )
 
         def _set_related_objects_controls(e=None) -> list[ft.Control]:
 
             controls = [
-                ft.Text("Related Objects:\t\t\t", theme_style=ft.TextThemeStyle.LABEL_LARGE, color=self.data.get('color', None)),
+                add_related_objects_button
             ]
 
             for idx, obj_key in enumerate(self.data.get('Related Objects', [])):
@@ -632,6 +669,7 @@ class Arc(MiniWidget):
                         ft.IconButton(
                             ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
                             data=obj_key,
+                            mouse_cursor="click"
                             #on_click=_toggle_related_objects
                         )
                     )
@@ -640,12 +678,11 @@ class Arc(MiniWidget):
                            
                     
 
-            controls.append(add_related_objects_button)
             return controls
         
         def _toggle_related_objects(e):
             should_add_key = True   # Flag to check if we need to remove or not
-            obj_key = e.control.data   # Key of the object
+            obj_key = e.control.data   # Key of the character
 
             for key in self.data.get('Related Objects', []):
                 if obj_key == key:     # If the character is in there, remove them and break
@@ -657,7 +694,7 @@ class Arc(MiniWidget):
             if should_add_key:
                 self.data.get('Related Objects', []).append(obj_key)
 
-            self.save_dict()
+            self.p.run_task(self.save_dict)
 
             related_objects_row.controls = _set_related_objects_controls()
             related_objects_selector.controls = _get_related_objects()
@@ -668,26 +705,24 @@ class Arc(MiniWidget):
             
             for widget in self.widget.story.widgets:
                 if widget.data.get('tag', None) == 'object':
-                    obj_key = widget.data.get('key', "")
-                    obj_obj = widget
-
+                    
                     char_list.append(
                         ft.Checkbox(
-                            obj_obj.data.get('title', obj_key),
-                            True if obj_key in self.data.get('Involved Characters', []) else False,
-                            data=obj_key,
-                            label_style=ft.TextStyle(color=obj_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
+                            widget.title,
+                            #True if obj_key in self.data.get('Relevant Characters', []) else False,
+                            #data=obj_key,
+                            #label_style=ft.TextStyle(color=obj_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
                             on_change=_toggle_related_objects
                         )
                     )
 
             if len(char_list) == 0:
-                char_list.append(ft.Text("No objects in story yet", color=ft.Colors.OUTLINE))
+                char_list.append(ft.Text("No objects in story yet", color=ft.Colors.OUTLINE, italic=True))
             return char_list
 
-        related_objects_row = ft.Row(
+        related_objects_row = ft.Column(
             _set_related_objects_controls(),
-            wrap=True, spacing=0,
+            spacing=0,
         )
         
         related_objects_selector = ft.Column(
@@ -697,10 +732,12 @@ class Arc(MiniWidget):
 
         custom_fields_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+            ft.Text("Custom Fields", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD),
             ft.IconButton(
                 ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Custom Field",
-                on_click=lambda e: self._new_custom_field_clicked())
+                on_click=lambda e: self._new_custom_field_clicked(),
+                mouse_cursor="click"
+            )
         ], spacing=0)
 
         custom_fields_column = self._build_custom_fields_column()
@@ -719,8 +756,8 @@ class Arc(MiniWidget):
                 events_label,
                 events_list,
 
-                involved_characters_row,        # Holds label, buttons for each involved character, and add/remove button
-                involved_characters_selector,
+                Relevant_characters_row,        # Holds label, buttons for each Relevant character, and add/remove button
+                Relevant_characters_selector,
                 
                 related_objects_row,
                 related_objects_selector,
@@ -729,15 +766,12 @@ class Arc(MiniWidget):
                 ft.Container(custom_fields_column, margin=ft.Margin.symmetric(horizontal=20)),
             ]
         )
-
-
-
         
         column = ft.Column([
             title_control,
             ft.Divider(height=2, thickness=2),
             content
-        ], expand=True, tight=True, spacing=0)
+        ], expand=True)
 
         
         self.content = column

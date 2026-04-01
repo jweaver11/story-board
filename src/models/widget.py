@@ -40,6 +40,7 @@ class Widget(ft.Container):
             data=data,                              # Sets our data. 
             border_radius=ft.BorderRadius.all(10),
             gradient=dark_gradient,
+            clip_behavior=ft.ClipBehavior.NONE
         )
 
         # Set our parameters we passed in (data set in super())
@@ -92,7 +93,7 @@ class Widget(ft.Container):
         # Container that holds our main body content. Gets built in reload_widget of child classes
         self.body_container = ft.Container(
             expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(16), 
-            on_size_change=self._get_size, size_change_interval=500,
+            on_size_change=self._get_size, size_change_interval=500, clip_behavior=ft.ClipBehavior.NONE
         ) 
 
         # Holds our sizing canvas, body container, header, and mini widgets all under the tab
@@ -176,7 +177,7 @@ class Widget(ft.Container):
             selected_index=0,
             content=ft.Column([
                 ft.TabBar(tabs=[self.tab]),     # Holds our tab at the top of the widget
-                ft.TabBarView([self.master_stack], expand=True)# Holds our body
+                ft.TabBarView([self.master_stack], expand=True, clip_behavior=ft.ClipBehavior.NONE)# Holds our body
             ], expand=True),
             
         )   

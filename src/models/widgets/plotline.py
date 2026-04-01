@@ -120,7 +120,7 @@ class Plotline(Widget):
         self._load_arcs()
         self._load_plot_points()
         self._load_markers()
-        self._create_information_display()      # Only one of it, since it just displays our plotline data
+        self._create_information_display()     
 
         # Dropdown on the rail. We don't use it here, let the rail handle it
         self.plotline_dropdown = None      # 'Plotline_Dropdown'
@@ -231,12 +231,16 @@ class Plotline(Widget):
         # Add our new Arc mini widget object to our arcs dict, and to our widgets mini widgets
         self.arcs[new_arc.title] = new_arc
         self.mini_widgets.append(new_arc)
-        #new_arc.show_mini_widget()
 
         # Apply our changes in the UI
         self.data['dropdown_is_expanded'] = True 
-        self.story.active_rail.content.reload_rail()
+        if self.story.data.get('selected_rail', "") == "plotlines":
+            self.story.active_rail.reload_rail()
+
         await self.rebuild_plotline_canvas()
+        for mw in self.mini_widgets:
+            if hasattr(mw, "plotline_control"):
+                mw.reload_plotline_control(no_update=True)
         self.reload_widget()
        
         
@@ -257,12 +261,17 @@ class Plotline(Widget):
         # Add our new Plot Point mini widget object to our plot_points dict, and to our widgets mini widgets
         self.plot_points[new_plot_point.title] = new_plot_point
         self.mini_widgets.append(new_plot_point)
-        #new_plot_point.show_mini_widget()
 
         # Apply our changes in the UI
         self.data['dropdown_is_expanded'] = True     # Make sure our dropdown is expanded to show the new plot point
-        self.story.active_rail.reload_rail()
+
+        if self.story.data.get('selected_rail', "") == "plotlines":
+            self.story.active_rail.reload_rail()
+
         await self.rebuild_plotline_canvas()
+        for mw in self.mini_widgets:
+            if hasattr(mw, "plotline_control"):
+                mw.reload_plotline_control(no_update=True)
         self.reload_widget()
 
     async def create_marker(self, title: str):
@@ -282,11 +291,14 @@ class Plotline(Widget):
         self.data['dropdown_is_expanded'] = True 
         self.markers[new_marker.title] = new_marker
         self.mini_widgets.append(new_marker)
-        #await new_marker.show_mini_widget()
 
-        # Apply our changes in the UI
-        self.story.active_rail.reload_rail()
+        if self.story.data.get('selected_rail', "") == "plotlines":
+            self.story.active_rail.reload_rail()
+
         await self.rebuild_plotline_canvas()
+        for mw in self.mini_widgets:
+            if hasattr(mw, "plotline_control"):
+                mw.reload_plotline_control(no_update=True)
         self.reload_widget()
 
 
@@ -468,7 +480,7 @@ class Plotline(Widget):
             except Exception as _:
                 pass
 
-    async def _exit_canvas(self, e: ft.HoverEvent):
+    async def _exit_canvas(self, e=None):
         ''' Called when exiting our plotline canvas '''
         self.can_open_menu = False
         self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
@@ -501,15 +513,15 @@ class Plotline(Widget):
             elif tag == "plot_point" and name in self.plot_points:
                 submit_button.disabled = True
                 new_item_tf.error = "Name must be unique"
-                new_item_tf.focus()
+                await new_item_tf.focus()
             elif tag == "arc" and name in self.arcs:
                 submit_button.disabled = True
                 new_item_tf.error = "Name must be unique"
-                new_item_tf.focus()
+                await new_item_tf.focus()
             elif tag == "marker" and name in self.markers:
                 submit_button.disabled = True
                 new_item_tf.error = "Name must be unique"
-                new_item_tf.focus()
+                await new_item_tf.focus()
 
             else:
                 submit_button.disabled = False
@@ -660,12 +672,12 @@ class Plotline(Widget):
             5, self.plotline_height // 2 - 60, left_label, 
             ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
             max_width=50,   # Prevent overflow left
-            text_align=ft.TextAlign.LEFT
+            text_align=ft.TextAlign.START, 
         ))
         self.plotline_canvas.shapes.append(cv.Text(
-            self.plotline_width - 55, self.plotline_height // 2 - 60, right_label, 
-            ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
-            text_align=ft.TextAlign.RIGHT, max_width=50   # Prevent overflow right
+            self.plotline_width - 5, self.plotline_height // 2 - 60, right_label, 
+            ft.TextStyle(18, weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS), alignment=ft.Alignment.CENTER,
+            text_align=ft.TextAlign.END, max_width=50,   # Prevent overflow right
         ))
         self.plotline_canvas.shapes.append(cv.Text(
             self.plotline_width // 2, self.plotline_height - 50, time_label, 
@@ -890,8 +902,9 @@ class Plotline(Widget):
         plotline_stack = ft.Stack(
             expand=True, 
             alignment=ft.Alignment(0, 0),
+            clip_behavior=ft.ClipBehavior.NONE,
             controls=[
-                ft.Container(self.plotline_canvas, ft.Padding.only(left=16, right=16), expand=True)      # Add our canvas which has our visual plotline
+                ft.Container(self.plotline_canvas, ft.Padding.only(left=16, right=16), expand=True, clip_behavior=ft.ClipBehavior.NONE)      # Add our canvas which has our visual plotline
             ]
         )
  

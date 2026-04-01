@@ -57,7 +57,7 @@ class PlotPoint(MiniWidget):
                 'Description': str,
                 'When': str,
                 'Where': str,
-                'Involved Characters': list,
+                'Relevant Characters': list,
                 'Related Objects': list,
             },
         )
@@ -181,7 +181,7 @@ class PlotPoint(MiniWidget):
         if old_side_location != self.data['side_location']:
             for mw in self.widget.mini_widgets:
                 if hasattr(mw, 'plotline_control'):
-                    mw.reload_plotline_control()
+                    mw.reload_plotline_control(no_update=True)
             await self.widget.rebuild_plotline_canvas()
             self.widget.reload_widget()
         else:
@@ -337,31 +337,31 @@ class PlotPoint(MiniWidget):
             tooltip="List of location(s) related to this plot point"
         )
 
-        # Adds or removes characters from our involved characters list
-        def _toggle_involved_characters(e):
+        # Adds or removes characters from our Relevant characters list
+        def _toggle_Relevant_characters(e):
             
             should_add_key = True   # Flag to check if we need to remove or not
             char_key = e.control.data   # Key of the character
 
-            for key in self.data.get('Involved Characters', []):
+            for key in self.data.get('Relevant Characters', []):
                 if char_key == key:     # If the character is in there, remove them and break
-                    self.data['Involved Characters'].remove(key)
+                    self.data['Relevant Characters'].remove(key)
                     should_add_key = False      # Make sure we don't re-add them after
                     break
 
             # If we went through the list and didn't find them, add them to the list
             if should_add_key:
                 #print("Adding key")
-                self.data.get('Involved Characters', []).append(char_key)
+                self.data.get('Relevant Characters', []).append(char_key)
 
             self.p.run_task(self.save_dict)
 
-            involved_characters_row.controls = _set_involved_characters_controls()
-            involved_characters_selector.controls = _get_involved_characters()
+            Relevant_characters_row.controls = _set_Relevant_characters_controls()
+            Relevant_characters_selector.controls = _get_Relevant_characters()
             self.update()
 
-        # Called to check our list of characters involved on this plotpoint. They are stored as keys and returned as names for display
-        def _get_involved_characters() -> list[str]:
+        # Called to check our list of characters Relevant on this plotpoint. They are stored as keys and returned as names for display
+        def _get_Relevant_characters() -> list[str]:
             char_list = []
             
             for widget in self.widget.story.widgets:
@@ -371,10 +371,10 @@ class PlotPoint(MiniWidget):
                     char_list.append(
                         ft.Checkbox(
                             widget.title,
-                            True if char_key in self.data.get('Involved Characters', []) else False,
+                            True if char_key in self.data.get('Relevant Characters', []) else False,
                             data=char_key,
                             label_style=ft.TextStyle(color=widget.data.get('color', None), weight=ft.FontWeight.BOLD),
-                            on_change=_toggle_involved_characters,
+                            on_change=_toggle_Relevant_characters,
                             mouse_cursor="click"
                         )
                     )
@@ -383,37 +383,37 @@ class PlotPoint(MiniWidget):
                 char_list.append(ft.Text("No characters in story yet", color=ft.Colors.OUTLINE, italic=True))
             return char_list
 
-        def _toggle_involved_characters_selector(e=None):
-            involved_characters_selector.visible = not involved_characters_selector.visible
-            involved_characters_selector.controls = _get_involved_characters()
+        def _toggle_Relevant_characters_selector(e=None):
+            Relevant_characters_selector.visible = not Relevant_characters_selector.visible
+            Relevant_characters_selector.controls = _get_Relevant_characters()
 
-            if involved_characters_selector.visible:
-                add_involved_characters_button.icon = ft.Icons.EDIT_OFF_OUTLINED
+            if Relevant_characters_selector.visible:
+                add_Relevant_characters_button.icon = ft.Icons.EDIT_OFF_OUTLINED
             else:
-                add_involved_characters_button.icon = ft.Icons.EDIT_OUTLINED
+                add_Relevant_characters_button.icon = ft.Icons.EDIT_OUTLINED
 
             self.update()
 
-        add_involved_characters_button = ft.TextButton(
-            "Involved Characters",
+        add_Relevant_characters_button = ft.TextButton(
+            "Relevant Characters",
             ft.Icons.EDIT_OUTLINED,
             style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor="click", color=ft.Colors.ON_SURFACE),
-            on_click=_toggle_involved_characters_selector,
+            on_click=_toggle_Relevant_characters_selector,
             
         )
 
-        involved_characters_selector = ft.Column(
-            _get_involved_characters(),
+        Relevant_characters_selector = ft.Column(
+            _get_Relevant_characters(),
             visible=False,
         )
 
-        def _set_involved_characters_controls(e=None) -> list[ft.Control]:
+        def _set_Relevant_characters_controls(e=None) -> list[ft.Control]:
 
             controls = [
-                add_involved_characters_button,
+                add_Relevant_characters_button,
             ]
 
-            for idx, ic_key in enumerate(self.data.get('Involved Characters', [])):
+            for idx, ic_key in enumerate(self.data.get('Relevant Characters', [])):
                 for widget in self.widget.story.widgets:
                     if widget.data.get('key', "") == ic_key and widget.data.get('tag', None) == 'character':
                         char = widget
@@ -429,24 +429,24 @@ class PlotPoint(MiniWidget):
                             ft.IconButton(
                                 ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
                                 data=ic_key, mouse_cursor="click",
-                                on_click=_toggle_involved_characters,
+                                on_click=_toggle_Relevant_characters,
                             )
                         ], spacing=0, tight=True)
                     )
                     
-                    if idx < len(self.data.get('Involved Characters', [])) - 1: # Skip adding container to last character
+                    if idx < len(self.data.get('Relevant Characters', [])) - 1: # Skip adding container to last character
                         controls.append(ft.Container(width=10))
                            
 
             return controls
 
-        involved_characters_row = ft.Column(
-            _set_involved_characters_controls(),
+        Relevant_characters_row = ft.Column(
+            _set_Relevant_characters_controls(),
             spacing=0,
         )
 
         def _toggle_related_objects_selector(e=None):
-            # For simplicity, we'll just use a text field to add related objects by key. In the future, we could make a dropdown selector similar to involved characters if needed
+            # For simplicity, we'll just use a text field to add related objects by key. In the future, we could make a dropdown selector similar to Relevant characters if needed
             related_objects_selector.visible = not related_objects_selector.visible
 
             if related_objects_selector.visible:
@@ -520,7 +520,7 @@ class PlotPoint(MiniWidget):
                     char_list.append(
                         ft.Checkbox(
                             widget.title,
-                            #True if obj_key in self.data.get('Involved Characters', []) else False,
+                            #True if obj_key in self.data.get('Relevant Characters', []) else False,
                             #data=obj_key,
                             #label_style=ft.TextStyle(color=obj_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
                             on_change=_toggle_related_objects
@@ -560,8 +560,8 @@ class PlotPoint(MiniWidget):
                 description_tf,
                 ft.Row([when_tf, where_tf]),
                 
-                involved_characters_row,        # Holds label, buttons for each involved character, and add/remove button
-                involved_characters_selector,
+                Relevant_characters_row,        # Holds label, buttons for each Relevant character, and add/remove button
+                Relevant_characters_selector,
                 
                 related_objects_row,
                 related_objects_selector,
