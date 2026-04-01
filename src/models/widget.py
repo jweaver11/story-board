@@ -40,7 +40,7 @@ class Widget(ft.Container):
             data=data,                              # Sets our data. 
             border_radius=ft.BorderRadius.all(10),
             gradient=dark_gradient,
-            clip_behavior=ft.ClipBehavior.NONE
+            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
         )
 
         # Set our parameters we passed in (data set in super())

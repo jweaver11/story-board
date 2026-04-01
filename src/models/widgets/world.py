@@ -10,6 +10,9 @@ from models.views.story import Story
 from utils.verify_data import verify_data
 from models.app import app
 from utils.safe_string_checker import return_safe_name
+from PIL import Image
+from io import BytesIO
+import base64
 
 
 
@@ -194,6 +197,45 @@ class World(Widget):
         )
      
         self.p.show_dialog(dlg)
+
+    # Called to find a canvas and load a snapshot from all its layers
+    def _set_canvas_snapshot(self, canvas_key: str) -> str:
+
+        capture_list = []
+        for widget in self.story.widgets:
+            if widget.data['key'] == canvas_key:
+                for layer in widget.data.get('canvas_data', {}).get('Layers', []):
+                    if layer.get('capture', ""):
+                        capture_list.append(layer['capture'])
+                break
+
+        
+        if not capture_list:
+            return ""
+
+        images = []
+        for capture in capture_list:
+            try:
+                image_bytes = base64.b64decode(capture)
+                image = Image.open(BytesIO(image_bytes)).convert("RGBA")
+                images.append(image)
+            except Exception:
+                continue
+
+        if not images:
+            return ""
+
+        width, height = images[0].size
+        merged = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+
+        for image in images:
+            if image.size != (width, height):
+                image = image.resize((width, height), Image.Resampling.LANCZOS)
+            merged = Image.alpha_composite(merged, image)
+
+        output = BytesIO()
+        merged.save(output, format="PNG")
+        return base64.b64encode(output.getvalue()).decode("utf-8")
 
     # Called when clicking our upload image button
     async def _upload_world_image(self, e=None):

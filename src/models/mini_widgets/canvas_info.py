@@ -564,7 +564,7 @@ class CanvasInformationDisplay(MiniWidget):
         # Set dark and light transparent bg images for all canvases
 
         title_control = ft.Row([
-            ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
+            #ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
             
             ft.GestureDetector(
                 ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.FADE),

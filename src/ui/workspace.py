@@ -111,7 +111,6 @@ class Workspace(ft.Container):
             )
         )
 
-        
 
         # Our master row that holds all our widgets
         self.master_widgets_row = IsolatedRow(spacing=0, expand=True, controls=[])
@@ -238,9 +237,7 @@ class Workspace(ft.Container):
 
         elif pin_location == "bottom":
             widget.data['index'] = len(self.bottom_pin.controls)
-
-
-
+ 
         
         # Make sure our widget is visible if it was dragged from the rail
         if not widget.visible:
@@ -249,13 +246,15 @@ class Workspace(ft.Container):
             self.story.blocker.update()
             return
         else:
-            self.p.run_task(widget.save_dict)  
+            widget.save_counter = 100
+            await widget.save_dict()
 
             # Apply to UI
             self.reload_workspace()     
 
             self.story.blocker.visible = False   # Unblock events
             self.story.blocker.update()
+
 
 
     # Called when we drag a widget from one pin location to another

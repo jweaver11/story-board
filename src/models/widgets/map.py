@@ -125,6 +125,96 @@ class Map(Widget):
             ),
             self.canvas,
         ], expand=True)
+
+        # Canvas has a custom tab, so it re-uses almost everything from widget
+        # UI ELEMENTS - Tab
+        self.tabs: ft.Tabs 
+        self.tab: ft.Tab  
+        self.icon: ft.Icon
+        self.tab_text: ft.Text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
+
+        # Grabs our tag to determine the icon we'll use
+        tag = self.data.get('tag', '')
+
+        # Set our icon based on what type of widget we are using tag
+        match tag:
+            case "document": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
+            case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
+            case "canvas_board": self.icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
+            case "note": self.icon = ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED)
+            case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
+            case "character_connection_map": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
+            case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)
+            case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
+            case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
+            case "object": self.icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
+            case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
+
+
+        # Set the color and size
+        self.icon = ft.IconButton(
+            ft.Icons.MAP_OUTLINED, self.data.get('color', ft.Colors.PRIMARY), 
+            mouse_cursor=ft.MouseCursor.CLICK, on_click=self.information_display.show_mini_widget,
+            tooltip="Show Canvas Info",
+        )
+        
+
+        tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
+        
+        # Our icon button that will hide the widget when clicked in the workspace
+        hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
+            scale=0.8,
+            on_click=self.hide_widget,
+            icon=ft.Icons.CLOSE_ROUNDED,
+            icon_color=ft.Colors.OUTLINE,
+            tooltip="Hide",
+            mouse_cursor=ft.MouseCursor.CLICK,
+        )
+
+
+        self.tab_gd = ft.GestureDetector(
+            ft.Row(
+                [self.icon, tab_text, hide_tab_icon_button],
+                spacing=0
+            ),     # Changes here to add show info button
+            mouse_cursor=ft.MouseCursor.CLICK,
+            hover_interval=100,
+            on_hover=self._set_coords,
+            on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
+        )
+
+        # Tab that holds our widget title and 'body'.
+        # Since this is a ft.Tab, it needs to be nested in a ft.Tabs control or it wont render.
+        self.tab = ft.Tab(
+
+            # Content of the tab itself. Has widgets name and hide widget icon, and functionality for dragging
+            label=ft.Draggable(   # Draggable is the control so we can drag and drop to different pin locations
+                group="widgets",    # Group for draggables (and receiving drag targets) to accept each other
+                data=self.data.get('key', ""),  # Pass ourself through the data (of our tab, NOT our object) so we can move ourself around
+
+                # Drag event utils
+                on_drag_start=self._start_drag,    # Shows our pin targets when we start dragging
+
+                # Content when we are dragging the follows the mouse
+                content_feedback=ft.TextButton(self.title), # Normal text won't restrict its own size, so we use a button
+
+                # The content of our draggable. We use a gesture detector so we have more events
+                content=self.tab_gd
+            )                    
+        )
+
+        # Tabs stuff
+        self.tabs = ft.Tabs(
+            expand=True,  
+            length=1,
+            selected_index=0,
+            content=ft.Column([
+                ft.TabBar(tabs=[self.tab]),     # Holds our tab at the top of the widget
+                ft.TabBarView([self.master_stack], expand=True)# Holds our body
+            ], expand=True),
+            
+        )   
+        self.content = self.tabs
            
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -343,24 +433,6 @@ class Map(Widget):
     async def _rebuild_map_canvas(self, e: cv.CanvasResizeEvent=None):
         ''' Redraws our map on the canvas when it is resized. Does it on startup as well '''
 
-        # Update our page reference and size
-        self.canvas.page = self.p
-        if e is not None:
-            self.map_width = int(e.width)
-            self.map_height = int(e.height)
-
-        if self.information_display.data.get('left', None) is None or self.information_display.data.get('top', None) is None:
-            self.information_display.data['left'] = 30
-            self.information_display.data['top'] = self.map_height - 30
-            self.information_display.show_info_button.left = 30
-            self.information_display.show_info_button.top = self.map_height - 30
-            self.information_display.show_info_button.page = self.p
-            self.information_display.show_info_button.update()
-            self.information_display.save_dict()
-    
-        
-        #self._render_widget()
-
 
     # Called when we need to rebuild out map UI
     def reload_widget(self):       
@@ -392,7 +464,15 @@ class Map(Widget):
                 self.canvas.shapes.append(mw.map_label)
                 #self.map_stack.controls.append(mw.map_label)
 
-        self.map_stack.controls.append(self.information_display.show_info_button)
+        # Add all our mini widgets to the plotline stack as well
+        self.map_stack.controls.append(
+            ft.Row([
+                ft.Column([mw for mw in self.mini_widgets if mw.data.get('side_location', "") == "left"], expand=1),
+                ft.Container(expand=2, ignore_interactions=True),
+                ft.Column([mw for mw in self.mini_widgets if mw.data.get('side_location', "") == "right"], expand=1)
+            ])
+        )
+
         
                 
         # Create our interactive viewer for panning and zooming

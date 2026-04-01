@@ -800,9 +800,7 @@ class Plotline(Widget):
 
                 marker_height = self.plotline_height // 2 #- y_pos
                 marker.plotline_control.height = marker_height
-                marker.plotline_control.top = y_pos
-
-                
+                marker.plotline_control.top = y_pos                
     
                 # Re-paint its shapes (dashed line) if needed (Only first load)
                 marker.plotline_control.content.content.shapes = [
