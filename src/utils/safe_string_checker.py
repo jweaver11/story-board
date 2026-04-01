@@ -2,11 +2,11 @@ import re
 import unicodedata
 
 # Called when creating data that needs to be normalized, like directory names, file_names, JSON keys, etc.
-def return_safe_name(text: str, prefix="item_") -> str:
+def return_safe_name(text: str, prefix="") -> str:
     """ Sanitizes the string and returns the safe version of it """
     
     if not text:
-        return prefix + "0"
+        return prefix
     
     # Normalize unicode (remove accents, etc.)
     text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')

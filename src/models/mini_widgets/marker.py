@@ -188,13 +188,15 @@ class Marker(MiniWidget):
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:
             self.hide_mini_widget()
-        # Otherwise, just update the page
-        #else:
-            #self.p.update()
+        
+        for mw in self.widget.mini_widgets:
+            if hasattr(mw, 'plotline_control'):
+                mw.reload_plotline_control(no_update=True)
+        self.widget.reload_widget()
           
 
     # Called from reload_mini_widget
-    def reload_plotline_control(self):
+    def reload_plotline_control(self, no_update=False):
         """ Rebuilds our plotline control that holds our plot point and slider """
 
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
@@ -220,7 +222,8 @@ class Marker(MiniWidget):
             ),
         )
 
-        #self.plotline_control = ft.Container(width=30, height=30, bgcolor="red")
+        if no_update:
+            return
 
         try:
             self.plotline_control.update()

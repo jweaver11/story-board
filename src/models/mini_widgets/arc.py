@@ -123,8 +123,8 @@ class Arc(MiniWidget):
         self.hidden = False                         # Track if we're in hidden mode for easier dragging
 
         # Loads our arc
-        #self.reload_plotline_control()
-        #self.reload_mini_widget()
+        self.reload_plotline_control()
+        self.reload_mini_widget()
 
 
     async def create_event(self, title: str):
@@ -141,19 +141,18 @@ class Arc(MiniWidget):
 
 
     # Called when we hover over our arc on the plotline
-    async def _highlight(self, e: ft.HoverEvent):
+    async def _highlight(self, e=None):
         ''' Focuses the arc control '''
 
         # Change its border opacity and update the page
-        self.plotline_control.shadow = ft.BoxShadow(0, 10, self.data.get('color'), blur_style=ft.ShadowBlurStyle.OUTER)
+        self.plotline_control.shadow = ft.BoxShadow(0, 10, self.data.get('color'), blur_style=ft.BlurStyle.OUTER)
         self.left_drag_handle.visible = True
         self.right_drag_handle.visible = True
 
-        self.plotline_control.page = self.p
         self.plotline_control.update()
 
     # Called when we stop hovering over our arc on the plotline
-    async def _stop_highlight(self, e: ft.HoverEvent):
+    async def _stop_highlight(self, e=None):
         ''' Changes the arc control to unfocused '''
 
         if self.is_dragging:
@@ -165,34 +164,36 @@ class Arc(MiniWidget):
             self.left_drag_handle.visible = False
             self.right_drag_handle.visible = False
         
-            self.plotline_control.page = self.p
             self.plotline_control.update()
     
-    def hide_mini_widget(self, e=None, update: bool=False):
+    async def hide_mini_widget(self, e=None):
         ''' Hides this arc '''
-        print(f"Hiding mini widget {self.title}")
+        #print(f"Hiding mini widget {self.title}")
 
         self.plotline_control.shadow = None
 
         self.left_drag_handle.visible = False
         self.right_drag_handle.visible = False
+        self.plotline_control.update()
         
-        return super().hide_mini_widget(update=update)
+        return await super().hide_mini_widget()
     
 
     # Called at the start of dragging our point on the slider
-    async def start_dragging(self, e):
+    async def start_dragging(self, e=None):
         ''' Called when we start dragging our slider thumb '''
 
         self.is_dragging = True
 
         # Hide all other info displays while dragging
         for mw in self.widget.mini_widgets:
-            mw.visible = False
+            if mw.visible:
+                mw.visible = False
+                mw.update()
             if isinstance(mw, Arc) and mw != self:
                 mw.plotline_control.ignore_interactions = True
+                mw.plotline_control.update()
 
-        self.p.update()
 
 
     # Called at the end of dragging our point on the slider to update it
@@ -206,7 +207,7 @@ class Arc(MiniWidget):
         
         # If we're dragging the left handle, update left position
         if e.control == self.left_drag_handle:
-            new_left = self.data.get('left', 0) + e.delta_x
+            new_left = self.data.get('left', 0) + e.local_delta.x
 
             # Clamp edges
             if new_left < 10:
@@ -219,13 +220,13 @@ class Arc(MiniWidget):
                 self.data['left'] = new_left
                 self.plotline_control.left = new_left
 
-            elif width < 100 and e.delta_x < 0:   # If we're trying to make it smaller, allow it, but not if we're trying to make it bigger
+            elif width < 100 and e.local_delta.x < 0:   # If we're trying to make it smaller, allow it, but not if we're trying to make it bigger
                 self.data['left'] = new_left
                 self.plotline_control.left = new_left
 
         # If we're dragging the right handle, update the right position
         else:
-            new_right = self.data.get('right', 0) - e.delta_x
+            new_right = self.data.get('right', 0) - e.local_delta.x
 
             # Clamp edges
             if new_right < 10:     # Make sure we don't drag past the plotline
@@ -238,7 +239,7 @@ class Arc(MiniWidget):
                 self.data['right'] = new_right
                 self.plotline_control.right = new_right
 
-            elif width < 100 and e.delta_x > 0:   # If we're trying to make it smaller, allow it, but not if we're trying to make it bigger
+            elif width < 100 and e.local_delta.x > 0:   # If we're trying to make it smaller, allow it, but not if we're trying to make it bigger
                 self.data['right'] = new_right
                 self.plotline_control.right = new_right
 
@@ -255,12 +256,11 @@ class Arc(MiniWidget):
         self.plotline_control.height = int(new_height)
 
         # Apply the updates
-        self.plotline_control.page = self.p 
         self.plotline_control.update()
 
 
     # Called when we finish dragging our slider thumb to save our new position
-    def finished_dragging(self, e):
+    async def finished_dragging(self, e=None):
         ''' Saves our new x positions to the file and updates alignment. Then applies the UI changes '''
 
         # Update our state
@@ -269,6 +269,8 @@ class Arc(MiniWidget):
         # Update our x alignment based on our new left and right positions, and save it to our data
         x_align_pixel = self.data.get('left', 0) + ((self.widget.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)) / 2)
         self.data['x_alignment'] = ((x_align_pixel) / max(self.widget.plotline_width, 1)) * 2 - 1
+
+        old_side_location = self.data.get('side_location', 'right')
 
         if self.data.get('x_alignment', 0) <= 0:
             self.data['side_location'] = "right"
@@ -282,28 +284,30 @@ class Arc(MiniWidget):
         self.data['right_ratio'] = self.data.get('right', 0) / max(self.widget.plotline_width, 1)
 
         # Make all other plot points visible again
-        for pp in self.widget.plot_points.values():
-            if pp.data.get('is_shown_on_widget', True):
-                pp.plotline_control.visible = True
+        #for pp in self.widget.plot_points.values():
+            #if pp.data.get('is_shown_on_widget', True):
+                #pp.plotline_control.visible = True
             
         # Save our new positions to file
         self.save_dict()
 
-        # Make other arcs work again
-        for mw in self.widget.mini_widgets:
-            if mw.data.get('visible', True):
-                mw.visible = True
-            if isinstance(mw, Arc):
-                mw.plotline_control.ignore_interactions = False
-
-        # Apply changes and make sure update plotline info
         if self.widget.information_display.visible:
-            self.widget.information_display.reload_mini_widget(no_update=True)
-        self.widget.reload_widget()
-        self.widget.story.active_rail.content.reload_rail()
+            self.widget.information_display.reload_mini_widget()
+
+        # If we changed sides, rebuild everything. Otherwise, just update the canvas for labels n stuff
+        if old_side_location != self.data['side_location']:
+            for mw in self.widget.mini_widgets:
+                if hasattr(mw, 'plotline_control'):
+                    mw.reload_plotline_control()
+            await self.widget.rebuild_plotline_canvas()
+            self.widget.reload_widget()
+        else:
+            await self.widget.rebuild_plotline_canvas(update=True)
+
+        #self.widget.story.active_rail.reload_rail()
 
     # Called when toggling whether this plot point is shown on the plotline in the plotline filters
-    def toggle_plotline_control(self, value: bool):
+    async def toggle_plotline_control(self, value: bool):
         ''' Toggles whether this plot point is shown on the plotline '''
 
         # Change the control visibility, data, and save it
@@ -313,14 +317,16 @@ class Arc(MiniWidget):
         
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:
-            self.hide_mini_widget(update=True)
-        # Otherwise, just update the page
-        else:
-            self.p.update()      
+            self.hide_mini_widget()
+
+        for mw in self.widget.mini_widgets:
+            if hasattr(mw, 'plotline_control'):
+                mw.reload_plotline_control(no_update=True)
+        self.widget.reload_widget()  
         
 
     # Called from reload mini widget to update our plotline control
-    def reload_plotline_control(self):
+    def reload_plotline_control(self, no_update=False):
         ''' Reloads our arc drawing on the plotline based on current/updated data, including page size '''
 
         width = self.widget.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
@@ -331,16 +337,16 @@ class Arc(MiniWidget):
 
         self.plotline_control = ft.Container(
             left=self.data.get('left', 0), right=self.data.get('right', None),
-            alignment=ft.alignment.top_center, #height=h,
+            alignment=ft.Alignment.TOP_CENTER, #height=h,
             margin=ft.Margin(16, 0, 16, 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            border=ft.border.only(          # Give use borderes on top left and right
+            border=ft.Border.only(          # Give use borderes on top left and right
                 left=ft.BorderSide(2, self.data.get('color', "secondary")),
                 right=ft.BorderSide(2, self.data.get('color', "secondary")),
                 top=ft.BorderSide(2, self.data.get('color', "secondary")),
             ), 
-            padding=ft.padding.only(top=10),
-            border_radius=ft.border_radius.only(top_left=10000, top_right=10000, bottom_left=0, bottom_right=0),      # Make it uber curved to look like an arc
+            padding=ft.Padding.only(top=10),
+            border_radius=ft.BorderRadius.only(top_left=10000, top_right=10000, bottom_left=0, bottom_right=0),      # Make it uber curved to look like an arc
             content=ft.GestureDetector(
                 mouse_cursor=ft.MouseCursor.CLICK,
                 hover_interval=200, expand=True,
@@ -353,7 +359,7 @@ class Arc(MiniWidget):
                         ft.Text(
                             self.title, expand=True, overflow=ft.TextOverflow.VISIBLE, 
                             theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER,
-                        ), margin=ft.margin.symmetric(horizontal=25), expand=True, alignment=ft.alignment.bottom_center
+                        ), margin=ft.Margin.symmetric(horizontal=25), expand=True, alignment=ft.Alignment.BOTTOM_CENTER
                     ),
                     ft.Row([
                         self.left_drag_handle,
@@ -363,39 +369,47 @@ class Arc(MiniWidget):
             )
         )
 
-        #print(f"Plotline control left and right for {self.title}: ", self.data.get('left', 0), self.data.get('right', 100))
+        if no_update:
+            return
+
+        try:
+            self.plotline_control.update()
+        except Exception as _:
+            pass
         
         
 
     # Called to reload our mini widget content
-    def reload_mini_widget(self, no_update: bool=False):
+    def reload_mini_widget(self):
 
         arc_icon = ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.data.get('color', None))
 
         arc_title_text = ft.GestureDetector(
-            ft.Container(ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"), padding=ft.padding.only(left=8)),
+            ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
             on_double_tap=self._rename_clicked,
             on_tap=self._rename_clicked,
             on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
-            mouse_cursor="click", on_hover=self.widget._hover_tab, hover_interval=500
+            mouse_cursor="click", hover_interval=500
         )
 
         pin_button = ft.IconButton(
             ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
             self.data.get('color', None),
-            tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
-            on_click=self._toggle_pin
+            tooltip="Pin Plot Point" if not self.data.get('is_pinned', False) else "Unpin Plot Point",
+            on_click=self._pin if not self.data.get('is_pinned', False) else self._unpin,
+            mouse_cursor="click"
         )
 
         close_button = ft.IconButton(
             ft.Icons.CLOSE, ft.Colors.OUTLINE,
             tooltip=f"Close {self.title}",
-            on_click=lambda e: self.hide_mini_widget(update=True),
+            on_click=self.hide_mini_widget,
+            mouse_cursor="click"
         )
         
 
         title_control = ft.Row([
-            arc_icon,
+            #arc_icon,
             arc_title_text,
             pin_button,
             ft.Container(expand=True),      # Spacer
@@ -437,7 +451,7 @@ class Arc(MiniWidget):
                     e.control.mouse_cursor = ft.MouseCursor.GRABBING
                 elif tag == "up":
                     e.control.mouse_cursor = ft.MouseCursor.GRAB
-                self.p.update()
+                self.update()
 
             controls = []
             for idx, event in enumerate(self.data.get('Events', [])):
@@ -462,7 +476,7 @@ class Arc(MiniWidget):
             events_list.controls = _get_events_controls()
             self.data['Events'] = events
             self.save_dict()
-            self.p.update()
+            self.update()
         
         events_label = ft.Row([
             ft.Container(width=6),
@@ -476,7 +490,7 @@ class Arc(MiniWidget):
 
 
         events_list = ft.ReorderableListView(
-            padding=ft.padding.all(4), show_default_drag_handles=False,
+            padding=ft.Padding.all(4), show_default_drag_handles=False,
             controls=_get_events_controls(), on_reorder=_reorder_events, 
         )
 
@@ -502,22 +516,24 @@ class Arc(MiniWidget):
 
             involved_characters_row.controls = _set_involved_characters_controls()
             involved_characters_selector.controls = _get_involved_characters()
-            self.p.update()
+            self.update()
 
         # Called to check our list of characters involved on this plotpoint. They are stored as keys and returned as names for display
         def _get_involved_characters() -> list[str]:
             char_list = []
             
-            for char_key, char_obj in self.widget.story.characters.items():
-                char_list.append(
-                    ft.Checkbox(
-                        char_obj.data.get('title', char_key),
-                        True if char_key in self.data.get('Involved Characters', []) else False,
-                        data=char_key,
-                        label_style=ft.TextStyle(color=char_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
-                        on_change=_toggle_involved_characters
+            for widget in self.widget.story.widgets:
+                if widget.data.get('tag', None) == 'character':
+                    char_key = widget.data.get('key', "")
+                    char_list.append(
+                        ft.Checkbox(
+                            widget.data.get('title', char_key),
+                            True if char_key in self.data.get('Involved Characters', []) else False,
+                            data=char_key,
+                            label_style=ft.TextStyle(color=widget.data.get('color', None), weight=ft.FontWeight.BOLD),
+                            on_change=_toggle_involved_characters
+                        )
                     )
-                )
 
             if len(char_list) == 0:
                 char_list.append(ft.Text("No characters in story yet", color=ft.Colors.OUTLINE))
@@ -532,7 +548,7 @@ class Arc(MiniWidget):
             else:
                 add_involved_characters_button.icon = ft.Icons.EDIT_OUTLINED
 
-            self.p.update()
+            self.update()
 
         add_involved_characters_button = ft.IconButton(
             ft.Icons.EDIT_OUTLINED,
@@ -552,21 +568,24 @@ class Arc(MiniWidget):
             ]
 
             for idx, ic_key in enumerate(self.data.get('Involved Characters', [])):
-                char = self.widget.story.characters.get(ic_key, None)
-                if char is not None:
-                    name = char.data.get('title', ic_key)
+                for widget in self.widget.story.widgets:
+                    if widget.data.get('tag', None) == 'character':
+                        char_key = widget.data.get('key', "")
+                        char = widget
+                    if char is not None:
+                        name = char.data.get('title', ic_key)
 
-                    # Add the control now
-                    controls.append(ft.Text(name, color=char.data.get('color', None), weight=ft.FontWeight.BOLD))
-                    controls.append(
-                        ft.IconButton(
-                            ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
-                            data=ic_key,
-                            on_click=_toggle_involved_characters
+                        # Add the control now
+                        controls.append(ft.Text(name, color=char.data.get('color', None), weight=ft.FontWeight.BOLD))
+                        controls.append(
+                            ft.IconButton(
+                                ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
+                                data=ic_key,
+                                on_click=_toggle_involved_characters
+                            )
                         )
-                    )
-                    if idx < len(self.data.get('Involved Characters', [])) - 1: # Skip adding container to last character
-                        controls.append(ft.Container(width=10))
+                if idx < len(self.data.get('Involved Characters', [])) - 1: # Skip adding container to last character
+                    controls.append(ft.Container(width=10))
                            
                     
 
@@ -588,7 +607,7 @@ class Arc(MiniWidget):
             else:
                 add_related_objects_button.icon = ft.Icons.EDIT_OUTLINED
 
-            self.p.update()
+            self.update()
 
         add_related_objects_button = ft.IconButton(
             ft.Icons.EDIT_OUTLINED,
@@ -626,7 +645,7 @@ class Arc(MiniWidget):
         
         def _toggle_related_objects(e):
             should_add_key = True   # Flag to check if we need to remove or not
-            obj_key = e.control.data   # Key of the character
+            obj_key = e.control.data   # Key of the object
 
             for key in self.data.get('Related Objects', []):
                 if obj_key == key:     # If the character is in there, remove them and break
@@ -642,21 +661,25 @@ class Arc(MiniWidget):
 
             related_objects_row.controls = _set_related_objects_controls()
             related_objects_selector.controls = _get_related_objects()
-            self.p.update()
+            self.update()
 
         def _get_related_objects() -> list[str]:
             char_list = []
             
-            for obj_key, obj_obj in self.widget.story.objects.items():
-                char_list.append(
-                    ft.Checkbox(
-                        obj_obj.data.get('title', obj_key),
-                        True if obj_key in self.data.get('Involved Characters', []) else False,
-                        data=obj_key,
-                        label_style=ft.TextStyle(color=obj_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
-                        on_change=_toggle_related_objects
+            for widget in self.widget.story.widgets:
+                if widget.data.get('tag', None) == 'object':
+                    obj_key = widget.data.get('key', "")
+                    obj_obj = widget
+
+                    char_list.append(
+                        ft.Checkbox(
+                            obj_obj.data.get('title', obj_key),
+                            True if obj_key in self.data.get('Involved Characters', []) else False,
+                            data=obj_key,
+                            label_style=ft.TextStyle(color=obj_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
+                            on_change=_toggle_related_objects
+                        )
                     )
-                )
 
             if len(char_list) == 0:
                 char_list.append(ft.Text("No objects in story yet", color=ft.Colors.OUTLINE))
@@ -703,7 +726,7 @@ class Arc(MiniWidget):
                 related_objects_selector,
 
                 custom_fields_label,
-                ft.Container(custom_fields_column, margin=ft.margin.symmetric(horizontal=20)),
+                ft.Container(custom_fields_column, margin=ft.Margin.symmetric(horizontal=20)),
             ]
         )
 
@@ -720,9 +743,9 @@ class Arc(MiniWidget):
         self.content = column
     
 
-        if no_update:
-            return
-        else:
-            self.p.update()
+        try:
+            self.update()
+        except Exception as _:
+            pass
 
 

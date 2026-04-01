@@ -81,7 +81,7 @@ class PlotlineInformationDisplay(MiniWidget):
                 await self.save_dict()
 
                 # Rebuild our canvas
-                await self.widget.rebuild_plotline_canvas()
+                await self.widget.rebuild_plotline_canvas(update=True)
 
                 # Remove the control for this division. Reloading would fix, but lose our scroll placement
                 for control in self.divisions_column.controls:
@@ -106,13 +106,13 @@ class PlotlineInformationDisplay(MiniWidget):
             else:
                 self.data.get(key, [])[idx] = e.control.value
                 await self.save_dict()
-                await self.widget.rebuild_plotline_canvas()
+                await self.widget.rebuild_plotline_canvas(update=True)
                 
         else:
             key = e.control.data
             value = e.control.value
             self._change_our_data_instant(key, value)
-            await self.widget.rebuild_plotline_canvas()
+            await self.widget.rebuild_plotline_canvas(update=True)
 
     
     def _change_our_data_instant(self, key, value):
@@ -201,10 +201,10 @@ class PlotlineInformationDisplay(MiniWidget):
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=self._change_our_data,
             data='Summary', 
-            focus_color=self.widget.data.get('color', None),
-            cursor_color=self.widget.data.get('color', None),
-            focused_border_color=self.widget.data.get('color', None),
-            label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
+            #focus_color=self.widget.data.get('color', None),
+            #cursor_color=self.widget.data.get('color', None),
+            #focused_border_color=self.widget.data.get('color', None),
+            #label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
         )
 
 
@@ -214,20 +214,20 @@ class PlotlineInformationDisplay(MiniWidget):
                 capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
                 data='Left Label',
-                focus_color=self.widget.data.get('color', None),
-                cursor_color=self.widget.data.get('color', None),
-                focused_border_color=self.widget.data.get('color', None),
-                label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
+                #focus_color=self.widget.data.get('color', None),
+                #cursor_color=self.widget.data.get('color', None),
+                #focused_border_color=self.widget.data.get('color', None),
+                #label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
             ),
             ft.TextField(
                 expand=True, label="Right Label", value=self.data.get('Right Label', ""), dense=True, 
                 capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
                 data='Right Label',
-                focus_color=self.widget.data.get('color', None),
-                cursor_color=self.widget.data.get('color', None),
-                focused_border_color=self.widget.data.get('color', None),
-                label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
+                #focus_color=self.widget.data.get('color', None),
+                #cursor_color=self.widget.data.get('color', None),
+                #focused_border_color=self.widget.data.get('color', None),
+                #label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
             )
         ])
 
@@ -238,10 +238,10 @@ class PlotlineInformationDisplay(MiniWidget):
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=self._change_our_data,
             data='Time Label',
-            focus_color=self.widget.data.get('color', None),
-            cursor_color=self.widget.data.get('color', None),
-            focused_border_color=self.widget.data.get('color', None),
-            label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
+            #focus_color=self.widget.data.get('color', None),
+            #cursor_color=self.widget.data.get('color', None),
+            #focused_border_color=self.widget.data.get('color', None),
+            #label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
         )
 
 

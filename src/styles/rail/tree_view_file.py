@@ -224,11 +224,13 @@ class TreeViewFile(ft.GestureDetector):
         ''' Returns a list of all available colors for icon changing '''
 
         # Called when a color option is clicked on popup menu to change icon color
-        def _change_icon_color(color: str):
+        async def _change_icon_color(e):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
+            color = e.control.data
+
             # Change the data
-            self.widget.change_data(**{'color': color})
+            await self.widget.change_data(**{'color': color})
             self.icon_color = color
             
             # Change our icon to match, apply the update
@@ -243,7 +245,7 @@ class TreeViewFile(ft.GestureDetector):
             color_controls.append(
                 ft.MenuItemButton(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                    on_click=lambda e, col=color: _change_icon_color(col), close_on_click=True,
+                    on_click=_change_icon_color, close_on_click=True, data=color,
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
                 )
             )

@@ -323,18 +323,13 @@ class MiniWidget(ft.Container):
 
         async def create_field(e): #show in edit view
             '''Called when user confirms the field name'''
-            
+
             field_name = return_safe_name(field_name_input.value)
-            
-            if not field_name:
-                self.p.pop_dialog()
-                return  # Don't create if empty
-            
+       
             # Add the field to data if it doesn't exist
             if field_name not in self.data['custom_fields']:
                 self.data['custom_fields'][field_name] = ""
 
-            
             # Save and reload
             await self.save_dict()
             self.reload_mini_widget()      
@@ -352,8 +347,8 @@ class MiniWidget(ft.Container):
             title=ft.Text(f"Create New Custom Field"),
             content=field_name_input,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
-                ft.TextButton("Create", on_click=create_field),
+                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Create", on_click=create_field, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),
             ],
         )
         

@@ -139,7 +139,7 @@ class Plotline(Widget):
                 self.data.update({key: value})
 
             await self.save_dict()
-            await self.rebuild_plotline_canvas()
+            await self.rebuild_plotline_canvas(update=True)
 
         # Handle errors
         except Exception as e:
@@ -540,10 +540,10 @@ class Plotline(Widget):
             if self.information_display.visible:
                 self.information_display.reload_mini_widget()
 
+            await self.story.close_menu()  
             self.p.pop_dialog()   # Close the dialog
 
-            await asyncio.sleep(0.1)        # Needs a buffer or wont work for some reason
-            await self.story.close_menu()       
+                 
 
 
         # Grab the type of mini widget we are creating
@@ -556,14 +556,14 @@ class Plotline(Widget):
         )
 
         # Button for creating new mw. Can also press enter in the textfield
-        submit_button = ft.TextButton("Create", on_click=_create_new_mw, disabled=True)
+        submit_button = ft.TextButton("Create", on_click=_create_new_mw, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
 
         # Dialog we open onto the page
         dlg = ft.AlertDialog(
             title=ft.Text(f"New {tag.replace('_', ' ').title()} Name"),
             content=new_item_tf,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda e: self.p.pop_dialog()),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.p.pop_dialog()),
                 submit_button
             ],
         )
@@ -659,13 +659,13 @@ class Plotline(Widget):
         self.plotline_canvas.shapes.append(cv.Text(
             5, self.plotline_height // 2 - 60, left_label, 
             ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
-            max_width=55,   # Prevent overflow left
+            max_width=50,   # Prevent overflow left
             text_align=ft.TextAlign.LEFT
         ))
         self.plotline_canvas.shapes.append(cv.Text(
-            self.plotline_width - 5, self.plotline_height // 2 - 60, right_label, 
+            self.plotline_width - 55, self.plotline_height // 2 - 60, right_label, 
             ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
-            text_align=ft.TextAlign.RIGHT, max_width=55   # Prevent overflow right
+            text_align=ft.TextAlign.RIGHT, max_width=50   # Prevent overflow right
         ))
         self.plotline_canvas.shapes.append(cv.Text(
             self.plotline_width // 2, self.plotline_height - 50, time_label, 

@@ -123,6 +123,9 @@ class PlotPoint(MiniWidget):
         if value == False:
             await self.hide_mini_widget()
 
+        for mw in self.widget.mini_widgets:
+            if hasattr(mw, 'plotline_control'):
+                mw.reload_plotline_control(no_update=True)
         self.widget.reload_widget()
           
     # Called when we start dragging
@@ -167,9 +170,9 @@ class PlotPoint(MiniWidget):
         await self.save_dict()
 
         # Re-show all the info displays we hid while dragging
-        for mw in self.widget.mini_widgets:
-            if mw.data.get('visible', True):
-                mw.visible = True
+        #for mw in self.widget.mini_widgets:
+            #if mw.data.get('visible', True):
+                #mw.visible = True
 
         if self.widget.information_display.visible:
             self.widget.information_display.reload_mini_widget()
@@ -245,7 +248,7 @@ class PlotPoint(MiniWidget):
 
 
     # Called from reload_mini_widget
-    def reload_plotline_control(self):
+    def reload_plotline_control(self, no_update=False):
         """ Rebuilds our plotline control that holds our plot point and slider """
 
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
@@ -266,7 +269,8 @@ class PlotPoint(MiniWidget):
             ),
         )
         
-
+        if no_update:
+            return
 
         try:
             self.plotline_control.update()
