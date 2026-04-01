@@ -119,8 +119,8 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
             nonlocal selected_story
             selected_story = e.control.value
             open_button.disabled = False
-            open_button.style=ft.ButtonStyle(color=ft.Colors.ON_SURFACE)
-            page.update()
+            open_button.style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")
+            open_button.update()
 
         # Returns a list of all story titles available to open
         def get_stories_list() -> ft.Control:
@@ -163,8 +163,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
             page.pop_dialog()
             page.update()
 
-        open_button = ft.TextButton("Open", on_click=open_selected_story, disabled=True)
-
+        open_button = ft.TextButton("Open", on_click=open_selected_story, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
 
         # Our alert dialog that pops up when file -> open is clicked
         dlg = ft.AlertDialog(
@@ -180,7 +179,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                 on_change=change_selected_story
             ),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                 open_button,
             ]
         )
@@ -253,6 +252,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Upload", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                        disabled=True,
                         # Options: story, chapter, map, drawing, character, note
                         leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
                         close_on_click=True,
@@ -261,6 +261,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Export", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                        disabled=True,
                         # Options: story, chapter, map, drawing, character, note
                         leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
                         close_on_click=True,

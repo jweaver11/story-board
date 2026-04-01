@@ -269,7 +269,7 @@ class Marker(MiniWidget):
         description_tf = ft.TextField(
             value=self.data.get('description', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'description': e.control.value}), 
-            label="Description", 
+            label="Description", dense=True, capitalization=ft.TextCapitalization.SENTENCES,
         )
 
         custom_fields_label = ft.Row([
@@ -277,7 +277,7 @@ class Marker(MiniWidget):
             ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
             ft.IconButton(
                 ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Custom Field",
-                on_click=lambda e: self._new_custom_field_clicked(),
+                on_click=lambda _: self._new_custom_field_clicked(),
                 mouse_cursor="click"
             )
         ], spacing=0)

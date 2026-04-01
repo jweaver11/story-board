@@ -79,6 +79,7 @@ class PlotPoint(MiniWidget):
         self.reload_plotline_control()
         self.reload_mini_widget()
 
+
     
     async def move_plot_point(self, e: ft.DragUpdateEvent):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
@@ -263,7 +264,7 @@ class PlotPoint(MiniWidget):
                 mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
                 on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
                 on_pan_update=self.move_plot_point, drag_interval=20, on_pan_end=self._drag_end,
-                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
                 on_tap=self.show_mini_widget, on_tap_down=self._drag_start,
                 content=ft.Icon(ft.Icons.CIRCLE, self.data.get('color', None))
             ),
@@ -320,21 +321,21 @@ class PlotPoint(MiniWidget):
             value=self.data.get('Description', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'Description': e.control.value}), 
             label="Description", capitalization=ft.TextCapitalization.SENTENCES,
-            tooltip="Brief description of this plot point"
+            tooltip="Brief description of this plot point", dense=True
         )
 
         when_tf = ft.TextField(
             value=self.data.get('When', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'When': e.control.value}), 
             label="When", capitalization=ft.TextCapitalization.SENTENCES,
-            tooltip="Time or date related to this plot point"
+            tooltip="Time or date related to this plot point", dense=True
         )
 
         where_tf = ft.TextField(
             value=self.data.get('Where'), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'Where': e.control.value}), 
             label="Where", capitalization=ft.TextCapitalization.SENTENCES,
-            tooltip="List of location(s) related to this plot point"
+            tooltip="List of location(s) related to this plot point", dense=True
         )
 
         # Adds or removes characters from our Relevant characters list

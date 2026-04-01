@@ -246,8 +246,8 @@ class Arc(MiniWidget):
         #new_height = (self.widget.plotline_height / 2) * (ratio) - 40
         new_height = width * 0.5
 
-        if new_height >= self.widget.plotline_height / 2 -70:
-            new_height = self.widget.plotline_height / 2 -70
+        if new_height >= self.widget.plotline_height / 2 - 70:
+            new_height = self.widget.plotline_height / 2 - 70
         if new_height < 50:
             new_height = 50
 
@@ -424,28 +424,28 @@ class Arc(MiniWidget):
             value=self.data.get('Summary', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'Summary': e.control.value}), 
             label="Summary", capitalization=ft.TextCapitalization.SENTENCES,
-            tooltip="Summary of what happened during this arc"
+            tooltip="Summary of what happened during this arc", dense=True
         )
 
         start_tf = ft.TextField(
             value=self.data.get('Start', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'Start': e.control.value}), 
             label="Start", capitalization=ft.TextCapitalization.SENTENCES,
-            tooltip="When this arc began"
+            tooltip="When this arc began", dense=True
         )
 
         end_tf = ft.TextField(
             value=self.data.get('End', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'End': e.control.value}), 
             label="End", capitalization=ft.TextCapitalization.SENTENCES,
-            tooltip="When this arc ends"
+            tooltip="When this arc ends", dense=True
         )
 
         where_tf = ft.TextField(
             value=self.data.get('Where'), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'Where': e.control.value}), 
             label="Where", capitalization=ft.TextCapitalization.SENTENCES,
-            tooltip="List of location(s) related to this plot point"
+            tooltip="List of location(s) related to this plot point", dense=True
         )
 
         def _get_events_controls() -> list[ft.Control]:

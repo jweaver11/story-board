@@ -241,7 +241,9 @@ class Plotline(Widget):
         for mw in self.mini_widgets:
             if hasattr(mw, "plotline_control"):
                 mw.reload_plotline_control(no_update=True)
+        await self.rebuild_plotline_canvas(update=True)
         self.reload_widget()
+        await new_arc.show_mini_widget()        # Hides non-pinned mini widgets
        
         
     # Called when creating a new plotpoint
@@ -272,7 +274,10 @@ class Plotline(Widget):
         for mw in self.mini_widgets:
             if hasattr(mw, "plotline_control"):
                 mw.reload_plotline_control(no_update=True)
+                
+        await self.rebuild_plotline_canvas(update=True)
         self.reload_widget()
+        await new_plot_point.show_mini_widget()     # Hides non-pinned mini widgets
 
     async def create_marker(self, title: str):
         ''' Creates a new marker inside of our plotline object, and updates the data to match '''
@@ -299,7 +304,9 @@ class Plotline(Widget):
         for mw in self.mini_widgets:
             if hasattr(mw, "plotline_control"):
                 mw.reload_plotline_control(no_update=True)
+        await self.rebuild_plotline_canvas(update=True)
         self.reload_widget()
+        await new_marker.show_mini_widget()     # Hides non-pinned mini widgets
 
 
     def delete_plot_point(self, plot_point):
@@ -825,7 +832,6 @@ class Plotline(Widget):
                 try:
                     marker.plotline_control.update()
                 except Exception as _:
-                    print("Failed update")
                     pass
 
         # Go through our arcs and update their size --------------------------------------------------        
@@ -849,7 +855,7 @@ class Plotline(Widget):
 
                 new_width = self.plotline_width - new_left - new_right
                 if new_width < 100:
-                    continue
+                    new_width = 100
 
                 height = new_width * 0.5
 

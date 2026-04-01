@@ -92,7 +92,6 @@ class MiniWidget(ft.Container):
                 # Our data is correct, so we update our immidiate parents data to match
                 self.widget.data[self.key][self.title] = self.data
 
-            # Recursively updates the parents data until widget=widget (widget), which saves to file
             await self.widget.save_dict()
 
         except Exception as e:
@@ -135,7 +134,7 @@ class MiniWidget(ft.Container):
             self.widget.reload_widget()
 
             # Also reload the active rail to reflect changes
-            self.widget.story.active_rail.content.reload_rail() 
+            self.widget.story.active_rail.reload_rail() 
             self.widget.story.close_menu_instant()
 
         # Catch errors
@@ -267,8 +266,8 @@ class MiniWidget(ft.Container):
 
         #print("Show called for", self.title)
 
-        if self.visible:
-            return
+        #if self.visible:
+            #return
         
         self.widget.story.blocker.visible = True
         self.widget.story.blocker.update()

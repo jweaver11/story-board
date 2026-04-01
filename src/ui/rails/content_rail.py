@@ -180,7 +180,7 @@ class ContentRail(Rail):
                             leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
                             data="canvas", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new Canvas for sketching drawing, or visual note taking",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
                         ),
                         ft.MenuItemButton(      
                             leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY), content="Note", 
@@ -198,7 +198,7 @@ class ContentRail(Rail):
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
                             data="plotline", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                             tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
                         ),
                         ft.MenuItemButton(
@@ -323,6 +323,7 @@ class ContentRail(Rail):
         
         # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space
         content.controls.append(ft.Container(expand=True))
+        content.controls.append(ft.Container(height=100))
 
 
         # Wrap the gd in a drag target so we can move characters here
