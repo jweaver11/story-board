@@ -41,7 +41,7 @@ def default_character_template_data_dict() -> dict:
         },   
         'Origin': {     
             'Birth Date': "",   
-            'Hometown': "",     
+            'Home Town': "",     
             'Education': "",        
             'Trauma': "",
         },  

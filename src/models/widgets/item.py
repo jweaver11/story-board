@@ -29,6 +29,7 @@ class Item(Widget):
             data = data,
             is_rebuilt = is_rebuilt
         )
+        self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
 
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
@@ -39,6 +40,7 @@ class Item(Widget):
                 'color': app.settings.data.get('default_item_color'),
                 'pin_location': app.settings.data.get('default_item_pin_location', "right") if data is None else data.get('pin_location', "right"),   # Default pin location for items
 
+                'edit_mode': True,      # Whether we are in edit mode or not
                 'image_base64': str, 
                 'Description': str,
 
@@ -125,13 +127,18 @@ class Item(Widget):
             except Exception as _:
                 pass
 
-    # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
-    def reload_widget(self):
-        ''' Reloads/Rebuilds our widget based on current data '''
+    # Called when clicking the edit mode button
+    def _edit_mode_clicked(self, e=None):
+        ''' Switches between edit mode and not for the item  '''
 
-        # Rebuild out tab to reflect any changes
-        self.reload_tab()
+        # Change our edit mode data flag, and save it to file
+        self.data['edit_mode'] = not self.data['edit_mode']
+        self.p.run_task(self.save_dict)
 
+        # Reload the widget. The reload widget should load differently depending on if we're in edit mode or not
+        self.reload_widget()
+
+    def _edit_mode_view(self):
         if self.data.get('image_base64', ""):
             img = ft.Container(
                 ft.Image(
@@ -164,13 +171,14 @@ class Item(Widget):
                         tooltip=f"Delete segment {key}",
                         on_click=self._delete_segment,
                         mouse_cursor="click", data=idx
-                    )
+                    ),
+                    ft.Container(width=1)
                 ])
             )
 
         description_text_field = TextField(
             self.data.get('Description', ""),
-            label="Description", multiline=True, expand=True,
+            multiline=True, expand=True,
             capitalization=ft.TextCapitalization.SENTENCES, 
             on_blur=lambda e: self.data.__setitem__('Description', e.control.value) or self.p.run_task(self.save_dict)
         )
@@ -186,11 +194,152 @@ class Item(Widget):
         )
         
         body = ft.Column(
-            expand=True, horizontal_alignment=ft.CrossAxisAlignment.START,
-            controls=[ft.Row([upload_image_button, description_text_field])] + segments_list + [add_segment_button]
+            expand=True, horizontal_alignment=ft.CrossAxisAlignment.START, scroll="auto",
+            controls=[
+                #ft.Container(height=1),
+                ft.Row(
+                    [
+                        upload_image_button, 
+                        ft.Column([
+                            ft.Row([
+                                ft.Text(f"Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
+                                ft.IconButton(
+                                    tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), 
+                                    on_click=self._edit_mode_clicked, mouse_cursor="click"
+                                ),
+                            ]),
+                            description_text_field
+                        ], horizontal_alignment=ft.CrossAxisAlignment.START, expand=True, tight=True, spacing=0), 
+                        ft.Container(width=6)
+                ]
+                )]
+                + segments_list
+                + [add_segment_button]
         )
 
         # Assign the body_container content as whatever view you have built in the widget
+        self.body_container.content = body
+
+    # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
+    def reload_widget(self):
+        ''' Reloads/Rebuilds our widget based on current data '''
+
+        # Rebuild out tab to reflect any changes
+        self.reload_tab()
+
+        # Check if we're in edit mode or not. If yes, build the edit view like this
+        if self.data.get('edit_mode', False):
+            self._edit_mode_view()
+            self._render_widget()
+            return
+        
+        def _load_item_data_controls():
+            ''' Loads data from a dict into a given container '''
+
+            control_list = []
+            if len(self.data.get('item_data', [])) == 0:
+                control_list.append(ft.Text("No item data added yet", italic=True))
+                return control_list
+            
+            # Go through our sections inside of our item data
+            for dict in self.data.get('item_data', []):
+
+
+                # List to hold text spans for each text control in the container
+                text_span_list = []
+                label = dict.get('title', '')
+                value = dict.get('content', '')
+
+                # Set a label and container to hold our text spans for each section
+                #label = ft.Text(f"\t{label}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None))
+
+                #control_list.append(label)
+                
+                if isinstance(value, str):
+
+                    # If artifically created new lines, treat as bullet point list
+                    if "\n" in value:
+                        if label != "":
+                            text_span_list.append(
+                                ft.TextSpan(f"{label}:\n", ft.TextStyle(size=16, weight=ft.FontWeight.BOLD))
+                            ) 
+
+                        # Add the value for this key, with a bullet point if there are multiple values separated by new lines
+                        values = [v.strip() for v in value.replace('\n', ',').split(',') if v.strip()]
+                        for val in values:
+                            text_span_list.append(ft.TextSpan(f"\t\u2022\t{val}\n"))
+
+                    # Otherwise, just add the key and value normally
+                    else:
+
+                        # Add the each key for this section
+                        if label != "":
+                            text_span_list.append(
+                                ft.TextSpan(f"{label}:\t\t", ft.TextStyle(16, weight=ft.FontWeight.BOLD))
+                            )
+                        text_span_list.append(ft.TextSpan(f"{value}\n"))     # Rest of the value
+
+                # Container to hold the text control of our section info
+                value = ft.Text(spans=text_span_list, size=16)
+
+                # Remove unnecessary new line at the end for cleaner formatting
+                last_span = text_span_list[-1] if text_span_list else None
+                if last_span and last_span.text.endswith("\n"):
+                    last_span.text = last_span.text[:-1]  # Remove the last new line for cleaner formatting
+
+                # Add the label and container with our text spans to the control list for this section
+                
+                control_list.append(value)
+
+            return control_list
+        
+        
+        if self.data.get('image_base64', ""):
+            img = ft.Container(
+                ft.Image(
+                    src=self.data.get('image_base64', ""),
+                    width=100,
+                    height=100,
+                    fit=ft.BoxFit.FILL,
+                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+            )
+        else:
+            img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
+            
+
+        description_section = ft.Column([
+            ft.Row([
+                ft.Text(f"Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
+                ft.IconButton(
+                    tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), 
+                    on_click=self._edit_mode_clicked, mouse_cursor="click"
+                ),
+            ]),
+            ft.Container(
+                ft.Text(
+                    f"{self.data.get('Description', '')}", expand=True, size=16
+                ), margin=ft.Margin.only(right=16)), # Forces container to take up space
+            
+        ], expand=True, spacing=0)
+
+        
+        # Header that holds our image, edit mode button, and about section
+        header = ft.Row([
+            ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_item_image, mouse_cursor="click"),
+            description_section
+        ], vertical_alignment=ft.CrossAxisAlignment.START)
+
+
+        # Body that holds the rest of our widget
+        body = ft.Column(
+            controls=[header],
+            scroll="auto", expand=True, spacing=4
+        )
+
+        # Load in our item data controls after the header
+        body.controls.extend(_load_item_data_controls())   
+
+        # Set the body we built
         self.body_container.content = body
         
         # Build in widget function that will handle loading our mini widgets and rendering the whole thing

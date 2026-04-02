@@ -16,6 +16,7 @@ from models.dataclasses.character_template import default_character_template_dat
 from utils.alert_dialogs.character_connection import new_character_connection_clicked
 import flet.canvas as cv
 import asyncio
+from styles.text_field import TextField
 
 
 
@@ -386,7 +387,7 @@ class Character(Widget):
 
                 # Set a label and container to hold our text spans for each section
                 label = ft.Row([
-                    ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                    ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
                     ft.IconButton(
                         tooltip="Add New Field", icon=ft.Icons.NEW_LABEL_OUTLINED, mouse_cursor="click",
                         on_click=lambda _, s=section:self._new_field_clicked(s), icon_color=self.data.get('color', None)
@@ -416,7 +417,7 @@ class Character(Widget):
                         # Add the each key for this section
                         control_list.append(
                             ft.Row([
-                                ft.TextField(
+                                TextField(
                                     label=key, hint_text=_get_help_text(key), value=value, 
                                     on_blur=lambda e, k=key: self._update_character_data(**{k: e.control.value}), expand=True,
                                     dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
@@ -426,13 +427,13 @@ class Character(Widget):
                                     tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, mouse_cursor="click",
                                     on_click=lambda _, k=key: self._delete_character_data(**{k: ""}), icon_color=ft.Colors.ERROR
                                 ),
-                                ft.Container(width=10)   # Spacing
+                                ft.Container(width=1)   # Spacing
                             ])
                         )
     
 
                 # Add the label and container with our text spans to the control list for this section
-                control_list.append(ft.Container(height=10))    # Spacing
+                #control_list.append(ft.Container(height=10))    # Spacing
                 
 
             return control_list
@@ -458,7 +459,7 @@ class Character(Widget):
 
         about_section = ft.Column([
             ft.Row([
-                ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
                 ft.IconButton(
                     tooltip="Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, icon_color=self.data.get('color', None), 
                     on_click=self._edit_mode_clicked, mouse_cursor="click"
@@ -466,7 +467,7 @@ class Character(Widget):
                 
             ]),
             ft.Container(
-                ft.TextField(
+                TextField(
                     self.data.get('About', ""), on_blur=_change_about_data, expand=True, 
                     dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
                     border_color=ft.Colors.OUTLINE_VARIANT
@@ -487,7 +488,7 @@ class Character(Widget):
         body = ft.Column([
             header,
             
-        ], scroll="auto", expand=True, spacing=6, on_scroll=self._save_scroll_position)
+        ], scroll="auto", expand=True, on_scroll=self._save_scroll_position)
 
         body.controls.extend(_load_character_data_controls())   
         body.controls.append(
@@ -555,20 +556,20 @@ class Character(Widget):
                         # If artifically created new lines, treat as bullet point list
                         if "\n" in value:
                             text_span_list.append(
-                                ft.TextSpan(f"{key.capitalize()}:\n", ft.TextStyle(size=16, weight=ft.FontWeight.BOLD))
+                                ft.TextSpan(f"{key}:\n", ft.TextStyle(size=16, weight=ft.FontWeight.BOLD))
                             )
 
                             # Add the value for this key, with a bullet point if there are multiple values separated by new lines
                             values = [v.strip() for v in value.replace('\n', ',').split(',') if v.strip()]
                             for val in values:
-                                text_span_list.append(ft.TextSpan(f"\t\u2022\t{val.capitalize()}\n"))
+                                text_span_list.append(ft.TextSpan(f"\t\u2022\t{val}\n"))
 
                         # Otherwise, just add the key and value normally
                         else:
 
                             # Add the each key for this section
                             text_span_list.append(
-                                ft.TextSpan(f"{key.capitalize()}:\t\t", ft.TextStyle(16, weight=ft.FontWeight.BOLD))
+                                ft.TextSpan(f"{key}:\t\t", ft.TextStyle(16, weight=ft.FontWeight.BOLD))
                             )
                             text_span_list.append(ft.TextSpan(f"{value}\n"))     # Rest of the value
 
@@ -601,13 +602,13 @@ class Character(Widget):
 
         about_section = ft.Column([
             ft.Row([
-                ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
+                ft.Text(f"About", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
                 ft.IconButton(
                     tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), 
                     on_click=self._edit_mode_clicked, mouse_cursor="click"
                 ),
             ]),
-            ft.Container(ft.Text(f"\t\t{self.data.get('About', "")}", expand=True, size=16), margin=ft.Margin.only(right=16)), # Forces container to take up space
+            ft.Container(ft.Text(f"{self.data.get('About', "")}", expand=True, size=16), margin=ft.Margin.only(right=16)), # Forces container to take up space
             
         ], expand=True, spacing=0)
 
@@ -616,7 +617,7 @@ class Character(Widget):
         header = ft.Row([
             ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_character_image, mouse_cursor="click"),
             about_section
-        ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
+        ], vertical_alignment=ft.CrossAxisAlignment.START)
 
 
         # Body that holds the rest of our widget
