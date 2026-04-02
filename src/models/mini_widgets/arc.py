@@ -731,17 +731,17 @@ class Arc(MiniWidget):
             visible=False,
         )
 
-        custom_fields_label = ft.Row([
+        notes_fields_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Custom Fields", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD),
+            ft.Text("Notes Fields", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD),
             ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Custom Field",
-                on_click=lambda e: self._new_custom_field_clicked(),
+                ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Notes Field",
+                on_click=lambda _: self._new_custom_field_clicked(),
                 mouse_cursor="click"
             )
         ], spacing=0)
 
-        custom_fields_column = self._build_custom_fields_column()
+        notes_fields_column = self._build_notes_column()
 
         # Build the main body content of our info display
         content = ft.Column(
@@ -763,8 +763,8 @@ class Arc(MiniWidget):
                 related_objects_row,
                 related_objects_selector,
 
-                custom_fields_label,
-                ft.Container(custom_fields_column, margin=ft.Margin.symmetric(horizontal=20)),
+                notes_fields_label,
+                ft.Container(notes_fields_column, margin=ft.Margin.symmetric(horizontal=20)),
             ]
         )
         

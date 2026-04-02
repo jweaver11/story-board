@@ -93,7 +93,7 @@ class ContentRail(Rail):
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.SHIELD_OUTLINED, ft.Colors.PRIMARY), content="Item", 
                         data="item", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         tooltip="New Items and Equipment for your story"
                     ),  
                     ft.MenuItemButton(
@@ -306,7 +306,7 @@ class ContentRail(Rail):
             expand=True,
             controls=[
                 ft.Container(height=6),
-                self.new_item_textfield
+                ft.Container(self.new_item_textfield, margin=ft.Margin.symmetric(horizontal=10))
             ],
         )
 

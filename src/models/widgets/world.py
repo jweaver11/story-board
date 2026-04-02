@@ -60,7 +60,7 @@ class World(Widget):
                     'Technology': dict,
                     'History': dict,
                     'Governments': dict,
-                    'Custom Fields': dict,  
+                    'Notes': dict,  
                 },
             }
         )
@@ -306,29 +306,35 @@ class World(Widget):
                     ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                     ft.IconButton(
                         tooltip="Add New Field", icon=ft.Icons.NEW_LABEL_OUTLINED, mouse_cursor="click",
-                        on_click=lambda e, s=section:self._new_field_clicked(s), icon_color=self.data.get('color', None)
+                        on_click=lambda _, s=section:self._new_field_clicked(s), icon_color=self.data.get('color', None)
                     ),
                 ])
-                # Container to hold the text control of our section info
-                container = ft.Container(         # For template data
-                    padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-                    border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(bottom=10),
-                    content=ft.Column(expand=True, spacing=6) # Forces container to take up space
-                )
+                control_list.append(label)
+
+                # If the dict is empty, show the delete button
+                if len(values) == 0:
+                    control_list.append(ft.Text(f"\t\tNo fields yet...", italic=True, color=ft.Colors.ON_SURFACE_VARIANT))
+                    label.controls.append(
+                        ft.TextButton(
+                            "Delete Section?",
+                            on_click=lambda _, s=section: self._delete_world_data(**{s: ""}),
+                            style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)
+                        )
+                    )
+                    continue
 
                 # Go through every key/value pair in this section and add it to our text span list with formatting
                 for key, value in values.items():
                     if isinstance(value, str) and (value or app.settings.data.get('show_empty_world_fields', True)):
 
                         # Add the each key for this section
-                        container.content.controls.append(
+                        control_list.append(
                             ft.Row([
                                 ft.TextField(
                                     label=key, hint_text=_get_help_text(key), value=value, 
                                     on_blur=lambda e, k=key: self._update_world_data(**{k: e.control.value}), expand=True,
                                     dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
-                                    focus_color=self.data.get('color', "primary"), focused_border_color=self.data.get('color', "primary"), 
-                                    cursor_color=self.data.get('color', "primary"),
+                                    border_color=ft.Colors.OUTLINE_VARIANT
                                 ),
                                 ft.IconButton(
                                     tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, mouse_cursor="click",
@@ -337,22 +343,9 @@ class World(Widget):
                             ])
                         )
 
-                if len(container.content.controls) == 0:
-                    container.content.controls.append(
-                        ft.Row([
-                            ft.Text("No fields to display", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
-                            ft.TextButton(
-                                ft.Text("Delete Section?", color=ft.Colors.ERROR),
-                                on_click=lambda e, s=section: self._delete_world_data(**{s: ""}),
-                                style=ft.ButtonStyle(mouse_cursor="click")
-                            )
-                        ])
-                    )
-
 
                 # Add the label and container with our text spans to the control list for this section
-                control_list.append(label)
-                control_list.append(container)
+                control_list.append(ft.Container(height=10))    # Spacing
 
             return control_list
                     
@@ -382,16 +375,12 @@ class World(Widget):
                     on_click=self._edit_mode_clicked, mouse_cursor="click"
                 ),
             ]),
-            ft.Container(
-                border_radius=ft.BorderRadius.all(10), expand=True,
-                border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(left=6),   
-                content=ft.TextField(
-                    self.data.get('char_data', {}).get('About', ""), on_blur=_change_about_data, expand=True, 
-                    dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
-                    focus_color="transparent", focused_border_color="transparent", 
-                    cursor_color=self.data.get('color', "primary"), border_color="transparent"
-                ), 
-            )
+            ft.TextField(
+                self.data.get('About', ""), on_blur=_change_about_data, expand=True, 
+                dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
+                border_color=ft.Colors.OUTLINE_VARIANT
+            ), 
+            
         ], expand=True, spacing=0)
 
         
@@ -434,7 +423,7 @@ class World(Widget):
                     continue
 
                 # Set a label and container to hold our text spans for each section
-                label = ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None))
+                label = ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None))
                 
                 # List to hold text spans for each text control in the container
                 text_span_list = []
@@ -454,7 +443,7 @@ class World(Widget):
                         # If artifically created new lines, treat as bullet point list
                         if "\n" in value:
                             text_span_list.append(
-                                ft.TextSpan(f"{key.capitalize()}:\n", ft.TextStyle(weight=ft.FontWeight.BOLD))
+                                ft.TextSpan(f"{key.capitalize()}:\n", ft.TextStyle(16, weight=ft.FontWeight.BOLD))
                             )
 
                             # Add the value for this key, with a bullet point if there are multiple values separated by new lines
@@ -467,7 +456,7 @@ class World(Widget):
 
                             # Add the each key for this section
                             text_span_list.append(
-                                ft.TextSpan(f"{key.capitalize()}:\t\t", ft.TextStyle(weight=ft.FontWeight.BOLD))
+                                ft.TextSpan(f"{key.capitalize()}:\t\t", ft.TextStyle(16, weight=ft.FontWeight.BOLD))
                             )
                             text_span_list.append(ft.TextSpan(f"{value}\n"))     # Rest of the value
 
@@ -509,7 +498,7 @@ class World(Widget):
 
         about_section = ft.Column([
             ft.Row([
-                ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
                 ft.IconButton(
                     tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), 
                     on_click=self._edit_mode_clicked, mouse_cursor="click"

@@ -7,6 +7,7 @@ from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 from models.app import app
 from utils.safe_string_checker import return_safe_name
+from styles.text_field import TextField
     
 
 class Note(Widget):
@@ -110,7 +111,7 @@ class Note(Widget):
             value = segment.get('content', '')
             segments_list.append(
                 ft.Row([
-                    ft.TextField(
+                    TextField(
                         value, expand=True,
                         multiline=True, label=key, dense=True, capitalization=ft.TextCapitalization.SENTENCES, 
                         on_blur=self._save_segment,

@@ -357,6 +357,7 @@ class Story(ft.View):
         from models.widgets.map import Map
         from models.widgets.character_connection_map import CharacterConnectionMap
         from models.widgets.world import World
+        from models.widgets.item import Item
         #from models.widgets.object import Object
 
         # If we are being re-loaded after settings or another story, clear our content so we can load it fresh
@@ -464,6 +465,14 @@ class Story(ft.View):
                                     story=self,
                                     data=widget_data,
                                 )
+                            case "item":
+                                widget = Item(
+                                    title=widget_data.get('title', 'Untitled Document'),
+                                    page=self.p,
+                                    directory_path=dir_path,
+                                    story=self,
+                                    data=widget_data,
+                                )
                             case _:
                                 print("Widget tag not valid Tag: ", tag)
 
@@ -488,6 +497,7 @@ class Story(ft.View):
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
         from models.widgets.character_connection_map import CharacterConnectionMap
+        from models.widgets.item import Item
         from models.widgets.world import World
         from models.mini_widgets.arc import Arc
         from models.mini_widgets.plot_point import PlotPoint
@@ -527,7 +537,9 @@ class Story(ft.View):
             case "world":
                 widget = World(title, self.p, directory_path, self, data)
             case "canvas_board":
-                widget = CanvasBoard(title, self.p, directory_path, self, data)     
+                widget = CanvasBoard(title, self.p, directory_path, self, data)   
+            case "item":
+                widget = Item(title, self.p, directory_path, self, data)  
             case _:
                 self.p.show_dialog(SnackBar(f"Error creating widget {title}: Invalid tag {tag}"))
 
@@ -565,6 +577,7 @@ class Story(ft.View):
         from models.widgets.map import Map
         from models.widgets.character_connection_map import CharacterConnectionMap
         from models.widgets.world import World
+        from models.widgets.item import Item
         from models.mini_widgets.arc import Arc
         from models.mini_widgets.plot_point import PlotPoint
 
@@ -653,6 +666,16 @@ class Story(ft.View):
                 
             case "canvas_board":
                 new_widget = CanvasBoard(
+                    widget.data.get('title', 'Untitled Document'),
+                    page=self.p,
+                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=widget.data,
+                    is_rebuilt=True
+                )
+
+            case "item":
+                new_widget = Item(
                     widget.data.get('title', 'Untitled Document'),
                     page=self.p,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),

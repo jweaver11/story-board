@@ -105,7 +105,7 @@ class Settings(ft.View):
 
                 # Widget settings
                 'default_canvas_color': "primary",
-                'default_canvas_board_color': "orange",
+                'default_canvas_board_color': "primary",
                 'default_chapter_color': "primary",   # Default colors for new widgets
                 'default_character_color': "primary",
                 'default_character_connection_map_color': "primary", 
@@ -114,6 +114,8 @@ class Settings(ft.View):
                 'default_planning_color': "primary",
                 'default_plotline_color': "primary",
                 'default_world_color': "primary",
+                'default_object_color': "primary",
+                'default_item_color': "primary",
 
                 'default_category_color': "primary",    # Categories thrown in here
 
@@ -129,6 +131,10 @@ class Settings(ft.View):
                 'default_planning_pin_location': "main",
                 'default_plotline_pin_location': "main",
                 #'default_world_pin_location': "right",
+                'default_item_pin_location': "main",
+                'default_object_pin_location': "main",
+                #'default_object_pin_location': "right",
+                #'default_item_pin_location': "right",
                 'default_world_pin_location': "main",
 
                 'active_character_template': "Default",             # Which template is being used for new characters for new stories - they default to this

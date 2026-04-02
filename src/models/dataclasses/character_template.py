@@ -10,7 +10,7 @@ def default_character_template_data_dict() -> dict:
         'Basic Info': {
             'Nickname': "",    
             'Role': "",        # Importance of character in the story. Main, Side, Background, None
-            'Tag': "",         # Tag for custom grouping of characters. Protagonist, Antagonist, Supporting, None
+            'Tag': "",         # Tag for grouping of characters. Protagonist, Antagonist, Supporting, None
             'Morality': "",    
             'Age': "",         
             'Nationality': "", 
@@ -45,5 +45,5 @@ def default_character_template_data_dict() -> dict:
             'Education': "",        
             'Trauma': "",
         },  
-        'Custom Fields': {}       # Anything the user wants to add on their own
+        'Notes': {}       # Anything the user wants to add on their own
     }

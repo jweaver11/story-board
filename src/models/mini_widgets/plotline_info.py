@@ -477,7 +477,7 @@ class PlotlineInformationDisplay(MiniWidget):
             ),
         ], spacing=0)
 
-        custom_fields_column = self._build_custom_fields_column()
+        custom_fields_column = self._build_notes_column()
 
 
         # Build the main body content of our info display

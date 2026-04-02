@@ -58,7 +58,7 @@ class MiniWidget(ft.Container):
                 'is_shown_on_widget': True,          # If the mini widget is shown on the parent widget. Some widgets can toggle this off
                 'is_pinned': False,           # If the mini widget is pinned open and will remain open
                 'side_location': side_location if side_location is not None else "right",     # Side of the widget the mini widget shows on
-                'custom_fields': dict,        # Dictionary for any custom fields the mini widget wants to store
+                'notes': dict,        # Dictionary for any custom fields the mini widget wants to store
             },
         )
 
@@ -164,7 +164,7 @@ class MiniWidget(ft.Container):
 
         try:
             for key, value in kwargs.items():
-                self.data['custom_fields'].update({key: value})
+                self.data['notes'].update({key: value})
 
             self.p.run_task(self.save_dict)
 
@@ -317,8 +317,8 @@ class MiniWidget(ft.Container):
     def _new_custom_field_clicked(self, e=None):
         ''' Called when the new field button is clicked '''
 
-        if 'custom_fields' not in self.data:
-            self.data['custom_fields'] = {} 
+        if 'notes' not in self.data:
+            self.data['notes'] = {} 
 
         async def create_field(e): #show in edit view
             '''Called when user confirms the field name'''
@@ -326,8 +326,8 @@ class MiniWidget(ft.Container):
             field_name = return_safe_name(field_name_input.value)
        
             # Add the field to data if it doesn't exist
-            if field_name not in self.data['custom_fields']:
-                self.data['custom_fields'][field_name] = ""
+            if field_name not in self.data['notes']:
+                self.data['notes'][field_name] = ""
 
             # Save and reload
             await self.save_dict()
@@ -337,13 +337,13 @@ class MiniWidget(ft.Container):
 
         # Create a dialog to ask for the field name
         field_name_input = ft.TextField(
-            label="Field Name", hint_text=f"New Custom Field Name",
+            label="Field Name", hint_text=f"New Note Segment Name",
             autofocus=True, capitalization=ft.TextCapitalization.SENTENCES,
             on_submit=create_field,     # Closes the overlay when submitting
         )
         
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Create New Custom Field"),
+            title=ft.Text(f"Create New Note Segment"),
             content=field_name_input,
             actions=[
                 ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
@@ -358,15 +358,15 @@ class MiniWidget(ft.Container):
 
     def _delete_custom_field_clicked(self, field_name: str):
 
-        if field_name in self.data.get('custom_fields', {}):
-            del self.data['custom_fields'][field_name]
+        if field_name in self.data.get('notes', {}):
+            del self.data['notes'][field_name]
             self.p.run_task(self.save_dict)
             self.reload_mini_widget()
 
-    def _build_custom_fields_column(self) -> ft.Column:
+    def _build_notes_column(self) -> ft.Column:
         ''' Builds our column of custom fields for this mini widget '''
         controls = []
-        for field_name, field_value in self.data.get('custom_fields', {}).items():
+        for field_name, field_value in self.data.get('notes', {}).items():
             controls.append(
                 ft.Row([
                     ft.TextField(
@@ -374,8 +374,8 @@ class MiniWidget(ft.Container):
                         on_blur=lambda e, fn=field_name: self.change_custom_field(**{fn: e.control.value}), dense=True
                     ),
                     ft.IconButton(
-                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Custom Field",
-                        on_click=lambda e, fn=field_name: self._delete_custom_field_clicked(fn),
+                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Note Segment",
+                        on_click=lambda _, fn=field_name: self._delete_custom_field_clicked(fn),
                         mouse_cursor="click"
                     ),
                 

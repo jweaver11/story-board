@@ -1,4 +1,4 @@
 # Class for import objects that appear in the story
 
-# Description, effects, notes, custom fields
+# Description, lore, type, material, size, weight, effects, value, notes
 # Can be at a location

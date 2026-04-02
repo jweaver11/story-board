@@ -324,7 +324,7 @@ class Location(MiniWidget):
                 on_click=lambda e: self._new_custom_field_clicked())
         ], spacing=0)
 
-        custom_fields_column = self._build_custom_fields_column()
+        custom_fields_column = self._build_notes_column()
 
         content = ft.Column(
             expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 

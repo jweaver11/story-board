@@ -167,7 +167,7 @@ class Rail(IsolatedColumn):
                 self.new_item_textfield.hint_text = "World Building Name"
             case "plot_point": 
                 self.new_item_textfield.hint_text = "Plot Point Title"
-            case "character" | "folder" :
+            case "character" | "folder" | "item" | "object":
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
                 if tag == "character":
                     template_name = str(e.control.content)

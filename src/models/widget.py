@@ -64,7 +64,7 @@ class Widget(ft.Container):
                     'visible': True,                                # Whether this widget is visible in the workspace or not
                     'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
                     #'color': str,                                  # Color of the icon and tab divider for this widget. Child classes set this on creation  
-                    'custom_fields': dict,                          # Dictionary for any custom fields the widget wants to store
+                    'notes': dict,                          # Dictionary for any fields the widget wants to store
                     'scroll_position': 0,                           # Used to save scroll positions upon rebuilds
                 }
             )
@@ -121,6 +121,7 @@ class Widget(ft.Container):
             case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
             case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
             case "object": self.icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
+            case "item": self.icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
             case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
 
 
@@ -248,20 +249,20 @@ class Widget(ft.Container):
 
         return
 
-    def change_custom_field(self, **kwargs):
-        ''' Changes a key/value pair in our custom fields dictionary and saves the json file '''
+    def change_notes_field(self, **kwargs):
+        ''' Changes a key/value pair in our notess dictionary and saves the json file '''
         # Called by:
-        # widget.change_custom_field(**{'key': value, 'key2': value2})
+        # widget.change_notes_field(**{'key': value, 'key2': value2})
 
         try:
             for key, value in kwargs.items():
-                self.data['custom_fields'].update({key: value})
+                self.data['notes'].update({key: value})
 
             self.p.run_task(self.save_dict)
 
         # Handle errors
         except Exception as e:
-            print(f"Error changing custom field {key}:{value} in widget {self.title}: {e}")
+            print(f"Error changing notes {key}:{value} in widget {self.title}: {e}")
 
     # Called when moving widget files
     def delete_file(self) -> bool:
@@ -657,7 +658,7 @@ class Widget(ft.Container):
             color = e.control.data
 
             # Change the data
-            self.change_data(**{'color': color})
+            await self.change_data(**{'color': color})
 
             self.story.blocker.visible = True
             self.story.blocker.update()
