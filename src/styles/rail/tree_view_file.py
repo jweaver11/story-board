@@ -6,6 +6,7 @@ from models.app import app
 from styles.colors import colors
 from utils.check_widget_unique import check_widget_unique
 import os
+import asyncio
 import math
 
 # Class for items within a tree view on the rail
@@ -23,8 +24,6 @@ class TreeViewFile(ft.GestureDetector):
         self.father = father
         tag = widget.data.get('tag', None)
 
-
-
         match tag:
             case "document": self.icon = ft.Icons.DESCRIPTION_OUTLINED
             case "canvas": self.icon = ft.Icons.BRUSH_OUTLINED
@@ -37,8 +36,6 @@ class TreeViewFile(ft.GestureDetector):
             case "world": self.icon = ft.Icons.PUBLIC_OUTLINED
             case "character_connection_map": self.icon = ft.Icons.ACCOUNT_TREE_OUTLINED
             case _: self.icon = ft.Icons.ERROR_OUTLINE
-
-                   
 
         # Set our text style
         self.text_style = ft.TextStyle(
@@ -230,12 +227,19 @@ class TreeViewFile(ft.GestureDetector):
             color = e.control.data
 
             # Change the data
+            print("Widget title: ", self.widget.title)
             await self.widget.change_data(**{'color': color})
             self.icon_color = color
             
             # Change our icon to match, apply the update
+            self.widget.story.blocker.visible = True
+            self.widget.story.blocker.update()
+            await asyncio.sleep(0)
             self.reload()
             self.widget.story.workspace.reload_workspace()
+            await self.widget.story.close_menu()
+            self.widget.story.blocker.visible = False
+            self.widget.story.blocker.update()
 
         # List for our colors when formatted
         color_controls = [] 
@@ -268,20 +272,21 @@ class TreeViewFile(ft.GestureDetector):
             group="widgets",
             data=self.widget.data['key'],
             content_feedback=ft.TextButton(ft.Row([ft.Icon(self.icon, expand=True), ft.Text(self.widget.title, style=self.text_style, expand=True)], expand=True)),
-            on_drag_start=lambda e: self.widget.story.workspace.show_pin_drag_targets(),
+            on_drag_start=lambda _: self.widget.story.workspace.show_pin_drag_targets(),
+            
             content=ft.ListTile(
                 leading=leading_control, 
                 title=ft.Text(self.widget.title, style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
                 shape=ft.RoundedRectangleBorder(radius=6),
                 bgcolor=ft.Colors.TRANSPARENT, 
                 dense=True,
-                content_padding=ft.Padding.all(0),
+                content_padding=ft.Padding.only(right=10) if self.father is not None else ft.Padding.only(right=10, left=10),
                 min_vertical_padding=0,
                 mouse_cursor=ft.MouseCursor.CLICK,
                 trailing=ft.IconButton(
                     icon=ft.Icons.MORE_VERT_ROUNDED,
                     visible=False,
-                    on_click=lambda e: self.widget.story.open_menu(self.get_menu_options()),
+                    on_click=lambda _: self.widget.story.open_menu(self.get_menu_options()),
                     mouse_cursor=ft.MouseCursor.CLICK,
                 ),
             ),

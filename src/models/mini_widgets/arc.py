@@ -603,6 +603,7 @@ class Arc(MiniWidget):
             ]
 
             for idx, ic_key in enumerate(self.data.get('Relevant Characters', [])):
+                char = None
                 for widget in self.widget.story.widgets:
                     if widget.data.get('key', "") == ic_key and widget.data.get('tag', None) == 'character':
                         char = widget

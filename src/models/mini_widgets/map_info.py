@@ -120,7 +120,7 @@ class MapInformationDisplay(MiniWidget):
                 ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.FADE),
                 on_double_tap=self.widget._rename_clicked,
                 on_tap=self.widget._rename_clicked,
-                on_secondary_tap=lambda e: self.widget.story.open_menu(self.widget._get_menu_options()),
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self.widget._get_menu_options()),
                 mouse_cursor="click", hover_interval=500,
                 tooltip=f"Rename {self.title}"
             ),

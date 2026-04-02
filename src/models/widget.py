@@ -231,7 +231,7 @@ class Widget(ft.Container):
                 return False
 
     # Called for little data changes
-    def change_data(self, **kwargs):
+    async def change_data(self, **kwargs):
         ''' Changes a key/value pair in our data and saves the json file '''
         # Called by:
         # widget.change_data(**{'key': value, 'key2': value2})
@@ -245,6 +245,8 @@ class Widget(ft.Container):
         # Handle errors
         except Exception as e:
             print(f"Error changing data {key}:{value} in widget {self.title}: {e}")
+
+        return
 
     def change_custom_field(self, **kwargs):
         ''' Changes a key/value pair in our custom fields dictionary and saves the json file '''

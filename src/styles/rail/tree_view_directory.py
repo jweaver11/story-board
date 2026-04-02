@@ -688,7 +688,7 @@ class TreeViewDirectory(ft.GestureDetector):
                 icon=ft.Icons.MORE_VERT_ROUNDED,
                 icon_color=ft.Colors.ON_SURFACE_VARIANT,
                 visible=False,
-                on_click=lambda e: self.story.open_menu(self.get_menu_options()),
+                on_click=lambda _: self.story.open_menu(self.get_menu_options()),
                 mouse_cursor=ft.MouseCursor.CLICK,
             ),
             dense=True,
@@ -696,7 +696,7 @@ class TreeViewDirectory(ft.GestureDetector):
             collapsed_shape=ft.RoundedRectangleBorder(radius=10),
             visual_density=ft.VisualDensity.COMPACT,
             expanded=self.is_expanded,
-            tile_padding=ft.Padding(0, 0, 0, 0),
+            tile_padding=ft.Padding(0, 0, 10, 0),
             icon_color=self.color,
             controls_padding=ft.Padding(10, 0, 0, 0),       # Keeps all sub children indented
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
@@ -704,8 +704,6 @@ class TreeViewDirectory(ft.GestureDetector):
             shape=ft.RoundedRectangleBorder(),
             on_change=self.toggle_expand,
             controls=[self.new_item_textfield],     
-           
-                
         )
 
         # Re-adds our content controls so we can keep states
