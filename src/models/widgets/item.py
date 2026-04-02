@@ -39,11 +39,13 @@ class Item(Widget):
                 'color': app.settings.data.get('default_item_color'),
                 'pin_location': app.settings.data.get('default_item_pin_location', "right") if data is None else data.get('pin_location', "right"),   # Default pin location for items
 
+                'image_base64': str, 
+                'Description': str,
+
                 # Item data - list of segments with title and string
                 'item_data': [
                     {'title': "Type", 'content': ""},
                     {'title': "Rarity", 'content': ""}, 
-                    {'title': "Description", 'content': ""},
                     {'title': "Effects", 'content': ""},
                     {'title': "Material", 'content': ""},
                     {'title': "Size", 'content': ""},
@@ -53,7 +55,6 @@ class Item(Widget):
                     {'title': "Locations", 'content': ""},
                     {'title': "Count", 'content': ""},
                     {'title': "Notes", 'content': ""},
-                
                 ]
             },
         )
@@ -75,10 +76,10 @@ class Item(Widget):
             self.reload_widget()
             self.p.pop_dialog()
 
-        new_segment_tf = ft.TextField(label="Field Title", autofocus=True, capitalization=ft.TextCapitalization.WORDS, on_submit=create_segment)
+        new_segment_tf = ft.TextField(autofocus=True, capitalization=ft.TextCapitalization.WORDS, on_submit=create_segment)
 
         dlg = ft.AlertDialog(
-            title=ft.Text("Add New Field"),
+            title=ft.Text("Segment Title"),
             content=new_segment_tf,
             actions=[
                 ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
@@ -104,12 +105,44 @@ class Item(Widget):
             await self.save_dict()
             self.reload_widget()
 
+    # Called when clicking our upload image button
+    async def _upload_item_image(self, e=None):
+
+        files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+        if files:
+
+            file_path = files[0].path
+            try:
+                import base64
+
+                with open(file_path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                    # Save to our data
+                    self.data['image_base64'] = f"{encoded_string}"
+                    await self.save_dict()
+                    self.reload_widget()
+
+            except Exception as _:
+                pass
+
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
+
+        if self.data.get('image_base64', ""):
+            img = ft.Container(
+                ft.Image(
+                    src=self.data.get('image_base64', ""),
+                    width=100,
+                    height=100,
+                    fit=ft.BoxFit.FILL,
+                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+            )
+        else:
+            img = ft.Icon(ft.Icons.SHIELD_OUTLINED, size=100, color=self.data.get('color', "primary"), expand=False)
         
         # Hold our segment controls when we load the item data
         segments_list = []
@@ -135,15 +168,26 @@ class Item(Widget):
                 ])
             )
 
-        add_segment_button = ft.IconButton(
-            ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+        description_text_field = TextField(
+            self.data.get('Description', ""),
+            label="Description", multiline=True, expand=True,
+            capitalization=ft.TextCapitalization.SENTENCES, 
+            on_blur=lambda e: self.data.__setitem__('Description', e.control.value) or self.p.run_task(self.save_dict)
+        )
+
+
+        upload_image_button = ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_item_image, mouse_cursor="click")
+
+        add_segment_button = ft.TextButton(
+            "Add New Segment", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
             tooltip="Add New Segment to Item",
-            on_click=self._create_new_segment, mouse_cursor="click",
+            on_click=self._create_new_segment, 
+            style=ft.ButtonStyle(self.data.get('color', ft.Colors.PRIMARY), icon_size=20, mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
         )
         
         body = ft.Column(
-            expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            controls=segments_list + [ft.Row([add_segment_button], alignment=ft.MainAxisAlignment.CENTER)]
+            expand=True, horizontal_alignment=ft.CrossAxisAlignment.START,
+            controls=[ft.Row([upload_image_button, description_text_field])] + segments_list + [add_segment_button]
         )
 
         # Assign the body_container content as whatever view you have built in the widget

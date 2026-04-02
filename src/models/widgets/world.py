@@ -316,7 +316,7 @@ class World(Widget):
                     control_list.append(ft.Text(f"\t\tNo fields yet...", italic=True, color=ft.Colors.ON_SURFACE_VARIANT))
                     label.controls.append(
                         ft.TextButton(
-                            "Delete Section?",
+                            "Delete Section",
                             on_click=lambda _, s=section: self._delete_world_data(**{s: ""}),
                             style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)
                         )
@@ -338,8 +338,9 @@ class World(Widget):
                                 ),
                                 ft.IconButton(
                                     tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, mouse_cursor="click",
-                                    on_click=lambda e, k=key: self._delete_world_data(**{k: ""}), icon_color=ft.Colors.ERROR
-                                )
+                                    on_click=lambda _, k=key: self._delete_world_data(**{k: ""}), icon_color=ft.Colors.ERROR
+                                ),
+                                ft.Container(width=10)
                             ])
                         )
 
@@ -380,6 +381,7 @@ class World(Widget):
                 dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
                 border_color=ft.Colors.OUTLINE_VARIANT
             ), 
+            ft.Container(width=10)
             
         ], expand=True, spacing=0)
 
@@ -392,14 +394,17 @@ class World(Widget):
 
         body = ft.Column([
             header,
-            ft.TextButton(
-                "Add New Section", ft.Icons.PLAYLIST_ADD_ROUNDED,
-                on_click=self._new_section_clicked,
-                style=ft.ButtonStyle(mouse_cursor="click", color=self.data.get('color', None), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-            ),
-        ], scroll="auto", expand=True, spacing=4)
+            
+        ], scroll="auto", expand=True, spacing=6)
 
         body.controls.extend(_load_world_data_controls())   
+        body.controls.append(
+            ft.TextButton(
+                "Add New Section", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                on_click=self._new_section_clicked,
+                style=ft.ButtonStyle(self.data.get('color', ft.Colors.PRIMARY), icon_size=20, mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
+            )
+        )
 
         self.body_container.content = body
 
@@ -431,7 +436,7 @@ class World(Widget):
                 # Container to hold the text control of our section info
                 container = ft.Container(         # For template data
                     padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-                    border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(bottom=10),
+                    border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(bottom=10, right=16),
                     content=ft.Row([ft.Text(expand=True, spans=text_span_list, size=14)]), # Forces container to take up space
                 )
 

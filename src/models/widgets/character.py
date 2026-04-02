@@ -42,6 +42,7 @@ class Character(Widget):
             data = data,   
             is_rebuilt = is_rebuilt 
         )
+        self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
 
 
         # Verifies this object has the required data fields, and creates them if not
@@ -399,7 +400,7 @@ class Character(Widget):
                     control_list.append(ft.Text(f"\t\tNo fields yet...", italic=True, color=ft.Colors.ON_SURFACE_VARIANT))
                     label.controls.append(
                         ft.TextButton(
-                            "Delete Section?",
+                            "Delete Section",
                             on_click=lambda _, s=section: self._delete_character_data(**{s: ""}),
                             style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)
                         )
@@ -424,7 +425,8 @@ class Character(Widget):
                                 ft.IconButton(
                                     tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, mouse_cursor="click",
                                     on_click=lambda _, k=key: self._delete_character_data(**{k: ""}), icon_color=ft.Colors.ERROR
-                                )
+                                ),
+                                ft.Container(width=10)   # Spacing
                             ])
                         )
     
@@ -463,11 +465,15 @@ class Character(Widget):
                 ),
                 
             ]),
-            ft.TextField(
-                self.data.get('About', ""), on_blur=_change_about_data, expand=True, 
-                dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
-                border_color=ft.Colors.OUTLINE_VARIANT
-            ), 
+            ft.Container(
+                ft.TextField(
+                    self.data.get('About', ""), on_blur=_change_about_data, expand=True, 
+                    dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
+                    border_color=ft.Colors.OUTLINE_VARIANT
+                ), 
+                margin=ft.Margin.only(right=16)
+            ),
+            ft.Container(width=16)
             
         ], expand=True, spacing=0)
 
@@ -480,14 +486,17 @@ class Character(Widget):
 
         body = ft.Column([
             header,
-            ft.TextButton(
-                "Add New Section", ft.Icons.PLAYLIST_ADD_ROUNDED,
-                on_click=self._new_section_clicked,
-                style=ft.ButtonStyle(mouse_cursor="click", color=self.data.get('color', None), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-            ),
-        ], scroll="auto", expand=True, spacing=4, on_scroll=self._save_scroll_position)
+            
+        ], scroll="auto", expand=True, spacing=6, on_scroll=self._save_scroll_position)
 
         body.controls.extend(_load_character_data_controls())   
+        body.controls.append(
+            ft.TextButton(
+                "Add New Section", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                on_click=self._new_section_clicked,
+                style=ft.ButtonStyle(self.data.get('color', ft.Colors.PRIMARY), icon_size=20, mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
+            )
+        )
 
         self.body_container.content = body
 
@@ -523,7 +532,7 @@ class Character(Widget):
                     continue
 
                 # Set a label and container to hold our text spans for each section
-                label = ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None))
+                label = ft.Text(f"\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None))
 
                 control_list.append(label)
                 
@@ -533,7 +542,8 @@ class Character(Widget):
                 # Container to hold the text control of our section info
                 container = ft.Container(         # For template data
                     padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-                    border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(bottom=10),
+                    border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), 
+                    margin=ft.Margin.only(bottom=10, right=16),
                     content=ft.Row([ft.Text(expand=True, spans=text_span_list, size=16)]), # Forces container to take up space
                 )
 
@@ -597,7 +607,7 @@ class Character(Widget):
                     on_click=self._edit_mode_clicked, mouse_cursor="click"
                 ),
             ]),
-            ft.Text(f"\t\t{self.data.get('About', "")}", expand=True, size=16), # Forces container to take up space
+            ft.Container(ft.Text(f"\t\t{self.data.get('About', "")}", expand=True, size=16), margin=ft.Margin.only(right=16)), # Forces container to take up space
             
         ], expand=True, spacing=0)
 

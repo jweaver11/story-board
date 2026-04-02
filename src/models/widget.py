@@ -177,10 +177,9 @@ class Widget(ft.Container):
             length=1,
             selected_index=0,
             content=ft.Column([
-                ft.TabBar(tabs=[self.tab]),     # Holds our tab at the top of the widget
+                ft.TabBar(tabs=[self.tab], indicator_color=self.data.get('color', ft.Colors.ON_SURFACE_VARIANT)),     # Holds our tab at the top of the widget
                 ft.TabBarView([self.master_stack], expand=True, clip_behavior=ft.ClipBehavior.NONE)# Holds our body
             ], expand=True),
-            
         )   
         self.content = self.tabs
 

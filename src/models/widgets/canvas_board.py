@@ -491,15 +491,12 @@ class CanvasBoard(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        description_container = ft.Container(            # For Summary
-            padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(5), expand=True,
-            border=ft.Border.all(2, ft.Colors.OUTLINE), #margin=ft.Margin.only(right=19),
-            content=ft.TextField(
-                expand=True, value=self.data.get('description', ""), dense=True, multiline=True,
-                capitalization=ft.TextCapitalization.SENTENCES, 
-                on_blur=lambda e: self.change_data(**{'description': e.control.value}),
-                border=ft.InputBorder.NONE,                  
-            ),
+        description_container = ft.TextField(
+            expand=True, value=self.data.get('description', ""), dense=True, multiline=True,
+            capitalization=ft.TextCapitalization.SENTENCES, 
+            on_blur=lambda e: self.p.run_task(self.change_data, **{'description': e.control.value}),
+            border_color=ft.Colors.OUTLINE_VARIANT,                  
+        
         )
 
         def _get_matrix_label_controls() -> list[ft.Control]:
@@ -524,6 +521,7 @@ class CanvasBoard(Widget):
                     controls.append(ft.Container(text_control, alignment=ft.Alignment.CENTER, expand=True))
 
             controls.append(ft.IconButton(ft.Icons.ADD, opacity=0, disabled=True))
+            controls.append(ft.Container(width=10))
                     
             return controls
         
@@ -657,6 +655,7 @@ class CanvasBoard(Widget):
                                         data={"row": idx, "column": sub_idx},
                                         on_blur=self._update_matrix_cell, #expand=True,
                                         width=2000, height=225,
+                                        border_color=ft.Colors.OUTLINE_VARIANT
                                     )], 
                                     scroll="auto", alignment=ft.MainAxisAlignment.START,
                                     
@@ -674,6 +673,7 @@ class CanvasBoard(Widget):
                         mouse_cursor=ft.MouseCursor.CLICK,
                     )
                 )
+                row_control.controls.append(ft.Container(width=10))
 
                 controls.append(row_control)
 
@@ -714,12 +714,11 @@ class CanvasBoard(Widget):
                 ft.Container(height=10), 
                 
                 ft.Row([
-                    ft.IconButton(
+                    ft.TextButton(
+                        "Add New Row",
                         ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
-                        ft.Colors.PRIMARY,  
                         on_click=self._new_row_clicked,
-                        tooltip="Add new row",
-                        mouse_cursor=ft.MouseCursor.CLICK,
+                        style=ft.ButtonStyle(self.data.get('color', ft.Colors.PRIMARY), icon_size=20, mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
                     ),
                     ft.Container()
                 ], vertical_alignment=ft.CrossAxisAlignment.START)

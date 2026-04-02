@@ -463,6 +463,8 @@ class Workspace(ft.Container):
                 old_is_active_tab = w.data.get('is_active_tab', False)
                 if idx == e.data:
                     w.data['is_active_tab'] = True
+                    main_pin_tabs.content.controls[0].indicator_color = w.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
+                    main_pin_tabs.content.controls[0].update()  
                 else:
                     w.data['is_active_tab'] = False
 
@@ -486,7 +488,7 @@ class Workspace(ft.Container):
                 animation_duration=100,
                 content=ft.Column([
                     ft.TabBar(
-                        tabs=[widget.tab for widget in self.main_pin], scrollable=True
+                        tabs=[widget.tab for widget in self.main_pin], scrollable=True, indicator_color=ft.Colors.ON_SURFACE_VARIANT
                     ), 
                     ft.TabBarView(
                         controls=[widget.master_stack for widget in self.main_pin],
@@ -509,6 +511,7 @@ class Workspace(ft.Container):
             for idx, widget in enumerate(self.main_pin):
                 if widget.data.get('is_active_tab', False):
                     main_pin_tabs.selected_index = idx
+                    main_pin_tabs.content.controls[0].indicator_color = widget.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
                     break
 
         elif len(self.main_pin) == 1:
