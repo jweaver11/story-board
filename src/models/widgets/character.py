@@ -421,12 +421,13 @@ class Character(Widget):
                                     label=key, hint_text=_get_help_text(key), value=value, 
                                     on_blur=lambda e, k=key: self._update_character_data(**{k: e.control.value}), expand=True,
                                     dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
-                                    border_color=ft.Colors.OUTLINE_VARIANT
+                                    border_color=ft.Colors.OUTLINE_VARIANT,
+                                    suffix_icon=ft.IconButton(
+                                        tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, mouse_cursor="click",
+                                        on_click=lambda _, k=key: self._delete_character_data(**{k: ""}), icon_color=ft.Colors.ERROR
+                                    ),
                                 ),
-                                ft.IconButton(
-                                    tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, mouse_cursor="click",
-                                    on_click=lambda _, k=key: self._delete_character_data(**{k: ""}), icon_color=ft.Colors.ERROR
-                                ),
+                                
                                 ft.Container(width=1)   # Spacing
                             ])
                         )

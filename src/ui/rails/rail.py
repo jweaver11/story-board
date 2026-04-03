@@ -165,6 +165,7 @@ class Rail(IsolatedColumn):
             
         tag = e.control.data
         
+        
         # Make textfield visible, reset its value, and give it right data for logic
         self.new_item_textfield.visible = True
         self.new_item_textfield.value = None
@@ -199,7 +200,10 @@ class Rail(IsolatedColumn):
                 template_name = str(e.control.content)
                 self.new_item_textfield.label = f"{template_name} Template"
             case _:
-                self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
+                if ":" in tag:
+                    self.new_item_textfield.hint_text = f"{tag.split(':')[0].capitalize()} Title"
+                else:
+                    self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
 
         # Open the textfield early since we have to wait for async close menu
         self.new_item_textfield.update()

@@ -165,13 +165,14 @@ class Item(Widget):
                         multiline=True, label=key, dense=True, capitalization=ft.TextCapitalization.SENTENCES, 
                         on_blur=self._save_segment,
                         data=idx,
+                        suffix_icon=ft.IconButton(
+                            ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                            tooltip=f"Delete segment {key}",
+                            on_click=self._delete_segment,
+                            mouse_cursor="click", data=idx
+                        ),
                     ),
-                    ft.IconButton(
-                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
-                        tooltip=f"Delete segment {key}",
-                        on_click=self._delete_segment,
-                        mouse_cursor="click", data=idx
-                    ),
+                    
                     ft.Container(width=1)
                 ])
             )

@@ -48,6 +48,8 @@ class Note(Widget):
                 ]
             },
         )
+        self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
+        
 
         # Saving creates the file if we're new
         if is_new:
@@ -116,13 +118,15 @@ class Note(Widget):
                         multiline=True, label=key, dense=True, capitalization=ft.TextCapitalization.SENTENCES, 
                         on_blur=self._save_segment,
                         data=idx,
+                        suffix_icon=ft.IconButton(
+                            ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                            tooltip=f"Delete segment {key}",
+                            on_click=self._delete_segment,
+                            mouse_cursor="click", data=idx
+                        )
                     ),
-                    ft.IconButton(
-                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
-                        tooltip=f"Delete segment {key}",
-                        on_click=self._delete_segment,
-                        mouse_cursor="click", data=idx
-                    )
+                    ft.Container(width=1)
+                    
                 ])
             )
 
@@ -133,7 +137,7 @@ class Note(Widget):
         )
         
         body = ft.Column(
-            expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll="auto",
             controls=segments_list + [ft.Row([add_segment_button], alignment=ft.MainAxisAlignment.CENTER)]
         )
 
