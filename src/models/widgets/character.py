@@ -483,7 +483,7 @@ class Character(Widget):
         header = ft.Row([
             ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_character_image, mouse_cursor="click"),
             about_section
-        ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
+        ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.CENTER)
 
         body = ft.Column([
             header,

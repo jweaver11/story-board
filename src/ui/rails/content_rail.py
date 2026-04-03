@@ -91,17 +91,12 @@ class ContentRail(Rail):
                         tooltip="Create a new world for your story. Choose from templates or create a default world."
                     ),
                     ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.SHIELD_OUTLINED, ft.Colors.PRIMARY), content="Item", 
+                        leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
                         data="item", on_click=self.new_item_clicked, close_on_click=True,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         tooltip="New Items and Equipment for your story"
                     ),  
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Object", 
-                        data="object", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
-                        tooltip="New Objects for your story"
-                    ),  
+                    
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.ADD_CHART_OUTLINED, ft.Colors.PRIMARY), content="Chart", 
                         data="chart", on_click=self.new_item_clicked, close_on_click=True, 
@@ -221,17 +216,12 @@ class ContentRail(Rail):
                             tooltip="Create a new world for your story. Choose from templates or create a default world."
                         ),
                         ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.SHIELD_OUTLINED, ft.Colors.PRIMARY), content="Item", 
+                            leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
                             data="item", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
                             tooltip="New Items and Equipment for your story"
                         ),  
-                        ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.SHIELD_OUTLINED, ft.Colors.PRIMARY), content="Object", 
-                            data="object", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
-                            tooltip="New Objects or Items for your story"
-                        ),  
+                        
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.ADD_CHART_OUTLINED, ft.Colors.PRIMARY), content="Chart", 
                             data="chart", on_click=self.new_item_clicked, close_on_click=True, 
@@ -277,7 +267,6 @@ class ContentRail(Rail):
                 no_padding=True, no_effects=True, 
             )
         ]
-            
 
     # Reload the rail whenever we need
     def reload_rail(self) -> ft.Control:
@@ -310,6 +299,8 @@ class ContentRail(Rail):
             ],
         )
 
+        
+
 
         # Load our content directory data into the rail
         load_directory_data(
@@ -323,7 +314,6 @@ class ContentRail(Rail):
         
         # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space
         content.controls.append(ft.Container(expand=True))
-        content.controls.append(ft.Container(height=100))
 
 
         # Wrap the gd in a drag target so we can move characters here

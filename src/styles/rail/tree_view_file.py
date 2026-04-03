@@ -35,7 +35,7 @@ class TreeViewFile(ft.GestureDetector):
             case "map": self.icon = ft.Icons.MAP_OUTLINED
             case "world": self.icon = ft.Icons.PUBLIC_OUTLINED
             case "character_connection_map": self.icon = ft.Icons.ACCOUNT_TREE_OUTLINED
-            case "item": self.icon = ft.Icons.SHIELD_OUTLINED 
+            case "item": self.icon = ft.Icons.STAR_OUTLINE_ROUNDED 
             case _: self.icon = ft.Icons.ERROR_OUTLINE
 
         # Set our text style

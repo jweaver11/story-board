@@ -120,8 +120,7 @@ class Widget(ft.Container):
             case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)
             case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
             case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
-            case "object": self.icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
-            case "item": self.icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
+            case "item": self.icon = ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED)
             case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
 
 
