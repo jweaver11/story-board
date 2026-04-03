@@ -116,8 +116,6 @@ def load_directory_data(
             
             if widget is not None:
 
-                
-
                 # Create the file item
                 item = TreeViewFile(
                     widget,

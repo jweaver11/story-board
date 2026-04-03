@@ -279,12 +279,12 @@ class Map(Widget):
                 submit_button.disabled = True
             elif name in self.locations:
                 submit_button.disabled = True
-                new_item_tf.error_text = "Name must be unique"
-                new_item_tf.focus()
+                new_item_tf.error = "Name must be unique"
+                await new_item_tf.focus()
 
             else:
                 submit_button.disabled = False
-                new_item_tf.error_text = None
+                new_item_tf.error = None
             
             new_item_tf.update()
             submit_button.update()
@@ -303,9 +303,9 @@ class Map(Widget):
             if self.information_display.visible:
                 self.information_display.reload_mini_widget()
 
-            self.p.close(dlg)   # Close the dialog
+            self.p.pop_dialog()   # Close the dialog
 
-            await asyncio.sleep(0.1)        # Needs a buffer or wont work for some reason
+            #await asyncio.sleep(0)        # Needs a buffer or wont work for some reason
             await self.story.close_menu()       
 
 
@@ -332,7 +332,7 @@ class Map(Widget):
             ],
         )
 
-        self.p.open(dlg)    
+        self.p.show_dialog(dlg)    
     
 
     def _get_menu_options(self) -> list[ft.Control]:
@@ -351,6 +351,7 @@ class Map(Widget):
                         ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", weight=ft.FontWeight.BOLD)]),
                         padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
                     ),
+                    #ft.CupertinoIcons.LOCATION
                     tooltip="New Location", menu_padding=0,
                     items=[
                         ft.PopupMenuItem(

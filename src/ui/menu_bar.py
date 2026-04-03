@@ -105,7 +105,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
 
 
     # Called when file -> open is clicked
-    def _open_clicked(e):
+    async def _open_clicked(e=None):
         ''' Opens a dialog to open an existing story '''
 
         #print("Open Story Clicked")
@@ -139,7 +139,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
             # Use something better than radio in future, but for now this works
             for story in app.stories.values():
                 stories.append(
-                    ft.Radio(expand=False, value=story.title, label=story.title, label_style=style)
+                    ft.Radio(expand=False, value=story.title, label=story.title, label_style=style, mouse_cursor=ft.MouseCursor.CLICK)
                 )
 
             # Return our list of stories
@@ -238,7 +238,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Open Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                        leading=ft.Icon(ft.Icons.MENU_BOOK_OUTLINED, ft.Colors.PRIMARY),
+                        leading=ft.Icon(ft.CupertinoIcons.BOOK, ft.Colors.PRIMARY),
                         close_on_click=True,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
                         on_click=_open_clicked,
@@ -257,7 +257,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                         leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
                         close_on_click=True,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
-                        on_click=_open_clicked,
+                        #on_click=_open_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Export", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
@@ -266,7 +266,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                         leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
                         close_on_click=True,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
-                        on_click=_open_clicked,
+                        #on_click=_open_clicked,
                     ),
                     
                     ft.MenuItemButton(

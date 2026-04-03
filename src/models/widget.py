@@ -121,6 +121,7 @@ class Widget(ft.Container):
             case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
             case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
             case "item": self.icon = ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED)
+            case "chart": self.icon = ft.Icon(ft.Icons.INSERT_CHART_OUTLINED)
             case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
 
 

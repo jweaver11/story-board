@@ -96,13 +96,13 @@ class ContentRail(Rail):
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         tooltip="New Items and Equipment for your story"
                     ),  
-                    
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.ADD_CHART_OUTLINED, ft.Colors.PRIMARY), content="Chart", 
-                        data="chart", on_click=self.new_item_clicked, close_on_click=True, 
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                    ft.SubmenuButton(
+                        ft.Row([ft.Icon(ft.Icons.INSERT_CHART_OUTLINED, ft.Colors.PRIMARY), ft.Text("Chart", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
+                        self.get_template_options("chart"), 
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         tooltip="New Charts for your story"
-                    ),  
+                    ),
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
                         data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
@@ -222,12 +222,13 @@ class ContentRail(Rail):
                             tooltip="New Items and Equipment for your story"
                         ),  
                         
-                        ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.ADD_CHART_OUTLINED, ft.Colors.PRIMARY), content="Chart", 
-                            data="chart", on_click=self.new_item_clicked, close_on_click=True, 
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                        ft.SubmenuButton(
+                            ft.Row([ft.Icon(ft.Icons.INSERT_CHART_OUTLINED, ft.Colors.PRIMARY), ft.Text("Chart", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
+                            self.get_template_options("chart"), 
+                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                             tooltip="New Charts for your story"
-                        ),  
+                        ), 
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
                             data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
@@ -299,8 +300,6 @@ class ContentRail(Rail):
             ],
         )
 
-        
-
 
         # Load our content directory data into the rail
         load_directory_data(
@@ -329,7 +328,7 @@ class ContentRail(Rail):
             content=dt,
             expand=True,
             on_hover=self.on_hovers,
-            on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),  # Too slow when size grows
+            on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()),  
             hover_interval=20,
         )
 

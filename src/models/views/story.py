@@ -358,6 +358,7 @@ class Story(ft.View):
         from models.widgets.character_connection_map import CharacterConnectionMap
         from models.widgets.world import World
         from models.widgets.item import Item
+        from models.widgets.chart import Chart
         #from models.widgets.object import Object
 
         # If we are being re-loaded after settings or another story, clear our content so we can load it fresh
@@ -473,13 +474,19 @@ class Story(ft.View):
                                     story=self,
                                     data=widget_data,
                                 )
+                            case "chart":
+                                widget = Chart(
+                                    title=widget_data.get('title', 'Untitled Document'),
+                                    page=self.p,
+                                    directory_path=dir_path,
+                                    story=self,
+                                    data=widget_data,
+                                )
                             case _:
                                 print("Widget tag not valid Tag: ", tag)
 
                         if widget is not None:
                             self.widgets.append(widget)
-                            
-        
                             
                     # Handle errors if the path is wrong
                     except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
@@ -487,7 +494,7 @@ class Story(ft.View):
 
         
     # Called to create a new widget based on tag (document, note, character, etc)
-    async def create_widget(self, title: str, tag: str=None, directory_path: str=None, data: dict=None):
+    async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict=None, chart_type: str="bar"):
         ''' Creates our new widget based on the tag passed in and directory_path passed in'''
         from models.widgets.document import Document
         from models.widgets.note import Note
@@ -499,10 +506,7 @@ class Story(ft.View):
         from models.widgets.character_connection_map import CharacterConnectionMap
         from models.widgets.item import Item
         from models.widgets.world import World
-        from models.mini_widgets.arc import Arc
-        from models.mini_widgets.plot_point import PlotPoint
-        #from models.widgets.object import Object
-
+        from models.widgets.chart import Chart
         from models.app import app
 
         if not self.blocker.visible:
@@ -540,6 +544,8 @@ class Story(ft.View):
                 widget = CanvasBoard(title, self.p, directory_path, self, data)   
             case "item":
                 widget = Item(title, self.p, directory_path, self, data)  
+            case "chart":
+                widget = Chart(title, self.p, directory_path, self, data, type=chart_type)
             case _:
                 self.p.show_dialog(SnackBar(f"Error creating widget {title}: Invalid tag {tag}"))
 
@@ -578,6 +584,7 @@ class Story(ft.View):
         from models.widgets.character_connection_map import CharacterConnectionMap
         from models.widgets.world import World
         from models.widgets.item import Item
+        from models.widgets.chart import Chart
         from models.mini_widgets.arc import Arc
         from models.mini_widgets.plot_point import PlotPoint
 
@@ -677,6 +684,16 @@ class Story(ft.View):
             case "item":
                 new_widget = Item(
                     widget.data.get('title', 'Untitled Document'),
+                    page=self.p,
+                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=widget.data,
+                    is_rebuilt=True
+                )
+
+            case "chart":
+                new_widget = Chart(
+                    title=widget.data.get('title', 'Untitled Document'),
                     page=self.p,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,

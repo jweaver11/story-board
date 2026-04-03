@@ -100,7 +100,21 @@ class Rail(IsolatedColumn):
                     )
                 )
 
-        # Not used
+        elif widget_type == "chart":
+            template_options = [
+                ft.MenuItemButton(
+                    "Bar", data=f"{widget_type}:bar", 
+                    on_click=self.new_item_clicked, leading=ft.Icon(ft.Icons.INSERT_CHART_OUTLINED_OUTLINED, ft.Colors.PRIMARY),
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10))
+                ),
+                ft.MenuItemButton(
+                    "Radar", data=f"{widget_type}:radar", 
+                    on_click=self.new_item_clicked, leading=ft.Icon(ft.CupertinoIcons.COMPASS, ft.Colors.PRIMARY),
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10))
+                ),
+            ]
+
+        # Not used, but maybe used in future for notes or something
         else:
             template_options = [
                 ft.MenuItemButton("Blank", data=widget_type, on_click=self.new_item_clicked),
@@ -190,7 +204,6 @@ class Rail(IsolatedColumn):
         # Open the textfield early since we have to wait for async close menu
         self.new_item_textfield.update()
         await self.new_item_textfield.focus()
-        await self.controls[2].content.content.content.scroll_to(0) # Scroll to top of rail
         
         await self.story.close_menu()
         
@@ -301,6 +314,8 @@ class Rail(IsolatedColumn):
             return
         
         tag = e.control.data
+        if ":" in tag:
+            tag, chart_type = tag.split(":")
             
         # If our new title unique (check from on_new_item_change), create the new item
         if self.item_is_unique:
@@ -333,7 +348,7 @@ class Rail(IsolatedColumn):
                 # All other cases are widgets
                 case _:
                     # Create the widget and reload all our rails
-                    await self.story.create_widget(title, tag)
+                    await self.story.create_widget(title, tag, chart_type=chart_type if tag == "chart" else None)
 
             if self.story.blocker.visible:
                 self.story.blocker.visible = False

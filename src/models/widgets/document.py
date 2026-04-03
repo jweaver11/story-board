@@ -223,7 +223,7 @@ class Document(Widget):
                         controls=[
                             ft.MenuItemButton(
                                 "Comment",
-                                leading=ft.Icon(ft.Icons.ADD_COMMENT_OUTLINED, self.data.get('color', "primary")), 
+                                leading=ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, self.data.get('color', "primary")), 
                                 on_click=lambda e: self.create_comment_clicked(e, "left"),
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                             ),

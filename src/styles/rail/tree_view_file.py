@@ -36,6 +36,11 @@ class TreeViewFile(ft.GestureDetector):
             case "world": self.icon = ft.Icons.PUBLIC_OUTLINED
             case "character_connection_map": self.icon = ft.Icons.ACCOUNT_TREE_OUTLINED
             case "item": self.icon = ft.Icons.STAR_OUTLINE_ROUNDED 
+            case "chart": 
+                if widget.data.get('type', None) == "bar":
+                    self.icon = ft.Icons.INSERT_CHART_OUTLINED
+                else:
+                    self.icon = ft.CupertinoIcons.COMPASS
             case _: self.icon = ft.Icons.ERROR_OUTLINE
 
         # Set our text style
@@ -53,7 +58,7 @@ class TreeViewFile(ft.GestureDetector):
         super().__init__(
             on_enter = self._highlight,
             on_exit = self._stop_highlight,
-            on_secondary_tap = lambda e: self.widget.story.open_menu(self.get_menu_options()),
+            on_secondary_tap = lambda _: self.widget.story.open_menu(self.get_menu_options()),
             on_tap = self.widget.show_widget,
             mouse_cursor = ft.MouseCursor.CLICK,
         )

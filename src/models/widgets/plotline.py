@@ -370,13 +370,13 @@ class Plotline(Widget):
                     ),
                     [
                         ft.MenuItemButton(
-                            "Plot Point", leading=ft.Icon(ft.Icons.ADD_LOCATION_OUTLINED, self.data.get('color', "primary")),
+                            "Plot Point", leading=ft.Icon(ft.Icons.LOCATION_ON_OUTLINED, self.data.get('color', "primary")),
                             on_click=self.new_item_clicked, data="plot_point",
                             tooltip="Mark important, short term events as plot points in your story",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ),
                         ft.MenuItemButton(
-                            "Arc", leading=ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.data.get('color', "primary")),
+                            "Arc", leading=ft.Icon(ft.Icons.SHOW_CHART_OUTLINED, self.data.get('color', "primary")),
                             on_click=self.new_item_clicked, data="arc",
                             tooltip="Create extented events in your story as arcs with set start and end points",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),

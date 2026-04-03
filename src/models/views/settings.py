@@ -114,8 +114,8 @@ class Settings(ft.View):
                 'default_planning_color': "primary",
                 'default_plotline_color': "primary",
                 'default_world_color': "primary",
-                'default_object_color': "primary",
                 'default_item_color': "primary",
+                'default_chart_color': "primary",
 
                 'default_category_color': "primary",    # Categories thrown in here
 
@@ -133,9 +133,9 @@ class Settings(ft.View):
                 #'default_world_pin_location': "right",
                 'default_item_pin_location': "main",
                 'default_object_pin_location': "main",
-                #'default_object_pin_location': "right",
                 #'default_item_pin_location': "right",
                 'default_world_pin_location': "main",
+                'default_chart_pin_location': "main",
 
                 'active_character_template': "Default",             # Which template is being used for new characters for new stories - they default to this
                 'active_world_template': "Default",                 # Which template is being used for new worlds for new stories - they default to this
