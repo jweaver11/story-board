@@ -204,7 +204,7 @@ class Marker(MiniWidget):
             margin=ft.Margin(16, 0, 16, 0), expand=True,
             width=10, alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.HARD_EDGE,
             #bgcolor="red",
-            border=ft.Border.all(2, self.data.get('color', None), ft.BorderSide(style=ft.BorderStyle.SOLID)),
+            #border=ft.Border.all(2, self.data.get('color', None), ft.BorderSide(style=ft.BorderStyle.SOLID)),
             left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.GestureDetector(
                 width=10, mouse_cursor=ft.MouseCursor.CLICK,

@@ -67,7 +67,7 @@ class TreeViewDirectory(ft.GestureDetector):
         super().__init__(
             mouse_cursor=ft.MouseCursor.CLICK,
             on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()),
-            exclude_from_semantics=True,
+            exclude_from_semantics=True, expand=True,
             on_enter=self._highlight,
             on_exit=self._stop_highlight,
         )
@@ -698,14 +698,13 @@ class TreeViewDirectory(ft.GestureDetector):
 
     # Called when we need to reload this directory tile
     def reload(self):
-
         self.expansion_tile = IsolatedExpansionTile(
             title=ft.Row([
                 ft.Icon(ft.Icons.FOLDER_OUTLINED, color=self.color), ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True)], 
                 expand=True
             ),
             trailing=ft.IconButton(
-                icon=ft.Icons.MORE_VERT_ROUNDED,
+                icon=ft.Icons.MORE_VERT_ROUNDED, 
                 icon_color=ft.Colors.ON_SURFACE_VARIANT,
                 visible=False,
                 on_click=lambda _: self.story.open_menu(self.get_menu_options()),

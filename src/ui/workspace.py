@@ -494,7 +494,7 @@ class Workspace(ft.Container):
                         controls=[widget.master_stack for widget in self.main_pin],
                         expand=True
                     )
-                ], expand=True),
+                ], expand=True, spacing=0),
             )   
             
             main_pin_tabs.selected_index = -1   #TODO: Set to active tab
@@ -502,9 +502,10 @@ class Workspace(ft.Container):
             # Stick it in a container for styling
             formatted_main_pin = ft.Container(
                 expand=True, border_radius=ft.BorderRadius.all(8),
-                gradient=dark_gradient, 
+                #gradient=dark_gradient, 
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                 margin=ft.Margin.all(0),
-                padding=ft.Padding.only(top=0, bottom=8, left=8, right=8),
+                #padding=ft.Padding.only(top=0, bottom=8, left=8, right=8),
                 content=main_pin_tabs
             )
 

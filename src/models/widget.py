@@ -92,7 +92,8 @@ class Widget(ft.Container):
     
         # Container that holds our main body content. Gets built in reload_widget of child classes
         self.body_container = ft.Container(
-            expand=True, border_radius=ft.BorderRadius.all(10), padding=ft.Padding.all(16), 
+            expand=True, border_radius=ft.BorderRadius.all(10), 
+            #padding=ft.Padding.all(16), 
             on_size_change=self._get_size, size_change_interval=500, clip_behavior=ft.ClipBehavior.NONE
         ) 
 

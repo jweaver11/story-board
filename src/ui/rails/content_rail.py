@@ -109,12 +109,6 @@ class ContentRail(Rail):
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
                         tooltip="Visualize the connections between the characters in your story"
                     ),  
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.PERSONAL_VIDEO_ROUNDED, ft.Colors.PRIMARY), content="Video", 
-                        data="video", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
-                        tooltip="New video references for your story"
-                    ),  # TODO: NEEDS TO JUST USE UPLOAD VIDEO, not actually craate one
                 ],
                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
@@ -234,12 +228,6 @@ class ContentRail(Rail):
                             data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
                             tooltip="Visualize the connections between the characters in your story"
-                        ),
-                        ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.PERSONAL_VIDEO_ROUNDED, ft.Colors.PRIMARY), content="Video", 
-                            data="video", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
-                            tooltip="New video references for your story"
                         ),
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),

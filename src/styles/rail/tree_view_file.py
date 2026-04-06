@@ -301,5 +301,5 @@ class TreeViewFile(ft.GestureDetector):
         
         try:
             self.update()
-        except Exception as e:
+        except Exception as _:
             pass
