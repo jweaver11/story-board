@@ -13,6 +13,7 @@ import asyncio
 from styles.snack_bar import SnackBar
 from flet_color_pickers import ColorPicker
 import flet.canvas as cv
+from styles.text_field import TextField
 
 
 
@@ -592,7 +593,7 @@ class CanvasInformationDisplay(MiniWidget):
         ], spacing=0)
 
         # Textfield of our canvas description
-        description_tf = ft.TextField(
+        description_tf = TextField(
             expand=True, label="Description", value=self.data.get('Description', ""), dense=True, multiline=True,
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=lambda e: self.change_data(**{'Description': e.control.value}),   # When we click out of the text field, we save our changes
@@ -689,7 +690,7 @@ class CanvasInformationDisplay(MiniWidget):
                         tooltip=f"{name} options",
                         items=[
                             ft.PopupMenuItem(
-                                ft.Row([ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED), ft.Text("Rename")]), data=name,
+                                ft.Row([ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY), ft.Text("Rename")]), data=name,
                                 mouse_cursor=ft.MouseCursor.CLICK, on_click=self._rename_layer_clicked, 
                             ),
                             #ft.PopupMenuItem(

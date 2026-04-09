@@ -103,6 +103,26 @@ class Chart(Widget):
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
 
+    # WIP
+    async def _radar_chart_event(self, e: fch.RadarChartEvent):
+        #TODO: dataset index only shows index of visible charts, so its messed up if some are hidden
+        return
+        chart = e.control
+        event_type = e.type                 # Type of event
+        dataset_index = e.data_set_index        # Index of which dataset we are interacting with
+        entry_index = e.entry_index         # Index of which entry in the dataset we are interacting with  
+        entry_value = e.entry_value     # Value of the indexed entry in that dataset
+
+        #if dataset_index is None or entry_index is None:
+            #return      # If either of these are None, we aren't interacting with an actual entry so we can ignore the event
+
+        match event_type:
+            case fch.ChartEventType.POINTER_HOVER:
+                print(e)
+                if dataset_index is not None:
+                    chart.data_sets[dataset_index].fill_color = ft.Colors.WHITE
+                chart.update()
+
 
     # Returns our widgets view for bar charts
     def _bar_chart_view(self):
@@ -115,13 +135,46 @@ class Chart(Widget):
                 fch.BarChartGroup(2, [fch.BarChartRod(from_y=0, to_y=5), fch.BarChartRod(from_y=0, to_y=3), fch.BarChartRod(from_y=0, to_y=4)]),
             ],
             interactive=True,
-            max_y=10,
+            #max_y=10,
             bottom_axis=fch.ChartAxis(ft.Text("Bottom Axis"), label_size=40),
-            left_axis=fch.ChartAxis(ft.Text("Left Axis"), title_size=40),
+            left_axis=fch.ChartAxis(ft.Text("Left Axis"), title_size=40, show_labels=False),
             baseline_y=0,
-            expand=True,
+            expand=3,
         )
-        self.body_container.content = chart
+
+        chart_info = ft.Container(
+            expand=1,
+            border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
+            padding=ft.Padding.only(left=11, top=8, bottom=8,),
+            shadow=ft.BoxShadow(0, 1),
+            bgcolor=ft.Colors.SURFACE_CONTAINER,
+            content=ft.Column(
+                [
+                    ft.Row([
+                        ft.Text(
+                            f"\tChart Info", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+                            color=self.data.get('color', None), expand=True
+                        ),
+                        ft.IconButton(
+                            ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info, 
+                            mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                        ),
+                    ]),
+                    ft.Divider(2, 2),
+                    #info_column
+                ], expand=True, scroll="none", spacing=0),
+        )
+        self.body_container.content = ft.Row(
+            [
+                chart,
+                chart_info
+            ], expand=True, spacing=0
+        )
+
+    
+
+            
+        
             
         
     # Shows the info column on the side of our chart or not
@@ -226,7 +279,7 @@ class Chart(Widget):
         should_rotate = self.data.get('radar_data', {}).get('rotate_node_titles', False)
         
         chart = fch.RadarChart(
-            expand=2,
+            expand=3,
             titles=[fch.RadarChartTitle(title, None if should_rotate else 360) for title in self.data.get('radar_data', {}).get('nodes', [])],
             center_min_value=True,
             tick_count=self.data.get('radar_data', {}).get('tick_count', 2),
@@ -235,10 +288,11 @@ class Chart(Widget):
             ) if not self.data.get('radar_data', {}).get('show_tick_labels', False) else 
                 ft.TextStyle(size=16, color=self.data.get('color', ft.Colors.ON_SURFACE_VARIANT), italic=True),
             title_text_style=ft.TextStyle(size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-            #on_event=self._radar_chart_event,
+            on_event=self._radar_chart_event,
             animation=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             title_position_percentage_offset=0.1,
             radar_shape=fch.RadarShape.CIRCLE if self.data.get('radar_data', {}).get('make_chart_round', False) else fch.RadarShape.POLYGON,
+            interactive=True
         )    
 
         # Add our data sets to the chart
@@ -247,8 +301,6 @@ class Chart(Widget):
             entries: list = ds.get('entries', [])
             visible: bool = ds.get('visible', True)
 
-            
-            
             if not visible:     # Skip non-visible ones
                 continue
 
@@ -624,7 +676,7 @@ class Chart(Widget):
                     ft.Container(height=1),
                     keys,
                     chart,
-                ], expand=2),
+                ], expand=3),
                 chart_info
             ], expand=True, spacing=0
         )

@@ -614,8 +614,8 @@ class CanvasRail(Rail):
 
 
         # If we use anti aliasing or not
-        self.paint_anti_alias_toggle = ft.Checkbox(
-            label="Anti-Aliasing  ", on_change=_paint_anti_alias_changed,
+        self.paint_anti_alias_toggle = ft.Switch(
+            True, "Anti-Aliasing  ", on_change=_paint_anti_alias_changed,
             label_position=ft.LabelPosition.LEFT,
             value=app.settings.data.get('paint_settings', {}).get('anti_alias', True),
             tooltip="Whether to use anti-aliasing for smoother brush strokes. Disabling may result in jagged edges"

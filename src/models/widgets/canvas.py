@@ -82,6 +82,7 @@ class Canvas(Widget):
         self.needs_redraw = False     # Used to track if we need to redraw canvas after a resize
         self.skip_first_resize = True
         self.initial_resize = True     # Initial resize needs rebuild
+        self.min_segment_dist = 2   # Sampling
 
         self.information_display: ft.Container = None
         self._create_information_display()
@@ -413,10 +414,10 @@ class Canvas(Widget):
         ''' Creates our line to add to the canvas as we draw, and saves that paths data to self.state '''
 
         # Sampling to improve perforamance. If the line length is too small, we skip it
-        #dx = e.local_position.x - self.state.x
-        #dy = e.local_position.y - self.state.y
-        #if dx * dx + dy * dy < self.min_segment_dist * self.min_segment_dist:
-            #return
+        dx = e.local_position.x - self.state.x
+        dy = e.local_position.y - self.state.y
+        if dx * dx + dy * dy < self.min_segment_dist * self.min_segment_dist:
+            return
 
         canvas: cv.Canvas = e.control.parent
         
@@ -568,7 +569,7 @@ class Canvas(Widget):
     async def save_canvas(self, e: ft.DragEndEvent):
         """ Saves our paths to our canvas data for storage """
 
-        # TODO: Set a shapes limit on canvas to clear shapes and re-set background after 15 or so
+        # TODO: Set a shapes limit on canvas to clear shapes and re-set background after 30 or so
 
         canvas: cv.Canvas = e.control.parent
         layer_name = canvas.data
