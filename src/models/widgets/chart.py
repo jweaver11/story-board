@@ -68,7 +68,7 @@ class Chart(Widget):
                         "Node 4",
                         "Node 5"
                     ],   
-                    'shape': "circle",   # Whether to show our radar chart as a circle or polygon
+                    'make_chart_round': True,   # Whether to show our radar chart as a circle or polygon
                     'show_info': True,  # Whether to show the info column on the side with our nodes and data sets
                     'min_value': 0,     # The minimum value for our radar chart, which will be the center point of the chart
                     'max_value': 20,    # The maximum value for our radar chart, which will be the outer edge of the chart
@@ -103,6 +103,8 @@ class Chart(Widget):
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
 
+
+    # Returns our widgets view for bar charts
     def _bar_chart_view(self):
         ''' Builds out the body of our bar chart widget '''
 
@@ -122,20 +124,15 @@ class Chart(Widget):
         self.body_container.content = chart
             
         
-        
+    # Shows the info column on the side of our chart or not
     async def _toggle_show_info(self, e):
         self.data['radar_data']['show_info'] = not self.data['radar_data'].get('show_info', True)
         await self.save_dict()
         self.reload_widget()
         
-
-        
-
+    # Returns our widgets view for radar charts
     def _radar_chart_view(self):
         ''' Builds out the body of our radar chart widget '''
-
-        # TODO: Show key at top of chart colors and labels
-        # Rotate titles??
         
         async def _update_entry(e):
             idx, entry_idx = e.control.data
@@ -233,7 +230,6 @@ class Chart(Widget):
             titles=[fch.RadarChartTitle(title, None if should_rotate else 360) for title in self.data.get('radar_data', {}).get('nodes', [])],
             center_min_value=True,
             tick_count=self.data.get('radar_data', {}).get('tick_count', 2),
-            #ticks_text_style=ft.TextStyle(size=16, color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
             ticks_text_style=ft.TextStyle(
                 size=16, color=ft.Colors.TRANSPARENT, italic=True
             ) if not self.data.get('radar_data', {}).get('show_tick_labels', False) else 
@@ -242,7 +238,7 @@ class Chart(Widget):
             #on_event=self._radar_chart_event,
             animation=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             title_position_percentage_offset=0.1,
-            radar_shape=fch.RadarShape.CIRCLE if self.data.get('radar_data', {}).get('shape', "circle") == "circle" else fch.RadarShape.POLYGON,
+            radar_shape=fch.RadarShape.CIRCLE if self.data.get('radar_data', {}).get('make_chart_round', False) else fch.RadarShape.POLYGON,
         )    
 
         # Add our data sets to the chart
@@ -264,18 +260,42 @@ class Chart(Widget):
                     entries=[fch.RadarDataSetEntry(value) for value in entries],
                 )
             )
+
+        # Load our keys above the chart
+        keys = ft.Row([], alignment=ft.MainAxisAlignment.CENTER,  wrap=True)
+        for idx, ds in enumerate(self.data.get('radar_data', {}).get('data_sets', [])):
+            
+            if idx == 0:        # Skip first one
+                continue
+
+            if ds.get('visible', True) == False:        #  Skip non-visible ones
+                continue
+
+            key = ft.Row([
+                ft.Container(
+                    height=30, width=80, margin=ft.Margin.only(left=10),
+                    border=ft.Border.all(2, ds.get('color', ft.Colors.PRIMARY)), 
+                    bgcolor=ft.Colors.with_opacity(0.2, ds.get('color', ft.Colors.PRIMARY))
+                ),
+                ft.Text(ds.get('title', "Data Set"), style=ft.TextStyle(weight=ft.FontWeight.BOLD))
+            ], tight=True, spacing=4)
+            keys.controls.append(key)
         
         if not self.data.get('radar_data', {}).get('show_info', True):
 
-            self.body_container.content = ft.Row(
-                [
-                    chart, 
-                    ft.IconButton(
-                        ft.Icons.INFO_OUTLINE, on_click=self._toggle_show_info, 
-                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                    )
-                ], expand=True, spacing=0
-            )
+            self.body_container.content = ft.Column([
+                ft.Container(height=1),
+                keys,
+                ft.Row(
+                    [
+                        chart, 
+                        ft.IconButton(
+                            ft.Icons.INFO_OUTLINE, on_click=self._toggle_show_info, 
+                            mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                        )
+                    ], expand=True, spacing=0
+                )
+            ], expand=True)
             return  # Don't load the info column if we're not showing it
 
         # Renames a node title on the chart
@@ -320,16 +340,13 @@ class Chart(Widget):
 
         # Toggles the chart either polygon or circle shaped
         async def _toggle_shape(e):
-            if self.data['radar_data']['shape'] == "circle":
-                self.data['radar_data']['shape'] = "polygon"
-                chart.radar_shape = fch.RadarShape.POLYGON
-                e.control.icon = ft.Icons.STAR_OUTLINE  
-            else:
-                self.data['radar_data']['shape'] = "circle"
+            self.data['radar_data']['make_chart_round'] = e.control.value
+            if e.control.value:
                 chart.radar_shape = fch.RadarShape.CIRCLE
-                e.control.icon = ft.Icons.CIRCLE_OUTLINED
+            else:
+                chart.radar_shape = fch.RadarShape.POLYGON
+               
             await self.save_dict()
-            e.control.update()
             chart.update()
 
         # Adding a new dataset with default values in each node
@@ -439,24 +456,7 @@ class Chart(Widget):
                 )
             )
 
-        keys = ft.Row([], alignment=ft.MainAxisAlignment.CENTER,  wrap=True)
-        for idx, ds in enumerate(self.data.get('radar_data', {}).get('data_sets', [])):
-            
-            if idx == 0:        # Skip first one
-                continue
-
-            if ds.get('visible', True) == False:        #  Skip non-visible ones
-                continue
-
-            key = ft.Row([
-                ft.Container(
-                    height=30, width=80, margin=ft.Margin.only(left=10),
-                    border=ft.Border.all(2, ds.get('color', ft.Colors.PRIMARY)), 
-                    bgcolor=ft.Colors.with_opacity(0.2, ds.get('color', ft.Colors.PRIMARY))
-                ),
-                ft.Text(ds.get('title', "Data Set"), style=ft.TextStyle(weight=ft.FontWeight.BOLD))
-            ], tight=True, spacing=4)
-            keys.controls.append(key)
+        
 
         async def _update_min_max_value(e):
             new_value = int(e.control.value)
@@ -537,49 +537,11 @@ class Chart(Widget):
             chart.update()
 
         info_column = ft.Column(
-            [
-                ft.Row([
-                    ft.Text(
-                        f"\tChart Info", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
-                        color=self.data.get('color', None), expand=True
-                    ),
-                    ft.IconButton(
-                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info, 
-                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                    ),
-                ]),
+            data_sets + [
                 ft.Divider(2, 2),
-            ] + data_sets + [
-                ft.Divider(2, 2),
-                ft.Container(height=10),
-                ft.Row([min_value_tf, max_value_tf]),
-                ft.Row([
-                    ft.Text(
-                        "\tInterval Count", style=ft.TextStyle(weight=ft.FontWeight.BOLD), color=self.data.get('color', None),
-                        tooltip="Increase or Decrease the number of lines between the center and outer edge of the chart"
-                    ),
-                    
-                    ft.IconButton(ft.Icons.ADD_OUTLINED, self.data.get('color', ft.Colors.PRIMARY), mouse_cursor=ft.MouseCursor.CLICK, on_click=_update_tick_count, data="add"),
-                    ft.IconButton(ft.Icons.REMOVE_OUTLINED, ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK, on_click=_update_tick_count, data="subtract"),
-                    
-                ], spacing=0),
                 
                 
-                ft.TextButton(
-                    ft.Text("Toggle Chart Shape", color=ft.Colors.ON_SURFACE),
-                    ft.Icons.CIRCLE_OUTLINED if self.data.get('radar_data', {}).get('shape', "circle") == "circle" else ft.Icons.STAR_OUTLINE,
-                    on_click=_toggle_shape,
-                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, )
-                ),
-                ft.Checkbox(
-                    "Show Interval Labels", self.data.get('radar_data', {}).get('show_tick_labels', False),
-                    on_change=_update_show_tick_labels, mouse_cursor=ft.MouseCursor.CLICK, 
-                ),
-                ft.Checkbox(
-                    "Rotate Chart Titles", self.data.get('radar_data', {}).get('rotate_node_titles', False),
-                    on_change=_toggle_rotate_node_titles, mouse_cursor=ft.MouseCursor.CLICK,
-                ),
-                ft.Divider(2, 2),
+                
                 ft.Row([
                     ft.Text(f"\tNodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                     ft.IconButton(
@@ -594,7 +556,37 @@ class Chart(Widget):
                     
                 ], spacing=0),
                 
-            ] + titles,
+            ] + titles + [
+                ft.Divider(2, 2),
+                ft.Container(height=10),
+                ft.Text(f"\tAppearence", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.Container(height=10),
+                ft.Row([min_value_tf, max_value_tf]),
+                ft.Row([
+                    ft.Text(
+                        "\tInterval Count", style=ft.TextStyle(weight=ft.FontWeight.BOLD), color=self.data.get('color', None),
+                        tooltip="Increase or Decrease the number of lines between the center and outer edge of the chart"
+                    ),
+                    
+                    ft.IconButton(ft.Icons.ADD_OUTLINED, self.data.get('color', ft.Colors.PRIMARY), mouse_cursor=ft.MouseCursor.CLICK, on_click=_update_tick_count, data="add"),
+                    ft.IconButton(ft.Icons.REMOVE_OUTLINED, ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK, on_click=_update_tick_count, data="subtract"),
+                    
+                ], spacing=0),
+                
+                
+                ft.Switch(
+                    True, "Make Chart Round", value=self.data.get('radar_data', {}).get('make_chart_round', False),
+                    on_change=_toggle_shape, mouse_cursor=ft.MouseCursor.CLICK
+                ),
+                ft.Switch(
+                    True, "Show Interval Labels", value=self.data.get('radar_data', {}).get('show_tick_labels', False),
+                    on_change=_update_show_tick_labels, mouse_cursor=ft.MouseCursor.CLICK, 
+                ),
+                ft.Switch(
+                    True, "Rotate Chart Titles", value=self.data.get('radar_data', {}).get('rotate_node_titles', False),
+                    on_change=_toggle_rotate_node_titles, mouse_cursor=ft.MouseCursor.CLICK,
+                ),
+            ],
             
             expand=True, scroll="auto", spacing=0
         )
@@ -607,7 +599,21 @@ class Chart(Widget):
             padding=ft.Padding.only(left=11, top=8, bottom=8,),
             shadow=ft.BoxShadow(0, 1),
             bgcolor=ft.Colors.SURFACE_CONTAINER,
-            content=ft.Column([info_column], expand=True, scroll="none"),
+            content=ft.Column(
+                [
+                    ft.Row([
+                        ft.Text(
+                            f"\tChart Info", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+                            color=self.data.get('color', None), expand=True
+                        ),
+                        ft.IconButton(
+                            ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info, 
+                            mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                        ),
+                    ]),
+                    ft.Divider(2, 2),
+                    info_column
+                ], expand=True, scroll="none", spacing=0),
         )
 
         
