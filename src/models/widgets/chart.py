@@ -70,10 +70,13 @@ class Chart(Widget):
                     ],   
                     'shape': "circle",   # Whether to show our radar chart as a circle or polygon
                     'show_info': True,  # Whether to show the info column on the side with our nodes and data sets
+                    'min_value': 0,     # The minimum value for our radar chart, which will be the center point of the chart
+                    'max_value': 20,    # The maximum value for our radar chart, which will be the outer edge of the chart
+                    'tick_count': 2,
                     'data_sets': [      # The data sets that make up the radar chart
                         {               # Starts maximized invisible so they can see other datasets at all times
-                            'color': "primary",
-                            'entries': [10, 5, 10, 10, 5],   # The values for each title/axis of the radar chart
+                            'color': "transparent",
+                            'entries': [0, 20, 20, 20, 20],   # The values for each title/axis of the radar chart. First value is min, second is max
                             'visible': True,
                             'title': "Data Set 1",
                             'expanded': True,   # Whether the dataset's info is expanded in the side column
@@ -174,11 +177,10 @@ class Chart(Widget):
         ''' Builds out the body of our radar chart widget '''
 
         #TODO: Show key at top of chart colors and labels
-        # Maximum and Minimum Graph Values
         
         async def _update_entry(e):
             idx, entry_idx = e.control.data
-            new_value = e.control.value
+            new_value = int(e.control.value)
 
             # Update our data model
             self.data['radar_data']['data_sets'][idx]['entries'][entry_idx] = new_value
@@ -187,9 +189,25 @@ class Chart(Widget):
             chart.data_sets[idx].entries[entry_idx].value = new_value
             chart.update()
 
+        async def _update_dataset_title(e):
+            entry_idx = e.control.data
+            new_title = e.control.value
+
+            self.data.get('radar_data', {}).get('data_sets', [])[entry_idx]['title'] = new_title
+            await self.save_dict()
+            self.reload_widget()
+
+        async def _update_expanded_state(e):
+            expanded = e.control.expanded
+            idx = e.control.data
+            self.data.get('radar_data', {}).get('data_sets', [])[idx]['expanded'] = expanded
+            await self.save_dict()
+
+
         class DataSet(ft.ExpansionTile):
-            def __init__(self, title: str, color: str, entries: list, visible: bool, idx: int, expanded: bool):
+            def __init__(self, title: str, color: str, entries: list, visible: bool, idx: int, expanded: bool, min_value: int = 0, max_value: int = 20):
                 self.index = idx
+            
                 super().__init__(
                     leading=ft.IconButton(
                         ft.Icons.VISIBILITY_OUTLINED if visible else ft.Icons.VISIBILITY_OFF_OUTLINED,
@@ -215,16 +233,30 @@ class Chart(Widget):
                             ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 
                             mouse_cursor=ft.MouseCursor.CLICK, data=idx,
                             on_click=_delete_data_set
-                        )
+                        ),
+                        on_blur=_update_dataset_title
                     ),
-                    dense=True, tile_padding=ft.Padding.only(right=11), controls_padding=ft.Padding.only(right=11),
+                    dense=True, tile_padding=ft.Padding.only(right=20), controls_padding=ft.Padding.only(right=30, left=30),
                     shape=ft.RoundedRectangleBorder(), expanded=expanded,
                     controls=[
-                        ft.Slider(
-                            value=entry, min=0, max=100, label="{value}", on_change=_update_entry, data=(idx, i),
-                        ) for i, entry in enumerate(entries)
-                    ]
+                        ft.Row([
+                            ft.Text(str(min_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                            ft.Slider(
+                                value=entry, 
+                                min=min_value,
+                                max=max_value, 
+                                label="{value}", on_change=_update_entry, data=(idx, i),
+                                expand=True,
+                                divisions=max_value - min_value if max_value > min_value else None
+                            ),
+                            ft.Text(str(max_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE)
+                        ], spacing=0) for i, entry in enumerate(entries)
+                    ],
+                    data=idx,
+                    on_change=_update_expanded_state
                 )
+
+            
             
             
         
@@ -232,7 +264,7 @@ class Chart(Widget):
             expand=2,
             titles=[fch.RadarChartTitle(text=title) for title in self.data.get('radar_data', {}).get('nodes', [])],
             center_min_value=True,
-            tick_count=5,
+            tick_count=self.data.get('radar_data', {}).get('tick_count', 2),
             #ticks_text_style=ft.TextStyle(size=16, color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
             ticks_text_style=ft.TextStyle(size=16, color=ft.Colors.TRANSPARENT, italic=True),
             title_text_style=ft.TextStyle(size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
@@ -243,24 +275,26 @@ class Chart(Widget):
         )    
 
         # Add our data sets to the chart
-        for ds in self.data.get('radar_data', {}).get('data_sets', []):
+        for idx, ds in enumerate(self.data.get('radar_data', {}).get('data_sets', [])):
             color = ds.get('color', "primary")
             entries: list = ds.get('entries', [])
             visible: bool = ds.get('visible', True)
+
+            
             
             if not visible:     # Skip non-visible ones
                 continue
 
             chart.data_sets.append(
                 fch.RadarDataSet(
-                    fill_color=ft.Colors.with_opacity(0.2, color),
+                    fill_color=ft.Colors.with_opacity(0.2, color) if color != "transparent" else ft.Colors.TRANSPARENT, # Protect weird transparent bugs
                     border_color=color,
                     entry_radius=4,
                     entries=[fch.RadarDataSetEntry(value) for value in entries],
                 )
             )
         
-        if self.data.get('radar_data', {}).get('show_info', True):
+        if not self.data.get('radar_data', {}).get('show_info', True):
 
             self.body_container.content = ft.Row(
                 [
@@ -271,28 +305,45 @@ class Chart(Widget):
                     )
                 ], expand=True, spacing=0
             )
-            return
+            return  # Don't load the info column if we're not showing it
 
         # Renames a node title on the chart
-        async def _update_title(e):
+        async def _update_node_title(e):
             self.data['radar_data']['nodes'][e.control.data] = e.control.value
             await self.save_dict()
             chart.titles[e.control.data].text = e.control.value
             chart.update()
 
         # Deletes a node/title and the corresponding data for it in each data set
-        async def _delete_title(e):
-            del self.data['radar_data']['nodes'][e.control.data]
-            for ds in self.data.get('radar_data', {}).get('data_sets', []):
-                del ds['entries'][e.control.data]
-            await self.save_dict()
-            self.reload_widget()
+        async def _delete_node_title(e):
 
-        # Adds a new title to the end of our titles list
-        async def _add_title(e):
+            async def _delete_node_title_confirm(_):
+                del self.data['radar_data']['nodes'][e.control.data]
+                for ds in self.data.get('radar_data', {}).get('data_sets', []):
+                    del ds['entries'][e.control.data]
+                await self.save_dict()
+                self.reload_widget()
+                self.p.pop_dialog()
+
+            node_title = self.data['radar_data']['nodes'][e.control.data]
+
+            dlg = ft.AlertDialog(
+                title=f"Are you sure you want to delete {node_title}?",
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
+                    ft.TextButton("Delete", on_click=_delete_node_title_confirm, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
+                ]
+            )
+            self.p.show_dialog(dlg)
+
+        # Adds a new title to the end of our titles list, and a default value for each dataset
+        async def _add_node_title(e):
             self.data['radar_data']['nodes'].append(f"Node {len(self.data['radar_data']['nodes']) + 1}")
+            default_value = int(self.data.get('radar_data', {}).get('max_value', 20) / 2)
+            if default_value < self.data.get('radar_data', {}).get('min_value', 0):
+                default_value = int(self.data.get('radar_data', {}).get('min_value', 0))
             for ds in self.data.get('radar_data', {}).get('data_sets', []):
-                ds['entries'].append(0)   # Add default value for new title to each data set
+                ds['entries'].append(default_value)   
             await self.save_dict()
             self.reload_widget()
 
@@ -310,23 +361,43 @@ class Chart(Widget):
             e.control.update()
             chart.update()
 
+        # Adding a new dataset with default values in each node
         async def _add_data_set(e):
+            median_value = int(self.data.get('radar_data', {}).get('max_value', 20) / 2)
+            if median_value < self.data.get('radar_data', {}).get('min_value', 0):
+                median_value = int(self.data.get('radar_data', {}).get('min_value', 0))
             self.data['radar_data']['data_sets'].append({
                 'color': "primary",
-                'entries': [2 for _ in self.data['radar_data']['nodes']],   # Default entries for each title/node
+                'entries': [median_value for _ in self.data['radar_data']['nodes']],   # Default entries for each title/node
                 'visible': True,
-                'title': f"Data Set {len(self.data['radar_data']['data_sets']) + 1}",
+                'title': f"Data Set {len(self.data['radar_data']['data_sets'])}",
                 'expanded': True
             })
             await self.save_dict()
             self.reload_widget()
 
+        # Delete a dataset and all its info
         async def _delete_data_set(e):
-            idx = e.control.data
-            del self.data['radar_data']['data_sets'][idx]
-            await self.save_dict()
-            self.reload_widget()
 
+            async def _delete_data_set_confirm(_):
+                idx = e.control.data
+                del self.data['radar_data']['data_sets'][idx]
+                await self.save_dict()
+                self.reload_widget()
+                self.p.pop_dialog()
+
+            dataset_title = self.data['radar_data']['data_sets'][e.control.data]['title']
+
+            dlg = ft.AlertDialog(
+                title=f"Are you sure you want to delete {dataset_title}?",
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
+                    ft.TextButton("Delete", on_click=_delete_data_set_confirm, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
+                ]
+            )
+            self.p.show_dialog(dlg)
+
+        # Toggle whether a dataset is visible on the chart
         async def _toggle_dataset_visibility(e):
             idx = e.control.data
             ds = self.data['radar_data']['data_sets'][idx]
@@ -334,6 +405,7 @@ class Chart(Widget):
             await self.save_dict()
             self.reload_widget()
 
+        # Change datasets color on the chart
         async def _change_dataset_color(e):
             idx = e.control.data
             color = str(e.control.content)
@@ -341,6 +413,7 @@ class Chart(Widget):
             await self.save_dict()
             self.reload_widget()
 
+        # Go through and add our titles/nodes to the chart
         titles = []
         for idx, title in enumerate(self.data.get('radar_data', {}).get('nodes', [])):
             titles.append(
@@ -348,16 +421,17 @@ class Chart(Widget):
                     TextField(
                         value=title, 
                         dense=True, data=idx, expand=True,
-                        on_blur=_update_title,
+                        on_blur=_update_node_title,
                         suffix_icon=ft.IconButton(
                             ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 
                             mouse_cursor="click", data=idx,
-                            on_click=_delete_title
+                            on_click=_delete_node_title
                         ) if idx >= 3 else None   # Minimum 3 nodes
                     ), ft.Container(width=1)
                 ])
             )      
 
+        # Go through and add our Data Sets to the info column on the side
         data_sets = [
             ft.Row([
                 ft.Text(f"\tDatasets", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
@@ -370,6 +444,8 @@ class Chart(Widget):
             ], spacing=0)
         ] 
         for idx, ds in enumerate(self.data.get('radar_data', {}).get('data_sets', [])):
+            if idx == 0:    # Skip first one
+                continue
         
             color = ds.get('color', "primary")
             entries: list = ds.get('entries', [])
@@ -383,60 +459,140 @@ class Chart(Widget):
                     entries,
                     visible,
                     idx,
-                    expanded
+                    expanded,
+                    self.data.get('radar_data', {}).get('min_value', 0),
+                    self.data.get('radar_data', {}).get('max_value', 20)
                 )
             )
 
 
+        async def _update_min_max_value(e):
+            new_value = int(e.control.value)
+            key = e.control.data
+            if key == "min_value" and new_value == self.data['radar_data'].get('min_value', 0):
+                return
+            if key == "max_value" and new_value == self.data['radar_data'].get('max_value', 20):
+                return
+            if key == "min_value" and new_value >= self.data['radar_data'].get('max_value', 20):
+                e.control.error = "Min value must be less than max value"
+                e.control.value = str(self.data['radar_data'].get('min_value', 0))
+                await e.control.focus()
+                e.control.update()
+                return
+            if key == "max_value" and new_value <= self.data['radar_data'].get('min_value', 0):
+                e.control.error = "Max value must be greater than min value"
+                e.control.value = str(self.data['radar_data'].get('max_value', 20))
+                await e.control.focus()
+                e.control.update()
+                return
+            self.data['radar_data'][key] = new_value
+
+            for idx, ds in enumerate(self.data.get('radar_data', {}).get('data_sets', [])):
+                if idx == 0:    # Set first one's values to the new min/max so it always fills the whole chart and shows the new scale
+                    ds['entries'][0] = self.data['radar_data'].get('min_value', 0)
+                    ds['entries'][1] = self.data['radar_data'].get('max_value', 20)
+                    continue
+                for i in range(len(ds.get('entries', []))):
+                    if ds['entries'][i] < self.data['radar_data'].get('min_value', 0):
+                        ds['entries'][i] = self.data['radar_data'].get('min_value', 0)
+                    elif ds['entries'][i] > self.data['radar_data'].get('max_value', 20):
+                        ds['entries'][i] = self.data['radar_data'].get('max_value', 20)
+            await self.save_dict()
+            self.reload_widget()
+           
+
+
+        min_value_tf = TextField(
+            value=str(self.data.get('radar_data', {}).get('min_value', 0)),
+            label="Min Value", dense=True, expand=True,
+            on_blur=_update_min_max_value,
+            input_filter=ft.NumbersOnlyInputFilter(),
+            tooltip="Minimum value in the center of the chart. Must be less than max value. If values in data sets are below this, they will be set to this value. ",
+            data="min_value"
+        )
+        max_value_tf = TextField(
+            value=str(self.data.get('radar_data', {}).get('max_value', 20)),
+            label="Max Value", dense=True, expand=True,
+            on_blur=_update_min_max_value,
+            input_filter=ft.NumbersOnlyInputFilter(),
+            tooltip="Maximum value at the outer edge of the chart. Must be greater than min value. If values in data sets are above this, they will be set to this value.",
+            data="max_value"
+        )
+
+        async def _update_tick_count(e):
+            change_function = e.control.data
+
+            if change_function == "add":
+                self.data['radar_data']['tick_count'] = self.data['radar_data'].get('tick_count', 2) + 1
+            elif change_function == "subtract" and self.data['radar_data'].get('tick_count', 2) > 1:
+                self.data['radar_data']['tick_count'] = self.data['radar_data'].get('tick_count', 2) - 1
+
+            chart.tick_count = self.data['radar_data'].get('tick_count', 2)
+            await self.save_dict()
+            chart.update()
+
         info_column = ft.Column(
             [
+                ft.Row([
+                    ft.Text(
+                        f"\tChart Info", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+                        color=self.data.get('color', None), expand=True
+                    ),
+                    ft.IconButton(
+                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info, 
+                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                    ),
+                ]),
+                ft.Divider(2, 2),
+                
+                ft.Row([
+                    ft.Text(
+                        "\tInterval Count", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None),
+                        tooltip="Increase or Decrease the number of lines between the center and outer edge of the chart"
+                    ),
+                    
+                    ft.IconButton(ft.Icons.ADD_OUTLINED, self.data.get('color', ft.Colors.PRIMARY), mouse_cursor=ft.MouseCursor.CLICK, on_click=_update_tick_count, data="add"),
+                    ft.IconButton(ft.Icons.REMOVE_OUTLINED, ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK, on_click=_update_tick_count, data="subtract"),
+                    ft.TextButton(
+                        ft.Text("Toggle Chart Shape", color=self.data.get('color', ft.Colors.PRIMARY), weight=ft.FontWeight.BOLD),
+                        ft.Icons.CIRCLE_OUTLINED if self.data.get('radar_data', {}).get('shape', "circle") == "circle" else ft.Icons.STAR_OUTLINE,
+                        self.data.get('color', ft.Colors.PRIMARY),
+                        on_click=_toggle_shape,
+                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)
+                    )
+                ], spacing=0),
+                ft.Row([min_value_tf, max_value_tf]),
                 ft.Row([
                     ft.Text(f"\tNodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                     ft.IconButton(
                         ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                         self.data.get('color', ft.Colors.PRIMARY),
-                        on_click=_add_title,
+                        on_click=_add_node_title,
                         mouse_cursor=ft.MouseCursor.CLICK,
                     ),
                     ft.Container(expand=True),
-                    ft.IconButton(
-                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info, 
-                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                    ),
+                    
                     ft.Container(width=11)
                     
                 ], spacing=0)
             ] +
             titles + 
             [
-                ft.Divider()
+                ft.Divider(2, 2)
             ] +
-            data_sets + 
-            [
-                
-            ],
-            expand=True, scroll="auto"
+            data_sets,
+            expand=True, scroll="auto", 
         )
 
-        holder_column = ft.Column([
-            info_column,
-            ft.TextButton(
-                ft.Text("Toggle Chart Shape", color=self.data.get('color', ft.Colors.PRIMARY), weight=ft.FontWeight.BOLD),
-                ft.Icons.CIRCLE_OUTLINED if self.data.get('radar_data', {}).get('shape', "circle") == "circle" else ft.Icons.STAR_OUTLINE,
-                self.data.get('color', ft.Colors.PRIMARY),
-                on_click=_toggle_shape,
-                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)
-            )
-        ], scroll="none")
 
 
         chart_info = ft.Container(
             expand=1,
             border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
-            padding=ft.Padding.only(left=11, top=8, bottom=8),
+            padding=ft.Padding.only(left=11, top=8, bottom=8,),
             shadow=ft.BoxShadow(0, 1),
             bgcolor=ft.Colors.SURFACE_CONTAINER,
-            content=holder_column
+            content=ft.Column([info_column], expand=True, scroll="none"),
         )
 
         
@@ -444,7 +600,6 @@ class Chart(Widget):
         self.body_container.content = ft.Row(
             [
                 chart,
-                
                 chart_info
             ], expand=True, spacing=0
         )
