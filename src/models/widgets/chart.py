@@ -128,6 +128,14 @@ class Chart(Widget):
     def _bar_chart_view(self):
         ''' Builds out the body of our bar chart widget '''
 
+        # TODO:
+        # Show labels on left and bottom axis
+        # Option for horizontal and vertical grid lines
+        # Option for stacked bars or seperate ones
+        # Option to edit baseline and max y values
+        # Add labels to Bar Chart Groups
+       
+        fch.ChartAxis()
         chart = fch.BarChart(
             groups=[
                 fch.BarChartGroup(0, [fch.BarChartRod(from_y=0, to_y=3), fch.BarChartRod(from_y=0, to_y=5), fch.BarChartRod(from_y=0, to_y=2)]),
@@ -135,11 +143,12 @@ class Chart(Widget):
                 fch.BarChartGroup(2, [fch.BarChartRod(from_y=0, to_y=5), fch.BarChartRod(from_y=0, to_y=3), fch.BarChartRod(from_y=0, to_y=4)]),
             ],
             interactive=True,
-            #max_y=10,
+            max_y=10,
             bottom_axis=fch.ChartAxis(ft.Text("Bottom Axis"), label_size=40),
             left_axis=fch.ChartAxis(ft.Text("Left Axis"), title_size=40, show_labels=False),
             baseline_y=0,
             expand=3,
+            border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT), bottom=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT))
         )
 
         chart_info = ft.Container(
