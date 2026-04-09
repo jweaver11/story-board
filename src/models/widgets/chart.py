@@ -72,14 +72,16 @@ class Chart(Widget):
                     'show_info': True,  # Whether to show the info column on the side with our nodes and data sets
                     'min_value': 0,     # The minimum value for our radar chart, which will be the center point of the chart
                     'max_value': 20,    # The maximum value for our radar chart, which will be the outer edge of the chart
-                    'tick_count': 2,
+                    'tick_count': 2,    # Number of tick lines between the center and outer edge of the chart
+                    'show_tick_labels': False,      # Whether to show the labels for each tick line or not
+                    'rotate_node_titles': True,    # Whether to keep our titles flat and not rotate them with the chart or not
                     'data_sets': [      # The data sets that make up the radar chart
                         {               # Starts maximized invisible so they can see other datasets at all times
                             'color': "transparent",
                             'entries': [0, 20, 20, 20, 20],   # The values for each title/axis of the radar chart. First value is min, second is max
                             'visible': True,
                             'title': "Data Set 1",
-                            'expanded': True,   # Whether the dataset's info is expanded in the side column
+                            'expanded': False,   # Whether the dataset's info is expanded in the side column
                         },
                         #{},...
                         
@@ -118,51 +120,7 @@ class Chart(Widget):
             expand=True,
         )
         self.body_container.content = chart
-
-    async def _radar_chart_event(self, e: fch.RadarChartEvent):
-        return
-        chart = e.control
-        event_type = e.type                 # Type of event
-        dataset_index = e.data_set_index        # Index of which dataset we are interacting with
-        entry_index = e.entry_index         # Index of which entry in the dataset we are interacting with  
-        entry_value = e.entry_value     # Value of the indexed entry in that dataset
-
-        print(e)
-
-        if dataset_index is None or entry_index is None:
-            #print("returned early")
-            return      # If either of these are None, we aren't interacting with an actual entry so we can ignore the event
-        
-        #TODO: dataset index only shows index of visible charts, so its messed up if some are hidden
-        
-
-        match event_type:
             
-            case fch.ChartEventType.POINTER_HOVER:
-                #print(e)
-                return
-                chart.data_sets[dataset_index].fill_color = ft.Colors.with_opacity(0.5, self.data.get('radar_data', {}).get('data_sets', )[dataset_index].get('color', ft.Colors.PRIMARY))   # Make the dataset more opaque on hover to highlight it
-                chart.update()
-                # Could show a tooltip or something here with info about the entry we're hovering
-
-            case fch.ChartEventType.PAN_START | fch.ChartEventType.LONG_PRESS_START | fch.ChartEventType.TAP_DOWN:
-                # Grab whatever point is being interacted with
-                pass
-            case fch.ChartEventType.PAN_UPDATE | fch.ChartEventType.LONG_PRESS_MOVE_UPDATE:
-                #print(e)
-                new_value = entry_value  # Or calculate from pointer position if needed
-
-                # 2. Update your data model
-                self.data['radar_data']['data_sets'][dataset_index]['entries'][entry_index] = new_value
-
-                # 3. Optionally: update the chart visually in real-time
-                chart.data_sets[dataset_index].entries[entry_index].value = new_value
-                chart.update()
-            case fch.ChartEventType.PAN_END | fch.ChartEventType.LONG_PRESS_END:
-                pass
-                #print("End event: ", e)
-            
-                
         
         
     async def _toggle_show_info(self, e):
@@ -176,7 +134,8 @@ class Chart(Widget):
     def _radar_chart_view(self):
         ''' Builds out the body of our radar chart widget '''
 
-        #TODO: Show key at top of chart colors and labels
+        # TODO: Show key at top of chart colors and labels
+        # Rotate titles??
         
         async def _update_entry(e):
             idx, entry_idx = e.control.data
@@ -185,10 +144,19 @@ class Chart(Widget):
             # Update our data model
             self.data['radar_data']['data_sets'][idx]['entries'][entry_idx] = new_value
 
+            # Find acutal index here in case of hidden datasets
+            visible_idx = -1
+            for i, ds in enumerate(self.data.get('radar_data', {}).get('data_sets', [])):
+                if ds.get('visible', True):
+                    visible_idx += 1
+                if i == idx:
+                    break
+
             # Update the chart visually in real-time
-            chart.data_sets[idx].entries[entry_idx].value = new_value
+            chart.data_sets[visible_idx].entries[entry_idx].value = new_value
             chart.update()
 
+        # Updates the title of a dataset
         async def _update_dataset_title(e):
             entry_idx = e.control.data
             new_title = e.control.value
@@ -197,13 +165,14 @@ class Chart(Widget):
             await self.save_dict()
             self.reload_widget()
 
+        # Updates whether our dataset is expanded in the info column or not
         async def _update_expanded_state(e):
             expanded = e.control.expanded
             idx = e.control.data
             self.data.get('radar_data', {}).get('data_sets', [])[idx]['expanded'] = expanded
             await self.save_dict()
 
-
+        # Class to hold our datasets in the dropdown menu in the info column
         class DataSet(ft.ExpansionTile):
             def __init__(self, title: str, color: str, entries: list, visible: bool, idx: int, expanded: bool, min_value: int = 0, max_value: int = 20):
                 self.index = idx
@@ -247,7 +216,8 @@ class Chart(Widget):
                                 max=max_value, 
                                 label="{value}", on_change=_update_entry, data=(idx, i),
                                 expand=True,
-                                divisions=max_value - min_value if max_value > min_value else None
+                                divisions=max_value - min_value if max_value > min_value else None,
+                                disabled=True if not visible else False
                             ),
                             ft.Text(str(max_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE)
                         ], spacing=0) for i, entry in enumerate(entries)
@@ -256,19 +226,20 @@ class Chart(Widget):
                     on_change=_update_expanded_state
                 )
 
-            
-            
-            
+        should_rotate = self.data.get('radar_data', {}).get('rotate_node_titles', False)
         
         chart = fch.RadarChart(
             expand=2,
-            titles=[fch.RadarChartTitle(text=title) for title in self.data.get('radar_data', {}).get('nodes', [])],
+            titles=[fch.RadarChartTitle(title, None if should_rotate else 360) for title in self.data.get('radar_data', {}).get('nodes', [])],
             center_min_value=True,
             tick_count=self.data.get('radar_data', {}).get('tick_count', 2),
             #ticks_text_style=ft.TextStyle(size=16, color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
-            ticks_text_style=ft.TextStyle(size=16, color=ft.Colors.TRANSPARENT, italic=True),
+            ticks_text_style=ft.TextStyle(
+                size=16, color=ft.Colors.TRANSPARENT, italic=True
+            ) if not self.data.get('radar_data', {}).get('show_tick_labels', False) else 
+                ft.TextStyle(size=16, color=self.data.get('color', ft.Colors.ON_SURFACE_VARIANT), italic=True),
             title_text_style=ft.TextStyle(size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-            on_event=self._radar_chart_event,
+            #on_event=self._radar_chart_event,
             animation=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             title_position_percentage_offset=0.1,
             radar_shape=fch.RadarShape.CIRCLE if self.data.get('radar_data', {}).get('shape', "circle") == "circle" else fch.RadarShape.POLYGON,
@@ -371,7 +342,7 @@ class Chart(Widget):
                 'entries': [median_value for _ in self.data['radar_data']['nodes']],   # Default entries for each title/node
                 'visible': True,
                 'title': f"Data Set {len(self.data['radar_data']['data_sets'])}",
-                'expanded': True
+                'expanded': False
             })
             await self.save_dict()
             self.reload_widget()
@@ -417,7 +388,7 @@ class Chart(Widget):
         titles = []
         for idx, title in enumerate(self.data.get('radar_data', {}).get('nodes', [])):
             titles.append(
-                ft.Row([
+                ft.Container(
                     TextField(
                         value=title, 
                         dense=True, data=idx, expand=True,
@@ -427,8 +398,10 @@ class Chart(Widget):
                             mouse_cursor="click", data=idx,
                             on_click=_delete_node_title
                         ) if idx >= 3 else None   # Minimum 3 nodes
-                    ), ft.Container(width=1)
-                ])
+                    ),
+                    margin=ft.Margin.only(bottom=10, right=11), expand=True
+                )
+                
             )      
 
         # Go through and add our Data Sets to the info column on the side
@@ -443,6 +416,7 @@ class Chart(Widget):
                 ),
             ], spacing=0)
         ] 
+
         for idx, ds in enumerate(self.data.get('radar_data', {}).get('data_sets', [])):
             if idx == 0:    # Skip first one
                 continue
@@ -465,6 +439,24 @@ class Chart(Widget):
                 )
             )
 
+        keys = ft.Row([], alignment=ft.MainAxisAlignment.CENTER,  wrap=True)
+        for idx, ds in enumerate(self.data.get('radar_data', {}).get('data_sets', [])):
+            
+            if idx == 0:        # Skip first one
+                continue
+
+            if ds.get('visible', True) == False:        #  Skip non-visible ones
+                continue
+
+            key = ft.Row([
+                ft.Container(
+                    height=30, width=80, margin=ft.Margin.only(left=10),
+                    border=ft.Border.all(2, ds.get('color', ft.Colors.PRIMARY)), 
+                    bgcolor=ft.Colors.with_opacity(0.2, ds.get('color', ft.Colors.PRIMARY))
+                ),
+                ft.Text(ds.get('title', "Data Set"), style=ft.TextStyle(weight=ft.FontWeight.BOLD))
+            ], tight=True, spacing=4)
+            keys.controls.append(key)
 
         async def _update_min_max_value(e):
             new_value = int(e.control.value)
@@ -531,6 +523,19 @@ class Chart(Widget):
             await self.save_dict()
             chart.update()
 
+        async def _update_show_tick_labels(e):
+            self.data['radar_data']['show_tick_labels'] = not self.data['radar_data'].get('show_tick_labels', False)
+            chart.ticks_text_style = ft.TextStyle(size=16, color=self.data.get('color', ft.Colors.ON_SURFACE_VARIANT) if self.data['radar_data'].get('show_tick_labels', False) else ft.Colors.TRANSPARENT, italic=True)
+            await self.save_dict()
+            chart.update()
+
+        async def _toggle_rotate_node_titles(e):
+            self.data['radar_data']['rotate_node_titles'] = not self.data['radar_data'].get('rotate_node_titles', False)
+            for title in chart.titles:
+                title.angle = None if self.data['radar_data'].get('rotate_node_titles', False) else 360
+            await self.save_dict()
+            chart.update()
+
         info_column = ft.Column(
             [
                 ft.Row([
@@ -544,24 +549,37 @@ class Chart(Widget):
                     ),
                 ]),
                 ft.Divider(2, 2),
-                
+            ] + data_sets + [
+                ft.Divider(2, 2),
+                ft.Container(height=10),
+                ft.Row([min_value_tf, max_value_tf]),
                 ft.Row([
                     ft.Text(
-                        "\tInterval Count", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None),
+                        "\tInterval Count", style=ft.TextStyle(weight=ft.FontWeight.BOLD), color=self.data.get('color', None),
                         tooltip="Increase or Decrease the number of lines between the center and outer edge of the chart"
                     ),
                     
                     ft.IconButton(ft.Icons.ADD_OUTLINED, self.data.get('color', ft.Colors.PRIMARY), mouse_cursor=ft.MouseCursor.CLICK, on_click=_update_tick_count, data="add"),
                     ft.IconButton(ft.Icons.REMOVE_OUTLINED, ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK, on_click=_update_tick_count, data="subtract"),
-                    ft.TextButton(
-                        ft.Text("Toggle Chart Shape", color=self.data.get('color', ft.Colors.PRIMARY), weight=ft.FontWeight.BOLD),
-                        ft.Icons.CIRCLE_OUTLINED if self.data.get('radar_data', {}).get('shape', "circle") == "circle" else ft.Icons.STAR_OUTLINE,
-                        self.data.get('color', ft.Colors.PRIMARY),
-                        on_click=_toggle_shape,
-                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)
-                    )
+                    
                 ], spacing=0),
-                ft.Row([min_value_tf, max_value_tf]),
+                
+                
+                ft.TextButton(
+                    ft.Text("Toggle Chart Shape", color=ft.Colors.ON_SURFACE),
+                    ft.Icons.CIRCLE_OUTLINED if self.data.get('radar_data', {}).get('shape', "circle") == "circle" else ft.Icons.STAR_OUTLINE,
+                    on_click=_toggle_shape,
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, )
+                ),
+                ft.Checkbox(
+                    "Show Interval Labels", self.data.get('radar_data', {}).get('show_tick_labels', False),
+                    on_change=_update_show_tick_labels, mouse_cursor=ft.MouseCursor.CLICK, 
+                ),
+                ft.Checkbox(
+                    "Rotate Chart Titles", self.data.get('radar_data', {}).get('rotate_node_titles', False),
+                    on_change=_toggle_rotate_node_titles, mouse_cursor=ft.MouseCursor.CLICK,
+                ),
+                ft.Divider(2, 2),
                 ft.Row([
                     ft.Text(f"\tNodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                     ft.IconButton(
@@ -574,14 +592,11 @@ class Chart(Widget):
                     
                     ft.Container(width=11)
                     
-                ], spacing=0)
-            ] +
-            titles + 
-            [
-                ft.Divider(2, 2)
-            ] +
-            data_sets,
-            expand=True, scroll="auto", 
+                ], spacing=0),
+                
+            ] + titles,
+            
+            expand=True, scroll="auto", spacing=0
         )
 
 
@@ -599,10 +614,15 @@ class Chart(Widget):
 
         self.body_container.content = ft.Row(
             [
-                chart,
+                ft.Column([
+                    ft.Container(height=1),
+                    keys,
+                    chart,
+                ], expand=2),
                 chart_info
             ], expand=True, spacing=0
         )
+       
 
         
 
