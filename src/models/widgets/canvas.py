@@ -521,6 +521,7 @@ class Canvas(Widget):
                 # Update our state x and y for the next segment
                 self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
+    # Redraws the canvas upon size changing. Not used currently
     async def _redraw_canvas(self, e=ft.PointerEvent):
         if self.story.workspace.is_resizing:    # If we're resizing just ignore this call
             self.needs_redraw = True

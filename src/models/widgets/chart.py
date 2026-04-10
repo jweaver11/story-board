@@ -544,7 +544,7 @@ class Chart(Widget):
                 if idx == 0:    # Set first one's values to the new min/max so it always fills the whole chart and shows the new scale
                     ds['entries'][0] = self.data['radar_data'].get('min_value', 0)
                     ds['entries'][1] = self.data['radar_data'].get('max_value', 20)
-                    continue
+                    #continue
                 for i in range(len(ds.get('entries', []))):
                     if ds['entries'][i] < self.data['radar_data'].get('min_value', 0):
                         ds['entries'][i] = self.data['radar_data'].get('min_value', 0)
