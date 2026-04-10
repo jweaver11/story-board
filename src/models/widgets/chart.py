@@ -343,7 +343,8 @@ class Chart(Widget):
                     ),
                     ft.Text(ds.get('title', "Data Set"), style=ft.TextStyle(weight=ft.FontWeight.BOLD))
                 ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_CONTAINER, border_radius=ft.BorderRadius.all(4), padding=ft.Padding.all(6),
+                #bgcolor=ft.Colors.SURFACE_CONTAINER, 
+                border_radius=ft.BorderRadius.all(4), padding=ft.Padding.all(6),
                 margin=ft.Margin.only(left=10),
             )
             keys.controls.append(key)

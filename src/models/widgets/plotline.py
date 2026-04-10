@@ -237,7 +237,6 @@ class Plotline(Widget):
         if self.story.data.get('selected_rail', "") == "plotlines":
             self.story.active_rail.reload_rail()
 
-        await self.rebuild_plotline_canvas()
         for mw in self.mini_widgets:
             if hasattr(mw, "plotline_control"):
                 mw.reload_plotline_control(no_update=True)
@@ -273,7 +272,6 @@ class Plotline(Widget):
         if self.story.data.get('selected_rail', "") == "plotlines":
             self.story.active_rail.reload_rail()
 
-        await self.rebuild_plotline_canvas()
         for mw in self.mini_widgets:
             if hasattr(mw, "plotline_control"):
                 mw.reload_plotline_control(no_update=True)
@@ -307,7 +305,6 @@ class Plotline(Widget):
         if self.story.data.get('selected_rail', "") == "plotlines":
             self.story.active_rail.reload_rail()
 
-        await self.rebuild_plotline_canvas()
         for mw in self.mini_widgets:
             if hasattr(mw, "plotline_control"):
                 mw.reload_plotline_control(no_update=True)
@@ -609,7 +606,6 @@ class Plotline(Widget):
 
         # If first launch, rebuild,
         if self.initial_resize:
-            print("rebuild called")
             await self.rebuild_plotline_canvas()
             self.needs_redraw = False
             self.initial_resize = False
@@ -811,9 +807,10 @@ class Plotline(Widget):
                 if y_pos < 70: 
                     y_pos = 70
 
-                marker_height = self.plotline_height // 2 #- y_pos
+                marker_height = self.plotline_height // 2 
                 marker.plotline_control.height = marker_height
-                marker.plotline_control.top = y_pos                
+                marker.plotline_control.top = y_pos         
+                #marker.plotline_control.bottom = self.plotline_height - y_pos     
     
                 # Re-paint its shapes (dashed line) if needed (Only first load)
                 marker.plotline_control.content.content.shapes = [
