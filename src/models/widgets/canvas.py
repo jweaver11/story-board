@@ -320,11 +320,8 @@ class Canvas(Widget):
             canvas.update()
         except Exception as _:
             print("Failed to update canvas")
-
-        #print(self.state.points)
-        #print(self.canvas.shapes)
             
-        # Save our canvas data
+        # Need to save, as this function stands alone and no others will run after it
         await self.save_canvas(e)
         
     # Called when we start drawing on the canvas
@@ -347,11 +344,11 @@ class Canvas(Widget):
         safe_paint_settings['style'] = safe_stroke
 
         # Check if we're in erase mode or not. If we are, set blend mode to clear and blur image to 0
-        if self.story.data.get('canvas_settings', {}).get('erase_mode', False):
-            safe_paint_settings['blend_mode'] = "clear"
-            safe_paint_settings['blur_image'] = 0
-            state_paint_settings['blend_mode'] = "clear"
-            state_paint_settings['blur_image'] = 0
+        #if self.story.data.get('canvas_settings', {}).get('erase_mode', False):
+            #safe_paint_settings['blend_mode'] = "clear"
+            #safe_paint_settings['blur_image'] = 0
+            #state_paint_settings['blend_mode'] = "clear"
+            #state_paint_settings['blur_image'] = 0
         
 
         # Update state x and y coordinates
@@ -360,12 +357,10 @@ class Canvas(Widget):
         # Clear and set our current path and state to match it
         self.current_path = cv.Path(elements=[], paint=ft.Paint(**safe_paint_settings))
         self.state.paths.clear()
-        self.state.paths.append({'elements': list(), 'paint': state_paint_settings})
+        self.state.paths.append({'elements': [], 'paint': state_paint_settings})
 
-        # Set move to element at our starting position that the mouse is at for the path to start from
+        # Move to our starting position for this element
         move_to_element = cv.Path.MoveTo(e.local_position.x, e.local_position.y)
-
-        # Add that element to current paths elements and our state paths
         self.current_path.elements.append(move_to_element)
         self.state.paths[0]['elements'].append((move_to_element.__dict__))
 
@@ -403,6 +398,13 @@ class Canvas(Widget):
                 self.current_path.elements.append(arc_element)
                 self.state.paths[0]['elements'].append((arc_element.__dict__))
 
+            #case ''
+
+        #cv.Path.CubicTo()
+        #cv.Path.QuadraticTo()
+        #cv.Path.Oval()
+        #cv.Path.Rect()
+        #cv.Path.
         # Add the path to the canvas so we can see it
         canvas.shapes.append(self.current_path)
         canvas.update()
@@ -411,7 +413,7 @@ class Canvas(Widget):
         
     # Called when actively drawing on the canvas
     async def is_drawing(self, e: ft.DragUpdateEvent):
-        ''' Creates our line to add to the canvas as we draw, and saves that paths data to self.state '''
+        ''' Determines which drawing tool we're using, and updates accordingly as we drag our mouse '''
 
         # Sampling to improve perforamance. If the line length is too small, we skip it
         dx = e.local_position.x - self.state.x
@@ -419,14 +421,13 @@ class Canvas(Widget):
         if dx * dx + dy * dy < self.min_segment_dist * self.min_segment_dist:
             return
 
-        canvas: cv.Canvas = e.control.parent
-        
-        # Grab our style so we can compare it
+        # Set our canvas and style
+        canvas: cv.Canvas = e.control.parent    
         style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
 
-
         match style:
-        # Handle lineto (Straight lines). Grab the element we created on start drawing, update its data
+        
+            # Straight lines
             case "lineto":
             
                 # Set the element and its data
@@ -441,13 +442,7 @@ class Canvas(Widget):
                 line_dict['x'] = line_element.x
                 line_dict['y'] = line_element.y
 
-                # Update the page and return early
-                try:
-                    # Much more effecient to just update the path, but that fails on first update due to lost page references
-                    self.current_path.update()
-                # This re-sets the canvas page, which all paths need to update correctly. This should only catch one time per stroke
-                except Exception as _:
-                    canvas.update()
+                self.current_path.update()
                 return
         
             case "arc" | "arcfill":
@@ -472,11 +467,7 @@ class Canvas(Widget):
 
                 arc_element.width = abs(e.local_position.x - self.state.x) 
 
-                # Update the page and return early
-                try:
-                    self.current_path.update()
-                except Exception as _:
-                    canvas.update()
+                self.current_path.update()
                 return
         
             # Handle arcs
@@ -491,12 +482,7 @@ class Canvas(Widget):
                 arc_dict['x'] = arc_element.x
                 arc_dict['y'] = arc_element.y
 
-                # Update the page and return early
-                try:
-                    # Page reference gets lost after dragging widget to new canvas, so we reset it and update
-                    self.current_path.update()
-                except Exception as _:
-                    canvas.update()
+                self.current_path.update()
                 return
         
         
@@ -504,6 +490,7 @@ class Canvas(Widget):
             case _:
 
                 #TODO: Add check here to reduce num of lines based on previous start and end??
+
                 # Set the path element based on what kind of path we're adding, add it to our current path and our state paths
                 path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
 
@@ -511,13 +498,7 @@ class Canvas(Widget):
                 self.current_path.elements.append(path_element)
                 self.state.paths[0]['elements'].append((path_element.__dict__))  
 
-                # After dragging canvas widget, it loses page reference and can't update
-                try:
-                    self.current_path.update()
-                except Exception as _:
-                    canvas.update()
-                
-
+                self.current_path.update()
                 # Update our state x and y for the next segment
                 self.state.x, self.state.y = e.local_position.x, e.local_position.y
 

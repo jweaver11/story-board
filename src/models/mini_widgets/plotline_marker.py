@@ -27,10 +27,7 @@ class Marker(MiniWidget):
         data: dict = None       
     ):
         
-        if left is not None:
-            side_location = 'right' if left <= widget.plotline_width // 2 else 'left'
-        else:
-            side_location = data.get('side_location', 'right') if data is not None else 'right'
+        
         
         # Parent constructor
         super().__init__(
@@ -38,7 +35,6 @@ class Marker(MiniWidget):
             widget=widget,        
             page=page,          
             key=key,  
-            side_location=side_location,
             data=data,    
         ) 
 
@@ -129,15 +125,7 @@ class Marker(MiniWidget):
         x_alignment = (self.data.get('left', 0) / (self.widget.plotline_width - 10)) * 2.0 - 1.0
 
         self.data['x_alignment'] = x_alignment
-
-        old_side_location = self.data.get('side_location', 'right')
-
-        if self.data.get('x_alignment', 0) <= 0:
-            self.data['side_location'] = "right"
-        else:
-            self.data['side_location'] = "left"
-
-        
+ 
 
         await self.save_dict()
 
@@ -148,19 +136,6 @@ class Marker(MiniWidget):
 
         if self.widget.information_display.visible:
             self.widget.information_display.reload_mini_widget()
-
-
-        # If we changed sides, rebuild everything. Otherwise, just update the canvas for labels n stuff
-        if old_side_location != self.data['side_location']:
-            for mw in self.widget.mini_widgets:
-                if hasattr(mw, 'plotline_control'):
-                    mw.reload_plotline_control(no_update=True)        # Fix sync issues with plotline controls after having to reload
-            await self.widget.rebuild_plotline_canvas()
-            self.widget.reload_widget()
-        else:
-            await self.widget.rebuild_plotline_canvas(update=True)
-
-        #self.widget.story.active_rail.reload_rail()
         
         
     # Called when hovering over our plot point to show the slider

@@ -1,1 +1,0 @@
-# Widgets for gifs/videos

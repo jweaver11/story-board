@@ -1,1 +1,0 @@
-# Create object to store values for types, just so there no magic values

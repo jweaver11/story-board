@@ -1,7 +1,7 @@
 import flet as ft
 from models.mini_widget import MiniWidget
 from styles.menu_option_style import MenuOptionStyle
-from models.mini_widgets.plot_point import PlotPoint
+from models.mini_widgets.plotline_plot_point import PlotPoint
 from styles.colors import colors
 
 

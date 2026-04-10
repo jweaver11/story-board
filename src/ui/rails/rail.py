@@ -222,9 +222,11 @@ class Rail(IsolatedColumn):
         # Grab out title and tag from the textfield, and set our new key to compare
         title = e.control.value
         tag = e.control.data
+        if ":" in tag:
+            tag = tag.split(":")[0]
 
         # Generate our new key to compare. Requires normalization
-        nk = self.directory_path + "\\" + title + "_" + e.control.data
+        nk = self.directory_path + "\\" + title + "_" + tag
         new_key = os.path.normpath(nk)
 
         if tag == "folder":

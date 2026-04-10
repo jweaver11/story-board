@@ -52,15 +52,10 @@ class Arc(MiniWidget):
             left_ratio = left / max(widget.plotline_width, 1)
             right_ratio = right / max(widget.plotline_width, 1)
 
-            if x_alignment <= 0:
-                side_location = "right"
-                
-            else:
-                side_location = "left"
+            
 
         # Needs values but they shouldn't be used, since the arc is not new
         else:
-            side_location = "right"     
             left = 0
             right = 0
             left_ratio = 0
@@ -76,7 +71,6 @@ class Arc(MiniWidget):
                 'color': "secondary",                       # Color of the arc in the plotline
                 
                 # For rendering on plotline
-                'side_location': side_location,      
                 'is_shown_on_widget': True,                 # If this arcs plotline control is shown on the plotline widget
 
                 # Absolute Left and Right positions of the arc on the plotline
@@ -166,7 +160,7 @@ class Arc(MiniWidget):
         
             self.plotline_control.update()
     
-    async def hide_mini_widget(self, e=None):
+    async def hide_mini_widget(self, e=None, update=True):
         ''' Hides this arc '''
         #print(f"Hiding mini widget {self.title}")
 
@@ -176,7 +170,7 @@ class Arc(MiniWidget):
         self.right_drag_handle.visible = False
         self.plotline_control.update()
         
-        return await super().hide_mini_widget()
+        return await super().hide_mini_widget(update=update)
     
 
     # Called at the start of dragging our point on the slider
@@ -251,7 +245,7 @@ class Arc(MiniWidget):
         if new_height < 50:
             new_height = 50
 
-            print("New height of arc: ", new_height, " for width: ", width)
+            #print("New height of arc: ", new_height, " for width: ", width)
 
         self.plotline_control.height = int(new_height)
 
@@ -269,14 +263,7 @@ class Arc(MiniWidget):
         # Update our x alignment based on our new left and right positions, and save it to our data
         x_align_pixel = self.data.get('left', 0) + ((self.widget.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)) / 2)
         self.data['x_alignment'] = ((x_align_pixel) / max(self.widget.plotline_width, 1)) * 2 - 1
-
-        old_side_location = self.data.get('side_location', 'right')
-
-        if self.data.get('x_alignment', 0) <= 0:
-            self.data['side_location'] = "right"
-        else:
-            self.data['side_location'] = "left"
-            
+  
         width = self.widget.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
         self.data['width'] = width
 
@@ -298,17 +285,6 @@ class Arc(MiniWidget):
         if self.widget.information_display.visible:
             self.widget.information_display.reload_mini_widget()
 
-        # If we changed sides, rebuild everything. Otherwise, just update the canvas for labels n stuff
-        if old_side_location != self.data['side_location']:
-            for mw in self.widget.mini_widgets:
-                if hasattr(mw, 'plotline_control'):
-                    mw.reload_plotline_control(no_update=False)
-            await self.widget.rebuild_plotline_canvas()
-            self.widget.reload_widget()
-        else:
-            await self.widget.rebuild_plotline_canvas(update=True)
-
-        #self.widget.story.active_rail.reload_rail()
 
     # Called when toggling whether this plot point is shown on the plotline in the plotline filters
     async def toggle_plotline_control(self, value: bool):

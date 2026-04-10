@@ -4,6 +4,7 @@ from models.widgets.plotline import Plotline
 import asyncio
 from models.dataclasses.events import Event
 from utils.verify_data import verify_data
+from styles.text_field import TextField
 
 
 # Display that makes Plotlines share much uniformaty in their information display like arcs do
@@ -43,7 +44,7 @@ class PlotlineInformationDisplay(MiniWidget):
         )
 
         # Holds our row controls for our divisions so we can add/remove without rebuilding
-        self.divisions_column = ft.Column(spacing=0, scroll="none")
+        self.divisions_column = ft.Column(scroll="none")
 
         if is_new:
             self.p.run_task(self.save_dict)
@@ -126,7 +127,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
         async def _new_divisions_clicked(e=None):
             ''' Called to add a new division to the bottom of the divisions list '''
-            text_control = ft.TextField(
+            text_control = TextField(
                 expand=True, value=len(self.data.get('Divisions', [])) + 1, dense=True, 
                 capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
@@ -159,22 +160,18 @@ class PlotlineInformationDisplay(MiniWidget):
             await self.save_dict()
             self.update()
 
-        timeline_icon = ft.Icon(ft.Icons.TIMELINE, self.widget.data.get('color', None))
         plotline_title_text = ft.GestureDetector(
-            ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
+            ft.Text(
+                f"\t\t{self.data['title']}\t\t", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+                tooltip=f"Rename {self.title}", color=self.widget.data.get('color', None),
+            ),
             on_double_tap=self.widget._rename_clicked,
             on_tap=self.widget._rename_clicked,
             on_secondary_tap=lambda _: self.widget.story.open_menu(self.widget._get_menu_options()),
             mouse_cursor="click", hover_interval=500
         )
 
-        pin_button = ft.IconButton(
-            ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
-            self.widget.data.get('color', None),
-            tooltip="Pin Information Display" if not self.data.get('is_pinned', False) else "Unpin Information Display",
-            on_click=self._toggle_pin,
-            mouse_cursor="click"
-        )
+        
 
         close_button = ft.IconButton(
             ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
@@ -185,9 +182,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
             
         title_control = ft.Row([
-            timeline_icon,
             plotline_title_text,
-            pin_button,
             ft.Container(expand=True),      # Spacer
             close_button
         ], spacing=0)
@@ -196,7 +191,7 @@ class PlotlineInformationDisplay(MiniWidget):
           # Start with some spacing at the top
 
 
-        summary_tf = ft.TextField(
+        summary_tf = TextField(
             expand=True, label="Summary", value=self.data.get('Summary', ""), dense=True, multiline=True,
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=self._change_our_data,
@@ -209,7 +204,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
 
         plotline_side_labels = ft.Row([
-            ft.TextField(
+            TextField(
                 expand=True, label="Left Label", value=self.data.get('Left Label', ""), dense=True, 
                 capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
@@ -219,7 +214,7 @@ class PlotlineInformationDisplay(MiniWidget):
                 #focused_border_color=self.widget.data.get('color', None),
                 #label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
             ),
-            ft.TextField(
+            TextField(
                 expand=True, label="Right Label", value=self.data.get('Right Label', ""), dense=True, 
                 capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
@@ -233,7 +228,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
 
 
-        time_label_tf = ft.TextField(
+        time_label_tf = TextField(
             expand=True, label="Time Label", value=self.data.get('Time Label', ""), dense=True,
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=self._change_our_data,
@@ -442,7 +437,7 @@ class PlotlineInformationDisplay(MiniWidget):
         # Add all our current divisions
         for idx, division in enumerate(self.data.get('Divisions', [])):
             # Create text control for this division
-            text_control = ft.TextField(
+            text_control = TextField(
                 expand=True,  value=division, dense=True, 
                 capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
@@ -467,29 +462,32 @@ class PlotlineInformationDisplay(MiniWidget):
             )
             
 
-        custom_fields_label = ft.Row([
+        notes_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True),
+            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True),
             ft.IconButton(
                 ft.Icons.NEW_LABEL_OUTLINED, self.widget.data.get('color' "primary"), tooltip="Add Custom Field",
-                on_click=lambda e: self._new_custom_field_clicked(),
+                on_click=lambda e: self._new_note_clicked(),
                 mouse_cursor="click"
             ),
         ], spacing=0)
 
-        custom_fields_column = self._build_notes_column()
+        notes_column = self._build_notes_column()
 
 
         # Build the main body content of our info display
         content = ft.Column(
-            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
+            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, spacing=0,
             controls=[
-                ft.Container(height=1), # Spacer
+                ft.Container(height=10), # Spacer
                 summary_tf,             # Summary
 
+                ft.Container(height=10), # Spacer
                 plotline_side_labels,       # Labels
+                ft.Container(height=10), # Spacer
                 time_label_tf,
 
+                ft.Container(height=10), # Spacer
                 events_label,       # Events
                 events_container,
                 
@@ -505,8 +503,8 @@ class PlotlineInformationDisplay(MiniWidget):
                 divisions_label,        # Divisions
                 ft.Container(self.divisions_column, margin=ft.Margin.symmetric(horizontal=20)),
 
-                custom_fields_label,     # Custom Fields
-                ft.Container(custom_fields_column, margin=ft.Margin.symmetric(horizontal=20)),
+                notes_label,     # Custom Fields
+                ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
             ]
         )
 
@@ -516,7 +514,7 @@ class PlotlineInformationDisplay(MiniWidget):
             title_control,
             ft.Divider(height=2, thickness=2),
             content
-        ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START)
+        ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START, spacing=0)
         
         self.content = column
 

@@ -585,8 +585,8 @@ class Story(ft.View):
         from models.widgets.world import World
         from models.widgets.item import Item
         from models.widgets.chart import Chart
-        from models.mini_widgets.arc import Arc
-        from models.mini_widgets.plot_point import PlotPoint
+        from models.mini_widgets.plotline_arc import Arc
+        from models.mini_widgets.plotline_plot_point import PlotPoint
 
         tag = widget.data.get('tag', None)
         new_widget = None

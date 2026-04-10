@@ -14,6 +14,7 @@ from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
 import asyncio
 from utils.safe_string_checker import return_safe_name
+from styles.text_field import TextField
 
 class MiniWidget(ft.Container):
 
@@ -25,18 +26,17 @@ class MiniWidget(ft.Container):
         widget: Widget,                  # The widget that contains this mini widget.
         page: ft.Page,                  # Grabs our original page for convenience and consistency
         key: str,                       # Key to identify this mini widget (by title) within its widgets data
-        side_location: str = None,      # Side of the widget the mini widget shows on
         data: dict = None               # Data passed in for this mini widget
     ):
 
         # Parent constructor
         super().__init__(
             expand=True,
-            border_radius=ft.BorderRadius.all(10),
-            border=ft.Border.all(2, ft.Colors.SECONDARY_CONTAINER),
-            padding=ft.Padding.all(8),
+            border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
+            padding=ft.Padding.only(left=11, top=8, bottom=8,),
+            shadow=ft.BoxShadow(0, 1),
             data=data,     
-            bgcolor=ft.Colors.with_opacity(.7, ft.Colors.SURFACE),
+            bgcolor=ft.Colors.SURFACE_CONTAINER,
             blur=5,
         )
 
@@ -56,8 +56,6 @@ class MiniWidget(ft.Container):
                 'tag': "mini_widget",         # Default mini widget tag, but should be overwritten by child classes
                 'visible': True,              # If the widget is visible
                 'is_shown_on_widget': True,          # If the mini widget is shown on the parent widget. Some widgets can toggle this off
-                'is_pinned': False,           # If the mini widget is pinned open and will remain open
-                'side_location': side_location if side_location is not None else "right",     # Side of the widget the mini widget shows on
                 'notes': dict,        # Dictionary for any custom fields the mini widget wants to store
             },
         )
@@ -157,10 +155,10 @@ class MiniWidget(ft.Container):
         except Exception as e:
             print(f"Error changing data {key}:{value} in widget {self.title}: {e}")
 
-    def change_custom_field(self, **kwargs):
+    def change_note(self, **kwargs):
         ''' Changes a key/value pair in our custom fields dictionary and saves the json file '''
         # Called by:
-        # widget.change_custom_field(**{'key': value, 'key2': value2})
+        # widget.change_note(**{'key': value, 'key2': value2})
 
         try:
             for key, value in kwargs.items():
@@ -171,9 +169,6 @@ class MiniWidget(ft.Container):
         # Handle errors
         except Exception as e:
             print(f"Error changing custom field {key}:{value} in widget {self.title}: {e}")
-
-    
-
 
     def rename(self, new_name: str):
         ''' Renames our mini widget, updating all references and data accordingly '''
@@ -264,57 +259,78 @@ class MiniWidget(ft.Container):
     async def show_mini_widget(self, e=None):
         ''' Shows our mini widget '''
 
-        #print("Show called for", self.title)
+        print("Show called for", self.title)
 
-        #if self.visible:
-            #return
+        if self.data.get('visible', False):
+            return
         
-        self.widget.story.blocker.visible = True
-        self.widget.story.blocker.update()
-        await asyncio.sleep(0)
+        # Make sure other mini widgets are hidden if they were visible
+        for mw in self.widget.mini_widgets:
+            if mw != self and mw.data.get('visible', False):
+                mw.hide_mini_widget(update=False)
+                await mw.hide_mini_widget()
+        
+        #self.widget.story.blocker.visible = True
+        #self.widget.story.blocker.update()
+        #await asyncio.sleep(0)
 
         self.data['visible'] = True
         self.visible = True
-        await self.save_dict()
         self.reload_mini_widget()
+        self.widget.mini_widgets_wrapper.visible = True
+        self.widget.mini_widgets_wrapper.update()
+        
+        await self.save_dict()
+        
 
-        # If we show this mini widget, hide all other mini widgets that are not pinned
-        for mw in self.widget.mini_widgets:
-            if mw != self and mw.data.get('is_pinned', False) == False:
-                #print("Hiding mini widget", mw.title, "because it is not pinned")
-                await mw.hide_mini_widget() 
-            #else:
-                #print("Not hiding mini widget", mw.title, "because it is pinned or focused mini widget")
-
-        self.widget.story.blocker.visible = False
-        self.widget.story.blocker.update()
+        #self.widget.story.blocker.visible = False
+        #self.widget.story.blocker.update()
 
 
-    async def hide_mini_widget(self, e=None):
+    async def hide_mini_widget(self, e=None, update: bool=True):
         ''' Hides our mini widget '''
 
-        #print("Hide called for", self.title)
+        print("Hide called for", self.title)
         
         # Return early if we are already hidden or pin
-        if not self.visible:
+        if not self.data.get('visible', True):
             return
         
-        self.widget.story.blocker.visible = True
-        self.widget.story.blocker.update()
-        await asyncio.sleep(0)
+        #self.widget.story.blocker.visible = True
+        #self.widget.story.blocker.update()
+        #await asyncio.sleep(0)
         
         # Update our visibility
         self.data['visible'] = False
         self.visible = False
-        self.data['is_pinned'] = False # Make sure to unpin us if we are pinned
-
+        
         await self.save_dict()
+
+        if not update:
+            return
+    
         self.update()
-        self.widget.story.blocker.visible = False
-        self.widget.story.blocker.update()
+
+        # Check if there is at least one mini widget still visible
+        for mw in self.widget.mini_widgets:
+            if mw.visible:
+                return
+            
+        self.widget.mini_widgets_wrapper.visible = False
+        self.widget.mini_widgets_wrapper.update()
+        
+        #self.visible = False
+
+        #if update:
+            #self.widget.mini_widget_container.visible = False
+            #self.widget.mini_widget_container.update()
+        #
+        #self.update()
+        #self.widget.story.blocker.visible = False
+        #self.widget.story.blocker.update()
 
 
-    def _new_custom_field_clicked(self, e=None):
+    def _new_note_clicked(self, e=None):
         ''' Called when the new field button is clicked '''
 
         if 'notes' not in self.data:
@@ -356,7 +372,7 @@ class MiniWidget(ft.Container):
         self.p.show_dialog(dlg)
 
 
-    def _delete_custom_field_clicked(self, field_name: str):
+    def _delete_note_clicked(self, field_name: str):
 
         if field_name in self.data.get('notes', {}):
             del self.data['notes'][field_name]
@@ -371,11 +387,11 @@ class MiniWidget(ft.Container):
                 ft.Row([
                     ft.TextField(
                         value=field_value, expand=True, label=field_name, capitalization=ft.TextCapitalization.SENTENCES,   
-                        on_blur=lambda e, fn=field_name: self.change_custom_field(**{fn: e.control.value}), dense=True
+                        on_blur=lambda e, fn=field_name: self.change_note(**{fn: e.control.value}), dense=True
                     ),
                     ft.IconButton(
                         ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Note Segment",
-                        on_click=lambda _, fn=field_name: self._delete_custom_field_clicked(fn),
+                        on_click=lambda _, fn=field_name: self._delete_note_clicked(fn),
                         mouse_cursor="click"
                     ),
                 
@@ -504,11 +520,11 @@ class MiniWidget(ft.Container):
                 text_field.focus()                                  # Auto focus the textfield
                 
         # Our text field that our functions use for renaming and referencing
-        text_field = ft.TextField(
+        text_field = TextField(
             value=self.title, 
             dense=True, capitalization=ft.TextCapitalization.WORDS,
-            focus_color=self.data.get('color', ft.Colors.PRIMARY),
-            border_color=self.data.get('color', ft.Colors.PRIMARY),
+            #focus_color=self.data.get('color', ft.Colors.PRIMARY),
+            #border_color=self.data.get('color', ft.Colors.PRIMARY),
             autofocus=True,
             data=self.data.get('tag', ''),
             on_submit=_submit_name,

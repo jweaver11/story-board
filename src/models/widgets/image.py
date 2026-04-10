@@ -1,1 +1,0 @@
-# Show images as their own widget

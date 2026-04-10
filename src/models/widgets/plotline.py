@@ -9,7 +9,7 @@ import flet as ft
 from styles.menu_option_style import MenuOptionStyle
 from models.views.story import Story
 from models.widget import Widget
-from models.mini_widgets.arc import Arc
+from models.mini_widgets.plotline_arc import Arc
 from utils.verify_data import verify_data
 import flet.canvas as cv
 from models.app import app
@@ -178,7 +178,7 @@ class Plotline(Widget):
     # Called in the constructor
     def _load_plot_points(self):
         ''' Loads plotpoints from data into self.plotpoints  '''
-        from models.mini_widgets.plot_point import PlotPoint
+        from models.mini_widgets.plotline_plot_point import PlotPoint
 
         # Looks up our plotpoints in our data, then passes in that data to create a live object
         for key, data in self.data['plot_points'].items():
@@ -192,7 +192,7 @@ class Plotline(Widget):
             self.mini_widgets.append(self.plot_points[key])  # Plot points need to be in the widgets mini widgets list to show up in the UI
 
     def _load_markers(self):
-        from models.mini_widgets.marker import Marker
+        from models.mini_widgets.plotline_marker import Marker
         ''' Loads markers from data into self.markers  '''
         # Looks up our markers in our data, then passes in that data to create a live object
         for key, data in self.data['markers'].items():
@@ -217,7 +217,7 @@ class Plotline(Widget):
     # Called when creating a new arc
     async def create_arc(self, title: str):
         ''' Creates a new arc inside of our plotline object, and updates the data to match '''
-        from models.mini_widgets.arc import Arc
+        from models.mini_widgets.plotline_arc import Arc
 
         new_arc = Arc(
             title=title, 
@@ -243,13 +243,16 @@ class Plotline(Widget):
                 mw.reload_plotline_control(no_update=True)
         await self.rebuild_plotline_canvas(update=True)
         self.reload_widget()
+        for mw in self.mini_widgets:
+            if mw.visible:
+                await mw.hide_mini_widget()
         await new_arc.show_mini_widget()        # Hides non-pinned mini widgets
        
         
     # Called when creating a new plotpoint
     async def create_plot_point(self, title: str):
         ''' Creates a new plotpoint inside of our plotline object, and updates the data to match '''
-        from models.mini_widgets.plot_point import PlotPoint
+        from models.mini_widgets.plotline_plot_point import PlotPoint
 
         new_plot_point = PlotPoint(
             title=title, 
@@ -277,11 +280,15 @@ class Plotline(Widget):
                 
         await self.rebuild_plotline_canvas(update=True)
         self.reload_widget()
-        await new_plot_point.show_mini_widget()     # Hides non-pinned mini widgets
+        for mw in self.mini_widgets:
+            if mw.visible:
+                await mw.hide_mini_widget()
+
+        await new_plot_point.show_mini_widget() 
 
     async def create_marker(self, title: str):
         ''' Creates a new marker inside of our plotline object, and updates the data to match '''
-        from models.mini_widgets.marker import Marker
+        from models.mini_widgets.plotline_marker import Marker
 
         new_marker = Marker(
             title=title, 
@@ -306,7 +313,10 @@ class Plotline(Widget):
                 mw.reload_plotline_control(no_update=True)
         await self.rebuild_plotline_canvas(update=True)
         self.reload_widget()
-        await new_marker.show_mini_widget()     # Hides non-pinned mini widgets
+        for mw in self.mini_widgets:
+            if mw.visible:
+                await mw.hide_mini_widget()
+        await new_marker.show_mini_widget()     
 
 
     def delete_plot_point(self, plot_point):
@@ -362,7 +372,7 @@ class Plotline(Widget):
                 content=ft.SubmenuButton(
                     ft.Container(
                         ft.Row([
-                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), 
+                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', "primary")), 
                             ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
@@ -391,7 +401,7 @@ class Plotline(Widget):
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                     style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                 ),
-                no_padding=True, no_effects=True
+                no_padding=True, no_effects=True 
             ),
             
             MenuOptionStyle(
@@ -597,6 +607,7 @@ class Plotline(Widget):
 
         # If first launch, rebuild,
         if self.initial_resize:
+            print("rebuild called")
             await self.rebuild_plotline_canvas()
             self.needs_redraw = False
             self.initial_resize = False
@@ -904,7 +915,7 @@ class Plotline(Widget):
         
         # Create a stack so we can sit our plotpoints and arcs on our plotline
         plotline_stack = ft.Stack(
-            expand=True, 
+            expand=3, 
             alignment=ft.Alignment(0, 0),
             clip_behavior=ft.ClipBehavior.NONE,
             controls=[
@@ -936,15 +947,6 @@ class Plotline(Widget):
                 break
             if self.data.get('show_all_markers', False) or marker.data.get('is_shown_on_widget', False):
                 plotline_stack.controls.append(marker.plotline_control)
-
-        # Add all our mini widgets to the plotline stack as well
-        plotline_stack.controls.append(
-            ft.Row([
-                ft.Column([mw for mw in self.mini_widgets if mw.data.get('side_location', "") == "left"], expand=1),
-                ft.Container(expand=2, ignore_interactions=True),
-                ft.Column([mw for mw in self.mini_widgets if mw.data.get('side_location', "") == "right"], expand=1)
-            ])
-        )
 
         # Set our content
         self.body_container.content = plotline_stack

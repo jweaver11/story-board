@@ -27,19 +27,12 @@ class PlotPoint(MiniWidget):
         if data is None:
             is_new = True
         
-        if left is not None:
-            side_location = 'right' if left <= widget.plotline_width // 2 else 'left'
-        else:
-            side_location = data.get('side_location', 'right') if data is not None else 'right'
-
-
         # Parent constructor
         super().__init__(
             title=title,        
             widget=widget,        
             page=page,          
             key=key,  
-            side_location=side_location,
             data=data,    
         ) 
 
@@ -159,14 +152,7 @@ class PlotPoint(MiniWidget):
         
         x_alignment = (self.data.get('left', 0) / (self.widget.plotline_width - 10)) * 2.0 - 1.0
 
-        old_side_location = self.data.get('side_location', 'right')
-
         self.data['x_alignment'] = x_alignment
-
-        if self.data.get('x_alignment', 0) <= 0:
-            self.data['side_location'] = "right"
-        else:
-            self.data['side_location'] = "left"
 
         await self.save_dict()
 
@@ -177,16 +163,6 @@ class PlotPoint(MiniWidget):
 
         if self.widget.information_display.visible:
             self.widget.information_display.reload_mini_widget()
-
-        # If we changed sides, rebuild everything. Otherwise, just update the canvas for labels n stuff
-        if old_side_location != self.data['side_location']:
-            for mw in self.widget.mini_widgets:
-                if hasattr(mw, 'plotline_control'):
-                    mw.reload_plotline_control(no_update=True)
-            await self.widget.rebuild_plotline_canvas()
-            self.widget.reload_widget()
-        else:
-            await self.widget.rebuild_plotline_canvas(update=True)
 
         #self.widget.story.active_rail.reload_rail()
 
@@ -242,10 +218,10 @@ class PlotPoint(MiniWidget):
         return icon_controls
     
     # Makes sure we stop highlighting
-    async def hide_mini_widget(self, e=None):
+    async def hide_mini_widget(self, e=None, update=True):
         self.plotline_control.shadow = None
         self.plotline_control.update()
-        return await super().hide_mini_widget()
+        return await super().hide_mini_widget(update=update)
 
 
     # Called from reload_mini_widget

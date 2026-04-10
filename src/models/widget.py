@@ -86,13 +86,12 @@ class Widget(ft.Container):
         self.mini_widgets_displayed_overtop: bool = True       # Widgets that set this false need to set their own mini widgets in reload_widget
 
 
-        # UI ELEMENTS - Body                     
-        self.header: ft.Control = None              # Optional header control to display above our body and mini widgets
-        self.side_bar: ft.Control = None            # Optional side bar control to display to the side of our body  
-    
+        # UI ELEMENTS - Body                  
+        self.mini_widgets_wrapper = ft.Column(expand=1, spacing=0)   # Container that holds our active mini widget. We can add/remove it without having to rebuild
+
         # Container that holds our main body content. Gets built in reload_widget of child classes
         self.body_container = ft.Container(
-            expand=True, border_radius=ft.BorderRadius.all(10), 
+            expand=3, border_radius=ft.BorderRadius.all(10), 
             #padding=ft.Padding.all(16), 
             on_size_change=self._get_size, size_change_interval=500, clip_behavior=ft.ClipBehavior.NONE
         ) 
@@ -180,7 +179,7 @@ class Widget(ft.Container):
             content=ft.Column([
                 ft.TabBar(tabs=[self.tab], indicator_color=self.data.get('color', ft.Colors.ON_SURFACE_VARIANT)),     # Holds our tab at the top of the widget
                 ft.TabBarView([self.master_stack], expand=True, clip_behavior=ft.ClipBehavior.NONE)# Holds our body
-            ], expand=True),
+            ], expand=True, spacing=0),
         )   
         self.content = self.tabs
 
@@ -357,7 +356,7 @@ class Widget(ft.Container):
         self.story.active_rail.content.reload_rail()   
         self.story.active_rail.update()
 
-    def create_comment_clicked(self, e=None, side_location: str="left"):
+    def create_comment_clicked(self, e=None):
         ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
 
         # Checks that the name in the textfield does not match any of the existing mini widgets of that type, and updates visually to reflect
@@ -389,7 +388,7 @@ class Widget(ft.Container):
                 return
             
             title = new_item_tf.value.strip()
-            await self.create_comment(title, side_location)
+            await self.create_comment(title)
             
             self.p.pop_dialog()   # Close the dialog
             await self.story.close_menu()       
@@ -419,7 +418,7 @@ class Widget(ft.Container):
         self.p.show_dialog(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
 
     # Called when a new mini note is created inside a widget
-    async def create_comment(self, title: str, side_location: str="left"):
+    async def create_comment(self, title: str):
         ''' Creates a mini note inside an image or document '''
         from models.mini_widgets.comment import Comment
 
@@ -428,7 +427,6 @@ class Widget(ft.Container):
             widget=self, 
             page=self.p, 
             key="comments",
-            data={'side_location': side_location}
         )
         self.comments[title] = new_comment
         self.mini_widgets.append(
@@ -791,11 +789,16 @@ class Widget(ft.Container):
         # Clear out our master stack controls so we start fresh to re-render
         self.master_stack.controls.clear()
 
-        # Add our sizing canvas and body container to the stack first
-        self.master_stack.controls = [self.body_container]
+        self.mini_widgets_wrapper.visible = False
+        self.mini_widgets_wrapper.controls = [mw for mw in self.mini_widgets]
+        for mw in self.mini_widgets_wrapper.controls:
+            if mw.visible:
+                self.mini_widgets_wrapper.visible = True
+                break
 
-        # If we have a header, add it to the stack. Headers are be immune to scrolling
-        self.master_stack.controls.append(self.header) if self.header is not None else None
+
+        # Add our sizing canvas and body container to the stack first
+        self.master_stack.controls = [ft.Row([self.body_container, self.mini_widgets_wrapper], spacing=0, expand=True)]
 
         try:
 
@@ -803,8 +806,8 @@ class Widget(ft.Container):
             if self.data.get('pin_location', '') == 'main':
 
                 self.master_stack.update()       
-                self.tab.update()
-                self.update()       # Crucial for sub controls to update through the tree to the page, even though we are technically not on it in main
+                #self.tab.update()
+                #self.update()       # Crucial for sub controls to update through the tree to the page, even though we are technically not on it in main
 
             # If not in the main pin, we are directly on the page, so just update ourselves
             else:
