@@ -265,7 +265,9 @@ class Chart(Widget):
                         on_blur=_update_dataset_title
                     ),
                     dense=True, tile_padding=ft.Padding.only(right=20), controls_padding=ft.Padding.only(right=30, left=30),
-                    shape=ft.RoundedRectangleBorder(), expanded=expanded,
+                    #shape=ft.RoundedRectangleBorder(), 
+                    expanded=expanded,
+                 
                     controls=[
                         ft.Row([
                             ft.Text(str(min_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
@@ -323,7 +325,7 @@ class Chart(Widget):
             )
 
         # Load our keys above the chart
-        keys = ft.Row([], alignment=ft.MainAxisAlignment.CENTER,  wrap=True)
+        keys = ft.Row([], alignment=ft.MainAxisAlignment.CENTER, wrap=True)
         for idx, ds in enumerate(self.data.get('radar_data', {}).get('data_sets', [])):
             
             if idx == 0:        # Skip first one
@@ -332,14 +334,18 @@ class Chart(Widget):
             if ds.get('visible', True) == False:        #  Skip non-visible ones
                 continue
 
-            key = ft.Row([
-                ft.Container(
-                    height=30, width=80, margin=ft.Margin.only(left=10),
-                    border=ft.Border.all(2, ds.get('color', ft.Colors.PRIMARY)), 
-                    bgcolor=ft.Colors.with_opacity(0.2, ds.get('color', ft.Colors.PRIMARY))
-                ),
-                ft.Text(ds.get('title', "Data Set"), style=ft.TextStyle(weight=ft.FontWeight.BOLD))
-            ], tight=True, spacing=4)
+            key = ft.Container(
+                ft.Row([
+                    ft.Container(
+                        height=30, width=80, 
+                        border=ft.Border.all(2, ds.get('color', ft.Colors.PRIMARY)), 
+                        bgcolor=ft.Colors.with_opacity(0.2, ds.get('color', ft.Colors.PRIMARY))
+                    ),
+                    ft.Text(ds.get('title', "Data Set"), style=ft.TextStyle(weight=ft.FontWeight.BOLD))
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_CONTAINER, border_radius=ft.BorderRadius.all(4), padding=ft.Padding.all(6),
+                margin=ft.Margin.only(left=10),
+            )
             keys.controls.append(key)
         
         if not self.data.get('radar_data', {}).get('show_info', True):
@@ -683,7 +689,7 @@ class Chart(Widget):
             [
                 ft.Column([
                     ft.Container(height=1),
-                    keys,
+                    ft.Row([ft.Container(keys, expand=True)]),
                     chart,
                 ], expand=3),
                 chart_info

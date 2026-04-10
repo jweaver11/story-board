@@ -33,11 +33,11 @@ class MiniWidget(ft.Container):
         super().__init__(
             expand=True,
             border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
-            padding=ft.Padding.only(left=11, top=8, bottom=8,),
+            padding=ft.Padding.only(left=11, top=8, bottom=8),
             shadow=ft.BoxShadow(0, 1),
             data=data,     
             bgcolor=ft.Colors.SURFACE_CONTAINER,
-            blur=5,
+            #blur=5,
         )
 
         
@@ -56,7 +56,7 @@ class MiniWidget(ft.Container):
                 'tag': "mini_widget",         # Default mini widget tag, but should be overwritten by child classes
                 'visible': True,              # If the widget is visible
                 'is_shown_on_widget': True,          # If the mini widget is shown on the parent widget. Some widgets can toggle this off
-                'notes': dict,        # Dictionary for any custom fields the mini widget wants to store
+                'notes': [],        # Dictionary for any custom fields the mini widget wants to store
             },
         )
 
@@ -155,20 +155,16 @@ class MiniWidget(ft.Container):
         except Exception as e:
             print(f"Error changing data {key}:{value} in widget {self.title}: {e}")
 
-    def change_note(self, **kwargs):
+    async def change_note(self, e):
         ''' Changes a key/value pair in our custom fields dictionary and saves the json file '''
         # Called by:
         # widget.change_note(**{'key': value, 'key2': value2})
+        note_idx = e.control.data
+        note_value = e.control.value
 
-        try:
-            for key, value in kwargs.items():
-                self.data['notes'].update({key: value})
+        self.data['notes'][note_idx]['value'] = note_value
+        await self.save_dict()
 
-            self.p.run_task(self.save_dict)
-
-        # Handle errors
-        except Exception as e:
-            print(f"Error changing custom field {key}:{value} in widget {self.title}: {e}")
 
     def rename(self, new_name: str):
         ''' Renames our mini widget, updating all references and data accordingly '''
@@ -259,7 +255,8 @@ class MiniWidget(ft.Container):
     async def show_mini_widget(self, e=None):
         ''' Shows our mini widget '''
 
-        print("Show called for", self.title)
+        #print("Show called for", self.title)
+        await self.widget.story.close_menu()
 
         if self.data.get('visible', False):
             return
@@ -290,7 +287,8 @@ class MiniWidget(ft.Container):
     async def hide_mini_widget(self, e=None, update: bool=True):
         ''' Hides our mini widget '''
 
-        print("Hide called for", self.title)
+        #print("Hide called for", self.title)
+        await self.widget.story.close_menu()
         
         # Return early if we are already hidden or pin
         if not self.data.get('visible', True):
@@ -330,20 +328,19 @@ class MiniWidget(ft.Container):
         #self.widget.story.blocker.update()
 
 
-    def _new_note_clicked(self, e=None):
+    async def _new_note_clicked(self, e=None):
         ''' Called when the new field button is clicked '''
 
         if 'notes' not in self.data:
             self.data['notes'] = {} 
 
-        async def create_field(e): #show in edit view
+        async def create_note(e=None): #show in edit view
             '''Called when user confirms the field name'''
 
-            field_name = return_safe_name(field_name_input.value)
+            nonlocal note_name_input
        
-            # Add the field to data if it doesn't exist
-            if field_name not in self.data['notes']:
-                self.data['notes'][field_name] = ""
+            note_title = note_name_input.value.strip()
+            self.data['notes'].append({'name': note_title, 'value': ''})
 
             # Save and reload
             await self.save_dict()
@@ -352,18 +349,18 @@ class MiniWidget(ft.Container):
             
 
         # Create a dialog to ask for the field name
-        field_name_input = ft.TextField(
-            label="Field Name", hint_text=f"New Note Segment Name",
+        note_name_input = ft.TextField(
+            hint_text=f"Note Name",
             autofocus=True, capitalization=ft.TextCapitalization.SENTENCES,
-            on_submit=create_field,     # Closes the overlay when submitting
+            on_submit=create_note,     # Closes the overlay when submitting
         )
         
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Create New Note Segment"),
-            content=field_name_input,
+            title=ft.Text(f"Create Note"),
+            content=note_name_input,
             actions=[
                 ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                ft.TextButton("Create", on_click=create_field, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),
+                ft.TextButton("Create", on_click=create_note, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),
             ],
         )
         
@@ -372,28 +369,31 @@ class MiniWidget(ft.Container):
         self.p.show_dialog(dlg)
 
 
-    def _delete_note_clicked(self, field_name: str):
+    async def _delete_note_clicked(self, e):
 
-        if field_name in self.data.get('notes', {}):
-            del self.data['notes'][field_name]
-            self.p.run_task(self.save_dict)
-            self.reload_mini_widget()
+        idx = e.control.data
+        self.data.get('notes', []).pop(idx)
+        await self.save_dict()
+        self.reload_mini_widget()
 
     def _build_notes_column(self) -> ft.Column:
         ''' Builds our column of custom fields for this mini widget '''
         controls = []
-        for field_name, field_value in self.data.get('notes', {}).items():
+        for idx, note_dict in enumerate(self.data.get('notes', [])):
+            note_value = note_dict.get('value', '')
+            note_title = note_dict.get('name', f"Field {idx+1}")
             controls.append(
                 ft.Row([
-                    ft.TextField(
-                        value=field_value, expand=True, label=field_name, capitalization=ft.TextCapitalization.SENTENCES,   
-                        on_blur=lambda e, fn=field_name: self.change_note(**{fn: e.control.value}), dense=True
+                    TextField(
+                        value=note_value, expand=True, label=note_title, capitalization=ft.TextCapitalization.SENTENCES,   
+                        on_blur=self.change_note, dense=True, data=idx,
+                        suffix_icon=ft.IconButton(
+                            ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Note",
+                            on_click=self._delete_note_clicked,
+                            mouse_cursor="click", data=idx
+                        ),
                     ),
-                    ft.IconButton(
-                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Note Segment",
-                        on_click=lambda _, fn=field_name: self._delete_note_clicked(fn),
-                        mouse_cursor="click"
-                    ),
+                    
                 
                 ],)
             )
@@ -560,15 +560,11 @@ class MiniWidget(ft.Container):
 
             
             self.reload_mini_widget()
-            if hasattr(self.widget, 'rebuild_plotline_canvas'):
-                await self.widget.rebuild_plotline_canvas()
-            self.widget.reload_widget()
+            if hasattr(self, 'reload_plotline_control'):
+                self.reload_plotline_control()
             
-
-            # Change our icon to match, apply the update
-            #self.widget.story.active_rail.reload_rail()
-
-            #await asyncio.sleep(0.3)
+            self.widget.reload_widget()
+ 
             await self.widget.story.close_menu()
             if self.widget.story.blocker.visible:
                 self.widget.story.blocker.visible = False

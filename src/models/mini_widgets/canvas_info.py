@@ -101,36 +101,6 @@ class CanvasInformationDisplay(MiniWidget):
 
         except Exception as e:
             print(f"Error saving mini widget data to {self.title}: {e}")
-
-
-    async def hide_mini_widget(self, e=None):
-        if not self.visible:
-            return
-        self.widget.story.blocker.visible = True
-        self.widget.story.blocker.update()
-        await asyncio.sleep(0.1)
-        self.data['visible'] = False
-        await self.save_dict()
-        self.visible = False
-        self.update()
-        self.widget.story.blocker.visible = False
-        self.widget.story.blocker.update()
-        await self.widget.story.close_menu()   
-
-    async def show_mini_widget(self, e=None):
-        await self.widget.story.close_menu()
-        if self.visible:
-            return
-        self.widget.story.blocker.visible = True
-        self.widget.story.blocker.update()
-        await asyncio.sleep(0.1)
-        self.data['visible'] = True
-        await self.save_dict()
-        self.visible = True
-        self.update()
-        self.widget.story.blocker.visible = False
-        self.widget.story.blocker.update()
-
         
 
     async def _set_background(self, e):

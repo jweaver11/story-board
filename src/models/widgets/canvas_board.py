@@ -8,7 +8,7 @@ from models.views.story import Story
 from utils.verify_data import verify_data
 from models.app import app
 import flet.canvas as cv
-from models.dataclasses.state import State
+from models.dataclasses.canvas_state import State
 import math
 from styles.snack_bar import SnackBar
 import asyncio

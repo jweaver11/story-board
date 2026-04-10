@@ -6,6 +6,7 @@ import math
 from styles.text_styles import text_style
 import flet.canvas as cv
 from styles.icons import icons
+from styles.text_field import TextField
 
 # Plotpoint mini widget object that appear on plotlines and arcs
 class PlotPoint(MiniWidget):
@@ -42,16 +43,14 @@ class PlotPoint(MiniWidget):
             {   
                 'tag': "plot_point",            # Tag to identify what type of object this is
                 'x_alignment': x_alignment if x_alignment is not None else float,           # Float between -1 and 1 on x axis of plotline. 0 is center
-                'icon': "circle",
                 'left': left, 
-                'color': "secondary",           # Color of the plot point on the plotline
+                'color': "primary",           # Color of the plot point on the plotline
 
                 # Information for our information display
                 'Description': str,
                 'When': str,
                 'Where': str,
                 'Relevant Characters': list,
-                'Related Objects': list,
             },
         )
 
@@ -93,8 +92,8 @@ class PlotPoint(MiniWidget):
         # Clamp sides and use timeline padding
         if new_left < 0:        # Padding on left because canvas draws in middle (5px)
             new_left = 0
-        elif new_left > self.widget.plotline_width - 16:  # No padding needed on right
-            new_left = self.widget.plotline_width - 16
+        elif new_left > self.widget.plotline_width - 25:  # No padding needed on right
+            new_left = self.widget.plotline_width - 25
         
         # Set our new left position within our stack
         self.plotline_control.left = new_left
@@ -130,12 +129,6 @@ class PlotPoint(MiniWidget):
         self.plotline_control.update()
         self.is_dragging = True
 
-        # Hide all other info displays while dragging
-        #for mw in self.widget.mini_widgets:
-            #mw.visible = False
-
-        #self.update()
-
     # Quick fixer for the mouse cursor and highlight is we just clicked the plotpoint without dragging
     async def _tap_up(self, e=None):
         self.plotline_control.content.mouse_cursor = ft.MouseCursor.CLICK
@@ -156,14 +149,10 @@ class PlotPoint(MiniWidget):
 
         await self.save_dict()
 
-        # Re-show all the info displays we hid while dragging
-        #for mw in self.widget.mini_widgets:
-            #if mw.data.get('visible', True):
-                #mw.visible = True
-
         if self.widget.information_display.visible:
             self.widget.information_display.reload_mini_widget()
 
+        await self.widget.rebuild_plotline_canvas(True)
         #self.widget.story.active_rail.reload_rail()
 
     # Called when hovering over our plot point to show the slider
@@ -208,7 +197,7 @@ class PlotPoint(MiniWidget):
         for icon in icons:
             icon_controls.append(
                 ft.MenuItemButton(
-                    content=ft.Icon(icon, self.data.get('color', 'secondary')),
+                    content=ft.Icon(icon, self.data.get('color', 'note')),
                     on_click=_change_icon,
                     data=icon,
                     style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)
@@ -259,31 +248,16 @@ class PlotPoint(MiniWidget):
     def reload_mini_widget(self):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
-        #self.reload_plotline_control()
-
-        select_icon_button = ft.SubmenuButton(      # Button to change the plot points icon on the plotline
-            content=ft.Icon(ft.Icons.CIRCLE, self.data.get('color', None)),
-            tooltip="Plot Point Icon", 
-            controls=self._get_icon_options()
-        )
-
         title_control = ft.Row([
-            #ft.MenuBar([select_icon_button]),
             ft.GestureDetector(
-                ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
+                ft.Text(f"\t\t{self.data['title']}\t\t", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+                tooltip=f"Rename {self.title}", color=self.data.get('color', None), expand=True),
                 on_double_tap=self._rename_clicked,
                 on_tap=self._rename_clicked,
-                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", hover_interval=500
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
+                mouse_cursor="click", hover_interval=500, expand=True
             ),
-            ft.IconButton(
-                ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
-                self.data.get('color', None),
-                tooltip="Pin Plot Point" if not self.data.get('is_pinned', False) else "Unpin Plot Point",
-                on_click=self._pin if not self.data.get('is_pinned', False) else self._unpin,
-                mouse_cursor="click"
-            ),
-            ft.Container(expand=True),
+            
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.OUTLINE,
                 tooltip=f"Close {self.title}",
@@ -293,21 +267,21 @@ class PlotPoint(MiniWidget):
         ], spacing=0)
 
 
-        description_tf = ft.TextField(
+        description_tf = TextField(
             value=self.data.get('Description', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'Description': e.control.value}), 
             label="Description", capitalization=ft.TextCapitalization.SENTENCES,
             tooltip="Brief description of this plot point", dense=True
         )
 
-        when_tf = ft.TextField(
+        when_tf = TextField(
             value=self.data.get('When', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'When': e.control.value}), 
             label="When", capitalization=ft.TextCapitalization.SENTENCES,
             tooltip="Time or date related to this plot point", dense=True
         )
 
-        where_tf = ft.TextField(
+        where_tf = TextField(
             value=self.data.get('Where'), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'Where': e.control.value}), 
             label="Where", capitalization=ft.TextCapitalization.SENTENCES,
@@ -422,113 +396,20 @@ class PlotPoint(MiniWidget):
             spacing=0,
         )
 
-        def _toggle_related_objects_selector(e=None):
-            # For simplicity, we'll just use a text field to add related objects by key. In the future, we could make a dropdown selector similar to Relevant characters if needed
-            related_objects_selector.visible = not related_objects_selector.visible
-
-            if related_objects_selector.visible:
-                add_related_objects_button.icon = ft.Icons.EDIT_OFF_OUTLINED
-            else:
-                add_related_objects_button.icon = ft.Icons.EDIT_OUTLINED
-
-            self.update()
-
-        add_related_objects_button = ft.TextButton(
-            "Related Objects",
-            ft.Icons.EDIT_OUTLINED,
-            style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor="click", color=ft.Colors.ON_SURFACE),
-            on_click=_toggle_related_objects_selector,
-        )
-
-        def _set_related_objects_controls(e=None) -> list[ft.Control]:
-
-            controls = [
-                add_related_objects_button
-            ]
-
-            for idx, obj_key in enumerate(self.data.get('Related Objects', [])):
-                char = self.widget.story.objects.get(obj_key, None)
-                if char is not None:
-                    name = char.data.get('title', obj_key)
-
-                    # Add the control now
-                    controls.append(ft.Text(name, color=char.data.get('color', None), weight=ft.FontWeight.BOLD))
-                    controls.append(
-                        ft.IconButton(
-                            ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
-                            data=obj_key,
-                            mouse_cursor="click"
-                            #on_click=_toggle_related_objects
-                        )
-                    )
-                    if idx < len(self.data.get('Related Objects', [])) - 1: # Skip adding container to last character
-                        controls.append(ft.Container(width=10))
-                           
-                    
-
-            return controls
         
-        def _toggle_related_objects(e):
-            should_add_key = True   # Flag to check if we need to remove or not
-            obj_key = e.control.data   # Key of the character
 
-            for key in self.data.get('Related Objects', []):
-                if obj_key == key:     # If the character is in there, remove them and break
-                    self.data['Related Objects'].remove(key)
-                    should_add_key = False      # Make sure we don't re-add them after
-                    break
-
-            # If we went through the list and didn't find them, add them to the list
-            if should_add_key:
-                self.data.get('Related Objects', []).append(obj_key)
-
-            self.p.run_task(self.save_dict)
-
-            related_objects_row.controls = _set_related_objects_controls()
-            related_objects_selector.controls = _get_related_objects()
-            self.update()
-
-        def _get_related_objects() -> list[str]:
-            char_list = []
-            
-            for widget in self.widget.story.widgets:
-                if widget.data.get('tag', None) == 'object':
-                    
-                    char_list.append(
-                        ft.Checkbox(
-                            widget.title,
-                            #True if obj_key in self.data.get('Relevant Characters', []) else False,
-                            #data=obj_key,
-                            #label_style=ft.TextStyle(color=obj_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
-                            on_change=_toggle_related_objects
-                        )
-                    )
-
-            if len(char_list) == 0:
-                char_list.append(ft.Text("No objects in story yet", color=ft.Colors.OUTLINE, italic=True))
-            return char_list
-
-        related_objects_row = ft.Column(
-            _set_related_objects_controls(),
-            spacing=0,
-        )
-        
-        related_objects_selector = ft.Column(
-            _get_related_objects(),
-            visible=False,
-        )
-
-        custom_fields_label = ft.Row([
+        notes_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Custom Fields", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD),
+            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None),),
             ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Custom Field",
-                on_click=lambda e: self._new_custom_field_clicked(),
+                ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"),
+                tooltip="Add Note",
+                on_click=self._new_note_clicked,
                 mouse_cursor="click"
             )
         ], spacing=0)
 
-        custom_fields_column = self._build_notes_column()
+        notes_column = self._build_notes_column()
 
         content = ft.Column(
             expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
@@ -539,12 +420,11 @@ class PlotPoint(MiniWidget):
                 
                 Relevant_characters_row,        # Holds label, buttons for each Relevant character, and add/remove button
                 Relevant_characters_selector,
+                ft.Divider(2, 2),
                 
-                related_objects_row,
-                related_objects_selector,
                 
-                custom_fields_label,
-                ft.Container(custom_fields_column, margin=ft.Margin.symmetric(horizontal=20)),
+                notes_label,
+                ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
             ]
         )
 
@@ -552,7 +432,7 @@ class PlotPoint(MiniWidget):
             title_control,
             ft.Divider(height=2, thickness=2),
             content
-        ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START)
+        ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START, spacing=0)
         
         self.content = column
         

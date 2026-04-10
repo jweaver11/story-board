@@ -11,6 +11,7 @@ from models.widget import Widget
 from utils.verify_data import verify_data
 from styles.text_styles import text_style
 import flet.canvas as cv
+from styles.text_field import TextField
 
 # Plotpoint mini widget object that appear on plotlines and arcs
 class Marker(MiniWidget):
@@ -46,7 +47,7 @@ class Marker(MiniWidget):
                 'title': str,
                 'x_alignment': x_alignment,           # Float from -1 to 1 representing where we are on the plotline. Used for resizing calcs
                 'left': left,                       # Integer Absolute left position on plotline
-                'color': "secondary",           # Color of the plot point on the plotline
+                'color': "note",           # Color of the plot point on the plotline
                 'description': str,
             },
         )
@@ -76,13 +77,6 @@ class Marker(MiniWidget):
         self.plotline_control.content.mouse_cursor = ft.MouseCursor.RESIZE_LEFT_RIGHT
         self.is_dragging = True
         self.plotline_control.update()
-
-        # Hide all other info displays while dragging
-        for mw in self.widget.mini_widgets:
-            if mw.data.get('visible', True):
-                mw.visible = False
-                mw.update()
-
         
 
     # Called when actively dragging our slider thumb to change our x position
@@ -101,10 +95,10 @@ class Marker(MiniWidget):
         new_left = self.plotline_control.left + delta_x
 
         # Clamp sides and use timeline padding
-        if new_left < 0:        # Padding on left because canvas draws in middle (5px)
-            new_left = 0
-        elif new_left > self.widget.plotline_width - 10:  # No padding needed on right
-            new_left = self.widget.plotline_width - 10
+        if new_left < 10:        # Padding on left because canvas draws in middle (5px)
+            new_left = 10
+        elif new_left > self.widget.plotline_width - 20:  # No padding needed on right
+            new_left = self.widget.plotline_width - 20
         
         # Set our new left position within our stack
         self.plotline_control.left = new_left
@@ -126,16 +120,13 @@ class Marker(MiniWidget):
 
         self.data['x_alignment'] = x_alignment
  
-
         await self.save_dict()
 
-        for mw in self.widget.mini_widgets:
-            if mw.data.get('visible', True) and mw.visible == False:
-                mw.visible = True
-                mw.update()
 
         if self.widget.information_display.visible:
             self.widget.information_display.reload_mini_widget()
+
+        await self.widget.rebuild_plotline_canvas(True)
         
         
     # Called when hovering over our plot point to show the slider
@@ -180,14 +171,15 @@ class Marker(MiniWidget):
             width=10, alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.HARD_EDGE,
             #bgcolor="red",
             #border=ft.Border.all(2, self.data.get('color', None), ft.BorderSide(style=ft.BorderStyle.SOLID)),
-            left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            left=self.data.get('left', 0), 
+            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.GestureDetector(
                 width=10, mouse_cursor=ft.MouseCursor.CLICK,
                 on_enter=self.highlight, on_exit=self.highlight,
                 on_tap_down=self._drag_start,
                 on_pan_start=self._drag_start, on_pan_end=self._drag_end,
                 on_pan_update=self.move_marker, drag_interval=20, 
-                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
                 on_tap=self.show_mini_widget,
                 content=cv.Canvas(
                     width=10, opacity=.7, resize_interval=20,    
@@ -216,20 +208,14 @@ class Marker(MiniWidget):
         title_control = ft.Row([
             #ft.Icon(ft.Icons.FLAG_OUTLINED, self.data.get('color', None)),
             ft.GestureDetector(
-                ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
+                ft.Text(f"\t\t{self.data['title']}\t\t", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+                tooltip=f"Rename {self.title}", color=self.data.get('color', None), expand=True),
                 on_double_tap=self._rename_clicked,
                 on_tap=self._rename_clicked,
-                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", hover_interval=500
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
+                mouse_cursor="click", hover_interval=500, expand=True
             ),
-            ft.IconButton(
-                ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
-                self.data.get('color', None),
-                tooltip="Pin Marker" if not self.data.get('is_pinned', False) else "Unpin Marker",
-                on_click=self._pin if not self.data.get('is_pinned', False) else self._unpin,
-                mouse_cursor="click"
-            ),
-            ft.Container(expand=True),
+            
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.OUTLINE,
                 tooltip=f"Close {self.title}",
@@ -241,32 +227,33 @@ class Marker(MiniWidget):
 
 
 
-        description_tf = ft.TextField(
+        description_tf = TextField(
             value=self.data.get('description', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'description': e.control.value}), 
             label="Description", dense=True, capitalization=ft.TextCapitalization.SENTENCES,
         )
 
-        custom_fields_label = ft.Row([
+        notes_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
             ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Custom Field",
-                on_click=lambda _: self._new_custom_field_clicked(),
+                ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), tooltip="Add Note",
+                on_click=self._new_note_clicked,
                 mouse_cursor="click"
             )
         ], spacing=0)
 
-        custom_fields_column = self._build_notes_column()
+        notes_column = self._build_notes_column()
         
         content = ft.Column(
             expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
             controls=[
                 ft.Container(height=1),  # Little padding
                 description_tf,
+                ft.Divider(2, 2),
 
-                custom_fields_label,
-                ft.Container(custom_fields_column, margin=ft.Margin.symmetric(horizontal=20)),
+                notes_label,
+                ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
             ]
         )
 
@@ -274,7 +261,7 @@ class Marker(MiniWidget):
             title_control,
             ft.Divider(height=2, thickness=2),
             content
-        ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START)
+        ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START, spacing=0)
         
         self.content = column
             

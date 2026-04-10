@@ -520,6 +520,8 @@ class Plotline(Widget):
     async def new_item_clicked(self, e, arc: Arc=None):
         ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
 
+        await self.story.close_menu()   # Close the menu first so it doesn't mess with our dialog
+
         # Checks that the name in the textfield does not match any of the existing mini widgets of that type, and updates visually to reflect
         async def _check_name_unique(e):
             name = new_item_tf.value.strip()
@@ -601,7 +603,7 @@ class Plotline(Widget):
         
 
     async def _set_size(self, e: cv.CanvasResizeEvent):
-        self.plotline_width = int(e.width)
+        self.plotline_width = int(e.width) - 25
         self.plotline_height = int(e.height)
         self.needs_redraw = True
 
@@ -629,16 +631,16 @@ class Plotline(Widget):
             cv.Path(
                 elements=[
                     # Left vertical end marker
-                    cv.Path.MoveTo(5, self.plotline_height // 2 + 25),
-                    cv.Path.LineTo(5, self.plotline_height // 2 - 25),
+                    cv.Path.MoveTo(25, self.plotline_height // 2 + 25),
+                    cv.Path.LineTo(25, self.plotline_height // 2 - 25),
 
                     # Horizontal line
-                    cv.Path.MoveTo(5, self.plotline_height // 2),
-                    cv.Path.LineTo(self.plotline_width - 5, self.plotline_height // 2),
+                    cv.Path.MoveTo(25, self.plotline_height // 2),
+                    cv.Path.LineTo(self.plotline_width, self.plotline_height // 2),
 
                     # Right vertical end marker
-                    cv.Path.MoveTo(self.plotline_width - 5, self.plotline_height // 2 + 25),
-                    cv.Path.LineTo(self.plotline_width - 5, self.plotline_height // 2 - 25),
+                    cv.Path.MoveTo(self.plotline_width, self.plotline_height // 2 + 25),
+                    cv.Path.LineTo(self.plotline_width, self.plotline_height // 2 - 25),
                 ],
                 paint=ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', "primary")},.7")
             ),
@@ -646,8 +648,8 @@ class Plotline(Widget):
 
         # Draw our divisions on the plotline -----------------------------------------------------------------
         num_divisions = len(self.information_display.data.get('Divisions', []))  # Total number of divisions
-        div_width = (self.plotline_width - 10) / (num_divisions + 1) if num_divisions > 0 else 0   # Width between each division
-        division_width = (self.plotline_width - div_width - 10) / num_divisions  if num_divisions > 0 else 0      # Division width starting after first division plus padding
+        div_width = (self.plotline_width) / (num_divisions + 1) if num_divisions > 0 else 0   # Width between each division
+        division_width = (self.plotline_width - div_width) / num_divisions  if num_divisions > 0 else 0      # Division width starting after first division plus padding
 
         # Create a path for our divisions
         divisions_path = cv.Path(
@@ -687,15 +689,15 @@ class Plotline(Widget):
 
         # Set the text width, and align it in center, make sure it wraps
         self.plotline_canvas.shapes.append(cv.Text(
-            5, self.plotline_height // 2 - 60, left_label, 
+            25, self.plotline_height // 2 - 60, left_label, 
             ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
             max_width=50,   # Prevent overflow left
-            text_align=ft.TextAlign.START, 
+            text_align=ft.TextAlign.CENTER, 
         ))
         self.plotline_canvas.shapes.append(cv.Text(
-            self.plotline_width - 5, self.plotline_height // 2 - 60, right_label, 
-            ft.TextStyle(18, weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS), alignment=ft.Alignment.CENTER,
-            text_align=ft.TextAlign.END, max_width=50,   # Prevent overflow right
+            self.plotline_width, self.plotline_height // 2 - 60, right_label, 
+            ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
+            text_align=ft.TextAlign.CENTER, max_width=50,   # Prevent overflow right
         ))
         self.plotline_canvas.shapes.append(cv.Text(
             self.plotline_width // 2, self.plotline_height - 50, time_label, 
@@ -724,7 +726,7 @@ class Plotline(Widget):
                 plot_point.plotline_control.left = new_x_pos
                 plot_point.plotline_control.top = self.plotline_height // 2 - 12     # Make sure plot point is in middle of the line
 
-                x_pos = new_x_pos + 12
+                x_pos = new_x_pos + 28
 
                 if line_direction == "top":
                     moveTo = cv.Path.MoveTo(x_pos, self.plotline_height // 2 - 20)
@@ -826,7 +828,7 @@ class Plotline(Widget):
                 ]
             
                 label_path = cv.Text(
-                    new_x_pos + 3, y_pos - 20, 
+                    new_x_pos + 18, y_pos - 20, 
                     marker.title,
                     ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=marker.data.get('color', "secondary"), overflow=ft.TextOverflow.ELLIPSIS),
                     alignment=ft.Alignment.CENTER,
@@ -919,9 +921,15 @@ class Plotline(Widget):
             alignment=ft.Alignment(0, 0),
             clip_behavior=ft.ClipBehavior.NONE,
             controls=[
-                ft.Container(self.plotline_canvas, ft.Padding.only(left=16, right=16), expand=True, clip_behavior=ft.ClipBehavior.NONE)      # Add our canvas which has our visual plotline
+                ft.Container(
+                    self.plotline_canvas, #ft.Padding.only(left=16, right=16), 
+                    expand=True, clip_behavior=ft.ClipBehavior.NONE,
+                    
+                )      # Add our canvas which has our visual plotline
             ]
         )
+
+        
  
         # Sort our arcs so the bigger ones are in back and smaller on top
         sorted_arcs = dict(sorted(self.arcs.items(), key=lambda item: item[1].data.get('left', 0) + item[1].data.get('right', 0)))
@@ -1197,6 +1205,8 @@ class Plotline(Widget):
         
 
         self._render_widget() 
+
+        self.p.run_task(self.rebuild_plotline_canvas, True)
 
 
 

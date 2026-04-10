@@ -5,6 +5,7 @@ from utils.verify_data import verify_data
 import flet.canvas as cv
 import math
 from models.app import app
+from styles.text_field import TextField
 
 
 class Arc(MiniWidget):
@@ -68,7 +69,7 @@ class Arc(MiniWidget):
             {   
                 # Mini widget data
                 'tag': "arc",                               # Tag to identify what type of object this is
-                'color': "secondary",                       # Color of the arc in the plotline
+                'color': "primary",                       # Color of the arc in the plotline
                 
                 # For rendering on plotline
                 'is_shown_on_widget': True,                 # If this arcs plotline control is shown on the plotline widget
@@ -87,7 +88,6 @@ class Arc(MiniWidget):
                 'End': str, 
                 'Where': str, 
                 'Relevant Characters': list,
-                'Related Objects': list,
             },
         )
 
@@ -95,25 +95,9 @@ class Arc(MiniWidget):
         # UI elements
         self.plotline_control: ft.Container = None      # Arc shaped contorl on the plotline
 
-        # Set drag handles on left and right of arc connections to the plotline
-        self.left_drag_handle = ft.GestureDetector(
-            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR, self.data.get('color', 'secondary'), 20), 
-            on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
-            on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
-            on_enter=self._highlight,      # Highlight container
-            visible=False, on_pan_update=self.change_x_positions, on_pan_start=self.start_dragging, on_pan_end=self.finished_dragging
-        ) 
-        self.right_drag_handle = ft.GestureDetector(
-            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT, content=ft.Icon(ft.Icons.DRAG_INDICATOR, self.data.get('color', 'secondary'), 20), 
-            on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
-            on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
-            on_enter=self._highlight,      # Highlight container
-            visible=False, on_pan_update=self.change_x_positions, on_pan_start=self.start_dragging, on_pan_end=self.finished_dragging
-        )    
-        
-        
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our arc slider
+        self.dragging_direction: str = "left"       # Direction we're dragging, left or right
         self.hidden = False                         # Track if we're in hidden mode for easier dragging
 
         # Loads our arc
@@ -140,8 +124,9 @@ class Arc(MiniWidget):
 
         # Change its border opacity and update the page
         self.plotline_control.shadow = ft.BoxShadow(0, 10, self.data.get('color'), blur_style=ft.BlurStyle.OUTER)
-        self.left_drag_handle.visible = True
-        self.right_drag_handle.visible = True
+
+        self.plotline_control.content.content.content.controls[0].visible = True
+        self.plotline_control.content.content.content.controls[2].visible = True
 
         self.plotline_control.update()
 
@@ -155,8 +140,9 @@ class Arc(MiniWidget):
         # If we are not visible, lower our border and text
         if not self.visible:
             self.plotline_control.shadow = None
-            self.left_drag_handle.visible = False
-            self.right_drag_handle.visible = False
+            
+            self.plotline_control.content.content.content.controls[0].visible = False
+            self.plotline_control.content.content.content.controls[2].visible = False
         
             self.plotline_control.update()
     
@@ -166,24 +152,30 @@ class Arc(MiniWidget):
 
         self.plotline_control.shadow = None
 
-        self.left_drag_handle.visible = False
-        self.right_drag_handle.visible = False
+        self.plotline_control.content.content.content.controls[0].visible = False
+        self.plotline_control.content.content.content.controls[2].visible = False
         self.plotline_control.update()
         
         return await super().hide_mini_widget(update=update)
     
 
     # Called at the start of dragging our point on the slider
-    async def start_dragging(self, e=None):
+    async def start_dragging(self, e: ft.PointerEvent):
         ''' Called when we start dragging our slider thumb '''
 
         self.is_dragging = True
+        width = self.widget.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
+
+        if e.local_position.x < width / 2:
+            self.dragging_direction = "left"
+        else:
+            self.dragging_direction = "right"
+
+        self.plotline_control.content.mouse_cursor = ft.MouseCursor.RESIZE_LEFT_RIGHT
+        self.plotline_control.update()
 
         # Hide all other info displays while dragging
         for mw in self.widget.mini_widgets:
-            if mw.visible:
-                mw.visible = False
-                mw.update()
             if isinstance(mw, Arc) and mw != self:
                 mw.plotline_control.ignore_interactions = True
                 mw.plotline_control.update()
@@ -200,7 +192,7 @@ class Arc(MiniWidget):
         ratio = width / max(self.widget.plotline_width, 1)
         
         # If we're dragging the left handle, update left position
-        if e.control == self.left_drag_handle:
+        if self.dragging_direction == "left":   # If we're dragging left handle (dragging right would make it bigger, dragging left would make it smaller)
             new_left = self.data.get('left', 0) + e.local_delta.x
 
             # Clamp edges
@@ -272,18 +264,20 @@ class Arc(MiniWidget):
 
         # Hide all other info displays while dragging
         for mw in self.widget.mini_widgets:
-            if mw.data.get('visible', False):
-                mw.visible = True
-                mw.update()
             if isinstance(mw, Arc) and mw != self:
                 mw.plotline_control.ignore_interactions = False
                 mw.plotline_control.update()
+
+        self.plotline_control.content.mouse_cursor = ft.MouseCursor.CLICK
+        self.plotline_control.update()
             
         # Save our new positions to file
         await self.save_dict()
 
         if self.widget.information_display.visible:
             self.widget.information_display.reload_mini_widget()
+
+        
 
 
     # Called when toggling whether this plot point is shown on the plotline in the plotline filters
@@ -318,12 +312,14 @@ class Arc(MiniWidget):
         self.plotline_control = ft.Container(
             left=self.data.get('left', 0), right=self.data.get('right', None),
             alignment=ft.Alignment.TOP_CENTER, #height=h,
-            margin=ft.Margin(16, 0, 16, 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            margin=ft.Margin(16, 0, 16, 0), 
+            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            animate=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             border=ft.Border.only(          # Give use borderes on top left and right
-                left=ft.BorderSide(2, self.data.get('color', "secondary")),
-                right=ft.BorderSide(2, self.data.get('color', "secondary")),
-                top=ft.BorderSide(2, self.data.get('color', "secondary")),
+                left=ft.BorderSide(2, self.data.get('color', "note")),
+                right=ft.BorderSide(2, self.data.get('color', "note")),
+                top=ft.BorderSide(2, self.data.get('color', "note")),
             ), 
             padding=ft.Padding.only(top=10),
             border_radius=ft.BorderRadius.only(top_left=10000, top_right=10000, bottom_left=0, bottom_right=0),      # Make it uber curved to look like an arc
@@ -331,21 +327,27 @@ class Arc(MiniWidget):
                 mouse_cursor=ft.MouseCursor.CLICK,
                 hover_interval=200, expand=True,
                 on_tap=self.show_mini_widget,    # Focus this mini widget when clicked
-                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
                 on_enter=self._highlight,      # Highlight container
                 on_exit=self._stop_highlight,        # Stop highlight
-                content=ft.Column([
-                    ft.Container(
-                        ft.Text(
-                            self.title, expand=True, overflow=ft.TextOverflow.VISIBLE, 
-                            theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER,
-                        ), margin=ft.Margin.symmetric(horizontal=25), expand=True, alignment=ft.Alignment.BOTTOM_CENTER
+                on_pan_update=self.change_x_positions, 
+                on_pan_start=self.start_dragging, 
+                on_pan_end=self.finished_dragging,
+                drag_interval=10,
+                content=ft.Container(
+                        ft.Row([
+                            ft.Icon(ft.Icons.ARROW_LEFT_OUTLINED, ft.Colors.ON_SURFACE_VARIANT, scale=0.8, visible=False),
+                            ft.Text(
+                                self.title, #expand=True, 
+                                overflow=ft.TextOverflow.VISIBLE, 
+                                theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER,
+                            ), 
+                            ft.Icon(ft.Icons.ARROW_RIGHT_OUTLINED, ft.Colors.ON_SURFACE_VARIANT, scale=0.8, visible=False)
+                        ], expand=True, spacing=6, alignment=ft.MainAxisAlignment.CENTER),
+                        margin=ft.Margin.symmetric(horizontal=25), expand=True, alignment=ft.Alignment.TOP_CENTER,
+                        padding=ft.Padding.only(top=10)
                     ),
-                    ft.Row([
-                        self.left_drag_handle,
-                        self.right_drag_handle
-                    ], vertical_alignment=ft.CrossAxisAlignment.START, alignment=ft.MainAxisAlignment.CENTER, spacing=30, expand=True)
-                ], expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0)
+        
             )
         )
 
@@ -362,22 +364,14 @@ class Arc(MiniWidget):
     # Called to reload our mini widget content
     def reload_mini_widget(self):
 
-        arc_icon = ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.data.get('color', None))
 
         arc_title_text = ft.GestureDetector(
-            ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
+            ft.Text(f"\t\t{self.data['title']}\t\t", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+                tooltip=f"Rename {self.title}", color=self.data.get('color', None), expand=True),
             on_double_tap=self._rename_clicked,
             on_tap=self._rename_clicked,
-            on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
-            mouse_cursor="click", hover_interval=500
-        )
-
-        pin_button = ft.IconButton(
-            ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
-            self.data.get('color', None),
-            tooltip="Pin Plot Point" if not self.data.get('is_pinned', False) else "Unpin Plot Point",
-            on_click=self._pin if not self.data.get('is_pinned', False) else self._unpin,
-            mouse_cursor="click"
+            on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
+            mouse_cursor="click", hover_interval=500, expand=True
         )
 
         close_button = ft.IconButton(
@@ -389,35 +383,32 @@ class Arc(MiniWidget):
         
 
         title_control = ft.Row([
-            #arc_icon,
             arc_title_text,
-            pin_button,
-            ft.Container(expand=True),      # Spacer
             close_button
         ], spacing=0)
 
-        summary_tf = ft.TextField(
+        summary_tf = TextField(
             value=self.data.get('Summary', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'Summary': e.control.value}), 
             label="Summary", capitalization=ft.TextCapitalization.SENTENCES,
             tooltip="Summary of what happened during this arc", dense=True
         )
 
-        start_tf = ft.TextField(
+        start_tf = TextField(
             value=self.data.get('Start', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'Start': e.control.value}), 
             label="Start", capitalization=ft.TextCapitalization.SENTENCES,
             tooltip="When this arc began", dense=True
         )
 
-        end_tf = ft.TextField(
+        end_tf = TextField(
             value=self.data.get('End', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'End': e.control.value}), 
             label="End", capitalization=ft.TextCapitalization.SENTENCES,
             tooltip="When this arc ends", dense=True
         )
 
-        where_tf = ft.TextField(
+        where_tf = TextField(
             value=self.data.get('Where'), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'Where': e.control.value}), 
             label="Where", capitalization=ft.TextCapitalization.SENTENCES,
@@ -456,16 +447,13 @@ class Arc(MiniWidget):
                 event_description = event.get('description', "") if isinstance(event, dict) else ""
                 event_tf = ft.ReorderableDragHandle(
                     ft.Container(
-                        ft.ListTile(
-                            leading=ft.Text(event_title),
-                            title=ft.TextField(
-                                value=event_description, label="Description", dense=True, data=idx, 
-                                on_blur=_change_event_description, capitalization=ft.TextCapitalization.SENTENCES, multiline=True
-                            ),
-                            trailing=ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, data=idx, on_click=_delete_event, mouse_cursor="click"),
-                            dense=True, data=idx, mouse_cursor=ft.MouseCursor.GRAB,
-                        ), 
-                        margin=ft.Margin.only(left=10, right=10)),
+                        TextField(
+                            value=event_description, dense=True, data=idx, label=event_title, expand=True,
+                            on_blur=_change_event_description, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
+                            suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, data=idx, on_click=_delete_event, mouse_cursor="click")
+                        ),
+                        padding=ft.Padding.only(left=10, right=35, top=5, bottom=5), expand=True
+                    )
                 )
                 controls.append(event_tf)
             return controls
@@ -482,14 +470,14 @@ class Arc(MiniWidget):
             self.update()
         
         events_label = ft.Row([
-            ft.Container(width=6),
             ft.Text(
-                "Events", weight=ft.FontWeight.BOLD, 
+                "\tEvents", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None),
                 tooltip="List of events (plot points) that happened during this arc. Drag to reorder them"
             ),
-            ft.Container(width=6),
             ft.IconButton(
-                ft.Icons.ADD, tooltip="Add Event", 
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
+                self.data.get('color', "primary"),
+                tooltip="Add Event", 
                 on_click=lambda e: self.p.run_task(self.widget.new_item_clicked, e, self), data="event",
                 mouse_cursor="click"
             ),
@@ -497,8 +485,9 @@ class Arc(MiniWidget):
 
 
         events_list = ft.ReorderableListView(
-            padding=ft.Padding.all(4), show_default_drag_handles=False,
+            padding=ft.Padding.all(4), #show_default_drag_handles=False,
             controls=_get_events_controls(), on_reorder=_reorder_events, 
+            spacing=16,
         )
 
 
@@ -611,124 +600,34 @@ class Arc(MiniWidget):
             spacing=0,
         )
 
-        def _toggle_related_objects_selector(e=None):
-            # For simplicity, we'll just use a text field to add related objects by key. In the future, we could make a dropdown selector similar to Relevant characters if needed
-            related_objects_selector.visible = not related_objects_selector.visible
+       
 
-            if related_objects_selector.visible:
-                add_related_objects_button.icon = ft.Icons.EDIT_OFF_OUTLINED
-            else:
-                add_related_objects_button.icon = ft.Icons.EDIT_OUTLINED
-
-            self.update()
-
-        add_related_objects_button = ft.TextButton(
-            "Related Objects",
-            ft.Icons.EDIT_OUTLINED,
-            style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor="click", color=ft.Colors.ON_SURFACE),
-            on_click=_toggle_related_objects_selector,
-        )
-
-        def _set_related_objects_controls(e=None) -> list[ft.Control]:
-
-            controls = [
-                add_related_objects_button
-            ]
-
-            for idx, obj_key in enumerate(self.data.get('Related Objects', [])):
-                char = self.widget.story.objects.get(obj_key, None)
-                if char is not None:
-                    name = char.data.get('title', obj_key)
-
-                    # Add the control now
-                    controls.append(ft.Text(name, color=char.data.get('color', None), weight=ft.FontWeight.BOLD))
-                    controls.append(
-                        ft.IconButton(
-                            ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
-                            data=obj_key,
-                            mouse_cursor="click"
-                            #on_click=_toggle_related_objects
-                        )
-                    )
-                    if idx < len(self.data.get('Related Objects', [])) - 1: # Skip adding container to last character
-                        controls.append(ft.Container(width=10))
-                           
-                    
-
-            return controls
-        
-        def _toggle_related_objects(e):
-            should_add_key = True   # Flag to check if we need to remove or not
-            obj_key = e.control.data   # Key of the character
-
-            for key in self.data.get('Related Objects', []):
-                if obj_key == key:     # If the character is in there, remove them and break
-                    self.data['Related Objects'].remove(key)
-                    should_add_key = False      # Make sure we don't re-add them after
-                    break
-
-            # If we went through the list and didn't find them, add them to the list
-            if should_add_key:
-                self.data.get('Related Objects', []).append(obj_key)
-
-            self.p.run_task(self.save_dict)
-
-            related_objects_row.controls = _set_related_objects_controls()
-            related_objects_selector.controls = _get_related_objects()
-            self.update()
-
-        def _get_related_objects() -> list[str]:
-            char_list = []
-            
-            for widget in self.widget.story.widgets:
-                if widget.data.get('tag', None) == 'object':
-                    
-                    char_list.append(
-                        ft.Checkbox(
-                            widget.title,
-                            #True if obj_key in self.data.get('Relevant Characters', []) else False,
-                            #data=obj_key,
-                            #label_style=ft.TextStyle(color=obj_obj.data.get('color', None), weight=ft.FontWeight.BOLD),
-                            on_change=_toggle_related_objects
-                        )
-                    )
-
-            if len(char_list) == 0:
-                char_list.append(ft.Text("No objects in story yet", color=ft.Colors.OUTLINE, italic=True))
-            return char_list
-
-        related_objects_row = ft.Column(
-            _set_related_objects_controls(),
-            spacing=0,
-        )
-        
-        related_objects_selector = ft.Column(
-            _get_related_objects(),
-            visible=False,
-        )
-
-        notes_fields_label = ft.Row([
+        notes_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Notes Fields", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD),
+            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
             ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Notes Field",
-                on_click=lambda _: self._new_custom_field_clicked(),
+                ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), tooltip="Add Note",
+                on_click=self._new_note_clicked,
                 mouse_cursor="click"
             )
         ], spacing=0)
 
-        notes_fields_column = self._build_notes_column()
+        notes_column = self._build_notes_column()
 
         # Build the main body content of our info display
         content = ft.Column(
-            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
+            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, spacing=0,
             controls=[
-                ft.Container(height=1), # Spacer
+                ft.Container(height=10), # Spacer
                 summary_tf,             # Summary
 
+                ft.Container(height=10), # Spacer
                 ft.Row([start_tf, end_tf]),             # When
 
+                ft.Container(height=10), # Spacer
                 where_tf,           # Where
+                ft.Container(height=10), # Spacer
+                ft.Divider(2, 2),
 
                 events_label,
                 events_list,
@@ -736,11 +635,9 @@ class Arc(MiniWidget):
                 Relevant_characters_row,        # Holds label, buttons for each Relevant character, and add/remove button
                 Relevant_characters_selector,
                 
-                related_objects_row,
-                related_objects_selector,
-
-                notes_fields_label,
-                ft.Container(notes_fields_column, margin=ft.Margin.symmetric(horizontal=20)),
+                ft.Divider(2, 2),
+                notes_label,
+                ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
             ]
         )
         
@@ -748,7 +645,7 @@ class Arc(MiniWidget):
             title_control,
             ft.Divider(height=2, thickness=2),
             content
-        ], expand=True)
+        ], expand=True, spacing=0)
 
         
         self.content = column

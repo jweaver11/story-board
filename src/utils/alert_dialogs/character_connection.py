@@ -1,5 +1,5 @@
 import flet as ft
-from models.dataclasses.connection import ConnectionDataClass
+from models.dataclasses.character_connection import ConnectionDataClass
 from styles.colors import colors
 from styles.icons import connection_icons
 

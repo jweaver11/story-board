@@ -2,7 +2,7 @@ import flet as ft
 from models.mini_widget import MiniWidget
 from models.widgets.plotline import Plotline
 import asyncio
-from models.dataclasses.events import Event
+from models.dataclasses.plotline_event import Event
 from utils.verify_data import verify_data
 from styles.text_field import TextField
 
@@ -84,25 +84,8 @@ class PlotlineInformationDisplay(MiniWidget):
                 # Rebuild our canvas
                 await self.widget.rebuild_plotline_canvas(update=True)
 
-                # Remove the control for this division. Reloading would fix, but lose our scroll placement
-                for control in self.divisions_column.controls:
-                    if isinstance(control, ft.Container) and isinstance(control.content, ft.Row):
-                    
-                        text_control = control.content.controls[0]
-                        if text_control.data[1] == idx:
-                            self.divisions_column.controls.remove(control)
-                            break
+                self.reload_mini_widget()
 
-                # Update the controls indexes after the deleted one. 
-                for control in self.divisions_column.controls:
-                    if isinstance(control, ft.Container) and isinstance(control.content, ft.Row):
-                        text_control = control.content.controls[0]      # Update both text and delete button indexes
-                        delete_button = control.content.controls[1]
-                        if text_control.data[0] == 'Divisions' and text_control.data[1] >= idx:
-                            text_control.data[1] -= 1
-                            delete_button.data[1] -= 1
-
-                #self.p.update()
 
             else:
                 self.data.get(key, [])[idx] = e.control.value
@@ -132,26 +115,17 @@ class PlotlineInformationDisplay(MiniWidget):
                 capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
                 data=['Divisions', len(self.data.get('Divisions', [])), False],
-                focus_color=self.widget.data.get('color', None),
-                cursor_color=self.widget.data.get('color', None),
-                focused_border_color=self.widget.data.get('color', None),
+                suffix_icon=ft.IconButton(
+                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                    tooltip="Delete Division", 
+                    on_click=self._change_our_data,
+                    data=['Divisions', idx, True],
+                    mouse_cursor="click"
+                ),
             )
 
-            self.divisions_column.controls.append(
-                ft.Container(
-                    ft.Row([
-                        text_control,
-                        ft.IconButton(
-                            ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
-                            tooltip="Delete Division", 
-                            mouse_cursor="click",
-                            on_click=self._change_our_data,
-                            data=['Divisions', len(self.data.get('Divisions', [])), True],
-                        ),
+            self.divisions_column.controls.append(text_control)
                         
-                    ]), margin=ft.Margin.only(left=20, right=20)
-                )
-            )
 
             current_divisions = self.data.get('Divisions', [])
             current_divisions.append(str(len(current_divisions) + 1))
@@ -196,10 +170,6 @@ class PlotlineInformationDisplay(MiniWidget):
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=self._change_our_data,
             data='Summary', 
-            #focus_color=self.widget.data.get('color', None),
-            #cursor_color=self.widget.data.get('color', None),
-            #focused_border_color=self.widget.data.get('color', None),
-            #label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
         )
 
 
@@ -209,20 +179,12 @@ class PlotlineInformationDisplay(MiniWidget):
                 capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
                 data='Left Label',
-                #focus_color=self.widget.data.get('color', None),
-                #cursor_color=self.widget.data.get('color', None),
-                #focused_border_color=self.widget.data.get('color', None),
-                #label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
             ),
             TextField(
                 expand=True, label="Right Label", value=self.data.get('Right Label', ""), dense=True, 
                 capitalization=ft.TextCapitalization.SENTENCES,
                 on_blur=self._change_our_data,
                 data='Right Label',
-                #focus_color=self.widget.data.get('color', None),
-                #cursor_color=self.widget.data.get('color', None),
-                #focused_border_color=self.widget.data.get('color', None),
-                #label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
             )
         ])
 
@@ -233,10 +195,6 @@ class PlotlineInformationDisplay(MiniWidget):
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=self._change_our_data,
             data='Time Label',
-            #focus_color=self.widget.data.get('color', None),
-            #cursor_color=self.widget.data.get('color', None),
-            #focused_border_color=self.widget.data.get('color', None),
-            #label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
         )
 
 
@@ -244,17 +202,17 @@ class PlotlineInformationDisplay(MiniWidget):
         events_list = []
 
         for pp in self.widget.plot_points.values():
-            events_list.append(Event(tag='plot_point', left=pp.data.get('left', 0), title=pp.title, color=pp.data.get('color', 'secondary')))
+            events_list.append(Event(tag='plot_point', left=pp.data.get('left', 0), title=pp.title, color=pp.data.get('color', 'note')))
 
         # Arcs have a right position, so we calc how far that is from left, and add a new event there as well
         for arc in self.widget.arcs.values():
-            events_list.append(Event(tag='arc_start', left=arc.data.get('left', 0), title=arc.title, color=arc.data.get('color', 'secondary')))
+            events_list.append(Event(tag='arc_start', left=arc.data.get('left', 0), title=arc.title, color=arc.data.get('color', 'note')))
             arc_width = arc.data.get('width', 0)
             arc_end: int = arc.data.get('left', 0) + arc_width  
-            events_list.append(Event(tag='arc_end', left=arc_end, title=arc.title, color=arc.data.get('color', 'secondary')))
+            events_list.append(Event(tag='arc_end', left=arc_end, title=arc.title, color=arc.data.get('color', 'note')))
 
         for marker in self.widget.markers.values():
-            events_list.append(Event(tag='marker', left=marker.data.get('left', 0), title=marker.title, color=marker.data.get('color', 'secondary')))
+            events_list.append(Event(tag='marker', left=marker.data.get('left', 0), title=marker.title, color=marker.data.get('color', 'note')))
 
         # Sort that list
         events_list = sorted(events_list, key=lambda e: e.left)
@@ -304,13 +262,13 @@ class PlotlineInformationDisplay(MiniWidget):
         events_container = ft.Container(               
             padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
-            content=ft.Row([events_text]),
+            content=ft.Row([events_text]), margin=ft.Margin.only(top=6)
         )
 
         events_label = ft.Row([
             ft.Container(width=6), 
             ft.Text(
-                "Sequence of Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), 
+                "Sequence of Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None), 
                 tooltip="The order of events that occur in this plotline"
             ),
             
@@ -318,11 +276,12 @@ class PlotlineInformationDisplay(MiniWidget):
         
 
         divisions_label = ft.Row([
-            ft.Container(width=6), 
-            ft.Text("Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=14), tooltip="The number and label of the divisions on this plotline."),
-            ft.Container(width=10),
+            ft.Text(
+                "Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None), 
+                tooltip="The number and label of the divisions on this plotline."
+            ),
             ft.IconButton(
-                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.widget.data.get('color' "primary"),
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.widget.data.get('color', ft.Colors.PRIMARY),
                 tooltip="Add Division", on_click=_new_divisions_clicked,
                 mouse_cursor="click"
             )
@@ -339,11 +298,11 @@ class PlotlineInformationDisplay(MiniWidget):
                         ft.Row([
                             ft.Container(
                                 ft.Text(pp.title, color=pp.data.get('color', None), expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD), 
-                                on_click=lambda e, p=pp: p.show_mini_widget(), expand=True, padding=ft.Padding.only(left=20)
+                                on_click=lambda e, p=pp: self.p.run_task(p.show_mini_widget), expand=True, padding=ft.Padding.only(left=20)
                             ),
                             ft.Container(
                                 ft.IconButton(
-                                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda e, p=pp: p._delete_clicked(),
+                                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda _, p=pp: p._delete_clicked(),
                                     tooltip="Delete Plot Point", style=ft.ButtonStyle(padding=ft.Padding.all(0), mouse_cursor="click")
                                 ), margin=ft.Margin.only(right=20)
                             )
@@ -358,11 +317,11 @@ class PlotlineInformationDisplay(MiniWidget):
                         ft.Row([
                             ft.Container(
                                 ft.Text(arc.title, color=arc.data.get('color', None), expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD), 
-                                on_click=lambda e, a=arc: a.show_mini_widget(), expand=True, padding=ft.Padding.only(left=20)
+                                on_click=lambda e, a=arc: self.p.run_task(a.show_mini_widget), expand=True, padding=ft.Padding.only(left=20)
                             ),
                             ft.Container(
                                 ft.IconButton(
-                                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda e, a=arc: a._delete_clicked(),
+                                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda _, a=arc: a._delete_clicked(),
                                     tooltip="Delete Arc", style=ft.ButtonStyle(padding=ft.Padding.all(0), mouse_cursor="click")
                                 ), margin=ft.Margin.only(right=20)
                             )
@@ -377,11 +336,11 @@ class PlotlineInformationDisplay(MiniWidget):
                         ft.Row([
                             ft.Container(
                                 ft.Text(marker.title, color=marker.data.get('color', None), expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD),
-                                on_click=lambda e, m=marker: m.show_mini_widget(), expand=True, padding=ft.Padding.only(left=20)
+                                on_click=lambda e, m=marker: self.p.run_task(m.show_mini_widget), expand=True, padding=ft.Padding.only(left=20)
                             ),
                             ft.Container(
                                 ft.IconButton(
-                                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda e, m=marker: m._delete_clicked(),
+                                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda _, m=marker: m._delete_clicked(),
                                     tooltip="Delete Marker", style=ft.ButtonStyle(padding=ft.Padding.all(0), mouse_cursor="click")
                                 ), margin=ft.Margin.only(right=20)
                             )
@@ -393,11 +352,10 @@ class PlotlineInformationDisplay(MiniWidget):
 
 
         plot_points_label = ft.Row([
-            ft.Container(width=6),
-            ft.Text("Plot Points", weight=ft.FontWeight.BOLD),
-            ft.Container(width=6),
+            ft.Text("Plot Points", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None),),
             ft.IconButton(
-                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.widget.data.get('color' "primary"), tooltip="Create New Plot Point", data="plot_point", 
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, icon_color=self.widget.data.get('color', ft.Colors.PRIMARY), 
+                tooltip="Create New Plot Point", data="plot_point", 
                 on_click=self.widget.new_item_clicked, #style=ft.ButtonStyle(padding=ft.Padding.all(0)),
                 mouse_cursor="click"
             )
@@ -406,11 +364,9 @@ class PlotlineInformationDisplay(MiniWidget):
         plot_points_list = _get_events("plot_points")
 
         arcs_label = ft.Row([
-            ft.Container(width=6),
-            ft.Text("Arcs",  weight=ft.FontWeight.BOLD),
-            ft.Container(width=6),
+            ft.Text("Arcs", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None),),
             ft.IconButton(
-                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.widget.data.get('color' "primary"), tooltip="Create New Arc", data="arc", 
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, icon_color=self.widget.data.get('color', ft.Colors.PRIMARY), tooltip="Create New Arc", data="arc", 
                 on_click=self.widget.new_item_clicked, #style=ft.ButtonStyle(padding=ft.Padding.all(0)),
                 mouse_cursor="click"
             )
@@ -419,11 +375,9 @@ class PlotlineInformationDisplay(MiniWidget):
         arcs_list = _get_events("arcs") 
 
         markers_label = ft.Row([
-            ft.Container(width=6),
-            ft.Text("Markers", weight=ft.FontWeight.BOLD),
-            ft.Container(width=6),
+            ft.Text("Markers", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None),),
             ft.IconButton(
-                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.widget.data.get('color' "primary"),tooltip="Create New Marker", data="marker", 
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, icon_color=self.widget.data.get('color', ft.Colors.PRIMARY), tooltip="Create New Marker", data="marker", 
                 on_click=self.widget.new_item_clicked, #style=ft.ButtonStyle(padding=ft.Padding.all(0)),
                 mouse_cursor="click"
             )
@@ -445,29 +399,24 @@ class PlotlineInformationDisplay(MiniWidget):
                 focus_color=self.widget.data.get('color', None),
                 cursor_color=self.widget.data.get('color', None),
                 focused_border_color=self.widget.data.get('color', None),
+                suffix_icon=ft.IconButton(
+                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                    tooltip="Delete Division", 
+                    on_click=self._change_our_data,
+                    data=['Divisions', idx, True],
+                    mouse_cursor="click"
+                ),
             )
 
             # Add to a row with delete button to remove divisions
-            self.divisions_column.controls.append(
-                ft.Row([
-                    text_control,
-                    ft.IconButton(
-                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
-                        tooltip="Delete Division", 
-                        on_click=self._change_our_data,
-                        data=['Divisions', idx, True],
-                        mouse_cursor="click"
-                    ),
-                ])
-            )
+            self.divisions_column.controls.append(text_control)
             
 
         notes_label = ft.Row([
-            ft.Container(width=6),
-            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True),
+            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None),),
             ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, self.widget.data.get('color' "primary"), tooltip="Add Custom Field",
-                on_click=lambda e: self._new_note_clicked(),
+                ft.Icons.NEW_LABEL_OUTLINED, icon_color=self.widget.data.get('color', ft.Colors.PRIMARY), tooltip="Add Note",
+                on_click=self._new_note_clicked,
                 mouse_cursor="click"
             ),
         ], spacing=0)
@@ -487,21 +436,36 @@ class PlotlineInformationDisplay(MiniWidget):
                 ft.Container(height=10), # Spacer
                 time_label_tf,
 
+
+
                 ft.Container(height=10), # Spacer
+                ft.Divider(2, 2),
+
+                divisions_label,        # Divisions
+                ft.Container(self.divisions_column, margin=ft.Margin.symmetric(horizontal=20)),
+                ft.Container(height=10), # Spacer
+                ft.Divider(2, 2),
+                ft.Container(height=10), # Spacer
+
                 events_label,       # Events
                 events_container,
+                ft.Container(height=10), # Spacer
+                ft.Divider(2, 2),
                 
                 plot_points_label,  # Plot Points
                 plot_points_list,
+                ft.Divider(2, 2),
 
                 arcs_label,         # Arcs
                 arcs_list,
+                ft.Divider(2, 2),
 
                 markers_label,      # Markers
                 markers_list,
+                ft.Divider(2, 2),
                 
-                divisions_label,        # Divisions
-                ft.Container(self.divisions_column, margin=ft.Margin.symmetric(horizontal=20)),
+                
+                
 
                 notes_label,     # Custom Fields
                 ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),

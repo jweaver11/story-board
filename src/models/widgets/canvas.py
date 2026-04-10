@@ -9,7 +9,7 @@ from models.widget import Widget
 from models.views.story import Story
 from utils.verify_data import verify_data
 from styles.snack_bar import SnackBar
-from models.dataclasses.state import State
+from models.dataclasses.canvas_state import State
 import flet.canvas as cv
 import math
 from models.app import app
@@ -767,14 +767,8 @@ class Canvas(Widget):
             min_scale=0.5, max_scale=3.0,
         )
 
-        # Align our drawing and info display side by side
-        row = ft.Row([
-            interactive_viewer, self.information_display
-        ], scroll="none", expand=True, vertical_alignment=ft.CrossAxisAlignment.CENTER)
 
-
-
-        self.body_container.content = row
+        self.body_container.content = interactive_viewer
 
         self._render_widget()
 

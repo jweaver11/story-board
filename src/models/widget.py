@@ -64,7 +64,7 @@ class Widget(ft.Container):
                     'visible': True,                                # Whether this widget is visible in the workspace or not
                     'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
                     #'color': str,                                  # Color of the icon and tab divider for this widget. Child classes set this on creation  
-                    'notes': dict,                          # Dictionary for any fields the widget wants to store
+                    'notes': [],                          # Dictionary for any fields the widget wants to store
                     'scroll_position': 0,                           # Used to save scroll positions upon rebuilds
                 }
             )

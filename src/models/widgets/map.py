@@ -9,7 +9,7 @@ from models.widget import Widget
 from models.mini_widgets.map_info import MapInformationDisplay
 from models.views.story import Story
 from utils.verify_data import verify_data
-from models.dataclasses.state import State
+from models.dataclasses.canvas_state import State
 import flet.canvas as cv
 from models.app import app
 from styles.menu_option_style import MenuOptionStyle
