@@ -497,7 +497,7 @@ class Widget(ft.Container):
         # Color, rename
         return [
             MenuOptionStyle(
-                on_click=self._rename_clicked,
+                on_click=self.rename_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
                     ft.Text(
@@ -514,7 +514,7 @@ class Widget(ft.Container):
                         ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
                         ft.Icon(ft.Icons.ARROW_RIGHT),
                     ], expand=True),
-                    self._get_color_options(), 
+                    self.get_color_options(), 
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                     style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                     tooltip="Change this widget's color"
@@ -530,9 +530,11 @@ class Widget(ft.Container):
             )
         ]
     
-    def _rename_clicked(self, e):
+    async def rename_clicked(self, e=None):
         ''' Replaces our widget title with a text field to rename it '''
         from utils.check_widget_unique import check_widget_unique
+
+        await self.story.close_menu()   # Close the menu so it doesn't interfere with the dialog
 
         # Track if our name is unique for checks, and if we're submitting or not
         is_unique = True
@@ -647,7 +649,7 @@ class Widget(ft.Container):
         self.p.show_dialog(dlg)
         
     
-    def _get_color_options(self) -> list[ft.Control]:
+    def get_color_options(self) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
 
         # Called when a color option is clicked on popup menu to change icon color

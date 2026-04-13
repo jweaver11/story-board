@@ -632,7 +632,7 @@ class Chart(Widget):
                 ft.Row([min_value_tf, max_value_tf]),
                 ft.Row([
                     ft.Text(
-                        "\tInterval Count", style=ft.TextStyle(weight=ft.FontWeight.BOLD), color=self.data.get('color', None),
+                        "\tInterval Count", style=ft.TextStyle(weight=ft.FontWeight.BOLD), #color=self.data.get('color', None),
                         tooltip="Increase or Decrease the number of lines between the center and outer edge of the chart"
                     ),
                     
@@ -643,15 +643,15 @@ class Chart(Widget):
                 
                 
                 ft.Switch(
-                    True, "Make Chart Round", value=self.data.get('radar_data', {}).get('make_chart_round', False),
+                    True, "\tMake Chart Round", value=self.data.get('radar_data', {}).get('make_chart_round', False),
                     on_change=_toggle_shape, mouse_cursor=ft.MouseCursor.CLICK
                 ),
                 ft.Switch(
-                    True, "Show Interval Labels", value=self.data.get('radar_data', {}).get('show_tick_labels', False),
+                    True, "\tShow Interval Labels", value=self.data.get('radar_data', {}).get('show_tick_labels', False),
                     on_change=_update_show_tick_labels, mouse_cursor=ft.MouseCursor.CLICK, 
                 ),
                 ft.Switch(
-                    True, "Rotate Chart Titles", value=self.data.get('radar_data', {}).get('rotate_node_titles', False),
+                    True, "\tRotate Chart Nodes", value=self.data.get('radar_data', {}).get('rotate_node_titles', False),
                     on_change=_toggle_rotate_node_titles, mouse_cursor=ft.MouseCursor.CLICK,
                 ),
             ],

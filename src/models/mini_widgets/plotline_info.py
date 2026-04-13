@@ -139,8 +139,8 @@ class PlotlineInformationDisplay(MiniWidget):
                 f"\t\t{self.data['title']}\t\t", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
                 tooltip=f"Rename {self.title}", color=self.widget.data.get('color', None),
             ),
-            on_double_tap=self.widget._rename_clicked,
-            on_tap=self.widget._rename_clicked,
+            on_double_tap=self.widget.rename_clicked,
+            on_tap=self.widget.rename_clicked,
             on_secondary_tap=lambda _: self.widget.story.open_menu(self.widget._get_menu_options()),
             mouse_cursor="click", hover_interval=500
         )

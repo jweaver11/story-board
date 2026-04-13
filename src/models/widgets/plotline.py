@@ -443,6 +443,8 @@ class Plotline(Widget):
     async def _hover_plotline_canvas(self, e: ft.PointerEvent):
         ''' Sets our coordinated for opening the menu when right clicking and updates our alignment we want to pass in '''
 
+        
+
         if self.story.workspace.is_resizing:    # If we're resizing just ignore this call
             return
         

@@ -54,7 +54,7 @@ class Character(Widget):
                 'tag': "character",
                 'pin_location': "left" if data is None else data.get('pin_location', "left"),     # Start our characters on the left pin
                 'color': app.settings.data.get('default_character_color'),
-
+ 
                 # State and view data
                 'edit_mode': True,      # Whether we are in edit mode or not
                 'image_base64': str,    # Saves our icon as img64 string 
@@ -95,9 +95,9 @@ class Character(Widget):
             
             field_name = return_safe_name(field_name_input.value)
             
-            if not field_name:
-                self.p.pop_dialog()
-                return  # Don't create if empty
+            #if not field_name:
+                #self.p.pop_dialog()
+                #return  # Don't create if empty
             
             # Add the field to data if it doesn't exist
             if field_name not in self.data['character_data'][section]:
@@ -121,7 +121,7 @@ class Character(Widget):
             title=ft.Text(f"Create New Field in {section}"),
             content=field_name_input,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                 ft.TextButton("Create", on_click=create_field, style=ft.ButtonStyle(mouse_cursor="click")),
             ],
         )
@@ -307,9 +307,7 @@ class Character(Widget):
         async def _create_new_section(e=None):
             nonlocal new_section_tf
             section_name = return_safe_name(new_section_tf.value)
-            if not section_name:
-                self.p.pop_dialog()
-                return  # Don't create if empty
+            
             
             # Don't create if already exists
             if 'character_data' not in self.data:
@@ -475,7 +473,7 @@ class Character(Widget):
                 ), 
                 margin=ft.Margin.only(right=16)
             ),
-            ft.Container(width=16)
+            #ft.Container(width=16)
             
         ], expand=True, spacing=0)
 
@@ -581,7 +579,6 @@ class Character(Widget):
                     last_span.text = last_span.text[:-1]  # Remove the last new line for cleaner formatting
 
                 # Add the label and container with our text spans to the control list for this section
-                
                 control_list.append(container)
 
             return control_list

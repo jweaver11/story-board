@@ -13,6 +13,7 @@ from utils.safe_string_checker import return_safe_name
 from PIL import Image
 from io import BytesIO
 import base64
+from styles.text_field import TextField
 
 
 
@@ -35,6 +36,7 @@ class World(Widget):
             data = data,  
             is_rebuilt = is_rebuilt  
         )
+        self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
         
         # Verifies this object has the required data fields, and creates them if not
         verify_data(
@@ -122,9 +124,7 @@ class World(Widget):
         async def _create_new_section(e=None):
             nonlocal new_section_tf
             section_name = return_safe_name(new_section_tf.value)
-            if not section_name:
-                self.p.pop_dialog()
-                return  # Don't create if empty
+            
             
             # Don't create if already exists
             if 'world_data' not in self.data:
@@ -165,9 +165,9 @@ class World(Widget):
             
             field_name = return_safe_name(field_name_input.value)
             
-            if not field_name:
-                self.p.pop_dialog()
-                return  # Don't create if empty
+            #if not field_name:
+                #self.p.pop_dialog()
+                #return  # Don't create if empty
             
             # Add the field to data if it doesn't exist
             if field_name not in self.data['world_data'][section]:
@@ -191,8 +191,8 @@ class World(Widget):
             title=ft.Text(f"Create New Field in {section}"),
             content=field_name_input,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
-                ft.TextButton("Create", on_click=create_field),
+                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Create", on_click=create_field, style=ft.ButtonStyle(mouse_cursor="click")),
             ],
         )
      
@@ -303,11 +303,12 @@ class World(Widget):
 
                 # Set a label and container to hold our text spans for each section
                 label = ft.Row([
-                    ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                    ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
                     ft.IconButton(
                         tooltip="Add New Field", icon=ft.Icons.NEW_LABEL_OUTLINED, mouse_cursor="click",
                         on_click=lambda _, s=section:self._new_field_clicked(s), icon_color=self.data.get('color', None)
                     ),
+                    
                 ])
                 control_list.append(label)
 
@@ -322,34 +323,39 @@ class World(Widget):
                         )
                     )
                     continue
+                
 
                 # Go through every key/value pair in this section and add it to our text span list with formatting
                 for key, value in values.items():
-                    if isinstance(value, str) and (value or app.settings.data.get('show_empty_world_fields', True)):
+
+                    if isinstance(value, str) and (value or app.settings.data.get('show_empty_character_fields', True)):
 
                         # Add the each key for this section
                         control_list.append(
                             ft.Row([
-                                ft.TextField(
+                                TextField(
                                     label=key, hint_text=_get_help_text(key), value=value, 
                                     on_blur=lambda e, k=key: self._update_world_data(**{k: e.control.value}), expand=True,
                                     dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
-                                    border_color=ft.Colors.OUTLINE_VARIANT
+                                    border_color=ft.Colors.OUTLINE_VARIANT,
+                                    suffix_icon=ft.IconButton(
+                                        tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, mouse_cursor="click",
+                                        on_click=lambda _, k=key: self._delete_world_data(**{k: ""}), icon_color=ft.Colors.ERROR
+                                    ),
                                 ),
-                                ft.IconButton(
-                                    tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, mouse_cursor="click",
-                                    on_click=lambda _, k=key: self._delete_world_data(**{k: ""}), icon_color=ft.Colors.ERROR
-                                ),
-                                ft.Container(width=10)
+                                
+                                ft.Container(width=1)   # Spacing
                             ])
                         )
-
+    
 
                 # Add the label and container with our text spans to the control list for this section
-                control_list.append(ft.Container(height=10))    # Spacing
+                #control_list.append(ft.Container(height=10))    # Spacing
+                
 
             return control_list
-                    
+
+        
         if self.data.get('image_base64', ""):
             img = ft.Container(
                 ft.Image(
@@ -357,10 +363,10 @@ class World(Widget):
                     width=100,
                     height=100,
                     fit=ft.BoxFit.FILL,
-                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
             )
         else:
-            img = ft.Icon(ft.Icons.PUBLIC_OUTLINED, size=100, color=self.data.get('color', "primary"), expand=False)
+            img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
 
         # Changes for the about section
         async def _change_about_data(e):
@@ -370,18 +376,21 @@ class World(Widget):
 
         about_section = ft.Column([
             ft.Row([
-                ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
                 ft.IconButton(
                     tooltip="Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, icon_color=self.data.get('color', None), 
                     on_click=self._edit_mode_clicked, mouse_cursor="click"
                 ),
             ]),
-            ft.TextField(
-                self.data.get('About', ""), on_blur=_change_about_data, expand=True, 
-                dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
-                border_color=ft.Colors.OUTLINE_VARIANT
-            ), 
-            ft.Container(width=10)
+            ft.Container(
+                TextField(
+                    self.data.get('About', ""), on_blur=_change_about_data, expand=True, 
+                    dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
+                    border_color=ft.Colors.OUTLINE_VARIANT
+                ), 
+                margin=ft.Margin.only(right=16)
+            ),
+            #ft.Container(width=10)
             
         ], expand=True, spacing=0)
 
@@ -390,7 +399,7 @@ class World(Widget):
         header = ft.Row([
             ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_world_image, mouse_cursor="click"),
             about_section
-        ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
+        ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.CENTER)
 
         body = ft.Column([
             header,
@@ -413,10 +422,17 @@ class World(Widget):
     def reload_widget(self): #this is the edit view currently
         ''' Reloads/Rebuilds our widget based on current data '''
 
+        # Rebuild out tab to reflect any changes
+        self.reload_tab()
+
+        # Check if we're in edit mode or not. If yes, build the edit view like this
+        if self.data.get('edit_mode', False):
+            self._edit_mode_view()
+            self._render_widget()
+            return
+
         def _load_world_data_controls() -> list[ft.Control]:
             ''' Loads data from a dict into a given container '''
-
-            # TODO: Skip empty ones check
 
             control_list = []
             
@@ -428,16 +444,19 @@ class World(Widget):
                     continue
 
                 # Set a label and container to hold our text spans for each section
-                label = ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None))
+                label = ft.Text(f"\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None))
                 
+                control_list.append(label)
+
                 # List to hold text spans for each text control in the container
                 text_span_list = []
 
                 # Container to hold the text control of our section info
                 container = ft.Container(         # For template data
                     padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-                    border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(bottom=10, right=16),
-                    content=ft.Row([ft.Text(expand=True, spans=text_span_list, size=14)]), # Forces container to take up space
+                    border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), 
+                    margin=ft.Margin.only(bottom=10, right=16),
+                    content=ft.Row([ft.Text(expand=True, spans=text_span_list, size=16)]), # Forces container to take up space
                 )
 
                 # Go through every key/value pair in this section and add it to our text span list with formatting
@@ -472,19 +491,9 @@ class World(Widget):
                     last_span.text = last_span.text[:-1]  # Remove the last new line for cleaner formatting
 
                 # Add the label and container with our text spans to the control list for this section
-                control_list.append(label)
                 control_list.append(container)
 
             return control_list
-
-        # Rebuild out tab to reflect any changes
-        self.reload_tab()
-
-        # Check if we're in edit mode or not. If yes, build the edit view like this
-        if self.data.get('edit_mode', False):
-            self._edit_mode_view()
-            self._render_widget()
-            return
 
 
         # If NOT in edit mode, build our normal view
@@ -493,8 +502,8 @@ class World(Widget):
             img = ft.Container(
                 ft.Image(
                     src=self.data.get('image_base64', ""),
-                    width=80,
-                    height=80,
+                    width=100,
+                    height=100,
                     fit=ft.BoxFit.FILL,
                 ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
             )
@@ -503,17 +512,14 @@ class World(Widget):
 
         about_section = ft.Column([
             ft.Row([
-                ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
+                ft.Text(f"About", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
                 ft.IconButton(
                     tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), 
                     on_click=self._edit_mode_clicked, mouse_cursor="click"
                 ),
             ]),
-            ft.Container(
-                padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-                border=ft.Border.all(2, ft.Colors.OUTLINE), margin=ft.Margin.only(left=6),   
-                content=ft.Row([ft.Text(self.data.get('About', ""), expand=True, size=14)], expand=True), # Forces container to take up space
-            )
+            ft.Container(ft.Text(f"{self.data.get('About', "")}", expand=True, size=16), margin=ft.Margin.only(right=16)), # Forces container to take up space
+
         ], expand=True, spacing=0)
 
         
