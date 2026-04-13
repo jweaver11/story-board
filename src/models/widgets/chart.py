@@ -12,6 +12,7 @@ from utils.safe_string_checker import return_safe_name
 from styles.text_field import TextField
 import flet_charts as fch
 from styles.colors import colors
+import math
     
 
 class Chart(Widget):
@@ -55,9 +56,32 @@ class Chart(Widget):
                 'type': type,             # How our chart is being displayed (bar or radar)
                 'Description': str,
 
+                'show_info': True,   # Whether to show the info column on the side of our charts or not. Only applies to radar charts
+
                 'bar_data': {
-                    
-                },              
+                    'left_axis_title': "Left Axis",
+                    'bottom_axis_title': "Bottom Axis",
+                    'show_labels': True,           # Whether to show labels on our axes or not
+                    'rod_shape': "rounded",          # The shape of our bars/rods. Either "rounded" or "square"
+                    'rod_width': 30,         # The width of our bars/rods. Only applies to vertical bar charts, not horizontal ones
+                    'stack_rods': False,      # If False, rods display on top of each other, not side by side
+                    'show_horizontal_grid_lines': False,
+                    'show_vertical_grid_lines': False,
+                    'max_y': 20,        # The max y value of our chart, which is the value that will fill the whole chart. Should be higher than any value in our bars
+                    'groups': [
+                        #{
+                            #'name': "Group 1", 
+                            #'visible': True,
+                            #'expanded': False,
+                            #'rods': [
+                                #{'to_y': 5, 'color': "primary"},
+                                #{'to_y': 10, 'color': "primary"},
+                                #{'to_y': 7, 'color': "primary"},
+                            #]
+                        #},
+                    ]
+                },        
+
 
                 # Data used for radar charts
                 'radar_data': {
@@ -69,7 +93,6 @@ class Chart(Widget):
                         "Node 5"
                     ],   
                     'make_chart_round': True,   # Whether to show our radar chart as a circle or polygon
-                    'show_info': True,  # Whether to show the info column on the side with our nodes and data sets
                     'min_value': 0,     # The minimum value for our radar chart, which will be the center point of the chart
                     'max_value': 20,    # The maximum value for our radar chart, which will be the outer edge of the chart
                     'tick_count': 2,    # Number of tick lines between the center and outer edge of the chart
@@ -103,52 +126,474 @@ class Chart(Widget):
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
 
-    # WIP
-    async def _radar_chart_event(self, e: fch.RadarChartEvent):
-        #TODO: dataset index only shows index of visible charts, so its messed up if some are hidden
-        return
-        chart = e.control
-        event_type = e.type                 # Type of event
-        dataset_index = e.data_set_index        # Index of which dataset we are interacting with
-        entry_index = e.entry_index         # Index of which entry in the dataset we are interacting with  
-        entry_value = e.entry_value     # Value of the indexed entry in that dataset
-
-        #if dataset_index is None or entry_index is None:
-            #return      # If either of these are None, we aren't interacting with an actual entry so we can ignore the event
-
-        match event_type:
-            case fch.ChartEventType.POINTER_HOVER:
-                print(e)
-                if dataset_index is not None:
-                    chart.data_sets[dataset_index].fill_color = ft.Colors.WHITE
-                chart.update()
+    # Shows the info column on the side of our chart or not
+    async def _toggle_show_info(self, e):
+        self.data['show_info'] = not self.data.get('show_info', True)
+        await self.save_dict()
+        self.reload_widget()
 
 
     # Returns our widgets view for bar charts
     def _bar_chart_view(self):
         ''' Builds out the body of our bar chart widget '''
 
+
+        async def _toggle_group_visibility(e):
+            idx = e.control.data
+            group = self.data.get('bar_data', {}).get('groups', [])[idx]
+            group['visible'] = not group.get('visible', True)
+            await self.save_dict()
+            self.reload_widget()
+
+        async def _update_group_title(e):
+            idx = e.control.data
+            new_title = e.control.value
+            self.data.get('bar_data', {}).get('groups', [])[idx]['name'] = new_title
+            await self.save_dict()
+            chart.bottom_axis.labels[idx].label = new_title
+            chart.update()
+
+        async def _delete_group(e):
+            idx = e.control.data
+
+            async def _delete_group_confirm(_):
+                
+                self.data.get('bar_data', {}).get('groups', []).pop(idx)
+                await self.save_dict()
+                self.reload_widget()
+                self.p.pop_dialog()
+                
+
+            group_title = self.data.get('bar_data', {}).get('groups', [])[idx].get('name', "Group")
+
+            dlg = ft.AlertDialog(
+                title=f"Are you sure you want to delete {group_title}?",
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
+                    ft.TextButton("Delete", on_click=_delete_group_confirm, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
+                ]
+            )
+            self.p.show_dialog(dlg)
+
+        async def _update_expanded_state(e):
+            expanded = e.control.expanded
+            idx = e.control.data
+            self.data.get('bar_data', {}).get('groups', [])[idx]['expanded'] = expanded
+            await self.save_dict()
+
+        async def _add_rod_clicked(e):
+            idx = e.control.data
+            group = self.data.get('bar_data', {}).get('groups', [])[idx]
+            median_value = int(self.data.get('bar_data', {}).get('max_y', 20) / 2)
+            if median_value < self.data.get('radar_data', {}).get('min_value', 0):
+                median_value = int(self.data.get('radar_data', {}).get('min_value', 0))
+            group['rods'].append({
+                'to_y': median_value, 
+                'color': "primary"
+            })
+            await self.save_dict()
+            self.reload_widget()
+
+        async def _update_rod_value(e):
+            idx, rod_idx = e.control.data
+            new_value = int(e.control.value)
+
+            # Update our data model
+            self.data['bar_data']['groups'][idx]['rods'][rod_idx]['to_y'] = new_value
+
+            # Find acutal index here in case of hidden groups
+            visible_idx = -1
+            for i, group in enumerate(self.data.get('bar_data', {}).get('groups', [])):
+                if group.get('visible', True):
+                    visible_idx += 1
+                if i == idx:
+                    break
+
+            # Update the chart visually in real-time
+            chart.groups[visible_idx].rods[rod_idx].to_y = new_value
+            chart.update()
+
+        async def _delete_rod_clicked(e):
+            idx, rod_idx = e.control.data
+
+            
+            self.data['bar_data']['groups'][idx]['rods'].pop(rod_idx)
+            await self.save_dict()
+            self.reload_widget()
+            self.p.pop_dialog()
+
+        async def _change_rod_color(e):
+            idx, rod_idx = e.control.data
+            new_color = e.control.content
+            e.control.parent.icon_color = new_color
+            e.control.parent.update()   
+
+            self.data['bar_data']['groups'][idx]['rods'][rod_idx]['color'] = new_color
+            await self.save_dict()
+            chart.groups[idx].rods[rod_idx].color = new_color
+            chart.update()
+
+           
+
+        # Class to hold our datasets in the dropdown menu in the info column
+        class BarGroup(ft.ExpansionTile):
+            def __init__(self, title: str, color: str, entries: list, visible: bool, idx: int, expanded: bool, min_value: int = 0, max_value: int = 20):
+                self.index = idx
+            
+                super().__init__(
+                    leading=ft.IconButton(
+                        ft.Icons.VISIBILITY_OUTLINED if visible else ft.Icons.VISIBILITY_OFF_OUTLINED,
+                        color if visible else ft.Colors.ON_SURFACE_VARIANT,
+                        on_click=_toggle_group_visibility,
+                        mouse_cursor=ft.MouseCursor.CLICK, 
+                        data=idx,
+                    ),
+                    title=TextField(
+                        title, dense=True, data=idx, expand=True,
+                        suffix_icon=ft.IconButton(
+                            ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 
+                            mouse_cursor=ft.MouseCursor.CLICK, data=idx,
+                            on_click=_delete_group
+                        ),
+                        on_blur=_update_group_title
+                    ),
+                    dense=True, tile_padding=ft.Padding.only(right=20), controls_padding=ft.Padding.only(right=30, left=30),
+                    expanded=expanded, 
+                    controls=[
+                        ft.Row([
+                            ft.Text("Rods", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),
+                            ft.TextButton(
+                                "Add New Rod", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD)), 
+                                on_click=_add_rod_clicked, 
+                                data=idx
+                            )
+                        ]),
+                    ] + [
+                        
+                        ft.Row([
+                            ft.PopupMenuButton(
+                                icon=ft.Icons.COLOR_LENS_OUTLINED, 
+                                icon_color=entry if visible else ft.Colors.ON_SURFACE_VARIANT, 
+                                menu_padding=ft.Padding.all(0),
+                                tooltip="Change Color",
+                                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                                items=[
+                                    ft.PopupMenuItem(
+                                        color.capitalize(), label_text_style=ft.TextStyle(color=color, weight=ft.FontWeight.BOLD),
+                                        mouse_cursor=ft.MouseCursor.CLICK,
+                                        on_click=_change_rod_color, data=(idx, i)
+                                    ) for color in colors
+                                ]
+                            ),
+                            ft.Text(str(min_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                            ft.Slider(
+                                value=entry, 
+                                min=min_value,
+                                max=max_value, 
+                                label="{value}", on_change=_update_rod_value, 
+                                data=(idx, i),
+                                expand=True,
+                                divisions=max_value - min_value if max_value > min_value else None,
+                                disabled=True if not visible else False
+                            ),
+                            ft.Text(str(max_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                            ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, on_click=_delete_rod_clicked, data=(idx, i), mouse_cursor=ft.MouseCursor.CLICK)    
+                        ], spacing=0) for i, entry in enumerate(entries)
+                    ],
+                    data=idx,
+                    on_change=_update_expanded_state,
+                    
+                )
+                #ft.ExpansionTile()
+
         # TODO:
-        # Show labels on left and bottom axis
-        # Option for horizontal and vertical grid lines
-        # Option for stacked bars or seperate ones
-        # Option to edit baseline and max y values
         # Add labels to Bar Chart Groups
-       
-        fch.ChartAxis()
+        # Hide Groups. And rods????
+
+        async def _set_axis_title(e):
+            new_title = e.control.value
+            axis = e.control.data
+
+            match axis:
+
+                # Update our data and chart to reflect
+                case "left":
+                    self.data['bar_data']['left_axis_title'] = new_title
+                    chart.left_axis.title = ft.Text(new_title)
+                    
+                case "bottom":
+                    self.data['bar_data']['bottom_axis_title'] = new_title
+                    chart.bottom_axis.title = ft.Text(new_title)
+                    
+                case "top":
+                    self.data['bar_data']['top_axis_title'] = new_title
+                    chart.top_axis.title = ft.Text(new_title)
+                    
+                case "right":
+                    self.data['bar_data']['right_axis_title'] = new_title
+                    chart.right_axis.title = ft.Text(new_title)
+
+
+            await self.save_dict()
+            chart.update()
+
+        async def _set_max_value(e):
+            
+            if e.control.value == "" or e.control.value is None:
+                return
+            new_value = int(e.control.value)
+
+            self.data['bar_data']['max_y'] = new_value            
+
+            await self.save_dict()
+            self.reload_widget()
+
+        async def _set_show_labels(e):
+            self.data['bar_data']['show_labels'] = e.control.value
+            chart.left_axis.show_labels = e.control.value
+            chart.bottom_axis.show_labels = e.control.value
+
+            await self.save_dict()
+            chart.update()
+        
+        async def _set_rod_width(e):
+            
+            new_width = int(e.control.value)
+            self.data['bar_data']['rod_width'] = new_width
+            for group in chart.groups:
+                for rod in group.rods:
+                    rod.width = new_width
+
+            await self.save_dict()
+            chart.update()
+
+        async def _set_stacked_rods(e):
+            self.data['bar_data']['stack_rods'] = e.control.value
+            for group in chart.groups:
+                group.group_vertically = e.control.value
+
+            await self.save_dict()
+            chart.update()
+
+        async def _set_rod_shape(e):
+            new_shape = "rounded" if e.control.value else "square"
+            self.data['bar_data']['rod_shape'] = new_shape
+            for group in chart.groups:
+                for rod in group.rods:
+                    rod.border_radius = None if new_shape == "rounded" else ft.BorderRadius.only(top_left=2, top_right=2)
+
+            await self.save_dict()
+            chart.update()
+
+        async def _set_grid_lines(e):
+            grid_line_type = e.control.data
+            show_grid_lines = e.control.value
+
+            match grid_line_type:
+                case "horizontal":
+                    self.data['bar_data']['show_horizontal_grid_lines'] = show_grid_lines
+                    chart.horizontal_grid_lines = fch.ChartGridLines() if show_grid_lines else None
+                case "vertical":
+                    self.data['bar_data']['show_vertical_grid_lines'] = show_grid_lines
+                    chart.vertical_grid_lines = fch.ChartGridLines() if show_grid_lines else None
+
+            await self.save_dict()
+            chart.update()
+
+        x_labels = []
+        for idx, group in enumerate(self.data.get('bar_data', {}).get('groups', [])):
+            if group.get('visible', True) == False:
+                continue
+            print("group name: ", group.get('name', ""))
+            x_labels.append(fch.ChartAxisLabel(idx, label=group.get('name', "")))
+
+        # Our bar chart
         chart = fch.BarChart(
-            groups=[
-                fch.BarChartGroup(0, [fch.BarChartRod(from_y=0, to_y=3), fch.BarChartRod(from_y=0, to_y=5), fch.BarChartRod(from_y=0, to_y=2)]),
-                fch.BarChartGroup(1, [fch.BarChartRod(from_y=0, to_y=4), fch.BarChartRod(from_y=0, to_y=2), fch.BarChartRod(from_y=0, to_y=6)]),
-                fch.BarChartGroup(2, [fch.BarChartRod(from_y=0, to_y=5), fch.BarChartRod(from_y=0, to_y=3), fch.BarChartRod(from_y=0, to_y=4)]),
-            ],
-            interactive=True,
-            max_y=10,
-            bottom_axis=fch.ChartAxis(ft.Text("Bottom Axis"), label_size=40),
-            left_axis=fch.ChartAxis(ft.Text("Left Axis"), title_size=40, show_labels=False),
-            baseline_y=0,
+            
+            # User customizable options
+            max_y=self.data.get('bar_data', {}).get('max_y', 20),
+            bottom_axis=fch.ChartAxis(
+                ft.Text(self.data.get('bar_data', {}).get('bottom_axis_title'), theme_style=ft.TextThemeStyle.LABEL_LARGE,  size=18),
+                title_size=40, label_size=30,
+                show_labels=self.data.get('bar_data', {}).get('show_labels', False),
+                labels=x_labels
+            ),
+            left_axis=fch.ChartAxis(
+                ft.Text(self.data.get('bar_data', {}).get('left_axis_title'), theme_style=ft.TextThemeStyle.LABEL_LARGE, size=18), 
+                title_size=40, label_size=30,
+                show_labels=self.data.get('bar_data', {}).get('show_labels', False),
+                
+            ),
+            top_axis=fch.ChartAxis(ft.Text(""), labels=fch.ChartAxisLabel(0, " ")), # Invisible label for behavior purposes
+            horizontal_grid_lines=fch.ChartGridLines() if self.data.get('bar_data', {}).get('show_horizontal_grid_lines', False) else None,
+            vertical_grid_lines=fch.ChartGridLines() if self.data.get('bar_data', {}).get('show_vertical_grid_lines', False) else None,
+
+            # Constants - user cannot change
             expand=3,
-            border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT), bottom=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT))
+            interactive=True,
+            animation=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            border=ft.Border.only(
+                left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT),
+                bottom=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT),
+            ),
+            
+        )
+
+        # Load our data into the chart
+        for idx, group in enumerate(self.data.get('bar_data', {}).get('groups', [])):
+            # Skip hidden ones
+            if group.get('visible', True) == False:
+                continue
+            group = fch.BarChartGroup(
+                idx,
+                spacing=4, 
+                group_vertically=self.data.get('bar_data', {}).get('stack_rods', False),
+                rods=[
+                    fch.BarChartRod(
+                        from_y=0, to_y=rod.get('to_y', 0), 
+                        width=self.data.get('bar_data', {}).get('rod_width', 30),
+                        border_radius=None if self.data.get('bar_data', {}).get('rod_shape', "rounded") == "rounded" else ft.BorderRadius.only(top_left=2, top_right=2),
+                        color=rod.get('color', self.data.get('color', ft.Colors.PRIMARY)),
+                    ) for rod in group.get('rods', [])
+                ]
+            )
+            chart.groups.append(group)
+
+        
+        # If we're not showing info, just give us a button to show info and return early
+        if not self.data.get('show_info', True):
+
+            self.body_container.content = ft.Row(
+                [
+                    ft.Container(chart, expand=3, padding=ft.Padding.only(left=20, bottom=20)), 
+                    ft.IconButton(
+                        ft.Icons.INFO_OUTLINE, on_click=self._toggle_show_info, 
+                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                    )
+                ], expand=True, spacing=0
+            )
+            return  # Don't load the info column if we're not showing it     
+        
+        # Adding a new dataset with default values in each node
+        async def _add_group(e):
+            median_value = int(self.data.get('bar_data', {}).get('max_y', 20) / 2)
+            if median_value < self.data.get('radar_data', {}).get('min_value', 0):
+                median_value = int(self.data.get('radar_data', {}).get('min_value', 0))
+            self.data['bar_data']['groups'].append({
+                'name': f"Group {len(self.data.get('bar_data', {}).get('groups', [])) + 1}",
+                'visible': True,
+                'expanded': False,
+                'rods': [
+                    {
+                        'to_y': median_value, 
+                        'color': "primary"
+                    }
+                ]
+            })
+            await self.save_dict()
+            self.reload_widget()
+        
+        def _get_groups_info() -> list[ft.Control]:
+            controls = [
+                # Data for our bar chart info sections
+                ft.Row([
+                    ft.Text(f"\tData", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                    ft.IconButton(
+                        ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                        self.data.get('color', ft.Colors.PRIMARY),
+                        mouse_cursor=ft.MouseCursor.CLICK,
+                        on_click=_add_group,
+                    ),
+                ], spacing=0),
+            ]
+
+            for idx, group in enumerate(self.data.get('bar_data', {}).get('groups', [])):
+                controls.append(
+                    BarGroup(
+                        title=group.get('name', "Group"), 
+                        color=group.get('rods', [{}])[0].get('color', self.data.get('color', ft.Colors.PRIMARY)) if len(group.get('rods', [])) > 0 else self.data.get('color', ft.Colors.PRIMARY), 
+                        entries=[rod.get('to_y', 0) for rod in group.get('rods', [])], 
+                        visible=group.get('visible', True),
+                        idx=idx, 
+                        expanded=group.get('expanded', False),
+                        min_value=0,
+                        max_value=self.data.get('bar_data', {}).get('max_y', 20)
+                    )
+                )
+
+            return controls
+
+
+        groups_info = _get_groups_info()
+       
+        info_column = ft.Column(
+            expand=True, scroll="auto", spacing=0,
+            controls=groups_info + [
+                
+                
+                ft.Divider(),
+
+                
+                # Appearence and information sections
+                ft.Text(f"\tAppearence", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.Container(height=10),
+
+                # Axis titles
+                ft.Row([
+                    TextField(
+                        label="Left Axis Title", value=self.data.get('bar_data', {}).get('left_axis_title', ""), 
+                        expand=True, data="left", on_blur=_set_axis_title
+                    ),
+                    TextField(
+                        label="Bottom Axis Title", value=self.data.get('bar_data', {}).get('bottom_axis_title', ""), 
+                        expand=True, data="bottom", on_blur=_set_axis_title
+                    ),
+                ]),
+                
+                ft.Container(height=10),
+
+                # Max y value   
+                TextField(
+                    label="Max Y Value", value=str(self.data.get('bar_data', {}).get('max_y', 20)), 
+                    input_filter=ft.NumbersOnlyInputFilter(), data="max", on_blur=_set_max_value
+                ),
+                
+
+                # Rod options
+                ft.Row([
+                    ft.Text("Rod Width", theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                    ft.Slider(
+                        value=self.data.get('bar_data', {}).get('rod_width', 30), min=10, max=100, 
+                        label="{value}", expand=True, on_change=_set_rod_width
+                    ),
+                ], spacing=0),
+                ft.Switch(
+                    value=self.data.get('bar_data', {}).get('stack_rods', False), 
+                    label="\tStack Rods", on_change=_set_stacked_rods
+                ),
+                ft.Switch(
+                    value=True if self.data.get('bar_data', {}).get('rod_shape', "rounded") == "rounded" else False, 
+                    label="\tRounded Rods", on_change=_set_rod_shape
+                ),
+
+                # Axis and Grid line options
+                ft.Switch(
+                    value=self.data.get('bar_data', {}).get('show_labels', False), 
+                    label="\tShow Axis Labels", on_change=_set_show_labels
+                ),
+                ft.Switch(
+                    value=self.data.get('bar_data', {}).get('show_horizontal_grid_lines', False), 
+                    label="\tShow Horizontal Grid Lines", on_change=_set_grid_lines, data="horizontal"
+                ),
+                ft.Switch(
+                    value=self.data.get('bar_data', {}).get('show_vertical_grid_lines', False), 
+                    label="\tShow Vertical Grid Lines", on_change=_set_grid_lines, data="vertical"
+                ),
+
+                
+                
+            ]
         )
 
         chart_info = ft.Container(
@@ -165,32 +610,22 @@ class Chart(Widget):
                             color=self.data.get('color', None), expand=True
                         ),
                         ft.IconButton(
-                            ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info, 
+                            ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info,
                             mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                         ),
                     ]),
                     ft.Divider(2, 2),
-                    #info_column
+
+                    info_column
                 ], expand=True, scroll="none", spacing=0),
         )
         self.body_container.content = ft.Row(
             [
-                chart,
+                ft.Container(chart, expand=3, padding=ft.Padding.only(bottom=20, left=20)),
                 chart_info
             ], expand=True, spacing=0
         )
-
-    
-
-            
         
-            
-        
-    # Shows the info column on the side of our chart or not
-    async def _toggle_show_info(self, e):
-        self.data['radar_data']['show_info'] = not self.data['radar_data'].get('show_info', True)
-        await self.save_dict()
-        self.reload_widget()
         
     # Returns our widgets view for radar charts
     def _radar_chart_view(self):
@@ -299,7 +734,6 @@ class Chart(Widget):
             ) if not self.data.get('radar_data', {}).get('show_tick_labels', False) else 
                 ft.TextStyle(size=16, color=self.data.get('color', ft.Colors.ON_SURFACE_VARIANT), italic=True),
             title_text_style=ft.TextStyle(size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-            on_event=self._radar_chart_event,
             animation=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             title_position_percentage_offset=0.1,
             radar_shape=fch.RadarShape.CIRCLE if self.data.get('radar_data', {}).get('make_chart_round', False) else fch.RadarShape.POLYGON,
@@ -349,11 +783,11 @@ class Chart(Widget):
             )
             keys.controls.append(key)
         
-        if not self.data.get('radar_data', {}).get('show_info', True):
+        if not self.data.get('show_info', True):
 
             self.body_container.content = ft.Column([
                 ft.Container(height=1),
-                keys,
+                ft.Row([ft.Container(keys, expand=True)]),
                 ft.Row(
                     [
                         chart, 
@@ -618,9 +1052,7 @@ class Chart(Widget):
                         on_click=_add_node_title,
                         mouse_cursor=ft.MouseCursor.CLICK,
                     ),
-                    ft.Container(expand=True),
                     
-                    ft.Container(width=11)
                     
                 ], spacing=0),
                 

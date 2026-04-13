@@ -799,8 +799,8 @@ class Story(ft.View):
             active_rail_stack.width += int(e.local_delta.x)    # Apply the change to our rail
             if active_rail_stack.width < 210:
                 active_rail_stack.width = 210
-            elif active_rail_stack.width > page.width / 2:
-                active_rail_stack.width = page.width / 2
+            elif active_rail_stack.width > 500:
+                active_rail_stack.width = 500
             active_rail_stack.update()
 
         # Called when app stops dragging the resizer to resize the active rail
