@@ -528,10 +528,7 @@ class CanvasInformationDisplay(MiniWidget):
     # Called when reloading our mini widget UI
     def reload_mini_widget(self):
        
-        # Manage saving so not at the end of every stroke.
-        # Add undo/redo based on capture list
-        # Remove old items from the undo/redo list after like 30 or so 
-        # Height ad width just for exporting
+        # TODO:
         # Set dark and light transparent bg images for all canvases
 
         title_control = ft.Row([
@@ -539,9 +536,9 @@ class CanvasInformationDisplay(MiniWidget):
             
             ft.GestureDetector(
                 ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.FADE),
-                on_double_tap=self.widget._rename_clicked,
-                on_tap=self.widget._rename_clicked,
-                on_secondary_tap=lambda e: self.widget.story.open_menu(self.widget._get_menu_options()),
+                on_double_tap=self.widget.rename_clicked,
+                on_tap=self.widget.rename_clicked,
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self.widget._get_menu_options()),
                 mouse_cursor="click", hover_interval=500,
                 tooltip=f"Rename {self.title}"
             ),

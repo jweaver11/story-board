@@ -615,8 +615,8 @@ class CanvasRail(Rail):
 
         # If we use anti aliasing or not
         self.paint_anti_alias_toggle = ft.Switch(
-            True, "Anti-Aliasing  ", on_change=_paint_anti_alias_changed,
-            label_position=ft.LabelPosition.LEFT,
+            True, "\tAnti-Aliasing  ", on_change=_paint_anti_alias_changed,
+            label_position=ft.LabelPosition.LEFT, label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
             value=app.settings.data.get('paint_settings', {}).get('anti_alias', True),
             tooltip="Whether to use anti-aliasing for smoother brush strokes. Disabling may result in jagged edges"
         )
@@ -773,29 +773,29 @@ class CanvasRail(Rail):
                 # Custom saved colors and custom brushes
 
                 ft.Row([
-                    ft.Text("Size", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Size of your strokes"), 
+                    ft.Text("\tSize", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Size of your strokes"), 
                     self.paint_width_slider
                 ], spacing=0),      # Size slider
 
                 ft.Row([
-                    ft.Text("Stroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="End shape of your strokes"), 
+                    ft.Text("\tStroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="End shape of your strokes"), 
                     ft.Container(self.paint_stroke_cap_selector, bgcolor=ft.Colors.SURFACE_CONTAINER, shape=ft.BoxShape.CIRCLE)
                 ]),     # Stroke cap shape selector
                 #ft.Container(height=10),   # Spacer
 
                 ft.Row([
-                    ft.Text("Stroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Shape taken at point of two strokes connecting"), 
+                    ft.Text("\tStroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Shape taken at point of two strokes connecting"), 
                     ft.Container(self.paint_stroke_join_selector, bgcolor=ft.Colors.SURFACE_CONTAINER, shape=ft.BoxShape.CIRCLE)
                 ]),   # Stroke join shape selector
                 #ft.Container(height=10),   # Spacer
  
                 # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
                 ft.Divider(),
-                ft.Row([ft.Text("Effects", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
+                #ft.Row([ft.Text("Effects", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
                 #ft.Container(height=10),   # Spacer
                 self.paint_anti_alias_toggle,
                 #ft.Container(height=10),   # Spacer
-                ft.Row([ft.Text("Blur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider]),
+                ft.Row([ft.Text("\tBlur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider]),
                 #ft.Container(height=10),   # Spacer
 
 
