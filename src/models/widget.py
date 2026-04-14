@@ -84,6 +84,7 @@ class Widget(ft.Container):
 
         # If widgets display info overtop content rather than next to it (plotline, map, canvas, etc.)
         self.mini_widgets_displayed_overtop: bool = True       # Widgets that set this false need to set their own mini widgets in reload_widget
+        self.no_render_mini_widgets: bool = False    # If we should let the widget render its own mini widgets, or have it handled here
 
 
         # UI ELEMENTS - Body                  
@@ -539,6 +540,12 @@ class Widget(ft.Container):
             )
         ]
     
+    # Shows the info column on the side of our chart or not
+    async def _toggle_show_info(self, e):
+        self.data['show_info'] = not self.data.get('show_info', True)
+        await self.save_dict()
+        self.reload_widget()
+    
     async def rename_clicked(self, e=None):
         ''' Replaces our widget title with a text field to rename it '''
         from utils.check_widget_unique import check_widget_unique
@@ -801,15 +808,22 @@ class Widget(ft.Container):
         self.master_stack.controls.clear()
 
         self.mini_widgets_wrapper.visible = False
-        self.mini_widgets_wrapper.controls = [mw for mw in self.mini_widgets]
-        for mw in self.mini_widgets_wrapper.controls:
-            if mw.visible:
-                self.mini_widgets_wrapper.visible = True
-                break
+        if not self.no_render_mini_widgets:
+            
+            self.mini_widgets_wrapper.controls = [mw for mw in self.mini_widgets]
+            for mw in self.mini_widgets_wrapper.controls:
+                if mw.visible:
+                    self.mini_widgets_wrapper.visible = True
+                    break
 
 
         # Add our sizing canvas and body container to the stack first
-        self.master_stack.controls = [ft.Row([self.body_container, self.mini_widgets_wrapper], spacing=0, expand=True)]
+        self.master_stack.controls = [
+            ft.Row([
+                self.body_container, 
+                self.mini_widgets_wrapper if self.mini_widgets_wrapper.visible else ft.Container()
+            ], spacing=0, expand=True)
+        ]
 
         try:
 

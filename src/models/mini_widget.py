@@ -37,6 +37,7 @@ class MiniWidget(ft.Container):
             shadow=ft.BoxShadow(0, 1),
             data=data,     
             bgcolor=ft.Colors.SURFACE_CONTAINER,
+            animate=ft.Animation(200, ft.AnimationCurve.DECELERATE)
             #blur=5,
         )
 
@@ -398,11 +399,17 @@ class MiniWidget(ft.Container):
                 ],)
             )
         return ft.Column(controls, spacing=8)
+    
+    # Called every time the mouse moves over our rail
+    async def _set_menu_coords(self, e: ft.PointerEvent):
+        ''' Stores our mouse positioning so we know where to open menus '''
+        self.widget.story.mouse_x = e.global_position.x 
+        self.widget.story.mouse_y = e.global_position.y
 
 
     def _get_menu_options(self) -> list[ft.Control]:
 
-        # Color, rename
+        # Color, rename, delete
         return [
             MenuOptionStyle(
                 on_click=self._rename_clicked,
@@ -411,7 +418,6 @@ class MiniWidget(ft.Container):
                     ft.Text(
                         "Rename", 
                         weight=ft.FontWeight.BOLD, 
-                        
                     ), 
                 ]),
             ),

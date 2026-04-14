@@ -41,6 +41,8 @@ class Document(Widget):
                 'color': app.settings.data.get('default_canvas_color'),
                 'mini_widgets_displayed_overtop': False,  
 
+                'show_info': True,   # Whether to show the info column on the side of our charts or not.
+
                 # Comments displayed on the side of the document
                 'comments': {           
                     'Summary': dict,      # Default comment for summaries.
@@ -57,27 +59,14 @@ class Document(Widget):
             self.p.run_task(self.save_dict)
 
         # We render our own mini widgets (comments), so we don't need parent class to render them as well
-        self.mini_widgets_displayed_overtop = False     
+        self.no_render_mini_widgets = True  
 
         self.comments = {}
         self.reference_images = {}
         self.load_comments()
         self.load_reference_images()
 
-        # Hold our comments on left and right side of the document
-        self.left_comments = IsolatedColumn([], expand=1, scroll="none", horizontal_alignment=ft.CrossAxisAlignment.END)
-        self.right_comments = IsolatedColumn([], expand=1, scroll="none")
-
-        # Holds our flet quill
-        self.document_container = ft.Container(
-            ft.TextField(hint_text="Temp doc textfield instead of quill for now", expand=True),
-            expand=3, margin=ft.Margin.symmetric(vertical=40, horizontal=40),
-            border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
-            border_radius=ft.BorderRadius.all(10),
-            alignment=ft.Alignment.TOP_CENTER, padding=ft.Padding.all(72),
-            height=1200,
-            #aspect_ratio=8.5/11.0,  # paper-like ratio
-        )
+        
 
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -187,7 +176,7 @@ class Document(Widget):
 
                 self._create_reference_image(title=file_name, side_location=side_location, image_str=encoded_string)
                 await self.save_dict()  # Save to our data
-                await asyncio.sleep(0.2)  # Small delay to ensure data is saved before reloading
+                #await asyncio.sleep(0.2)  # Small delay to ensure data is saved before reloading
                 self.reload_widget() # Reload workspace to update the UI with our new image
                     
 
@@ -202,116 +191,98 @@ class Document(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        # clear mini widgets from the sides and re-add them
-        self.left_comments.controls.clear()
-        self.right_comments.controls.clear()
-        self.left_comments.controls.append(ft.Container(height=20))
-        self.right_comments.controls.append(ft.Container(height=20))
 
-        # Add buttons to create comments on left or right side of the document
-        self.left_comments.controls.append(
-            ft.MenuBar(
-                [
-                    ft.SubmenuButton(
-                        ft.Container(
-                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', "primary")),
-                            padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
-                            width=40, height=40, alignment=ft.Alignment.CENTER
-                        ),
-                        tooltip="Create new comment or reference image", expand=False,
-                        #style=ft.ButtonStyle(mouse_cursor="click"),
-                        controls=[
-                            ft.MenuItemButton(
-                                "Comment",
-                                leading=ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, self.data.get('color', "primary")), 
-                                on_click=lambda e: self.create_comment_clicked(e, "left"),
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                            ),
-                            ft.MenuItemButton(
-                                "Reference Image", 
-                                leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), 
-                                on_click=self._create_reference_image_clicked,
-                                data="left",
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                            ),
-                        ],
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
-                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                    )
-                ],
-                style=ft.MenuStyle(
-                    bgcolor="transparent", shadow_color="transparent",
-                    shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding.all(0)
-                ),
-                
-            )
-        )
-        self.right_comments.controls.append(
-            ft.MenuBar(
-                [
-                    ft.SubmenuButton(
-                        ft.Container(
-                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', "primary")),
-                            padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
-                            width=40, height=40, alignment=ft.Alignment.CENTER
-                        ),
-                        tooltip="Create new comment or reference image", expand=False,
-                        #style=ft.ButtonStyle(mouse_cursor="click"),
-                        controls=[
-                            ft.MenuItemButton(
-                                "Comment",
-                                leading=ft.Icon(ft.Icons.ADD_COMMENT_OUTLINED, self.data.get('color', "primary")), 
-                                on_click=lambda e: self.create_comment_clicked(e, "right"),
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                            ),
-                            ft.MenuItemButton(
-                                "Reference Image", 
-                                leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), 
-                                on_click=self._create_reference_image_clicked,
-                                data="right",
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                            ),
-                        ],
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
-                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                    )
-                ],
-                style=ft.MenuStyle(
-                    bgcolor="transparent", shadow_color="transparent",
-                    shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding.all(0)
-                ),
-                
-            )
+        #quill = FletQuill() # Put inside document container
+
+        # Holds our flet quill
+        document_container = ft.Container(
+            ft.TextField(hint_text="Temp doc textfield instead of quill for now", expand=True),
+            expand=3, margin=ft.Margin.symmetric(vertical=40, horizontal=40),
+            border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
+            border_radius=ft.BorderRadius.all(10),
+            alignment=ft.Alignment.TOP_CENTER, padding=ft.Padding.all(72),
+            #height=1200,
+            #aspect_ratio=8.5/11.0,  # paper-like ratio
         )
 
+        # If we're not showing info, just give us a button to show info and return early
+        if not self.data.get('show_info', True):
+            print("Not showing info, showing button to show info")
+
+            self.body_container.content = ft.Row(
+                [
+                    document_container, 
+                    ft.IconButton(
+                        ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
+                        on_click=self._toggle_show_info, 
+                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                    )
+                ], expand=True, spacing=0
+            )
+            self._render_widget()
+            return      
         
+        # Otherwise, build our info column
+        info_column = ft.Column([
+            ft.Row([
+                ft.Text(
+                    f"\tComments", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+                    color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
+                    ),
+                ft.PopupMenuButton(
+                    icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, icon_color=self.data.get('color', "primary"),
+                    tooltip="Create new comment or reference image",
+                    style=ft.ButtonStyle(mouse_cursor="click"),
+                    menu_padding=ft.Padding.all(0),
+                    items=[
+                        ft.PopupMenuItem(
+                            "Comment",
+                            ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, self.data.get('color', "primary")), 
+                            on_click=self.create_comment_clicked,
+                            mouse_cursor="click",
+                        ),
+                        ft.PopupMenuItem(
+                            "Reference Image", 
+                            ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), 
+                            on_click=self._create_reference_image_clicked,
+                            data="left",
+                            mouse_cursor="click",
+                        ),
+                    ],
+                ),
+                    
+                ft.Container(expand=True),
+                ft.IconButton(
+                    ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info,
+                    mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                ),
+            ], spacing=0),
+            ft.Divider()
+        ], expand=1, spacing=0, scroll="auto")
 
-        # Add our comments to the correct side
-        for mw in self.mini_widgets:
-            if mw.data.get('side_location', 'left') == 'left':
-                self.left_comments.controls.append(mw)
+        # Add our mini widgets to our info column, with dividers in between
+        for idx, mw in enumerate(self.mini_widgets):
+            info_column.controls.append(mw)
+            if idx != len(self.mini_widgets) - 1:   # Don't add divider after last mini widget
+                info_column.controls.append(ft.Divider())
             else:
-                self.right_comments.controls.append(mw)
+                info_column.controls.append(ft.Container(expand=True))  # Little padding at the end of the list
 
-        # Re-set our document content to a flet quill
-        self.document_container.content = ft.TextField("Quill goes here", expand=True, multiline=True)
-        
-        # Will hold our comments on left and right side
-        doc_row = IsolatedRow([
-            self.left_comments,
-            self.document_container,
-            self.right_comments
-        ], expand=True, vertical_alignment=ft.CrossAxisAlignment.START)
-
-        # Column that holds our row with the comments and document for scrolling
-        master_column = IsolatedColumn(
-            [
-                ft.Text("Toolbar goes here"), ft.Divider(height=1, thickness=1), doc_row
-            ], 
-            scroll="auto", expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0
+        info_container = ft.Container(
+            info_column, 
+            border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
+            padding=ft.Padding.only(left=11, top=8, bottom=8),
+            shadow=ft.BoxShadow(0, 1),
+            expand=1,
+            bgcolor=ft.Colors.SURFACE_CONTAINER,
         )
 
-        self.body_container.content = master_column
+        self.body_container.content = IsolatedRow([
+            document_container,
+            ft.Column([     # Extra column to force vertical expansion
+                info_container
+            ], scroll="none", expand=True)
+        ], expand=True, spacing=0)
 
 
         self._render_widget()

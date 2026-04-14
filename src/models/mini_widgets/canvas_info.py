@@ -81,9 +81,13 @@ class CanvasInformationDisplay(MiniWidget):
             },
         )
 
+        
+
         # Saving creates the file if we're new
         if is_new:
             self.p.run_task(self.save_dict)
+
+        self.visible = True     # Always set to visible, the parent will choose to add it or not
 
         # Reloads the information display of the canvas
         self.reload_mini_widget()
@@ -533,15 +537,12 @@ class CanvasInformationDisplay(MiniWidget):
 
         title_control = ft.Row([
             #ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
-            
-            ft.GestureDetector(
-                ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.FADE),
-                on_double_tap=self.widget.rename_clicked,
-                on_tap=self.widget.rename_clicked,
-                on_secondary_tap=lambda _: self.widget.story.open_menu(self.widget._get_menu_options()),
-                mouse_cursor="click", hover_interval=500,
-                tooltip=f"Rename {self.title}"
+     
+            ft.Text(
+                f"\t{self.data['title']}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+                weight=ft.FontWeight.BOLD, color=self.data.get('color', None),
             ),
+                
             ft.IconButton(
                 ft.Icons.UNDO, self.widget.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
                 on_click=self.undo, #disabled=True if len(self.widget.state.undo_list) == 0 else False
@@ -555,7 +556,7 @@ class CanvasInformationDisplay(MiniWidget):
                 ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
                 tooltip=f"Close {self.title}",
                 mouse_cursor=ft.MouseCursor.CLICK,
-                on_click=self.hide_mini_widget,
+                on_click=self.widget._toggle_show_info,
             ),
         ], spacing=0)
 
@@ -616,9 +617,6 @@ class CanvasInformationDisplay(MiniWidget):
             "Export", ft.Icons.FILE_DOWNLOAD_OUTLINED, tooltip="Export canvas as image",
             on_click=self.widget.export_canvas_clicked, style=ft.ButtonStyle(mouse_cursor="click")
         )
-
-           
-
 
         # Button for creating new layers
         create_new_layer_button = ft.IconButton(

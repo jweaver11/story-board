@@ -58,6 +58,7 @@ class Canvas(Widget):
                 # Widget data
                 "tag": "canvas",
                 'color': app.settings.data.get('default_canvas_color'),
+                'show_info': True,   # Whether to show the info column on the side of our charts or not.
 
                 # Info display and general canvas data
                 'canvas_data': {},       
@@ -84,10 +85,6 @@ class Canvas(Widget):
         self.initial_resize = True     # Initial resize needs rebuild
         self.min_segment_dist = 2   # Sampling
 
-        self.information_display: ft.Container = None
-        self._create_information_display()
-
-
         
         self.layers = [{}]    # List of our layers, which are each their own canvas
         self.layer_stack: ft.Stack  # Stack to hold our layers on top of each other
@@ -96,96 +93,10 @@ class Canvas(Widget):
         
         self.current_path= cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
 
+        # We render our own mini widgets (comments), so we don't need parent class to render them as well
+        self.no_render_mini_widgets = True  
 
-        # Canvas has a custom tab, so it re-uses almost everything from widget
-        # UI ELEMENTS - Tab
-        self.tabs: ft.Tabs 
-        self.tab: ft.Tab  
-        self.icon: ft.Icon
-        self.tab_text: ft.Text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
-
-        # Grabs our tag to determine the icon we'll use
-        tag = self.data.get('tag', '')
-
-        # Set our icon based on what type of widget we are using tag
-        match tag:
-            case "document": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
-            case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
-            case "canvas_board": self.icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
-            case "note": self.icon = ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED)
-            case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
-            case "character_connection_map": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
-            case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)
-            case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
-            case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
-            case "object": self.icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
-            case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
-
-
-        # Set the color and size
-        self.icon = ft.IconButton(
-            ft.Icons.BRUSH_OUTLINED, self.data.get('color', ft.Colors.PRIMARY), 
-            mouse_cursor=ft.MouseCursor.CLICK, on_click=self.information_display.show_mini_widget,
-            tooltip="Show Canvas Info",
-        )
         
-
-        tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
-        
-        # Our icon button that will hide the widget when clicked in the workspace
-        hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
-            scale=0.8,
-            on_click=self.hide_widget,
-            icon=ft.Icons.CLOSE_ROUNDED,
-            icon_color=ft.Colors.OUTLINE,
-            tooltip="Hide",
-            mouse_cursor=ft.MouseCursor.CLICK,
-        )
-
-
-        self.tab_gd = ft.GestureDetector(
-            ft.Row(
-                [self.icon, tab_text, hide_tab_icon_button],
-                spacing=0
-            ),     # Changes here to add show info button
-            mouse_cursor=ft.MouseCursor.CLICK,
-            hover_interval=100,
-            on_hover=self._set_coords,
-            on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
-        )
-
-        # Tab that holds our widget title and 'body'.
-        # Since this is a ft.Tab, it needs to be nested in a ft.Tabs control or it wont render.
-        self.tab = ft.Tab(
-
-            # Content of the tab itself. Has widgets name and hide widget icon, and functionality for dragging
-            label=ft.Draggable(   # Draggable is the control so we can drag and drop to different pin locations
-                group="widgets",    # Group for draggables (and receiving drag targets) to accept each other
-                data=self.data.get('key', ""),  # Pass ourself through the data (of our tab, NOT our object) so we can move ourself around
-
-                # Drag event utils
-                on_drag_start=self._start_drag,    # Shows our pin targets when we start dragging
-
-                # Content when we are dragging the follows the mouse
-                content_feedback=ft.TextButton(self.title), # Normal text won't restrict its own size, so we use a button
-
-                # The content of our draggable. We use a gesture detector so we have more events
-                content=self.tab_gd
-            )                    
-        )
-
-        # Tabs stuff
-        self.tabs = ft.Tabs(
-            expand=True,  
-            length=1,
-            selected_index=0,
-            content=ft.Column([
-                ft.TabBar(tabs=[self.tab]),     # Holds our tab at the top of the widget
-                ft.TabBarView([self.master_stack], expand=True)# Holds our body
-            ], expand=True),
-            
-        )   
-        self.content = self.tabs
 
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -238,8 +149,10 @@ class Canvas(Widget):
     # Special color changes for this one
     def reload_tab(self):
         self.icon.icon_color = self.data.get('color', "primary")
-        self.information_display.reload_mini_widget()
-        super().reload_tab()    
+        #self.information_display.reload_mini_widget()
+           
+        #self.reload_widget()
+        super().reload_tab() 
 
     async def _set_size(self, e: cv.CanvasResizeEvent):
         if e: 
@@ -264,25 +177,24 @@ class Canvas(Widget):
             return
 
     # Called in the constructor
-    def _create_information_display(self):
+    def _create_information_display(self) -> CanvasInformationDisplay:
         ''' Creates our plotline information display mini widget '''
         
-        self.information_display = CanvasInformationDisplay(
+        return CanvasInformationDisplay(
             title=self.title,
             widget=self,
             page=self.p,
             key="canvas_data",     
             data=self.data.get('canvas_data'),      
         )
-        # Add to our mini widgets so it shows up in the UI
-        self.mini_widgets.append(self.information_display)
+        
 
     def _get_menu_options(self):
         ''' Gets the menu options for when we right click on the canvas '''
 
         options = [
             MenuOptionStyle(
-                on_click=self.information_display.show_mini_widget,
+                on_click=self._toggle_show_info,
                 content=ft.Row([
                     ft.Icon(ft.Icons.INFO_OUTLINE, self.data.get('color', 'primary'),),
                     ft.Text(
@@ -767,8 +679,27 @@ class Canvas(Widget):
             min_scale=0.5, max_scale=3.0,
         )
 
+        # If we're not showing info, just give us a button to show info and return early
+        if not self.data.get('show_info', True):
 
-        self.body_container.content = interactive_viewer
+            self.body_container.content = ft.Row(
+                [
+                    interactive_viewer, 
+                    ft.IconButton(
+                        ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY), 
+                        mouse_cursor=ft.MouseCursor.CLICK, on_click=self._toggle_show_info,
+                        tooltip="Show Canvas Info", bgcolor=ft.Colors.SURFACE_CONTAINER,
+                    )
+                ], expand=True, spacing=0
+            )
+            self._render_widget()
+            return  # Don't load the info column if we're not showing it   
+
+
+        information_display = self._create_information_display()  
+
+
+        self.body_container.content = ft.Row([interactive_viewer, information_display], expand=True, spacing=0)
 
         self._render_widget()
 

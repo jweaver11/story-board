@@ -56,7 +56,7 @@ class Chart(Widget):
                 'type': type,             # How our chart is being displayed (bar or radar)
                 'Description': str,
 
-                'show_info': True,   # Whether to show the info column on the side of our charts or not. Only applies to radar charts
+                'show_info': True,   # Whether to show the info column on the side of our charts or not.
 
                 'bar_data': {
                     'left_axis_title': "Left Axis",
@@ -125,12 +125,6 @@ class Chart(Widget):
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
-
-    # Shows the info column on the side of our chart or not
-    async def _toggle_show_info(self, e):
-        self.data['show_info'] = not self.data.get('show_info', True)
-        await self.save_dict()
-        self.reload_widget()
 
 
     # Returns our widgets view for bar charts
@@ -468,7 +462,8 @@ class Chart(Widget):
                 [
                     ft.Container(chart, expand=3, padding=ft.Padding.only(left=20, bottom=20)), 
                     ft.IconButton(
-                        ft.Icons.INFO_OUTLINE, on_click=self._toggle_show_info, 
+                        ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
+                        on_click=self._toggle_show_info, 
                         mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                     )
                 ], expand=True, spacing=0
@@ -782,6 +777,8 @@ class Chart(Widget):
                 margin=ft.Margin.only(left=10),
             )
             keys.controls.append(key)
+
+        
         
         if not self.data.get('show_info', True):
 
@@ -792,7 +789,8 @@ class Chart(Widget):
                     [
                         chart, 
                         ft.IconButton(
-                            ft.Icons.INFO_OUTLINE, on_click=self._toggle_show_info, 
+                            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
+                            on_click=self._toggle_show_info, 
                             mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                         )
                     ], expand=True, spacing=0
@@ -1040,7 +1038,7 @@ class Chart(Widget):
 
         info_column = ft.Column(
             data_sets + [
-                ft.Divider(2, 2),
+                ft.Divider(),
                 
                 
                 
@@ -1057,7 +1055,7 @@ class Chart(Widget):
                 ], spacing=0),
                 
             ] + titles + [
-                ft.Divider(2, 2),
+                ft.Divider(),
                 ft.Container(height=10),
                 ft.Text(f"\tAppearence", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                 ft.Container(height=10),
@@ -1111,7 +1109,7 @@ class Chart(Widget):
                             mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                         ),
                     ]),
-                    ft.Divider(2, 2),
+                    ft.Divider(),
                     info_column
                 ], expand=True, scroll="none", spacing=0),
         )
