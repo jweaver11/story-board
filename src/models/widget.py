@@ -807,7 +807,7 @@ class Widget(ft.Container):
         # Clear out our master stack controls so we start fresh to re-render
         self.master_stack.controls.clear()
 
-        self.mini_widgets_wrapper.visible = False
+        self.mini_widgets_wrapper.visible = False   # Set false for widgets that dont use this or dont have any mini widgets
         if not self.no_render_mini_widgets:
             
             self.mini_widgets_wrapper.controls = [mw for mw in self.mini_widgets]
@@ -821,7 +821,7 @@ class Widget(ft.Container):
         self.master_stack.controls = [
             ft.Row([
                 self.body_container, 
-                self.mini_widgets_wrapper if self.mini_widgets_wrapper.visible else ft.Container()
+                self.mini_widgets_wrapper
             ], spacing=0, expand=True)
         ]
 

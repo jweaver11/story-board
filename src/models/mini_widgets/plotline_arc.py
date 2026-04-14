@@ -277,6 +277,9 @@ class Arc(MiniWidget):
         if self.widget.information_display.visible:
             self.widget.information_display.reload_mini_widget()
 
+        # Makes sure any resized arcs are sorted correctly
+        self.widget.reload_widget()
+
         
 
 
@@ -643,7 +646,7 @@ class Arc(MiniWidget):
         
         column = ft.Column([
             title_control,
-            ft.Divider(height=2, thickness=2),
+            ft.Divider(),
             content
         ], expand=True, spacing=0)
 

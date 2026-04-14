@@ -15,7 +15,7 @@ import flet as ft
 from models.widget import Widget
 from models.mini_widget import MiniWidget
 from utils.verify_data import verify_data
-
+from styles.text_field import TextField
 
 class MapInformationDisplay(MiniWidget):
 
@@ -91,16 +91,55 @@ class MapInformationDisplay(MiniWidget):
         self.data['drawing_mode'] = not self.data.get('drawing_mode', False)
         await self.save_dict()
 
-        e.control.icon = ft.Icons.DRAW_OUTLINED if not self.data['drawing_mode'] else ft.Icons.DONE
+        e.control.icon = ft.Icons.DRAW_OUTLINED if self.data['drawing_mode'] else ft.Icons.LOCATION_SEARCHING_OUTLINED
 
         # If we entered drawing mode, show our drawing canvas rail. Otherwise, go back to the previous rail
         if self.data.get('drawing_mode', False):
-            self.widget.story.workspaces_rail.change_workspace(None, self.widget.story, force_rail="canvas")
+            #self.widget.story.workspaces_rail.change_workspace(None, self.widget.story, force_rail="canvas")
             self.widget.canvas.content.mouse_cursor = ft.MouseCursor.PRECISE
         else:
-            self.widget.canvas.content.mouse_cursor = ft.MouseCursor.CLICK
-
+            self.widget.canvas.content.mouse_cursor = None
         self.widget.canvas.content.update()
+
+        self.reload_mini_widget()
+
+
+    def _drawing_mode_view(self) -> ft.Column:
+        # Create our header
+        drawing_buttons = ft.Row([
+            
+            # Undo and redo buttons
+            ft.PopupMenuButton(
+                icon=ft.Icons.IMAGE_ASPECT_RATIO_OUTLINED, tooltip="Set the background of your canvas. If one is set, it will be exported with the canvas",
+                menu_padding=ft.Padding.all(0), 
+                #on_cancel=self._set_color,
+                items=[
+                    #ft.PopupMenuItem("None", on_click=self._set_canvas_background, tooltip="No background"),
+                    #ft.PopupMenuItem("Color", on_click=self._set_canvas_background, tooltip="Set a solid color background"),
+                    #ft.PopupMenuItem("Image", on_click=self._set_canvas_background, tooltip="Set an image as the background"),
+                ]
+            ),
+           
+            # Button to hide markers
+        ])
+        return ft.Column([
+            drawing_buttons
+        ], expand=True, scroll="auto", spacing=0)
+    
+    def _map_info_view(self) -> ft.Column:
+        description_tf = TextField(
+            expand=True, label="Description", value=self.data.get('Description', ""), dense=True, multiline=True,
+            capitalization=ft.TextCapitalization.SENTENCES,
+            on_blur=lambda e: self.change_data(**{'Description': e.control.value}),   # When we click out of the text field, we save our changes
+            
+        )
+        return ft.Column([
+            description_tf,
+        ], expand=True, scroll="auto", spacing=0)
+    
+    async def hide_mini_widget(self, e=None):
+        await super().hide_mini_widget(e)
+        self.widget.reload_widget() # Makes sure there is always a button to show info if we are hidden
 
     
     # Called when reloading our mini widget UI
@@ -115,15 +154,19 @@ class MapInformationDisplay(MiniWidget):
         # Lore and History
 
         title_control = ft.Row([
-            #ft.Icon(ft.Icons.MAP, self.widget.data.get('color', None)),
-            ft.GestureDetector(
-                ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.FADE),
-                on_double_tap=self.widget._rename_clicked,
-                on_tap=self.widget._rename_clicked,
-                on_secondary_tap=lambda _: self.widget.story.open_menu(self.widget._get_menu_options()),
-                mouse_cursor="click", hover_interval=500,
-                tooltip=f"Rename {self.title}"
+            #ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
+            ft.IconButton(
+                ft.Icons.DRAW_OUTLINED if self.data.get('drawing_mode') else ft.Icons.LOCATION_SEARCHING_OUTLINED,
+                self.data.get('color', None), mouse_cursor=ft.MouseCursor.CLICK,
+                tooltip="Enter Drawing Mode" if not self.data.get('drawing_mode') else "Exit Drawing Mode",
+                on_click=self._toggle_drawing_mode,
             ),
+     
+            ft.Text(
+                f"\t{self.data['title']}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+                weight=ft.FontWeight.BOLD, color=self.data.get('color', None),
+            ),
+                
             ft.IconButton(
                 ft.Icons.UNDO, self.widget.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
                 #on_click=self.undo, #disabled=True if len(self.widget.state.undo_list) == 0 else False
@@ -141,52 +184,25 @@ class MapInformationDisplay(MiniWidget):
             ),
         ], spacing=0)
 
-        # Create our header
-        header = ft.Row([
-            ft.IconButton(
-                ft.Icons.DRAW_OUTLINED if not self.data.get('drawing_mode') else ft.Icons.DONE,
-                tooltip="Enter Drawing Mode" if not self.data.get('drawing_mode') else "Exit Drawing Mode",
-                on_click=self._toggle_drawing_mode,
-            ),
-            # Undo and redo buttons
-            ft.PopupMenuButton(
-                icon=ft.Icons.IMAGE_ASPECT_RATIO_OUTLINED, tooltip="Set the background of your canvas. If one is set, it will be exported with the canvas",
-                menu_padding=ft.Padding.all(0), 
-                #on_cancel=self._set_color,
-                items=[
-                    #ft.PopupMenuItem("None", on_click=self._set_canvas_background, tooltip="No background"),
-                    #ft.PopupMenuItem("Color", on_click=self._set_canvas_background, tooltip="Set a solid color background"),
-                    #ft.PopupMenuItem("Image", on_click=self._set_canvas_background, tooltip="Set an image as the background"),
-                ]
-            ),
-           
-            # Button to hide markers
-        ])
 
-        description_tf = ft.TextField(
-            expand=True, label="Description", value=self.data.get('Description', ""), dense=True, multiline=True,
-            capitalization=ft.TextCapitalization.SENTENCES,
-            on_blur=lambda e: self.change_data(**{'Description': e.control.value}),   # When we click out of the text field, we save our changes
-            #focus_color=self.widget.data.get('color', None),
-            #cursor_color=self.widget.data.get('color', None),
-            #focused_border_color=self.widget.data.get('color', None),
-            #label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
-        )
+        
+
+        
         
         content = ft.Column([
-            ft.Container(height=1),  # Spacing 
-            header,
-            description_tf
-        ], expand=True, scroll="auto", alignment=ft.MainAxisAlignment.START)
-
-        
-        column = ft.Column([
             title_control,
-            ft.Divider(height=2, thickness=2),
-            content
-        ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START)
+            ft.Divider(),
+            ft.Container(height=1),
+                        
+        ], expand=True, scroll="none", alignment=ft.MainAxisAlignment.START, spacing=0)
+
+        if self.data.get('drawing_mode', False):
+            content.controls.append(self._drawing_mode_view())
+        else:
+            content.controls.append(self._map_info_view())
         
-        self.content = column
+        
+        self.content = content
 
         try:
             self.update()

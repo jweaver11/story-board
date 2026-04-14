@@ -413,7 +413,7 @@ class Plotline(Widget):
                 ]),
             ),
             MenuOptionStyle(
-                on_click=self._rename_clicked,
+                on_click=self.rename_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
                     ft.Text(
@@ -429,7 +429,7 @@ class Plotline(Widget):
                         ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
                         ft.Icon(ft.Icons.ARROW_RIGHT),
                     ], expand=True),
-                    self._get_color_options(), 
+                    self.get_color_options(), 
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                     style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                     tooltip="Change this widget's color"
@@ -923,12 +923,9 @@ class Plotline(Widget):
                 ft.Container(
                     self.plotline_canvas, #ft.Padding.only(left=16, right=16), 
                     expand=True, clip_behavior=ft.ClipBehavior.NONE,
-                    
                 )      # Add our canvas which has our visual plotline
             ]
-        )
-
-        
+        ) 
  
         # Sort our arcs so the bigger ones are in back and smaller on top
         sorted_arcs = dict(sorted(self.arcs.items(), key=lambda item: item[1].data.get('left', 0) + item[1].data.get('right', 0)))
@@ -954,6 +951,7 @@ class Plotline(Widget):
                 break
             if self.data.get('show_all_markers', False) or marker.data.get('is_shown_on_widget', False):
                 plotline_stack.controls.append(marker.plotline_control)
+                
 
         # Set our content
         self.body_container.content = plotline_stack

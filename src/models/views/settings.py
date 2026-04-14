@@ -283,7 +283,7 @@ class Settings(ft.View):
     
         
     # Called when we select a new category of settings in our settings view
-    def _settings_category_changed(self, e=None):
+    def _settings_category_changed(self, e=None, template_name: str=None):
         ''' Determines which category is now active and changes our body container to match '''
 
         if e is None:
@@ -301,7 +301,7 @@ class Settings(ft.View):
             case 2:
                 self.body_container.content = self._load_story_settings()
             case 3:
-                self.body_container.content = self._load_template_settings()
+                self.body_container.content = self._load_template_settings(template_name)
             case 4:
                 self.body_container.content = self._load_resources_settings()
                 
@@ -1158,7 +1158,7 @@ class Settings(ft.View):
                     self.data['character_templates'] = character_templates     # Update our main data dict with the new template
                     self.p.run_task(self.save_dict)
                     self.p.pop_dialog()
-                    self._settings_category_changed()
+                    self._settings_category_changed(template_name=name)     # Reload our settings page to update the ui and load the new template we just created
 
                 else: 
                     await new_template_tf.focus()
@@ -1169,7 +1169,8 @@ class Settings(ft.View):
 
             new_template_tf = TextField(
                 dense=True, expand=True, capitalization=ft.TextCapitalization.WORDS, 
-                on_change=_check_template_name_unique, on_submit=_create_new_template, autofocus=True
+                on_change=_check_template_name_unique, on_submit=_create_new_template, 
+                autofocus=True
             )
             
             dlg = ft.AlertDialog(
@@ -1218,7 +1219,6 @@ class Settings(ft.View):
         # Gets our template names as a column on the left side of our template settings view
         def _load_templates_names(type: str, selected_template_name: str=None) -> list[ft.Control]:
 
-            
             controls = []
 
             copied_templates = character_templates if type == "character" else world_templates
@@ -1283,7 +1283,7 @@ class Settings(ft.View):
                                 )
                             ),
                             shape=ft.RoundedRectangleBorder(radius=6),
-                            bgcolor=ft.Colors.TRANSPARENT, 
+                            bgcolor=ft.Colors.TRANSPARENT if template_name != selected_template_name else ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE),
                             dense=True,
                             content_padding=ft.Padding.only(left=10),
                             min_vertical_padding=0,
@@ -1329,10 +1329,10 @@ class Settings(ft.View):
 
         templates_names_column = ft.Column([], scroll="auto", width=240,  horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         templates_names_column.controls.append(ft.Text("Character Templates", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER))
-        templates_names_column.controls.extend(_load_templates_names("character"))
+        templates_names_column.controls.extend(_load_templates_names("character", selected_template))
         templates_names_column.controls.append(ft.Divider())
         templates_names_column.controls.append(ft.Text("World Templates", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER))
-        templates_names_column.controls.extend(_load_templates_names("world"))
+        templates_names_column.controls.extend(_load_templates_names("world", selected_template))
         
         # Sets our templates
         content = ft.Column([

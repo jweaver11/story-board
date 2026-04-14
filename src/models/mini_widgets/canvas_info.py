@@ -540,7 +540,7 @@ class CanvasInformationDisplay(MiniWidget):
      
             ft.Text(
                 f"\t{self.data['title']}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
-                weight=ft.FontWeight.BOLD, color=self.data.get('color', None),
+                weight=ft.FontWeight.BOLD, color=self.widget.data.get('color', None),
             ),
                 
             ft.IconButton(

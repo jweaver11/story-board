@@ -866,7 +866,7 @@ class Story(ft.View):
             border_radius=ft.BorderRadius.all(10), visible=False,
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
             width=160, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-            shadow=ft.BoxShadow(color=ft.Colors.OUTLINE_VARIANT, blur_radius=4, blur_style=ft.BlurStyle.OUTER),
+            shadow=ft.BoxShadow(0, 1),
             content=ft.Column(
                 spacing=0,
                 controls=[]

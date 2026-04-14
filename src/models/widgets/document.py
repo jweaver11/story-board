@@ -207,7 +207,6 @@ class Document(Widget):
 
         # If we're not showing info, just give us a button to show info and return early
         if not self.data.get('show_info', True):
-            print("Not showing info, showing button to show info")
 
             self.body_container.content = ft.Row(
                 [
@@ -224,40 +223,7 @@ class Document(Widget):
         
         # Otherwise, build our info column
         info_column = ft.Column([
-            ft.Row([
-                ft.Text(
-                    f"\tComments", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
-                    color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
-                    ),
-                ft.PopupMenuButton(
-                    icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, icon_color=self.data.get('color', "primary"),
-                    tooltip="Create new comment or reference image",
-                    style=ft.ButtonStyle(mouse_cursor="click"),
-                    menu_padding=ft.Padding.all(0),
-                    items=[
-                        ft.PopupMenuItem(
-                            "Comment",
-                            ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, self.data.get('color', "primary")), 
-                            on_click=self.create_comment_clicked,
-                            mouse_cursor="click",
-                        ),
-                        ft.PopupMenuItem(
-                            "Reference Image", 
-                            ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), 
-                            on_click=self._create_reference_image_clicked,
-                            data="left",
-                            mouse_cursor="click",
-                        ),
-                    ],
-                ),
-                    
-                ft.Container(expand=True),
-                ft.IconButton(
-                    ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info,
-                    mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                ),
-            ], spacing=0),
-            ft.Divider()
+            
         ], expand=1, spacing=0, scroll="auto")
 
         # Add our mini widgets to our info column, with dividers in between
@@ -269,7 +235,43 @@ class Document(Widget):
                 info_column.controls.append(ft.Container(expand=True))  # Little padding at the end of the list
 
         info_container = ft.Container(
-            info_column, 
+            ft.Column([
+                ft.Row([
+                    ft.Text(
+                        f"\t{self.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+                        color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
+                        ),
+                    ft.PopupMenuButton(
+                        icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, icon_color=self.data.get('color', "primary"),
+                        tooltip="Create new comment or reference image",
+                        style=ft.ButtonStyle(mouse_cursor="click"),
+                        menu_padding=ft.Padding.all(0),
+                        items=[
+                            ft.PopupMenuItem(
+                                "Comment",
+                                ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, self.data.get('color', "primary")), 
+                                on_click=self.create_comment_clicked,
+                                mouse_cursor="click",
+                            ),
+                            ft.PopupMenuItem(
+                                "Reference Image", 
+                                ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), 
+                                on_click=self._create_reference_image_clicked,
+                                data="left",
+                                mouse_cursor="click",
+                            ),
+                        ],
+                    ),
+                        
+                    ft.Container(expand=True),
+                    ft.IconButton(
+                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info,
+                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                    ),
+                ], spacing=0),
+                ft.Divider(),
+                info_column, 
+            ], expand=True, scroll="none", spacing=0),
             border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             padding=ft.Padding.only(left=11, top=8, bottom=8),
             shadow=ft.BoxShadow(0, 1),
@@ -280,9 +282,10 @@ class Document(Widget):
         self.body_container.content = IsolatedRow([
             document_container,
             ft.Column([     # Extra column to force vertical expansion
+                
                 info_container
-            ], scroll="none", expand=True)
-        ], expand=True, spacing=0)
+            ], scroll="none", expand=True, spacing=0)
+        ], expand=True)
 
 
         self._render_widget()

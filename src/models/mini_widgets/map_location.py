@@ -37,12 +37,6 @@ class Location(MiniWidget):
         top: int = None,                   
         data: dict = None       
     ):
-        
-        if left is not None:
-            side_location = 'right' if left <= widget.map_width // 2 else 'left'
-        else:
-            side_location = data.get('side_location', 'right') if data is not None else 'right'
-
 
         # Parent constructor
         super().__init__(
@@ -50,7 +44,6 @@ class Location(MiniWidget):
             widget=widget,        
             page=page,          
             key=key,  
-            side_location=side_location,
             data=data,    
         ) 
 
@@ -67,10 +60,7 @@ class Location(MiniWidget):
 
                 # Information for our information display
                 'Description': str,
-                'When': str,
-                'Where': str,
-                'Involved Characters': list,
-                'Related Objects': list,
+                'History': str,
             },
         )
 
@@ -91,7 +81,7 @@ class Location(MiniWidget):
             self.data.get('top', 0) - 30 if self.data.get('top', 0) > 30 else self.data.get('top', 0) + 30,
             self.title, 
             ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=self.data.get('color', "secondary"), overflow=ft.TextOverflow.VISIBLE),
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
             max_width=100,
             text_align=ft.TextAlign.CENTER
         )
@@ -142,9 +132,6 @@ class Location(MiniWidget):
         #self.map_label.left = new_left - 50 if new_left > 50 else new_left + 50 
         #self.map_label.top = new_top - 30 if new_top > 30 else new_top + 30
 
-        
-        self.map_control.page = self.p
-        self.map_label.page = self.p
         self.map_control.update()
         self.map_label.update()
         
@@ -180,11 +167,6 @@ class Location(MiniWidget):
 
         self.data['x_alignment'] = x_alignment
 
-        if self.data.get('x_alignment', 0) <= 0:
-            self.data['side_location'] = "right"
-        else:
-            self.data['side_location'] = "left"
-
         self.save_dict()
 
         # Re-show all the info displays we hid while dragging
@@ -194,7 +176,6 @@ class Location(MiniWidget):
 
         if self.widget.information_display.visible:
             self.widget.information_display.reload_mini_widget(no_update=True)
-        self.map_control.page = self.p
         self.map_control.update()
         await self.widget._rebuild_map_canvas()
 
@@ -204,7 +185,6 @@ class Location(MiniWidget):
 
         # Gives us a focused shadow
         self.map_control.shadow = ft.BoxShadow(5, 10, ft.Colors.with_opacity(.6, self.data.get('color'))) #if self.map_control.shadow is None else None
-        self.map_control.page = self.p
         self.map_control.update()
 
     # Hides are shadow unless our info display is visible, then stay highlighted
@@ -217,7 +197,6 @@ class Location(MiniWidget):
         # If our info display is visible, keep highlighted
         if not self.visible:
             self.map_control.shadow = None
-            self.map_control.page = self.p
             self.map_control.update()
 
     def _get_icon_options(self) -> list[ft.Control]:
@@ -251,11 +230,10 @@ class Location(MiniWidget):
         return icon_controls
     
     # Makes sure we stop highlighting
-    def hide_mini_widget(self, e=None, update: bool=False):
+    async def hide_mini_widget(self, e=None, update: bool=False):
         self.map_control.shadow = None
-        self.map_control.page = self.p
         self.map_control.update()
-        return super().hide_mini_widget(e, update)
+        return await super().hide_mini_widget(e, update)
 
 
     # Called from reload_mini_widget
@@ -266,7 +244,7 @@ class Location(MiniWidget):
         self.map_control = ft.Container(
             expand=False, 
             shape=ft.BoxShape.CIRCLE,
-            alignment=ft.alignment.center, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             top=self.data.get('top', 0),
             content=ft.GestureDetector(
@@ -284,29 +262,28 @@ class Location(MiniWidget):
     def reload_mini_widget(self, no_update: bool=False):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
+        # TODO: Change icon, title, color, description
+
+        location_title_text = ft.Text(
+            f"\t{self.data['title']}", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+            tooltip=f"Rename {self.title}", color=self.widget.data.get('color', None), expand=True
+        )
+
         
+        close_button = ft.IconButton(
+            ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
+            tooltip=f"Close {self.title}",
+            on_click=self.hide_mini_widget,
+            mouse_cursor="click"
+        )
+
+            
         title_control = ft.Row([
-            self.icon_button,
-            ft.GestureDetector(
-                ft.Text(f"\t\t{self.data['title']}\t\t", weight=ft.FontWeight.BOLD, tooltip=f"Rename {self.title}"),
-                on_double_tap=self._rename_clicked,
-                on_tap=self._rename_clicked,
-                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", on_hover=self.widget._hover_tab, hover_interval=500
-            ),
-            ft.IconButton(
-                ft.Icons.PUSH_PIN_OUTLINED if not self.widget.data.get('information_display_is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED,
-                self.data.get('color', None),
-                tooltip="Pin Information Display" if not self.widget.data.get('information_display_is_pinned', False) else "Unpin Information Display",
-                on_click=self._toggle_pin
-            ),
-            ft.Container(expand=True),
-            ft.IconButton(
-                ft.Icons.CLOSE, ft.Colors.OUTLINE,
-                tooltip=f"Close {self.title}",
-                on_click=lambda e: self.hide_mini_widget(update=True),
-            ),
+            location_title_text,
+            close_button
         ], spacing=0)
+        
+        
 
 
         description_tf = ft.TextField(
@@ -320,13 +297,13 @@ class Location(MiniWidget):
             ft.Container(width=6),
             ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
             ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Custom Field",
-                on_click=lambda e: self._new_custom_field_clicked())
+                ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Note",
+                on_click=self._new_note_clicked)
         ], spacing=0)
 
         custom_fields_column = self._build_notes_column()
 
-        content = ft.Column(
+        column = ft.Column(
             expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
             controls=[
                 ft.Container(height=1),
@@ -334,20 +311,19 @@ class Location(MiniWidget):
                 
                 
                 custom_fields_label,
-                ft.Container(custom_fields_column, margin=ft.margin.symmetric(horizontal=20)),
+                ft.Container(custom_fields_column, margin=ft.Margin.symmetric(horizontal=20)),
             ]
         )
 
-        column = ft.Column([
-            title_control,
-            ft.Divider(height=2, thickness=2),
-            content
-        ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START)
         
-        self.content = column
+        self.content = ft.Column([
+            title_control,
+            ft.Divider(),
+            column
+        ], expand=True, scroll="none", spacing=0)
         
 
-        if no_update:
-            return
-        else:
-            self.p.update()
+        try:
+            self.update()
+        except Exception as _:
+            pass

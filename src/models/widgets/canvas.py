@@ -682,7 +682,7 @@ class Canvas(Widget):
         # If we're not showing info, just give us a button to show info and return early
         if not self.data.get('show_info', True):
 
-            self.body_container.content = ft.Row(
+            self.body_container.content = ft.Row( 
                 [
                     interactive_viewer, 
                     ft.IconButton(

@@ -134,15 +134,9 @@ class PlotlineInformationDisplay(MiniWidget):
             await self.save_dict()
             self.update()
 
-        plotline_title_text = ft.GestureDetector(
-            ft.Text(
-                f"\t\t{self.data['title']}\t\t", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
-                tooltip=f"Rename {self.title}", color=self.widget.data.get('color', None),
-            ),
-            on_double_tap=self.widget.rename_clicked,
-            on_tap=self.widget.rename_clicked,
-            on_secondary_tap=lambda _: self.widget.story.open_menu(self.widget._get_menu_options()),
-            mouse_cursor="click", hover_interval=500
+        plotline_title_text = ft.Text(
+            f"\t{self.data['title']}", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+            tooltip=f"Rename {self.title}", color=self.widget.data.get('color', None), expand=True
         )
 
         
@@ -157,7 +151,6 @@ class PlotlineInformationDisplay(MiniWidget):
             
         title_control = ft.Row([
             plotline_title_text,
-            ft.Container(expand=True),      # Spacer
             close_button
         ], spacing=0)
         
@@ -476,7 +469,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
         column = ft.Column([
             title_control,
-            ft.Divider(height=2, thickness=2),
+            ft.Divider(),
             content
         ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START, spacing=0)
         

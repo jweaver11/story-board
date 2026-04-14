@@ -14,7 +14,7 @@ import flet.canvas as cv
 from models.app import app
 from styles.menu_option_style import MenuOptionStyle
 import asyncio
-from models.mini_widgets.location import Location
+from models.mini_widgets.map_location import Location
 from utils.safe_string_checker import return_safe_name
 
 
@@ -97,7 +97,7 @@ class Map(Widget):
 
         self.canvas = cv.Canvas(
             content=ft.GestureDetector(
-                mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('map_data', {}).get('drawing_mode') else ft.MouseCursor.CLICK, 
+                mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('map_data', {}).get('drawing_mode') else None, 
                 expand=True,
 
                 # Drawing event handlers
@@ -125,96 +125,6 @@ class Map(Widget):
             ),
             self.canvas,
         ], expand=True)
-
-        # Canvas has a custom tab, so it re-uses almost everything from widget
-        # UI ELEMENTS - Tab
-        self.tabs: ft.Tabs 
-        self.tab: ft.Tab  
-        self.icon: ft.Icon
-        self.tab_text: ft.Text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
-
-        # Grabs our tag to determine the icon we'll use
-        tag = self.data.get('tag', '')
-
-        # Set our icon based on what type of widget we are using tag
-        match tag:
-            case "document": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
-            case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
-            case "canvas_board": self.icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
-            case "note": self.icon = ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED)
-            case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
-            case "character_connection_map": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
-            case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)
-            case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
-            case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
-            case "object": self.icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
-            case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
-
-
-        # Set the color and size
-        self.icon = ft.IconButton(
-            ft.Icons.MAP_OUTLINED, self.data.get('color', ft.Colors.PRIMARY), 
-            mouse_cursor=ft.MouseCursor.CLICK, on_click=self.information_display.show_mini_widget,
-            tooltip="Show Canvas Info",
-        )
-        
-
-        tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
-        
-        # Our icon button that will hide the widget when clicked in the workspace
-        hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
-            scale=0.8,
-            on_click=self.hide_widget,
-            icon=ft.Icons.CLOSE_ROUNDED,
-            icon_color=ft.Colors.OUTLINE,
-            tooltip="Hide",
-            mouse_cursor=ft.MouseCursor.CLICK,
-        )
-
-
-        self.tab_gd = ft.GestureDetector(
-            ft.Row(
-                [self.icon, tab_text, hide_tab_icon_button],
-                spacing=0
-            ),     # Changes here to add show info button
-            mouse_cursor=ft.MouseCursor.CLICK,
-            hover_interval=100,
-            on_hover=self._set_coords,
-            on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
-        )
-
-        # Tab that holds our widget title and 'body'.
-        # Since this is a ft.Tab, it needs to be nested in a ft.Tabs control or it wont render.
-        self.tab = ft.Tab(
-
-            # Content of the tab itself. Has widgets name and hide widget icon, and functionality for dragging
-            label=ft.Draggable(   # Draggable is the control so we can drag and drop to different pin locations
-                group="widgets",    # Group for draggables (and receiving drag targets) to accept each other
-                data=self.data.get('key', ""),  # Pass ourself through the data (of our tab, NOT our object) so we can move ourself around
-
-                # Drag event utils
-                on_drag_start=self._start_drag,    # Shows our pin targets when we start dragging
-
-                # Content when we are dragging the follows the mouse
-                content_feedback=ft.TextButton(self.title), # Normal text won't restrict its own size, so we use a button
-
-                # The content of our draggable. We use a gesture detector so we have more events
-                content=self.tab_gd
-            )                    
-        )
-
-        # Tabs stuff
-        self.tabs = ft.Tabs(
-            expand=True,  
-            length=1,
-            selected_index=0,
-            content=ft.Column([
-                ft.TabBar(tabs=[self.tab]),     # Holds our tab at the top of the widget
-                ft.TabBarView([self.master_stack], expand=True)# Holds our body
-            ], expand=True),
-            
-        )   
-        self.content = self.tabs
            
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -249,6 +159,14 @@ class Map(Widget):
         self.mini_widgets.append(new_location)
         self.reload_widget()
 
+        #await self.rebuild_plotline_canvas(update=True)
+        self.reload_widget()
+        for mw in self.mini_widgets:
+            if mw.visible:
+                await mw.hide_mini_widget()
+
+        await new_location.show_mini_widget() 
+
     def load_locations(self):
         for title, data in self.data.get('locations', {}).items():
             self.locations[title] = Location(
@@ -274,7 +192,7 @@ class Map(Widget):
         async def _check_name_unique(e):
             name = new_item_tf.value.strip()
             submit_button.disabled = False
-            new_item_tf.error_text = None
+            new_item_tf.error = None
             if not name:
                 submit_button.disabled = True
             elif name in self.locations:
@@ -311,7 +229,6 @@ class Map(Widget):
 
         # Grab the type of mini widget we are creating
         data = e.control.data
-        print("Data for new location:", data)
 
         # Textfield for the name of the new mw
         new_item_tf = ft.TextField(
@@ -327,103 +244,101 @@ class Map(Widget):
             title=ft.Text(f"New Location Name"),
             content=new_item_tf,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda e: self.p.close(dlg)),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda _: self.p.pop_dialog()),
                 submit_button
             ],
         )
 
         self.p.show_dialog(dlg)    
     
-
+ 
     def _get_menu_options(self) -> list[ft.Control]:
         
 
-        async def _show_info_display(e):
-            ''' Shows our information display mini widget '''
-            self.information_display.show_mini_widget()
-            await self.story.close_menu()
+        # TODO: Add Valley, Plains, Rivers, Storm, Lake, Village
+            
 
         # New (all dif types of locations), rename color
         return [
              MenuOptionStyle(
-                content=ft.PopupMenuButton(
-                    content=ft.Container(
-                        ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", weight=ft.FontWeight.BOLD)]),
-                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                content=ft.SubmenuButton(
+                    ft.Container(
+                        ft.Row([
+                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', "primary")), 
+                            ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Icon(ft.Icons.ARROW_RIGHT),
+                        ], expand=True),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
                     ),
-                    #ft.CupertinoIcons.LOCATION
-                    tooltip="New Location", menu_padding=0,
-                    items=[
-                        ft.PopupMenuItem(
-                            text="Blank", icon=ft.Icons.CHECK_BOX_OUTLINE_BLANK,
-                            on_click=self.new_location_clicked, data={'icon': 'location_pin'}
-                        ),
-                        ft.PopupMenuItem(
-                            text="Point of Interest", icon=ft.Icons.LOCATION_PIN,
-                            on_click=self.new_location_clicked, data={'icon': 'location_pin'}
-                        ),
-                        ft.PopupMenuItem(
-                            text="Mountain", icon=ft.Icons.TERRAIN,
-                            on_click=self.new_location_clicked, data={'icon': 'terrain'}
-                        ),
-                        ft.PopupMenuItem(
-                            text="Forest", icon=ft.Icons.FOREST,
-                            on_click=self.new_location_clicked, data={'icon': 'forest'}
-                        ),
-                        ft.PopupMenuItem(
-                            text="Ocean", icon=ft.Icons.WATER,
-                            on_click=self.new_location_clicked, data={'icon': 'water'}
-                        ),
-                        ft.PopupMenuItem(
-                            text="City", icon=ft.Icons.LOCATION_CITY,
-                            on_click=self.new_location_clicked, data={'icon': 'location_city'}
-                        ),
-                        ft.PopupMenuItem(
-                            text="Dungeon", icon=ft.Icons.STAIRS_OUTLINED,
-                            on_click=self.new_location_clicked, data={'icon': 'stairs_outlined'}
-                        )
+                    controls=[
                         
-                    ]
-                ), no_padding=True,
+                        ft.MenuItemButton(
+                            "Label", leading=ft.Icon(ft.Icons.TEXT_FIELDS_OUTLINED, self.data.get('color', "primary")),
+                            on_click=self.new_location_clicked, #data="none",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        ),
+                        ft.MenuItemButton(
+                            "Point of Interest", leading=ft.Icon(ft.Icons.LOCATION_PIN, self.data.get('color', "primary")),
+                            on_click=self.new_location_clicked, data="point_of_interest",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        ),
+                        ft.MenuItemButton(
+                            "Mountain", leading=ft.Icon(ft.Icons.TERRAIN, self.data.get('color', "primary")),
+                            on_click=self.new_location_clicked, data="mountain",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        ),
+                        ft.MenuItemButton(
+                            "Forest", leading=ft.Icon(ft.Icons.FOREST, self.data.get('color', "primary")),
+                            on_click=self.new_location_clicked, data="forest",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        ),
+                        ft.MenuItemButton(
+                            "Water", leading=ft.Icon(ft.Icons.WATER, self.data.get('color', "primary")),
+                            on_click=self.new_location_clicked, data="water",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        ),
+                        ft.MenuItemButton(
+                            "City", leading=ft.Icon(ft.Icons.LOCATION_CITY, self.data.get('color', "primary")),
+                            on_click=self.new_location_clicked, data="city",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        ),
+                        ft.MenuItemButton(
+                            "Dungeon", leading=ft.Icon(ft.Icons.STAIRS_OUTLINED, self.data.get('color', "primary")),
+                            on_click=self.new_location_clicked, data="dungeon",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        ),
+                        
+                        
+                    ],
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                ), 
+                no_padding=True, no_effects=True
             ),
+            
             MenuOptionStyle(
-                on_click=_show_info_display,
+                on_click=self.rename_clicked,
                 content=ft.Row([
-                    ft.Icon(ft.Icons.INFO_OUTLINE),
-                    ft.Text(
-                        "Show Info", 
-                        weight=ft.FontWeight.BOLD, 
-                        color=ft.Colors.ON_SURFACE
-                    ), 
-                ]),
-            ),
-            # Delete button
-            MenuOptionStyle(
-                on_click=self._rename_clicked,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED),
+                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
                     ft.Text(
                         "Rename", 
                         weight=ft.FontWeight.BOLD, 
-                        color=ft.Colors.ON_SURFACE
                     ), 
                 ]),
             ),
-            # Color changing popup menu
             MenuOptionStyle(
-                content=ft.PopupMenuButton(
-                    expand=True,
-                    tooltip="",
-                    padding=None,
-                    content=ft.Row(
-                        expand=True,
-                        controls=[
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color=self.data.get('color', None)),
-                            ft.Text("Color", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True), 
-                        ]
-                    ),
-                    items=self._get_color_options()
-                )
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
+                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    self.get_color_options(), 
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    tooltip="Change this widget's color"
+                ),
+                no_padding=True, no_effects=True
             ),
         ]
     
@@ -443,8 +358,6 @@ class Map(Widget):
         self.reload_tab()
 
         # TODO: 
-        # Little Info Display Button in the bottom right that can be dragged around and shows map info display. No header, clicking canvas does not open it
-        # Also drawing mode button should be near it
         # Users can choose to create their image or use some default ones, or upload their own
         # Make show_info_button is a checkmark when in drawing mode
 
@@ -452,8 +365,8 @@ class Map(Widget):
         self.map_stack.controls.clear()
         self.map_stack.controls = [     # Add our background and canvas
             ft.Container(
-                expand=True, ignore_interactions=True,
-                #image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
+                expand=True, ignore_interactions=True, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
+                #image=ft.DecorationImage("map_background.png", fit=ft.BoxFit.FILL)    # Our background image
             ),
             self.canvas, 
         ] 
@@ -464,31 +377,45 @@ class Map(Widget):
                 self.map_stack.controls.append(mw.map_control)
                 self.canvas.shapes.append(mw.map_label)
                 #self.map_stack.controls.append(mw.map_label)
-
-        # Add all our mini widgets to the plotline stack as well
-        self.map_stack.controls.append(
-            ft.Row([
-                ft.Column([mw for mw in self.mini_widgets if mw.data.get('side_location', "") == "left"], expand=1),
-                ft.Container(expand=2, ignore_interactions=True),
-                ft.Column([mw for mw in self.mini_widgets if mw.data.get('side_location', "") == "right"], expand=1)
-            ])
-        )
-
         
                 
         # Create our interactive viewer for panning and zooming
-        iv = ft.InteractiveViewer(
-            content=self.map_stack, expand=True,
-            scale_factor=750, boundary_margin=50,
-            min_scale=0.5, max_scale=2.0, scale=1.0,
+        interactive_viewer = ft.InteractiveViewer(
+            content=self.map_stack, 
+            expand=3,
+            scale_factor=500, boundary_margin=50,
+            min_scale=0.5, max_scale=3.0,
         )
+
+        mini_widgets_visible = False
+        for mw in self.mini_widgets:
+            if mw.visible:
+                mini_widgets_visible = True
+                break
+
+        async def _show_mini_widget(e):
+            e.control.visible = False
+            e.control.update()
+            await self.information_display.show_mini_widget()
+
+        if not mini_widgets_visible:
+            self.body_container.content = ft.Row(
+                [
+                    interactive_viewer, 
+                    ft.IconButton(
+                        ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
+                        on_click=_show_mini_widget, 
+                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                    )
+                ], expand=True, spacing=0
+            )
+            self._render_widget()
+            return      
+
         
 
-        self.body_container.content = iv
 
-
-        # Not used, but changes how our mini widgets are positioned
-        self.header = ft.Container(ignore_interactions=True, height=50)
+        self.body_container.content = interactive_viewer
 
 
         self._render_widget()

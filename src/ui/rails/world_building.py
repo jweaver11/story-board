@@ -192,8 +192,8 @@ class WorldBuildingRail(Rail):
         menu_gesture_detector = ft.GestureDetector(
             content=dt,
             expand=True,
-            on_hover=self.on_hovers,
-            on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
+            on_hover=self._set_menu_coords,
+            on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()),
             hover_interval=20,
         )
 

@@ -430,9 +430,9 @@ class PlotPoint(MiniWidget):
 
         column = ft.Column([
             title_control,
-            ft.Divider(height=2, thickness=2),
+            ft.Divider(),
             content
-        ], expand=True, scroll="none", tight=True, alignment=ft.MainAxisAlignment.START, spacing=0)
+        ], expand=True, scroll="none", spacing=0)
         
         self.content = column
         
