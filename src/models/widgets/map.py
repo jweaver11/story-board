@@ -412,9 +412,6 @@ class Map(Widget):
             self._render_widget()
             return      
 
-        
-
-
         self.body_container.content = interactive_viewer
 
 

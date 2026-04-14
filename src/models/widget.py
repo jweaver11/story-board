@@ -770,9 +770,8 @@ class Widget(ft.Container):
     def reload_tab(self, update: bool=False):
         ''' Creates our tab for our widget that has the title and hide icon '''
 
-        # Set the color and size
+        # Set our color and text if title changed
         self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
-
         self.tab_text.value = self.title
 
         if update:
@@ -811,6 +810,7 @@ class Widget(ft.Container):
         if not self.no_render_mini_widgets:
             
             self.mini_widgets_wrapper.controls = [mw for mw in self.mini_widgets]
+            # Check if any mini widgets are visible, so we show the wrapper or not
             for mw in self.mini_widgets_wrapper.controls:
                 if mw.visible:
                     self.mini_widgets_wrapper.visible = True
@@ -832,7 +832,7 @@ class Widget(ft.Container):
 
                 self.master_stack.update()       
                 #self.tab.update()
-                #self.update()       # Crucial for sub controls to update through the tree to the page, even though we are technically not on it in main
+                #self.update()       
 
             # If not in the main pin, we are directly on the page, so just update ourselves
             else:

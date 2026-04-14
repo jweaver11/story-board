@@ -163,16 +163,18 @@ class Canvas(Widget):
                 self.initial_resize = False
                 self.needs_redraw = False
 
-                self.story.blocker.visible = True
-                self.story.blocker.update()
-                await asyncio.sleep(0)
-                self.reload_widget()     # Initial resize needs to build the canvases with the right size
-                
-                if self.story.blocker.visible:
-                    self.story.blocker.visible = False
-                    self.story.blocker.update()
-
-                await asyncio.sleep(0)
+                # Handles switching to tab of canvas upon first launch
+                try:
+                    for layer in self.layers:
+                        container = layer.get('canvas')
+                        if container and isinstance(container.content, cv.Canvas):
+                            shapes = container.content.shapes
+                            if shapes and isinstance(shapes[0], cv.Image):
+                                shapes[0].width = self.canvas_width
+                                shapes[0].height = self.canvas_height
+                    self.layer_stack.update()
+                except Exception:
+                    pass
                 
             return
 
