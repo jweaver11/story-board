@@ -65,7 +65,7 @@ class Chart(Widget):
                     'rod_shape': "rounded",          # The shape of our bars/rods. Either "rounded" or "square"
                     'rod_width': 30,         # The width of our bars/rods. Only applies to vertical bar charts, not horizontal ones
                     'stack_rods': False,      # If False, rods display on top of each other, not side by side
-                    'show_horizontal_grid_lines': False,
+                    'show_horizontal_grid_lines': True,
                     'show_vertical_grid_lines': False,
                     'max_y': 20,        # The max y value of our chart, which is the value that will fill the whole chart. Should be higher than any value in our bars
                     'groups': [
@@ -237,13 +237,13 @@ class Chart(Widget):
 
         # Class to hold our datasets in the dropdown menu in the info column
         class BarGroup(ft.ExpansionTile):
-            def __init__(self, title: str, color: str, entries: list, visible: bool, idx: int, expanded: bool, min_value: int = 0, max_value: int = 20):
+            def __init__(self, title: str, color: str, rods: list, visible: bool, idx: int, expanded: bool, min_value: int = 0, max_value: int = 20):
                 self.index = idx
             
                 super().__init__(
                     leading=ft.IconButton(
                         ft.Icons.VISIBILITY_OUTLINED if visible else ft.Icons.VISIBILITY_OFF_OUTLINED,
-                        color if visible else ft.Colors.ON_SURFACE_VARIANT,
+                        ft.Colors.PRIMARY,
                         on_click=_toggle_group_visibility,
                         mouse_cursor=ft.MouseCursor.CLICK, 
                         data=idx,
@@ -274,7 +274,7 @@ class Chart(Widget):
                         ft.Row([
                             ft.PopupMenuButton(
                                 icon=ft.Icons.COLOR_LENS_OUTLINED, 
-                                icon_color=entry if visible else ft.Colors.ON_SURFACE_VARIANT, 
+                                icon_color=rod.get('color', ft.Colors.PRIMARY) if visible else ft.Colors.ON_SURFACE_VARIANT, 
                                 menu_padding=ft.Padding.all(0),
                                 tooltip="Change Color",
                                 style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
@@ -288,7 +288,7 @@ class Chart(Widget):
                             ),
                             ft.Text(str(min_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
                             ft.Slider(
-                                value=entry, 
+                                value=rod.get('to_y', 0), 
                                 min=min_value,
                                 max=max_value, 
                                 label="{value}", on_change=_update_rod_value, 
@@ -299,13 +299,13 @@ class Chart(Widget):
                             ),
                             ft.Text(str(max_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
                             ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, on_click=_delete_rod_clicked, data=(idx, i), mouse_cursor=ft.MouseCursor.CLICK)    
-                        ], spacing=0) for i, entry in enumerate(entries)
+                        ], spacing=0) for i, rod in enumerate(rods)
                     ],
                     data=idx,
                     on_change=_update_expanded_state,
                     
                 )
-                #ft.ExpansionTile()
+                
 
         # TODO:
         # Add labels to Bar Chart Groups
@@ -513,7 +513,7 @@ class Chart(Widget):
                     BarGroup(
                         title=group.get('name', "Group"), 
                         color=group.get('rods', [{}])[0].get('color', self.data.get('color', ft.Colors.PRIMARY)) if len(group.get('rods', [])) > 0 else self.data.get('color', ft.Colors.PRIMARY), 
-                        entries=[rod.get('to_y', 0) for rod in group.get('rods', [])], 
+                        rods=[rod for rod in group.get('rods', [])], 
                         visible=group.get('visible', True),
                         idx=idx, 
                         expanded=group.get('expanded', False),

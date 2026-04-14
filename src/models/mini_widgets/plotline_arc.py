@@ -202,11 +202,11 @@ class Arc(MiniWidget):
                 new_left = self.widget.plotline_width - 10
 
             # Width check that we're not too small
-            if width >= 100:
+            if width >= 130:
                 self.data['left'] = new_left
                 self.plotline_control.left = new_left
 
-            elif width < 100 and e.local_delta.x < 0:   # If we're trying to make it smaller, allow it, but not if we're trying to make it bigger
+            elif width < 130 and e.local_delta.x < 0:   # If we're trying to make it smaller, allow it, but not if we're trying to make it bigger
                 self.data['left'] = new_left
                 self.plotline_control.left = new_left
 
@@ -221,11 +221,11 @@ class Arc(MiniWidget):
                 new_right = self.widget.plotline_width
 
             # Width check that we're not too small
-            if width >= 100:
+            if width >= 130:
                 self.data['right'] = new_right
                 self.plotline_control.right = new_right
 
-            elif width < 100 and e.local_delta.x > 0:   # If we're trying to make it smaller, allow it, but not if we're trying to make it bigger
+            elif width < 130 and e.local_delta.x > 0:   # If we're trying to make it smaller, allow it, but not if we're trying to make it bigger
                 self.data['right'] = new_right
                 self.plotline_control.right = new_right
 
@@ -343,7 +343,7 @@ class Arc(MiniWidget):
                                 theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER,
                             ), 
                             ft.Icon(ft.Icons.ARROW_RIGHT_OUTLINED, ft.Colors.ON_SURFACE_VARIANT, scale=0.8, visible=False)
-                        ], expand=True, spacing=6, alignment=ft.MainAxisAlignment.CENTER),
+                        ], expand=True, spacing=0, alignment=ft.MainAxisAlignment.CENTER),
                         margin=ft.Margin.symmetric(horizontal=25), expand=True, alignment=ft.Alignment.TOP_CENTER,
                         padding=ft.Padding.only(top=10)
                     ),

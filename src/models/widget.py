@@ -333,8 +333,12 @@ class Widget(ft.Container):
         self.h = int(e.height)
         
     # Called when renaming a widget
-    def rename(self, title: str):
+    async def rename(self, title: str):
         ''' Renames our widget in live title, data, and json file '''
+
+        self.story.blocker.visible = True
+        self.story.blocker.update()
+        await asyncio.sleep(0)
 
         # Save our old file path for renaming later
         old_file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json")  
@@ -349,12 +353,17 @@ class Widget(ft.Container):
 
         # Save our data to this new file
         self.save_counter = 100         # Force a save to file call
-        self.p.run_task(self.save_dict)                                
+        self.p.run_task(self.save_dict)      
+
+        await asyncio.sleep(0.2)     # Wait for file writes to finish and take effect                     
 
         # Reload our widget ui and rail to reflect changes 
         self.reload_widget()           
-        self.story.active_rail.content.reload_rail()   
-        self.story.active_rail.update()
+        self.story.active_rail.reload_rail()  
+        self.story.workspace.reload_workspace()   # Reload workspace to update tab title and sorting if needed 
+        if self.story.blocker.visible:
+            self.story.blocker.visible = False
+            self.story.blocker.update()
 
     def create_comment_clicked(self, e=None):
         ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
@@ -591,7 +600,7 @@ class Widget(ft.Container):
             text_field.update()   # Update our text field to show error or not
 
         # Called when submitting our textfield.
-        def _submit_name(e):
+        async def _submit_name(e):
             ''' Checks that we're unique and renames the widget if so. on_blur is auto called after this, so we handle that as well '''          
 
             # Non local variables
@@ -607,7 +616,7 @@ class Widget(ft.Container):
 
             # If it is, call the rename function. It will do everything else
             if is_unique:
-                self.rename(name)
+                await self.rename(name)
                 self.p.pop_dialog()
                 
             # Otherwise make sure we show our error

@@ -605,7 +605,7 @@ class Character(Widget):
                     tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), 
                     on_click=self._edit_mode_clicked, mouse_cursor="click"
                 ),
-            ]),
+            ], spacing=0),
             ft.Container(ft.Text(f"{self.data.get('About', "")}", expand=True, size=16), margin=ft.Margin.only(right=16)), # Forces container to take up space
             
         ], expand=True, spacing=0)
