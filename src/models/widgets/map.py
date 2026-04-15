@@ -81,6 +81,7 @@ class Map(Widget):
         # Drawing elements
         self.state = State()
         self.paint_brush = ft.Paint(stroke_width=3)
+        self.lock_position = False  # Used to mark a position when right clicking to create a new location
 
         # State utils
         self.map_width: int = 0
@@ -107,11 +108,12 @@ class Map(Widget):
                 #on_tap_up=self.add_point,      # Handles so we can add points
 
                 # Non-drawing event handlers
-                on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
+                #on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
+                on_secondary_tap=self._open_menu,
                 on_hover=self._get_coords,
                 on_tap=self._show_info_display,
                 #on_tap=lambda e: self.story.open_menu(self._get_menu_options()),
-                drag_interval=5, hover_interval=20,
+                drag_interval=20, hover_interval=20,
             ),
             expand=True, resize_interval=100,
             on_resize=self._set_size, 
@@ -120,17 +122,19 @@ class Map(Widget):
         self.needs_redraw = False
         self.initial_resize = True    # 
 
-        # Our stack for map locations
-        self.map_stack = ft.Stack([
-            ft.Container(
-                expand=True, ignore_interactions=True,
-                #image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
-            ),
-            self.canvas,
-        ], expand=True)
            
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
+
+    # Called when mouse hovers over the map
+    async def _get_coords(self, e: ft.PointerEvent):
+        ''' Sets our coordinate positions for menus and passing in new items '''
+        self.story.mouse_x = e.global_position.x
+        self.story.mouse_y = e.global_position.y
+        if not self.lock_position:
+            self.l = e.local_position.x
+            self.t = e.local_position.y
+        
 
     # Called in the constructor
     def _create_information_display(self):
@@ -155,12 +159,16 @@ class Map(Widget):
             key="locations",   
             data=data,      
             left=self.l,
-            top=self.t
+            top=self.t,
+            icon=data.get('icon', "Location")
         )
        
         self.locations[title] = new_location
         self.mini_widgets.append(new_location)
-        self.reload_widget()
+
+        for mw in self.mini_widgets:
+            if hasattr(mw, "map_control"):
+                mw.reload_map_control(no_update=True)
 
         self.reload_widget()
         for mw in self.mini_widgets:
@@ -168,6 +176,7 @@ class Map(Widget):
                 await mw.hide_mini_widget()
 
         await new_location.show_mini_widget() 
+        self.lock_position = False
 
     def load_locations(self):
         for title, data in self.data.get('locations', {}).items():
@@ -186,9 +195,17 @@ class Map(Widget):
         if not self.data.get('map_data', {}).get('drawing_mode', False):
             await self._show_info_mini_widget()
 
+    async def _open_menu(self, e: ft.PointerEvent):
+        
+        self.lock_position = True
+        print("Opening menu at", self.l, self.t)
+        self.story.open_menu(self._get_menu_options())
+
     # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
     async def new_location_clicked(self, e):
         ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
+
+        await self.story.close_menu()
 
         # Checks that the name in the textfield does not match any of the existing mini widgets of that type, and updates visually to reflect
         async def _check_name_unique(e):
@@ -220,8 +237,6 @@ class Map(Widget):
             title = new_item_tf.value.strip()
             await self.create_location(title, data)
             
-            if self.information_display.visible:
-                self.information_display.reload_mini_widget()
 
             self.p.pop_dialog()   # Close the dialog
 
@@ -239,25 +254,34 @@ class Map(Widget):
         )
 
         # Button for creating new mw. Can also press enter in the textfield
-        submit_button = ft.TextButton("Create", on_click=_create_new_mw, disabled=True)
+        submit_button = ft.TextButton("Create", on_click=_create_new_mw, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
 
         # Dialog we open onto the page
         dlg = ft.AlertDialog(
             title=ft.Text(f"New Location Name"),
             content=new_item_tf,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR), on_click=lambda _: self.p.pop_dialog()),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda _: self.p.pop_dialog()),
                 submit_button
             ],
         )
 
         self.p.show_dialog(dlg)    
+
+    def delete_location(self, location: Location):# Remove from our dict
+        if location.title in self.locations:
+            self.locations.pop(location.title)
+            self.data['locations'].pop(location.title, None)
+            self.p.run_task(self.save_dict)
+
+        if self.information_display.visible:
+            self.information_display.reload_mini_widget()
     
  
     def _get_menu_options(self) -> list[ft.Control]:
         
 
-        # TODO: Add Valley, Plains, Rivers, Storm, Lake, Village
+        # TODO: Add Valley, Plains, Rivers, Storm, Lake, Village, Desert, Castle, Other (Rest of options)
             
 
         # New (all dif types of locations), rename color
@@ -276,41 +300,40 @@ class Map(Widget):
                         
                         ft.MenuItemButton(
                             "Label", leading=ft.Icon(ft.Icons.TEXT_FIELDS_OUTLINED, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, #data="none",
+                            on_click=self.new_location_clicked, data={"icon": "label"},
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ),
                         ft.MenuItemButton(
                             "Point of Interest", leading=ft.Icon(ft.Icons.LOCATION_PIN, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, data="point_of_interest",
+                            on_click=self.new_location_clicked, data={"icon": "location_pin"},
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ),
                         ft.MenuItemButton(
                             "Mountain", leading=ft.Icon(ft.Icons.TERRAIN, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, data="mountain",
+                            on_click=self.new_location_clicked, data={"icon": "terrain"},
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ),
                         ft.MenuItemButton(
                             "Forest", leading=ft.Icon(ft.Icons.FOREST, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, data="forest",
+                            on_click=self.new_location_clicked, data={"icon": "forest"},
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ),
                         ft.MenuItemButton(
                             "Water", leading=ft.Icon(ft.Icons.WATER, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, data="water",
+                            on_click=self.new_location_clicked, data={"icon": "water"},
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ),
                         ft.MenuItemButton(
                             "City", leading=ft.Icon(ft.Icons.LOCATION_CITY, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, data="city",
+                            on_click=self.new_location_clicked, data={"icon": "location_city"},
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ),
                         ft.MenuItemButton(
                             "Dungeon", leading=ft.Icon(ft.Icons.STAIRS_OUTLINED, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, data="dungeon",
+                            on_click=self.new_location_clicked, data={"icon": "stairs_outlined"},
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ),
-                        
-                        
+ 
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                     style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
@@ -375,10 +398,18 @@ class Map(Widget):
 
         # TODO: 
         # Users can choose to create their image or use some default ones, or upload their own
+        # Our stack for map locations
+        map_stack = ft.Stack([
+            ft.Container(
+                expand=True, ignore_interactions=True,
+                #image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
+            ),
+            self.canvas,
+        ], expand=True)
 
         # Clear our map stack controls so we can re-add them
-        self.map_stack.controls.clear()
-        self.map_stack.controls = [     # Add our background and canvas
+        map_stack.controls.clear()
+        map_stack.controls = [     # Add our background and canvas
             ft.Container(
                 expand=True, ignore_interactions=True, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
                 #image=ft.DecorationImage("map_background.png", fit=ft.BoxFit.FILL)    # Our background image
@@ -388,15 +419,17 @@ class Map(Widget):
 
         # Add our map locations to the stack
         for mw in self.mini_widgets:
-            if hasattr(mw, 'map_control') and hasattr(mw, 'map_label'):
-                self.map_stack.controls.append(mw.map_control)
-                self.canvas.shapes.append(mw.map_label)
-                #self.map_stack.controls.append(mw.map_label)
+            
+            if hasattr(mw, 'map_control'):
+                map_stack.controls.append(mw.map_control)
+            if hasattr(mw, 'map_label'):
+                map_stack.controls.append(mw.map_label)
+            
         
                 
         # Create our interactive viewer for panning and zooming
         interactive_viewer = ft.InteractiveViewer(
-            content=self.map_stack, 
+            content=map_stack, 
             expand=3,
             scale_factor=500, boundary_margin=50,
             min_scale=0.5, max_scale=3.0,

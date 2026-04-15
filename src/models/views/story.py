@@ -724,13 +724,22 @@ class Story(ft.View):
             self.close_menu_detector.visible = False
             self.close_menu_detector.update()
 
+        for widget in self.widgets:
+            if hasattr(widget, 'lock_position'):
+                widget.lock_position = False
+
     def close_menu_instant(self, e=None):
         ''' Closes our right click menu when clicking outside of it '''
        
-        self.menu.visible = False
-        self.close_menu_detector.visible = False
-        self.close_menu_detector.update()
-        self.menu.update()
+        if self.menu.visible:
+            self.menu.visible = False
+            self.menu.update()
+        if self.close_menu_detector.visible:
+            self.close_menu_detector.visible = False
+            self.close_menu_detector.update()
+        for widget in self.widgets:
+            if hasattr(widget, 'lock_position'):
+                widget.lock_position = False
  
     # Called to open a right click menu in the page overlay
     def open_menu(self, menu_options: list):

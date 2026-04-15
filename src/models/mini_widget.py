@@ -205,8 +205,7 @@ class MiniWidget(ft.Container):
             if hasattr(self, 'reload_plotline_control'):
                 self.reload_plotline_control()
 
-            if hasattr(self, 'reload_map_control') and hasattr(self, 'map_label'):
-                self.map_label.text = new_name
+            if hasattr(self, 'reload_map_control'):
                 self.reload_map_control()
                 
             if self.visible:
@@ -216,9 +215,6 @@ class MiniWidget(ft.Container):
                     self.widget.information_display.reload_mini_widget() 
             self.widget.reload_widget()
 
-
-            # Also reload the active rail to reflect changes
-            self.widget.story.active_rail.content.reload_rail() 
 
         # Catch errors
         except Exception as e:
@@ -280,8 +276,9 @@ class MiniWidget(ft.Container):
         self.widget.mini_widgets_wrapper.update()
         
         if hasattr(self.widget, 'show_info_button'):
-            self.widget.show_info_button.visible = False
-            self.widget.show_info_button.update()
+            if self.widget.show_info_button.visible:
+                self.widget.show_info_button.visible = False
+                self.widget.show_info_button.update()
         
         #self.widget.story.blocker.visible = False
         #self.widget.story.blocker.update()
@@ -339,8 +336,23 @@ class MiniWidget(ft.Container):
 
     def _set_icon(self) -> ft.Icon:
         ''' Returns the icon for this mini widget based on its tag and data '''
-        icon = self.data.get('icon', 'info')
-        color = self.data.get('color', None)
+
+        match self.data.get('icon', 'location_pin'):
+            case "location_city":
+                icon = ft.Icons.LOCATION_CITY
+            case "stairs_outlined":
+                icon = ft.Icons.STAIRS_OUTLINED
+            case "terrain":
+                icon = ft.Icons.TERRAIN
+            case "forest":
+                icon = ft.Icons.FOREST
+            case "water":
+                icon = ft.Icons.WATER
+
+            case _:
+                icon = ft.Icons.LOCATION_PIN
+
+        return icon
 
 
     async def _new_note_clicked(self, e=None):

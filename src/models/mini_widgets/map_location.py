@@ -22,11 +22,10 @@ class Location(MiniWidget):
         widget: Widget, 
         page: ft.Page, 
         key: str,                          
-        alignment: float = None,          
         left: int = None,                   
         top: int = None,                   
         data: dict = None,
-        type: str = "Location"       
+        icon: str = "label"       
     ):
 
         # Parent constructor
@@ -43,14 +42,13 @@ class Location(MiniWidget):
             self,   # Pass in our own data so the function can see the actual data we loaded
             {   
                 'tag': "location",            # Tag to identify what type of object this is
-                'x_alignment': alignment if alignment is not None else (),           # Float between -1 and 1 on x axis of map. 0 is center
-                'icon': "circle",
+                'icon': icon,
                 'left': left, 
                 'top': top,
                 'color': "secondary",           # Color of the plot point on the map
 
                 # Information for our information display
-                'Type': type,   # Type of location (city, town, dungeon, mountain, etc)
+                'Type': str,   # Type of location (city, town, dungeon, mountain, etc)
                 'Description': str, 
                 'History': str,
                 'image_base64': str,  
@@ -62,29 +60,10 @@ class Location(MiniWidget):
 
         # UI elements
         self.map_control: ft.Container    # Circle container to shows our location icon on the map
-        self.map_label = ft.Text(           # Label that appears above our icon on the map, shows our title and appears on hover
-            self.title, theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER, 
-            color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
-            left=self.data.get('left', 0), top=self.data.get('top', 0) - 30 if self.data.get('top', 0) > 30 else self.data.get('top', 0) + 30,
-            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN), 
-            overflow=ft.TextOverflow.CLIP,
-        )
-        self.map_label = cv.Text(
-            self.data.get('left', 0) + 12, 
-            self.data.get('top', 0) - 30 if self.data.get('top', 0) > 30 else self.data.get('top', 0) + 30,
-            self.title, 
-            ft.TextStyle(14, weight=ft.FontWeight.BOLD, color=self.data.get('color', "secondary"), overflow=ft.TextOverflow.VISIBLE),
-            alignment=ft.Alignment.CENTER,
-            max_width=100,
-            text_align=ft.TextAlign.CENTER
-        )
-                      
-        self.icon_button = ft.PopupMenuButton(      # Button to change the plot points icon on the map
-            icon=self.data.get('icon', 'location_pin'),
-            tooltip="Location Icon", icon_color=self.data.get('color', 'secondary'),
-            menu_padding=ft.Padding(0,0,0,0), 
-            items=self._get_icon_options()
-        )
+        self.map_label: ft.Text
+        
+        
+                    
 
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our plot point
@@ -114,22 +93,28 @@ class Location(MiniWidget):
         new_top = self.map_control.top + delta_y
 
 
+        #self.map_label.offset = ft.Offset(-0.5, -1)
+
         # Clamp our position to the bounds of our map
-        if new_left < 20:        
+        if new_left <= 20:        
             new_left = 20
-        elif new_left > self.widget.map_width - 20:  
-            new_left = self.widget.map_width - 20
-        if new_top < 20:
-            new_top = 20
-        elif new_top > self.widget.map_height - 20:
-            new_top = self.widget.map_height - 20
+        elif new_left > self.widget.map_width - 25:  
+            new_left = self.widget.map_width - 25
+        if new_top <= 45:
+            new_top = 45
+            
+        if new_top > self.widget.map_height - 45:
+            new_top = self.widget.map_height - 45
+        
         
         
         # Set our new position and animate it there
         self.map_control.left = new_left
         self.map_control.top = new_top
-        self.map_label.x = new_left
-        self.map_label.y = new_top - 30 if new_top > 30 else new_top + 30
+        self.map_label.left = new_left + 12 # Offset half the width of the icon
+        self.map_label.top = new_top
+
+        
         
         self.data['left'] = self.map_control.left
         self.data['top'] = self.map_control.top
@@ -189,35 +174,7 @@ class Location(MiniWidget):
             self.map_control.shadow = None
             self.map_control.update()
 
-    def _get_icon_options(self) -> list[ft.Control]:
-        ''' Returns a list of all available icons for icon changing '''
-
-        # Called when an icon option is clicked on popup menu to change icon
-        async def _change_icon(icon: str, e):
-            ''' Passes in our kwargs to the widget, and applies the updates '''
-
-            # Set our data and update our button icon
-            self.data['icon'] = icon
-            await self.save_dict()
-
-            # Update the UI to match. Map control needs widget to reload as well
-            self.icon_button.icon = icon
-            self.reload_map_control()
-            self.widget.reload_widget()
-
-        # List for our icons when formatted
-        icon_controls = [] 
-
-        # Create our controls for our icon options
-        for icon in icons:
-            icon_controls.append(
-                ft.PopupMenuItem(
-                    content=ft.Icon(icon, self.data.get('color', 'secondary')),
-                    on_click=lambda e, ic=icon: _change_icon(ic, e)
-                )
-            )
-
-        return icon_controls
+    
     
     # Makes sure we stop highlighting
     async def hide_mini_widget(self, e=None, update: bool=True):
@@ -247,16 +204,21 @@ class Location(MiniWidget):
 
 
     # Called from reload_mini_widget
-    def reload_map_control(self):
+    def reload_map_control(self, no_update: bool=False):
         """ Rebuilds our map control that holds our plot point and slider """
+
+        
+        icon = self._set_icon()
 
         # Our container that is our plot point on the map, and contains our gesture detector for hovering and right clicking
         self.map_control = ft.Container(
-            opacity=1.0, shape=ft.BoxShape.CIRCLE,
-            #bgcolor="red", 
-            width=24, height=24,
+            #border=ft.Border.all(1, "blue"),
+            expand=True,
+            width=25,
+            height=25,
             alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            left=self.data.get('left', 0), 
             top=self.data.get('top', 0),
             content=ft.GestureDetector(
                 mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
@@ -264,9 +226,50 @@ class Location(MiniWidget):
                 on_pan_update=self.move_location, drag_interval=20, on_pan_end=self._drag_end,
                 on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
                 on_tap=self.show_mini_widget, on_tap_down=self._drag_start,
-                content=ft.Icon(self.data.get('icon', 'location_pin'), self.data.get('color', None))
+                content=ft.Icon(
+                    icon, self.data.get('color', None), expand=True,
+                    visible=True if self.data.get('icon', "label") != "label" else False,
+                ), 
+                expand=True,
             ),
         )
+
+
+        self.map_label = ft.Container(
+            expand=True,
+            width=150,
+            height=40,
+            #border=ft.Border.all(1, "red"),
+            alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            left=self.data.get('left', 0) + 12, # Offset half the width of the icon
+            top=self.data.get('top', 0),
+            offset=ft.Offset(-0.5, -1),
+            content=ft.GestureDetector(
+                mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
+                on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
+                on_pan_update=self.move_location, drag_interval=20, on_pan_end=self._drag_end,
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
+                on_tap=self.show_mini_widget, on_tap_down=self._drag_start, expand=True,
+                content=ft.Text(           # Label that appears above our icon on the map, shows our title and appears on hover
+                    self.title, theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER, 
+                    color=self.data.get('color', None), weight=ft.FontWeight.BOLD, expand=True,
+                    #overflow=ft.TextOverflow.ELLIPSIS,
+                    #left=self.data.get('left', 0),
+                    #top=self.data.get('top', 0) - 30 if self.data.get('top', 0) > 30 else self.data.get('top', 0) + 30,
+                )
+            )
+        )
+        
+
+        if no_update:
+            return
+
+        try:
+            self.map_control.update()
+            self.map_label.update()
+        except Exception as _:
+            pass
 
 
     # Called when reloading changes to our plot point and in constructor
@@ -315,7 +318,7 @@ class Location(MiniWidget):
                 ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
             )
         else:
-            img = ft.Icon(ft.Icons.LOCATION_HISTORY_OUTLINED, size=100, color=self.data.get('color', "primary"), expand=False)
+            img = ft.Icon(ft.Icons.LOCATION_PIN, size=100, color=self.data.get('color', "primary"), expand=False)
 
         upload_image_button = ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_location_image, mouse_cursor="click")
 

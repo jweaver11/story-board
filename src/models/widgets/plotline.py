@@ -239,7 +239,6 @@ class Plotline(Widget):
         for mw in self.mini_widgets:
             if hasattr(mw, "plotline_control"):
                 mw.reload_plotline_control(no_update=True)
-        await self.rebuild_plotline_canvas(update=True)
         self.reload_widget()
         for mw in self.mini_widgets:
             if mw.visible:
@@ -275,7 +274,6 @@ class Plotline(Widget):
             if hasattr(mw, "plotline_control"):
                 mw.reload_plotline_control(no_update=True)
                 
-        await self.rebuild_plotline_canvas(update=True)
         self.reload_widget()
         for mw in self.mini_widgets:
             if mw.visible:
@@ -307,7 +305,6 @@ class Plotline(Widget):
         for mw in self.mini_widgets:
             if hasattr(mw, "plotline_control"):
                 mw.reload_plotline_control(no_update=True)
-        await self.rebuild_plotline_canvas(update=True)
         self.reload_widget()
         for mw in self.mini_widgets:
             if mw.visible:
@@ -326,7 +323,7 @@ class Plotline(Widget):
 
         # Apply changes
         if self.information_display.visible:
-            self.information_display.reload_mini_widget(no_update=True)
+            self.information_display.reload_mini_widget()
         
     def delete_arc(self, arc):
         ''' Deletes an arc from our plotline '''
@@ -338,7 +335,7 @@ class Plotline(Widget):
             self.p.run_task(self.save_dict)
 
         if self.information_display.visible:
-            self.information_display.reload_mini_widget(no_update=True)
+            self.information_display.reload_mini_widget()
         
 
     def delete_marker(self, marker):
@@ -351,7 +348,7 @@ class Plotline(Widget):
             self.p.run_task(self.save_dict)
 
         if self.information_display.visible:
-            self.information_display.reload_mini_widget(no_update=True)
+            self.information_display.reload_mini_widget()
         
 
     # Called when right clicking our controls for either plotline or an arc
@@ -565,9 +562,6 @@ class Plotline(Widget):
             elif tag == "event":
                 if arc is not None:
                     await arc.create_event(title)
-
-            if self.information_display.visible:
-                self.information_display.reload_mini_widget()
 
             await self.story.close_menu()  
             self.p.pop_dialog()   # Close the dialog

@@ -762,7 +762,7 @@ class Widget(ft.Container):
         await self.save_dict()
 
     # Called when mouse hovers over the map
-    async def _get_coords(self, e: ft.HoverEvent):
+    async def _get_coords(self, e: ft.PointerEvent):
         ''' Sets our coordinate positions for menus and passing in new items '''
         self.story.mouse_x = e.global_position.x
         self.story.mouse_y = e.global_position.y
