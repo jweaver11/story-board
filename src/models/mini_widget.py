@@ -273,14 +273,16 @@ class MiniWidget(ft.Container):
         #await asyncio.sleep(0)
 
         self.data['visible'] = True
+        await self.save_dict()
         self.visible = True
         self.reload_mini_widget()
         self.widget.mini_widgets_wrapper.visible = True
         self.widget.mini_widgets_wrapper.update()
         
-        await self.save_dict()
+        if hasattr(self.widget, 'show_info_button'):
+            self.widget.show_info_button.visible = False
+            self.widget.show_info_button.update()
         
-
         #self.widget.story.blocker.visible = False
         #self.widget.story.blocker.update()
 
@@ -305,6 +307,7 @@ class MiniWidget(ft.Container):
         
         await self.save_dict()
 
+        # If we're not updating, just return out
         if not update:
             return
     
@@ -313,11 +316,17 @@ class MiniWidget(ft.Container):
         # Check if there is at least one mini widget still visible
         for mw in self.widget.mini_widgets:
             if mw.visible:
+                if hasattr(self.widget, 'show_info_button'):
+                    self.widget.show_info_button.visible = False
+                    self.widget.show_info_button.update()
                 return
             
         self.widget.mini_widgets_wrapper.visible = False
         self.widget.mini_widgets_wrapper.update()
-        
+        if hasattr(self.widget, 'show_info_button'):
+            self.widget.show_info_button.visible = True
+            self.widget.show_info_button.update()
+ 
         #self.visible = False
 
         #if update:
@@ -327,6 +336,11 @@ class MiniWidget(ft.Container):
         #self.update()
         #self.widget.story.blocker.visible = False
         #self.widget.story.blocker.update()
+
+    def _set_icon(self) -> ft.Icon:
+        ''' Returns the icon for this mini widget based on its tag and data '''
+        icon = self.data.get('icon', 'info')
+        color = self.data.get('color', None)
 
 
     async def _new_note_clicked(self, e=None):

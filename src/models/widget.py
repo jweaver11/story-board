@@ -681,6 +681,9 @@ class Widget(ft.Container):
             await asyncio.sleep(0)
             
             # Change our icon to match, apply the update
+            if hasattr(self, 'information_display'):
+                if self.information_display.visible:
+                    self.information_display.reload_mini_widget()
             self.reload_widget()
             self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
             await self.story.close_menu()

@@ -101,7 +101,6 @@ class Plotline(Widget):
         self.show_hover_effects: bool = False   # If we should show hover effects of our plotline. Plot points and markers turn these off when hovering over them
         self.needs_redraw = False           # Used to track if we need to redraw canvas after a resize
         self.skip_first_resize = True
-        self.initial_resize = True          # Initial resize needs rebuild
 
         # Our plotline canvas that draws our plotline line and markers
         self.plotline_canvas = cv.Canvas(
@@ -139,7 +138,7 @@ class Plotline(Widget):
                 self.data.update({key: value})
 
             await self.save_dict()
-            await self.rebuild_plotline_canvas(update=True)
+            #await self.rebuild_plotline_canvas(update=True)
 
         # Handle errors
         except Exception as e:
@@ -605,14 +604,14 @@ class Plotline(Widget):
         self.plotline_width = int(e.width) - 25
         self.plotline_height = int(e.height)
         self.needs_redraw = True
-
-        # If first launch, rebuild,
-        if self.initial_resize:
-            await self.rebuild_plotline_canvas()
-            self.needs_redraw = False
-            self.initial_resize = False
+        await self.rebuild_plotline_canvas(True)
 
 
+
+    async def _show_info_mini_widget(self, e=None):
+        self.show_info_button.visible = False
+        self.show_info_button.update()
+        await self.information_display.show_mini_widget()
 
 
     # Called for any size changes to our plotline canvas
@@ -803,7 +802,7 @@ class Plotline(Widget):
                 marker.plotline_control.left = new_x_pos  
 
                 # Set how high up we want to go (Up to 80% height)
-                y_pos = int(self.h // 4)
+                y_pos = int(self.plotline_height // 4)
 
                 # Guard against the header
                 if y_pos < 70: 
@@ -856,7 +855,6 @@ class Plotline(Widget):
 
                 width = self.plotline_width - arc.data.get('left', 0) - arc.data.get('right', 0)
                 
-                    
                 lr = arc.data.get('left_ratio', 0)
                 rr = arc.data.get('right_ratio', 0)            
 
@@ -897,16 +895,7 @@ class Plotline(Widget):
                 self.plotline_canvas.update()
             except Exception as _:
                 pass
-
-        # Only update the first time this is called, as all other times also have to update anyway
-        if self.initial_resize:
-            try:
-                self.plotline_canvas.update()
-            except Exception as _:
-                pass
-                
-
-            
+                     
 
     # Called when we need to rebuild out plotline UI
     def reload_widget(self):
@@ -951,255 +940,27 @@ class Plotline(Widget):
                 break
             if self.data.get('show_all_markers', False) or marker.data.get('is_shown_on_widget', False):
                 plotline_stack.controls.append(marker.plotline_control)
-                
 
-        # Set our content
-        self.body_container.content = plotline_stack
+        mini_widgets_visible = False
+        for mw in self.mini_widgets:
+            if mw.visible:
+                mini_widgets_visible = True
+                break
 
-
-        # Prepare our header and create our filter dropdowns ----------------------------------------------------------------
-        def _mini_widget_filter_changed(value: bool, mini_widget=None, key: str=None):
-            ''' Called when a mini widget filter checkbox is changed. type is either plot_point, arc, or marker in case '''
-
-            # If we passed in a key, its a show/hide all option
-            if key is not None:
-
-                # If we're showing or hiding all, make sure the opposite is false
-                match key:
-                    case 'show_all_plot_points':
-                        if value == True:
-                            self.p.run_task(self.change_data, **{'hide_all_plot_points': False, key: value})
-                            for pp in self.plot_points.values():
-                                pp.toggle_plotline_control(True)
-
-                    case 'hide_all_plot_points':
-                        if value == True:
-                            self.p.run_task(self.change_data, **{'show_all_plot_points': False, key: value})
-                            for pp in self.plot_points.values():
-                                pp.toggle_plotline_control(False)
-
-                    case 'show_all_arcs':
-                        if value == True:
-                            self.p.run_task(self.change_data, **{'hide_all_arcs': False, key: value})
-                            for a in self.arcs.values():
-                                a.toggle_plotline_control(True)
-
-                    case 'hide_all_arcs':
-                        if value == True:
-                            self.p.run_task(self.change_data, **{'show_all_arcs': False, key: value})
-                            for a in self.arcs.values():
-                                a.toggle_plotline_control(False)
-
-                    case 'show_all_markers':
-                        if value == True:
-                            self.p.run_task(self.change_data, **{'hide_all_markers': False, key: value})
-                            for m in self.markers.values():
-                                m.toggle_plotline_control(True)
-
-
-                    case 'hide_all_markers':
-                        if value == True:
-                            self.p.run_task(self.change_data, **{'show_all_markers': False, key: value})
-                            for m in self.markers.values():
-                                m.toggle_plotline_control(False)
-
-                self.reload_widget()
-                return
-
-            # Otherwise its a show or hide mini widget option
-            if mini_widget is not None:
-
-                # Set our tag
-                tag = mini_widget.data.get('tag', 'none')
-
-                # If hiding a mini widget, make sure our matching show_all is false
-                if value == False:
-                    match tag:
-                        case 'plot_point':
-                            self.p.run_task(self.change_data, **{'show_all_plot_points': False})
-                        case 'arc':
-                            self.p.run_task(self.change_data, **{'show_all_arcs': False})
-                        case 'marker':
-                            self.p.run_task(self.change_data, **{'show_all_markers': False})
-                    
-
-                # Otherwise we're showing a mini widget, make sure our matching hide_all is false
-                else:
-                    match tag:
-                        case 'plot_point':
-                            self.p.run_task(self.change_data, **{'hide_all_plot_points': False})
-                        case 'arc':
-                            self.p.run_task(self.change_data, **{'hide_all_arcs': False})
-                        case 'marker':
-                            self.p.run_task(self.change_data, **{'hide_all_markers': False})
-
-                
-                # Show or hide that mini widget on the plotline
-                mini_widget.toggle_plotline_control(value)
-                self.reload_widget()
-
-      
-            
+        self.show_info_button = ft.IconButton(
+            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
+            on_click=self._show_info_mini_widget, 
+            mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+            visible=not mini_widgets_visible, 
+        )
             
 
-
-        def _get_plot_points_filter_options() -> list[ft.Control]:
-
-            if len(self.plot_points) == 0:
-                return [ft.Text("No Plot Points Created", color=ft.Colors.ON_SURFACE_VARIANT, italic=True)]
-            # List for our colors when formatted
-            plot_point_checkboxes = [
-                ft.Checkbox(
-                    label="Show All", value=self.data.get('show_all_plot_points'), expand=True, adaptive=True,
-                    on_change=lambda e: _mini_widget_filter_changed(e.control.value, mini_widget=None, key='show_all_plot_points')
-                ),
-                ft.Checkbox(
-                    label="Hide all", value=self.data.get('hide_all_plot_points'), expand=True, adaptive=True,
-                    on_change=lambda e: _mini_widget_filter_changed(e.control.value, mini_widget=None, key='hide_all_plot_points')
-                )
-            ]
-
-            # Create our controls for our color options
-            for plot_point in self.plot_points.values():
-                plot_point_checkboxes.append(
-                    ft.Checkbox(
-                        label=plot_point.title, 
-                        value=plot_point.data.get('is_shown_on_widget'), 
-                        expand=True, adaptive=True,
-                        on_change=lambda e, pp=plot_point: _mini_widget_filter_changed(e.control.value, pp)
-                    )
-                )
-
-            return plot_point_checkboxes
-        
-
-        def _get_arcs_filter_options() -> list[ft.Control]:
-            if len(self.arcs) == 0:
-                return [ft.Text("No Arcs Created", color=ft.Colors.ON_SURFACE_VARIANT, italic=True)]
-
-            # List for our colors when formatted
-            arc_checkboxes = [
-                ft.Checkbox(
-                    label="Show All", value=self.data.get('show_all_arcs'), expand=True, adaptive=True,
-                    on_change=lambda e: _mini_widget_filter_changed(e.control.value, mini_widget=None, key='show_all_arcs')
-                ),
-                ft.Checkbox(
-                    label="Hide all", value=self.data.get('hide_all_arcs'), expand=True, adaptive=True,
-                    on_change=lambda e: _mini_widget_filter_changed(e.control.value, mini_widget=None, key='hide_all_arcs')
-                )
-            ]
-
-            # Create our controls for our color options
-            for arc in self.arcs.values():
-                arc_checkboxes.append(
-                    ft.Checkbox(
-                        label=arc.title, 
-                        value=arc.data.get('is_shown_on_widget'), 
-                        expand=True, adaptive=True,
-                        on_change=lambda e, a=arc: _mini_widget_filter_changed(e.control.value, a),
-                    )
-                ) 
-                
-            return arc_checkboxes
-        
-        def _get_markers_filter_options() -> list[ft.Control]:
-            if len(self.markers) == 0:
-                return [ft.Text("No Markers Created", color=ft.Colors.ON_SURFACE_VARIANT, italic=True)]
-            
-            # List for our colors when formatted
-            marker_checkboxes = [
-                ft.Checkbox(
-                    label="Show All", value=self.data.get('show_all_markers'), expand=True, adaptive=True,
-                    on_change=lambda e: _mini_widget_filter_changed(e.control.value, mini_widget=None, key='show_all_markers')
-                ),
-                ft.Checkbox(
-                    label="Hide all", value=self.data.get('hide_all_markers'), expand=True, adaptive=True,
-                    on_change=lambda e: _mini_widget_filter_changed(e.control.value, mini_widget=None, key='hide_all_markers')
-                )
-            ] 
-
-            # Create our controls for our color options
-            for marker in self.markers.values():
-                marker_checkboxes.append(
-                    ft.Checkbox(
-                        label=marker.title, 
-                        value=marker.data.get('is_shown_on_widget'), 
-                        expand=True, adaptive=True,
-                        on_change=lambda e, m=marker: _mini_widget_filter_changed(e.control.value, m),
-                    )
-                )
-
-            return marker_checkboxes
-
-        
-
-        plot_points_filters = ft.Container(
-            padding=None,
-            width=170, shadow=ft.BoxShadow(color=ft.Colors.SURFACE, blur_radius=2, blur_style=ft.BlurStyle.OUTER),
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-            border_radius=ft.BorderRadius.all(6),
-            content=ft.ExpansionTile(
-                expand=True, dense=True,
-                on_change=lambda e: self.p.run_task(self.change_data, **{'plot_points_filter_dropdown_expanded': not self.data.get('plot_points_filter_dropdown_expanded', True)}),
-                title=ft.Text("Plot Point Filters", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), 
-                expanded=self.data.get('plot_points_filter_dropdown_expanded', True),
-                visual_density=ft.VisualDensity.COMPACT, collapsed_bgcolor=ft.Colors.SURFACE,
-                tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
-                maintain_state=True, adaptive=True, bgcolor=ft.Colors.SURFACE,
-                expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
-                shape=ft.RoundedRectangleBorder(),
-                controls=_get_plot_points_filter_options()
-            )
+        self.body_container.content = ft.Row(
+            [
+                plotline_stack, 
+                self.show_info_button
+            ], expand=True, spacing=0
         )
-
-
-        arcs_filters = ft.Container(
-            padding=None,
-            width=170, shadow=ft.BoxShadow(color=ft.Colors.SURFACE, blur_radius=2, blur_style=ft.BlurStyle.OUTER),
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-            border_radius=ft.BorderRadius.all(6),
-            content=ft.ExpansionTile(
-                expand=True, dense=True,
-                on_change=lambda e: self.p.run_task(self.change_data, **{'arcs_filter_dropdown_expanded': not self.data.get('arcs_filter_dropdown_expanded', True)}),
-                title=ft.Text("Arcs Filters", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), 
-                expanded=self.data.get('arcs_filter_dropdown_expanded', True),
-                visual_density=ft.VisualDensity.COMPACT, collapsed_bgcolor=ft.Colors.SURFACE,
-                tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
-                maintain_state=True, adaptive=True, bgcolor=ft.Colors.SURFACE,
-                expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
-                shape=ft.RoundedRectangleBorder(),
-                controls=_get_arcs_filter_options()
-            )
-        )
-
-        markers_filters = ft.Container(
-            padding=None,
-            width=170, shadow=ft.BoxShadow(color=ft.Colors.SURFACE, blur_radius=2, blur_style=ft.BlurStyle.OUTER),
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-            border_radius=ft.BorderRadius.all(6),
-            content=ft.ExpansionTile(
-                expand=True, dense=True,
-                on_change=lambda e: self.p.run_task(self.change_data, **{'markers_filter_dropdown_expanded': not self.data.get('markers_filter_dropdown_expanded', True)}),
-                title=ft.Text("Markers Filters", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), 
-                expanded=self.data.get('markers_filter_dropdown_expanded', True),
-                visual_density=ft.VisualDensity.COMPACT, collapsed_bgcolor=ft.Colors.SURFACE,
-                tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
-                maintain_state=True, adaptive=True, bgcolor=ft.Colors.SURFACE,
-                expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
-                shape=ft.RoundedRectangleBorder(),
-                controls=_get_markers_filter_options()
-            ),
-            
-        )
-        
-    
-
-        self.header = ft.Row(
-            alignment=ft.MainAxisAlignment.CENTER,
-            vertical_alignment=ft.CrossAxisAlignment.START,
-            controls=[plot_points_filters, arcs_filters, markers_filters],
-        )
-        
 
         self._render_widget() 
 

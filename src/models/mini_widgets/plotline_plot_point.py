@@ -250,10 +250,9 @@ class PlotPoint(MiniWidget):
 
         title_control = ft.Row([
             ft.GestureDetector(
-                ft.Text(f"\t\t{self.data['title']}\t\t", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
-                tooltip=f"Rename {self.title}", color=self.data.get('color', None), expand=True),
+                ft.Text(f"\t{self.data['title']}", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+                color=self.data.get('color', None), expand=True),
                 on_double_tap=self._rename_clicked,
-                on_tap=self._rename_clicked,
                 on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
                 mouse_cursor="click", hover_interval=500, expand=True
             ),
@@ -271,21 +270,21 @@ class PlotPoint(MiniWidget):
             value=self.data.get('Description', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'Description': e.control.value}), 
             label="Description", capitalization=ft.TextCapitalization.SENTENCES,
-            tooltip="Brief description of this plot point", dense=True
+            dense=True
         )
 
         when_tf = TextField(
             value=self.data.get('When', ''), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'When': e.control.value}), 
             label="When", capitalization=ft.TextCapitalization.SENTENCES,
-            tooltip="Time or date related to this plot point", dense=True
+            dense=True
         )
 
         where_tf = TextField(
             value=self.data.get('Where'), multiline=True, expand=True, 
             on_blur=lambda e: self.change_data(**{'Where': e.control.value}), 
             label="Where", capitalization=ft.TextCapitalization.SENTENCES,
-            tooltip="List of location(s) related to this plot point", dense=True
+            dense=True
         )
 
         # Adds or removes characters from our Relevant characters list

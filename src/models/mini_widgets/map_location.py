@@ -2,17 +2,6 @@
 Class for marking any point of interest (location) on a map
 '''
 
-# Needs coordinates
-# Allow user to pick icon
-# Allow users to connect to a map
-
-
-# Cities, towns, villages, landmarks, buildings, rooms, natural features, geography, regions, POI
-
-# Data {
-#       map_key -- only sub maps have a map key value, and they will just render the maps info display instead of building a new one
-#}
-
 import flet as ft
 from models.mini_widget import MiniWidget
 from models.widget import Widget
@@ -21,6 +10,7 @@ import math
 from styles.text_styles import text_style
 import flet.canvas as cv 
 from styles.icons import icons
+from styles.text_field import TextField
 
 # Locations that appear on our map
 class Location(MiniWidget):
@@ -35,7 +25,8 @@ class Location(MiniWidget):
         alignment: float = None,          
         left: int = None,                   
         top: int = None,                   
-        data: dict = None       
+        data: dict = None,
+        type: str = "Location"       
     ):
 
         # Parent constructor
@@ -59,8 +50,10 @@ class Location(MiniWidget):
                 'color': "secondary",           # Color of the plot point on the map
 
                 # Information for our information display
-                'Description': str,
+                'Type': type,   # Type of location (city, town, dungeon, mountain, etc)
+                'Description': str, 
                 'History': str,
+                'image_base64': str,  
             },
         )
 
@@ -98,16 +91,28 @@ class Location(MiniWidget):
 
         # Build our slider for moving our plot point
         self.reload_map_control()
-        self.reload_mini_widget(no_update=True)
+        self.reload_mini_widget()
 
     
     async def move_location(self, e: ft.DragUpdateEvent):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
 
-        
+        if e is None:
+            delta_x = 0
+            delta_y = 0
+        else:
+            delta_x = e.local_delta.x
+            delta_y = e.local_delta.y
+
+        if not isinstance(delta_x, (int, float)):
+            delta_x = 0
+        if not isinstance(delta_y, (int, float)):
+            delta_y = 0
+
         # Calculate our new absolute positioning based on our delta x from dragging
-        new_left = self.map_control.left + e.delta_x
-        new_top = self.map_control.top + e.delta_y
+        new_left = self.map_control.left + delta_x
+        new_top = self.map_control.top + delta_y
+
 
         # Clamp our position to the bounds of our map
         if new_left < 20:        
@@ -119,18 +124,15 @@ class Location(MiniWidget):
         elif new_top > self.widget.map_height - 20:
             new_top = self.widget.map_height - 20
         
-        # Apply to data
-        self.data['left'] = new_left
-        self.data['top'] = self.map_control.top
-
-
+        
         # Set our new position and animate it there
         self.map_control.left = new_left
         self.map_control.top = new_top
-        self.map_label.x = new_left + 12
+        self.map_label.x = new_left
         self.map_label.y = new_top - 30 if new_top > 30 else new_top + 30
-        #self.map_label.left = new_left - 50 if new_left > 50 else new_left + 50 
-        #self.map_label.top = new_top - 30 if new_top > 30 else new_top + 30
+        
+        self.data['left'] = self.map_control.left
+        self.data['top'] = self.map_control.top
 
         self.map_control.update()
         self.map_label.update()
@@ -143,11 +145,7 @@ class Location(MiniWidget):
         self.map_control.content.mouse_cursor = ft.MouseCursor.MOVE
         self.is_dragging = True
 
-        # Hide all other info displays while dragging
-        for mw in self.widget.mini_widgets:
-            mw.visible = False
-
-        self.p.update()
+        self.map_control.update()
 
     # Quick fixer for the mouse cursor and highlight is we just clicked the plotpoint without dragging
     async def _tap_up(self, e=None):
@@ -167,17 +165,9 @@ class Location(MiniWidget):
 
         self.data['x_alignment'] = x_alignment
 
-        self.save_dict()
+        await self.save_dict()
 
-        # Re-show all the info displays we hid while dragging
-        for mw in self.widget.mini_widgets:
-            if mw.data.get('visible', True):
-                mw.visible = True
-
-        if self.widget.information_display.visible:
-            self.widget.information_display.reload_mini_widget(no_update=True)
         self.map_control.update()
-        await self.widget._rebuild_map_canvas()
 
     # Called when hovering over our plot point to show the slider
     async def _highlight(self, e=None):
@@ -203,12 +193,12 @@ class Location(MiniWidget):
         ''' Returns a list of all available icons for icon changing '''
 
         # Called when an icon option is clicked on popup menu to change icon
-        def _change_icon(icon: str, e):
+        async def _change_icon(icon: str, e):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
             # Set our data and update our button icon
             self.data['icon'] = icon
-            self.save_dict()
+            await self.save_dict()
 
             # Update the UI to match. Map control needs widget to reload as well
             self.icon_button.icon = icon
@@ -230,10 +220,30 @@ class Location(MiniWidget):
         return icon_controls
     
     # Makes sure we stop highlighting
-    async def hide_mini_widget(self, e=None, update: bool=False):
+    async def hide_mini_widget(self, e=None, update: bool=True):
         self.map_control.shadow = None
         self.map_control.update()
         return await super().hide_mini_widget(e, update)
+    
+    # Called when clicking our upload image button
+    async def _upload_location_image(self, e=None):
+
+        files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+        if files:
+
+            file_path = files[0].path
+            try:
+                import base64
+
+                with open(file_path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                    # Save to our data
+                    self.data['image_base64'] = f"{encoded_string}"
+                    await self.save_dict()
+                    self.reload_mini_widget()
+
+            except Exception as _:
+                pass
 
 
     # Called from reload_mini_widget
@@ -242,8 +252,9 @@ class Location(MiniWidget):
 
         # Our container that is our plot point on the map, and contains our gesture detector for hovering and right clicking
         self.map_control = ft.Container(
-            expand=False, 
-            shape=ft.BoxShape.CIRCLE,
+            opacity=1.0, shape=ft.BoxShape.CIRCLE,
+            #bgcolor="red", 
+            width=24, height=24,
             alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             top=self.data.get('top', 0),
@@ -251,7 +262,7 @@ class Location(MiniWidget):
                 mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
                 on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
                 on_pan_update=self.move_location, drag_interval=20, on_pan_end=self._drag_end,
-                on_secondary_tap=lambda e: self.widget.story.open_menu(self._get_menu_options()),
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
                 on_tap=self.show_mini_widget, on_tap_down=self._drag_start,
                 content=ft.Icon(self.data.get('icon', 'location_pin'), self.data.get('color', None))
             ),
@@ -259,14 +270,24 @@ class Location(MiniWidget):
 
 
     # Called when reloading changes to our plot point and in constructor
-    def reload_mini_widget(self, no_update: bool=False):
+    def reload_mini_widget(self):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
         # TODO: Change icon, title, color, description
+        # Allow user to pick icon
 
-        location_title_text = ft.Text(
-            f"\t{self.data['title']}", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
-            tooltip=f"Rename {self.title}", color=self.widget.data.get('color', None), expand=True
+        # Cities, towns, villages, landmarks, buildings, rooms, natural features, geography, regions, POI
+
+
+
+        location_title_text = ft.GestureDetector(
+            ft.Text(
+                f"\t{self.data['title']}", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+                color=self.data.get('color', None), expand=True
+            ),
+            on_double_tap=self._rename_clicked,
+            on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
+            mouse_cursor="click", hover_interval=500, expand=True
         )
 
         
@@ -284,34 +305,63 @@ class Location(MiniWidget):
         ], spacing=0)
         
         
+        if self.data.get('image_base64', ""):
+            img = ft.Container(
+                ft.Image(
+                    src=self.data.get('image_base64', ""),
+                    width=100,
+                    height=100,
+                    fit=ft.BoxFit.FILL,
+                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+            )
+        else:
+            img = ft.Icon(ft.Icons.LOCATION_HISTORY_OUTLINED, size=100, color=self.data.get('color', "primary"), expand=False)
 
+        upload_image_button = ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_location_image, mouse_cursor="click")
 
-        description_tf = ft.TextField(
-            value=self.data.get('Description', ''), multiline=True, expand=True, 
-            on_blur=lambda e: self.change_data(**{'Description': e.control.value}), 
-            label="Description", capitalization=ft.TextCapitalization.SENTENCES,
-            tooltip="Brief description of this plot point"
+        type_tf = TextField(
+            value=self.data.get('Type', ''), multiline=False, expand=True,
+            on_blur=lambda e: self.change_data(**{'Type': e.control.value}),
+            label="Type", capitalization=ft.TextCapitalization.WORDS, dense=True,
+            hint_text="Village, Mountains, Dungeon, etc"
         )
 
-        custom_fields_label = ft.Row([
+        description_tf = TextField(
+            value=self.data.get('Description', ''), multiline=True, expand=True, 
+            on_blur=lambda e: self.change_data(**{'Description': e.control.value}), 
+            label="Description", capitalization=ft.TextCapitalization.SENTENCES, dense=True
+        )
+
+        history_tf = TextField(
+            value=self.data.get('History', ''), multiline=True, expand=True,
+            on_blur=lambda e: self.change_data(**{'History': e.control.value}),
+            label="History", capitalization=ft.TextCapitalization.SENTENCES, dense=True
+        )
+
+        notes_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Custom Fields", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
             ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, tooltip="Add Note",
-                on_click=self._new_note_clicked)
+                ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), tooltip="Add Note",
+                on_click=self._new_note_clicked,
+                mouse_cursor="click"
+            )
         ], spacing=0)
 
-        custom_fields_column = self._build_notes_column()
+        notes_column = self._build_notes_column()
 
         column = ft.Column(
             expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
             controls=[
                 ft.Container(height=1),
+
+                ft.Row([upload_image_button, type_tf], spacing=0),
+
                 description_tf,
+                history_tf,
                 
-                
-                custom_fields_label,
-                ft.Container(custom_fields_column, margin=ft.Margin.symmetric(horizontal=20)),
+                notes_label,
+                ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
             ]
         )
 
@@ -321,6 +371,8 @@ class Location(MiniWidget):
             ft.Divider(),
             column
         ], expand=True, scroll="none", spacing=0)
+
+         
         
 
         try:

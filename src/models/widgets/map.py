@@ -107,15 +107,18 @@ class Map(Widget):
                 #on_tap_up=self.add_point,      # Handles so we can add points
 
                 # Non-drawing event handlers
-                on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
+                on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
                 on_hover=self._get_coords,
-                #on_tap=self._show_info_display,
-                on_tap=lambda e: self.story.open_menu(self._get_menu_options()),
+                on_tap=self._show_info_display,
+                #on_tap=lambda e: self.story.open_menu(self._get_menu_options()),
                 drag_interval=5, hover_interval=20,
             ),
             expand=True, resize_interval=100,
-            on_resize=self._rebuild_map_canvas, 
+            on_resize=self._set_size, 
         )
+
+        self.needs_redraw = False
+        self.initial_resize = True    # 
 
         # Our stack for map locations
         self.map_stack = ft.Stack([
@@ -159,7 +162,6 @@ class Map(Widget):
         self.mini_widgets.append(new_location)
         self.reload_widget()
 
-        #await self.rebuild_plotline_canvas(update=True)
         self.reload_widget()
         for mw in self.mini_widgets:
             if mw.visible:
@@ -179,10 +181,10 @@ class Map(Widget):
             self.mini_widgets.append(self.locations[title])
 
     # Called when clicking on our map to show our information display
-    async def _show_info_display(self, e: ft.TapEvent):
+    async def _show_info_display(self, e: ft.TapEvent=None):
         ''' If we're not in drawing mode, show our information display '''
         if not self.data.get('map_data', {}).get('drawing_mode', False):
-            self.information_display.show_mini_widget()
+            await self._show_info_mini_widget()
 
     # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
     async def new_location_clicked(self, e):
@@ -342,6 +344,20 @@ class Map(Widget):
             ),
         ]
     
+    async def _set_size(self, e: cv.CanvasResizeEvent):
+        self.map_width = int(e.width) - 25
+        self.map_height = int(e.height)
+        self.needs_redraw = True
+
+        # If first launch, rebuild,
+        if self.initial_resize:
+            self.needs_redraw = False
+            self.initial_resize = False
+    
+    async def _show_info_mini_widget(self, e=None):
+        self.show_info_button.visible = False
+        self.show_info_button.update()
+        await self.information_display.show_mini_widget()
 
 
 
@@ -359,7 +375,6 @@ class Map(Widget):
 
         # TODO: 
         # Users can choose to create their image or use some default ones, or upload their own
-        # Make show_info_button is a checkmark when in drawing mode
 
         # Clear our map stack controls so we can re-add them
         self.map_stack.controls.clear()
@@ -393,29 +408,24 @@ class Map(Widget):
                 mini_widgets_visible = True
                 break
 
-        async def _show_mini_widget(e):
-            e.control.visible = False
-            e.control.update()
-            await self.information_display.show_mini_widget()
+        
 
-        if not mini_widgets_visible:
-            self.body_container.content = ft.Row(
-                [
-                    interactive_viewer, 
-                    ft.IconButton(
-                        ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
-                        on_click=_show_mini_widget, 
-                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                    )
-                ], expand=True, spacing=0
-            )
-            self._render_widget()
-            return      
+        self.show_info_button = ft.IconButton(
+            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
+            on_click=self._show_info_mini_widget, 
+            mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+            visible=not mini_widgets_visible, 
+        )
 
-        self.body_container.content = interactive_viewer
-
-
+        
+        self.body_container.content = ft.Row(
+            [
+                interactive_viewer, 
+                self.show_info_button
+            ], expand=True, spacing=0
+        )
         self._render_widget()
+               
     
 
 

@@ -137,9 +137,9 @@ class MapInformationDisplay(MiniWidget):
             description_tf,
         ], expand=True, scroll="auto", spacing=0)
     
-    async def hide_mini_widget(self, e=None):
-        await super().hide_mini_widget(e)
-        self.widget.reload_widget() # Makes sure there is always a button to show info if we are hidden
+    #async def hide_mini_widget(self, e=None, update: bool=False):
+        #await super().hide_mini_widget(e, update)
+        #self.widget.reload_widget() # Makes sure there is always a button to show info if we are hidden
 
     
     # Called when reloading our mini widget UI
@@ -157,22 +157,27 @@ class MapInformationDisplay(MiniWidget):
             #ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
             ft.IconButton(
                 ft.Icons.DRAW_OUTLINED if self.data.get('drawing_mode') else ft.Icons.LOCATION_SEARCHING_OUTLINED,
-                self.data.get('color', None), mouse_cursor=ft.MouseCursor.CLICK,
+                self.widget.data.get('color', None), mouse_cursor=ft.MouseCursor.CLICK,
                 tooltip="Enter Drawing Mode" if not self.data.get('drawing_mode') else "Exit Drawing Mode",
                 on_click=self._toggle_drawing_mode,
             ),
      
-            ft.Text(
-                f"\t{self.data['title']}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
-                weight=ft.FontWeight.BOLD, color=self.data.get('color', None),
+            ft.GestureDetector(
+                ft.Text(f"\t{self.widget.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+                color=self.data.get('color', None), expand=True),
+                on_double_tap=self.widget.rename_clicked,
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
+                mouse_cursor="click", hover_interval=500, expand=True
             ),
                 
             ft.IconButton(
                 ft.Icons.UNDO, self.widget.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
+                visible=self.data.get('drawing_mode', False) # Only show in drawing mode
                 #on_click=self.undo, #disabled=True if len(self.widget.state.undo_list) == 0 else False
             ),
             ft.IconButton(
                 ft.Icons.REDO_OUTLINED, self.widget.data.get('color', None), tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
+                visible=self.data.get('drawing_mode', False) # Only show in drawing mode
                 #on_click=self.redo, #disabled=True if len(self.widget.state.redo_list) == 0 else False
             ),
             ft.Container(expand=True),
@@ -185,16 +190,13 @@ class MapInformationDisplay(MiniWidget):
         ], spacing=0)
 
 
-        
+        content = ft.Column(
+            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, spacing=0,
+            controls=[
+                ft.Container(height=10), # Spacer
+            ]
+        )
 
-        
-        
-        content = ft.Column([
-            title_control,
-            ft.Divider(),
-            ft.Container(height=1),
-                        
-        ], expand=True, scroll="none", alignment=ft.MainAxisAlignment.START, spacing=0)
 
         if self.data.get('drawing_mode', False):
             content.controls.append(self._drawing_mode_view())
@@ -202,7 +204,13 @@ class MapInformationDisplay(MiniWidget):
             content.controls.append(self._map_info_view())
         
         
-        self.content = content
+        
+        self.content = ft.Column([
+            title_control,
+            ft.Divider(),
+            content,
+                        
+        ], expand=True, scroll="none", alignment=ft.MainAxisAlignment.START, spacing=0)
 
         try:
             self.update()

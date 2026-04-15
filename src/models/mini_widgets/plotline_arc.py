@@ -369,13 +369,12 @@ class Arc(MiniWidget):
 
 
         arc_title_text = ft.GestureDetector(
-            ft.Text(f"\t\t{self.data['title']}\t\t", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
-                tooltip=f"Rename {self.title}", color=self.data.get('color', None), expand=True),
-            on_double_tap=self._rename_clicked,
-            on_tap=self._rename_clicked,
-            on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
-            mouse_cursor="click", hover_interval=500, expand=True
-        )
+                ft.Text(f"\t{self.data['title']}", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+                color=self.data.get('color', None), expand=True),
+                on_double_tap=self._rename_clicked,
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
+                mouse_cursor="click", hover_interval=500, expand=True
+            )
 
         close_button = ft.IconButton(
             ft.Icons.CLOSE, ft.Colors.OUTLINE,
