@@ -3,7 +3,7 @@ from models.views.story import Story
 from models.widget import Widget
 from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
-#from flet_quill import FletQuill
+from flet_quill import FletQuill, FletQuillEditor, FletQuillToolbar
 from models.app import app
 from models.isolated_controls.row import IsolatedRow
 from models.isolated_controls.column import IsolatedColumn
@@ -11,6 +11,7 @@ import math
 from models.mini_widgets.reference_image import ReferenceImage
 from utils.safe_string_checker import return_safe_name
 import asyncio
+
 
 # Class that holds our text document objects
 class Document(Widget):
@@ -193,14 +194,36 @@ class Document(Widget):
 
 
         #quill = FletQuill() # Put inside document container
+        toolbar = FletQuillToolbar(
+            controller_id="page_1",  # starts controlling page 1
+        )
+
+        editor = FletQuillEditor(
+            controller_id="page_1",
+            text_data=[{"insert": "Hello from the combined control!\n"}],
+            #text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),
+            placeholder_text="Start your masterpiece here..."
+        )
+
+        quill = FletQuill(
+                show_toolbar_divider=False,
+                center_toolbar=False,
+                text_data=[{"insert": "Hello from the combined control!\n"}],
+                
+            )
+        
+        async def _save_quill(e):
+            data = await quill.save()
+            print("Saved content:", data)
 
         # Holds our flet quill
         document_container = ft.Container(
-            ft.TextField(hint_text="Temp doc textfield instead of quill for now", expand=True),
-            expand=3, margin=ft.Margin.symmetric(vertical=40, horizontal=40),
-            border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
-            border_radius=ft.BorderRadius.all(10),
-            alignment=ft.Alignment.TOP_CENTER, padding=ft.Padding.all(72),
+            expand=3, #margin=ft.Margin.symmetric(vertical=40, horizontal=40),
+            #border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
+            #border_radius=ft.BorderRadius.all(10),
+            alignment=ft.Alignment.TOP_CENTER, 
+            #padding=ft.Padding.all(72),
+            content=ft.Column([quill, ft.Button("Save", on_click=_save_quill)], expand=True),
             #height=1200,
             #aspect_ratio=8.5/11.0,  # paper-like ratio
         )
