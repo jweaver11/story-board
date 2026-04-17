@@ -55,14 +55,14 @@ class CanvasInformationDisplay(MiniWidget):
 
                 # Background can be an image, color, or left empty for transparent. 
                 'background': None,             # We display it using a container, but manually create it when exporting
-                'bg_type': None,            # "color", "image", or None so we know how to display it
+                'bg_type': None,                # "color", "image", or None so we know how to display it
 
                 # Canvas info
                 'Description': str,
                 "width": None,              # Resolution size used for exporting
                 "height": None,
                 "aspect_ratio": None,       # Actually used for displaying the canvas, and we scale up when exporting
-                'Is Locked': False, # Lock state tracking. When locked, no changes can be made (no drawing)
+                'Is Locked': False,         # Lock state tracking. When locked, no changes can be made (no drawing)
 
                 # Layer info for our canvases
                 'Layers': [
@@ -113,8 +113,6 @@ class CanvasInformationDisplay(MiniWidget):
 
         type = e.control.data
 
-        # TODO: Create a new background layer when this is clicked
-
         # Set a color as the background
         if type == "color":
 
@@ -132,9 +130,10 @@ class CanvasInformationDisplay(MiniWidget):
 
                 self.widget.story.blocker.visible = True
                 self.widget.story.blocker.update()
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0)
 
-                self.widget.story.workspace.reload_workspace()
+                #self.widget.story.workspace.reload_workspace()
+                self.widget.reload_widget()
                 self.widget.story.blocker.visible = False
                 self.widget.story.blocker.update()
 
@@ -167,14 +166,14 @@ class CanvasInformationDisplay(MiniWidget):
                         self.data['background'] = f"{encoded_string}"
                         self.data['bg_type'] = "image"
                         await self.save_dict()
-                        await asyncio.sleep(0.1)
 
                         self.widget.story.blocker.visible = True
                         self.widget.story.blocker.update()
                         await asyncio.sleep(0)
 
                         # Works ways faster than reloading the widgetfor some reason
-                        self.widget.story.workspace.reload_workspace()
+                        #self.widget.story.workspace.reload_workspace()
+                        self.widget.reload_widget()
 
                         self.widget.story.blocker.visible = False
                         self.widget.story.blocker.update()
@@ -216,7 +215,8 @@ class CanvasInformationDisplay(MiniWidget):
         
 
         #self.widget.reload_widget()
-        self.widget.story.workspace.reload_workspace()
+        #self.widget.story.workspace.reload_workspace()
+        self.widget.reload_widget()
         self.widget.story.blocker.visible = False
         self.widget.story.blocker.update()
 
@@ -244,8 +244,8 @@ class CanvasInformationDisplay(MiniWidget):
         await asyncio.sleep(0)
 
         #self.widget.reload_widget()
-        self.widget.story.workspace.reload_workspace()
-        await asyncio.sleep(0.1)
+        #self.widget.story.workspace.reload_workspace()
+        self.widget.reload_widget()
         self.widget.story.blocker.visible = False
         self.widget.story.blocker.update()
 
@@ -264,10 +264,10 @@ class CanvasInformationDisplay(MiniWidget):
             self.widget.story.blocker.update()
             await asyncio.sleep(0)
             self.p.pop_dialog()
-            await asyncio.sleep(0.1)
 
             #self.widget.reload_widget()
-            self.widget.story.workspace.reload_workspace()
+            #self.widget.story.workspace.reload_workspace()
+            self.widget.reload_widget()
             self.widget.story.blocker.visible = False
             self.widget.story.blocker.update()
 
@@ -366,16 +366,16 @@ class CanvasInformationDisplay(MiniWidget):
         async def _create_layer_confirmed(e=None):
             self.widget.story.blocker.visible = True
             self.widget.story.blocker.update()
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0)
 
             name = new_layer_tf.value or f"Layer {len(self.data.get('Layers', []))+1}"
             self.data['Layers'].append({'name': name, 'visible': True, 'capture': ""})
             await self.save_dict()
             self.p.pop_dialog()
-            await asyncio.sleep(0.1)
 
             #self.widget.reload_widget()
-            self.widget.story.workspace.reload_workspace()
+            #self.widget.story.workspace.reload_workspace()
+            self.widget.reload_widget()
             self.widget.story.blocker.visible = False
             self.widget.story.blocker.update()
 
@@ -418,7 +418,7 @@ class CanvasInformationDisplay(MiniWidget):
         async def _rename_layer_confirmed(e=None):
             self.widget.story.blocker.visible = True
             self.widget.story.blocker.update()
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0)
 
             new_name = rename_layer_tf.value or f"Layer {len(self.data.get('Layers', []))+1}"
             for layer in self.data.get('Layers', []):
@@ -427,11 +427,11 @@ class CanvasInformationDisplay(MiniWidget):
                     break
             await self.save_dict()
             self.p.pop_dialog()
-            await asyncio.sleep(0.1)
 
             #self.widget.reload_widget()
-            self.widget.story.workspace.reload_workspace()
-            await asyncio.sleep(0.1)
+            #self.widget.story.workspace.reload_workspace()
+            self.widget.reload_widget()
+            #await asyncio.sleep(0.1)
             #self.widget.story.blocker.visible = False
             #self.widget.story.blocker.update()
 
@@ -675,7 +675,17 @@ class CanvasInformationDisplay(MiniWidget):
             )
             layer_expansion_tile.controls[0].controls.append(layer_tile)
 
-        
+        notes_label = ft.Row([
+            ft.Container(width=6),
+            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+            ft.IconButton(
+                ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), tooltip="Add Note",
+                on_click=self._new_note_clicked,
+                mouse_cursor="click"
+            )
+        ], spacing=0)
+
+        notes_column = self._build_notes_column()
         
         content = ft.Column([
             ft.Container(height=1),  # Spacing 
@@ -683,9 +693,10 @@ class CanvasInformationDisplay(MiniWidget):
 
             ft.Row([edit_bg_options, export_button], ft.MainAxisAlignment.SPACE_EVENLY, wrap=True),
 
-            
+            layer_expansion_tile,
 
-            layer_expansion_tile
+            notes_label,
+            ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
         ], expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START)
 
         

@@ -771,6 +771,9 @@ class CanvasRail(Rail):
                 # Add shapes and shapefill drawing modes. Path will use paint.style.paintingstyle fill or stroke.
                 # Add shadow effect option for paths
                 # Custom saved colors and custom brushes
+                # -------
+                # PS
+                # Selecting tools disables drawing utnil you select brush again?
 
                 ft.Row([
                     ft.Text("\tSize", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Size of your strokes"), 

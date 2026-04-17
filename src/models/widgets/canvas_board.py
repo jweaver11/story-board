@@ -15,6 +15,7 @@ import asyncio
 import base64
 from io import BytesIO
 from PIL import Image
+from styles.text_field import TextField
 
 
 class CanvasBoard(Widget):
@@ -51,27 +52,35 @@ class CanvasBoard(Widget):
 
                 # Our main data matrix for this canvas board
                 'matrix': [
-                    [           # First row
-                        {       # First Column
-                            'preview_canvas_key': "",      # Key to the canvas we are tied too
-                            'preview_canvas_title': "",    # Title of the canvas we're tied to, for easy reference
-                            'preview_canvas_color': "",    # Color of the canvas we're tied to, for easy reference
-                            "preview_canvas_snapshot": "",         # Snapshot of the canvas for previewing
+                    [                   # First row
+                        {               # First Column
+                            'preview_canvas_key': "",               # Key to the canvas we are tied too
+                            'preview_canvas_title': "",             # Title of the canvas we're tied to, for easy reference
+                            'preview_canvas_color': "",             # Color of the canvas we're tied to, for easy reference
+                            "preview_canvas_snapshot": "",          # Snapshot of the canvas for previewing
                         },         
-                        "",             # Sketch capture to be loaded into canvas
+                        {
+                            'capture': "",
+                            'undo_list': [],
+                            'redo_list': []
+                        },             # Sketch capture to be loaded into canvas
                         "",             # Concept description text
-                        ""              # Notes for is row
+                        ""              # Any other notes for this row
                     ],      
-                    [           # Second row
-                        {       # First Column
+                    [               # Second row
+                        {           # First Column
                             'preview_canvas_key': "",      
                             'preview_canvas_title': "",    
                             'preview_canvas_color': "",    
                             "preview_canvas_snapshot": "",         
                         },         
-                        "",   # Second column
-                        "",      # Third column
-                        ""      # Fourth column
+                        {
+                            'capture': "",
+                            'undo_list': [],
+                            'redo_list': []
+                        },          # Second column
+                        "",         # Third column
+                        ""          # Fourth column
                     ]
                 ]
             },
@@ -83,6 +92,7 @@ class CanvasBoard(Widget):
 
 
         self.state: State = State()     # State model from tracking our drawing state
+        self.active_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -101,11 +111,11 @@ class CanvasBoard(Widget):
 
 
     # Called when we click the canvas and don't initiate a drag
-    async def add_point(self, e: ft.TapEvent):
+    async def add_shape(self, e: ft.TapEvent):
         ''' Adds a point to the canvas if we just clicked and didn't initiate a drag '''
+        
 
-        row = e.control.data.get('row')
-        column = e.control.data.get('column')
+        canvas: cv.Canvas = e.control.parent
 
         # Create the point using our paint settings and point mode
         point = cv.Points(
@@ -114,137 +124,110 @@ class CanvasBoard(Widget):
         )
         
         # Add point to the canvas and our state data
-        e.control.parent.shapes.append(point)
-        self.state.points.append((e.local_position.x, e.local_position.y, point.point_mode, point.paint.__dict__))
+        canvas.shapes.append(point)
+        self.state.points.append((e.local_position.x, e.local_position.y, point.point_mode.value, app.settings.data.get('paint_settings', {})))
 
-        # After dragging canvas widget, it loses page reference and can't update
+        # After dragging canvas widget, it loses page reference and can't update, so the exception handles that.
         try:
-            e.control.parent.update()
+            canvas.update()
+        except Exception:
+            print("Failed to update canvas")
             
-        except Exception as _:
-            print("Failed to update e.control")
-            
-            
-        # Save our canvas data
-        self.save_canvas(row, column)
+        # Need to save, as this function stands alone and no others will run after it
+        await self.save_canvas(e)
         
     # Called when we start drawing on the canvas
-    async def start_drawing(self, e: ft.DragStartEvent):
+    async def start_new_stroke(self, e: ft.DragStartEvent):
         ''' Set our initial starting x and y coordinates for the element we're drawing '''
 
-        # Grab our style so we can compare it
-        style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
+        canvas: cv.Canvas = e.control.parent
 
-        # Make a copy of our paint settings to modify it, since some of the styles are not built in
-        safe_paint_settings = ft.Paint(ft.Colors.ON_SURFACE, stroke_width=2, stroke_cap=ft.StrokeCap.ROUND)
-
-        # Copy of our paint settings for our state tracking and data storage (only erase mode needs this)
-        state_paint_settings = ft.Paint(ft.Colors.ON_SURFACE, stroke_width=2, stroke_cap=ft.StrokeCap.ROUND)
-
-        # Set either stroke or fill based on custom styles
-        safe_stroke = 'fill' if style.endswith('fill') else 'stroke'
-        safe_paint_settings['style'] = safe_stroke
-
-        
-        
+        paint_settings = ft.Paint(**app.settings.data.get('paint_settings', {}))
+        paint_settings.style = ft.PaintingStyle.STROKE
 
         # Update state x and y coordinates
         self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
         # Clear and set our current path and state to match it
-        self.current_path = cv.Path(elements=[], paint=ft.Paint(ft.Colors.ON_SURFACE, stroke_width=2, stroke_cap=ft.StrokeCap.ROUND))
+        self.active_path = cv.Path(elements=[], paint=paint_settings)
         self.state.paths.clear()
-        self.state.paths.append({'elements': list(), 'paint': state_paint_settings})
+        self.state.paths.append({'elements': [], 'paint': paint_settings})
 
-        # Set move to element at our starting position that the mouse is at for the path to start from
+        # Move to our starting position for this element
         move_to_element = cv.Path.MoveTo(e.local_position.x, e.local_position.y)
-
-        # Add that element to current paths elements and our state paths
-        self.current_path.elements.append(move_to_element)
+        self.active_path.elements.append(move_to_element)
         self.state.paths[0]['elements'].append((move_to_element.__dict__))
 
-        #print(f"Starting drawing with style {style}")
-
-        # If we're using lineto (straight lines), add that element to the current path and state right away
-        if style == "lineto":
-            line_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
-            self.current_path.elements.append(line_element)
-            self.state.paths[0]['elements'].append((line_element.__dict__))
-
-        elif style == "arc":
-            arc_element = cv.Path.Arc(
-                width=20,
-                height=20,
-                
-                x=e.local_position.x,
-                y=e.local_position.y,
-                start_angle=math.pi,
-                sweep_angle=-math.pi,
-            )
-            self.current_path.elements.append(arc_element)
-            self.state.paths[0]['elements'].append((arc_element.__dict__))
-
-        # Else if we're using arcto, add that element to the current path and state right away
-        elif style == 'arcto' or style == 'arctofill':
-            arc_element = cv.Path.ArcTo(
-                radius=12,
-                rotation=0,
-                large_arc=False,
-                x=e.local_position.x,
-                y=e.local_position.y,
-                clockwise=True,
-            )
-            self.current_path.elements.append(arc_element)
-            self.state.paths[0]['elements'].append((arc_element.__dict__))
-
         # Add the path to the canvas so we can see it
-        e.control.parent.shapes.append(self.current_path)
+        canvas.shapes.append(self.active_path)
+        canvas.update()
 
 
         
     # Called when actively drawing on the canvas
-    async def is_drawing(self, e: ft.DragUpdateEvent):
+    async def update_stroke(self, e: ft.DragUpdateEvent):
         ''' Creates our line to add to the canvas as we draw, and saves that paths data to self.state '''
 
-        ft.Paint(ft.Colors.ON_SURFACE, stroke_width=2, stroke_cap=ft.StrokeCap.ROUND)
-        
+        canvas: cv.Canvas = e.control.parent
 
-        #TODO: Add check here to reduce num of lines based on previous start and edn
-        # Set the path element based on what kind of path we're adding, add it to our current path and our state paths
+        paint_settings = ft.Paint(**app.settings.data.get('paint_settings', {}))
+        paint_settings.style = ft.PaintingStyle.STROKE
+        
         path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
 
         # Add the declared element to our current path and state paths
-        self.current_path.elements.append(path_element)
+        self.active_path.elements.append(path_element)
         self.state.paths[0]['elements'].append((path_element.__dict__))  
 
-        # After dragging canvas widget, it loses page reference and can't update
-        try:
-            # Page reference gets lost after dragging widget to new canvas, so we reset it and update
-            self.current_path.update()
-        except Exception as _:
-            e.control.parent.update()
-        
-
+        self.active_path.update()
         # Update our state x and y for the next segment
         self.state.x, self.state.y = e.local_position.x, e.local_position.y
-        
 
     # Called when we release the mouse to stop drawing a line
     async def save_canvas(self, e: ft.DragEndEvent):
         """ Saves our paths to our canvas data for storage """
+        
+
+        #------
+        # TODO: Set a shapes limit on canvas to clear shapes and re-set background after 30 or so
+
         row = e.control.data.get('row')
         column = e.control.data.get('column')
 
-        # Save our paths annd points to the correct cell in our matrix
-        canvas_data = self.data['matrix'][row][column]
-        canvas_data['paths'].extend(self.state.paths)
-        canvas_data['points'].extend(self.state.points)
+        canvas: cv.Canvas = e.control.parent
+        #layer_name = canvas.data
 
-        self.p.run_task(self.save_dict)
+        # Grab the old capture for this layer and add it as an undo task
+        #for layer in self.data.get('canvas_data', {}).get('Layers', []):
+            #if layer.get('name', None) == layer_name:
+                #if layer.get('capture', None):
+                    #old_capture = layer.get('capture')
+                    #self.state.undo_list.append({'layer_name': layer_name, 'capture': old_capture})
 
-        # Clear the current state, otherwise it constantly grows and lags the program
-        self.state.paths.clear()
-        self.state.points.clear()
+        #if len(self.state.undo_list) > 30:   # Limit our undo/redo list to 30 items to save memory
+            #self.state.undo_list.pop(0)
+        
+        try:
+            await canvas.capture()
+    
+            cc = await canvas.get_capture()
+            encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
+
+            if encoded_capture:
+
+                # Save the capture, but we don't use it until a reload_widget is called
+                self.data['matrix'][row][column]['capture'] = encoded_capture
+                await self.save_dict()     # Save our data with the new capture
+
+            # Must clear the capture or weird UI bugs
+            await canvas.clear_capture()
+
+            # Clear the current state
+            self.state.paths[0]['elements'].clear()
+            self.state.points.clear()
+
+        except Exception as e:
+            print("failed to save canvas", e)
 
     # Called when we click to add a new row at the bottom of our matrix
     async def _new_row_clicked(self, e=None):
@@ -260,6 +243,12 @@ class CanvasBoard(Widget):
                         'preview_canvas_title': "",    
                         'preview_canvas_color': "",   
                         "preview_canvas_snapshot": "", 
+                    })
+                case "Sketch":
+                    new_row.append({
+                        'capture': "",
+                        'undo_list': [],
+                        'redo_list': []
                     })    
                 
                 case _:
@@ -271,9 +260,10 @@ class CanvasBoard(Widget):
 
         # Add the new row to our matrix data
         self.data['matrix'].append(new_row)
-        self.p.run_task(self.save_dict)
+        await self.save_dict()     # Save our data with the new row
 
-        self.story.workspace.reload_workspace()
+        #self.story.workspace.reload_workspace()
+        self.reload_widget()
         self.story.blocker.visible = False
         self.story.blocker.update()
 
@@ -288,9 +278,10 @@ class CanvasBoard(Widget):
             await asyncio.sleep(0)
 
             del self.data['matrix'][row]
-            self.p.run_task(self.save_dict)
+            await self.save_dict()     # Save our data with the deleted row
 
-            self.story.workspace.reload_workspace()
+            #self.story.workspace.reload_workspace()
+            self.reload_widget()
             self.story.blocker.visible = False
             self.story.blocker.update()
 
@@ -312,9 +303,10 @@ class CanvasBoard(Widget):
             await asyncio.sleep(0)
 
 
-            self.p.run_task(self.save_dict)
-            
-            self.story.workspace.reload_workspace()
+            await self.save_dict()     # Save our data with the deleted row
+
+            #self.story.workspace.reload_workspace()
+            self.reload_widget()
             self.story.blocker.visible = False
             self.story.blocker.update()
 
@@ -385,9 +377,10 @@ class CanvasBoard(Widget):
             self.data['matrix'][row][column]['preview_canvas_title'] = canvas_title
             self.data['matrix'][row][column]['preview_canvas_color'] = canvas_color
             self.data['matrix'][row][column]['preview_canvas_snapshot'] = self._set_canvas_snapshot(canvas_key)
-            await self.save_dict()
+            await self.save_dict()     
 
-            self.story.workspace.reload_workspace()
+            #self.story.workspace.reload_workspace()
+            self.reload_widget()
 
             self.story.blocker.visible = False
             self.story.blocker.update()
@@ -454,9 +447,10 @@ class CanvasBoard(Widget):
         await asyncio.sleep(0)
 
         self.data['matrix'][row][column]['preview_canvas_snapshot'] = self._set_canvas_snapshot(canvas_key)
-        await self.save_dict()
+        await self.save_dict()     # Save our data with the deleted row
 
-        self.story.workspace.reload_workspace()
+        #self.story.workspace.reload_workspace()
+        self.reload_widget()
         self.story.blocker.visible = False
         self.story.blocker.update()
     
@@ -475,9 +469,10 @@ class CanvasBoard(Widget):
         self.data['matrix'][row][column]['preview_canvas_snapshot'] = ""
         self.data['matrix'][row][column]['preview_canvas_title'] = ""
         self.data['matrix'][row][column]['preview_canvas_color'] = ""
-        await self.save_dict()
+        await self.save_dict()     # Save our data with the deleted row
 
-        self.story.workspace.reload_workspace()
+        #self.story.workspace.reload_workspace()
+        self.reload_widget()
 
         self.story.blocker.visible = False
         self.story.blocker.update()
@@ -491,12 +486,11 @@ class CanvasBoard(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        description_container = ft.TextField(
+        description_tf = TextField(
             expand=True, value=self.data.get('description', ""), dense=True, multiline=True,
             capitalization=ft.TextCapitalization.SENTENCES, 
             on_blur=lambda e: self.p.run_task(self.change_data, **{'description': e.control.value}),
-            border_color=ft.Colors.OUTLINE_VARIANT,                  
-        
+            hint_text="Description of the scope of this Canvas Board..."       
         )
 
         def _get_matrix_label_controls() -> list[ft.Control]:
@@ -542,7 +536,6 @@ class CanvasBoard(Widget):
                 # For each column (cell) in the row and add correct control based on its label
                 for sub_idx, cell in enumerate(row):                    
                     
-
                     # Build a preview for a connectted canvas
                     # TODO: Wrap canvas in container that clicking refreshes
                     if sub_idx == 0:
@@ -616,23 +609,38 @@ class CanvasBoard(Widget):
 
                         # Build a sketch canvas for this row
                     elif sub_idx == 1:      # Sketch canvas for rough thumbnails
+                        capture = cell.get('capture', "")
                         sketch_canvas = cv.Canvas(
                             content=ft.GestureDetector(
                                 mouse_cursor=ft.MouseCursor.PRECISE,
-                                on_pan_start=self.start_drawing,
-                                on_pan_update=self.is_drawing,
+                                on_pan_start=self.start_new_stroke,
+                                on_pan_update=self.update_stroke,
                                 on_pan_end=self.save_canvas,
-                                on_tap_up=self.add_point,      # Handles so we can add points
+                                on_tap_up=self.add_shape,      # Handles so we can add points
                                 drag_interval=10,
                                 data={"row": idx, "column": sub_idx},
                             ),
                             width=200, height=200,
-                            shapes=[ft.Image(cell, 0, 0, 200, 200)],
+                            shapes=[cv.Image(capture, 0, 0, 200, 200)],
                         )
                         row_control.controls.append(
                             ft.Container(
                                 ft.Column([
-                                    ft.Container(height=40),
+                                    ft.Container(
+                                        ft.Row([
+                                            ft.IconButton(
+                                                ft.Icons.UNDO, self.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
+                                                data={"row": idx, "column": sub_idx},
+                                                #on_click=self.undo, #disabled=True if len(self.widget.state.undo_list) == 0 else False
+                                            ),
+                                            ft.IconButton(
+                                                ft.Icons.REDO_OUTLINED, self.data.get('color', None), tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
+                                                data={"row": idx, "column": sub_idx},
+                                                #on_click=self.redo, #disabled=True if len(self.widget.state.redo_list) == 0 else False
+                                            ),
+                                        ], alignment=ft.MainAxisAlignment.CENTER), 
+                                        height=40
+                                    ),
                                     ft.Container(
                                         sketch_canvas, border=ft.Border.all(1, ft.Colors.OUTLINE),
                                         bgcolor="surface", border_radius=ft.BorderRadius.all(6),
@@ -698,13 +706,13 @@ class CanvasBoard(Widget):
             expand=True, scroll="none", spacing=0,
             controls=[                 
             
-                ft.Row([
-                    ft.Container(width=6), 
-                    ft.Text("Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                ], spacing=0),
                 ft.Container(height=10), 
+                ft.Row([
+                    ft.Container(width=10), 
+                    ft.Text("\tDescription", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                ], spacing=0),
 
-                ft.Row([description_container]),
+                ft.Container(ft.Row([description_tf]), padding=ft.Padding.all(10)),
                 ft.Container(height=10), 
                 
                 matrix_labels,
@@ -730,6 +738,7 @@ class CanvasBoard(Widget):
         self.body_container.content = body
 
         # TODO: Add undo-redo buttons like our canvas has for our sketches
+        # Add choose file to preview options
 
         # Call render widget (from Widget class) to update the UI
         self._render_widget()

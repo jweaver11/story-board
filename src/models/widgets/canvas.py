@@ -77,26 +77,27 @@ class Canvas(Widget):
         
 
         # State tracking for canvas drawing info
-        self.state = State()         # Used for our coordinates and how to apply things
+        self.state = State()                # Used for tracking our coords and current drawing data for the active stroke/shape being applied
         self.canvas_width = 0
         self.canvas_height = 0
-        self.needs_redraw = False     # Used to track if we need to redraw canvas after a resize
-        self.skip_first_resize = True
-        self.initial_resize = True     # Initial resize needs rebuild
-        self.min_segment_dist = 2   # Sampling
-
+        self.min_segment_dist = 2           # Sampling size
+        self.needs_redraw = False           # Used to track if we need to redraw canvas after a resize
+        self.skip_first_resize = True       # Skip the first resize since it will fix itself
+        self.initial_resize = True          # Initial resize to track our canvases size without rebuild
         
-        self.layers = [{}]    # List of our layers, which are each their own canvas
-        self.layer_stack: ft.Stack  # Stack to hold our layers on top of each other
+        self.layers = [{}]                  # List of our layers, which are each their own canvas
+        self.layer_stack: ft.Stack          # Stack to hold our layers on top of each other
 
         self.bg_image: ft.DecorationImage   # Hold our background image
         
-        self.current_path= cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
+        # The active stroke we are adding to the canvas when drawing so we know how to update it
+        self.active_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
+
+        self.active_tool: cv.Shape                     # The active shape being added if we're using a tool
+        self.tool_controller: ft.GestureDetector       # The overlayed controller to modify shapes so we can resize, rotate, transform, etc
 
         # We render our own mini widgets (comments), so we don't need parent class to render them as well
         self.no_render_mini_widgets = True  
-
-        
 
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -116,25 +117,25 @@ class Canvas(Widget):
                     data=name,        # Save the index of this layer so we know where to save it in our data
                     content=ft.GestureDetector(
                         mouse_cursor=ft.MouseCursor.PRECISE,
-                        on_pan_start=self.start_drawing,
-                        on_pan_update=self.is_drawing,
-                        on_pan_end=self.save_canvas,
-                        on_tap_up=self.add_point,      # Handles so we can add points
+                        on_pan_start=self.start_new_stroke,         # Starts a new brush stroke with current paint settings
+                        on_pan_update=self.update_stroke,           # Updates the current stroke based on mouse movement
+                        on_pan_end=self.save_canvas,                # Saves the now complete stroke to our data and canvas capture
+                        on_tap_up=self.add_shape,                   # Handles adding dots and tools
                         on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
                         on_hover=self._redraw_canvas,       # Redraws canvas if it needs it from resizing, otherwise just sets coords
                         hover_interval=20,
-                        drag_interval=10,
+                        drag_interval=10,                   
                         expand=True,
                     ),
                     expand=True, 
                     shapes=[
-                        cv.Image(
+                        cv.Image(       # Sets the background image of the layer to its most recent capture
                             capture, 0, 0, 
-                            self.canvas_width if self.canvas_width != 0 else None, # Not working
+                            self.canvas_width if self.canvas_width != 0 else None,          # Ignore setting size before we know it
                             self.canvas_height if self.canvas_height != 0 else None 
-                        )     # Set the capture of the layer for all but background
+                        )    
                     ],
-                    on_resize=self._set_size if idx == 0 else None,  
+                    on_resize=self._set_size if idx == 0 else None,  # Only one layer (background) needs to set size to avoid redundency
                 ),
                 expand=True, data=name,
                 visible=visible,    # Set visibility
@@ -145,14 +146,6 @@ class Canvas(Widget):
             
             self.layers.append({'name': name, 'visible': visible, 'canvas': new_layer})
 
-
-    # Special color changes for this one
-    def reload_tab(self):
-        self.icon.icon_color = self.data.get('color', "primary")
-        #self.information_display.reload_mini_widget()
-           
-        #self.reload_widget()
-        super().reload_tab() 
 
     async def _set_size(self, e: cv.CanvasResizeEvent):
         if e: 
@@ -214,8 +207,14 @@ class Canvas(Widget):
 
 
     # Called when we click the canvas and don't initiate a drag
-    async def add_point(self, e: ft.TapEvent):
+    async def add_shape(self, e: ft.TapEvent):
         ''' Adds a point to the canvas if we just clicked and didn't initiate a drag '''
+
+        # TODO PS
+        # Clicking decifers if drawing or adding a tool
+        # if drawing: add point.
+        # else: add tool
+        # Adds a 100x100 shape of selected tool stacked under the controller, and sets it as the active shape to be modified
 
         canvas: cv.Canvas = e.control.parent
 
@@ -232,14 +231,14 @@ class Canvas(Widget):
         # After dragging canvas widget, it loses page reference and can't update, so the exception handles that.
         try:
             canvas.update()
-        except Exception as _:
+        except Exception:
             print("Failed to update canvas")
             
         # Need to save, as this function stands alone and no others will run after it
         await self.save_canvas(e)
         
     # Called when we start drawing on the canvas
-    async def start_drawing(self, e: ft.DragStartEvent):
+    async def start_new_stroke(self, e: ft.DragStartEvent):
         ''' Set our initial starting x and y coordinates for the element we're drawing '''
 
         canvas: cv.Canvas = e.control.parent
@@ -269,13 +268,13 @@ class Canvas(Widget):
         self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
         # Clear and set our current path and state to match it
-        self.current_path = cv.Path(elements=[], paint=ft.Paint(**safe_paint_settings))
+        self.active_path = cv.Path(elements=[], paint=ft.Paint(**safe_paint_settings))
         self.state.paths.clear()
         self.state.paths.append({'elements': [], 'paint': state_paint_settings})
 
         # Move to our starting position for this element
         move_to_element = cv.Path.MoveTo(e.local_position.x, e.local_position.y)
-        self.current_path.elements.append(move_to_element)
+        self.active_path.elements.append(move_to_element)
         self.state.paths[0]['elements'].append((move_to_element.__dict__))
 
 
@@ -283,7 +282,7 @@ class Canvas(Widget):
             # If we're using lineto (straight lines), add that element to the current path and state right away
             case "lineto":
                 line_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
-                self.current_path.elements.append(line_element)
+                self.active_path.elements.append(line_element)
                 self.state.paths[0]['elements'].append((line_element.__dict__))
 
             case "arc":
@@ -296,7 +295,7 @@ class Canvas(Widget):
                     start_angle=math.pi,
                     sweep_angle=-math.pi,
                 )
-                self.current_path.elements.append(arc_element)
+                self.active_path.elements.append(arc_element)
                 self.state.paths[0]['elements'].append((arc_element.__dict__))
 
         # Else if we're using arcto, add that element to the current path and state right away
@@ -309,7 +308,7 @@ class Canvas(Widget):
                     y=e.local_position.y,
                     clockwise=True,
                 )
-                self.current_path.elements.append(arc_element)
+                self.active_path.elements.append(arc_element)
                 self.state.paths[0]['elements'].append((arc_element.__dict__))
 
             #case ''
@@ -320,13 +319,13 @@ class Canvas(Widget):
         #cv.Path.Rect()
         #cv.Path.
         # Add the path to the canvas so we can see it
-        canvas.shapes.append(self.current_path)
+        canvas.shapes.append(self.active_path)
         canvas.update()
 
 
         
     # Called when actively drawing on the canvas
-    async def is_drawing(self, e: ft.DragUpdateEvent):
+    async def update_stroke(self, e: ft.DragUpdateEvent):
         ''' Determines which drawing tool we're using, and updates accordingly as we drag our mouse '''
 
         # Sampling to improve perforamance. If the line length is too small, we skip it
@@ -336,7 +335,6 @@ class Canvas(Widget):
             return
 
         # Set our canvas and style
-        canvas: cv.Canvas = e.control.parent    
         style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
 
         match style:
@@ -345,7 +343,7 @@ class Canvas(Widget):
             case "lineto":
             
                 # Set the element and its data
-                line_element = self.current_path.elements[-1]
+                line_element = self.active_path.elements[-1]
                 line_dict = line_element.__dict__
 
                 # Update the elements position
@@ -356,13 +354,13 @@ class Canvas(Widget):
                 line_dict['x'] = line_element.x
                 line_dict['y'] = line_element.y
 
-                self.current_path.update()
+                self.active_path.update()
                 return
         
             case "arc" | "arcfill":
             
                 # Set the element and its data
-                arc_element = self.current_path.elements[-1]
+                arc_element = self.active_path.elements[-1]
                 arc_dict = arc_element.__dict__
 
                 # Swap directions of arc depending if we drag up or down from starting point
@@ -381,13 +379,13 @@ class Canvas(Widget):
 
                 arc_element.width = abs(e.local_position.x - self.state.x) 
 
-                self.current_path.update()
+                self.active_path.update()
                 return
         
             # Handle arcs
             case 'arcto' | 'arctofill':
             
-                arc_element = self.current_path.elements[-1]
+                arc_element = self.active_path.elements[-1]
                 arc_dict = arc_element.__dict__
 
                 arc_element.x = e.local_position.x
@@ -396,7 +394,7 @@ class Canvas(Widget):
                 arc_dict['x'] = arc_element.x
                 arc_dict['y'] = arc_element.y
 
-                self.current_path.update()
+                self.active_path.update()
                 return
         
         
@@ -409,10 +407,10 @@ class Canvas(Widget):
                 path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
 
                 # Add the declared element to our current path and state paths
-                self.current_path.elements.append(path_element)
+                self.active_path.elements.append(path_element)
                 self.state.paths[0]['elements'].append((path_element.__dict__))  
 
-                self.current_path.update()
+                self.active_path.update()
                 # Update our state x and y for the next segment
                 self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
@@ -473,7 +471,6 @@ class Canvas(Widget):
         # Grab the old capture for this layer and add it as an undo task
         for layer in self.data.get('canvas_data', {}).get('Layers', []):
             if layer.get('name', None) == layer_name:
-
                 if layer.get('capture', None):
                     old_capture = layer.get('capture')
                     self.state.undo_list.append({'layer_name': layer_name, 'capture': old_capture})
@@ -483,7 +480,7 @@ class Canvas(Widget):
         
         try:
 
-            await canvas.capture()
+            await canvas.capture(2)
     
             cc = await canvas.get_capture()
             encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
