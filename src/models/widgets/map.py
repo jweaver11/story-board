@@ -420,7 +420,7 @@ class Map(Widget):
         # Add our map locations to the stack
         for mw in self.mini_widgets:
             
-            if hasattr(mw, 'map_control'):
+            if hasattr(mw, 'map_control') and mw.data.get('icon', "") != "label":
                 map_stack.controls.append(mw.map_control)
             if hasattr(mw, 'map_label'):
                 map_stack.controls.append(mw.map_label)

@@ -119,7 +119,8 @@ class Location(MiniWidget):
         self.data['left'] = self.map_control.left
         self.data['top'] = self.map_control.top
 
-        self.map_control.update()
+        if self.data.get('icon', "") != "label":
+            self.map_control.update()
         self.map_label.update()
         
           
@@ -127,10 +128,11 @@ class Location(MiniWidget):
     async def _drag_start(self, e=None):
         ''' Called when we start dragging our plot point. Sets our state to dragging and changes our mouse cursor '''
 
-        self.map_control.content.mouse_cursor = ft.MouseCursor.MOVE
-        self.is_dragging = True
+        if self.data.get('icon', "") != "label":
+            self.map_control.content.mouse_cursor = ft.MouseCursor.MOVE
+            self.is_dragging = True
 
-        self.map_control.update()
+            self.map_control.update()
 
     # Quick fixer for the mouse cursor and highlight is we just clicked the plotpoint without dragging
     async def _tap_up(self, e=None):
@@ -152,15 +154,17 @@ class Location(MiniWidget):
 
         await self.save_dict()
 
-        self.map_control.update()
+        if self.data.get('icon', "") != "label":
+            self.map_control.update()
 
     # Called when hovering over our plot point to show the slider
     async def _highlight(self, e=None):
         ''' Shows our slider and hides our map_marker. Makes sure all other sliders are hidden '''
 
         # Gives us a focused shadow
-        self.map_control.shadow = ft.BoxShadow(5, 10, ft.Colors.with_opacity(.6, self.data.get('color'))) #if self.map_control.shadow is None else None
-        self.map_control.update()
+        if self.data.get('icon', "") != "label":
+            self.map_control.shadow = ft.BoxShadow(4, 4, ft.Colors.with_opacity(.6, self.data.get('color'))) #if self.map_control.shadow is None else None
+            self.map_control.update()
 
     # Hides are shadow unless our info display is visible, then stay highlighted
     async def _stop_highlight(self, e=None):
@@ -170,7 +174,7 @@ class Location(MiniWidget):
             return
 
         # If our info display is visible, keep highlighted
-        if not self.visible:
+        if not self.visible and self.data.get('icon', "") != "label":
             self.map_control.shadow = None
             self.map_control.update()
 
@@ -178,8 +182,9 @@ class Location(MiniWidget):
     
     # Makes sure we stop highlighting
     async def hide_mini_widget(self, e=None, update: bool=True):
-        self.map_control.shadow = None
-        self.map_control.update()
+        if self.data.get('icon', "") != "label":
+            self.map_control.shadow = None
+            self.map_control.update()
         return await super().hide_mini_widget(e, update)
     
     # Called when clicking our upload image button
@@ -216,10 +221,12 @@ class Location(MiniWidget):
             expand=True,
             width=25,
             height=25,
+            shape=ft.BoxShape.CIRCLE,
             alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             left=self.data.get('left', 0), 
             top=self.data.get('top', 0),
+            shadow=ft.BoxShadow(4, 4, ft.Colors.with_opacity(.6, self.data.get('color'))) if self.visible else None,
             content=ft.GestureDetector(
                 mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
                 on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
@@ -253,7 +260,7 @@ class Location(MiniWidget):
                 on_tap=self.show_mini_widget, on_tap_down=self._drag_start, expand=True,
                 content=ft.Text(           # Label that appears above our icon on the map, shows our title and appears on hover
                     self.title, theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER, 
-                    color=self.data.get('color', None), weight=ft.FontWeight.BOLD, expand=True,
+                    color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True,
                     #overflow=ft.TextOverflow.ELLIPSIS,
                     #left=self.data.get('left', 0),
                     #top=self.data.get('top', 0) - 30 if self.data.get('top', 0) > 30 else self.data.get('top', 0) + 30,

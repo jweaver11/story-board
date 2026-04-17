@@ -594,6 +594,8 @@ class MiniWidget(ft.Container):
             self.reload_mini_widget()
             if hasattr(self, 'reload_plotline_control'):
                 self.reload_plotline_control()
+            if hasattr(self, 'reload_map_control'):
+                self.reload_map_control()
             
             self.widget.reload_widget()
  

@@ -96,6 +96,12 @@ class ContentRail(Rail):
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         tooltip="New Items and Equipment for your story"
                     ),  
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, ft.Colors.PRIMARY), content="Comic Preview", 
+                        data="comic_preview", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                        tooltip="Preview the canvases in your story as a comic strip", disabled=True
+                    ),
                     ft.SubmenuButton(
                         ft.Row([ft.Icon(ft.Icons.INSERT_CHART_OUTLINED, ft.Colors.PRIMARY), ft.Text("Chart", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                         self.get_template_options("chart"), 
@@ -215,6 +221,12 @@ class ContentRail(Rail):
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
                             tooltip="New Items and Equipment for your story"
                         ),  
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, ft.Colors.PRIMARY), content="Comic Preview", 
+                            data="comic_preview", on_click=self.new_item_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                            tooltip="Preview the canvases in your story as a comic strip", disabled=True
+                        ), 
                         
                         ft.SubmenuButton(
                             ft.Row([ft.Icon(ft.Icons.INSERT_CHART_OUTLINED, ft.Colors.PRIMARY), ft.Text("Chart", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
