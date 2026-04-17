@@ -51,7 +51,12 @@ class CanvasInformationDisplay(MiniWidget):
             {   
                 'title': self.title,          # Title of the mini widget, should match the object title
                 'tag': "canvas_information_display",     
-                'layers_expansion_tile_expanded': True,   
+                'layers_expansion_tile_expanded': True,  
+
+                # Undo and redo list
+                'undo_list': [],    
+                'redo_list': [],
+                # Each undo/redo item {'layer_name': "", 'capture': ""} 
 
                 # Background can be an image, color, or left empty for transparent. 
                 'background': None,             # We display it using a container, but manually create it when exporting
@@ -452,22 +457,25 @@ class CanvasInformationDisplay(MiniWidget):
 
     # Called when undoing a stroke on the canvas
     async def undo(self, e=None):
-        if len(self.widget.state.undo_list) == 0:
+
+        # If there's nothing to undo, return early
+        #if len(self.widget.state.undo_list) == 0:
+            #return
+        if len(self.data['undo_list']) == 0:
             return
-        
-        # Hitting undo needs to grab current state of canvas and add that to redo list
-        
+                
         # Grab the task we're going to carry out and its name and capture
-        task = self.widget.state.undo_list.pop()    
+        #task = self.widget.state.undo_list.pop()    
+        task = self.data['undo_list'].pop()
         layer_name = task.get('layer_name', None)
         capture = task.get('capture', None)
-
 
         # Set data back to old capture state
         for layer in self.data.get('Layers', []):
             if layer.get('name', None) == layer_name:
                 previous_capture = layer.get('capture', None)   # Grab current capture of the layer and add it to the redo list
-                self.widget.state.redo_list.append({'layer_name': layer_name, 'capture': previous_capture}) 
+                #self.widget.state.redo_list.append({'layer_name': layer_name, 'capture': previous_capture}) 
+                self.data['redo_list'].append({'layer_name': layer_name, 'capture': previous_capture})
                 layer['capture'] = capture     
                 await self.save_dict()
                 break
@@ -492,11 +500,14 @@ class CanvasInformationDisplay(MiniWidget):
 
     # Called when redoing a stroke on the canvas after a previous undo
     async def redo(self, e=None):
-        if len(self.widget.state.redo_list) == 0:
+        #if len(self.widget.state.redo_list) == 0:
+            #return
+        if len(self.data['redo_list']) == 0:
             return
            
         # Most recent task we want to redo
-        task = self.widget.state.redo_list.pop()    
+        #task = self.widget.state.redo_list.pop()   
+        task = self.data['redo_list'].pop() 
         layer_name = task.get('layer_name', None)
         capture = task.get('capture', None)
 
@@ -504,7 +515,8 @@ class CanvasInformationDisplay(MiniWidget):
         for layer in self.data.get('Layers', []):
             if layer.get('name', None) == layer_name:
                 previous_capture = layer.get('capture', None)   # Grab current capture of the layer and add it to undo list
-                self.widget.state.undo_list.append({'layer_name': layer_name, 'capture': previous_capture})
+                #self.widget.state.undo_list.append({'layer_name': layer_name, 'capture': previous_capture})
+                self.data['undo_list'].append({'layer_name': layer_name, 'capture': previous_capture})
                 layer['capture'] = capture     # Set the capture of the layer to the one from our undo task
                 await self.save_dict()
                 break

@@ -473,10 +473,11 @@ class Canvas(Widget):
             if layer.get('name', None) == layer_name:
                 if layer.get('capture', None):
                     old_capture = layer.get('capture')
-                    self.state.undo_list.append({'layer_name': layer_name, 'capture': old_capture})
-
-        if len(self.state.undo_list) > 30:   # Limit our undo/redo list to 30 items to save memory
-            self.state.undo_list.pop(0)
+                    self.data['canvas_data']['undo_list'].append({'layer_name': layer_name, 'capture': old_capture})
+                    self.data['canvas_data']['redo_list'].clear()     # Clear redo list after new action
+        
+        if len(self.data['canvas_data']['undo_list']) > 30:
+            self.data['canvas_data']['undo_list'].pop(0)
         
         try:
 

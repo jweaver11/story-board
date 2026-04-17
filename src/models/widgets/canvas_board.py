@@ -193,19 +193,16 @@ class CanvasBoard(Widget):
 
         row = e.control.data.get('row')
         column = e.control.data.get('column')
-
         canvas: cv.Canvas = e.control.parent
-        #layer_name = canvas.data
 
-        # Grab the old capture for this layer and add it as an undo task
-        #for layer in self.data.get('canvas_data', {}).get('Layers', []):
-            #if layer.get('name', None) == layer_name:
-                #if layer.get('capture', None):
-                    #old_capture = layer.get('capture')
-                    #self.state.undo_list.append({'layer_name': layer_name, 'capture': old_capture})
+        # Grab old capture and add it to the undo list
+        old_capture = self.data['matrix'][row][column].get('capture', "")
+        if old_capture:
+            self.data['matrix'][row][column]['undo_list'].append(old_capture)   
+            self.data['matrix'][row][column]['redo_list'].clear()
 
-        #if len(self.state.undo_list) > 30:   # Limit our undo/redo list to 30 items to save memory
-            #self.state.undo_list.pop(0)
+        if len(self.data['matrix'][row][column]['undo_list']) > 30:   # Limit our undo/redo list to 30 items to save memory
+            self.data['matrix'][row][column]['undo_list'].pop(0)
         
         try:
             await canvas.capture()
@@ -228,6 +225,58 @@ class CanvasBoard(Widget):
 
         except Exception as e:
             print("failed to save canvas", e)
+
+    # Called when undoing a stroke on the canvas
+    async def undo(self, e):
+
+        row = e.control.data.get('row')
+        column = e.control.data.get('column')
+
+        # If there's nothing to undo, return early
+        if len(self.data['matrix'][row][column]['undo_list']) == 0:
+            return
+
+        canvas: cv.Canvas = e.control.parent.parent.parent.controls[-1].content  
+                
+        # Grab capture we are reverting our canvas too, as well as the one to add to our redo list
+        undo_capture = self.data['matrix'][row][column]['undo_list'].pop()
+        redo_capture = self.data['matrix'][row][column].get('capture', "")
+        
+        self.data['matrix'][row][column]['redo_list'].append(redo_capture)   # Add current capture to redo list before we change it
+        self.data['matrix'][row][column]['capture'] = undo_capture
+
+        canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
+        canvas.shapes.append(cv.Image(undo_capture, 0, 0, 200, 200))   # Re-add most reccent capture
+        canvas.update()
+
+        await self.save_dict()
+
+    # Called when redoing a stroke on the canvas after a previous undo
+    async def redo(self, e=None):
+        row = e.control.data.get('row')
+        column = e.control.data.get('column')
+
+        # If there's nothing to redo, return early
+        if len(self.data['matrix'][row][column]['redo_list']) == 0:
+            return
+        
+        canvas: cv.Canvas = e.control.parent.parent.parent.controls[-1].content  
+
+        previous_capture = self.data['matrix'][row][column].get('capture', "")  # What the capture currently is before re-doing
+        new_capture = self.data['matrix'][row][column]['redo_list'].pop()   # Grab capture we are redoing to our canvas
+
+        
+        self.data['matrix'][row][column]['undo_list'].append(previous_capture)   # Add current capture to undo list before we change it
+        self.data['matrix'][row][column]['capture'] = new_capture
+
+        canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
+        canvas.shapes.append(cv.Image(new_capture, 0, 0, 200, 200))   # Re-add most reccent capture
+        canvas.update()
+
+        
+
+       
+        
 
     # Called when we click to add a new row at the bottom of our matrix
     async def _new_row_clicked(self, e=None):
@@ -631,12 +680,12 @@ class CanvasBoard(Widget):
                                             ft.IconButton(
                                                 ft.Icons.UNDO, self.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
                                                 data={"row": idx, "column": sub_idx},
-                                                #on_click=self.undo, #disabled=True if len(self.widget.state.undo_list) == 0 else False
+                                                on_click=self.undo,
                                             ),
                                             ft.IconButton(
                                                 ft.Icons.REDO_OUTLINED, self.data.get('color', None), tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
                                                 data={"row": idx, "column": sub_idx},
-                                                #on_click=self.redo, #disabled=True if len(self.widget.state.redo_list) == 0 else False
+                                                on_click=self.redo,
                                             ),
                                         ], alignment=ft.MainAxisAlignment.CENTER), 
                                         height=40
