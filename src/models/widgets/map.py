@@ -35,6 +35,8 @@ class Map(Widget):
         is_new = False
         if data is None:
             is_new = True
+        elif data.get('tag') is None:
+            is_new = True
         
                 
         # Parent constructor
@@ -66,10 +68,12 @@ class Map(Widget):
                 'locations': dict,        # Our locations on this map. Locations can also be maps
                 # If location is a map, it just has a tag and the maps key to reference it so we can open its information display when clicking it
 
-                # Map data for the information display
+                # Map data for the map part of the information display
                 'map_data': dict,
-                
-                
+            
+                # Used for drawing
+                'undo_list': [],    
+                'redo_list': [],
             },  
         )
 
@@ -396,7 +400,7 @@ class Map(Widget):
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        # TODO: 
+        # TODO:  
         # Users can choose to create their image or use some default ones, or upload their own
         # Our stack for map locations
         map_stack = ft.Stack([

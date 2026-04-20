@@ -284,7 +284,7 @@ class Canvas(Widget):
         self.state.paths[0]['elements'].append((move_to_element.__dict__))
 
 
-        match style:
+        match style: 
             # If we're using lineto (straight lines), add that element to the current path and state right away
             case "lineto":
                 line_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)

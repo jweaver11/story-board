@@ -105,6 +105,8 @@ class MapInformationDisplay(MiniWidget):
 
 
     def _drawing_mode_view(self) -> ft.Column:
+        # TODO: 
+        # Match canvas info mini widget
         # Create our header
         drawing_buttons = ft.Row([
             
@@ -127,31 +129,65 @@ class MapInformationDisplay(MiniWidget):
         ], expand=True, scroll="auto", spacing=0)
     
     def _map_info_view(self) -> ft.Column:
+
+        def _get_locations() -> list[ft.Control]:
+            controls = []
+            for location in self.widget.locations.values():
+                title = location.data.get('title', 'Unknown Location')
+                color = location.data.get('color', None)
+                controls.append(
+                    ft.Row([
+                        ft.Container(
+                            ft.Text(title, color=color, expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD), 
+                            on_click=lambda _, l=location: self.p.run_task(l.show_mini_widget), 
+                            expand=True, padding=ft.Padding.only(left=20)
+                        ),
+                        ft.Container(
+                            ft.IconButton(
+                                ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda _, l=location: l._delete_clicked(),
+                                tooltip="Delete Location", style=ft.ButtonStyle(padding=ft.Padding.all(0), mouse_cursor="click")
+                            ), margin=ft.Margin.only(right=20)
+                        )
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+                )
+            if not controls:
+                controls.append(ft.Text("No Locations added yet.", color=ft.Colors.OUTLINE))
+                
+            return controls
+
         description_tf = TextField(
             expand=True, label="Description", value=self.data.get('Description', ""), dense=True, multiline=True,
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=lambda e: self.change_data(**{'Description': e.control.value}),   # When we click out of the text field, we save our changes
-            
+        )
+        lore_tf = TextField(
+            expand=True, label="Lore", value=self.data.get('Lore', ""), dense=True, multiline=True,
+            capitalization=ft.TextCapitalization.SENTENCES,
+            on_blur=lambda e: self.change_data(**{'Lore': e.control.value}),   # When we click out of the text field, we save our changes
+        )
+        history_tf = TextField(
+            expand=True, label="History", value=self.data.get('History', ""), dense=True, multiline=True,
+            capitalization=ft.TextCapitalization.SENTENCES,
+            on_blur=lambda e: self.change_data(**{'History': e.control.value}),   # When we click out of the text field, we save our changes
         )
         return ft.Column([
-            description_tf,
-        ], expand=True, scroll="auto", spacing=0)
+                description_tf,
+                lore_tf,
+                history_tf,
+                ft.Divider(2, 2),
+                
+                ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None),),
+                    
+            ] 
+            + _get_locations()
+            
+            
+        , expand=True, scroll="auto", spacing=10)
     
-    #async def hide_mini_widget(self, e=None, update: bool=False):
-        #await super().hide_mini_widget(e, update)
-        #self.widget.reload_widget() # Makes sure there is always a button to show info if we are hidden
 
     
     # Called when reloading our mini widget UI
     def reload_mini_widget(self):
-
-        # TODO: 
-        # Locations
-        # Toggle Drawing Mode Button
-        # Undo and redo Buttons only in drawing mode
-        # Export
-        # Set background button
-        # Lore and History
 
         title_control = ft.Row([
             #ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
@@ -163,11 +199,11 @@ class MapInformationDisplay(MiniWidget):
             ),
      
             ft.GestureDetector(
-                ft.Text(f"\t{self.widget.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
-                color=self.data.get('color', None), expand=True),
+                ft.Text(f"{self.widget.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+                color=self.data.get('color', None)),
                 on_double_tap=self.widget.rename_clicked,
                 on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", hover_interval=500, expand=True
+                mouse_cursor="click", hover_interval=500, 
             ),
                 
             ft.IconButton(
