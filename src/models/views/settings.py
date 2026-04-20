@@ -174,6 +174,7 @@ class Settings(ft.View):
                 json.dump(self.data, f, indent=4)
         
         # Handle errors
+        
         except Exception as e:
             print(f"Error saving widget to {self.file_path}: {e}") 
             print("Data that failed to save: ", self.data)
@@ -282,7 +283,7 @@ class Settings(ft.View):
     
         
     # Called when we select a new category of settings in our settings view
-    def _settings_category_changed(self, e=None, template_name: str=None):
+    def _settings_category_changed(self, e=None, template_name: str=None, template_type: str=None):
         ''' Determines which category is now active and changes our body container to match '''
 
         if e is None:
@@ -298,7 +299,7 @@ class Settings(ft.View):
             case 1:
                 self.body_container.content = self._load_widgets_settings()
             case 2:
-                self.body_container.content = self._load_template_settings(template_name)
+                self.body_container.content = self._load_template_settings(template_name, template_type)
             case 3:
                 self.body_container.content = self._load_resources_settings()
                 
@@ -755,444 +756,663 @@ class Settings(ft.View):
 
         return content
     
-    def _load_template_settings(self, selected_template: str = None):
-        ''' Loads our resources settings view '''
-
-        # Has resources to help writers, can re-run the tutorial view, examples, discord link, planned features
-        # TODO: Use seleted template to auto load new templates data when creating them
+    def _load_template_settings(self, selected_template: str = None, selected_type: str = None):
+        ''' Loads our template settings view for editing character and world templates '''
 
         page = self.p
 
-        
-        # A template control that gets the entire template data so we can manipulate it and save it
-        class TemplateCtrl(ft.Column):
-            def __init__(self, name: str, **kwargs):
-                super().__init__(**kwargs)
+        # Grab all our existing templates.  These are mutated in place by the nested helpers
+        # so changes are visible across all closures that share these references.
+        character_templates: dict = self.data.get('character_templates', {}).copy()
+        world_templates: dict     = self.data.get('world_templates',     {}).copy()
 
-                
-                self.scroll = "none"
-                self.spacing = 0
-                self.expand = True
+        def _get_templates(ttype: str) -> dict:
+            return character_templates if ttype == "character" else world_templates
 
-                self.name = name        # Name of this template within our templates dict
-                self.old_name = name     # Old name to check if we changed it for renaming our template key in our dict
-                self.can_create_section = False     # State checking
-                
-                self.reload()
+        def _sync_and_save():
+            ''' Pushes local template dicts back to settings data and writes to disk '''
+            self.data['character_templates'] = character_templates
+            self.data['world_templates']     = world_templates
+            self.p.run_task(self.save_dict)
 
-            # When clicking add new section
-            async def _new_section_clicked(self, e=None):
-                dlg = ft.AlertDialog(
-                    title="Name Your Section",
-                    content=TextField(),
-                    actions=[
-                        ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                        ft.TextButton("Create", on_click=self._add_section, style=ft.ButtonStyle(mouse_cursor="click")),
-                    ]
+        # Declared early so inner helpers that need it can reference it via closure
+        edit_container = ft.Container(
+            expand=True,
+            border_radius=ft.BorderRadius.all(10),
+            padding=ft.Padding.all(10),
+        )
+
+        # ── FieldItem ──────────────────────────────────────────────────────────
+        class FieldItem(ft.Container):
+            ''' A single draggable field row inside a SectionCtrl '''
+
+            def __init__(self, section_ctrl, field_name: str):
+                super().__init__(key=field_name)
+                self.section_ctrl = section_ctrl
+                self.field_name   = field_name
+                self.padding      = ft.Padding.symmetric(vertical=2, horizontal=2)
+                self._render()
+
+            def _render(self):
+                self.content = ft.ReorderableDragHandle(
+                    content=ft.Row(
+                        [
+                            ft.Text(self.field_name, expand=True, theme_style=ft.TextThemeStyle.BODY_MEDIUM),
+                            ft.IconButton(
+                                icon=ft.Icons.DELETE_OUTLINE,
+                                icon_color=ft.Colors.ERROR,
+                                tooltip="Delete field",
+                                icon_size=18,
+                                on_click=lambda e, k=self.field_name: self.section_ctrl._delete_field(k),
+                                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                            ),
+                        ],
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                    )
                 )
 
-                self.page.show_dialog(dlg)
-
-            
-
-            # Called when we submit a new section name. Checks if we can create it and creates it if we can
-            def _reorder_sections(self, e: ft.OnReorderEvent):
-                old_index = e.old_index
-                new_idx = e.new_index
-                new_data = {}
-
-                # Find our sections name that is getting moved based on old index
-                for idx, name in enumerate(self.data.keys()):
-                    if idx == old_index:
-                        section_name = name
-                section_data = self.data.get(section_name, None)        # Set its data as well
-
-                # Remove the section from its old position
-                self.data.pop(section_name)
-
-                # Re-build our data dict based on new order
-                for idx, name in enumerate(self.data.keys()):
-                    # Adds the moved section to our new index, and adds the rest of the data where it should be
-                    if idx == new_idx:
-                        new_data[section_name] = section_data
-                    new_data[name] = self.data[name]
-
-                if new_idx >= len(self.data):   # If we move to the end of the list, add it there, since it won't be added in the loop
-                    new_data[section_name] = section_data
-
-                self.data = new_data
-                character_templates[self.name] = self.data     # Update our existing templates with the new data
-
-                self.reload()
-                
-
-            def _delete_section(self, section_name: str):
-                pass
-
-            def _add_section(self, section_name: str):
-                pass
-
-            def _update_section(self, section_name: str, new_data: dict):
-                pass
-
-            def _reset_template_data(self, e=None):
-                self.data = default_character_template_data_dict()
-                character_templates[self.name] = self.data
-                self.reload()
-                
-            # Reloads our control visually based on our current data
-            def reload(self):   
-
-                #print("New Template data on reload---------------------------------------------")    
-
-                #for key, value in self.data.items():
-                    #print(f"{key}: {value}")
-
-                #print("\n")        
-                        
-                # Set title and divider for this column
-                self.controls = [
-                    ft.Container(height=6),
-                    ft.Row([
-                        ft.Text(theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM, value=self.name),
-                        ft.TextButton("Add Section", on_click=self._new_section_clicked, style=ft.ButtonStyle(mouse_cursor="click")),
-                    ]),
-                    ft.Container(height=6), 
-                    ft.Divider(height=2, thickness=2),
-                    ft.Container(height=6),
-                    ft.ReorderableListView(
-                        on_reorder=self._reorder_sections, padding=ft.Padding.only(right=10), expand=True,
-                        show_default_drag_handles=False, 
-                        
-                        #footer=add new section button?
-                    )
-                ]
-
-                idx = 0
-
-                for section_name, section_data in self.data.items():
-                    self.controls[-1].controls.append(
-                        SectionCtrl(
-                            name=section_name,  # Name of the section
-                            template_name=self.name,   # Name of the template this section belongs to for easy access to update data
-                            data=section_data,  # Data (dict) of the section
-                            index=idx,          # Index for our reorderable list
-                        )
-                    )
-                    
-                    idx += 1
-
-                try:
-                    self.update()
-                except Exception as _:
-                    pass
-
-        # Simple section class for each section in our template so we can remove and reorder them easily
+        # ── SectionCtrl ────────────────────────────────────────────────────────
         class SectionCtrl(ft.Container):
-            def __init__(self, name: str, template_name: str, data: dict, index: int):
-                super().__init__(data=data)
-                self.name = name
-                self.template_name = template_name  
-                self.index = index
+            ''' One section card inside a TemplateCtrl '''
+
+            def __init__(self, name: str, template_name: str, template_type: str, data: dict):
+                super().__init__(key=name, data=data)
+                self.name          = name
+                self.template_name = template_name
+                self.template_type = template_type
 
                 self.border_radius = ft.BorderRadius.all(10)
-                self.border = ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT)
-                self.padding = ft.Padding.all(10)
-                self.margin = ft.Margin.only(bottom=10, top=10)
+                self.border        = ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT)
+                self.padding       = ft.Padding.all(10)
+                self.margin        = ft.Margin.only(bottom=8, top=8)
+
+                # Wired by TemplateCtrl after construction
+                self._delete_callback = None
 
                 self.reload()
 
+            # ── helpers ──────────────────────────────────────────────────────
+            def _tmpl(self) -> dict:
+                return _get_templates(self.template_type)
+
+            def _persist(self):
+                self._tmpl()[self.template_name][self.name] = self.data
+                _sync_and_save()
+
+            # ── field reordering ─────────────────────────────────────────────
             def _reorder_items(self, e: ft.OnReorderEvent):
-                old_index = e.old_index
+                old_idx = e.old_index
                 new_idx = e.new_index
-                new_data = {}
+                new_data: dict = {}
 
-                # Find our sections name that is getting moved based on old index
-                for idx, key in enumerate(self.data.keys()):
-                    if idx == old_index:
+                k = None
+                for i, key in enumerate(self.data.keys()):
+                    if i == old_idx:
                         k = key
-                value = self.data.get(k, None)        # Set its data as well
+                if k is None:
+                    return
 
-                # Remove the section from its old position
-                self.data.pop(k)
+                value = self.data.pop(k)
 
-                # Re-build our data dict based on new order
-                for idx, name in enumerate(self.data.keys()):
-                    # Adds the moved section to our new index, and adds the rest of the data where it should be
-                    if idx == new_idx:
+                for i, name in enumerate(self.data.keys()):
+                    if i == new_idx:
                         new_data[k] = value
                     new_data[name] = self.data[name]
 
-                if new_idx >= len(self.data):   # If we move to the end of the list, add it there, since it won't be added in the loop
+                if new_idx >= len(self.data):
                     new_data[k] = value
 
-                # Update our data, our parent TemplateCtrl's data, and the character_templates data
                 self.data = new_data
-                character_templates[self.template_name][self.name] = self.data     # Update our parents data
-
+                self._persist()
                 self.reload()
-                page.update()
-
-                
-            def reload(self):
-
-                #print("NEW SECTION Data------------------------------------")
-                #for key, value in self.data.items():
-                    #print(f"{key}: {value}")
-                #print("\n")
-
-                self.content = ft.ReorderableDragHandle(
-                    #sself.index,
-                    content=ft.Column([
-                        ft.Row([
-                            ft.Text(self.name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True),
-                            ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Remove this section from template"),
-                        ], vertical_alignment=ft.CrossAxisAlignment.START, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                        
-                        # Rest of section body here
-                        ft.ReorderableListView(on_reorder=self._reorder_items)
-                    ])
-                )
-
-                for key, value in self.data.items():
-                    self.content.content.controls[1].controls.append(
-                        ft.Row([
-                            ft.Text(f"{key}: ", weight=ft.FontWeight.BOLD),
-                            ft.Text(str(value))
-                        ])
-                    )
-
-        
-            
-        # Called when clicking create template button or pressing enter in the text field
-        def _create_new_template_clicked(e=None):
-            ''' Determines if name is valid and creates the template if it is'''
-            #nonlocal can_create_template
-
-            def _check_template_name_unique(e):
-                #nonlocal character_templates, edit_container, editing_current_template, new_template_tf, can_create_template
-                name = e.control.value.strip() or ""
-                is_unique = name not in character_templates.keys()
-                
-                if not is_unique:
-                    e.control.error = "Template name already exists"
-                    submit_button.disabled = True
-                else:
-                    e.control.error = None
-                    submit_button.disabled = False
-                    
-                e.control.update()  
-                submit_button.update()
-
-            async def _create_new_template(e=None):
-                #nonlocal character_templates, edit_container, editing_current_template, content
-
-                name = new_template_tf.value.strip() or ""
-
-                if can_create_template:
-
-                    character_templates[name] = default_character_template_data_dict()       # Create a new empty template
-                    self.data['character_templates'] = character_templates     # Update our main data dict with the new template
-                    self.p.run_task(self.save_dict)
-                    self.p.pop_dialog()
-                    self._settings_category_changed(template_name=name)     # Reload our settings page to update the ui and load the new template we just created
-
-                else: 
-                    await new_template_tf.focus()
-
-            can_create_template = False     # Checker if name is unique and we can create the template
-
-            submit_button = ft.TextButton("Create", on_click=_create_new_template, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
-
-            new_template_tf = TextField(
-                dense=True, expand=True, capitalization=ft.TextCapitalization.WORDS, 
-                on_change=_check_template_name_unique, on_submit=_create_new_template, 
-                autofocus=True
-            )
-            
-            dlg = ft.AlertDialog(
-                title=ft.Text("Name Your Template"),
-                content=new_template_tf,
-                actions=[
-                    ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda _: self.p.pop_dialog()),
-                    submit_button
-                ],
-            )
-
-            self.p.show_dialog(dlg)
-
-
-        def load_template(name: str = None) -> ft.Control:
-
-            if name is None:
-                return ft.Column(
-                    [ft.Text("Select a template to start editing", expand=True, theme_style=ft.TextThemeStyle.HEADLINE_SMALL, text_align=ft.TextAlign.CENTER), ft.Container(expand=True)],
-                    expand=True, scroll="auto", alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.CENTER
-                )
-            
-            # Load our name and data for the template we're loading/editing
-            template_name, template_data = None, None
-            for tn, td in character_templates.items():
-                if tn == name:
-                    template_name = tn
-                    template_data = td
-                    break
-                    
-            # Error handling
-            if template_name is None or template_data is None:
-                return
-            
-
-            # Set existing data. This is all data already in this template
-            template_data_ctrl = TemplateCtrl(
-                name=name,
-                width=edit_container.width,
-                data=template_data
-            )
-
-            return template_data_ctrl
-
-
-        # Gets our template names as a column on the left side of our template settings view
-        def _load_templates_names(type: str, selected_template_name: str=None) -> list[ft.Control]:
-
-            controls = []
-
-            copied_templates = character_templates if type == "character" else world_templates
-        
-            async def _rename_template_clicked(e):
-                pass
-                #new_name = e.control.data
-                #pass
-
-
-            async def _set_active_editing_template(e):
-                #nonlocal character_templates, edit_container, editing_current_template, column
-
-                type, name = e.control.data
-                
-                #editing_current_template = name
-                e.control.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
-                for ctrl in controls:   
-                    if isinstance(ctrl, ft.ListTile) and ctrl != e.control:
-                        ctrl.bgcolor = "transparent"
-                
-                # Load the template into our edit container
-                edit_container.content = load_template(name)
-                edit_container.update()
                 try:
                     self.update()
-                except Exception as _:
+                except Exception:
                     pass
-            
 
-            # Delete the template
-            async def _delete_template_clicked(e):
-                type, name = e.control.data
-                if type == "character":
-                    if name in character_templates:
-                        del character_templates[name]        # Remove it from our local data we're manipulating
-                        self.data['character_templates'] = character_templates     # Update our main data dict with the new template list after deletion
-                        await self.save_dict()                    # Save our data to our json file
-                        self.body_container.content = self._load_template_settings()     # Reload our settings page to update the ui
+            # ── field creation ───────────────────────────────────────────────
+            def _new_field_clicked(self, e=None):
+                sec = self
 
-                else:
-                    if name in world_templates:
-                        del world_templates[name]        # Remove it from our local data we're manipulating
-                        self.data['world_templates'] = world_templates     # Update our main data dict with the new template list after deletion
-                        await self.save_dict()                    # Save our data to our json file
-                        self.body_container.content = self._load_template_settings()     # Reload our settings page to update the ui
-                    
-                
-            
-            # Create a nameplace for each template
-            for template_name in copied_templates.keys():
-                if template_name != "Default":
-                    controls.append(
-                        ft.ListTile(
-                            title=ft.Text(
-                                template_name, expand=True, overflow=ft.TextOverflow.ELLIPSIS,
-                                style=ft.TextStyle(
-                                    size=14,
-                                    color=ft.Colors.ON_SURFACE,
-                                    weight=ft.FontWeight.BOLD,
-                                    overflow=ft.TextOverflow.ELLIPSIS,
-                                )
-                            ),
-                            shape=ft.RoundedRectangleBorder(radius=6),
-                            bgcolor=ft.Colors.TRANSPARENT if template_name != selected_template_name else ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE),
-                            dense=True,
-                            content_padding=ft.Padding.only(left=10),
-                            min_vertical_padding=0,
-                            mouse_cursor=ft.MouseCursor.CLICK,
-                            trailing=ft.PopupMenuButton(
-                                items=[
-                                    ft.PopupMenuItem(
-                                        "Rename Template", ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY),
-                                        #on_click=lambda e, name=template_name: _edit_template(name, e)
-                                        data=(type, template_name), mouse_cursor=ft.MouseCursor.CLICK
-                                    ),
-                                    ft.PopupMenuItem(
-                                        "Delete Template", ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR),
-                                        on_click=_delete_template_clicked,
-                                        data=(type, template_name), mouse_cursor=ft.MouseCursor.CLICK
-                                    )
-                                ],
-                                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-                                menu_padding=ft.Padding.all(0),
-                            ),
-                            data=(type, template_name), on_click=_set_active_editing_template,
+                def _check(e):
+                    name = e.control.value.strip()
+                    if not name or name in sec.data:
+                        e.control.error = "Name already exists or is empty"
+                        add_btn.disabled = True
+                    else:
+                        e.control.error = None
+                        add_btn.disabled = False
+                    e.control.update()
+                    add_btn.update()
+
+                async def _do_add(e=None):
+                    name = field_tf.value.strip()
+                    if name and name not in sec.data:
+                        sec._add_field(name)
+                        page.pop_dialog()
+
+                field_tf = TextField(
+                    dense=True, expand=True,
+                    capitalization=ft.TextCapitalization.WORDS,
+                    on_change=_check, on_submit=_do_add, autofocus=True,
+                )
+                add_btn = ft.TextButton(
+                    "Add", on_click=_do_add, disabled=True,
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                )
+                page.show_dialog(ft.AlertDialog(
+                    title=ft.Text("Name Your Field"),
+                    content=field_tf,
+                    actions=[
+                        ft.TextButton(
+                            "Cancel", on_click=lambda _: page.pop_dialog(),
+                            style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK),
                         ),
-                    )
+                        add_btn,
+                    ],
+                ))
 
-            new_template_button = ft.TextButton(
-                f"Create New {type.capitalize()} Template", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
-                on_click=_create_new_template_clicked, style=ft.ButtonStyle(mouse_cursor="click")
+            def _add_field(self, field_name: str):
+                self.data[field_name] = ""
+                self._persist()
+                self.reload()
+                try:
+                    self.update()
+                except Exception:
+                    pass
+
+            def _delete_field(self, field_name: str):
+                if field_name in self.data:
+                    del self.data[field_name]
+                    self._persist()
+                    self.reload()
+                    try:
+                        self.update()
+                    except Exception:
+                        pass
+
+            # ── section deletion ─────────────────────────────────────────────
+            def _on_delete_clicked(self, e):
+                if self._delete_callback:
+                    self._delete_callback(self.name)
+
+            # ── render ───────────────────────────────────────────────────────
+            def reload(self):
+                field_items = [FieldItem(section_ctrl=self, field_name=k) for k in self.data.keys()]
+
+                fields_view = (
+                    ft.ReorderableListView(
+                        controls=field_items,
+                        on_reorder=self._reorder_items,
+                        show_default_drag_handles=False,
+                        #shrink_wrap=True,
+                    )
+                    if field_items
+                    else ft.Container(
+                        content=ft.Text(
+                            "No fields yet — click 'Add Field' to add one.",
+                            theme_style=ft.TextThemeStyle.BODY_SMALL,
+                            color=ft.Colors.ON_SURFACE_VARIANT,
+                        ),
+                        padding=ft.Padding.symmetric(vertical=4),
+                    )
+                )
+
+                self.content = ft.ReorderableDragHandle(
+                    content=ft.Column(
+                        [
+                            ft.Row(
+                                [
+                                    ft.Text(
+                                        self.name,
+                                        theme_style=ft.TextThemeStyle.TITLE_MEDIUM,
+                                        weight=ft.FontWeight.BOLD,
+                                        expand=True,
+                                    ),
+                                    ft.TextButton(
+                                        "Add Field", on_click=self._new_field_clicked,
+                                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                                    ),
+                                    ft.TextButton(
+                                        "Delete Section",
+                                        on_click=self._on_delete_clicked,
+                                        style=ft.ButtonStyle(
+                                            color=ft.Colors.ERROR,
+                                            mouse_cursor=ft.MouseCursor.CLICK,
+                                        ),
+                                    ),
+                                ],
+                                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                            ),
+                            ft.Divider(),
+                            fields_view,
+                        ],
+                        spacing=4,
+                    )
+                )
+
+        # ── TemplateCtrl ───────────────────────────────────────────────────────
+        class TemplateCtrl(ft.Column):
+            ''' Editable view for a single template '''
+
+            def __init__(self, name: str, template_type: str, **kwargs):
+                super().__init__(**kwargs)
+                self.scroll        = "auto"
+                self.spacing       = 0
+                self.expand        = True
+                self.name          = name
+                self.template_type = template_type
+                self.reload()
+
+            def _tmpl(self) -> dict:
+                return _get_templates(self.template_type)
+
+            def _persist(self):
+                self._tmpl()[self.name] = self.data
+                _sync_and_save()
+
+            # ── section reordering ───────────────────────────────────────────
+            def _reorder_sections(self, e: ft.OnReorderEvent):
+                old_idx = e.old_index
+                new_idx = e.new_index
+                new_data: dict = {}
+
+                section_name = None
+                for i, name in enumerate(self.data.keys()):
+                    if i == old_idx:
+                        section_name = name
+                if section_name is None:
+                    return
+
+                section_data = self.data.pop(section_name)
+
+                for i, name in enumerate(self.data.keys()):
+                    if i == new_idx:
+                        new_data[section_name] = section_data
+                    new_data[name] = self.data[name]
+
+                if new_idx >= len(self.data):
+                    new_data[section_name] = section_data
+
+                self.data = new_data
+                self._persist()
+                self.reload()
+
+            # ── section creation ─────────────────────────────────────────────
+            def _new_section_clicked(self, e=None):
+                ctrl = self
+
+                def _check(e):
+                    name = e.control.value.strip()
+                    if not name or name in ctrl.data:
+                        e.control.error = "Name already exists or is empty"
+                        add_btn.disabled = True
+                    else:
+                        e.control.error = None
+                        add_btn.disabled = False
+                    e.control.update()
+                    add_btn.update()
+
+                async def _do_create(e=None):
+                    name = sec_tf.value.strip()
+                    if name and name not in ctrl.data:
+                        ctrl._add_section(name)
+                        page.pop_dialog()
+
+                sec_tf = TextField(
+                    dense=True, expand=True,
+                    capitalization=ft.TextCapitalization.WORDS,
+                    on_change=_check, on_submit=_do_create, autofocus=True,
+                )
+                add_btn = ft.TextButton(
+                    "Create", on_click=_do_create, disabled=True,
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                )
+                page.show_dialog(ft.AlertDialog(
+                    title=ft.Text("Name Your Section"),
+                    content=sec_tf,
+                    actions=[
+                        ft.TextButton(
+                            "Cancel", on_click=lambda _: page.pop_dialog(),
+                            style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK),
+                        ),
+                        add_btn,
+                    ],
+                ))
+
+            def _add_section(self, section_name: str):
+                self.data[section_name] = {}
+                self._persist()
+                self.reload()
+
+            def _delete_section(self, section_name: str):
+                if section_name in self.data:
+                    del self.data[section_name]
+                    self._persist()
+                    self.reload()
+
+            # ── render ───────────────────────────────────────────────────────
+            def reload(self):
+                section_controls = []
+                for section_name, section_data in self.data.items():
+                    # Guard against stale dict-type values from old world template defaults
+                    if not isinstance(section_data, dict):
+                        section_data = {}
+                        self.data[section_name] = section_data
+
+                    sc = SectionCtrl(
+                        name=section_name,
+                        template_name=self.name,
+                        template_type=self.template_type,
+                        data=section_data,
+                    )
+                    sc._delete_callback = self._delete_section
+                    section_controls.append(sc)
+
+                sections_view = (
+                    ft.ReorderableListView(
+                        controls=section_controls,
+                        on_reorder=self._reorder_sections,
+                        padding=ft.Padding.only(right=10),
+                        expand=True,
+                        show_default_drag_handles=False,
+                    )
+                    if section_controls
+                    else ft.Container(
+                        content=ft.Text(
+                            "No sections yet — click 'Add Section' to create one.",
+                            theme_style=ft.TextThemeStyle.BODY_MEDIUM,
+                            color=ft.Colors.ON_SURFACE_VARIANT,
+                            text_align=ft.TextAlign.CENTER,
+                        ),
+                        padding=ft.Padding.all(20),
+                        expand=True,
+                    )
+                )
+
+                self.controls = [
+                    ft.Container(height=6),
+                    ft.Row([
+                        ft.Text(
+                            theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM,
+                            value=self.name,
+                            expand=True,
+                        ),
+                        ft.TextButton(
+                            "Add Section", on_click=self._new_section_clicked,
+                            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                        ),
+                    ]),
+                    ft.Container(height=6),
+                    ft.Divider(),
+                    ft.Container(height=6),
+                    sections_view,
+                ]
+
+                try:
+                    self.update()
+                except Exception:
+                    pass
+
+        # ── load_template ──────────────────────────────────────────────────────
+        def load_template(name: str = None, ttype: str = None) -> ft.Control:
+            if name is None or ttype is None:
+                return ft.Column(
+                    [
+                        ft.Text(
+                            "Select a template to start editing",
+                            expand=True,
+                            theme_style=ft.TextThemeStyle.HEADLINE_SMALL,
+                            text_align=ft.TextAlign.CENTER,
+                        ),
+                        ft.Container(expand=True),
+                    ],
+                    expand=True, scroll="auto",
+                    alignment=ft.MainAxisAlignment.START,
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                )
+
+            templates = _get_templates(ttype)
+            template_data = templates.get(name)
+            if template_data is None:
+                return load_template()
+
+            return TemplateCtrl(
+                name=name,
+                template_type=ttype,
+                width=edit_container.width,
+                data=template_data,
             )
 
-            controls.append(new_template_button)
+        # ── create template dialog ─────────────────────────────────────────────
+        def _create_new_template_clicked(ttype: str, e=None):
+            from utils.safe_string_checker import return_safe_name
+            templates = _get_templates(ttype)
 
+            def _check(e):
+                raw  = e.control.value.strip()
+                safe = return_safe_name(raw)
+                ok   = bool(safe) and safe not in templates and safe.lower() != "default"
+                e.control.error   = None if ok else ("Name is taken or invalid")
+                add_btn.disabled  = not ok
+                e.control.update()
+                add_btn.update()
+
+            async def _do_create(e=None):
+                from utils.safe_string_checker import return_safe_name
+                raw  = tf.value.strip()
+                safe = return_safe_name(raw)
+                if safe and safe not in templates and safe.lower() != "default":
+                    if ttype == "character":
+                        templates[safe] = default_character_template_data_dict()
+                    else:
+                        templates[safe] = default_world_template_data_dict()
+                    _sync_and_save()
+                    self.p.pop_dialog()
+                    # Auto-select the newly created template
+                    self._settings_category_changed(template_name=safe, template_type=ttype)
+
+            tf = TextField(
+                dense=True, expand=True,
+                capitalization=ft.TextCapitalization.WORDS,
+                on_change=_check, on_submit=_do_create, autofocus=True,
+            )
+            add_btn = ft.TextButton(
+                "Create", on_click=_do_create, disabled=True,
+                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+            )
+            self.p.show_dialog(ft.AlertDialog(
+                title=ft.Text(f"Name Your {ttype.capitalize()} Template"),
+                content=tf,
+                actions=[
+                    ft.TextButton(
+                        "Cancel", on_click=lambda _: self.p.pop_dialog(),
+                        style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK),
+                    ),
+                    add_btn,
+                ],
+            ))
+
+        # ── rename template dialog ─────────────────────────────────────────────
+        def _rename_template_clicked(ttype: str, old_name: str, e=None):
+            from utils.safe_string_checker import return_safe_name
+            templates = _get_templates(ttype)
+
+            def _check(e):
+                raw  = e.control.value.strip()
+                safe = return_safe_name(raw)
+                same = safe == old_name
+                ok   = bool(safe) and (same or (safe not in templates and safe.lower() != "default"))
+                e.control.error  = None if ok else "Name is taken or invalid"
+                save_btn.disabled = not ok
+                e.control.update()
+                save_btn.update()
+
+            async def _do_rename(e=None):
+                from utils.safe_string_checker import return_safe_name
+                raw  = tf.value.strip()
+                safe = return_safe_name(raw)
+                if not safe or safe == old_name:
+                    self.p.pop_dialog()
+                    return
+                if safe not in templates and safe.lower() != "default":
+                    data = templates.pop(old_name)
+                    templates[safe] = data
+                    _sync_and_save()
+                    self.p.pop_dialog()
+                    self._settings_category_changed(template_name=safe, template_type=ttype)
+
+            tf = TextField(
+                value=old_name,
+                dense=True, expand=True,
+                capitalization=ft.TextCapitalization.WORDS,
+                on_change=_check, on_submit=_do_rename, autofocus=True,
+            )
+            save_btn = ft.TextButton(
+                "Save", on_click=_do_rename,
+                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+            )
+            self.p.show_dialog(ft.AlertDialog(
+                title=ft.Text("Rename Template"),
+                content=tf,
+                actions=[
+                    ft.TextButton(
+                        "Cancel", on_click=lambda _: self.p.pop_dialog(),
+                        style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK),
+                    ),
+                    save_btn,
+                ],
+            ))
+
+        # ── template names sidebar ─────────────────────────────────────────────
+        def _load_templates_names(ttype: str, selected_template_name: str = None) -> list[ft.Control]:
+            controls: list = []
+            templates = _get_templates(ttype)
+
+            async def _set_active(e):
+                t, name = e.control.data
+                e.control.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
+                for ctrl in controls:
+                    if isinstance(ctrl, ft.ListTile) and ctrl != e.control:
+                        ctrl.bgcolor = ft.Colors.TRANSPARENT
+                edit_container.content = load_template(name, t)
+                edit_container.update()
+
+            async def _delete_template(e):
+                t, name = e.control.data
+                tmpl = _get_templates(t)
+                if name in tmpl:
+                    del tmpl[name]
+                    _sync_and_save()
+                    self.body_container.content = self._load_template_settings()
+                    self.body_container.update()
+
+            for template_name in templates.keys():
+                if template_name == "Default":
+                    continue
+                controls.append(
+                    ft.ListTile(
+                        title=ft.Text(
+                            template_name,
+                            overflow=ft.TextOverflow.ELLIPSIS,
+                            style=ft.TextStyle(
+                                size=14,
+                                color=ft.Colors.ON_SURFACE,
+                                weight=ft.FontWeight.BOLD,
+                                overflow=ft.TextOverflow.ELLIPSIS,
+                            ),
+                        ),
+                        shape=ft.RoundedRectangleBorder(radius=6),
+                        bgcolor=ft.Colors.TRANSPARENT,
+                        dense=True,
+                        content_padding=ft.Padding.only(left=10),
+                        min_vertical_padding=0,
+                        mouse_cursor=ft.MouseCursor.CLICK,
+                        trailing=ft.PopupMenuButton(
+                            items=[
+                                ft.PopupMenuItem(
+                                    "Rename Template",
+                                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY),
+                                    on_click=lambda e, t=ttype, n=template_name: _rename_template_clicked(t, n),
+                                    data=(ttype, template_name),
+                                    mouse_cursor=ft.MouseCursor.CLICK,
+                                ),
+                                ft.PopupMenuItem(
+                                    "Delete Template",
+                                    ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR),
+                                    on_click=_delete_template,
+                                    data=(ttype, template_name),
+                                    mouse_cursor=ft.MouseCursor.CLICK,
+                                ),
+                            ],
+                            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                            menu_padding=ft.Padding.all(0),
+                        ),
+                        data=(ttype, template_name),
+                        on_click=_set_active,
+                    )
+                )
+
+            controls.append(
+                ft.TextButton(
+                    f"Create New {ttype.capitalize()} Template",
+                    on_click=lambda e, t=ttype: _create_new_template_clicked(t, e),
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                )
+            )
             return controls
-        
-        # Grab all our existing templates
-        character_templates = self.data.get('character_templates', {}).copy()        # Copy our data for ez manipulation without saving until the end
-        world_templates = self.data.get('world_templates', {}).copy()
 
-        edit_container = ft.Container(
-            expand=True, border_radius=ft.BorderRadius.all(10),
-            content=load_template(), padding=ft.Padding.all(10), 
+        # ── assemble the view ──────────────────────────────────────────────────
+        edit_container.content = (
+            load_template(selected_template, selected_type)
+            if selected_template is not None
+            else load_template()
         )
 
-
-        templates_names_column = ft.Column([], scroll="auto", width=240,  horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-        templates_names_column.controls.append(ft.Text("Character Templates", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER))
-        templates_names_column.controls.extend(_load_templates_names("character", selected_template))
+        templates_names_column = ft.Column(
+            [], scroll="auto", width=240,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+        templates_names_column.controls.append(
+            ft.Text("Character Templates", theme_style=ft.TextThemeStyle.TITLE_MEDIUM,
+                    weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER)
+        )
+        templates_names_column.controls.extend(_load_templates_names("character", selected_template if selected_type == "character" else None))
         templates_names_column.controls.append(ft.Divider())
-        templates_names_column.controls.append(ft.Text("World Templates", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER))
-        templates_names_column.controls.extend(_load_templates_names("world", selected_template))
-        
-        # Sets our templates
-        content = ft.Column([
+        templates_names_column.controls.append(
+            ft.Text("World Templates", theme_style=ft.TextThemeStyle.TITLE_MEDIUM,
+                    weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER)
+        )
+        templates_names_column.controls.extend(_load_templates_names("world", selected_template if selected_type == "world" else None))
+
+        return ft.Column([
             ft.Row([
                 ft.Text("Templates", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
-                #ft.Container(expand=True),   # Spacer to push title to left
                 ft.IconButton(
-                    ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
+                    ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings,
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
-                    mouse_cursor="click", tooltip="Close Settings"
-                )
+                    mouse_cursor="click", tooltip="Close Settings",
+                ),
             ]),
-            ft.Text(f"Edit your character and world templates", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
-            ft.Container(height=10),    # Spacer
+            ft.Text(
+                "Edit your character and world templates",
+                theme_style=ft.TextThemeStyle.BODY_MEDIUM,
+                color=ft.Colors.ON_SURFACE_VARIANT,
+            ),
+            ft.Container(height=10),
             ft.Divider(),
             ft.Row(
-                scroll="none", expand=True, vertical_alignment=ft.CrossAxisAlignment.START,
-                controls=[templates_names_column, ft.VerticalDivider(), edit_container, ft.Container(width=10)]
+                scroll="none", expand=True,
+                vertical_alignment=ft.CrossAxisAlignment.START,
+                controls=[
+                    templates_names_column,
+                    ft.VerticalDivider(),
+                    edit_container,
+                    ft.Container(width=10),
+                ],
             ),
-
         ])
-
-        return content
 
         
     
