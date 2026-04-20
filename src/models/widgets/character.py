@@ -62,7 +62,7 @@ class Character(Widget):
                 # Character data
                 'About': "",
                 # If this dict doesn't exist, we create it with our active template data. If we fail to pull that, we use a default template (which has quite a lot)
-                'character_data': app.settings.data.get('character_templates', {}).get(app.settings.get('active_character_template', ""), default_character_template_data_dict()) 
+                'character_data': app.settings.data.get('character_templates', {}).get(app.settings.data.get('active_character_template', ""), default_character_template_data_dict()) 
                 if data is None or 'character_data' not in data else data['character_data'],
 
                 'charts': {}
@@ -168,7 +168,7 @@ class Character(Widget):
         self.p.run_task(self.save_dict)
         self.reload_widget()
 
-    # Called when clicking our upload image button
+    # Called when clicking our upload image button 
     async def _upload_character_image(self, e=None):
 
         files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
@@ -410,7 +410,7 @@ class Character(Widget):
                 # Go through every key/value pair in this section and add it to our text span list with formatting
                 for key, value in values.items():
 
-                    if isinstance(value, str) and (value or app.settings.data.get('show_empty_character_fields', True)):
+                    if isinstance(value, str):
 
                         # Add the each key for this section
                         control_list.append(
@@ -549,7 +549,7 @@ class Character(Widget):
 
                 # Go through every key/value pair in this section and add it to our text span list with formatting
                 for key, value in values.items():
-                    if isinstance(value, str) and (value or app.settings.data.get('show_empty_character_fields', True)):
+                    if isinstance(value, str):
 
 
                         # If artifically created new lines, treat as bullet point list

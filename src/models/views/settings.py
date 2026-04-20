@@ -16,6 +16,7 @@ from ui.menu_bar import create_menu_bar
 from ui.workspaces_rail import WorkspacesRail
 from models.dataclasses.character_template import default_character_template_data_dict
 from styles.text_field import TextField
+from models.dataclasses.world_template import default_world_template_data_dict
 
  
 class Settings(ft.View):
@@ -140,16 +141,14 @@ class Settings(ft.View):
 
                 'active_character_template': "Default",             # Which template is being used for new characters for new stories - they default to this
                 'active_world_template': "Default",                 # Which template is being used for new worlds for new stories - they default to this
-                'show_empty_character_fields': True,                # If we show empty character fields in character widget or not
                 'division_labels_direction': "bottom",              # If the division labels are on top of the plotline instead of below
 
                 # Hold our default character templates
                 'character_templates': {    
                     'Default': default_character_template_data_dict(),
-                    # Fantasy/DnD
                 },   
-                'world_templates': {    # TODO
-                    'Default': dict,
+                'world_templates': {    
+                    'Default': default_world_template_data_dict(),
                 }
             }, 
         )
@@ -299,15 +298,13 @@ class Settings(ft.View):
             case 1:
                 self.body_container.content = self._load_widgets_settings()
             case 2:
-                self.body_container.content = self._load_story_settings()
-            case 3:
                 self.body_container.content = self._load_template_settings(template_name)
-            case 4:
+            case 3:
                 self.body_container.content = self._load_resources_settings()
                 
         try:
             self.update()
-        except Exception as _:
+        except Exception:
             pass
         
     # Called when appearance settings category is selected
@@ -478,54 +475,6 @@ class Settings(ft.View):
             e.control.color = new_color   # Changes the dropdown text color to match the selected color
             e.control.update()
 
-        def _toggle_show_empty_character_fields(e):
-            ''' Toggles if we show empty character fields in character widget or not '''
-            from models.app import app
-
-            new_value = e.control.value   # Grabs the new value of the checkbox
-
-            self.data['show_empty_character_fields'] = new_value
-
-            # Save our updated settings
-            self.p.run_task(self.save_dict)
-            e.control.update()
-
-            for story in app.stories.values():
-                if story.route == self.data.get('active_story', ""):
-                    for character in story.characters.values():
-                        character.reload_widget()   # Reloads the character widget to show/hide empty fields
-                    break
-
-        # Called to add our templates to our dropdown
-        def _load_character_templates() -> list[ft.DropdownOption]:
-            ''' Loads our character templates into the expansion tile '''
-
-            options = []
-            for key, template_data in self.data.get('character_templates', {}).items():
-                template_name = template_data.get('title', "Unnamed Template")
-                options.append(ft.DropdownOption(template_name))
-
-            options.append(
-                ft.DropdownOption(
-                    key="Create New Template", disabled=True, 
-                    content=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE, tooltip="Create new character template (Coming Soon!)"),
-                )
-            )
-            
-
-            return options
-        
-
-        def _new_character_template_selected(e):
-            if e.control.value == "Create New Template":
-                self.p.open(new_character_connection_clicked(self.story))
-                e.control.value = self.data.get('active_character_template')    # Resets the dropdown so we can select this again later
-                e.control.update()
-
-            else:
-                self.change_data(active_character_template=e.control.value)
-
-            
 
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
         content=ft.Column([
@@ -799,121 +748,9 @@ class Settings(ft.View):
                     ft.Container(width=10),   # Spacer
                 ]),
                 
-                ft.Divider(),
-                ft.Text("Canvases", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
-                ft.Container(height=10),    # Spacer
                 
-                ft.Divider(),
-
-                ft.Text("Canvas Boards", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
-                ft.Container(height=10),    # Spacer
-                
-                ft.Divider(),
-
-                ft.Text("Chapters", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
-                ft.Container(height=10),    # Spacer
-                
-                ft.Divider(),
-
-
-                ft.Text("Characters", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),     # Headling for theme colors
-                ft.Container(height=10),    # Spacer
-
-                ft.Row([
-                    ft.Container(width=10),    # Spacer
-                        ft.Checkbox(
-                        label="Show Empty Character Fields", value=self.data.get('show_empty_character_fields', True),
-                        on_change=_toggle_show_empty_character_fields, label_position=ft.LabelPosition.LEFT,
-                        tooltip="If enabled, empty fields for characterls will be shown. When disabled, characters provide a simpler view and only shows information that has been filled out.",
-                    ),
-                ]),
-                ft.Container(height=0),    # Spacer
-                
-                ft.Row([
-                    ft.Container(width=10),    # Spacer
-                    ft.Text("Character Templates", theme_style=ft.TextThemeStyle.LABEL_LARGE),
-                    ft.Dropdown(
-                        label="Active Template", width=200,
-                        #value=self.data.get('active_character_template', "None"),
-                        value="Default",
-                        #options=_load_character_templates(), 
-                        options=[ft.DropdownOption("Default")],
-                        on_select=_new_character_template_selected,
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        dense=True, tooltip="Select a character template to use when creating new characters",
-                        capitalization= ft.TextCapitalization.SENTENCES,
-                    ),
-                    ft.IconButton(ft.Icons.MANAGE_SEARCH_OUTLINED, tooltip="Manage Character Templates (Coming Soon!)", disabled=True)
-                ]),
-                
-                
-
-                ft.Divider(),
-
-                ft.Text("Character Connection Maps", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
-                ft.Container(height=10),    # Spacer
-                
-                ft.Divider(),
-
-                ft.Text("Maps", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
-                ft.Container(height=10),    # Spacer
-                
-                ft.Divider(),
-
-                ft.Text("Notes", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
-                ft.Container(height=10),    # Spacer
-                
-                ft.Divider(),
-
-                ft.Text("Planning", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
-                ft.Container(height=10),    # Spacer
-                
-                ft.Divider(),
-
-                ft.Text("Plotlines", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
-                ft.Container(height=10),    # Spacer
-
-                ft.Divider(),
-
-                ft.Text("Worlds", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
-                ft.Container(height=10),    # Spacer
-                
-                ft.Container(expand=True, height=500)
-
-
-
-
-
             ], scroll="auto", expand=True),
             
-        ])
-
-        return content
-    
-    def _load_story_settings(self) -> ft.Container:
-        ''' Loads our story settings view '''
-
-        # Type - novel vs comic. Effects how new content is created
-
-        # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
-        content=ft.Column([
-            ft.Row([
-                ft.Text("Story Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
-                ft.Container(expand=True),   # Spacer to push close button to the right
-                ft.IconButton(
-                    ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
-                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
-                    mouse_cursor="click", tooltip="Close Settings"
-                )
-            ]),            
-            ft.Text(f"Settings for your current story: {self.story.title}", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
-            ft.Container(height=10),    # Spacer
-
-            ft.Divider(),
-            ft.Container(height=10),    # Spacer
-
-
-
         ])
 
         return content
@@ -1421,18 +1258,6 @@ class Settings(ft.View):
                     label=ft.Container(ft.Text("Widgets", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.Margin.only(bottom=20))
                 ),
                 ft.NavigationRailDestination(
-                    icon=ft.Icons.MENU_BOOK_OUTLINED,
-                    selected_icon=ft.Icon(ft.Icons.MENU_BOOK, color=ft.Colors.PRIMARY),
-                    disabled=self.story is None,   # Disable if no story is loaded
-                    label=ft.Container(
-                        margin=ft.Margin.only(bottom=20),
-                        content=ft.Text(
-                            "Story Settings", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE,
-                            color=ft.Colors.OUTLINE if self.story is None else None
-                        ),
-                    )
-                ),
-                ft.NavigationRailDestination(
                     icon=ft.Icons.FILE_PRESENT_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.FILE_PRESENT, color=ft.Colors.PRIMARY),
                     label=ft.Container(ft.Text("Templates", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.Margin.only(bottom=20))
@@ -1473,8 +1298,8 @@ class Settings(ft.View):
                     ft.Container(
                         ft.Container(
                             expand=True,
-                            gradient=dark_gradient, 
-                            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                            #gradient=dark_gradient, 
+                            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                             border_radius=ft.BorderRadius.all(20),
                             margin=ft.Margin.all(10),
                             content=ft.Row(

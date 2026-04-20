@@ -203,12 +203,19 @@ class WorldBuildingRail(Rail):
             ft.Divider(),
             menu_gesture_detector
         ]
+
+        self.controls = [
+            #header,
+            #ft.Divider(),
+            ft.Text("Coming Soon")
+            #menu_gesture_detector
+        ]
         
         
         # Apply the update
         try:
             self.update()
-        except Exception as e:
+        except Exception:
             pass
 
 

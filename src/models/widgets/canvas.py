@@ -256,6 +256,12 @@ class Canvas(Widget):
         safe_stroke = 'fill' if style.endswith('fill') else 'stroke'
         safe_paint_settings['style'] = safe_stroke
 
+        #if self.story.data.get('canvas_settings', {}).get('erase_mode', False):
+            #state_paint_settings.color = ft.Colors.TRANSPARENT
+            
+
+
+
         # Check if we're in erase mode or not. If we are, set blend mode to clear and blur image to 0
         #if self.story.data.get('canvas_settings', {}).get('erase_mode', False):
             #safe_paint_settings['blend_mode'] = "clear"
@@ -491,9 +497,18 @@ class Canvas(Widget):
 
                 # Save the capture, but we don't use it until a reload_widget is called
                 self.data['canvas_data']['Layers'][self.data.get('canvas_data', {}).get('Active Layer', 0)]['capture'] = encoded_capture
-
-
                 await self.save_dict()     # Save our data with the new capture
+
+                # Check paint settings. If erasing, we clear and re-capture
+                if app.settings.data.get('canvas_settings', {}).get('erase_mode', False):
+                    canvas.shapes.clear()
+                    canvas.shapes.append(cv.Image(
+                        encoded_capture, 0, 0,
+                        self.canvas_width if self.canvas_width != 0 else None,
+                        self.canvas_height if self.canvas_height != 0 else None
+                    ))
+                    canvas.update()
+
 
             # Must clear the capture or weird UI bugs
             await canvas.clear_capture()

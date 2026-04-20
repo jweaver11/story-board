@@ -44,7 +44,7 @@ class PlanningRail(Rail):
         # Apply the update
         try:
             self.update()
-        except Exception as e:
+        except Exception:
             pass
         
 

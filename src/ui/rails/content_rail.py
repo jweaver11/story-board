@@ -295,8 +295,7 @@ class ContentRail(Rail):
             spacing=0,
             expand=True,
             controls=[
-                ft.Container(height=6),
-                ft.Container(self.new_item_textfield, margin=ft.Margin.symmetric(horizontal=10))
+                ft.Container(self.new_item_textfield, padding=ft.Padding.only(left=10, right=10, top=6))
             ],
         )
 

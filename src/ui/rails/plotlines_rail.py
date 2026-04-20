@@ -188,10 +188,7 @@ class PlotlinesRail(Rail):
 
             # Add the dropdown as a reorderable element for the list
             column.controls.append(
-                ft.ReorderableDraggable(
-                    i, 
-                    content=dropdown,
-                )
+                ft.ReorderableDragHandle(dropdown)
             )
             i += 1      # Increment index
             column.controls.append(ft.Divider())    # Add a divider under the plotline for visual seperation
@@ -209,8 +206,8 @@ class PlotlinesRail(Rail):
         # Gesture detector to put on top of stack on the rail to pop open menus on right click
         menu_gesture_detector = ft.GestureDetector(
             content=content, expand=True,
-            on_hover=self.on_hovers,
-            on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
+            on_hover=self._set_menu_coords,
+            on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()),
             hover_interval=20,
         )
 
@@ -238,7 +235,7 @@ class PlotlinesRail(Rail):
         # Apply the update
         try:
             self.update()
-        except Exception as e:
+        except Exception:
             pass
 
 

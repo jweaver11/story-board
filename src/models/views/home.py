@@ -20,11 +20,6 @@ def create_home_view(page: ft.Page) -> ft.View:
         # Variable to track if the title is unique
         is_unique = True
 
-        # Called by clicking off the dialog or cancel button
-        def close_dialog(e):
-            ''' Closes the dialog '''
-            dlg.open = False
-            page.update()
 
         async def submit_new_story(e):
             ''' Creates a new story with the given title '''
@@ -52,7 +47,7 @@ def create_home_view(page: ft.Page) -> ft.View:
                 page.update()
             else:
                 #print("Title not unique, no story created")
-                story_title_field.error_text = "Title must be unique"
+                story_title_field.error = "Title must be unique"
                 await story_title_field.focus()   # refocus the text field since the title was not unique
                 page.update()
 
@@ -83,7 +78,10 @@ def create_home_view(page: ft.Page) -> ft.View:
             on_change=check_story_title_unique,
         )
 
-        create_button = ft.TextButton("Create", on_click=lambda e: page.run_task(submit_new_story, story_title_field), disabled=True)
+        create_button = ft.TextButton(
+            "Create", on_click=lambda _: page.run_task(submit_new_story, story_title_field), 
+            disabled=True, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor=ft.MouseCursor.CLICK)
+        )
             
         # The dialog that will pop up whenever the new story button is clicked
         dlg = ft.AlertDialog(
@@ -96,7 +94,7 @@ def create_home_view(page: ft.Page) -> ft.View:
 
             # Our two action buttons at the bottom of the dialog
             actions=[
-                ft.TextButton("Cancel", on_click=close_dialog, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda _: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK)),
                 create_button,
             ],
         )
@@ -116,17 +114,15 @@ def create_home_view(page: ft.Page) -> ft.View:
             ft.Container(
                 expand=True,
                 alignment=ft.Alignment.CENTER,
-                gradient=dark_gradient,
+                #gradient=dark_gradient,
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                 content=ft.FloatingActionButton(
-                    content=ft.Row([
-                        ft.Container(expand=True), 
-                        ft.Icon(ft.Icons.ADD_OUTLINED), 
-                        ft.Text("Create New Story", theme_style=ft.TextThemeStyle.BODY_LARGE), 
-                        ft.Container(expand=True)
-                        ],  alignment=ft.Alignment.CENTER),
+                    "Create New Story",
+                    ft.Icons.ADD_OUTLINED,
                     on_click=create_new_story_button_clicked,
-                    width=200,
-                    height=100,
+                    scale=1.5,
+                    #width=200,
+                    #height=100,
                     shape=ft.RoundedRectangleBorder(radius=10),  
                 ),
             ),

@@ -39,7 +39,8 @@ class Widget(ft.Container):
             expand=True, 
             data=data,                              # Sets our data. 
             border_radius=ft.BorderRadius.all(10),
-            gradient=dark_gradient,
+            #gradient=dark_gradient,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
         )
 
@@ -720,11 +721,12 @@ class Widget(ft.Container):
 
             self.p.pop_dialog()
             if self.delete_file():
-                if self in self.story.widgets:
-                    print("Deleted: ", self.title)
-                    self.story.widgets.remove(self)   
+                for widget in self.story.widgets:
+                    if widget.data.get('key', '') == self.data.get('key', ''):
+                        self.story.widgets.remove(widget)
+                        break
             
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.2)
             self.story.active_rail.reload_rail()    # Reload the rail to reflect the deletion
             self.story.workspace.reload_workspace()
 

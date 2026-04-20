@@ -23,6 +23,12 @@ class PlotlineDropdown(ft.GestureDetector):
         plotline: Plotline,                                      # Reference to the plotline this dropdown represents 
         rail,     
     ):
+        
+        # Parent constructor
+        super().__init__(
+            mouse_cursor=ft.MouseCursor.CLICK,
+            on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()),
+        )
 
         # Set our parameters
         self.title = title
@@ -69,15 +75,11 @@ class PlotlineDropdown(ft.GestureDetector):
             maintain_state=True, adaptive=True,
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
             shape=ft.RoundedRectangleBorder(),      # Gets rid of the build in borders
-            on_change=lambda e: self.toggle_expand(),
+            on_change=self.toggle_expand,
         )
 
         
-        # Parent constructor
-        super().__init__(
-            mouse_cursor=ft.MouseCursor.CLICK,
-            on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()),
-        )
+        
         
 
         self.reload()
@@ -90,7 +92,7 @@ class PlotlineDropdown(ft.GestureDetector):
                 content=ft.PopupMenuButton(
                     content=ft.Container(
                         ft.Row([ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED), ft.Text("New", weight=ft.FontWeight.BOLD)]),
-                        padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6),
                     ),
                     tooltip=f"New Item for {self.title}", menu_padding=0,
                     items=[
@@ -130,7 +132,7 @@ class PlotlineDropdown(ft.GestureDetector):
                         padding=ft.padding.all(8), border_radius=ft.border_radius.all(6),
                     ),
                     tooltip=f"Change {self.title} Color", menu_padding=0,
-                    items=self.plotline._get_color_options()
+                    items=self.plotline.get_color_options()
                 ),
                 no_padding=True
             ),
@@ -138,28 +140,17 @@ class PlotlineDropdown(ft.GestureDetector):
         
     
     # Called when expanding/collapsing the directory
-    def toggle_expand(self):
+    async def toggle_expand(self, e=None):
         ''' Makes sure our state and data match the updated expanded/collapsed state '''
 
         self.is_expanded = not self.is_expanded
 
         self.plotline.data["dropdown_is_expanded"] = self.is_expanded
         self.plotline.save_dict()
-
-        # Make the plotline widget visible if its not
-        if not self.plotline.visible:
-            self.plotline.toggle_visibility(value=True)
-
-
-        
-
-    
-        
-
         
 
     # Called when our new item textfield changes
-    def new_item_check(self, e):
+    async def new_item_check(self, e):
         ''' Checks if our new item is unique in our plotline's dicts '''
 
         # Get our name and check if its unique
@@ -174,25 +165,25 @@ class PlotlineDropdown(ft.GestureDetector):
             # Run through our plotline plotline/arcs plot points to see if the name exists
             if title in self.plotline.plot_points.keys():
                 self.item_is_unique = False
-                e.control.error_text = "Title must be unique"
+                e.control.error = "Title must be unique"
             else:
                 self.item_is_unique = True
-                e.control.error_text = None
+                e.control.error = None
 
         # Check for arcs
         elif type == "arc":
             if title in self.plotline.arcs.keys():
                 self.item_is_unique = False
-                e.control.error_text = "Title must be unique"
+                e.control.error = "Title must be unique"
             else:
                 self.item_is_unique = True
-                e.control.error_text = None
+                e.control.error = None
 
         # Update the page to show changes
-        self.story.p.update()
+        self.update()
 
     # Called when clicking off the textfield and after submission
-    def on_new_item_blur(self, e):
+    async def on_new_item_blur(self, e):
         ''' Handles if we need to hide our textfield or re-focus it based on submissions '''
         
         # Check if we're submitting, or normal blur
@@ -205,24 +196,24 @@ class PlotlineDropdown(ft.GestureDetector):
             if self.item_is_unique:
                 e.control.visible = False
                 e.control.value = None
-                e.control.error_text = None
-                self.story.p.update()
+                e.control.error = None
+                self.update()
                 return
             
             # Otherwise its not unique, re-focus our textfield
             else:
                 e.control.visible = True
-                e.control.focus()
+                await e.control.focus()
         
         # If we're not submitting, just hide the textfield and reset values
         else:
             e.control.visible = False
             e.control.value = None
-            e.control.error_text = None
-            self.story.p.update()
+            e.control.error = None
+            self.update()
 
 
-    def new_item_submit(self, e):
+    async def new_item_submit(self, e):
 
         # Get our name and check if its unique
         title = e.control.value
@@ -246,8 +237,8 @@ class PlotlineDropdown(ft.GestureDetector):
             
         # Otherwise make sure we show our error
         else:
-            self.new_item_textfield.focus()                                  # Auto focus the textfield
-            self.story.p.update()
+            await self.new_item_textfield.focus()                                  # Auto focus the textfield
+            self.update()
 
         
     # Called when rename button is clicked
@@ -271,7 +262,7 @@ class PlotlineDropdown(ft.GestureDetector):
             # Otherwise we're not submitting (just clicking off the textbox), so we cancel the rename
             else:
 
-                self.story.active_rail.content.reload_rail()
+                self.story.active_rail.reload_rail()
                 
 
         # Called everytime a change in textbox occurs
@@ -287,29 +278,17 @@ class PlotlineDropdown(ft.GestureDetector):
             self.are_submitting = False
             self.is_unique = True
         
-
-            for plotline in self.story.plotlines.values():
-
-                # If there is no change, skip the checks
-                if new_name.capitalize() == self.title:
-                    break
-
-                elif new_name.capitalize() == plotline.title:
-                    self.is_unique = False
-                    break
-           
-
             # Give us our error text if not unique
             if not self.is_unique:
-                e.control.error_text = "plotline already exists"
+                e.control.error = "plotline already exists"
             else:
-                e.control.error_text = None
+                e.control.error = None
 
             # Apply the update
-            self.plotline.p.update()
+            self.update()
 
         # Called when submitting our textfield.
-        def _submit_name(e):
+        async def _submit_name(e):
             ''' Checks that we're unique and renames the widget if so. on_blur is auto called after this, so we handle that as well '''
 
             nonlocal text_field
@@ -327,14 +306,14 @@ class PlotlineDropdown(ft.GestureDetector):
 
                 self.plotline.rename(new_name)
 
-                self.story.active_rail.content.reload_rail()
+                self.story.active_rail.reload_rail()
                 
                 
             # Otherwise make sure we show our error
             else:
-                text_field.error_text = "Name already exists"
-                text_field.focus()                                  # Auto focus the textfield
-                self.plotline.p.update()
+                text_field.error = "Name already exists"
+                await text_field.focus()                                  # Auto focus the textfield
+                self.update()
                 
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
@@ -383,7 +362,7 @@ class PlotlineDropdown(ft.GestureDetector):
             color_controls.append(
                 ft.PopupMenuItem(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                    on_click=lambda e, col=color: _change_icon_color(col)
+                    on_click=lambda _, col=color: _change_icon_color(col)
                 )
             )
 
@@ -396,14 +375,14 @@ class PlotlineDropdown(ft.GestureDetector):
         def _delete_confirmed(e):
             ''' Deletes the widget after confirmation '''
 
-            self.plotline.p.close(dlg)
-            self.plotline.story.delete_widget(self.plotline)
+            self.plotline.p.pop_dialog()
+            #self.plotline.story.delete_widget(self.plotline)
             
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
             title=ft.Text(f"Are you sure you want to delete {self.plotline.title} forever?", weight=ft.FontWeight.BOLD),
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
             title_padding=ft.padding.all(25),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda e: self.plotline.p.close(dlg)),
@@ -411,25 +390,10 @@ class PlotlineDropdown(ft.GestureDetector):
             ]
         )
 
-        self.plotline.p.open(dlg)
+        self.plotline.p.show_dialog(dlg)
 
     # Called when we need to reload this directory tile
     def reload(self):
-
-        
-
-        self.expansion_tile = ft.ExpansionTile(
-            title=ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left"),
-            dense=True, expanded=self.is_expanded,
-            visual_density=ft.VisualDensity.COMPACT,
-            tile_padding=ft.Padding(6, 0, 0, 0),      # If no leading icon, give us small indentation
-            controls_padding=ft.Padding(10, 0, 0, 0),       # Keeps all sub children indented
-            leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, color=self.color),
-            maintain_state=True, adaptive=True,
-            expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
-            shape=ft.RoundedRectangleBorder(),      # Gets rid of the build in borders
-            on_change=lambda e: self.toggle_expand(),
-        )
 
         # Our controls should always be 3. Plot point dropdown, arcs dropdown, and a spacing container
         # Re-adds our content controls so we can keep states
@@ -443,4 +407,7 @@ class PlotlineDropdown(ft.GestureDetector):
         self.content = self.expansion_tile
 
 
-        self.plotline.p.update()
+        try:
+            self.update()
+        except Exception:
+            pass

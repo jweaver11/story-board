@@ -337,15 +337,7 @@ class CanvasRail(Rail):
                 on_click=lambda _: self._set_active_brush(stroke_brush_settings, name="Stroke"),
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ),
-            ft.MenuItemButton(
-                data=default_brush_settings,
-                content=ft.Container(
-                    ft.Row([ft.Text("Line", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(line_brush_settings)], spacing=20),
-                    clip_behavior=ft.ClipBehavior.HARD_EDGE
-                ),
-                on_click=lambda _: self._set_active_brush(line_brush_settings, "Line"),
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-            ),
+            
             ft.MenuItemButton(
                 data=fill_brush_settings,
                 content=ft.Container(
@@ -359,6 +351,16 @@ class CanvasRail(Rail):
 
             ft.Divider(),   # Placeholder for shapes section
             ft.Text("\tTools & Shapes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
+
+            ft.MenuItemButton(
+                data=default_brush_settings,
+                content=ft.Container(
+                    ft.Row([ft.Text("Line", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(line_brush_settings)], spacing=20),
+                    clip_behavior=ft.ClipBehavior.HARD_EDGE
+                ),
+                on_click=lambda _: self._set_active_brush(line_brush_settings, "Line"),
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+            ),
            
             
             ft.MenuItemButton(
@@ -670,12 +672,13 @@ class CanvasRail(Rail):
         else:
             paint_blend_mode_icon = ft.Icons.BLUR_OFF_OUTLINED
 
-        '''
+        
         self.paint_blend_mode_selector = ft.PopupMenuButton(
             icon=paint_blend_mode_icon, menu_padding=ft.Padding.all(0),
             tooltip="Current blend effects applied to your brush strokes. Select to change.",
             items=[
                 ft.PopupMenuItem("None", icon=ft.Icons.BLUR_OFF_OUTLINED, on_click=_paint_blend_mode_changed, data=None, tooltip="No blend mode"),
+                ft.PopupMenuItem("Clear", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="clear", tooltip="Clear the destination where the source is drawn, leaving it transparent"),
                 ft.PopupMenuItem("Color", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="color", tooltip="Take the hue and saturation of the source image, and the luminosity of the destination image"),
                 ft.PopupMenuItem("Color Burn", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="color_burn", tooltip="Divide the inverse of the destination by the source, and inverse the result"),
                 ft.PopupMenuItem("Color Dodge", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="color_dodge", tooltip="Divide the destination by the inverse of the source"),
@@ -705,7 +708,7 @@ class CanvasRail(Rail):
                 ft.PopupMenuItem("XOR", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="xor", tooltip="Apply a bitwise xor operator to the source and destination images. This leaves transparency where they would overlap"),
             ]
         )
-        '''
+        
 
         save_custom_brush_button = ft.IconButton(      
             ft.Icons.SAVE_ROUNDED, ft.Colors.PRIMARY,
@@ -725,6 +728,7 @@ class CanvasRail(Rail):
             spacing=0,
             expand=True,
             controls=[
+                ft.Container(self.new_item_textfield, padding=ft.Padding.only(left=10, right=10)),
 
                 # Save brush settings, label for rail, and reset brush settings to defaults buttons
                 ft.Row([
@@ -809,7 +813,7 @@ class CanvasRail(Rail):
         
 
        
-
+ 
         self.controls = [
             IsolatedColumn(
                 spacing=0,

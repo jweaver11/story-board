@@ -332,8 +332,8 @@ class CharactersRail(Rail):
         )
 
         menu_gesture_detector = ft.GestureDetector(
-            content=content, expand=True, on_hover=self.on_hovers,
-            on_secondary_tap=lambda e: self.story.open_menu(self.get_menu_options()), 
+            content=content, expand=True, on_hover=self._set_menu_coords,
+            on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()), 
             hover_interval=20,
         )
 
@@ -342,10 +342,17 @@ class CharactersRail(Rail):
             ft.Divider(),
             menu_gesture_detector
         ]
+
+        self.controls = [
+            #header,
+            #ft.Divider(),
+            ft.Text("Coming Soon")
+            #menu_gesture_detector
+        ]
         
         
         # Apply the update
         try:
             self.update()
-        except Exception as e:
+        except Exception:
             pass

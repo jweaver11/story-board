@@ -250,14 +250,14 @@ class MiniWidgetItem(ft.GestureDetector):
             else:
                 self.mini_widget.owner.delete_arc(self.mini_widget)
 
-            self.mini_widget.owner.story.active_rail.content.reload_rail()
+            self.mini_widget.owner.story.active_rail.reload_rail()
             await self.mini_widget.owner.story.close_menu()
             
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
             title=ft.Text(f"Are you sure you want to delete {self.mini_widget.title} forever?", weight=ft.FontWeight.BOLD),
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
             title_padding=ft.padding.all(25),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda e: self.mini_widget.p.close(dlg), style=ft.ButtonStyle(color=ft.Colors.ERROR)),
@@ -265,16 +265,16 @@ class MiniWidgetItem(ft.GestureDetector):
             ]
         )
 
-        self.mini_widget.p.open(dlg)
+        self.mini_widget.p.show_dialog(dlg)
 
 
     # Called to reload our tree view file display
     def reload(self):
 
         self.content = ft.Container(
-            expand=True, margin=ft.margin.only(left=12),
+            expand=True, margin=ft.Margin.only(left=12),
             padding=ft.Padding(6, 4, 6, 4),
-            border_radius=ft.border_radius.all(6),
+            border_radius=ft.BorderRadius.all(6),
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             content=ft.Row(
                 expand=True, #alignment=ft.MainAxisAlignment.CENTER,

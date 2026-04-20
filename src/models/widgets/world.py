@@ -14,6 +14,7 @@ from PIL import Image
 from io import BytesIO
 import base64
 from styles.text_field import TextField
+from models.dataclasses.world_template import default_world_template_data_dict
 
 
 
@@ -47,26 +48,17 @@ class World(Widget):
                 'color': app.settings.data.get('default_world_color'),   
 
                 # State and view data
-                'edit_mode': bool,              # Whether we are in edit mode or not
+                'edit_mode': True,              # Whether we are in edit mode or not
                 'image_base64': str,            # Saves our image as img64 string
 
                 'About': str,
 
                 # World data
-                'world_data': {
-                    'Locations': dict,
-                    'Lore': dict,
-                    'Power Systems': dict,
-                    'Social Systems': dict,
-                    'Geography': dict,
-                    'Technology': dict,
-                    'History': dict,
-                    'Governments': dict,
-                    'Notes': dict,  
-                },
+                'world_data': app.settings.data.get('world_templates', {}).get(app.settings.data.get('active_world_template', ""), default_world_template_data_dict()) 
+                if data is None or 'world_data' not in data else data['world_data'],
             }
         )
-
+ 
         # Saving creates the file if we're new
         if is_new:
             self.p.run_task(self.save_dict)
@@ -328,7 +320,7 @@ class World(Widget):
                 # Go through every key/value pair in this section and add it to our text span list with formatting
                 for key, value in values.items():
 
-                    if isinstance(value, str) and (value or app.settings.data.get('show_empty_character_fields', True)):
+                    if isinstance(value, str):
 
                         # Add the each key for this section
                         control_list.append(
@@ -461,7 +453,7 @@ class World(Widget):
 
                 # Go through every key/value pair in this section and add it to our text span list with formatting
                 for key, value in values.items():
-                    if isinstance(value, str) and (value or app.settings.data.get('show_empty_world_fields', True)):
+                    if isinstance(value, str):
 
 
                         # If artifically created new lines, treat as bullet point list
