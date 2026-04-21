@@ -21,6 +21,9 @@ from PIL import Image
 import asyncio
 from styles.menu_option_style import MenuOptionStyle
 
+MAX_SHAPES_BEFORE_CAPTURE = 10   # Prevent lag from too many paths on the canvas without being removed
+MAX_UNDO_LIST_TASKS = 30         # Max number of undo tasks to store in our undo list before we start deleting old ones
+
 
 class Canvas(Widget):
     def __init__(
@@ -84,6 +87,7 @@ class Canvas(Widget):
         self.needs_redraw = False           # Used to track if we need to redraw canvas after a resize
         self.skip_first_resize = True       # Skip the first resize since it will fix itself
         self.initial_resize = True          # Initial resize to track our canvases size without rebuild
+
         
         self.layers = [{}]                  # List of our layers, which are each their own canvas
         self.layer_stack: ft.Stack          # Stack to hold our layers on top of each other
@@ -226,7 +230,6 @@ class Canvas(Widget):
         
         # Add point to the canvas and our state data
         canvas.shapes.append(point)
-        self.state.points.append((e.local_position.x, e.local_position.y, point.point_mode.value, app.settings.data.get('paint_settings', {})))
 
         # After dragging canvas widget, it loses page reference and can't update, so the exception handles that.
         try:
@@ -239,7 +242,7 @@ class Canvas(Widget):
         
     # Called when we start drawing on the canvas
     async def start_new_stroke(self, e: ft.DragStartEvent):
-        ''' Set our initial starting x and y coordinates for the element we're drawing '''
+        ''' Set our initial starting x and y coordinates for the element we're drawing. '''
 
         canvas: cv.Canvas = e.control.parent
 
@@ -249,25 +252,15 @@ class Canvas(Widget):
         # Make a copy of our paint settings to modify it, since some of the styles are not built in
         safe_paint_settings = app.settings.data.get('paint_settings', {}).copy()
 
-        # Copy of our paint settings for our state tracking and data storage (only erase mode needs this)
-        state_paint_settings = app.settings.data.get('paint_settings', {}).copy()
-
         # Set either stroke or fill based on custom styles
         safe_stroke = 'fill' if style.endswith('fill') else 'stroke'
         safe_paint_settings['style'] = safe_stroke
 
-        #if self.story.data.get('canvas_settings', {}).get('erase_mode', False):
-            #state_paint_settings.color = ft.Colors.TRANSPARENT
-            
-
-
-
-        # Check if we're in erase mode or not. If we are, set blend mode to clear and blur image to 0
-        #if self.story.data.get('canvas_settings', {}).get('erase_mode', False):
-            #safe_paint_settings['blend_mode'] = "clear"
-            #safe_paint_settings['blur_image'] = 0
-            #state_paint_settings['blend_mode'] = "clear"
-            #state_paint_settings['blur_image'] = 0
+        # Check if we're using a blend mode. If yes, make sure to 
+        #if app.settings.data.get('paint_settings', {}).get('blend_mode', None) is not None:
+            #if app.settings.data.get('paint_settings', {}).get('blend_mode', None) == "clear":
+                #safe_paint_settings['blend_mode'] = "clear"
+                #safe_paint_settings['blur_image'] = 0
         
 
         # Update state x and y coordinates
@@ -275,13 +268,10 @@ class Canvas(Widget):
 
         # Clear and set our current path and state to match it
         self.active_path = cv.Path(elements=[], paint=ft.Paint(**safe_paint_settings))
-        self.state.paths.clear()
-        self.state.paths.append({'elements': [], 'paint': state_paint_settings})
 
         # Move to our starting position for this element
         move_to_element = cv.Path.MoveTo(e.local_position.x, e.local_position.y)
         self.active_path.elements.append(move_to_element)
-        self.state.paths[0]['elements'].append((move_to_element.__dict__))
 
 
         match style: 
@@ -289,7 +279,6 @@ class Canvas(Widget):
             case "lineto":
                 line_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
                 self.active_path.elements.append(line_element)
-                self.state.paths[0]['elements'].append((line_element.__dict__))
 
             case "arc":
                 arc_element = cv.Path.Arc(
@@ -302,7 +291,6 @@ class Canvas(Widget):
                     sweep_angle=-math.pi,
                 )
                 self.active_path.elements.append(arc_element)
-                self.state.paths[0]['elements'].append((arc_element.__dict__))
 
         # Else if we're using arcto, add that element to the current path and state right away
             case 'arcto' | 'arctofill':
@@ -315,7 +303,6 @@ class Canvas(Widget):
                     clockwise=True,
                 )
                 self.active_path.elements.append(arc_element)
-                self.state.paths[0]['elements'].append((arc_element.__dict__))
 
             #case ''
 
@@ -324,10 +311,13 @@ class Canvas(Widget):
         #cv.Path.Oval()
         #cv.Path.Rect()
         #cv.Path.
+
         # Add the path to the canvas so we can see it
         canvas.shapes.append(self.active_path)
         canvas.update()
+        self.state.shapes_count += 1
 
+   
 
         
     # Called when actively drawing on the canvas
@@ -342,6 +332,10 @@ class Canvas(Widget):
 
         # Set our canvas and style
         style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
+
+        canvas: cv.Canvas = e.control.parent
+
+        
 
         match style:
         
@@ -361,6 +355,7 @@ class Canvas(Widget):
                 line_dict['y'] = line_element.y
 
                 self.active_path.update()
+                
                 return
         
             case "arc" | "arcfill":
@@ -407,18 +402,80 @@ class Canvas(Widget):
             # If its not one of our custom styles, use free-draw stroke, which is constantly adding line_to segements
             case _:
 
+
+
                 #TODO: Add check here to reduce num of lines based on previous start and end??
+                # Iffffff free drawing, if we hit max shapes, finish the current shape and add a new one moving to current position
 
                 # Set the path element based on what kind of path we're adding, add it to our current path and our state paths
                 path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
 
                 # Add the declared element to our current path and state paths
                 self.active_path.elements.append(path_element)
-                self.state.paths[0]['elements'].append((path_element.__dict__))  
 
                 self.active_path.update()
-                # Update our state x and y for the next segment
-                self.state.x, self.state.y = e.local_position.x, e.local_position.y
+                
+                    
+                # Update our state x, y, and shape count
+                self.state.x = e.local_position.x
+                self.state.y =  e.local_position.y
+                self.state.shapes_count += 1
+        
+
+    # Called when we release the mouse to stop drawing a line
+    async def save_canvas(self, e: ft.DragEndEvent):
+        """ Saves our paths to our canvas data for storage """
+
+        # Set our canvas, layer name, and update our shapes count
+        canvas: cv.Canvas = e.control.parent
+        layer_name = canvas.data
+        self.state.shapes_count += 1
+
+        #if self.state.shapes_count > 5:    # Capture clear logic here
+
+        # Grab the old capture for this layer and add it as an undo task for the canvas
+        for layer in self.data.get('canvas_data', {}).get('Layers', []):
+            if layer.get('name', None) == layer_name:
+                if layer.get('capture', None):
+                    old_capture = layer.get('capture')
+                    self.data['canvas_data']['undo_list'].append({'layer_name': layer_name, 'capture': old_capture})
+                    self.data['canvas_data']['redo_list'].clear()     # Clear redo list after new action
+        
+                    # Make sure undo list is not too long and hog to many resources
+                    if len(self.data['canvas_data']['undo_list']) > MAX_UNDO_LIST_TASKS:
+                        self.data['canvas_data']['undo_list'].pop(0)
+        
+        try:
+
+            # Will PUT CURRENT VISUAL ON THE CANVAS UNTIL CLEAR CAPTURE
+            await canvas.capture()  # Captures the current state of this canvas
+    
+            cc = await canvas.get_capture()
+            encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
+
+            # If capture failed, return
+            if not encoded_capture:
+                return
+
+            # Save the capture, but we don't use it until a reload_widget is called
+            self.data['canvas_data']['Layers'][self.data.get('canvas_data', {}).get('Active Layer', 0)]['capture'] = encoded_capture
+            await self.save_dict()     # Save our data with the new capture
+
+            # Check paint settings. If using a blend mode, redraw canvas to avoid bugs for some reason
+            #if app.settings.data.get('paint_settings', {}).get('blend_mode', None) is not None:
+                #if app.settings.data.get('paint_settings', {}).get('blend_mode', None) == "clear":
+                    #canvas.shapes.clear()
+                    #canvas.shapes.append(cv.Image(
+                        #encoded_capture, 0, 0,
+                        #self.canvas_width if self.canvas_width != 0 else None,
+                        #self.canvas_height if self.canvas_height != 0 else None
+                    #))
+                    #canvas.update()
+                
+            await canvas.clear_capture()
+
+        except Exception as e:
+            print("failed to save canvas", e)
 
     # Redraws the canvas upon size changing. Not used currently
     async def _redraw_canvas(self, e=ft.PointerEvent):
@@ -435,6 +492,8 @@ class Canvas(Widget):
         # If we're not resizing but don't need to redraw, set our coords
         self.story.mouse_x = e.global_position.x
         self.story.mouse_y = e.global_position.y
+
+        return  # Temp before resizing is handled
         
         # If we need to redraw, do that
         if self.needs_redraw:
@@ -463,62 +522,6 @@ class Canvas(Widget):
             self.story.blocker.visible = False
             self.story.blocker.update()
             self.needs_redraw = False
-        
-
-    # Called when we release the mouse to stop drawing a line
-    async def save_canvas(self, e: ft.DragEndEvent):
-        """ Saves our paths to our canvas data for storage """
-
-        # TODO: Set a shapes limit on canvas to clear shapes and re-set background after 30 or so
-
-        canvas: cv.Canvas = e.control.parent
-        layer_name = canvas.data
-
-        # Grab the old capture for this layer and add it as an undo task
-        for layer in self.data.get('canvas_data', {}).get('Layers', []):
-            if layer.get('name', None) == layer_name:
-                if layer.get('capture', None):
-                    old_capture = layer.get('capture')
-                    self.data['canvas_data']['undo_list'].append({'layer_name': layer_name, 'capture': old_capture})
-                    self.data['canvas_data']['redo_list'].clear()     # Clear redo list after new action
-        
-        if len(self.data['canvas_data']['undo_list']) > 30:
-            self.data['canvas_data']['undo_list'].pop(0)
-        
-        try:
-
-            await canvas.capture(2)
-    
-            cc = await canvas.get_capture()
-            encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
-            if encoded_capture:
-
-                #print("Got capture of canvas for layer name: ", canvas.data)
-
-                # Save the capture, but we don't use it until a reload_widget is called
-                self.data['canvas_data']['Layers'][self.data.get('canvas_data', {}).get('Active Layer', 0)]['capture'] = encoded_capture
-                await self.save_dict()     # Save our data with the new capture
-
-                # Check paint settings. If erasing, we clear and re-capture
-                if app.settings.data.get('canvas_settings', {}).get('erase_mode', False):
-                    canvas.shapes.clear()
-                    canvas.shapes.append(cv.Image(
-                        encoded_capture, 0, 0,
-                        self.canvas_width if self.canvas_width != 0 else None,
-                        self.canvas_height if self.canvas_height != 0 else None
-                    ))
-                    canvas.update()
-
-
-            # Must clear the capture or weird UI bugs
-            await canvas.clear_capture()
-
-            # Clear the current state
-            self.state.paths[0]['elements'].clear()
-            self.state.points.clear()
-
-        except Exception as e:
-            print("failed to save canvas", e)
 
 
     # Called when we click to export a canvas
@@ -677,6 +680,7 @@ class Canvas(Widget):
             border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
             aspect_ratio=self.data.get('canvas_data', {}).get('aspect_ratio'),       # If set, ignores width and height
             content=self.layer_stack, 
+            opacity=0.99    # Forces canvas onto its own opacity layer for rendering to avoid blend mode bugs
         )
 
         
@@ -717,7 +721,3 @@ class Canvas(Widget):
         self.body_container.content = ft.Row([interactive_viewer, information_display], expand=True, spacing=0)
 
         self._render_widget()
-
-
-
-

@@ -107,6 +107,7 @@ class MapInformationDisplay(MiniWidget):
     def _drawing_mode_view(self) -> ft.Column:
         # TODO: 
         # Match canvas info mini widget
+        
         # Create our header
         drawing_buttons = ft.Row([
             

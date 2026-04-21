@@ -333,7 +333,7 @@ class CanvasInformationDisplay(MiniWidget):
                 for ctrl in reorderable_list.controls:   # Loop through layers and update bg color to show active layer
                     if isinstance(ctrl, ft.ReorderableDragHandle):
                         if ctrl.data == e.control.data:
-                            ctrl.content.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGH
+                            ctrl.content.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
                             ctrl.content.leading.icon = ft.Icons.VISIBILITY
                         else:
                             ctrl.content.bgcolor = None
@@ -680,7 +680,7 @@ class CanvasInformationDisplay(MiniWidget):
                             )
                         ]
                     ) if idx != 0 else None,    # Don't allow deleting the first layer
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH if self.data.get('Active Layer', 0) == idx else None,  # Lighter bg for selected layer
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if self.data.get('Active Layer', 0) == idx else None,  # Lighter bg for selected layer
                     on_click=self._set_active_layer, data=name,
                     #content_padding=ft.Padding.only(right=30),
                 ), data=name

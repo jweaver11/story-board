@@ -157,6 +157,12 @@ class CanvasRail(Rail):
     def _set_active_brush(self, brush_settings: dict, name: str):
         ''' Sets the current brush settings to the passed in brush settings dictionary '''
 
+        if name == "Erase":
+            brush_settings['blend_mode'] = "clear"
+            app.settings.data['canvas_settings']['erase_mode'] = True
+        else:
+            app.settings.data['canvas_settings']['erase_mode'] = False
+
         app.settings.data['paint_settings'].update(brush_settings)
         app.settings.data['canvas_settings']['current_brush_name'] = name
         self.p.run_task(app.settings.save_dict)
@@ -351,6 +357,16 @@ class CanvasRail(Rail):
 
             ft.Divider(),   # Placeholder for shapes section
             ft.Text("\tTools & Shapes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
+
+            ft.MenuItemButton(
+                data=default_brush_settings,
+                content=ft.Container(
+                    ft.Row([ft.Text("Erase", overflow=ft.TextOverflow.ELLIPSIS), ft.Icon(ft.Icons.PHONELINK_ERASE)]),
+                    clip_behavior=ft.ClipBehavior.HARD_EDGE
+                ),
+                on_click=lambda _: self._set_active_brush(line_brush_settings, "Erase"),
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+            ),
 
             ft.MenuItemButton(
                 data=default_brush_settings,
@@ -775,6 +791,7 @@ class CanvasRail(Rail):
                 # Add shapes and shapefill drawing modes. Path will use paint.style.paintingstyle fill or stroke.
                 # Add shadow effect option for paths
                 # Custom saved colors and custom brushes
+                # Add txt input for brush size as well
                 # -------
                 # PS
                 # Selecting tools disables drawing utnil you select brush again?
@@ -798,15 +815,15 @@ class CanvasRail(Rail):
  
                 # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
                 ft.Divider(),
-                #ft.Row([ft.Text("Effects", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
-                #ft.Container(height=10),   # Spacer
+                ft.Row([ft.Text("Effects", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
+                ft.Container(height=10),   # Spacer
                 self.paint_anti_alias_toggle,
                 #ft.Container(height=10),   # Spacer
                 ft.Row([ft.Text("\tBlur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider]),
                 #ft.Container(height=10),   # Spacer
 
 
-                #ft.Row([self.paint_blend_mode_label, self.paint_blend_mode_selector])  # Not rendering correctly so disabled
+                ft.Row([self.paint_blend_mode_label, self.paint_blend_mode_selector])  # Not rendering correctly so disabled
 
             ]
         )

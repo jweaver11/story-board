@@ -1,6 +1,7 @@
 '''
 State management model for our drawings
 '''
+import flet as ft
 
 class State:
 
@@ -8,13 +9,8 @@ class State:
     x: float = 0.0
     y: float = 0.0
 
-    # Shapes that we are currently drawing so we know what to save to data
-    paths = [{'elements': [], 'paint': {}}]    # Paths
-    points = []    # Points
+    # Track number of shapes drawn so we can clear when too many are added
+    shapes_count: int = 0
 
-    # Our list of captures for undo/redo
-    #undo_list = []
-    #redo_list = []
-    # Each undo/redo item {'layer_name': "", 'capture': ""}    # Set that layer to a previous or now-future capture state
 
         
