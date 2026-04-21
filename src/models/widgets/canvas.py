@@ -21,7 +21,7 @@ from PIL import Image
 import asyncio
 from styles.menu_option_style import MenuOptionStyle
 
-MAX_SHAPES_BEFORE_CAPTURE = 10   # Prevent lag from too many paths on the canvas without being removed
+MAX_SHAPES_BEFORE_CAPTURE = 30   # Prevent lag from too many paths on the canvas without being removed
 MAX_UNDO_LIST_TASKS = 30         # Max number of undo tasks to store in our undo list before we start deleting old ones
 
 
@@ -259,9 +259,12 @@ class Canvas(Widget):
         # Check if we're using a blend mode. If yes, make sure to 
         #if app.settings.data.get('paint_settings', {}).get('blend_mode', None) is not None:
             #if app.settings.data.get('paint_settings', {}).get('blend_mode', None) == "clear":
-                #safe_paint_settings['blend_mode'] = "clear"
-                #safe_paint_settings['blur_image'] = 0
-        
+        if app.settings.data.get('canvas_settings', {}).get('erase_mode', False):
+            print("Erase mode is tru")
+            safe_paint_settings['blend_mode'] = "clear"
+            safe_paint_settings['blur_image'] = 0
+            style = "stroke"
+    
 
         # Update state x and y coordinates
         self.state.x, self.state.y = e.local_position.x, e.local_position.y
@@ -315,7 +318,6 @@ class Canvas(Widget):
         # Add the path to the canvas so we can see it
         canvas.shapes.append(self.active_path)
         canvas.update()
-        self.state.shapes_count += 1
 
    
 
@@ -419,7 +421,6 @@ class Canvas(Widget):
                 # Update our state x, y, and shape count
                 self.state.x = e.local_position.x
                 self.state.y =  e.local_position.y
-                self.state.shapes_count += 1
         
 
     # Called when we release the mouse to stop drawing a line
@@ -429,9 +430,6 @@ class Canvas(Widget):
         # Set our canvas, layer name, and update our shapes count
         canvas: cv.Canvas = e.control.parent
         layer_name = canvas.data
-        self.state.shapes_count += 1
-
-        #if self.state.shapes_count > 5:    # Capture clear logic here
 
         # Grab the old capture for this layer and add it as an undo task for the canvas
         for layer in self.data.get('canvas_data', {}).get('Layers', []):
@@ -447,32 +445,30 @@ class Canvas(Widget):
         
         try:
 
-            # Will PUT CURRENT VISUAL ON THE CANVAS UNTIL CLEAR CAPTURE
-            await canvas.capture()  # Captures the current state of this canvas
-    
-            cc = await canvas.get_capture()
-            encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
+            # Captures the current state of this canvas
+            await canvas.capture()  
+
+            # Get the capture and encode it so we can store it where we need to
+            capture = await canvas.get_capture()
+            encoded_capture = base64.b64encode(capture).decode('utf-8')      # Requires encoding to save json
 
             # If capture failed, return
             if not encoded_capture:
+                await canvas.clear_capture()
                 return
 
-            # Save the capture, but we don't use it until a reload_widget is called
+            # Save the capture, to whatever layer we're drawing on
             self.data['canvas_data']['Layers'][self.data.get('canvas_data', {}).get('Active Layer', 0)]['capture'] = encoded_capture
-            await self.save_dict()     # Save our data with the new capture
-
-            # Check paint settings. If using a blend mode, redraw canvas to avoid bugs for some reason
-            #if app.settings.data.get('paint_settings', {}).get('blend_mode', None) is not None:
-                #if app.settings.data.get('paint_settings', {}).get('blend_mode', None) == "clear":
-                    #canvas.shapes.clear()
-                    #canvas.shapes.append(cv.Image(
-                        #encoded_capture, 0, 0,
-                        #self.canvas_width if self.canvas_width != 0 else None,
-                        #self.canvas_height if self.canvas_height != 0 else None
-                    #))
-                    #canvas.update()
+            await self.save_dict()     
                 
             await canvas.clear_capture()
+
+            # Check if we have too many shapes on the canvas. If we do, capture them and put it in an image
+            if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:   
+                print("Capturing canvas to prevent lag")
+                canvas.shapes.clear()
+                canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))   
+                canvas.update()
 
         except Exception as e:
             print("failed to save canvas", e)

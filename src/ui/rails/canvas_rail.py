@@ -1,7 +1,5 @@
 """ 
 Canvas Rail to display all drawing options and tools 
-NOTE: Cannot use self.reload_rail() in this class, because ColorPicker is built in and loses its page reference
-
 """
 
 import flet as ft
@@ -48,6 +46,12 @@ class CanvasRail(Rail):
                         leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
                         data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
+                        data="map", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                     ),
                 ],
@@ -131,12 +135,7 @@ class CanvasRail(Rail):
             expand=True,
         )
            
-
-        self.paint_blend_mode_selector: ft.PopupMenuButton = None   
-        self.paint_blend_mode_label = ft.Text(
-            f"Blend Mode: {self._set_blend_mode_label()}", theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True,
-            tooltip="Current blend effects applied to your brush strokes. Select to change."
-        )
+        
 
         self.reload_rail()
     
@@ -158,7 +157,6 @@ class CanvasRail(Rail):
         ''' Sets the current brush settings to the passed in brush settings dictionary '''
 
         if name == "Erase":
-            brush_settings['blend_mode'] = "clear"
             app.settings.data['canvas_settings']['erase_mode'] = True
         else:
             app.settings.data['canvas_settings']['erase_mode'] = False
@@ -230,8 +228,18 @@ class CanvasRail(Rail):
         
 
     # Called to build a small preview canvas of our brush strokes for visual distinction
-    def _build_preview_canvas(self, paint_settings: dict) -> cv.Canvas:
+    def _build_preview_canvas(self, paint_settings: dict, tool: str="") -> cv.Canvas:
         ''' Builds a small canvas, and uses the passed in paint settings to draw a sample stroke to show the user what their current brush settings look like. '''
+        
+        
+
+        match tool:
+            case "Erase":
+                return ft.Icon(ft.Icons.PHONELINK_ERASE, paint_settings.get('color', ft.Colors.PRIMARY))
+            case "Line":
+                return ft.Icon(ft.Icons.REMOVE, paint_settings.get('color', ft.Colors.PRIMARY))
+            
+        
         # Set our canvas and grab our style. BUILD like width and height are 100, 30. This size is just for padding
         preview_canvas = cv.Canvas(width=105, height=35)
 
@@ -239,6 +247,7 @@ class CanvasRail(Rail):
         max_size = 6
 
         ps = paint_settings.copy()
+        ps['blend_mode'] = None
 
         # Set max values of paint so that it fits normally on our small preview
         style = ps.get('style', 'stroke')
@@ -287,7 +296,9 @@ class CanvasRail(Rail):
                     ], ps)
                 ]
 
-        return preview_canvas
+        
+
+        return ft.Container(preview_canvas, opacity=.99)
     
 
     def _get_brush_options(self) -> list[ft.Control]:
@@ -361,17 +372,17 @@ class CanvasRail(Rail):
             ft.MenuItemButton(
                 data=default_brush_settings,
                 content=ft.Container(
-                    ft.Row([ft.Text("Erase", overflow=ft.TextOverflow.ELLIPSIS), ft.Icon(ft.Icons.PHONELINK_ERASE)]),
+                    ft.Row([ft.Text("Erase", overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(stroke_brush_settings, "Erase")], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
                 ),
-                on_click=lambda _: self._set_active_brush(line_brush_settings, "Erase"),
+                on_click=lambda _: self._set_active_brush(stroke_brush_settings, "Erase"),
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ),
 
             ft.MenuItemButton(
                 data=default_brush_settings,
                 content=ft.Container(
-                    ft.Row([ft.Text("Line", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(line_brush_settings)], spacing=20),
+                    ft.Row([ft.Text("Line", overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_canvas(line_brush_settings, "Line" )], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
                 ),
                 on_click=lambda _: self._set_active_brush(line_brush_settings, "Line"),
@@ -466,7 +477,6 @@ class CanvasRail(Rail):
 
             # Set the new mode and label
             app.settings.data['paint_settings']['blend_mode'] = mode
-            self.paint_blend_mode_label.value = f"Blend Mode: {self._set_blend_mode_label()}"
 
             self.p.run_task(app.settings.save_dict)
             self.story.active_rail.reload_rail()
@@ -641,37 +651,44 @@ class CanvasRail(Rail):
 
         # Stroke cap shape
         if app.settings.data.get('paint_settings', {}).get('stroke_cap', 'butt') == 'round':
-            paint_stroke_icon = ft.Icons.CIRCLE_OUTLINED
+            paint_stroke_cap_icon = ft.Icons.CIRCLE_OUTLINED
         elif app.settings.data.get('paint_settings', {}).get('stroke_cap', 'butt') == 'square':
-            paint_stroke_icon = ft.Icons.SQUARE_OUTLINED
+            paint_stroke_cap_icon = ft.Icons.SQUARE_OUTLINED
         else:
-            paint_stroke_icon = ft.Icons.CROP_SQUARE_OUTLINED
-        self.paint_stroke_cap_selector = ft.PopupMenuButton(
-            icon=paint_stroke_icon, menu_padding=ft.Padding.all(0),
+            paint_stroke_cap_icon = ft.Icons.CROP_SQUARE_OUTLINED
+        paint_stroke_cap_selector = ft.SubmenuButton(
+            ft.Row([
+                ft.Text("\tStroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="End shape of your strokes"), 
+                ft.Container(ft.Icon(paint_stroke_cap_icon), bgcolor=ft.Colors.SURFACE_CONTAINER, shape=ft.BoxShape.CIRCLE)
+            ]),     # Stroke cap shape selector
             tooltip="The shape that your brush strokes will have at the end of each line segment.",
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-            items=[
-                ft.PopupMenuItem("Butt", on_click=_paint_stroke_cap_changed, icon=ft.Icons.CROP_SQUARE_OUTLINED, tooltip="Flat cut ends", mouse_cursor="click"),
-                ft.PopupMenuItem("Round", on_click=_paint_stroke_cap_changed, icon=ft.Icons.CIRCLE_OUTLINED, tooltip="Rounded ends", mouse_cursor="click"),
-                ft.PopupMenuItem("Square", on_click=_paint_stroke_cap_changed, icon=ft.Icons.SQUARE_OUTLINED, tooltip="Sharp cut ends", mouse_cursor="click"),
+            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+            style=ft.ButtonStyle(padding=ft.Padding.all(0), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            controls=[
+                ft.MenuItemButton("Butt", on_click=_paint_stroke_cap_changed, leading=ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED), tooltip="Flat cut ends", style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
+                ft.MenuItemButton("Round", on_click=_paint_stroke_cap_changed, leading=ft.Icon(ft.Icons.CIRCLE_OUTLINED), tooltip="Rounded ends", style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
+                ft.MenuItemButton("Square", on_click=_paint_stroke_cap_changed, leading=ft.Icon(ft.Icons.SQUARE_OUTLINED), tooltip="Sharp cut ends", style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
             ]
         )
 
         if app.settings.data.get('paint_settings', {}).get('stroke_join', 'miter') == 'round':
-            stroke_cap_icon = ft.Icons.CIRCLE_OUTLINED
+            stroke_join_icon = ft.Icons.CIRCLE_OUTLINED
         elif app.settings.data.get('paint_settings', {}).get('stroke_join', 'miter') == 'bevel':
-            stroke_cap_icon = ft.Icons.SQUARE_OUTLINED
+            stroke_join_icon = ft.Icons.SQUARE_OUTLINED
         else:
-            stroke_cap_icon = ft.Icons.CROP_SQUARE_OUTLINED
-        self.paint_stroke_join_selector = ft.PopupMenuButton(
-            icon=stroke_cap_icon, menu_padding=ft.Padding.all(0),
+            stroke_join_icon = ft.Icons.CROP_SQUARE_OUTLINED
+        paint_stroke_join_selector = ft.SubmenuButton(
+            ft.Row([
+                ft.Text("\tStroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Shape taken at point of two strokes connecting"), 
+                ft.Container(ft.Icon(stroke_join_icon), bgcolor=ft.Colors.SURFACE_CONTAINER, shape=ft.BoxShape.CIRCLE)
+            ]),   
             tooltip="The shape that your brush strokes will have at the join of two line segments.",
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-            bgcolor=ft.Colors.SURFACE_CONTAINER,
-            items=[
-                ft.PopupMenuItem("Miter", icon=ft.Icons.CROP_SQUARE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Sharp corners", mouse_cursor="click"),
-                ft.PopupMenuItem("Round", icon=ft.Icons.CIRCLE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Rounded corners", mouse_cursor="click"),
-                ft.PopupMenuItem("Bevel", icon=ft.Icons.SQUARE_OUTLINED, on_click=_paint_stroke_join_changed, tooltip="Flat cut corners", mouse_cursor="click"),
+            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+            style=ft.ButtonStyle(padding=ft.Padding.all(0), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            controls=[
+                ft.MenuItemButton("Miter", leading=ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED), on_click=_paint_stroke_join_changed, tooltip="Sharp corners", style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
+                ft.MenuItemButton("Round", leading=ft.Icon(ft.Icons.CIRCLE_OUTLINED), on_click=_paint_stroke_join_changed, tooltip="Rounded corners", style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
+                ft.MenuItemButton("Bevel", leading=ft.Icon(ft.Icons.SQUARE_OUTLINED), on_click=_paint_stroke_join_changed, tooltip="Flat cut corners", style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
             ]
         )
 
@@ -683,45 +700,44 @@ class CanvasRail(Rail):
             on_change_end=_paint_stroke_blur_changed  
         )
 
-        if app.settings.data.get('paint_settings', {}).get('blend_mode', None) is None:
-            paint_blend_mode_icon = ft.Icons.BLUR_ON_OUTLINED
-        else:
-            paint_blend_mode_icon = ft.Icons.BLUR_OFF_OUTLINED
+        
 
         
-        self.paint_blend_mode_selector = ft.PopupMenuButton(
-            icon=paint_blend_mode_icon, menu_padding=ft.Padding.all(0),
+        paint_blend_mode_selector = ft.SubmenuButton(
+            f"Blend Mode: {self._set_blend_mode_label()}", 
             tooltip="Current blend effects applied to your brush strokes. Select to change.",
-            items=[
-                ft.PopupMenuItem("None", icon=ft.Icons.BLUR_OFF_OUTLINED, on_click=_paint_blend_mode_changed, data=None, tooltip="No blend mode"),
-                ft.PopupMenuItem("Clear", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="clear", tooltip="Clear the destination where the source is drawn, leaving it transparent"),
-                ft.PopupMenuItem("Color", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="color", tooltip="Take the hue and saturation of the source image, and the luminosity of the destination image"),
-                ft.PopupMenuItem("Color Burn", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="color_burn", tooltip="Divide the inverse of the destination by the source, and inverse the result"),
-                ft.PopupMenuItem("Color Dodge", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="color_dodge", tooltip="Divide the destination by the inverse of the source"),
-                ft.PopupMenuItem("Darken", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="darken", tooltip="Composite the source and destination image by choosing the lowest value from each color channel"),
-                ft.PopupMenuItem("Difference", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="difference", tooltip="Subtract the smaller value from the bigger value for each channel"),
-                ft.PopupMenuItem("Destination", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst", tooltip="Drop the source image, only paint the destination image"),
-                ft.PopupMenuItem("Destination Atop Source", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst_a_top", tooltip="Composite the destination image over the source image, but only where it overlaps the source"),
-                ft.PopupMenuItem("Destination In", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst_in", tooltip="Show the destination image, but only where the two images overlap. The source image is not rendered, it is treated merely as a mask. The color channels of the source are ignored, only the opacity has an effect"),
-                ft.PopupMenuItem("Destination Out", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst_out", tooltip="Show the destination image, but only where the two images do not overlap. The source image is not rendered, it is treated merely as a mask. The color channels of the source are ignored, only the opacity has an effect"),
-                ft.PopupMenuItem("Destination Over", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="dst_over", tooltip="Composite the source image under the destination image"),
-                ft.PopupMenuItem("Exclusion", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="exclusion", tooltip="Subtract double the product of the two images from the sum of the two images."),
-                ft.PopupMenuItem("Hard Light", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="hard_light", tooltip="Multiply the components of the source and destination images after adjusting them to favor the source"),
-                ft.PopupMenuItem("Hue", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="hue", tooltip="Take the hue of the source image, and the saturation and luminosity of the destination image"),
-                ft.PopupMenuItem("Lighten", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="lighten", tooltip="Composite the source and destination image by choosing the highest value from each color channel"),
-                ft.PopupMenuItem("Luminosity", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="luminosity", tooltip="Take the luminosity of the source image, and the hue and saturation of the destination image"),
-                ft.PopupMenuItem("Modulate", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="modulate", tooltip="Multiply the color components of the source and destination images"),
-                ft.PopupMenuItem("Multiply", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="multiply", tooltip="Multiply the components of the source and destination images, including the alpha channel"),
-                ft.PopupMenuItem("Overlay", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="overlay", tooltip="Multiply the components of the source and destination images after adjusting them to favor the destination"),
-                ft.PopupMenuItem("Plus", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="plus", tooltip="Sum the components of the source and destination images"),
-                ft.PopupMenuItem("Saturation", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="saturation", tooltip="Take the saturation of the source image, and the hue and luminosity of the destination image"),
-                ft.PopupMenuItem("Screen", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="screen", tooltip="Multiply the inverse of the components of the source and destination images, and inverse the result"),
-                ft.PopupMenuItem("Soft Light", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="soft_light", tooltip="Somewhere between Overlay and Color blend modes"),
-                ft.PopupMenuItem("Source", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="src", tooltip="Drop the destination image, only paint the source image"),
-                ft.PopupMenuItem("Soure Atop Destination", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="src_a_top", tooltip="Composite the source image over the destination image, but only where it overlaps the destination"),
-                ft.PopupMenuItem("Source In", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="src_in", tooltip="Show the source image, but only where the two images overlap. The destination image is not rendered, it is treated merely as a mask. The color channels of the destination are ignored, only the opacity has an effect"),
-                ft.PopupMenuItem("Source Out", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="src_out", tooltip="Show the source image, but only where the two images do not overlap. The destination image is not rendered, it is treated merely as a mask. The color channels of the destination are ignored, only the opacity has an effect"),
-                ft.PopupMenuItem("XOR", icon=ft.Icons.BLUR_ON_OUTLINED, on_click=_paint_blend_mode_changed, data="xor", tooltip="Apply a bitwise xor operator to the source and destination images. This leaves transparency where they would overlap"),
+            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+            style=ft.ButtonStyle(padding=ft.Padding.all(0), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            controls=[
+                ft.MenuItemButton("None",  on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data=None, tooltip="No blend mode"),
+                ft.MenuItemButton("Clear", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="clear", tooltip="Clear the destination where the source is drawn, leaving it transparent"),
+                ft.MenuItemButton("Color", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="color", tooltip="Take the hue and saturation of the source image, and the luminosity of the destination image"),
+                ft.MenuItemButton("Color Burn", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="color_burn", tooltip="Divide the inverse of the destination by the source, and inverse the result"),
+                ft.MenuItemButton("Color Dodge", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="color_dodge", tooltip="Divide the destination by the inverse of the source"),
+                ft.MenuItemButton("Darken", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="darken", tooltip="Composite the source and destination image by choosing the lowest value from each color channel"),
+                ft.MenuItemButton("Difference", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="difference", tooltip="Subtract the smaller value from the bigger value for each channel"),
+                ft.MenuItemButton("Destination", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst", tooltip="Drop the source image, only paint the destination image"),
+                ft.MenuItemButton("Destination Atop Source", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst_a_top", tooltip="Composite the destination image over the source image, but only where it overlaps the source"),
+                ft.MenuItemButton("Destination In", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst_in", tooltip="Show the destination image, but only where the two images overlap. The source image is not rendered, it is treated merely as a mask. The color channels of the source are ignored, only the opacity has an effect"),
+                ft.MenuItemButton("Destination Out", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst_out", tooltip="Show the destination image, but only where the two images do not overlap. The source image is not rendered, it is treated merely as a mask. The color channels of the source are ignored, only the opacity has an effect"),
+                ft.MenuItemButton("Destination Over", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst_over", tooltip="Composite the source image under the destination image"),
+                ft.MenuItemButton("Exclusion", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="exclusion", tooltip="Subtract double the product of the two images from the sum of the two images."),
+                ft.MenuItemButton("Hard Light", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="hard_light", tooltip="Multiply the components of the source and destination images after adjusting them to favor the source"),
+                ft.MenuItemButton("Hue", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="hue", tooltip="Take the hue of the source image, and the saturation and luminosity of the destination image"),
+                ft.MenuItemButton("Lighten", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="lighten", tooltip="Composite the source and destination image by choosing the highest value from each color channel"),
+                ft.MenuItemButton("Luminosity", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="luminosity", tooltip="Take the luminosity of the source image, and the hue and saturation of the destination image"),
+                ft.MenuItemButton("Modulate", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="modulate", tooltip="Multiply the color components of the source and destination images"),
+                ft.MenuItemButton("Multiply", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="multiply", tooltip="Multiply the components of the source and destination images, including the alpha channel"),
+                ft.MenuItemButton("Overlay", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="overlay", tooltip="Multiply the components of the source and destination images after adjusting them to favor the destination"),
+                ft.MenuItemButton("Plus", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="plus", tooltip="Sum the components of the source and destination images"),
+                ft.MenuItemButton("Saturation", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="saturation", tooltip="Take the saturation of the source image, and the hue and luminosity of the destination image"),
+                ft.MenuItemButton("Screen", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="screen", tooltip="Multiply the inverse of the components of the source and destination images, and inverse the result"),
+                ft.MenuItemButton("Soft Light", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="soft_light", tooltip="Somewhere between Overlay and Color blend modes"),
+                ft.MenuItemButton("Source", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="src", tooltip="Drop the destination image, only paint the source image"),
+                ft.MenuItemButton("Soure Atop Destination", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="src_a_top", tooltip="Composite the source image over the destination image, but only where it overlaps the destination"),
+                ft.MenuItemButton("Source In", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="src_in", tooltip="Show the source image, but only where the two images overlap. The destination image is not rendered, it is treated merely as a mask. The color channels of the destination are ignored, only the opacity has an effect"),
+                ft.MenuItemButton("Source Out", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="src_out", tooltip="Show the source image, but only where the two images do not overlap. The destination image is not rendered, it is treated merely as a mask. The color channels of the destination are ignored, only the opacity has an effect"),
+                ft.MenuItemButton("XOR", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="xor", tooltip="Apply a bitwise xor operator to the source and destination images. This leaves transparency where they would overlap"),
             ]
         )
         
@@ -801,16 +817,24 @@ class CanvasRail(Rail):
                     self.paint_width_slider
                 ], spacing=0),      # Size slider
 
-                ft.Row([
-                    ft.Text("\tStroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="End shape of your strokes"), 
-                    ft.Container(self.paint_stroke_cap_selector, bgcolor=ft.Colors.SURFACE_CONTAINER, shape=ft.BoxShape.CIRCLE)
-                ]),     # Stroke cap shape selector
+                
                 #ft.Container(height=10),   # Spacer
+                ft.MenuBar(
+                    [paint_stroke_cap_selector],
+                    style=ft.MenuStyle(
+                        bgcolor="transparent", shadow_color="transparent",
+                        shape=ft.RoundedRectangleBorder(radius=10),
+                    ),
+                ),
 
-                ft.Row([
-                    ft.Text("\tStroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Shape taken at point of two strokes connecting"), 
-                    ft.Container(self.paint_stroke_join_selector, bgcolor=ft.Colors.SURFACE_CONTAINER, shape=ft.BoxShape.CIRCLE)
-                ]),   # Stroke join shape selector
+                
+                ft.MenuBar(
+                    [paint_stroke_join_selector],
+                    style=ft.MenuStyle(
+                        bgcolor="transparent", shadow_color="transparent",
+                        shape=ft.RoundedRectangleBorder(radius=10),
+                    ),
+                ),
                 #ft.Container(height=10),   # Spacer
  
                 # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
@@ -823,7 +847,13 @@ class CanvasRail(Rail):
                 #ft.Container(height=10),   # Spacer
 
 
-                ft.Row([self.paint_blend_mode_label, self.paint_blend_mode_selector])  # Not rendering correctly so disabled
+                ft.MenuBar(
+                    [paint_blend_mode_selector],
+                    style=ft.MenuStyle(
+                        bgcolor="transparent", shadow_color="transparent",
+                        shape=ft.RoundedRectangleBorder(radius=10),
+                    ),
+                )
 
             ]
         )
@@ -847,5 +877,5 @@ class CanvasRail(Rail):
         # Apply the update
         try:
             self.update()
-        except Exception as e:
+        except Exception:
             pass
