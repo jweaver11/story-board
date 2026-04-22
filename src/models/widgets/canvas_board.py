@@ -150,13 +150,10 @@ class CanvasBoard(Widget):
 
         # Clear and set our current path and state to match it
         self.active_path = cv.Path(elements=[], paint=paint_settings)
-        self.state.paths.clear()
-        self.state.paths.append({'elements': [], 'paint': paint_settings})
 
         # Move to our starting position for this element
         move_to_element = cv.Path.MoveTo(e.local_position.x, e.local_position.y)
         self.active_path.elements.append(move_to_element)
-        self.state.paths[0]['elements'].append((move_to_element.__dict__))
 
         # Add the path to the canvas so we can see it
         canvas.shapes.append(self.active_path)
@@ -177,7 +174,6 @@ class CanvasBoard(Widget):
 
         # Add the declared element to our current path and state paths
         self.active_path.elements.append(path_element)
-        self.state.paths[0]['elements'].append((path_element.__dict__))  
 
         self.active_path.update()
         # Update our state x and y for the next segment
@@ -219,9 +215,7 @@ class CanvasBoard(Widget):
             # Must clear the capture or weird UI bugs
             await canvas.clear_capture()
 
-            # Clear the current state
-            self.state.paths[0]['elements'].clear()
-            self.state.points.clear()
+            
 
         except Exception as e:
             print("failed to save canvas", e)
@@ -537,6 +531,7 @@ class CanvasBoard(Widget):
 
         description_tf = TextField(
             expand=True, value=self.data.get('description', ""), dense=True, multiline=True,
+            label="Description",
             capitalization=ft.TextCapitalization.SENTENCES, 
             on_blur=lambda e: self.p.run_task(self.change_data, **{'description': e.control.value}),
             hint_text="Description of the scope of this Canvas Board..."       
@@ -740,12 +735,8 @@ class CanvasBoard(Widget):
                     
             return controls
         
-
-        
         # Labels for our matrix data (columns)
         matrix_labels = ft.Row(_get_matrix_label_controls(), spacing=0, scroll="none")
-       
-
 
         matrix_grid_view = ft.Column(_get_matrix_data_controls(), spacing=0, scroll="auto", tight=True, expand=True)
 
@@ -755,30 +746,31 @@ class CanvasBoard(Widget):
             expand=True, scroll="none", spacing=0,
             controls=[                 
             
-                ft.Container(height=10), 
-                ft.Row([
-                    ft.Container(width=10), 
-                    ft.Text("\tDescription", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                ], spacing=0),
+                #ft.Container(height=10), 
+                #ft.Row([
+                    #ft.Container(width=10), 
+                    #ft.Text("\tDescription", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+                #], spacing=0),
 
-                ft.Container(ft.Row([description_tf]), padding=ft.Padding.all(10)),
-                ft.Container(height=10), 
+                #ft.Container(ft.Row([description_tf]), padding=ft.Padding.all(10)),
+                #ft.Container(height=10), 
                 
                 matrix_labels,
                 ft.Divider(2, 2),
                         
                 matrix_grid_view,
-                ft.Container(height=10), 
+                #ft.Container(height=10), 
+                #ft.Divider(2, 2),
                 
                 ft.Row([
                     ft.TextButton(
                         "Add New Row",
-                        ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
+                        #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
                         on_click=self._new_row_clicked,
                         style=ft.ButtonStyle(self.data.get('color', ft.Colors.PRIMARY), icon_size=20, mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
                     ),
-                    ft.Container()
-                ], vertical_alignment=ft.CrossAxisAlignment.START)
+                    description_tf
+                ], vertical_alignment=ft.CrossAxisAlignment.START, spacing=0)
                 
 
             ])
