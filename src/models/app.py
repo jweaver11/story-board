@@ -86,7 +86,7 @@ class App:
 
         # Set our logic when page window is resized
         page.on_resize = app.settings.page_resized
-        page.on_close = app.settings.page_closed
+        page.on_close = app.settings.save_story
 
 
       # Called on app startup in main

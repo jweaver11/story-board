@@ -67,10 +67,8 @@ class Document(Widget):
         self.load_comments()
         self.load_reference_images()
 
-        
-
         if self.visible:
-            self.reload_widget()         # Build our widget if it's visible on init
+            self.reload_widget()         # Build our widget if it's visible on init        
 
     # Called when our canvas resizes
     async def _get_size(self, e: ft.LayoutSizeChangeEvent[ft.Container]):
@@ -154,11 +152,7 @@ class Document(Widget):
         self.mini_widgets.append(reference_image)
         self.p.run_task(reference_image.save_dict)
     
-    # Will be called when we have a flet quill
-    def _save_document(self, text_data: list):
-        ''' Saves our document text data to our data dictionary '''
-        self.data['document_data'] = text_data
-        self.p.run_task(self.save_dict)
+   
 
     async def _create_reference_image_clicked(self, e):
 
@@ -189,41 +183,47 @@ class Document(Widget):
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
+        async def _save_quill():
+            ''' Saves our quill data, but marks that it needs to be saved '''
+        
+            self.data['document_data'] = await quill_editor.save()
+            self.save_counter += 1
+            if self.save_counter >= 100:   # Dont make file writes to often, since default is 15 changes
+                await self.save_dict()
+
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-
-        #quill = FletQuill() # Put inside document container
-        toolbar = FletQuillToolbar(
-            controller_id="page_1",  # starts controlling page 1
-        )
-
-        editor = FletQuillEditor(
-            controller_id="page_1",
-            text_data=[{"insert": "Hello from the combined control!\n"}],
-            #text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),
-            placeholder_text="Start your masterpiece here..."
-        )
-
         quill = FletQuill(
-                show_toolbar_divider=False,
-                center_toolbar=False,
-                text_data=[{"insert": "Hello from the combined control!\n"}],
-                
-            )
+            show_toolbar_divider=False,
+            center_toolbar=False,
+            text_data=[{"insert": "Hello from the combined control!\n"}],
+        )
         
-        async def _save_quill(e):
-            data = await quill.save()
-            print("Saved content:", data)
+        quill_toolbar = FletQuillToolbar(
+            show_toolbar_divider=False,
+                center_toolbar=True,
+        )
+        quill_editor = FletQuillEditor(
+            text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),
+            placeholder_text="Start your masterpiece here...",
+        )
 
         # Holds our flet quill
         document_container = ft.Container(
-            expand=3, #margin=ft.Margin.symmetric(vertical=40, horizontal=40),
-            #border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
-            #border_radius=ft.BorderRadius.all(10),
+            expand=3, 
             alignment=ft.Alignment.TOP_CENTER, 
-            #padding=ft.Padding.all(72),
-            content=ft.Column([quill, ft.Button("Save", on_click=_save_quill)], expand=True),
+            padding=ft.Padding.all(10),
+            content=ft.Column([
+                quill_toolbar, 
+                ft.Container(
+                    ft.KeyboardListener(quill_editor, on_key_down=_save_quill, expand=True),
+                    expand=True, 
+                    border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
+                    border_radius=ft.BorderRadius.all(4),
+                    padding=ft.Padding.all(20),  
+                ),
+            ], expand=True, spacing=0),
             #height=1200,
             #aspect_ratio=8.5/11.0,  # paper-like ratio
         )

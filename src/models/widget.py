@@ -316,7 +316,7 @@ class Widget(ft.Container):
             self.directory_path = new_directory
             self.data['directory_path'] = new_directory
             self.data['key'] = new_key
-            self.save_counter = 100         # Force a save to file call
+            self.save_counter = 1000        # Force a save to file call
             self.p.run_task(self.save_dict)
             await asyncio.sleep(0.2)    # Make sure file has time to save before reload
 
@@ -354,7 +354,7 @@ class Widget(ft.Container):
         os.rename(old_file_path, self.data['key'] + ".json")  
 
         # Save our data to this new file
-        self.save_counter = 100         # Force a save to file call
+        self.save_counter = 1000         # Force a save to file call
         self.p.run_task(self.save_dict)      
 
         await asyncio.sleep(0.2)     # Wait for file writes to finish and take effect                     
@@ -492,7 +492,7 @@ class Widget(ft.Container):
         
         self.data['visible'] = True
         self.visible = True
-        self.save_counter = 100     # Force a file save
+        self.save_counter = 1000     # Force a file save
         await self.save_dict()
 
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
