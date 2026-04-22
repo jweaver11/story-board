@@ -429,12 +429,6 @@ class Settings(ft.View):
                     dense=True, data="category",
                 ),
             ]),   
-
-            ft.TextButton(      # Reorder workspaces rail button
-                "Reorder Workspaces", icon=ft.Icons.REORDER_ROUNDED,
-                on_click=lambda e: self.workspaces_rail.toggle_reorder_rail(story=self.story),
-                tooltip="Reorder the workspaces on the rail",
-            ), 
         ])
 
         return content
