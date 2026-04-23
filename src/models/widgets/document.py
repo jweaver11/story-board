@@ -257,13 +257,15 @@ class Document(Widget):
             else:
                 info_column.controls.append(ft.Container(expand=True))  # Little padding at the end of the list
 
+        
+
         info_container = ft.Container(
             ft.Column([
                 ft.Row([
                     ft.Text(
                         f"\t{self.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
                         color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
-                        ),
+                    ),
                     ft.PopupMenuButton(
                         icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, icon_color=self.data.get('color', "primary"),
                         tooltip="Create new comment or reference image",

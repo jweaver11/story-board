@@ -37,6 +37,8 @@ class CanvasBoard(Widget):
             is_rebuilt = is_rebuilt
         )
 
+        self.body_container.padding = ft.Padding.only(bottom=10)
+
         # Verifies this object has the required data fields, and creates them if not
         verify_data(
             object=self,   # Pass in our own data so the function can see the actual data we loaded
@@ -125,7 +127,6 @@ class CanvasBoard(Widget):
         
         # Add point to the canvas and our state data
         canvas.shapes.append(point)
-        self.state.points.append((e.local_position.x, e.local_position.y, point.point_mode.value, app.settings.data.get('paint_settings', {})))
 
         # After dragging canvas widget, it loses page reference and can't update, so the exception handles that.
         try:
@@ -183,10 +184,6 @@ class CanvasBoard(Widget):
     async def save_canvas(self, e: ft.DragEndEvent):
         """ Saves our paths to our canvas data for storage """
         
-
-        #------
-        # TODO: Set a shapes limit on canvas to clear shapes and re-set background after 30 or so
-
         row = e.control.data.get('row')
         column = e.control.data.get('column')
         canvas: cv.Canvas = e.control.parent
@@ -215,7 +212,10 @@ class CanvasBoard(Widget):
             # Must clear the capture or weird UI bugs
             await canvas.clear_capture()
 
-            
+            if len(canvas.shapes) > 30:   # Limit our canvas to 30 shapes to save memory, and clear the canvas if we exceed that
+                canvas.shapes.clear()
+                canvas.shapes.append(cv.Image(encoded_capture, 0, 0, 200, 200))   # Re-add most reccent capture as the only shape on the canvas after clearing
+                canvas.update()
 
         except Exception as e:
             print("failed to save canvas", e)
@@ -745,40 +745,28 @@ class CanvasBoard(Widget):
         body = ft.Column(
             expand=True, scroll="none", spacing=0,
             controls=[                 
-            
-                #ft.Container(height=10), 
-                #ft.Row([
-                    #ft.Container(width=10), 
-                    #ft.Text("\tDescription", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-                #], spacing=0),
-
-                #ft.Container(ft.Row([description_tf]), padding=ft.Padding.all(10)),
-                #ft.Container(height=10), 
                 
                 matrix_labels,
                 ft.Divider(2, 2),
                         
                 matrix_grid_view,
-                #ft.Container(height=10), 
-                #ft.Divider(2, 2),
+                ft.Container(height=10),
                 
                 ft.Row([
                     ft.TextButton(
                         "Add New Row",
-                        #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
                         on_click=self._new_row_clicked,
                         style=ft.ButtonStyle(self.data.get('color', ft.Colors.PRIMARY), icon_size=20, mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
                     ),
-                    description_tf
-                ], vertical_alignment=ft.CrossAxisAlignment.START, spacing=0)
-                
+                    description_tf,
+                    ft.Container(width=10)
+                ], vertical_alignment=ft.CrossAxisAlignment.CENTER, spacing=0)
 
             ])
     
 
         self.body_container.content = body
 
-        # TODO: Add undo-redo buttons like our canvas has for our sketches
         # Add choose file to preview options
 
         # Call render widget (from Widget class) to update the UI

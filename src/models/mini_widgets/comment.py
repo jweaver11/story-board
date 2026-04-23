@@ -69,7 +69,7 @@ class Comment(MiniWidget):
         title_control = ft.GestureDetector(
             content=ft.Row([
                 ft.Text(
-                    f"\t\t{self.data['title']}\t\t", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), 
+                    f"{self.data['title']}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), 
                     color=self.data.get('color', None), weight=ft.FontWeight.BOLD, expand=True,
                 ),
                 options_button := ft.IconButton(
@@ -79,12 +79,13 @@ class Comment(MiniWidget):
                     mouse_cursor=ft.MouseCursor.CLICK,
                 ),
             ], height=35),
-            on_double_tap=self._rename_clicked,
+            #on_double_tap=self._rename_clicked,
             on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
             on_hover=self._set_menu_coords,
             on_enter=_show_options_button,
             on_exit=_hide_options_button,
-            mouse_cursor="click", hover_interval=500,
+            #mouse_cursor="click", 
+            hover_interval=100,
         )
             
         
@@ -98,7 +99,7 @@ class Comment(MiniWidget):
 
         content = ft.Column(
             tight=True, 
-            scroll="auto", alignment=ft.MainAxisAlignment.START, #spacing=6,
+            alignment=ft.MainAxisAlignment.START, #spacing=6,
             controls=[
                 title_control,
                 content_tf,
