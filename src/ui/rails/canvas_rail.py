@@ -982,5 +982,4 @@ class CanvasRail(Rail):
 
 # TODO: 
 # Add shadow Default brush
-# Custom saved colors and custom brushes
 # Add txt input for brush size as well

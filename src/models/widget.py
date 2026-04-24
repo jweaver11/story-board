@@ -124,6 +124,7 @@ class Widget(ft.Container):
             case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
             case "item": self.icon = ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED)
             case "chart": self.icon = ft.Icon(ft.Icons.INSERT_CHART_OUTLINED)
+            case "comic_preview": self.icon = ft.Icon(ft.Icons.SLIDESHOW_OUTLINED)
             case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
 
 

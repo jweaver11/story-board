@@ -119,6 +119,7 @@ class Settings(ft.View):
                 'default_world_color': "primary",
                 'default_item_color': "primary",
                 'default_chart_color': "primary",
+                'default_comic_preview_color': "primary",
 
                 'default_category_color': "primary",    # Categories thrown in here
 
@@ -135,7 +136,7 @@ class Settings(ft.View):
                 'default_plotline_pin_location': "main",
                 #'default_world_pin_location': "right",
                 'default_item_pin_location': "main",
-                'default_object_pin_location': "main",
+                'default_comic_preview_pin_location': "main",
                 #'default_item_pin_location': "right",
                 'default_world_pin_location': "main",
                 'default_chart_pin_location': "main",

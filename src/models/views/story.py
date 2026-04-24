@@ -359,7 +359,7 @@ class Story(ft.View):
         from models.widgets.world import World
         from models.widgets.item import Item
         from models.widgets.chart import Chart
-        #from models.widgets.object import Object
+        from models.widgets.comic_preview import ComicPreview
 
         # If we are being re-loaded after settings or another story, clear our content so we can load it fresh
         self.widgets.clear()
@@ -482,6 +482,14 @@ class Story(ft.View):
                                     story=self,
                                     data=widget_data,
                                 )
+                            case "comic_preview":
+                                widget = ComicPreview(
+                                    title=widget_data.get('title', 'Untitled Document'),
+                                    page=self.p,
+                                    directory_path=dir_path,
+                                    story=self,
+                                    data=widget_data,
+                                )
                             case _:
                                 print("Widget tag not valid Tag: ", tag)
 
@@ -507,6 +515,7 @@ class Story(ft.View):
         from models.widgets.item import Item
         from models.widgets.world import World
         from models.widgets.chart import Chart
+        from models.widgets.comic_preview import ComicPreview
         from models.app import app
 
         if not self.blocker.visible:
@@ -546,10 +555,10 @@ class Story(ft.View):
                 widget = Item(title, self.p, directory_path, self, data)  
             case "chart":
                 widget = Chart(title, self.p, directory_path, self, data, type=chart_type)
+            case "comic_preview":
+                widget = ComicPreview(title, self.p, directory_path, self, data)
             case _:
                 self.p.show_dialog(SnackBar(f"Error creating widget {title}: Invalid tag {tag}"))
-
-        
         
 
         # Force a file save and write
@@ -585,6 +594,7 @@ class Story(ft.View):
         from models.widgets.world import World
         from models.widgets.item import Item
         from models.widgets.chart import Chart
+        from models.widgets.comic_preview import ComicPreview
         from models.mini_widgets.plotline_arc import Arc
         from models.mini_widgets.plotline_plot_point import PlotPoint
 
@@ -693,6 +703,15 @@ class Story(ft.View):
 
             case "chart":
                 new_widget = Chart(
+                    title=widget.data.get('title', 'Untitled Document'),
+                    page=self.p,
+                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=widget.data,
+                    is_rebuilt=True
+                )
+            case "comic_preview":
+                new_widget = ComicPreview(
                     title=widget.data.get('title', 'Untitled Document'),
                     page=self.p,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),

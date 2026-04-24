@@ -198,6 +198,8 @@ class Rail(IsolatedColumn):
                 self.new_item_textfield.hint_text = "World Title"
                 template_name = str(e.control.content)
                 self.new_item_textfield.label = f"{template_name}"
+            case "comic_preview":
+                self.new_item_textfield.hint_text = "Comic Preview Title"
             case _:
                 if ":" in tag:
                     self.new_item_textfield.hint_text = f"{tag.split(':')[0].capitalize()} Title"
