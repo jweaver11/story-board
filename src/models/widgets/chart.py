@@ -257,7 +257,7 @@ class Chart(Widget):
                         ft.Row([
                             ft.Text("Rods", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),
                             ft.TextButton(
-                                "Add New Rod", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                                "Add New Rod", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                                 style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD)), 
                                 on_click=_add_rod_clicked, 
                                 data=idx
@@ -314,19 +314,19 @@ class Chart(Widget):
                 # Update our data and chart to reflect
                 case "left":
                     self.data['bar_data']['left_axis_title'] = new_title
-                    chart.left_axis.title = ft.Text(new_title)
+                    chart.left_axis.title = ft.Text(new_title, theme_style=ft.TextThemeStyle.LABEL_LARGE,  size=18)
                     
                 case "bottom":
                     self.data['bar_data']['bottom_axis_title'] = new_title
-                    chart.bottom_axis.title = ft.Text(new_title)
+                    chart.bottom_axis.title = ft.Text(new_title, theme_style=ft.TextThemeStyle.LABEL_LARGE,  size=18)
                     
                 case "top":
                     self.data['bar_data']['top_axis_title'] = new_title
-                    chart.top_axis.title = ft.Text(new_title)
+                    chart.top_axis.title = ft.Text(new_title, theme_style=ft.TextThemeStyle.LABEL_LARGE,  size=18)
                     
                 case "right":
                     self.data['bar_data']['right_axis_title'] = new_title
-                    chart.right_axis.title = ft.Text(new_title)
+                    chart.right_axis.title = ft.Text(new_title, theme_style=ft.TextThemeStyle.LABEL_LARGE,  size=18)
 
 
             await self.save_dict()
@@ -337,11 +337,11 @@ class Chart(Widget):
             if e.control.value == "" or e.control.value is None:
                 return
             new_value = int(e.control.value)
-
-            self.data['bar_data']['max_y'] = new_value            
+            self.data['bar_data']['max_y'] = new_value       
 
             await self.save_dict()
-            self.reload_widget()
+            chart.max_y = new_value
+            chart.update()   
 
         async def _set_show_labels(e):
             self.data['bar_data']['show_labels'] = e.control.value

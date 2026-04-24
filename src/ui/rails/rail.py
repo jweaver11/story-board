@@ -178,8 +178,7 @@ class Rail(IsolatedColumn):
         match tag:
             case "character_connection_map":
                 self.new_item_textfield.hint_text = "Character Connection Map Title"
-            case "world_building":
-                self.new_item_textfield.hint_text = "World Building Name"
+            
             case "plot_point": 
                 self.new_item_textfield.hint_text = "Plot Point Title"
             case "character" | "folder" | "item" | "object":
@@ -198,7 +197,7 @@ class Rail(IsolatedColumn):
             case "world":
                 self.new_item_textfield.hint_text = "World Title"
                 template_name = str(e.control.content)
-                self.new_item_textfield.label = f"{template_name} Template"
+                self.new_item_textfield.label = f"{template_name}"
             case _:
                 if ":" in tag:
                     self.new_item_textfield.hint_text = f"{tag.split(':')[0].capitalize()} Title"
