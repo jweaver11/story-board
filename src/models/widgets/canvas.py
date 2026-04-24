@@ -244,6 +244,8 @@ class Canvas(Widget):
     async def start_new_stroke(self, e: ft.DragStartEvent):
         ''' Set our initial starting x and y coordinates for the element we're drawing. '''
 
+        
+
         canvas: cv.Canvas = e.control.parent
 
         # Grab our style so we can compare it
@@ -259,8 +261,9 @@ class Canvas(Widget):
         # Check if we're using a blend mode. If yes, make sure to 
         #if app.settings.data.get('paint_settings', {}).get('blend_mode', None) is not None:
             #if app.settings.data.get('paint_settings', {}).get('blend_mode', None) == "clear":
-        if app.settings.data.get('canvas_settings', {}).get('erase_mode', False):
-            print("Erase mode is tru")
+
+        # If we're using the erase tool, set the paint settings to erase
+        if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") == "tool" and app.settings.data.get('canvas_settings', {}).get('current_tool_name', "") == "erase":
             safe_paint_settings['blend_mode'] = "clear"
             safe_paint_settings['blur_image'] = 0
             style = "stroke"

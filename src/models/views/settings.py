@@ -68,12 +68,12 @@ class Settings(ft.View):
 
                     # Stroke styles
                     'color': "#FFFFFF,1.0",     # Hex color folowed by opacity
-                    'stroke_width': 3,
-                    'style': "stroke",
-                    'stroke_cap': "round",
-                    'stroke_join': "round",
+                    'stroke_width': 3,          # Size of the strokees
+                    'style': "stroke",          # style of the strokes. Either stroke or fill
+                    'stroke_cap': "round",      # Each end of the strokes shape
+                    'stroke_join': "round",     # How corners between strokes are drawn
                     'stroke_miter_limit': 10, 
-                    'stroke_dash_pattern': None,
+                    'stroke_dash_pattern': None,         # If we should use dashed lines, and the pattern for them
 
                     # Effects
                     'anti_alias': True,
@@ -81,11 +81,12 @@ class Settings(ft.View):
                     'blend_mode': "src_over",
                 },               
 
-                # Other canvas related settings that are not technically paint
+                # Other canvas and drawing settings outside of the brushes paint
                 'canvas_settings':{
-                    'erase_mode': False,                # Whether we're in erase mode or not
+                    'current_control_mode': "draw",      # Either drawing (use brush settings), or tools (use built in tools)
+                    'current_brush_name': "stroke",      # Name of the currently selected brush, either default or custom. Just used for display purposes
+                    'current_tool_name': "erase",        # Current tool or shape being used
                     'saved_brushes': dict,              # Saved brushes the user has created that we can load
-                    'current_brush_name': "stroke",   # Name of the currently selected brush, either default or custom. Just used for display purposes
                 },
 
                 # Settings the user can change in the settings view

@@ -577,9 +577,6 @@ class CanvasInformationDisplay(MiniWidget):
             expand=True, label="Description", value=self.data.get('Description', ""), dense=True, multiline=True,
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=lambda e: self.change_data(**{'Description': e.control.value}),   # When we click out of the text field, we save our changes
-            focus_color=self.widget.data.get('color', None),
-            cursor_color=self.widget.data.get('color', None),
-            focused_border_color=self.widget.data.get('color', None),
             label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
         )
 
@@ -689,9 +686,9 @@ class CanvasInformationDisplay(MiniWidget):
 
         notes_label = ft.Row([
             ft.Container(width=6),
-            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None), selectable=True),
             ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), tooltip="Add Note",
+                ft.Icons.NEW_LABEL_OUTLINED, self.widget.data.get('color', "primary"), tooltip="Add Note",
                 on_click=self._new_note_clicked,
                 mouse_cursor="click"
             )
