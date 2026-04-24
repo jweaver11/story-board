@@ -174,18 +174,32 @@ class CanvasRail(Rail):
         in_tool_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") == "tool"
         match app.settings.data.get('canvas_settings', {}).get('current_tool_name', ""):
             case "erase": 
-                return ft.Icon(ft.Icons.AUTO_FIX_NORMAL if in_tool_mode else ft.Icons.AUTO_FIX_NORMAL_OUTLINED, ft.Colors.PRIMARY, scale=0.8)
+                return ft.Icon(ft.Icons.AUTO_FIX_NORMAL if in_tool_mode else ft.Icons.AUTO_FIX_NORMAL_OUTLINED, ft.Colors.PRIMARY)
+            case "line":
+                return ft.Icon(ft.Icons.REMOVE if in_tool_mode else ft.Icons.REMOVE_OUTLINED, ft.Colors.PRIMARY)
+            case "text":
+                return ft.Icon(ft.Icons.TEXT_FIELDS if in_tool_mode else ft.Icons.TEXT_FIELDS_OUTLINED, ft.Colors.PRIMARY)
+            case "oval":
+                return ft.Icon(ft.Icons.CIRCLE if in_tool_mode else ft.Icons.CIRCLE_OUTLINED, ft.Colors.PRIMARY)
+            case "arc":
+                return ft.Icon(ft.CupertinoIcons.CIRCLE_RIGHTHALF_FILL, ft.Colors.PRIMARY, rotate=math.pi/2)
+            case "rectangle":
+                return ft.Icon(ft.Icons.RECTANGLE if in_tool_mode else ft.Icons.RECTANGLE_OUTLINED, ft.Colors.PRIMARY)
+            case "triangle":
+                return ft.Icon(ft.CupertinoIcons.ARROWTRIANGLE_UP_FILL if in_tool_mode else ft.CupertinoIcons.ARROWTRIANGLE_UP, ft.Colors.PRIMARY)
             case _:
                 return ft.Icon(ft.Icons.BUILD if in_tool_mode else ft.Icons.BUILD_OUTLINED, ft.Colors.PRIMARY, scale=0.8)
+            
+    async def _set_active_tool(self, e):
+        tool_name = e.control.data
+        app.settings.data['canvas_settings']['current_control_mode'] = "tool"
+        app.settings.data['canvas_settings']['current_tool_name'] = tool_name
+        await app.settings.save_dict()
+        self.story.active_rail.reload_rail()
 
 
     def _get_tool_options(self) -> list[ft.Control]:
         ''' Gets our tool options for the popup menu. '''
-
-        # Arc
-        # Half Circle
-        # Triangle
-        # Oval
 
         return [
             ft.Text("\tTools", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
@@ -194,20 +208,17 @@ class CanvasRail(Rail):
                     ft.Text("Erase", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
                     ft.Icon(ft.Icons.AUTO_FIX_NORMAL, ft.Colors.PRIMARY)
                 ]),
-                expand=True,
-                #on_click=lambda _: self._set_active_tool("erase"),
+                data="erase",
+                on_click=self._set_active_tool,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ),
             ft.MenuItemButton(
-                #data=default_brush_settings,
-                content=ft.Container(
-                    ft.Row([
-                        ft.Text("Line", overflow=ft.TextOverflow.ELLIPSIS, expand=True), 
-                        ft.Icon(ft.Icons.REMOVE, ft.Colors.PRIMARY)
-                    ]),
-                    clip_behavior=ft.ClipBehavior.HARD_EDGE
-                ),
-                #on_click=lambda _: self._set_active_brush(stroke_brush_settings, "Erase"),
+                ft.Row([
+                    ft.Text("Line", overflow=ft.TextOverflow.ELLIPSIS, expand=True), 
+                    ft.Icon(ft.Icons.REMOVE, ft.Colors.PRIMARY)
+                ]),
+                data="line",
+                on_click=self._set_active_tool,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ),
             ft.MenuItemButton(
@@ -215,6 +226,9 @@ class CanvasRail(Rail):
                     ft.Text("Text", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
                     ft.Icon(ft.Icons.TEXT_FIELDS, ft.Colors.PRIMARY)
                 ]),
+                data="text",
+                on_click=self._set_active_tool,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ),
 
             # Shapes we can use
@@ -225,40 +239,41 @@ class CanvasRail(Rail):
                 ft.Row([
                     ft.Text("Oval", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
                     ft.Icon(ft.Icons.CIRCLE, ft.Colors.PRIMARY)
-                ], spacing=4),
-                #on_click=lambda _: self._set_active_tool("circle"),
+                ]),
+                data="oval",
+                on_click=self._set_active_tool,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+            ),
+            ft.MenuItemButton(
+                ft.Row([
+                    ft.Text("Arc", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                    ft.Icon(ft.CupertinoIcons.CIRCLE_RIGHTHALF_FILL, ft.Colors.PRIMARY, rotate=math.pi/2)   
+                ]),
+                data="arc",
+                on_click=self._set_active_tool,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ),
             ft.MenuItemButton(
                 ft.Row([
                     ft.Text("Rectangle", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
                     ft.Icon(ft.Icons.RECTANGLE, ft.Colors.PRIMARY)
-                ], spacing=4),
-                #on_click=lambda _: self._set_active_tool("circle"),
+                ]),
+                data="rectangle",
+                on_click=self._set_active_tool,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ),
             ft.MenuItemButton(
-                #data=default_brush_settings,
-                content=ft.Container(
-                    #ft.Row([ft.Text("Arc", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_brush(arc_brush_settings)], spacing=20),
-                    clip_behavior=ft.ClipBehavior.HARD_EDGE
-                ),
-                #on_click=lambda _: self._set_active_brush(arc_brush_settings, "Arc"),
+                ft.Row([
+                    ft.Text("Triangle", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                    ft.Icon(ft.CupertinoIcons.ARROWTRIANGLE_UP_FILL, ft.Colors.PRIMARY)
+                ]),
+                data="triangle",
+                on_click=self._set_active_tool,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ),
-            ft.MenuItemButton(
-                #data=default_brush_settings,
-                content=ft.Container(
-                    #ft.Row([ft.Text("Semi-Circle", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_brush(half_circle_brush_settings)], spacing=20),
-                    clip_behavior=ft.ClipBehavior.HARD_EDGE
-                ),
-                #on_click=lambda _: self._set_active_brush(half_circle_brush_settings, "Semi-Circle"),
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-            ),
-            # TODO: Add more shapes here
             
-            # TODO: Add more built in options here
-            # Set restriction from naming brushes default or built in tools
+
+            
         ]
 
         
@@ -408,6 +423,15 @@ class CanvasRail(Rail):
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
                 ),
                 on_click=lambda _: self._set_active_brush(default_brush_settings, name="Default"),
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+            ),       
+            ft.MenuItemButton(
+                data=default_brush_settings,
+                content=ft.Container(
+                    ft.Row([ft.Text("Shadow", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_brush(default_brush_settings)], spacing=20),
+                    clip_behavior=ft.ClipBehavior.HARD_EDGE
+                ),
+                on_click=lambda _: self._set_active_brush(default_brush_settings, name="Shadow"),
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
             ),            
 
@@ -727,7 +751,6 @@ class CanvasRail(Rail):
             style=ft.ButtonStyle(padding=ft.Padding.only(left=4, right=4), alignment=ft.Alignment.CENTER, mouse_cursor="click", bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, shape=ft.RoundedRectangleBorder(radius=4)),
             controls=[
                 ft.MenuItemButton("None",  on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data=None, tooltip="No blend mode"),
-                ft.MenuItemButton("Clear", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="clear", tooltip="Clear the destination where the source is drawn, leaving it transparent"),
                 ft.MenuItemButton("Color", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="color", tooltip="Take the hue and saturation of the source image, and the luminosity of the destination image"),
                 ft.MenuItemButton("Color Burn", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="color_burn", tooltip="Divide the inverse of the destination by the source, and inverse the result"),
                 ft.MenuItemButton("Color Dodge", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="color_dodge", tooltip="Divide the destination by the inverse of the source"),
@@ -780,6 +803,9 @@ class CanvasRail(Rail):
         async def _set_control_mode(e):
             selected_mode = e.control.data
             app.settings.data['canvas_settings']['current_control_mode'] = selected_mode
+            if selected_mode == "draw":
+                if app.settings.data.get('paint_settings', {}).get('blend_mode', "") == "clear":
+                    app.settings.data['paint_settings']['blend_mode'] = "src_over"
             await app.settings.save_dict()
             self.story.active_rail.reload_rail()
 
@@ -820,7 +846,7 @@ class CanvasRail(Rail):
                 ft.Row([
                     ft.Text("Brush Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER, expand=True),
                 ]),
-                ft.Container(height=10),
+                #ft.Container(height=10),
             
    
                 ft.Text(
@@ -841,6 +867,7 @@ class CanvasRail(Rail):
                     ),
                     save_custom_brush_button
                 ], spacing=4),
+                ft.Container(height=10),
 
                 # Brush Selector and Save custom brush button
                 ft.Text(
@@ -859,7 +886,8 @@ class CanvasRail(Rail):
                         ),
                         #expand=True,
                     ),
-                ], spacing=4, wrap=True),    
+                ], spacing=4, wrap=True),  
+                ft.Container(height=10),  
 
                 ft.Text(
                     "\tCurrent Tool", color=ft.Colors.ON_SURFACE, 
@@ -880,14 +908,7 @@ class CanvasRail(Rail):
                 ], spacing=4),
                     
    
-                # TODO: 
-                # Add shapes and shapefill drawing modes. Path will use paint.style.paintingstyle fill or stroke.
-                # Add shadow effect option for paths
-                # Custom saved colors and custom brushes
-                # Add txt input for brush size as well
-                # -------
-                # PS
-                # Selecting tools disables drawing utnil you select brush again?
+                
 
                 ft.Row([
                     ft.Text("\tWidth", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Size of your strokes"), 
@@ -957,3 +978,9 @@ class CanvasRail(Rail):
             self.update()
         except Exception:
             pass
+
+
+# TODO: 
+# Add shadow Default brush
+# Custom saved colors and custom brushes
+# Add txt input for brush size as well

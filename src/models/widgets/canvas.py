@@ -218,14 +218,39 @@ class Canvas(Widget):
         # Clicking decifers if drawing or adding a tool
         # if drawing: add point.
         # else: add tool
-        # Adds a 100x100 shape of selected tool stacked under the controller, and sets it as the active shape to be modified
+        # Adds a 200x200 shape of selected tool stacked under the controller, and sets it as the active shape to be modified
 
-        canvas: cv.Canvas = e.control.parent
+        # Set our paint settings in case we need to change them
+        paint_settings = app.settings.data.get('paint_settings', {}).copy()
+
+        # Check if we're in tool mode, and what tool we're using
+        if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") != "draw":
+
+            tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+            match tool_name:
+
+                # Erase tool - make sure our paint settings don't break the drawing
+                case "erase":
+                    paint_settings['blend_mode'] = "clear"
+                    paint_settings['blur_image'] = 0
+                    paint_settings['style'] = "stroke"
+
+                # Skip lines, since they are drawn normally
+                case "line":
+                    pass
+
+                # All other tools/shapes get added here
+                case _:
+                    # Add the tool here
+                    return
+
+        # If we didn't return, we're either in erase tool or drawing mode
+        canvas: cv.Canvas = e.control.parent    # Set the canvas
 
         # Create the point using our paint settings and point mode
         point = cv.Points(
             points=[(e.local_position.x, e.local_position.y)],
-            paint=ft.Paint(**app.settings.data.get('paint_settings', {})),
+            paint=ft.Paint(**paint_settings),
         )
         
         # Add point to the canvas and our state data
@@ -244,81 +269,87 @@ class Canvas(Widget):
     async def start_new_stroke(self, e: ft.DragStartEvent):
         ''' Set our initial starting x and y coordinates for the element we're drawing. '''
 
-        
-
+        # Grab the canvas and paint settings
         canvas: cv.Canvas = e.control.parent
-
-        # Grab our style so we can compare it
-        style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
-
-        # Make a copy of our paint settings to modify it, since some of the styles are not built in
-        safe_paint_settings = app.settings.data.get('paint_settings', {}).copy()
-
-        # Set either stroke or fill based on custom styles
-        safe_stroke = 'fill' if style.endswith('fill') else 'stroke'
-        safe_paint_settings['style'] = safe_stroke
-
-        # Check if we're using a blend mode. If yes, make sure to 
-        #if app.settings.data.get('paint_settings', {}).get('blend_mode', None) is not None:
-            #if app.settings.data.get('paint_settings', {}).get('blend_mode', None) == "clear":
-
-        # If we're using the erase tool, set the paint settings to erase
-        if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") == "tool" and app.settings.data.get('canvas_settings', {}).get('current_tool_name', "") == "erase":
-            safe_paint_settings['blend_mode'] = "clear"
-            safe_paint_settings['blur_image'] = 0
-            style = "stroke"
+        paint_settings = app.settings.data.get('paint_settings', {}).copy()
     
-
-        # Update state x and y coordinates
+        # Update our state x and y coordinates
         self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
-        # Clear and set our current path and state to match it
-        self.active_path = cv.Path(elements=[], paint=ft.Paint(**safe_paint_settings))
+        # Recreate our active path with correct starting positiuon
+        self.active_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
+        
+        # Check if we're in tool mode, and what tool we're using
+        if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") != "draw":
 
-        # Move to our starting position for this element
-        move_to_element = cv.Path.MoveTo(e.local_position.x, e.local_position.y)
-        self.active_path.elements.append(move_to_element)
+            tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+            match tool_name:
 
+                # Erase tool - make sure our paint settings don't break the drawing
+                case "erase":
+                    paint_settings['blend_mode'] = "clear"
+                    paint_settings['blur_image'] = 0
+                    paint_settings['style'] = "stroke"
+                    self.active_path.paint = ft.Paint(**paint_settings) # Make the active path match the paint
 
-        match style: 
-            # If we're using lineto (straight lines), add that element to the current path and state right away
-            case "lineto":
-                line_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
-                self.active_path.elements.append(line_element)
+                # For line tool - add the first line element to the path
+                case "line":
+                    line_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
+                    self.active_path.elements.append(line_element)
 
-            case "arc":
-                arc_element = cv.Path.Arc(
-                    width=20,
-                    height=20,
+                # Ignore all other tools, as they will control themselves
+                case _:
+                    return
+                
+        else:
+            
+
+            
+
+            # Grab our style so we can compare it
+            '''OLD
+            style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
+            match style: 
+                # If we're using lineto (straight lines), add that element to the current path and state right away
+                case "lineto":
+                    line_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
+                    self.active_path.elements.append(line_element)
+
+                case "arc":
                     
-                    x=e.local_position.x,
-                    y=e.local_position.y,
-                    start_angle=math.pi,
-                    sweep_angle=-math.pi,
-                )
-                self.active_path.elements.append(arc_element)
+                    arc_element = cv.Path.Arc(
+                        width=20,
+                        height=20,
+                        
+                        x=e.local_position.x,
+                        y=e.local_position.y,
+                        start_angle=math.pi,
+                        sweep_angle=-math.pi,
+                    )
+                    self.active_path.elements.append(arc_element)
 
-        # Else if we're using arcto, add that element to the current path and state right away
-            case 'arcto' | 'arctofill':
-                arc_element = cv.Path.ArcTo(
-                    radius=12,
-                    rotation=0,
-                    large_arc=False,
-                    x=e.local_position.x,
-                    y=e.local_position.y,
-                    clockwise=True,
-                )
-                self.active_path.elements.append(arc_element)
+            # Else if we're using arcto, add that element to the current path and state right away
+                case 'arcto' | 'arctofill':
+                    arc_element = cv.Path.ArcTo(
+                        radius=12,
+                        rotation=0,
+                        large_arc=False,
+                        x=e.local_position.x,
+                        y=e.local_position.y,
+                        clockwise=True,
+                    )
+                    self.active_path.elements.append(arc_element)
 
-            #case ''
+                #case ''
+            '''
 
-        #cv.Path.CubicTo()
-        #cv.Path.QuadraticTo()
-        #cv.Path.Oval()
-        #cv.Path.Rect()
-        #cv.Path.
+            #cv.Path.CubicTo()
+            #cv.Path.QuadraticTo()
+            #cv.Path.Oval()
+            #cv.Path.Rect()
+            #cv.Path.
 
-        # Add the path to the canvas so we can see it
+        # Add our path to the canvas so we can see it
         canvas.shapes.append(self.active_path)
         canvas.update()
 
@@ -329,40 +360,61 @@ class Canvas(Widget):
     async def update_stroke(self, e: ft.DragUpdateEvent):
         ''' Determines which drawing tool we're using, and updates accordingly as we drag our mouse '''
 
+        #TODO: Add check here to reduce num of lines based on previous start and end??
+
         # Sampling to improve perforamance. If the line length is too small, we skip it
         dx = e.local_position.x - self.state.x
         dy = e.local_position.y - self.state.y
         if dx * dx + dy * dy < self.min_segment_dist * self.min_segment_dist:
             return
+        
+        paint_settings = app.settings.data.get('paint_settings', {}).copy()
+        
+        # Check if we're in tool mode, and what tool we're using
+        if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") != "draw":
+
+            tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+            match tool_name:
+
+                # Skip erase tool as it will free stroke
+                case "erase":
+                    pass
+
+                # For line tool - Update our straight line element to the current mouse position
+                case "line":
+                    # Set the element and its data
+                    line_element = self.active_path.elements[-1]
+                    line_dict = line_element.__dict__
+
+                    # Update the elements position
+                    line_element.x = e.local_position.x
+                    line_element.y = e.local_position.y
+
+                    # Update the dict to match
+                    line_dict['x'] = line_element.x
+                    line_dict['y'] = line_element.y
+
+                    self.active_path.update()
+                    return
+
+                # Ignore all other tools and return out so we don't draw
+                case _:
+                    return
+                
+        # Everything else is just drawing, so if we didn't return early we add a new line element to our current path
+        path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
+        self.active_path.elements.append(path_element)
+        self.active_path.update()
+            
+        # Update our state x and y positions
+        self.state.x = e.local_position.x
+        self.state.y =  e.local_position.y
 
         # Set our canvas and style
-        style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
+        #style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
+        '''
+        OLD
 
-        canvas: cv.Canvas = e.control.parent
-
-        
-
-        match style:
-        
-            # Straight lines
-            case "lineto":
-            
-                # Set the element and its data
-                line_element = self.active_path.elements[-1]
-                line_dict = line_element.__dict__
-
-                # Update the elements position
-                line_element.x = e.local_position.x
-                line_element.y = e.local_position.y
-
-                # Update the dict to match
-                line_dict['x'] = line_element.x
-                line_dict['y'] = line_element.y
-
-                self.active_path.update()
-                
-                return
-        
             case "arc" | "arcfill":
             
                 # Set the element and its data
@@ -406,24 +458,8 @@ class Canvas(Widget):
         
             # If its not one of our custom styles, use free-draw stroke, which is constantly adding line_to segements
             case _:
-
-
-
-                #TODO: Add check here to reduce num of lines based on previous start and end??
-                # Iffffff free drawing, if we hit max shapes, finish the current shape and add a new one moving to current position
-
-                # Set the path element based on what kind of path we're adding, add it to our current path and our state paths
-                path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
-
-                # Add the declared element to our current path and state paths
-                self.active_path.elements.append(path_element)
-
-                self.active_path.update()
-                
-                    
-                # Update our state x, y, and shape count
-                self.state.x = e.local_position.x
-                self.state.y =  e.local_position.y
+        
+        '''
         
 
     # Called when we release the mouse to stop drawing a line
