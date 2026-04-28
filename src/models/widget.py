@@ -816,6 +816,7 @@ class Widget(ft.Container):
         if not self.no_render_mini_widgets:
             
             self.mini_widgets_wrapper.controls = [mw for mw in self.mini_widgets]
+            
             # Check if any mini widgets are visible, so we show the wrapper or not
             for mw in self.mini_widgets_wrapper.controls:
                 if mw.visible:

@@ -196,6 +196,10 @@ class CanvasRail(Rail):
         app.settings.data['canvas_settings']['current_tool_name'] = tool_name
         await app.settings.save_dict()
         self.story.active_rail.reload_rail()
+        for widget in self.story.widgets:
+            if widget.visible:
+                if widget.data.get('tag') == "canvas":
+                    await widget.set_mouse_cursor()
 
 
     def _get_tool_options(self) -> list[ft.Control]:
@@ -287,6 +291,10 @@ class CanvasRail(Rail):
         self.p.run_task(app.settings.save_dict)
 
         self.story.active_rail.reload_rail()
+        for widget in self.story.widgets:
+            if widget.visible:
+                if widget.data.get('tag') == "canvas":
+                    self.p.run_task(widget.set_mouse_cursor)
 
     # Set the blend mode label based on current mode in settings
     def _set_blend_mode_label(self) -> str:
@@ -799,6 +807,11 @@ class CanvasRail(Rail):
                     app.settings.data['paint_settings']['blend_mode'] = "src_over"
             await app.settings.save_dict()
             self.story.active_rail.reload_rail()
+            for widget in self.story.widgets:
+                if widget.visible:
+                    if widget.data.get('tag') == "canvas":
+                        await widget.set_mouse_cursor()
+
 
         # Buttons that set either to draw or to use a tool
         set_draw_button = ft.IconButton(
@@ -973,3 +986,5 @@ class CanvasRail(Rail):
 
 # TODO: 
 # Add txt input for brush size as well
+# Add txt size for text tool
+# Build in text bubble shapes for voice lines (up-left, up-right, down-left, down-right). See canvas example on flet docs, they have one

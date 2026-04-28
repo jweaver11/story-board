@@ -20,6 +20,7 @@ from io import BytesIO
 from PIL import Image
 import asyncio
 from styles.menu_option_style import MenuOptionStyle
+from models.dataclasses.canvas_shape import CanvasShape    
 
 MAX_SHAPES_BEFORE_CAPTURE = 30   # Prevent lag from too many paths on the canvas without being removed
 MAX_UNDO_LIST_TASKS = 30         # Max number of undo tasks to store in our undo list before we start deleting old ones
@@ -109,6 +110,7 @@ class Canvas(Widget):
 
     def _load_layers(self):
         self.layers.clear()
+        mouse_cursor = ft.MouseCursor.PRECISE if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") == "draw" else ft.MouseCursor.CLICK
         
         for idx, layer in enumerate(self.data.get('canvas_data', {}).get('Layers', [])):
 
@@ -120,7 +122,7 @@ class Canvas(Widget):
                 cv.Canvas(
                     data=name,        # Save the index of this layer so we know where to save it in our data
                     content=ft.GestureDetector(
-                        mouse_cursor=ft.MouseCursor.PRECISE,
+                        mouse_cursor=mouse_cursor,
                         on_pan_start=self.start_new_stroke,         # Starts a new brush stroke with current paint settings
                         on_pan_update=self.update_stroke,           # Updates the current stroke based on mouse movement
                         on_pan_end=self.save_canvas,                # Saves the now complete stroke to our data and canvas capture
@@ -208,6 +210,24 @@ class Canvas(Widget):
         options.extend(super()._get_menu_options())     # Get the default menu options for widgets and add them to our information display options
         return options
     
+    # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
+    async def set_mouse_cursor(self, e=None):
+        control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
+        new_mouse_cursor = ft.MouseCursor.PRECISE if control_mode == "draw" else ft.MouseCursor.CLICK
+        for layer in self.layers:
+            # Grab container to check if actually visible. Not visible, not exporting
+            container = layer.get('canvas', None)
+            if not container.visible:   
+                continue
+
+            # Grab canvas our canvas for that layer
+            canvas: cv.Canvas = layer.get('canvas', None).content
+            canvas.content.mouse_cursor = new_mouse_cursor  
+            canvas.content.update()
+           
+
+
+    
     async def _deselect_shape(self, e=None):
         ''' Deselects the active shape and re-sets our controls'''
         
@@ -244,7 +264,10 @@ class Canvas(Widget):
 
                 # All other tools/shapes get added here
                 case _:
-                    # Add the tool here
+
+                    self.layer_stack.controls.append(CanvasShape(tool_name, left=e.local_position.x, top=e.local_position.y))
+                    self.layer_stack.update()
+
                     return
 
         # If we didn't return, we're either in erase tool or drawing mode
