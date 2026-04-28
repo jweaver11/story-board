@@ -262,9 +262,8 @@ class PlotlineInformationDisplay(MiniWidget):
         )
 
         events_label = ft.Row([
-            ft.Container(width=6), 
             ft.Text(
-                "Sequence of Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None), 
+                "\tSequence of Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None), 
                 tooltip="The order of events that occur in this plotline"
             ),
             
@@ -273,7 +272,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
         divisions_label = ft.Row([
             ft.Text(
-                "Divisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None), 
+                "\tDivisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None), 
                 tooltip="The number and label of the divisions on this plotline."
             ),
             ft.IconButton(
@@ -360,7 +359,7 @@ class PlotlineInformationDisplay(MiniWidget):
         plot_points_list = _get_events("plot_points")
 
         arcs_label = ft.Row([
-            ft.Text("Arcs", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None),),
+            ft.Text("\tArcs", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None),),
             ft.IconButton(
                 ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, icon_color=self.widget.data.get('color', ft.Colors.PRIMARY), tooltip="Create New Arc", data="arc", 
                 on_click=self.widget.new_item_clicked, #style=ft.ButtonStyle(padding=ft.Padding.all(0)),

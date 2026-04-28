@@ -36,6 +36,7 @@ class TreeViewFile(ft.GestureDetector):
             case "world": self.icon = ft.Icons.PUBLIC_OUTLINED
             case "character_connection_map": self.icon = ft.Icons.ACCOUNT_TREE_OUTLINED
             case "item": self.icon = ft.Icons.STAR_OUTLINE_ROUNDED 
+            case "comic_preview": self.icon = ft.Icons.SLIDESHOW_OUTLINED
             case "chart": 
                 if widget.data.get('type', None) == "bar":
                     self.icon = ft.Icons.INSERT_CHART_OUTLINED

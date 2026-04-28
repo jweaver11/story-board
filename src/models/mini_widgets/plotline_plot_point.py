@@ -338,18 +338,21 @@ class PlotPoint(MiniWidget):
             Relevant_characters_selector.controls = _get_Relevant_characters()
 
             if Relevant_characters_selector.visible:
-                add_Relevant_characters_button.icon = ft.Icons.EDIT_OFF_OUTLINED
+                #add_Relevant_characters_button.icon = ft.Icons.EDIT_OFF_OUTLINED
+                add_Relevant_characters_button.content.controls[1].icon = ft.Icons.EDIT_OFF_OUTLINED
             else:
-                add_Relevant_characters_button.icon = ft.Icons.EDIT_OUTLINED
+                add_Relevant_characters_button.content.controls[1].icon = ft.Icons.EDIT_OUTLINED
 
             self.update()
 
         add_Relevant_characters_button = ft.TextButton(
-            "Relevant Characters",
-            ft.Icons.EDIT_OUTLINED,
-            style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor="click", color=ft.Colors.ON_SURFACE),
+            ft.Row([
+                ft.Text("Relevant Characters", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
+                ft.Icon(ft.Icons.EDIT_OUTLINED, self.data.get('color', None))
+            ], tight=True),
+            tooltip="Add or remove relevant characters for this plot point",
+            style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor="click", color=self.data.get('color', ft.Colors.PRIMARY)),
             on_click=_toggle_Relevant_characters_selector,
-            
         )
 
         Relevant_characters_selector = ft.Column(
@@ -375,7 +378,7 @@ class PlotPoint(MiniWidget):
                     # Add the control now
                     controls.append(
                         ft.Row([
-                            ft.Text(name, color=char.data.get('color', None), weight=ft.FontWeight.BOLD),
+                            ft.Text(f"\t\t\t{name}", color=char.data.get('color', None), weight=ft.FontWeight.BOLD),
                             ft.IconButton(
                                 ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
                                 data=ic_key, mouse_cursor="click",
