@@ -21,6 +21,12 @@ class CanvasShape(ft.Container):
         )
 
         self.shape_type = shape_type
+        self.stroke_width = app.settings.data.get('paint_settings', {}).get('stroke_width', 3) if not app.settings.data.get('use_default_shape_paint', True) else 3
+        self.paint = ft.Paint(
+            color=app.settings.data.get('paint_settings', {}).get('color', ft.Colors.BLACK) if not app.settings.data.get('use_default_shape_paint', True) else ft.Colors.BLACK,
+            stroke_width=self.stroke_width,
+            style=app.settings.data.get('paint_settings', {}).get('style', ft.PaintingStyle.STROKE)
+        )
 
         # State management for rotation and resizing
         self._prev_mouse_angle = 0
@@ -135,6 +141,13 @@ class CanvasShape(ft.Container):
                     case "rectangle":
                         self.shape.width = self.canvas.width
                         self.shape.height = self.canvas.height
+                    case "triangle":
+                        self.shape.elements = [
+                            cv.Path.MoveTo(self.canvas.width / 2, 0),
+                            cv.Path.LineTo(self.canvas.width, self.canvas.height),
+                            cv.Path.LineTo(0, self.canvas.height),
+                            cv.Path.Close()
+                        ]
 
 
                 self.left += dx / 2 * (cos_a + 1)
@@ -154,6 +167,13 @@ class CanvasShape(ft.Container):
                     case "rectangle":
                         self.shape.width = self.canvas.width
                         self.shape.height = self.canvas.height
+                    case "triangle":
+                        self.shape.elements = [
+                            cv.Path.MoveTo(self.canvas.width / 2, 0),
+                            cv.Path.LineTo(self.canvas.width, self.canvas.height),
+                            cv.Path.LineTo(0, self.canvas.height),
+                            cv.Path.Close()
+                        ]
 
 
                 self.left += dx / 2 * (cos_a - 1)
@@ -173,6 +193,13 @@ class CanvasShape(ft.Container):
                     case "rectangle":
                         self.shape.width = self.canvas.width
                         self.shape.height = self.canvas.height
+                    case "triangle":
+                        self.shape.elements = [
+                            cv.Path.MoveTo(self.canvas.width / 2, 0),
+                            cv.Path.LineTo(self.canvas.width, self.canvas.height),
+                            cv.Path.LineTo(0, self.canvas.height),
+                            cv.Path.Close()
+                        ]
 
                         
                 self.left -= dy / 2 * sin_a
@@ -192,6 +219,13 @@ class CanvasShape(ft.Container):
                     case "rectangle":
                         self.shape.width = self.canvas.width
                         self.shape.height = self.canvas.height
+                    case "triangle":
+                        self.shape.elements = [
+                            cv.Path.MoveTo(self.canvas.width / 2, 0),
+                            cv.Path.LineTo(self.canvas.width, self.canvas.height),
+                            cv.Path.LineTo(0, self.canvas.height),
+                            cv.Path.Close()
+                        ]
                         
 
                         
@@ -213,42 +247,42 @@ class CanvasShape(ft.Container):
 
     def build(self):
 
-        # TODO: Can rotate built in:
-        # BUG: Shape not showing up when touching border
-        # Arc
-        # ArcTo?
-        # Circle?
-        # Oval
-        # Half Circle
-        # Rectangle
-        # Triangle
-        # Text
-        # Text Box's (x4)
-
-        cv.Path.Rect
-        cv.Path.Arc
-        cv.Path.ArcTo
-        cv.Path.CubicTo
-        cv.Path.QuadraticTo
-        cv.Path.Oval
-        
-
         match self.shape_type:
             case "rectangle":
-                self.shape = cv.Rect(0, 0, 200, 200, paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
+                self.shape = cv.Rect(0, 0, 200, 200, paint=self.paint)
+            case "triangle":
+                self.shape = cv.Path(
+                    elements=[
+                        cv.Path.MoveTo(100, 0),
+                        cv.Path.LineTo(200, 200),
+                        cv.Path.LineTo(0, 200),
+                        cv.Path.Close()
+                    ], 
+                    paint=self.paint
+                )
 
-        #shape = None
+
+            case "circle":
+                self.shape = cv.Circle(100, 100, 100, paint=self.paint)
+            case "oval":
+                self.shape = cv.Oval(0, 0, 200, 100, paint=self.paint)
+            
+            case "text":
+                self.shape = cv.Text(90, 90, "cv.Text")
+            case "arc":
+                self.shape = cv.Arc(100, 100, 100, 0, math.pi / 2, paint=self.paint)
+            case "dialogue_box":
+                pass
 
         self.canvas = cv.Canvas(
-            shapes=[self.shape],      # Shape we built depending on the tool being used
+            shapes=[self.shape if self.shape else cv.Text(0, 0, "Error getting shape")],      # Shape we built depending on the tool being used
             content=ft.GestureDetector(
-                #ft.Container(expand=True, ),
                 on_pan_update=self._manipulate,     # Handles resizing and dragging
                 on_hover=self._set_manipulation_action,
                 expand=True, mouse_cursor=ft.MouseCursor.MOVE,
                 drag_interval=10, hover_interval=50
             ),
-            margin=ft.Margin.all(10),
+            margin=ft.Margin.all(4),
             width=200, height=200,
         )
 
@@ -262,6 +296,8 @@ class CanvasShape(ft.Container):
             expand=True
         )
         
+        # If we're text or not, we'll add a text_editor below the canvas to edit the text
+        is_text = self.shape_type in ["text", "text_box"]
         
         self.content = ft.Column(
             [
@@ -269,9 +305,10 @@ class CanvasShape(ft.Container):
                 ft.VerticalDivider(),
                 ft.Container(
                     self.canvas, 
-                    expand=True, #padding=ft.Padding.all(10), 
-                    border=ft.Border.all(2, ft.Colors.RED)
-                )
+                    expand=True, 
+                    border=ft.Border.all(2, ft.Colors.OUTLINE)
+                ),
+                text_editor := ft.TextField("Edit me", expand=True, multiline=True, visible=is_text)
             ], 
             tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0
         )

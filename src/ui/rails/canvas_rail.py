@@ -179,7 +179,7 @@ class CanvasRail(Rail):
                 return ft.Icon(ft.Icons.REMOVE if in_tool_mode else ft.Icons.REMOVE_OUTLINED, ft.Colors.PRIMARY)
             case "text":
                 return ft.Icon(ft.Icons.TEXT_FIELDS if in_tool_mode else ft.Icons.TEXT_FIELDS_OUTLINED, ft.Colors.PRIMARY)
-            case "oval":
+            case "circle":
                 return ft.Icon(ft.Icons.CIRCLE if in_tool_mode else ft.Icons.CIRCLE_OUTLINED, ft.Colors.PRIMARY)
             case "arc":
                 return ft.Icon(ft.CupertinoIcons.CIRCLE_RIGHTHALF_FILL, ft.Colors.PRIMARY, rotate=math.pi/2)
@@ -215,6 +215,7 @@ class CanvasRail(Rail):
                 data="erase",
                 on_click=self._set_active_tool,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                tooltip="Erase parts of your Canvas using your current brush width"
             ),
             ft.MenuItemButton(
                 ft.Row([
@@ -224,6 +225,7 @@ class CanvasRail(Rail):
                 data="line",
                 on_click=self._set_active_tool,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                tooltip="Draw straight lines. Click and drag to draw a line between your starting point and the current position of your mouse."
             ),
             ft.MenuItemButton(
                 ft.Row([
@@ -233,6 +235,18 @@ class CanvasRail(Rail):
                 data="text",
                 on_click=self._set_active_tool,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                tooltip="Add text only to your canvas. Useful for labels"
+            ),
+            ft.MenuItemButton(
+                ft.Row([
+                    ft.Text("Dialogue Box", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                    ft.Icon(ft.CupertinoIcons.BUBBLE_LEFT, ft.Colors.PRIMARY)
+                    # ft.CupertinoIcons.CHAT_BUBBLE
+                ]),
+                data="dialogue_box",
+                on_click=self._set_active_tool,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                tooltip="Add dialogue boxes to your canvas"
             ),
 
             # Shapes we can use
@@ -241,12 +255,23 @@ class CanvasRail(Rail):
 
             ft.MenuItemButton(
                 ft.Row([
-                    ft.Text("Oval", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                    ft.Text("Circle", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
                     ft.Icon(ft.Icons.CIRCLE, ft.Colors.PRIMARY)
+                ]),
+                data="circle",
+                on_click=self._set_active_tool,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                tooltip="Add perfect circles to your canvas"
+            ),
+            ft.MenuItemButton(
+                ft.Row([
+                    ft.Text("Oval", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                    ft.Icon(ft.Icons.CIRCLE, ft.Colors.PRIMARY, scale=ft.Scale(scale_x=0.8))
                 ]),
                 data="oval",
                 on_click=self._set_active_tool,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                tooltip="Add ovals and ellipses to your canvas"
             ),
             ft.MenuItemButton(
                 ft.Row([
@@ -256,6 +281,7 @@ class CanvasRail(Rail):
                 data="arc",
                 on_click=self._set_active_tool,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                tooltip="Add arcs and partial circles to your canvas"
             ),
             ft.MenuItemButton(
                 ft.Row([
@@ -265,6 +291,7 @@ class CanvasRail(Rail):
                 data="rectangle",
                 on_click=self._set_active_tool,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                tooltip="Add rectangles and squares to your canvas"
             ),
             ft.MenuItemButton(
                 ft.Row([
@@ -274,7 +301,9 @@ class CanvasRail(Rail):
                 data="triangle",
                 on_click=self._set_active_tool,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                tooltip="Add triangles to your canvas"
             ),
+            
             
 
             
@@ -986,6 +1015,9 @@ class CanvasRail(Rail):
 
 # TODO: 
 # Add txt input for brush size as well
-# Add txt size for text tool
-# Build in text bubble shapes for voice lines (up-left, up-right, down-left, down-right). See canvas example on flet docs, they have one
+# Add txt size, color, fonts? for text tool
+# Build in dialoge bubbles shapes for voice lines (up-left, up-right, down-left, down-right, middle-up, middle-down). See canvas example on flet docs, they have one
+# -- Both round and normal for above dialogue boxes
+# -- add rectangle dialog box with built in text for narrator text and such
 # Border Radius for rectangle tool
+# Option to paint shapes as just blank standard paint, not use current paint settings

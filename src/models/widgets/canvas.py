@@ -232,6 +232,9 @@ class Canvas(Widget):
            
     # If we have an active tool/shape that we are manipulating, paint it on the canvas
     async def paint_tool_on_canvas(self):
+        ''' Converts the displayed shapes rotation and size onto our active layer and paints it there'''
+
+        # Temp to show how it would be called
         self.active_tool.visible = False
         self.active_tool.update()
 

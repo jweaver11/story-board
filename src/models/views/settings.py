@@ -86,6 +86,7 @@ class Settings(ft.View):
                     'current_control_mode': "draw",      # Either drawing (use brush settings), or tools (use built in tools)
                     'current_brush_name': "stroke",      # Name of the currently selected brush, either default or custom. Just used for display purposes
                     'current_tool_name': "erase",        # Current tool or shape being used
+                    'use_default_shape_paint': True,    # If True, shapes are black and use default paint settings rather than live brush settings
                     'saved_brushes': dict,              # Saved brushes the user has created that we can load
                 },
 
