@@ -325,27 +325,6 @@ class CanvasRail(Rail):
             case "src_out": return "Source Out"
             case "xor": return "XOR"
             case _: return mode.replace("_", " ").title()
-
-    # Reset our paint settings to their defaults. Unload any selected brushes.
-    def _reset_paint_to_defaults(self, e):
-        ''' Resets all paint settings to their default values (except color and opacity) '''
-
-        current_color = app.settings.data.get('paint_settings', {}).get('color', "#000000") 
-        app.settings.data['paint_settings'] = {
-            "color": current_color,         # Keep current color
-            "stroke_width": 3,              # Default brush size
-            "style": "stroke",              # Default paint style
-            "anti_alias": True,             # Default anti-aliasing on
-            "stroke_cap": "round",          # Default stroke cap
-            "stroke_join": "round",         # Default stroke join
-            "stroke_miter_limit": 10,       # Default miter limit
-            "blur_image": 0,                # Default no blur
-            "blend_mode": None,             # Default no blend mode
-            "stroke_dash_pattern": None,    # Default no dash pattern
-        }
-        self.p.run_task(app.settings.save_dict)
-        self.story.active_rail.reload_rail()
-
         
 
     # Called to build a small preview canvas of our brush strokes for visual distinction
@@ -412,6 +391,17 @@ class CanvasRail(Rail):
             'blur_image': 0,
             'blend_mode': "src_over",
         }
+        shadow_brush_settings = {
+            'color': "#40000000",   
+            'stroke_width': 20,
+            'style': "stroke",
+            'stroke_cap': "round",
+            'stroke_join': "round",
+            'stroke_miter_limit': 10, 
+            'stroke_dash_pattern': None,
+            'anti_alias': True,
+            'blur_image': 10,
+        }
 
         # Start by building our default brush options
         options = [
@@ -424,16 +414,17 @@ class CanvasRail(Rail):
                 ),
                 on_click=lambda _: self._set_active_brush(default_brush_settings, name="Default"),
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-            ),       
+            ),    
             ft.MenuItemButton(
                 data=default_brush_settings,
                 content=ft.Container(
-                    ft.Row([ft.Text("Shadow", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_brush(default_brush_settings)], spacing=20),
+                    ft.Row([ft.Text("Shadow", expand=True, overflow=ft.TextOverflow.ELLIPSIS), self._build_preview_brush(shadow_brush_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE
                 ),
-                on_click=lambda _: self._set_active_brush(default_brush_settings, name="Shadow"),
+                on_click=lambda _: self._set_active_brush(shadow_brush_settings, name="Shadow"),
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-            ),            
+            ),        
+                   
 
             ft.Divider(),   # Placeholder for shapes section
             ft.Text("\tSaved Brushes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
@@ -542,7 +533,7 @@ class CanvasRail(Rail):
                 # Remove it from data
                 if name in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}):
                     del app.settings.data['canvas_settings']['saved_brushes'][name]
-                    self.p.run_task(app.settings.save_dict)
+                    await app.settings.save_dict()
 
                 # Remove the control from the dialog
                 dlg.content.controls = [ctrl for ctrl in content.controls if ctrl.data != name]   
@@ -981,5 +972,4 @@ class CanvasRail(Rail):
 
 
 # TODO: 
-# Add shadow Default brush
 # Add txt input for brush size as well

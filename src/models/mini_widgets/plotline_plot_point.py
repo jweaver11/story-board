@@ -365,7 +365,7 @@ class PlotPoint(MiniWidget):
             controls = [
                 add_Relevant_characters_button,
             ]
-
+            char = None
             for idx, ic_key in enumerate(self.data.get('Relevant Characters', [])):
                 for widget in self.widget.story.widgets:
                     if widget.data.get('key', "") == ic_key and widget.data.get('tag', None) == 'character':

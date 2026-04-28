@@ -207,6 +207,9 @@ class Canvas(Widget):
 
         options.extend(super()._get_menu_options())     # Get the default menu options for widgets and add them to our information display options
         return options
+    
+    async def _deselect_shape(self, e=None):
+        ''' Deselects the active shape and re-sets our controls'''
         
 
 
@@ -352,9 +355,6 @@ class Canvas(Widget):
         # Add our path to the canvas so we can see it
         canvas.shapes.append(self.active_path)
         canvas.update()
-
-   
-
         
     # Called when actively drawing on the canvas
     async def update_stroke(self, e: ft.DragUpdateEvent):
@@ -367,9 +367,7 @@ class Canvas(Widget):
         dy = e.local_position.y - self.state.y
         if dx * dx + dy * dy < self.min_segment_dist * self.min_segment_dist:
             return
-        
-        paint_settings = app.settings.data.get('paint_settings', {}).copy()
-        
+                
         # Check if we're in tool mode, and what tool we're using
         if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") != "draw":
 
