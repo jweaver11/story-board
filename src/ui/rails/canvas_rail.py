@@ -988,3 +988,4 @@ class CanvasRail(Rail):
 # Add txt input for brush size as well
 # Add txt size for text tool
 # Build in text bubble shapes for voice lines (up-left, up-right, down-left, down-right). See canvas example on flet docs, they have one
+# Border Radius for rectangle tool

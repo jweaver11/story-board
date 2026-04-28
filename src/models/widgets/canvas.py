@@ -88,6 +88,7 @@ class Canvas(Widget):
         self.needs_redraw = False           # Used to track if we need to redraw canvas after a resize
         self.skip_first_resize = True       # Skip the first resize since it will fix itself
         self.initial_resize = True          # Initial resize to track our canvases size without rebuild
+        self.maniuplating_shape = False     # Whether we're currently manipulating a shape or not, so we know whether to update our active path or not when dragging
 
         
         self.layers = [{}]                  # List of our layers, which are each their own canvas
@@ -98,8 +99,7 @@ class Canvas(Widget):
         # The active stroke we are adding to the canvas when drawing so we know how to update it
         self.active_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
 
-        self.active_tool: cv.Shape                     # The active shape being added if we're using a tool
-        self.tool_controller: ft.GestureDetector       # The overlayed controller to modify shapes so we can resize, rotate, transform, etc
+        self.active_tool: ft.Container                    # The active shape being added if we're using a tool
 
         # We render our own mini widgets (comments), so we don't need parent class to render them as well
         self.no_render_mini_widgets = True  
@@ -224,7 +224,16 @@ class Canvas(Widget):
             canvas: cv.Canvas = layer.get('canvas', None).content
             canvas.content.mouse_cursor = new_mouse_cursor  
             canvas.content.update()
+
+        # Paints a shape we're modifying if the rail tool changes
+        if self.maniuplating_shape:
+            await self.paint_tool_on_canvas()
+            self.maniuplating_shape = False
            
+    # If we have an active tool/shape that we are manipulating, paint it on the canvas
+    async def paint_tool_on_canvas(self):
+        self.active_tool.visible = False
+        self.active_tool.update()
 
 
     
@@ -241,7 +250,6 @@ class Canvas(Widget):
         # Clicking decifers if drawing or adding a tool
         # if drawing: add point.
         # else: add tool
-        # Adds a 200x200 shape of selected tool stacked under the controller, and sets it as the active shape to be modified
 
         # Set our paint settings in case we need to change them
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
@@ -265,10 +273,19 @@ class Canvas(Widget):
                 # All other tools/shapes get added here
                 case _:
 
-                    self.layer_stack.controls.append(CanvasShape(tool_name, left=e.local_position.x, top=e.local_position.y))
+                    if self.maniuplating_shape:
+                        await self.paint_tool_on_canvas()
+                        self.maniuplating_shape = False
+                        return
+
+                    self.maniuplating_shape = True
+                    self.active_tool = CanvasShape(tool_name, left=e.local_position.x, top=e.local_position.y)
+                    self.layer_stack.controls.append(self.active_tool)
                     self.layer_stack.update()
 
                     return
+                
+        self.maniuplating_shape = False 
 
         # If we didn't return, we're either in erase tool or drawing mode
         canvas: cv.Canvas = e.control.parent    # Set the canvas
@@ -369,12 +386,7 @@ class Canvas(Widget):
                 #case ''
             '''
 
-            #cv.Path.CubicTo()
-            #cv.Path.QuadraticTo()
-            #cv.Path.Oval()
-            #cv.Path.Rect()
-            #cv.Path.
-
+            
         # Add our path to the canvas so we can see it
         canvas.shapes.append(self.active_path)
         canvas.update()
