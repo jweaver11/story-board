@@ -116,6 +116,18 @@ class ComicPreview(Widget):
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
+        async def _remove_snapshot(e):
+            idx = e.control.data
+            self.data['snapshots'].pop(idx)
+            await self.save_dict()
+            # Remove from mini map
+            included_canvases.controls.pop(idx)
+            included_canvases.update()
+           
+            preview_display.controls.pop(idx)
+            preview_display.update()
+            
+
         # Handles toggling the preview direction between vertical and horizontal
         async def _toggle_preview_direction(e):
             if self.data.get('preview_direction', "vertical") == "vertical":
@@ -132,26 +144,32 @@ class ComicPreview(Widget):
 
         # Handles uploading new snapshot(s) from external files
         async def _upload_snapshot_clicked(e):
-            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            files = await ft.FilePicker().pick_files(allow_multiple=True, allowed_extensions=["jpg", "jpeg", "png", "webp"])
             if files:
+                for file in files:
+                    file_path = file.path
+                    try:
+                        import base64
 
-                file_path = files[0].path
-                try:
-                    import base64
+                        with open(file_path, "rb") as image_file:
+                            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                            # Save to our data
+                            self.data['snapshots'].append({
+                                'key': None,
+                                'title': file_path.split("\\")[-1],
+                                'image': encoded_string
+                            })
+                            
 
-                    with open(file_path, "rb") as image_file:
-                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                        # Save to our data
-                        self.data['snapshots'].append({
-                            'key': None,
-                            'title': file_path.split("\\")[-1],
-                            'image': encoded_string
-                        })
-                        await self.save_dict()
-                        self.reload_widget()
-
-                except Exception as _:
-                    pass
+                    except Exception as _:
+                        pass
+                await self.save_dict()
+                self.story.blocker.visible = True
+                self.story.blocker.update()
+                await asyncio.sleep(0)
+                self.reload_widget()
+                self.story.blocker.visible = False
+                self.story.blocker.update()
 
         # Handles reordering our snapshots on the left side of the page
         async def _reorder_snapshots(e: ft.OnReorderEvent):
@@ -323,7 +341,7 @@ class ComicPreview(Widget):
 
         # Add included canvases to the mini map that are reorderable
         included_canvases = ft.ReorderableListView(scroll="auto", on_reorder=_reorder_snapshots)
-        for snapshot in self.data.get('snapshots', []):
+        for idx, snapshot in enumerate(self.data.get('snapshots', [])):
             included_canvases.controls.append(
                 ft.ReorderableDragHandle(
                     ft.Row([
@@ -331,8 +349,8 @@ class ComicPreview(Widget):
                         ft.Image(snapshot.get('image', ""), ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, width=50, height=50),
                         ft.Container(expand=True),
                         ft.IconButton(
-                            ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, on_click=_toggle_canvas_inclusion, 
-                            mouse_cursor=ft.MouseCursor.CLICK, data=snapshot.get('key')
+                            ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, on_click=_remove_snapshot, 
+                            mouse_cursor=ft.MouseCursor.CLICK, data=idx
                         ) if not snapshot.get('key') else ft.Container(),  # Only show delete button its an uploaded image
                         ft.Container(width=40)
                     ]),
