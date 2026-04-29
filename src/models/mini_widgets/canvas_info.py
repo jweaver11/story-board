@@ -378,8 +378,6 @@ class CanvasInformationDisplay(MiniWidget):
             await self.save_dict()
             self.p.pop_dialog()
 
-            #self.widget.reload_widget()
-            #self.widget.story.workspace.reload_workspace()
             self.widget.reload_widget()
             self.widget.story.blocker.visible = False
             self.widget.story.blocker.update()
@@ -433,12 +431,11 @@ class CanvasInformationDisplay(MiniWidget):
             await self.save_dict()
             self.p.pop_dialog()
 
-            #self.widget.reload_widget()
-            #self.widget.story.workspace.reload_workspace()
             self.widget.reload_widget()
-            #await asyncio.sleep(0.1)
-            #self.widget.story.blocker.visible = False
-            #self.widget.story.blocker.update()
+            if self.widget.story.blocker.visible:
+                self.widget.story.blocker.visible = False
+                self.widget.story.blocker.update()
+            
 
         old_name = e.control.data
 

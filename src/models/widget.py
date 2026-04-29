@@ -543,7 +543,7 @@ class Widget(ft.Container):
         ]
     
     # Shows the info column on the side of our chart or not
-    async def _toggle_show_info(self, e):
+    async def _toggle_show_info(self, e=None):
         self.data['show_info'] = not self.data.get('show_info', True)
         await self.save_dict()
         self.reload_widget()

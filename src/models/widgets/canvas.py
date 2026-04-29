@@ -99,7 +99,7 @@ class Canvas(Widget):
         # The active stroke we are adding to the canvas when drawing so we know how to update it
         self.active_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
 
-        self.active_tool: ft.Container                    # The active shape being added if we're using a tool
+        self.active_tool: CanvasShape                    # The active shape being added if we're using a tool
 
         # We render our own mini widgets (comments), so we don't need parent class to render them as well
         self.no_render_mini_widgets = True  
@@ -213,7 +213,16 @@ class Canvas(Widget):
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     async def set_mouse_cursor(self, e=None):
         control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
-        new_mouse_cursor = ft.MouseCursor.PRECISE if control_mode == "draw" else ft.MouseCursor.CLICK
+        active_tool = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+        
+        
+        if active_tool == "erase" or active_tool == "line":
+            new_mouse_cursor = ft.MouseCursor.PRECISE
+        else:
+            new_mouse_cursor = ft.MouseCursor.CLICK
+        if control_mode == "draw":
+            new_mouse_cursor = ft.MouseCursor.PRECISE
+        
         for layer in self.layers:
             # Grab container to check if actually visible. Not visible, not exporting
             container = layer.get('canvas', None)
@@ -229,30 +238,96 @@ class Canvas(Widget):
         if self.maniuplating_shape:
             await self.paint_tool_on_canvas()
             self.maniuplating_shape = False
+
+    async def _toggle_show_info(self, e):
+        if self.maniuplating_shape:
+            await self.paint_tool_on_canvas()
+            self.maniuplating_shape = False
+        await super()._toggle_show_info()
            
     # If we have an active tool/shape that we are manipulating, paint it on the canvas
     async def paint_tool_on_canvas(self):
-        ''' Converts the displayed shapes rotation and size onto our active layer and paints it there'''
+        ''' Converts the displayed shapes rotation and size onto our active layer and paints it there '''
 
-        # Temp to show how it would be called
+      
+        active_canvas: cv.Canvas = None
+        for layer in self.layers:
+            if self.data.get('canvas_data', {}).get('Active Layer', 0) == self.layers.index(layer):
+                active_canvas = layer.get('canvas', None).content
+                break
+
+        if self.active_tool is None:
+            return
+        
+        # Text can be rotated, so we can just grab it and put it in the right spot
+        if self.active_tool.shape_type == "text":
+
+            # Align our text to account for size of our layer canvas
+            text_shape: cv.Text = self.active_tool.cv_shape
+            text_shape.x += self.active_tool.left + 1
+            text_shape.y += self.active_tool.top + 1
+            
+            active_canvas.shapes.append(text_shape)
+            
+            active_canvas.update()
+            await self.save_canvas(canvas=active_canvas)
+            self.active_tool.visible = False
+            self.active_tool.rotate_handle.visible = False
+            self.active_tool.rotate_handle.update()
+            self.active_tool.update()
+            return
+        
+        await self.active_tool.canvas.capture()
+        shape_capture = await self.active_tool.canvas.get_capture()
+        await self.active_tool.canvas.clear_capture()
+
+        shape_img = Image.open(BytesIO(shape_capture)).convert("RGBA")
+
+        angle = self.active_tool.rotate.angle
+
+        # Flet rotate.angle is radians; PIL rotate() takes degrees counterclockwise
+        angle_degrees = -math.degrees(angle)
+        rotated = shape_img.rotate(angle_degrees, expand=True, resample=Image.Resampling.BICUBIC)
+
+        # Set rotation (with border padding)
+        rotation_cx = self.active_tool.left + (self.active_tool.canvas.width + 2) / 2
+        rotation_cy = self.active_tool.top + (self.active_tool.canvas.height + 2) / 2
+
+
+        paste_x = int(rotation_cx - rotated.width / 2)
+        paste_y = int(rotation_cy - rotated.height / 2)
+
+        active_layer_idx = self.data.get('canvas_data', {}).get('Active Layer', 0)  
+
+        # Decode existing layer capture
+        layer_b64 = self.data['canvas_data']['Layers'][active_layer_idx]['capture']
+        layer_img = Image.open(BytesIO(base64.b64decode(layer_b64))).convert("RGBA")
+
+        # Composite using the shape's alpha channel as the mask
+        layer_img.paste(rotated, (paste_x, paste_y), rotated)
+
+        output = BytesIO()
+        layer_img.save(output, format="PNG")
+        encoded = base64.b64encode(output.getvalue()).decode('utf-8')
+
+        active_canvas.shapes.clear()   
+        active_canvas.shapes.append(cv.Image(encoded, 0, 0))
+        active_canvas.update()
+        await self.save_canvas(canvas=active_canvas) 
+            
+
+        # Finally, remove the active tool stuff
         self.active_tool.visible = False
+        self.active_tool.rotate_handle.visible = False
+        self.active_tool.rotate_handle.update()
         self.active_tool.update()
 
-
-    
-    async def _deselect_shape(self, e=None):
-        ''' Deselects the active shape and re-sets our controls'''
         
 
 
     # Called when we click the canvas and don't initiate a drag
     async def add_shape(self, e: ft.TapEvent):
         ''' Adds a point to the canvas if we just clicked and didn't initiate a drag '''
-
-        # TODO PS
-        # Clicking decifers if drawing or adding a tool
-        # if drawing: add point.
-        # else: add tool
 
         # Set our paint settings in case we need to change them
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
@@ -277,15 +352,20 @@ class Canvas(Widget):
                 case _:
 
                     if self.maniuplating_shape:
-                        await self.paint_tool_on_canvas()
                         self.maniuplating_shape = False
+                        await self.paint_tool_on_canvas()
                         return
+    
 
                     self.maniuplating_shape = True
                     self.active_tool = CanvasShape(tool_name, left=e.local_position.x, top=e.local_position.y)
                     self.layer_stack.controls.append(self.active_tool)
                     self.layer_stack.update()
-
+                    self.layer_stack.controls.append(self.active_tool.rotate_handle)
+                    self.layer_stack.update()
+                    #TODO: add textfield here??
+                    #if self.active_tool.shape_type == "text":
+                        #self.la
                     return
                 
         self.maniuplating_shape = False 
@@ -445,65 +525,15 @@ class Canvas(Widget):
         # Update our state x and y positions
         self.state.x = e.local_position.x
         self.state.y =  e.local_position.y
-
-        # Set our canvas and style
-        #style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
-        '''
-        OLD
-
-            case "arc" | "arcfill":
-            
-                # Set the element and its data
-                arc_element = self.active_path.elements[-1]
-                arc_dict = arc_element.__dict__
-
-                # Swap directions of arc depending if we drag up or down from starting point
-                if e.local_position.y - self.state.y >= 0:   # Dragging down
-                    arc_element.sweep_angle = -math.pi
-                    arc_element.height = abs(self.state.y - e.local_position.y)
-                    arc_element.y = self.state.y - (arc_element.height / 2)
-                    
-                else:       # Dragging up
-                    arc_element.sweep_angle = math.pi
-                    arc_element.height = abs(e.local_position.y - self.state.y)
-                    arc_element.y = abs(self.state.y - (arc_element.height / 2))
-
-                if e.local_position.x - self.state.x < 0:   # Dragging left, move X position of arc to match
-                    arc_element.x = e.local_position.x
-
-                arc_element.width = abs(e.local_position.x - self.state.x) 
-
-                self.active_path.update()
-                return
-        
-            # Handle arcs
-            case 'arcto' | 'arctofill':
-            
-                arc_element = self.active_path.elements[-1]
-                arc_dict = arc_element.__dict__
-
-                arc_element.x = e.local_position.x
-                arc_element.y = e.local_position.y
-
-                arc_dict['x'] = arc_element.x
-                arc_dict['y'] = arc_element.y
-
-                self.active_path.update()
-                return
-        
-        
-            # If its not one of our custom styles, use free-draw stroke, which is constantly adding line_to segements
-            case _:
-        
-        '''
         
 
     # Called when we release the mouse to stop drawing a line
-    async def save_canvas(self, e: ft.DragEndEvent):
+    async def save_canvas(self, e: ft.DragEndEvent=None, canvas: cv.Canvas=None):
         """ Saves our paths to our canvas data for storage """
 
         # Set our canvas, layer name, and update our shapes count
-        canvas: cv.Canvas = e.control.parent
+        if canvas is None:
+            canvas: cv.Canvas = e.control.parent
         layer_name = canvas.data
 
         # Grab the old capture for this layer and add it as an undo task for the canvas
@@ -517,9 +547,7 @@ class Canvas(Widget):
                     # Make sure undo list is not too long and hog to many resources
                     if len(self.data['canvas_data']['undo_list']) > MAX_UNDO_LIST_TASKS:
                         self.data['canvas_data']['undo_list'].pop(0)
-        
         try:
-
             # Captures the current state of this canvas
             await canvas.capture()  
 

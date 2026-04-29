@@ -241,6 +241,12 @@ class CanvasRail(Rail):
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
                 tooltip="Add text only to your canvas. Useful for labels"
             ),
+            
+
+            # Shapes we can use
+            ft.Divider(), 
+            ft.Text("\tShapes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
+            
             ft.MenuItemButton(
                 ft.Row([
                     ft.Text("Dialogue Box", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
@@ -252,10 +258,6 @@ class CanvasRail(Rail):
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
                 tooltip="Add dialogue boxes to your canvas"
             ),
-
-            # Shapes we can use
-            ft.Divider(), 
-            ft.Text("\tShapes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
 
             ft.MenuItemButton(
                 ft.Row([
@@ -1028,6 +1030,5 @@ class CanvasRail(Rail):
 # Add txt size, color, fonts? for text tool
 # Build in dialoge bubbles shapes for voice lines (up-left, up-right, down-left, down-right, middle-up, middle-down). See canvas example on flet docs, they have one
 # -- Both round and normal for above dialogue boxes
-# -- add rectangle dialog box with built in text for narrator text and such
 # Border Radius for rectangle tool
 # Option to paint shapes as just blank standard paint, not use current paint settings

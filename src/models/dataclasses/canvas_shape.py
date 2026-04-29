@@ -25,7 +25,8 @@ class CanvasShape(ft.Container):
         self.paint = ft.Paint(
             color=app.settings.data.get('paint_settings', {}).get('color', ft.Colors.BLACK) if not app.settings.data.get('use_default_shape_paint', True) else ft.Colors.BLACK,
             stroke_width=self.stroke_width,
-            style=app.settings.data.get('paint_settings', {}).get('style', ft.PaintingStyle.STROKE)
+            style=app.settings.data.get('paint_settings', {}).get('style', ft.PaintingStyle.STROKE),
+            anti_alias=True
         )
 
         # State management for rotation and resizing
@@ -53,6 +54,9 @@ class CanvasShape(ft.Container):
 
     # Rotates the shape based on the mouse movement.  
     async def _rotate(self, e: ft.DragUpdateEvent):
+
+        
+
         current_angle = math.atan2(
             e.local_position.y - self._local_center_y,
             e.local_position.x - self._local_center_x
@@ -62,9 +66,14 @@ class CanvasShape(ft.Container):
             delta -= 2 * math.pi
         elif delta < -math.pi:
             delta += 2 * math.pi
-        self.rotate.angle += delta
 
-        # Check if we're near 90 degree increments and snap to them if we are
+        if self.shape_type == "text":
+            self.cv_shape.rotate += delta
+        else:
+            self.rotate.angle += delta
+
+        # TODO: Check if we're near 90 degree increments and snap to them if we are
+        # Also add size change for dialogue box and text shapes
         if self.rotate.angle:
             pass
 
@@ -144,8 +153,8 @@ class CanvasShape(ft.Container):
                 # Update whichever shape is inside of this container
                 match self.shape_type:
                     case "rectangle":
-                        self.cv_shape.width = self.canvas.width
-                        self.cv_shape.height = self.canvas.height
+                        self.cv_shape.width = self.canvas.width - 20
+                        self.cv_shape.height = self.canvas.height - 20
                     case "triangle":
                         self.cv_shape.elements = [
                             cv.Path.MoveTo(self.canvas.width / 2, 0),
@@ -156,19 +165,33 @@ class CanvasShape(ft.Container):
                     case "circle":
                         self.left += dx / 2 * (cos_a + 1)
                         self.top  += dx / 2 * sin_a
+                        self.rotate_handle.left = self.left + self.canvas.width / 2
+                        self.rotate_handle.top = self.top - 50
                         self.canvas.height = self.canvas.width
                         new_circle_value = self.canvas.width / 2
                         self.cv_shape.x = new_circle_value
                         self.cv_shape.y = new_circle_value  
-                        self.cv_shape.radius = new_circle_value
+                        self.cv_shape.radius = new_circle_value - 10
+                        self.rotate_handle.update()
                         self.canvas.update()
                         self.update()
                         return
+                    case "oval":
+                        self.cv_shape.width = self.canvas.width - 20
+                        self.cv_shape.height = self.canvas.height - 20
+                    case "text":
+                        self.cv_shape.max_width = self.canvas.width - 20
+                    case "arc":
+                        self.cv_shape.width = self.canvas.width - 20
+                        self.cv_shape.height = self.canvas.height * 2 - 40
 
 
 
                 self.left += dx / 2 * (cos_a + 1)
                 self.top  += dx / 2 * sin_a
+                self.rotate_handle.left = self.left + self.canvas.width / 2
+                self.rotate_handle.top = self.top - 50
+                self.rotate_handle.update()
                 self.canvas.update()
                 self.update()
 
@@ -178,12 +201,13 @@ class CanvasShape(ft.Container):
                 cos_a, sin_a = math.cos(angle), math.sin(angle)
                 dx = e.local_delta.x
                 self.canvas.width = max(20, self.canvas.width + dx)
+                self.rotate_handle.left = self.canvas.width / 2
 
                 # Update whichever shape is inside of this container
                 match self.shape_type:
                     case "rectangle":
-                        self.cv_shape.width = self.canvas.width
-                        self.cv_shape.height = self.canvas.height
+                        self.cv_shape.width = self.canvas.width - 20
+                        self.cv_shape.height = self.canvas.height - 20
                     case "triangle":
                         self.cv_shape.elements = [
                             cv.Path.MoveTo(self.canvas.width / 2, 0),
@@ -194,20 +218,33 @@ class CanvasShape(ft.Container):
                     case "circle":
                         self.left += dx / 2 * (cos_a - 1)
                         self.top  += dx / 2 * sin_a
+                        self.rotate_handle.left = self.left + self.canvas.width / 2
+                        self.rotate_handle.top = self.top - 50
                         self.canvas.height = self.canvas.width
                         new_circle_value = self.canvas.width / 2
                         self.cv_shape.x = new_circle_value
                         self.cv_shape.y = new_circle_value  
-                        self.cv_shape.radius = new_circle_value
+                        self.cv_shape.radius = new_circle_value - 10
+                        self.rotate_handle.update()
                         self.canvas.update()
                         self.update()
                         return
-
+                    case "oval":
+                        self.cv_shape.width = self.canvas.width - 20
+                        self.cv_shape.height = self.canvas.height - 20
+                    case "text":
+                        self.cv_shape.max_width = self.canvas.width - 20
+                    case "arc":
+                        self.cv_shape.width = self.canvas.width - 20
+                        self.cv_shape.height = self.canvas.height * 2 - 40
 
 
 
                 self.left += dx / 2 * (cos_a - 1)
                 self.top  += dx / 2 * sin_a
+                self.rotate_handle.left = self.left + self.canvas.width / 2
+                self.rotate_handle.top = self.top - 50
+                self.rotate_handle.update()
                 self.canvas.update()
                 self.update()
 
@@ -221,8 +258,8 @@ class CanvasShape(ft.Container):
                 # Update whichever shape is inside of this container
                 match self.shape_type:
                     case "rectangle":
-                        self.cv_shape.width = self.canvas.width
-                        self.cv_shape.height = self.canvas.height
+                        self.cv_shape.width = self.canvas.width - 20
+                        self.cv_shape.height = self.canvas.height - 20
                     case "triangle":
                         self.cv_shape.elements = [
                             cv.Path.MoveTo(self.canvas.width / 2, 0),
@@ -233,19 +270,33 @@ class CanvasShape(ft.Container):
                     case "circle":
                         self.left -= dy / 2 * sin_a
                         self.top  += dy / 2 * (cos_a + 1)
+                        self.rotate_handle.top = self.top - 50
+                        self.rotate_handle.left = self.left + self.canvas.width / 2
                         self.canvas.width = self.canvas.height
                         new_circle_value = self.canvas.height / 2
                         self.cv_shape.x = new_circle_value
                         self.cv_shape.y = new_circle_value  
-                        self.cv_shape.radius = new_circle_value
+                        self.cv_shape.radius = new_circle_value - 10
+                        self.rotate_handle.update()
                         self.canvas.update()
                         self.update()
                         return
+                    case "oval":
+                        self.cv_shape.width = self.canvas.width - 20
+                        self.cv_shape.height = self.canvas.height - 20
+                    case "text":
+                        pass
+                    case "arc":
+                        self.cv_shape.width = self.canvas.width - 20
+                        self.cv_shape.height = self.canvas.height * 2 - 40
                         
 
                         
                 self.left -= dy / 2 * sin_a
                 self.top  += dy / 2 * (cos_a + 1)
+                self.rotate_handle.left = self.left + self.canvas.width / 2
+                self.rotate_handle.top = self.top - 50
+                self.rotate_handle.update()
                 self.canvas.update()
                 self.update()
 
@@ -254,13 +305,13 @@ class CanvasShape(ft.Container):
                 angle = self.rotate.angle
                 cos_a, sin_a = math.cos(angle), math.sin(angle)
                 dy = e.local_delta.y
-                self.canvas.height = max(20, self.canvas.height + dy)
+                self.canvas.height = max(20, self.canvas.height + dy)            
 
                 # Update whichever shape is inside of this container
                 match self.shape_type:
                     case "rectangle":
-                        self.cv_shape.width = self.canvas.width
-                        self.cv_shape.height = self.canvas.height
+                        self.cv_shape.width = self.canvas.width - 20
+                        self.cv_shape.height = self.canvas.height - 20
                     case "triangle":
                         self.cv_shape.elements = [
                             cv.Path.MoveTo(self.canvas.width / 2, 0),
@@ -271,20 +322,34 @@ class CanvasShape(ft.Container):
                     case "circle":
                         self.left -= dy / 2 * sin_a
                         self.top  += dy / 2 * (cos_a - 1)
+                        self.rotate_handle.top = self.top - 50
+                        self.rotate_handle.left = self.left + self.canvas.width / 2
                         self.canvas.width = self.canvas.height
                         new_circle_value = self.canvas.height / 2
                         self.cv_shape.x = new_circle_value
                         self.cv_shape.y = new_circle_value  
-                        self.cv_shape.radius = new_circle_value
+                        self.cv_shape.radius = new_circle_value - 10
+                        self.rotate_handle.update()
                         self.canvas.update()
                         self.update()
                         return
+                    case "oval":
+                        self.cv_shape.width = self.canvas.width - 20
+                        self.cv_shape.height = self.canvas.height - 20
+                    case "text":
+                        pass
+                    case "arc":
+                        self.cv_shape.width = self.canvas.width - 20
+                        self.cv_shape.height = self.canvas.height * 2 - 40
 
                         
 
                         
                 self.left -= dy / 2 * sin_a
                 self.top  += dy / 2 * (cos_a - 1)
+                self.rotate_handle.left = self.left + self.canvas.width / 2
+                self.rotate_handle.top = self.top - 50
+                self.rotate_handle.update()
                 self.canvas.update()
                 self.update()
 
@@ -294,6 +359,9 @@ class CanvasShape(ft.Container):
                 cos_a, sin_a = math.cos(angle), math.sin(angle)
                 self.left += e.local_delta.x * cos_a - e.local_delta.y * sin_a
                 self.top  += e.local_delta.x * sin_a + e.local_delta.y * cos_a
+                self.rotate_handle.left = self.left + self.canvas.width / 2
+                self.rotate_handle.top = self.top - 50
+                self.rotate_handle.update()
                 self.update()
 
     
@@ -303,39 +371,49 @@ class CanvasShape(ft.Container):
 
         match self.shape_type:
             case "rectangle":
-                self.cv_shape = cv.Rect(0, 0, 200, 200, paint=self.paint)
+                self.cv_shape = cv.Rect(10, 10, 180, 180, paint=self.paint)
             case "triangle":
                 self.cv_shape = cv.Path(
                     elements=[
-                        cv.Path.MoveTo(100, 0),
-                        cv.Path.LineTo(200, 200),
-                        cv.Path.LineTo(0, 200),
+                        cv.Path.MoveTo(100, 10),
+                        cv.Path.LineTo(180, 180),
+                        cv.Path.LineTo(0, 180),
                         cv.Path.Close()
                     ], 
                     paint=self.paint
                 )
-
-
             case "circle":
-                self.cv_shape = cv.Circle(100, 100, 100, paint=self.paint)
+                self.cv_shape = cv.Circle(100, 100, 90, paint=self.paint)
             case "oval":
-                self.cv_shape = cv.Oval(0, 0, 200, 200, paint=self.paint)
-            
+                self.cv_shape = cv.Oval(10, 10, 180, 180, paint=self.paint)
             case "text":
                 self.cv_shape = cv.Text(
-                    10, 10, "Text", 
+                    90, 90, "Text", 
                     max_width=180, 
                     style=ft.TextStyle(color=ft.Colors.WHITE, size=16),
+                    alignment=ft.Alignment.CENTER,
+                    rotate=0,
                     text_align=ft.TextAlign.CENTER,
                 )
+
             case "arc":
-                self.cv_shape = cv.Arc(100, 100, 100, 0, math.pi / 2, paint=self.paint)
+                self.cv_shape = cv.Arc(10, 10, 180, 360, math.pi, math.pi, paint=self.paint)
             case "dialogue_box":
-                pass
+                self.cv_shape = cv.Path(
+                    [
+                        cv.Path.MoveTo(x=75, y=25),
+                        cv.Path.QuadraticTo(cp1x=25, cp1y=25, x=25, y=62.5),
+                        cv.Path.QuadraticTo(cp1x=25, cp1y=100, x=50, y=100),
+                        cv.Path.QuadraticTo(cp1x=50, cp1y=120, x=30, y=125),
+                        cv.Path.QuadraticTo(cp1x=60, cp1y=120, x=65, y=100),
+                        cv.Path.QuadraticTo(cp1x=125, cp1y=100, x=125, y=62.5),
+                        cv.Path.QuadraticTo(cp1x=125, cp1y=25, x=75, y=25),
+                    ],
+                    self.paint
+                )
 
         # If we're text or not, we'll add a text_editor below the canvas to edit the text
         is_text = self.shape_type == "text"
-        can_rotate = self.shape_type != "circle"
 
         self.canvas = cv.Canvas(
             shapes=[self.cv_shape if self.cv_shape else cv.Text(0, 0, "Error getting shape", style=ft.TextStyle(color=ft.Colors.WHITE, size=16))],      # Shape we built depending on the tool being used
@@ -343,37 +421,41 @@ class CanvasShape(ft.Container):
                 on_pan_update=self._manipulate,     # Handles resizing and dragging
                 on_hover=self._set_manipulation_action,
                 expand=True, mouse_cursor=ft.MouseCursor.MOVE,
-                drag_interval=10, hover_interval=50
+                drag_interval=25, hover_interval=50,
             ),
-            margin=ft.Margin.all(4),
             width=200, height=200,
+            animate_rotation=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            animate_size=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         )
 
         # How we will rotate the shape
         self.rotate_handle = ft.GestureDetector(
-            ft.Icon(ft.Icons.ROTATE_RIGHT_OUTLINED, ft.Colors.PRIMARY), 
+            ft.Icon(ft.Icons.ROTATE_RIGHT_OUTLINED, ft.Colors.PRIMARY, disabled=True), 
             mouse_cursor=ft.MouseCursor.CLICK if self.page.platform == ft.PagePlatform.WINDOWS else ft.MouseCursor.GRAB,
             on_pan_start=self._rotate_start,
             on_pan_update=self._rotate, 
             drag_interval=20,
             expand=True,
-            visible=can_rotate
+            height=50,
+            left=self.left + 100,
+            offset=ft.Offset(-0.5, 0),
+            top=self.top - 50,
+            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         )
         
         
         
         self.content = ft.Column(
             [
-                self.rotate_handle,
-                ft.VerticalDivider(),
+                #self.rotate_handle,
                 ft.Container(
                     self.canvas, 
                     expand=True, 
-                    border=ft.Border.all(2, ft.Colors.OUTLINE)
+                    border=ft.Border.all(1, ft.Colors.with_opacity(0.2, ft.Colors.OUTLINE)),
                 ),
-                text_editor := ft.TextField(
+                ft.TextField(
                     hint_text="Enter your text here", multiline=True, dense=True, visible=is_text,
-                    on_change=self._change_text
+                    on_change=self._change_text, width=200, 
                 )
             ], 
             tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0
