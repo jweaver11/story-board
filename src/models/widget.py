@@ -547,6 +547,7 @@ class Widget(ft.Container):
         self.data['show_info'] = not self.data.get('show_info', True)
         await self.save_dict()
         self.reload_widget()
+        await self.story.close_menu()
     
     async def rename_clicked(self, e=None):
         ''' Replaces our widget title with a text field to rename it '''

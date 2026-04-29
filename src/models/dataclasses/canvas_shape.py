@@ -36,7 +36,6 @@ class CanvasShape(ft.Container):
         self._height = 200        # Height of actual shape excluding tools to rotate
         self.manipulate_action: str = "move"
 
-
         self.rotate_handle: ft.GestureDetector
         self.canvas: cv.Canvas
 
@@ -87,6 +86,12 @@ class CanvasShape(ft.Container):
             return ft.MouseCursor.RESIZE_UP_DOWN              # ↕
         else:
             return ft.MouseCursor.RESIZE_UP_RIGHT_DOWN_LEFT   # ↙↗  (/)
+        
+    async def _change_text(self, e):
+        if self.shape_type in ["text", "text_box"]:
+            self.cv_shape.value = e.control.value
+            self.canvas.update()
+
 
     # Sets the mouse cursor depending on where the mouse is hovering
     async def _set_manipulation_action(self, e: ft.PointerEvent):
@@ -139,15 +144,27 @@ class CanvasShape(ft.Container):
                 # Update whichever shape is inside of this container
                 match self.shape_type:
                     case "rectangle":
-                        self.shape.width = self.canvas.width
-                        self.shape.height = self.canvas.height
+                        self.cv_shape.width = self.canvas.width
+                        self.cv_shape.height = self.canvas.height
                     case "triangle":
-                        self.shape.elements = [
+                        self.cv_shape.elements = [
                             cv.Path.MoveTo(self.canvas.width / 2, 0),
                             cv.Path.LineTo(self.canvas.width, self.canvas.height),
                             cv.Path.LineTo(0, self.canvas.height),
                             cv.Path.Close()
                         ]
+                    case "circle":
+                        self.left += dx / 2 * (cos_a + 1)
+                        self.top  += dx / 2 * sin_a
+                        self.canvas.height = self.canvas.width
+                        new_circle_value = self.canvas.width / 2
+                        self.cv_shape.x = new_circle_value
+                        self.cv_shape.y = new_circle_value  
+                        self.cv_shape.radius = new_circle_value
+                        self.canvas.update()
+                        self.update()
+                        return
+
 
 
                 self.left += dx / 2 * (cos_a + 1)
@@ -165,15 +182,28 @@ class CanvasShape(ft.Container):
                 # Update whichever shape is inside of this container
                 match self.shape_type:
                     case "rectangle":
-                        self.shape.width = self.canvas.width
-                        self.shape.height = self.canvas.height
+                        self.cv_shape.width = self.canvas.width
+                        self.cv_shape.height = self.canvas.height
                     case "triangle":
-                        self.shape.elements = [
+                        self.cv_shape.elements = [
                             cv.Path.MoveTo(self.canvas.width / 2, 0),
                             cv.Path.LineTo(self.canvas.width, self.canvas.height),
                             cv.Path.LineTo(0, self.canvas.height),
                             cv.Path.Close()
                         ]
+                    case "circle":
+                        self.left += dx / 2 * (cos_a - 1)
+                        self.top  += dx / 2 * sin_a
+                        self.canvas.height = self.canvas.width
+                        new_circle_value = self.canvas.width / 2
+                        self.cv_shape.x = new_circle_value
+                        self.cv_shape.y = new_circle_value  
+                        self.cv_shape.radius = new_circle_value
+                        self.canvas.update()
+                        self.update()
+                        return
+
+
 
 
                 self.left += dx / 2 * (cos_a - 1)
@@ -191,15 +221,27 @@ class CanvasShape(ft.Container):
                 # Update whichever shape is inside of this container
                 match self.shape_type:
                     case "rectangle":
-                        self.shape.width = self.canvas.width
-                        self.shape.height = self.canvas.height
+                        self.cv_shape.width = self.canvas.width
+                        self.cv_shape.height = self.canvas.height
                     case "triangle":
-                        self.shape.elements = [
+                        self.cv_shape.elements = [
                             cv.Path.MoveTo(self.canvas.width / 2, 0),
                             cv.Path.LineTo(self.canvas.width, self.canvas.height),
                             cv.Path.LineTo(0, self.canvas.height),
                             cv.Path.Close()
                         ]
+                    case "circle":
+                        self.left -= dy / 2 * sin_a
+                        self.top  += dy / 2 * (cos_a + 1)
+                        self.canvas.width = self.canvas.height
+                        new_circle_value = self.canvas.height / 2
+                        self.cv_shape.x = new_circle_value
+                        self.cv_shape.y = new_circle_value  
+                        self.cv_shape.radius = new_circle_value
+                        self.canvas.update()
+                        self.update()
+                        return
+                        
 
                         
                 self.left -= dy / 2 * sin_a
@@ -217,15 +259,27 @@ class CanvasShape(ft.Container):
                 # Update whichever shape is inside of this container
                 match self.shape_type:
                     case "rectangle":
-                        self.shape.width = self.canvas.width
-                        self.shape.height = self.canvas.height
+                        self.cv_shape.width = self.canvas.width
+                        self.cv_shape.height = self.canvas.height
                     case "triangle":
-                        self.shape.elements = [
+                        self.cv_shape.elements = [
                             cv.Path.MoveTo(self.canvas.width / 2, 0),
                             cv.Path.LineTo(self.canvas.width, self.canvas.height),
                             cv.Path.LineTo(0, self.canvas.height),
                             cv.Path.Close()
                         ]
+                    case "circle":
+                        self.left -= dy / 2 * sin_a
+                        self.top  += dy / 2 * (cos_a - 1)
+                        self.canvas.width = self.canvas.height
+                        new_circle_value = self.canvas.height / 2
+                        self.cv_shape.x = new_circle_value
+                        self.cv_shape.y = new_circle_value  
+                        self.cv_shape.radius = new_circle_value
+                        self.canvas.update()
+                        self.update()
+                        return
+
                         
 
                         
@@ -249,9 +303,9 @@ class CanvasShape(ft.Container):
 
         match self.shape_type:
             case "rectangle":
-                self.shape = cv.Rect(0, 0, 200, 200, paint=self.paint)
+                self.cv_shape = cv.Rect(0, 0, 200, 200, paint=self.paint)
             case "triangle":
-                self.shape = cv.Path(
+                self.cv_shape = cv.Path(
                     elements=[
                         cv.Path.MoveTo(100, 0),
                         cv.Path.LineTo(200, 200),
@@ -263,19 +317,28 @@ class CanvasShape(ft.Container):
 
 
             case "circle":
-                self.shape = cv.Circle(100, 100, 100, paint=self.paint)
+                self.cv_shape = cv.Circle(100, 100, 100, paint=self.paint)
             case "oval":
-                self.shape = cv.Oval(0, 0, 200, 100, paint=self.paint)
+                self.cv_shape = cv.Oval(0, 0, 200, 200, paint=self.paint)
             
             case "text":
-                self.shape = cv.Text(90, 90, "cv.Text")
+                self.cv_shape = cv.Text(
+                    10, 10, "Text", 
+                    max_width=180, 
+                    style=ft.TextStyle(color=ft.Colors.WHITE, size=16),
+                    text_align=ft.TextAlign.CENTER,
+                )
             case "arc":
-                self.shape = cv.Arc(100, 100, 100, 0, math.pi / 2, paint=self.paint)
+                self.cv_shape = cv.Arc(100, 100, 100, 0, math.pi / 2, paint=self.paint)
             case "dialogue_box":
                 pass
 
+        # If we're text or not, we'll add a text_editor below the canvas to edit the text
+        is_text = self.shape_type == "text"
+        can_rotate = self.shape_type != "circle"
+
         self.canvas = cv.Canvas(
-            shapes=[self.shape if self.shape else cv.Text(0, 0, "Error getting shape")],      # Shape we built depending on the tool being used
+            shapes=[self.cv_shape if self.cv_shape else cv.Text(0, 0, "Error getting shape", style=ft.TextStyle(color=ft.Colors.WHITE, size=16))],      # Shape we built depending on the tool being used
             content=ft.GestureDetector(
                 on_pan_update=self._manipulate,     # Handles resizing and dragging
                 on_hover=self._set_manipulation_action,
@@ -293,11 +356,11 @@ class CanvasShape(ft.Container):
             on_pan_start=self._rotate_start,
             on_pan_update=self._rotate, 
             drag_interval=20,
-            expand=True
+            expand=True,
+            visible=can_rotate
         )
         
-        # If we're text or not, we'll add a text_editor below the canvas to edit the text
-        is_text = self.shape_type in ["text", "text_box"]
+        
         
         self.content = ft.Column(
             [
@@ -308,7 +371,10 @@ class CanvasShape(ft.Container):
                     expand=True, 
                     border=ft.Border.all(2, ft.Colors.OUTLINE)
                 ),
-                text_editor := ft.TextField("Edit me", expand=True, multiline=True, visible=is_text)
+                text_editor := ft.TextField(
+                    hint_text="Enter your text here", multiline=True, dense=True, visible=is_text,
+                    on_change=self._change_text
+                )
             ], 
             tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0
         )

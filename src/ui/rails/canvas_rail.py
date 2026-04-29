@@ -187,6 +187,10 @@ class CanvasRail(Rail):
                 return ft.Icon(ft.Icons.RECTANGLE if in_tool_mode else ft.Icons.RECTANGLE_OUTLINED, ft.Colors.PRIMARY)
             case "triangle":
                 return ft.Icon(ft.CupertinoIcons.ARROWTRIANGLE_UP_FILL if in_tool_mode else ft.CupertinoIcons.ARROWTRIANGLE_UP, ft.Colors.PRIMARY)
+            case "oval":
+                return ft.Icon(ft.Icons.CIRCLE if in_tool_mode else ft.Icons.CIRCLE_OUTLINED, ft.Colors.PRIMARY, scale=ft.Scale(scale_x=0.8))
+            case "dialogue_box":
+                return ft.Icon(ft.CupertinoIcons.BUBBLE_LEFT_FILL if in_tool_mode else ft.CupertinoIcons.BUBBLE_LEFT, ft.Colors.PRIMARY)
             case _:
                 return ft.Icon(ft.Icons.BUILD if in_tool_mode else ft.Icons.BUILD_OUTLINED, ft.Colors.PRIMARY, scale=0.8)
             
@@ -240,7 +244,7 @@ class CanvasRail(Rail):
             ft.MenuItemButton(
                 ft.Row([
                     ft.Text("Dialogue Box", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                    ft.Icon(ft.CupertinoIcons.BUBBLE_LEFT, ft.Colors.PRIMARY)
+                    ft.Icon(ft.CupertinoIcons.BUBBLE_LEFT_FILL, ft.Colors.PRIMARY)
                     # ft.CupertinoIcons.CHAT_BUBBLE
                 ]),
                 data="dialogue_box",
@@ -985,7 +989,13 @@ class CanvasRail(Rail):
                         bgcolor="transparent", shadow_color="transparent",
                         shape=ft.RoundedRectangleBorder(radius=10),
                     ),
-                )
+                ),
+
+
+                # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
+                ft.Divider(),
+                ft.Row([ft.Text("Tool Options", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
+                ft.Container(height=10),   # Spacer
 
             ]
         )

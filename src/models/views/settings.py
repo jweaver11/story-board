@@ -86,7 +86,13 @@ class Settings(ft.View):
                     'current_control_mode': "draw",      # Either drawing (use brush settings), or tools (use built in tools)
                     'current_brush_name': "stroke",      # Name of the currently selected brush, either default or custom. Just used for display purposes
                     'current_tool_name': "erase",        # Current tool or shape being used
-                    'use_default_shape_paint': True,    # If True, shapes are black and use default paint settings rather than live brush settings
+                    'use_default_shape_paint': True,     # If True, shapes are black/white and use default paint settings rather than live brush settings
+                    'text_shape_size': 16,                # Font size for text shapes
+                    'text_shape_font': "Arial",              # Font family for text shapes
+                    'text_shape_color': "#FFFFFF",          # Font color for text shapes
+                    'text_shape_bold': False,                   # If text shapes are bold or not
+                    'text_shape_italic': False,                 # If text shapes are italic or not  
+                    'text_shape_underline': False,              # If text shapes are underlined or not
                     'saved_brushes': dict,              # Saved brushes the user has created that we can load
                 },
 
