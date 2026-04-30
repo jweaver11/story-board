@@ -590,10 +590,10 @@ class Canvas(Widget):
                 canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))
                 canvas.update()
 
-            #elif app.settings.data.get('paint_settings', {}).get('blend_mode', "") is not None:   
-                #canvas.shapes.clear()
-                #canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))
-                #canvas.update()
+            elif app.settings.data.get('paint_settings', {}).get('blend_mode', "") is not None:   
+                canvas.shapes.clear()
+                canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))
+                canvas.update()
 
             
 
