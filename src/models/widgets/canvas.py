@@ -53,6 +53,7 @@ class Canvas(Widget):
             data=data,  
             is_rebuilt = is_rebuilt
         ) 
+        self.body_container.padding = ft.Padding.only(left=16)
 
 
         # Verifies this object has the required data fields, and creates them if not
@@ -88,7 +89,7 @@ class Canvas(Widget):
         self.needs_redraw = False           # Used to track if we need to redraw canvas after a resize
         self.skip_first_resize = True       # Skip the first resize since it will fix itself
         self.initial_resize = True          # Initial resize to track our canvases size without rebuild
-        self.maniuplating_shape = False     # Whether we're currently manipulating a shape or not, so we know whether to update our active path or not when dragging
+        self.manipulating_shape = False     # Whether we're currently manipulating a shape or not, so we know whether to update our active path or not when dragging
 
         
         self.layers = [{}]                  # List of our layers, which are each their own canvas
@@ -110,7 +111,16 @@ class Canvas(Widget):
 
     def _load_layers(self):
         self.layers.clear()
-        mouse_cursor = ft.MouseCursor.PRECISE if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") == "draw" else ft.MouseCursor.CLICK
+        control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
+        active_tool = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+        
+        
+        if active_tool == "erase" or active_tool == "line":
+            mouse_cursor = ft.MouseCursor.PRECISE
+        else:
+            mouse_cursor = ft.MouseCursor.CLICK
+        if control_mode == "draw":
+            mouse_cursor = ft.MouseCursor.PRECISE
         
         for idx, layer in enumerate(self.data.get('canvas_data', {}).get('Layers', [])):
 
@@ -235,14 +245,14 @@ class Canvas(Widget):
             canvas.content.update()
 
         # Paints a shape we're modifying if the rail tool changes
-        if self.maniuplating_shape:
+        if self.manipulating_shape:
             await self.paint_tool_on_canvas()
-            self.maniuplating_shape = False
+            self.manipulating_shape = False
 
     async def _toggle_show_info(self, e):
-        if self.maniuplating_shape:
+        if self.manipulating_shape:
             await self.paint_tool_on_canvas()
-            self.maniuplating_shape = False
+            self.manipulating_shape = False
         await super()._toggle_show_info()
            
     # If we have an active tool/shape that we are manipulating, paint it on the canvas
@@ -351,24 +361,21 @@ class Canvas(Widget):
                 # All other tools/shapes get added here
                 case _:
 
-                    if self.maniuplating_shape:
-                        self.maniuplating_shape = False
+                    if self.manipulating_shape:
+                        self.manipulating_shape = False
                         await self.paint_tool_on_canvas()
                         return
     
 
-                    self.maniuplating_shape = True
+                    self.manipulating_shape = True
                     self.active_tool = CanvasShape(tool_name, left=e.local_position.x, top=e.local_position.y)
                     self.layer_stack.controls.append(self.active_tool)
                     self.layer_stack.update()
                     self.layer_stack.controls.append(self.active_tool.rotate_handle)
                     self.layer_stack.update()
-                    #TODO: add textfield here??
-                    #if self.active_tool.shape_type == "text":
-                        #self.la
                     return
                 
-        self.maniuplating_shape = False 
+        self.manipulating_shape = False 
 
         # If we didn't return, we're either in erase tool or drawing mode
         canvas: cv.Canvas = e.control.parent    # Set the canvas
@@ -478,7 +485,17 @@ class Canvas(Widget):
     async def update_stroke(self, e: ft.DragUpdateEvent):
         ''' Determines which drawing tool we're using, and updates accordingly as we drag our mouse '''
 
-        #TODO: Add check here to reduce num of lines based on previous start and end??
+        # TODO: Add check here to reduce num of lines based on previous start and end??
+        # Erasor tool erases all drawing in layers that are below the active layer temporarily, since it renders invisible pixels that display on the current layer
+        # Switch info display of layers to show them in bottom up view instead of top down??
+        # Add rest of dialogue boxes, and resizing of them
+        # Option to use cv.Line vs cv.Path as a textured brush??
+        # Make it so you can hide and delete active layer, and it will auto select the top most layer as the new active layer
+        # Add bluring of layers for depth of field and other effects
+        # Make it so you can make a hidden layer active, and it will make it non-hidden
+        # Undo redo list having issues now
+        
+        # BUG: Selected layer issue
 
         # Sampling to improve perforamance. If the line length is too small, we skip it
         dx = e.local_position.x - self.state.x
@@ -560,19 +577,22 @@ class Canvas(Widget):
                 await canvas.clear_capture()
                 return
 
-            # Save the capture, to whatever layer we're drawing on
-            self.data['canvas_data']['Layers'][self.data.get('canvas_data', {}).get('Active Layer', 0)]['capture'] = encoded_capture
+            # With this:
+            for layer in self.data['canvas_data']['Layers']:
+                if layer.get('name') == layer_name:
+                    layer['capture'] = encoded_capture
+                    break
             await self.save_dict()     
                 
             await canvas.clear_capture()
 
             # Check if we have too many shapes on the canvas. If we do, capture them and put it in an image
             if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:   
-                print("Capturing canvas to prevent lag")
                 canvas.shapes.clear()
                 canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))   
                 canvas.update()
 
+            
         except Exception as e:
             print("failed to save canvas", e)
 
@@ -627,25 +647,6 @@ class Canvas(Widget):
     async def export_canvas_clicked(self, e=None):
         """ Exports canvas to correct file type based on selection with optional upscaling """
 
-        # Convert colors for color background to rgba format
-        def hex_to_rgba(hex_color: str):
-            hex_color = hex_color.lstrip("#")
-
-            if len(hex_color) == 8:  # AARRGGBB
-                a = int(hex_color[0:2], 16)
-                r = int(hex_color[2:4], 16)
-                g = int(hex_color[4:6], 16)
-                b = int(hex_color[6:8], 16)
-                return (r, g, b, a)
-
-            if len(hex_color) == 6:  # RRGGBB
-                r = int(hex_color[0:2], 16)
-                g = int(hex_color[2:4], 16)
-                b = int(hex_color[4:6], 16)
-                return (r, g, b, 255)
-
-            raise ValueError("Invalid hex color format")
-
         # Merge all our layer/canvas captures together into one image at the right size
         def _merge_captures(captures_list: list, target_width: int=None, target_height: int=None):
 
@@ -672,20 +673,7 @@ class Canvas(Widget):
             if not images:      # Catch errors
                 return
             
-            # Determine our background type and create an image for it
-            bg_type = self.data.get('canvas_data', {}).get('bg_type', None)
-
-            match bg_type:
-                case "color":       # Color backgrounds
-                    hex_color = self.data.get('canvas_data', {}).get('background', "#00000000")
-                    rgba_color = hex_to_rgba(hex_color) 
-                    merged = Image.new("RGBA", (width, height), rgba_color)
-                case "image":       # Images
-                    bg_image_data = self.data.get('canvas_data', {}).get('background', None)
-                    merged = Image.open(BytesIO(base64.b64decode(bg_image_data))).convert("RGBA")
-                    merged = merged.resize((width, height))
-                case _:     # All others are just invisible
-                    merged = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+            merged = Image.new("RGBA", (width, height), (0, 0, 0, 0))
             
             # Put all the images together
             for image in images:
@@ -762,10 +750,7 @@ class Canvas(Widget):
         self.layer_stack = ft.Stack([
             ft.Container(   # Make sure we're expanded
                 expand=True, ignore_interactions=True,
-                bgcolor=self.data.get('canvas_data', {}).get('background', None) if self.data.get('canvas_data', {}).get('bg_type') == "color" else None,
-                image=ft.DecorationImage(
-                    self.data.get('canvas_data', {}).get('background', None), fit=ft.BoxFit.FILL
-                ) if self.data.get('canvas_data', {}).get('bg_type') == "image" else None,
+                image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL) 
             ),      
         ],  expand=False, alignment=ft.Alignment(0, 0))   # Stack so we can have a background that doesn't get captured, and an interactive viewer to zoom and pan without affecting our coordinates
 

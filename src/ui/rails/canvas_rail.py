@@ -1026,6 +1026,7 @@ class CanvasRail(Rail):
 
 
 # TODO: 
+# Add tool "note" icon with tooltip of the current tool selected next to the tool selector dropdown. Such as erase behaviors
 # Add txt input for brush size as well
 # Add txt size, color, fonts? for text tool
 # Build in dialoge bubbles shapes for voice lines (up-left, up-right, down-left, down-right, middle-up, middle-down). See canvas example on flet docs, they have one

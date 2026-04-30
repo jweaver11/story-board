@@ -41,45 +41,6 @@ class CanvasShape(ft.Container):
         self.canvas: cv.Canvas
 
 
-        
-    # Setup initial rotation position
-    async def _rotate_start(self, e: ft.DragStartEvent):
-        self._local_center_x = self.canvas.width / 2
-        self._local_center_y = 24 + self.canvas.height / 2  # ≈ 124
-        self._prev_mouse_angle = math.atan2(
-            e.local_position.y - self._local_center_y,
-            e.local_position.x - self._local_center_x
-        )
-
-
-    # Rotates the shape based on the mouse movement.  
-    async def _rotate(self, e: ft.DragUpdateEvent):
-
-        
-
-        current_angle = math.atan2(
-            e.local_position.y - self._local_center_y,
-            e.local_position.x - self._local_center_x
-        )
-        delta = current_angle - self._prev_mouse_angle
-        if delta > math.pi:
-            delta -= 2 * math.pi
-        elif delta < -math.pi:
-            delta += 2 * math.pi
-
-        if self.shape_type == "text":
-            self.cv_shape.rotate += delta
-        else:
-            self.rotate.angle += delta
-
-        # TODO: Check if we're near 90 degree increments and snap to them if we are
-        # Also add size change for dialogue box and text shapes
-        if self.rotate.angle:
-            pass
-
-        self._prev_mouse_angle = current_angle
-        self.update()
-
     # Returns the correct cursor for the given angle of rotation for visual feedback when hovering over edges to resize
     def _cursor_for_angle(self, angle: float) -> ft.MouseCursor:
         """Maps a screen-space drag direction (radians) to the best resize cursor."""
@@ -96,11 +57,17 @@ class CanvasShape(ft.Container):
         else:
             return ft.MouseCursor.RESIZE_UP_RIGHT_DOWN_LEFT   # ↙↗  (/)
         
+    # Changes the text when typing in the text field
     async def _change_text(self, e):
-        if self.shape_type in ["text", "text_box"]:
+        if self.shape_type == "text":
             self.cv_shape.value = e.control.value
-            self.canvas.update()
+            self.cv_shape.update()
 
+    # Sets the text's max width for better control of rotated text
+    async def _resize_text_width(self, e: ft.DragUpdateEvent):
+        if self.shape_type == "text":
+            self.cv_shape.max_width = max(20, self.cv_shape.max_width + e.local_delta.x)
+            self.cv_shape.update()
 
     # Sets the mouse cursor depending on where the mouse is hovering
     async def _set_manipulation_action(self, e: ft.PointerEvent):
@@ -137,6 +104,52 @@ class CanvasShape(ft.Container):
         e.control.mouse_cursor = ft.MouseCursor.MOVE
         self.manipulate_action = "move"
         e.control.update()
+
+    # Setup initial rotation position
+    async def _rotate_start(self, e: ft.DragStartEvent):
+        self._local_center_x = self.canvas.width / 2
+        self._local_center_y = 24 + self.canvas.height / 2  # ≈ 124
+        self._prev_mouse_angle = math.atan2(
+            e.local_position.y - self._local_center_y,
+            e.local_position.x - self._local_center_x
+        )
+
+
+    # Rotates the shape based on the mouse movement.  
+    async def _rotate(self, e: ft.DragUpdateEvent):
+
+        current_angle = math.atan2(
+            e.local_position.y - self._local_center_y,
+            e.local_position.x - self._local_center_x
+        )
+        delta = current_angle - self._prev_mouse_angle
+        if delta > math.pi:
+            delta -= 2 * math.pi
+        elif delta < -math.pi:
+            delta += 2 * math.pi
+
+        # Text has a built in rotate, so we'll use that
+        if self.shape_type == "text":
+
+            # Snap to 90 degree angles if close to them
+            new_angle = self.cv_shape.rotate + delta
+            angle_deg = math.degrees(new_angle) % 360
+            nearest_90 = round(angle_deg / 90) * 90
+            if abs(angle_deg - nearest_90) < 1.5:
+                new_angle = math.radians(nearest_90)
+            self.cv_shape.rotate = new_angle
+            
+        # Other shapes don't have built in rotate, so we rotate the container they're in
+        else:
+            new_angle = self.rotate.angle + delta
+            angle_deg = math.degrees(new_angle) % 360
+            nearest_90 = round(angle_deg / 90) * 90
+            if abs(angle_deg - nearest_90) < 1.5:
+                new_angle = math.radians(nearest_90)
+            self.rotate.angle = new_angle
+
+        self._prev_mouse_angle = current_angle
+        self.update()
 
     # Either drag or resize us based on where the user is manipulating
     async def _manipulate(self, e: ft.DragUpdateEvent):
@@ -180,12 +193,11 @@ class CanvasShape(ft.Container):
                         self.cv_shape.width = self.canvas.width - 20
                         self.cv_shape.height = self.canvas.height - 20
                     case "text":
-                        self.cv_shape.max_width = self.canvas.width - 20
+                        self.cv_shape.x = self.canvas.width / 2
+                        self.cv_shape.y = self.canvas.height / 2
                     case "arc":
                         self.cv_shape.width = self.canvas.width - 20
                         self.cv_shape.height = self.canvas.height * 2 - 40
-
-
 
                 self.left += dx / 2 * (cos_a + 1)
                 self.top  += dx / 2 * sin_a
@@ -233,12 +245,11 @@ class CanvasShape(ft.Container):
                         self.cv_shape.width = self.canvas.width - 20
                         self.cv_shape.height = self.canvas.height - 20
                     case "text":
-                        self.cv_shape.max_width = self.canvas.width - 20
+                        self.cv_shape.x = self.canvas.width / 2
+                        self.cv_shape.y = self.canvas.height / 2
                     case "arc":
                         self.cv_shape.width = self.canvas.width - 20
                         self.cv_shape.height = self.canvas.height * 2 - 40
-
-
 
                 self.left += dx / 2 * (cos_a - 1)
                 self.top  += dx / 2 * sin_a
@@ -285,12 +296,11 @@ class CanvasShape(ft.Container):
                         self.cv_shape.width = self.canvas.width - 20
                         self.cv_shape.height = self.canvas.height - 20
                     case "text":
-                        pass
+                        self.cv_shape.x = self.canvas.width / 2
+                        self.cv_shape.y = self.canvas.height / 2
                     case "arc":
                         self.cv_shape.width = self.canvas.width - 20
                         self.cv_shape.height = self.canvas.height * 2 - 40
-                        
-
                         
                 self.left -= dy / 2 * sin_a
                 self.top  += dy / 2 * (cos_a + 1)
@@ -337,13 +347,11 @@ class CanvasShape(ft.Container):
                         self.cv_shape.width = self.canvas.width - 20
                         self.cv_shape.height = self.canvas.height - 20
                     case "text":
-                        pass
+                        self.cv_shape.x = self.canvas.width / 2
+                        self.cv_shape.y = self.canvas.height / 2
                     case "arc":
                         self.cv_shape.width = self.canvas.width - 20
                         self.cv_shape.height = self.canvas.height * 2 - 40
-
-                        
-
                         
                 self.left -= dy / 2 * sin_a
                 self.top  += dy / 2 * (cos_a - 1)
@@ -365,8 +373,6 @@ class CanvasShape(ft.Container):
                 self.update()
 
     
-
-
     def build(self):
 
         match self.shape_type:
@@ -388,12 +394,12 @@ class CanvasShape(ft.Container):
                 self.cv_shape = cv.Oval(10, 10, 180, 180, paint=self.paint)
             case "text":
                 self.cv_shape = cv.Text(
-                    90, 90, "Text", 
+                    100, 100, "Text", 
                     max_width=180, 
-                    style=ft.TextStyle(color=ft.Colors.WHITE, size=16),
-                    alignment=ft.Alignment.CENTER,
                     rotate=0,
+                    alignment=ft.Alignment.CENTER,
                     text_align=ft.TextAlign.CENTER,
+                    style=ft.TextStyle(color=ft.Colors.WHITE, size=16),
                 )
 
             case "arc":
@@ -428,9 +434,9 @@ class CanvasShape(ft.Container):
             animate_size=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         )
 
-        # How we will rotate the shape
+        # How we will rotate the shape. This is added from the canvas to the overlay
         self.rotate_handle = ft.GestureDetector(
-            ft.Icon(ft.Icons.ROTATE_RIGHT_OUTLINED, ft.Colors.PRIMARY, disabled=True), 
+            ft.Icon(ft.Icons.ROTATE_RIGHT_OUTLINED, ft.Colors.PRIMARY), 
             mouse_cursor=ft.MouseCursor.CLICK if self.page.platform == ft.PagePlatform.WINDOWS else ft.MouseCursor.GRAB,
             on_pan_start=self._rotate_start,
             on_pan_update=self._rotate, 
@@ -442,12 +448,20 @@ class CanvasShape(ft.Container):
             top=self.top - 50,
             animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         )
+
+        text_width_adjustor = ft.GestureDetector(
+            ft.Icon(ft.CupertinoIcons.RESIZE_H, ft.Colors.PRIMARY), 
+            tooltip="Drag to adjust text width based on its right side up layout",
+            mouse_cursor=ft.MouseCursor.CLICK if self.page.platform == ft.PagePlatform.WINDOWS else ft.MouseCursor.GRAB,
+            on_pan_update=self._resize_text_width, 
+            drag_interval=20,
+            visible=self.shape_type == "text"
+        )
         
         
         
         self.content = ft.Column(
             [
-                #self.rotate_handle,
                 ft.Container(
                     self.canvas, 
                     expand=True, 
@@ -456,7 +470,8 @@ class CanvasShape(ft.Container):
                 ft.TextField(
                     hint_text="Enter your text here", multiline=True, dense=True, visible=is_text,
                     on_change=self._change_text, width=200, 
-                )
+                ),
+                text_width_adjustor
             ], 
             tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0
         )
