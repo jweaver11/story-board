@@ -306,6 +306,7 @@ class CanvasInformationDisplay(MiniWidget):
             for layer in self.data.get('Layers', []):
                 if layer.get('name') == name:
                     self.data['Layers'].remove(layer)
+                    self.data['Active Layer'] = -1  
                     break
             
             for task in self.data['undo_list'][:]:   # Remove any undo tasks related to this layer
@@ -347,18 +348,20 @@ class CanvasInformationDisplay(MiniWidget):
 
                 # Can't hide active layer, show snackbar
                 if idx == self.data.get('Active Layer', 0) and layer.get('visible', True):
-                    self.p.show_dialog(SnackBar("Cannot hide active layer"))
-                    return
+                    
+                    self.data['Active Layer'] = -1 
+                            
+
                 layer['visible'] = not layer.get('visible', True)
+                
                 await self.save_dict()
 
                 # Update that canvases visibility and edit our icon to match
                 for ctrl in self.widget.layer_stack.controls:
                     if isinstance(ctrl, ft.Container) and ctrl.data == name:
                         ctrl.visible = layer['visible']
-                        e.control.icon = ft.Icons.VISIBILITY if layer['visible'] else ft.Icons.VISIBILITY_OFF   
-                        e.control.update()
                         ctrl.update()
+                   
                 self.reload_mini_widget()   # Just reload to reset the order in the UI
                 return
         
@@ -374,15 +377,17 @@ class CanvasInformationDisplay(MiniWidget):
             await self.widget.paint_tool_on_canvas()
 
         layer_name = e.control.data
-        print("Setting active layer to: ", layer_name)
 
         for idx, layer in enumerate(self.data.get('Layers', [])):
-            if layer.get('name') == e.control.data:
+            if layer.get('name') == layer_name:
 
                 # Error catch for setting an invisible layer as active
                 if layer.get('visible', True) == False:
-                    self.p.show_dialog(SnackBar("Cannot make a hidden layer the active layer"))
-                    return
+                    for ctrl in self.widget.layer_stack.controls:
+                        if isinstance(ctrl, ft.Container) and ctrl.data == layer_name:
+                            ctrl.visible = True
+                            ctrl.update()
+                    
 
                 self.data['Active Layer'] = idx
                 layer['visible'] = True   # Make sure layer is visible when we set it to active
@@ -392,7 +397,7 @@ class CanvasInformationDisplay(MiniWidget):
 
                 for ctrl in reorderable_list.controls:   # Loop through layers and update bg color to show active layer
                     if isinstance(ctrl, ft.ReorderableDragHandle):
-                        if ctrl.data == e.control.data:
+                        if ctrl.data == layer_name:
                             ctrl.content.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
                             ctrl.content.leading.icon = ft.Icons.VISIBILITY
                         else:
@@ -400,7 +405,7 @@ class CanvasInformationDisplay(MiniWidget):
                         ctrl.content.update()  # Update each layer control to reflect bg color change
 
                 for ctrl in self.widget.layer_stack.controls:
-                    if isinstance(ctrl, ft.Container) and ctrl.data == e.control.data:
+                    if isinstance(ctrl, ft.Container) and ctrl.data == layer_name:
                         ctrl.ignore_interactions = False   # Active layer can interact
                         ctrl.update()
                     elif isinstance(ctrl, ft.Container):

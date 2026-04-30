@@ -487,16 +487,9 @@ class Canvas(Widget):
 
         # TODO: Add check here to reduce num of lines based on previous start and end??
         # Erasor tool erases all drawing in layers that are below the active layer temporarily, since it renders invisible pixels that display on the current layer
-        # Switch info display of layers to show them in bottom up view instead of top down??
         # Add rest of dialogue boxes, and resizing of them
         # Option to use cv.Line vs cv.Path as a textured brush??
-        # Make it so you can hide and delete active layer, and it will auto select the top most layer as the new active layer
-        # Add bluring of layers for depth of field and other effects
-        # Make it so you can make a hidden layer active, and it will make it non-hidden
-        # Undo redo list having issues now
         
-        # BUG: Selected layer issue
-
         # Sampling to improve perforamance. If the line length is too small, we skip it
         dx = e.local_position.x - self.state.x
         dy = e.local_position.y - self.state.y
