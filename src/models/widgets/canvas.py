@@ -486,7 +486,6 @@ class Canvas(Widget):
         ''' Determines which drawing tool we're using, and updates accordingly as we drag our mouse '''
 
         # TODO: Add check here to reduce num of lines based on previous start and end??
-        # Erasor tool erases all drawing in layers that are below the active layer temporarily, since it renders invisible pixels that display on the current layer
         # Add rest of dialogue boxes, and resizing of them
         # Option to use cv.Line vs cv.Path as a textured brush??
         
@@ -584,6 +583,19 @@ class Canvas(Widget):
                 canvas.shapes.clear()
                 canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))   
                 canvas.update()
+
+            # Always re-render end of erase strokes, or they will appear broken
+            elif app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") == "tool" and app.settings.data.get('canvas_settings', {}).get('current_tool_name', "") == "erase":   
+                canvas.shapes.clear()
+                canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))
+                canvas.update()
+
+            #elif app.settings.data.get('paint_settings', {}).get('blend_mode', "") is not None:   
+                #canvas.shapes.clear()
+                #canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))
+                #canvas.update()
+
+            
 
             
         except Exception as e:

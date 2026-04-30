@@ -866,6 +866,33 @@ class CanvasRail(Rail):
             data="tool", on_click=_set_control_mode
         )
 
+        # Set a tooltip for certain tools
+        tool_note_visible = False
+        match app.settings.data.get('canvas_settings', {}).get('current_tool_name', 'draw'):
+            case "erase":
+                tool_tooltip = "Eraser Tool: Erases overtop of existing content ONLY on the active layer, \n" \
+                "Even though it appears to erase all layers beneath the active layer"
+                if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "tool":
+                    tool_note_visible = True
+
+            case "line":
+                tool_tooltip = "Line Tool: Draws straight lines from starting point where mouse is pressed down until mouse is released"
+                if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "tool":
+                    tool_note_visible = True
+
+            case _:
+
+                tool_tooltip = None
+                tool_note_visible = False
+
+        # Set a note for certain tools
+        tool_note = ft.Icon(
+            ft.Icons.INFO_OUTLINE, ft.Colors.PRIMARY,
+            scale=0.8,
+            visible=tool_note_visible,
+            tooltip=tool_tooltip
+        )
+
         fill_switch = ft.Switch(
             True, "\tFill", on_change=_paint_fill_changed,
             label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
@@ -942,8 +969,9 @@ class CanvasRail(Rail):
                         style=ft.MenuStyle(
                             bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)
                         ),
-                        expand=True,
-                    )
+                        #expand=True,
+                    ),
+                    tool_note
                 ], spacing=4),
                     
    
@@ -1026,7 +1054,6 @@ class CanvasRail(Rail):
 
 
 # TODO: 
-# Add tool "note" icon with tooltip of the current tool selected next to the tool selector dropdown. Such as erase behaviors
 # Add txt input for brush size as well
 # Add txt size, color, fonts? for text tool
 # Build in dialoge bubbles shapes for voice lines (up-left, up-right, down-left, down-right, middle-up, middle-down). See canvas example on flet docs, they have one
