@@ -147,10 +147,10 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
             data=canvas_data
         )
 
-        story.data['selected_rail'] = 'canvas'
-        page.run_task(story.save_dict)
-        story.workspaces_rail.reload_rail(story)
-        story.active_rail.reload_rail()
+        #story.data['selected_rail'] = 'canvas'
+        #page.run_task(story.save_dict)
+        #story.workspaces_rail.reload_rail(story)
+        #story.active_rail.reload_rail()
 
         # Build the canvas here
         page.pop_dialog()

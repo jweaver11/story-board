@@ -396,7 +396,7 @@ class Rail(IsolatedColumn):
         # Apply the update to UI
         try:        # Handle first launch
             self.update()
-        except Exception as e:
+        except Exception:
             pass
 
         # Return yourself as the control

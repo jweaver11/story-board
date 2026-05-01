@@ -207,8 +207,8 @@ class CanvasRail(Rail):
         await app.settings.save_dict()
         self.story.active_rail.reload_rail()
         for widget in self.story.widgets:
-            if widget.visible:
-                if widget.data.get('tag') == "canvas":
+            if widget.data.get('tag') == "canvas":
+                if widget.data.get('visible', True):
                     await widget.set_mouse_cursor()
 
 
@@ -333,8 +333,8 @@ class CanvasRail(Rail):
 
         self.story.active_rail.reload_rail()
         for widget in self.story.widgets:
-            if widget.visible:
-                if widget.data.get('tag') == "canvas":
+            if widget.data.get('tag') == "canvas":
+                if widget.data.get('visible', True):
                     self.p.run_task(widget.set_mouse_cursor)
 
     # Set the blend mode label based on current mode in settings
@@ -720,7 +720,7 @@ class CanvasRail(Rail):
             label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
             value=app.settings.data.get('paint_settings', {}).get('anti_alias', True),
             tooltip="Whether to use anti-aliasing for smoother brush strokes. Disabling may result in jagged edges",
-            label_position=ft.LabelPosition.LEFT
+            #label_position=ft.LabelPosition.LEFT
         )
 
         # Stroke cap shape
@@ -790,7 +790,7 @@ class CanvasRail(Rail):
         
         paint_blend_mode_selector = ft.SubmenuButton(
             f"Blend Mode: {self._set_blend_mode_label()}", 
-            tooltip="Current blend effects applied to your brush strokes. Select to change.",
+            tooltip="The Current blend effects applied to your brush strokes. \nSome blend modes don't render correctly until AFTER a stroke is completed.",
             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
             style=ft.ButtonStyle(
                 padding=ft.Padding.only(left=4, right=4), alignment=ft.Alignment.CENTER,
@@ -857,8 +857,8 @@ class CanvasRail(Rail):
             await app.settings.save_dict()
             self.story.active_rail.reload_rail()
             for widget in self.story.widgets:
-                if widget.visible:
-                    if widget.data.get('tag') == "canvas":
+                if widget.data.get('tag') == "canvas":
+                    if widget.data.get('visible', True):
                         await widget.set_mouse_cursor()
 
 
@@ -912,8 +912,49 @@ class CanvasRail(Rail):
             label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
             value=app.settings.data.get('paint_settings', {}).get('style', 'stroke').endswith('_fill'),
             tooltip="Whether to fill strokes and shapes, or leave them hollow (Transparent)",
-            label_position=ft.LabelPosition.LEFT
+            #label_position=ft.LabelPosition.LEFT
         )
+
+        # Toggles path smoothing
+        async def _path_smoothing_changed(e):
+            new_value = e.control.value
+            app.settings.data['canvas_settings']['use_path_smoothing'] = e.control.value
+            await app.settings.save_dict()
+
+        use_path_smoothing_switch =  ft.Switch(
+            True, "\tPath Smoothing", on_change=_path_smoothing_changed,
+            label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
+            value=app.settings.data.get('canvas_settings', {}).get('use_path_smoothing', True),
+            tooltip="Whether to apply path smoothing to brush strokes. Makes the brushes paint color appear smoother, especially at lower opacity values.",
+            #label_position=ft.LabelPosition.LEFT
+        )
+
+        # Updates any live text tools if we changed a setting that would affect it
+        async def _update_live_text_shape():
+            for widget in self.story.widgets:
+                if widget.data.get('tag') == "canvas" and widget.data.get('visible', False):
+                    if widget.manipulating_shape and widget.active_tool.shape_type == "text":
+                        widget.active_tool.cv_shape.style = ft.TextStyle(
+                            # TODO: Set properties here
+                        )
+                        widget.active_tool.cv_shape.update()
+
+        async def _change_text_options(e):
+            option = e.control.data
+            value = e.control.value
+            if option == "bold":
+                app.settings.data['text_settings']['bold'] = value
+            elif option == "italic":
+                app.settings.data['text_settings']['italic'] = value
+            elif option == "underline":
+                app.settings.data['text_settings']['underline'] = value
+            elif option == "strikethough":
+                app.settings.data['text_settings']['strikethough'] = value
+            await app.settings.save_dict()
+            self.story.active_rail.reload_rail()
+            await _update_live_text_shape()
+
+        
         
         # Build the content of our rail
         content = ft.Column(
@@ -949,34 +990,38 @@ class CanvasRail(Rail):
                     #italic=True,
                     #tooltip="The current brush you have selected"
                 #),
+                ft.Container(
+                    ft.MenuBar(
+                        [self.color_selector],
+                        style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)),
+                        #expand=True,
+                    ),
+                    margin=ft.Margin.only(left=4)
+                ),
 
                 ft.Row([
                     ft.Container(set_draw_button, margin=ft.Margin.only(left=4)), 
-                    ft.MenuBar(
-                        [self.brush_selector], 
-                        style=ft.MenuStyle(
-                            bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)
-                        ),
-                        #expand=True,
-                    ),
                     ft.Container(
                         ft.MenuBar(
-                            [self.color_selector],
-                            style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)),
+                            [self.brush_selector], 
+                            style=ft.MenuStyle(
+                                bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)
+                            ),
                             #expand=True,
                         ),
                         margin=ft.Margin.only(left=4)
                     ),
-                    save_custom_brush_button
-                ], spacing=4, wrap=True),  
-                ft.Container(height=10),  
+                    
+                    ft.Container(save_custom_brush_button, margin=ft.Margin.only(left=4))
+                ], spacing=0, wrap=True),  
+                #ft.Container(height=10),  
 
-                ft.Text(
-                    "\tCurrent Tool", color=ft.Colors.ON_SURFACE, 
-                    theme_style=ft.TextThemeStyle.LABEL_LARGE, 
-                    italic=True,
-                    tooltip="The current tool you have selected"
-                ),
+                #ft.Text(
+                    #"\tCurrent Tool", color=ft.Colors.ON_SURFACE, 
+                    #theme_style=ft.TextThemeStyle.LABEL_LARGE, 
+                    #italic=True,
+                    #tooltip="The current tool you have selected"
+                #),
 
                 ft.Row([
                     ft.Container(set_tool_button, margin=ft.Margin.only(left=4)),
@@ -994,24 +1039,28 @@ class CanvasRail(Rail):
                 
 
                 ft.Row([
-                    ft.Text("\tWidth", theme_style=ft.TextThemeStyle.LABEL_LARGE, tooltip="Size of your strokes"), 
+                    ft.Text("\t\tWidth", theme_style=ft.TextThemeStyle.LABEL_LARGE,), 
                     self.paint_width_slider
-                ], spacing=0),      # Size slider
+                ], spacing=0, tooltip="Size of your strokes"),      # Size slider
 
-                fill_switch,
+                ft.Row([ft.Text("\t\tBlur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider], spacing=0),
 
                 
-                #ft.Container(height=10),   # Spacer
+
+                
                 
                 #ft.Container(height=10),   # Spacer
  
                 # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
-                ft.Divider(),
-                ft.Row([ft.Text("Effects", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
+                #ft.Divider(),
+                #ft.Row([ft.Text("Effects", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
                 #ft.Container(height=10),   # Spacer
+                fill_switch,
+
+                use_path_smoothing_switch,
                 
                 paint_anti_alias_toggle,
-                ft.Row([ft.Text("\tBlur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider], spacing=0),
+                
 
                 ft.MenuBar(
                     [paint_stroke_cap_selector],
@@ -1042,11 +1091,26 @@ class CanvasRail(Rail):
 
                 # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
                 ft.Divider(),
-                ft.Row([ft.Text("Tool Options", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
+                ft.Row([ft.Text("Tool Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
                 #ft.Container(height=10),   # Spacer
 
+                # If widget.manipulating_shape and visible, then modify its curreent shape
+                ft.Text("Text size"),
+                ft.Text("Text color"),
+                ft.Text("Fonts"),
+                ft.Text("Text Bold"),
+                ft.Text("Text Italic"),
+                ft.Text("Text Decoration"),
+                ft.Text("Background Color"),
+                ft.Text("Shadow Color"),
+                ft.Text("Letter Spacing"),
+                ft.Text("Word Spacing"),
+                ft.Text("Rectangle border radius"),
+                ft.Text("Option to use paint settings for shapes or not"),
+                ft.Text("Adjust sampling option"),
             ]
         )
+        
         
 
        
@@ -1073,10 +1137,8 @@ class CanvasRail(Rail):
 
 # TODO: 
 # Add txt input for brush size as well
-# Add txt size, color, fonts? for text tool
 # Use path smoothing for brush strokes, will use cv.Path if true else cv.line. Won't effect shapes
 # Add rest of dialogue boxes, and resizing of them
-# Build in dialoge bubbles shapes for voice lines (up-left, up-right, down-left, down-right, middle-up, middle-down). See canvas example on flet docs, they have one
+# Build in dialoge bubbles shapes for dialogue (up-left, up-right, down-left, down-right, middle-up, middle-down). See canvas example on flet docs, they have one
 # -- Both round and normal for above dialogue boxes
-# Border Radius for rectangle tool
 # Option to paint shapes as just blank standard paint, not use current paint settings

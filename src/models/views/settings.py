@@ -94,7 +94,7 @@ class Settings(ft.View):
                     'text_shape_color': "#FFFFFF",          # Font color for text shapes
                     'text_shape_bold': False,                   # If text shapes are bold or not
                     'text_shape_italic': False,                 # If text shapes are italic or not  
-                    'text_shape_underline': False,              # If text shapes are underlined or not
+                    'text_shape_decoration': False,              # If text shapes are underlined or not
                     'saved_brushes': dict,              # Saved brushes the user has created that we can load
                 },
 

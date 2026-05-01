@@ -150,7 +150,7 @@ class Canvas(Widget):
                             self.canvas_height if self.canvas_height != 0 else None 
                         )    
                     ],
-                    on_resize=self._set_size if idx == 0 else None,  # Only one layer (background) needs to set size to avoid redundency
+                    
                 ),
                 expand=True, data=name,
                 visible=visible,    # Set visibility
@@ -221,32 +221,35 @@ class Canvas(Widget):
     
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     async def set_mouse_cursor(self, e=None):
-        control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
-        active_tool = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
-        
-        
-        if active_tool == "erase" or active_tool == "line":
-            new_mouse_cursor = ft.MouseCursor.PRECISE
-        else:
-            new_mouse_cursor = ft.MouseCursor.CLICK
-        if control_mode == "draw":
-            new_mouse_cursor = ft.MouseCursor.PRECISE
-        
-        for layer in self.layers:
-            # Grab container to check if actually visible. Not visible, not exporting
-            container = layer.get('canvas', None)
-            if not container.visible:   
-                continue
+        try:
+            control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
+            active_tool = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+            
+            
+            if active_tool == "erase" or active_tool == "line":
+                new_mouse_cursor = ft.MouseCursor.PRECISE
+            else:
+                new_mouse_cursor = ft.MouseCursor.CLICK
+            if control_mode == "draw":
+                new_mouse_cursor = ft.MouseCursor.PRECISE
+            
+            for layer in self.layers:
+                # Grab container to check if actually visible. Not visible, not exporting
+                container = layer.get('canvas', None)
+                if not container.visible:   
+                    continue
 
-            # Grab canvas our canvas for that layer
-            canvas: cv.Canvas = layer.get('canvas', None).content
-            canvas.content.mouse_cursor = new_mouse_cursor  
-            canvas.content.update()
+                # Grab canvas our canvas for that layer
+                canvas: cv.Canvas = layer.get('canvas', None).content
+                canvas.content.mouse_cursor = new_mouse_cursor  
+                canvas.content.update()
 
-        # Paints a shape we're modifying if the rail tool changes
-        if self.manipulating_shape:
-            await self.paint_tool_on_canvas()
-            self.manipulating_shape = False
+            # Paints a shape we're modifying if the rail tool changes
+            if self.manipulating_shape:
+                await self.paint_tool_on_canvas()
+                self.manipulating_shape = False
+        except Exception:
+            pass
 
     async def _toggle_show_info(self, e):
         if self.manipulating_shape:
@@ -408,6 +411,8 @@ class Canvas(Widget):
         # Update our state x and y coordinates
         self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
+
+
         # Recreate our active path with correct starting positiuon
         self.active_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
         
@@ -432,49 +437,7 @@ class Canvas(Widget):
                 # Ignore all other tools, as they will control themselves
                 case _:
                     return
-                
-        else:
             
-
-            
-
-            # Grab our style so we can compare it
-            '''OLD
-            style = str(app.settings.data.get('paint_settings', {}).get('style', 'stroke'))
-            match style: 
-                # If we're using lineto (straight lines), add that element to the current path and state right away
-                case "lineto":
-                    line_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
-                    self.active_path.elements.append(line_element)
-
-                case "arc":
-                    
-                    arc_element = cv.Path.Arc(
-                        width=20,
-                        height=20,
-                        
-                        x=e.local_position.x,
-                        y=e.local_position.y,
-                        start_angle=math.pi,
-                        sweep_angle=-math.pi,
-                    )
-                    self.active_path.elements.append(arc_element)
-
-            # Else if we're using arcto, add that element to the current path and state right away
-                case 'arcto' | 'arctofill':
-                    arc_element = cv.Path.ArcTo(
-                        radius=12,
-                        rotation=0,
-                        large_arc=False,
-                        x=e.local_position.x,
-                        y=e.local_position.y,
-                        clockwise=True,
-                    )
-                    self.active_path.elements.append(arc_element)
-
-                #case ''
-            '''
-
             
         # Add our path to the canvas so we can see it
         canvas.shapes.append(self.active_path)
@@ -524,10 +487,20 @@ class Canvas(Widget):
                 case _:
                     return
                 
+
         # Everything else is just drawing, so if we didn't return early we add a new line element to our current path
-        path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
-        self.active_path.elements.append(path_element)
-        self.active_path.update()
+        
+        # Smooth drawing, on by default
+        if app.settings.data.get('canvas_settings', {}).get('use_path_smoothing', False): 
+            path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
+            self.active_path.elements.append(path_element)
+            self.active_path.update()
+
+        # Non-smooth drawing
+        else:
+            canvas: cv.Canvas = e.control.parent
+            canvas.shapes.append(cv.Line(self.state.x, self.state.y, e.local_position.x, e.local_position.y, paint=self.active_path.paint))
+            canvas.update()
             
         # Update our state x and y positions
         self.state.x = e.local_position.x
@@ -579,15 +552,16 @@ class Canvas(Widget):
             # Check if we have too many shapes on the canvas. If we do, capture them and put it in an image
             if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:   
                 canvas.shapes.clear()
-                canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))   
+                canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))  
                 canvas.update()
 
-            # Always re-render end of erase strokes, or they will appear broken
+            # Always re-render end of erase strokes, or they will appear broken. TEMPORARY FIX
             elif app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") == "tool" and app.settings.data.get('canvas_settings', {}).get('current_tool_name', "") == "erase":   
                 canvas.shapes.clear()
                 canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))
                 canvas.update()
 
+            # Always re-render end of non-none blend mode strokes, or they will appear broken. TEMPORARY FIX
             elif app.settings.data.get('paint_settings', {}).get('blend_mode', "") is not None:   
                 canvas.shapes.clear()
                 canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))
@@ -767,7 +741,8 @@ class Canvas(Widget):
             border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
             aspect_ratio=self.data.get('canvas_data', {}).get('aspect_ratio'),       # If set, ignores width and height
             content=self.layer_stack, 
-            opacity=0.99    # Forces canvas onto its own opacity layer for rendering to avoid blend mode bugs
+            opacity=0.99,    # Forces canvas onto its own opacity layer for rendering to avoid blend mode bugs
+            on_size_change=self._set_size       # Set the size of the canvases needed for recapturing
         )
 
         

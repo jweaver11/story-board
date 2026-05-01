@@ -825,8 +825,8 @@ class Story(ft.View):
             self.workspace.is_resizing = True
 
             active_rail_stack.width += int(e.local_delta.x)    # Apply the change to our rail
-            if active_rail_stack.width < 210:
-                active_rail_stack.width = 210
+            if active_rail_stack.width < 250:
+                active_rail_stack.width = 250
             elif active_rail_stack.width > 500:
                 active_rail_stack.width = 500
             active_rail_stack.update()
