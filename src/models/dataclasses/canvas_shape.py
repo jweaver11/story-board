@@ -465,7 +465,7 @@ class CanvasShape(ft.Container):
                 ft.Container(
                     self.canvas, 
                     expand=True, 
-                    border=ft.Border.all(1, ft.Colors.with_opacity(0.2, ft.Colors.OUTLINE)),
+                    border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
                 ),
                 ft.TextField(
                     hint_text="Enter your text here", multiline=True, dense=True, visible=is_text,
@@ -476,6 +476,4 @@ class CanvasShape(ft.Container):
             tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0
         )
 
-    
-    
 

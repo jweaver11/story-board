@@ -85,7 +85,6 @@ class Canvas(Widget):
         self.state = State()                # Used for tracking our coords and current drawing data for the active stroke/shape being applied
         self.canvas_width = 0
         self.canvas_height = 0
-        self.min_segment_dist = 2           # Sampling size
         self.needs_redraw = False           # Used to track if we need to redraw canvas after a resize
         self.skip_first_resize = True       # Skip the first resize since it will fix itself
         self.initial_resize = True          # Initial resize to track our canvases size without rebuild
@@ -484,15 +483,14 @@ class Canvas(Widget):
     # Called when actively drawing on the canvas
     async def update_stroke(self, e: ft.DragUpdateEvent):
         ''' Determines which drawing tool we're using, and updates accordingly as we drag our mouse '''
-
-        # TODO: Add check here to reduce num of lines based on previous start and end??
-        # Add rest of dialogue boxes, and resizing of them
-        # Option to use cv.Line vs cv.Path as a textured brush??
+        
+        # Set constant for sampling
+        MINIMUM_SEGMENT_DISTANCE = app.settings.data.get('canvas_settings', {}).get('sampling_distance', 2)
         
         # Sampling to improve perforamance. If the line length is too small, we skip it
         dx = e.local_position.x - self.state.x
         dy = e.local_position.y - self.state.y
-        if dx * dx + dy * dy < self.min_segment_dist * self.min_segment_dist:
+        if dx * dx + dy * dy < MINIMUM_SEGMENT_DISTANCE * MINIMUM_SEGMENT_DISTANCE:
             return
                 
         # Check if we're in tool mode, and what tool we're using

@@ -98,7 +98,13 @@ class CanvasRail(Rail):
             width=40,
             tooltip="The color of your brush strokes.",
             on_close=self._save_color, expand=True,
-            controls=[ft.Column([self.color_picker,  ft.MenuItemButton("Set Color", on_click=lambda: None)])],
+            controls=[ft.Column([
+                self.color_picker,  
+                ft.MenuItemButton(
+                    "Set Color", on_click=lambda: None,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
+                )
+            ])],
             style=ft.ButtonStyle(
                 mouse_cursor=ft.MouseCursor.CLICK,  
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
@@ -709,11 +715,12 @@ class CanvasRail(Rail):
 
 
         # If we use anti aliasing or not
-        self.paint_anti_alias_toggle = ft.Switch(
+        paint_anti_alias_toggle = ft.Switch(
             True, "\tAnti-Aliasing", on_change=_paint_anti_alias_changed,
             label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
             value=app.settings.data.get('paint_settings', {}).get('anti_alias', True),
-            tooltip="Whether to use anti-aliasing for smoother brush strokes. Disabling may result in jagged edges"
+            tooltip="Whether to use anti-aliasing for smoother brush strokes. Disabling may result in jagged edges",
+            label_position=ft.LabelPosition.LEFT
         )
 
         # Stroke cap shape
@@ -725,14 +732,15 @@ class CanvasRail(Rail):
             paint_stroke_cap_icon = ft.Icons.CROP_SQUARE_OUTLINED
         paint_stroke_cap_selector = ft.SubmenuButton(
             ft.Row([
-                ft.Icon(paint_stroke_cap_icon),
-                ft.Text("\tStroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE), 
                 
-            ]),     # Stroke cap shape selector
+                ft.Text("Stroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE), 
+                ft.Icon(paint_stroke_cap_icon),
+                
+            ], spacing=6),     # Stroke cap shape selector
             tooltip="The shape that your brush strokes will have at the end of each line segment.",
             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
             style=ft.ButtonStyle(
-                padding=ft.Padding.only(left=4, right=4), alignment=ft.Alignment.CENTER, mouse_cursor="click", bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                padding=ft.Padding.only(left=4, right=4), alignment=ft.Alignment.CENTER, mouse_cursor="click", #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 shape=ft.RoundedRectangleBorder(radius=4)
             ),
             controls=[
@@ -750,15 +758,17 @@ class CanvasRail(Rail):
             stroke_join_icon = ft.Icons.CROP_SQUARE_OUTLINED
         paint_stroke_join_selector = ft.SubmenuButton(
             ft.Row([
-                ft.Icon(stroke_join_icon),
-                ft.Text("\tStroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE), 
                 
-            ]),   
+                ft.Text("Stroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE), 
+                ft.Icon(stroke_join_icon),
+                
+            ], spacing=6),   
             tooltip="The shape that your brush strokes will have at the join of two line segments.",
             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
             style=ft.ButtonStyle(
                 padding=ft.Padding.only(left=4, right=4), alignment=ft.Alignment.CENTER, mouse_cursor="click",
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, shape=ft.RoundedRectangleBorder(radius=4)
+                #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, 
+                shape=ft.RoundedRectangleBorder(radius=4)
             ),
             controls=[
                 ft.MenuItemButton("Miter", leading=ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED), on_click=_paint_stroke_join_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
@@ -782,7 +792,11 @@ class CanvasRail(Rail):
             f"Blend Mode: {self._set_blend_mode_label()}", 
             tooltip="Current blend effects applied to your brush strokes. Select to change.",
             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
-            style=ft.ButtonStyle(padding=ft.Padding.only(left=4, right=4), alignment=ft.Alignment.CENTER, mouse_cursor="click", bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, shape=ft.RoundedRectangleBorder(radius=4)),
+            style=ft.ButtonStyle(
+                padding=ft.Padding.only(left=4, right=4), alignment=ft.Alignment.CENTER,
+                #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, 
+                shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click", 
+            ),
             controls=[
                 ft.MenuItemButton("None",  on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data=None, tooltip="No blend mode"),
                 ft.MenuItemButton("Color", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="color", tooltip="Take the hue and saturation of the source image, and the luminosity of the destination image"),
@@ -894,10 +908,11 @@ class CanvasRail(Rail):
         )
 
         fill_switch = ft.Switch(
-            True, "\tFill", on_change=_paint_fill_changed,
+            True, "\tFill Paint", on_change=_paint_fill_changed,
             label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
             value=app.settings.data.get('paint_settings', {}).get('style', 'stroke').endswith('_fill'),
-            tooltip="Whether to fill strokes and shapes, or leave them hollow (Transparent)"
+            tooltip="Whether to fill strokes and shapes, or leave them hollow (Transparent)",
+            label_position=ft.LabelPosition.LEFT
         )
         
         # Build the content of our rail
@@ -915,33 +930,25 @@ class CanvasRail(Rail):
                 #ft.Container(height=10),
             
    
-                ft.Text(
-                    "\tCurrent Color", color=ft.Colors.ON_SURFACE, 
-                    theme_style=ft.TextThemeStyle.LABEL_LARGE, 
-                    italic=True,
-                    tooltip="The color of your brush strokes"
-                ),
+                #ft.Text(
+                    #"\tCurrent Color", color=ft.Colors.ON_SURFACE, 
+                    #theme_style=ft.TextThemeStyle.LABEL_LARGE, 
+                    #italic=True,
+                    #tooltip="The color of your brush strokes"
+                #),
                     
-                ft.Row([
-                    ft.Container(
-                        ft.MenuBar(
-                            [self.color_selector],
-                            style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)),
-                            #expand=True,
-                        ),
-                        margin=ft.Margin.only(left=4)
-                    ),
-                    save_custom_brush_button
-                ], spacing=4),
-                ft.Container(height=10),
+                #ft.Row([
+                    
+                #], spacing=4),
+               # ft.Container(height=10),
 
                 # Brush Selector and Save custom brush button
-                ft.Text(
-                    "\tCurrent Brush", color=ft.Colors.ON_SURFACE, 
-                    theme_style=ft.TextThemeStyle.LABEL_LARGE, 
-                    italic=True,
-                    tooltip="The current brush you have selected"
-                ),
+                #ft.Text(
+                    #"\tCurrent Brush", color=ft.Colors.ON_SURFACE, 
+                    #theme_style=ft.TextThemeStyle.LABEL_LARGE, 
+                    #italic=True,
+                    #tooltip="The current brush you have selected"
+                #),
 
                 ft.Row([
                     ft.Container(set_draw_button, margin=ft.Margin.only(left=4)), 
@@ -952,6 +959,15 @@ class CanvasRail(Rail):
                         ),
                         #expand=True,
                     ),
+                    ft.Container(
+                        ft.MenuBar(
+                            [self.color_selector],
+                            style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)),
+                            #expand=True,
+                        ),
+                        margin=ft.Margin.only(left=4)
+                    ),
+                    save_custom_brush_button
                 ], spacing=4, wrap=True),  
                 ft.Container(height=10),  
 
@@ -986,6 +1002,17 @@ class CanvasRail(Rail):
 
                 
                 #ft.Container(height=10),   # Spacer
+                
+                #ft.Container(height=10),   # Spacer
+ 
+                # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
+                ft.Divider(),
+                ft.Row([ft.Text("Effects", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
+                #ft.Container(height=10),   # Spacer
+                
+                paint_anti_alias_toggle,
+                ft.Row([ft.Text("\tBlur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider], spacing=0),
+
                 ft.MenuBar(
                     [paint_stroke_cap_selector],
                     style=ft.MenuStyle(
@@ -1002,15 +1029,6 @@ class CanvasRail(Rail):
                         shape=ft.RoundedRectangleBorder(radius=10),
                     ),
                 ),
-                #ft.Container(height=10),   # Spacer
- 
-                # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
-                ft.Divider(),
-                ft.Row([ft.Text("Effects", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
-                ft.Container(height=10),   # Spacer
-                
-                self.paint_anti_alias_toggle,
-                ft.Row([ft.Text("\tBlur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider]),
 
 
                 ft.MenuBar(
@@ -1025,7 +1043,7 @@ class CanvasRail(Rail):
                 # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
                 ft.Divider(),
                 ft.Row([ft.Text("Tool Options", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
-                ft.Container(height=10),   # Spacer
+                #ft.Container(height=10),   # Spacer
 
             ]
         )
@@ -1056,6 +1074,8 @@ class CanvasRail(Rail):
 # TODO: 
 # Add txt input for brush size as well
 # Add txt size, color, fonts? for text tool
+# Use path smoothing for brush strokes, will use cv.Path if true else cv.line. Won't effect shapes
+# Add rest of dialogue boxes, and resizing of them
 # Build in dialoge bubbles shapes for voice lines (up-left, up-right, down-left, down-right, middle-up, middle-down). See canvas example on flet docs, they have one
 # -- Both round and normal for above dialogue boxes
 # Border Radius for rectangle tool

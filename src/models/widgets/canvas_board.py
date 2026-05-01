@@ -687,6 +687,7 @@ class CanvasBoard(Widget):
                                     ),
                                     ft.Container(
                                         sketch_canvas, border=ft.Border.all(1, ft.Colors.OUTLINE),
+                                        opacity=0.99,
                                         bgcolor="surface", border_radius=ft.BorderRadius.all(6),
                                     ),
                                 ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.END), 

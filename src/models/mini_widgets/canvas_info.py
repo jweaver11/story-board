@@ -262,7 +262,7 @@ class CanvasInformationDisplay(MiniWidget):
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
             title=f"Set Blur for {layer_name}",
             actions=[
-                ft.TextButton("Close", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
                 ft.TextButton("Apply", on_click=_apply_blur, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
             ]
         )
@@ -711,7 +711,7 @@ class CanvasInformationDisplay(MiniWidget):
                                 disabled=not visible
                             ),
                             ft.PopupMenuItem(
-                                "Set Blur", ft.Icon(ft.Icons.BLUR_CIRCULAR_OUTLINED, self.widget.data.get('color', ft.Colors.PRIMARY)), 
+                                "Set Blur", ft.Icon(ft.Icons.BLUR_ON_OUTLINED, self.widget.data.get('color', ft.Colors.PRIMARY)), 
                                 on_click=self._set_layer_blur, 
                                 tooltip="Set the blur only for existing content on this layer. Useful for backgrounds and effects. " \
                                 "Will NOT effect any future content drawn on this layer" if visible else

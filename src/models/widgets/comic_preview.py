@@ -13,6 +13,7 @@ from PIL import Image
 from io import BytesIO
 from styles.snack_bar import SnackBar
 import asyncio
+from flet_color_pickers import BlockPicker
     
 
 class ComicPreview(Widget):
@@ -45,9 +46,10 @@ class ComicPreview(Widget):
                 'color': app.settings.data.get('default_comic_preview_color', "primary"),
                 'pin_location': app.settings.data.get('default_comic_preview_pin_location', "right") if data is None else data.get('pin_location', "right"),   # Default pin location for notes
                 'preview_direction': "vertical",      # Default direction for comic preview, can be vertical or horizontal
+                'preview_background_color': "#00000000",  # Background color shown in comic preview widgets
                 'show_info': True,                    # Whether or not to show the info column on the left side of the page
                 'can_add_canvases': True,               # Whether or not the user can add canvases to the preview (as opposed to just uploading images)
-                'snapshots': [              # List to hold our snapshots of the canvases. Also allows png uploads
+                'featured_canvases': [              # List to hold our featured_canvases of the canvases. Also allows png uploads
                     #{
                         #'key': "canvas_key or None" is None if its an uploaded image
                         #'title': "title of the snapshot, either canvas name or file name",
@@ -110,6 +112,20 @@ class ComicPreview(Widget):
         output = BytesIO()
         merged.save(output, format="PNG")
         return base64.b64encode(output.getvalue()).decode("utf-8")
+    
+    # Called to refresh any connected canvases featured_canvases that might be outdated
+    async def _refresh_canvas_snapshots(self):
+        self.story.blocker.visible = True
+        self.story.blocker.update()
+        await asyncio.sleep(0)
+        for snapshot in self.data.get('featured_canvases', []):
+            if snapshot.get('key'):
+                snapshot['image'] = self._set_canvas_snapshot(snapshot['key'])
+        await self.save_dict()
+        self.reload_widget()
+        if self.story.blocker.visible:
+            self.story.blocker.visible = False
+            self.story.blocker.update()
 
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
@@ -117,16 +133,44 @@ class ComicPreview(Widget):
         ''' Reloads/Rebuilds our widget based on current data '''
 
         async def _remove_snapshot(e):
+            self.story.blocker.visible = True
+            self.story.blocker.update()
+            await asyncio.sleep(0)
             idx = e.control.data
-            self.data['snapshots'].pop(idx)
+            self.data['featured_canvases'].pop(idx)
             await self.save_dict()
-            # Remove from mini map
-            included_canvases.controls.pop(idx)
-            included_canvases.update()
-           
-            preview_display.controls.pop(idx)
-            preview_display.update()
-            
+
+            self.reload_widget()
+            if self.story.blocker.visible:
+                self.story.blocker.visible = False
+                self.story.blocker.update()
+
+        async def _add_canvas_snapshot(e):
+            self.story.blocker.visible = True
+            self.story.blocker.update()
+            await asyncio.sleep(0)
+            key = e.control.data
+            title = None
+            for widget in self.story.widgets:
+                if widget.data.get('key') == key:
+                    title = widget.title    
+            self.data['featured_canvases'].append({
+                'key': key,
+                'title': title,
+                'image': self._set_canvas_snapshot(key)
+            })
+            await self.save_dict()
+            self.reload_widget()
+            if self.story.blocker.visible:
+                self.story.blocker.visible = False
+                self.story.blocker.update()
+
+        # Updates our background color
+        async def _set_background_color(e: ft.ControlEvent):
+            self.data['preview_background_color'] = e.data
+            await self.save_dict()
+            preview_display_container.bgcolor = self.data.get('preview_background_color', ft.Colors.BLACK)
+            preview_display_container.update()
 
         # Handles toggling the preview direction between vertical and horizontal
         async def _toggle_preview_direction(e):
@@ -154,7 +198,7 @@ class ComicPreview(Widget):
                         with open(file_path, "rb") as image_file:
                             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                             # Save to our data
-                            self.data['snapshots'].append({
+                            self.data['featured_canvases'].append({
                                 'key': None,
                                 'title': file_path.split("\\")[-1],
                                 'image': encoded_string
@@ -171,93 +215,46 @@ class ComicPreview(Widget):
                 self.story.blocker.visible = False
                 self.story.blocker.update()
 
-        # Handles reordering our snapshots on the left side of the page
+        # Handles reordering our featured_canvases on the left side of the page
         async def _reorder_snapshots(e: ft.OnReorderEvent):
             if e.old_index == e.new_index:
                 return
-            self.data['snapshots'].insert(e.new_index, self.data['snapshots'].pop(e.old_index))
+            self.story.blocker.visible = True
+            self.story.blocker.update()
+            await asyncio.sleep(0)
+            self.data['featured_canvases'].insert(e.new_index, self.data['featured_canvases'].pop(e.old_index))
             await self.save_dict()
             self.reload_widget()
+            if self.story.blocker.visible:
+                self.story.blocker.visible = False
+                self.story.blocker.update()
 
-        # Handles showing/hiding all the canvases that are included or could be included in the preview
-        async def _toggle_included_canvases(e):
+        # Handles showing/hiding all the canvases that are featured or could be featured in the preview
+        async def _toggle_featured_canvases(e):
             self.data['can_add_canvases'] = not self.data.get('can_add_canvases', True)
             await self.save_dict()
             if self.data.get('can_add_canvases', True):
-                can_add_canvases_button.content.controls[1].icon = ft.Icons.EDIT_OUTLINED
+                show_available_canvases_button.content.controls[-1].icon = ft.Icons.EDIT_OUTLINED
                 selectable_snapshots.visible = True
             else:
-                can_add_canvases_button.content.controls[1].icon = ft.Icons.EDIT_OFF_OUTLINED
+                show_available_canvases_button.content.controls[-1].icon = ft.Icons.EDIT_OFF_OUTLINED
                 selectable_snapshots.visible = False
-            can_add_canvases_button.update()
+            show_available_canvases_button.update()
             selectable_snapshots.update()
-
-        # Handles connecting/removing a canavs snapshot
-        async def _toggle_canvas_inclusion(e):
-            canvas_key = e.control.data
-            included_canvas_keys = [snapshot.get('key') for snapshot in self.data.get('snapshots', [])]
-
-            # If we're adding a canvas
-            if canvas_key in included_canvas_keys:
-
-                # Remove from data
-                self.data['snapshots'] = [snapshot for snapshot in self.data.get('snapshots', []) if snapshot.get('key') != canvas_key]
-
-                # Remove from mini map
-                for control in included_canvases.controls:
-                    if control.data == canvas_key:
-                        included_canvases.controls.remove(control)
-                        break
-                
-                # Remove from preview
-                for control in preview_display.controls:
-                    if control.data == canvas_key:
-                        preview_display.controls.remove(control)
-                        break
-
-            # If we're removing a canvas
-            else:
-                # Add to data
-                canvas_widget = next((widget for widget in self.story.widgets if widget.data.get('key') == canvas_key), None)
-                snapshot = self._set_canvas_snapshot(canvas_key)
-                if canvas_widget:
-
-                    self.data['snapshots'].append({
-                        'key': canvas_key,
-                        'title': canvas_widget.title,
-                        'image': snapshot
-                    })
-
-                    # Add to mini map
-                    included_canvases.controls.append(
-                        ft.ReorderableDragHandle(   
-                            ft.Row([
-                                ft.Text(canvas_widget.title, weight=ft.FontWeight.BOLD),
-                                ft.Image(snapshot, ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, width=50, height=50)
-                            ]),
-                            data=canvas_key
-                        )
-                    )
-                    
-
-                    # Add to preview   
-                    preview_display.controls.append(ft.Image(snapshot, ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, data=canvas_key))
-                    
-
-            await self.save_dict()
-            included_canvases.update()
-            preview_display.update()
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
         # Button to toggle the preview direction between vertical and horizontal
-        toggle_preview_direction_button = ft.IconButton(
-            ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ,
+        toggle_preview_direction_button = ft.TextButton(
+            ft.Row([
+                ft.Text("Toggle Preview Direction", color=self.data.get('color', ft.Colors.PRIMARY), weight=ft.FontWeight.BOLD),
+                ft.Icon(ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ),
+            ], tight=True),
             self.data.get('color', ft.Colors.PRIMARY),
             tooltip="Toggle preview direction",
             on_click=_toggle_preview_direction,
-            mouse_cursor=ft.MouseCursor.CLICK,
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
         )
 
 
@@ -268,32 +265,43 @@ class ComicPreview(Widget):
 
         preview_display.controls = []
 
-        for snapshot in self.data.get('snapshots', []):
+        for snapshot in self.data.get('featured_canvases', []):
             preview_display.controls.append(ft.Image(snapshot.get('image', ""), ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, data=snapshot.get('key')))
 
         preview_display_container = ft.Container(
+            preview_display,
+            expand=2,
+            bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK),
+        )
+
+        preview_display_wrapper = ft.Container(
             ft.Row([
                 ft.Container(expand=1), 
-                preview_display, 
+                preview_display_container, 
                 ft.Container(expand=1)
             ], 
             expand=True, spacing=0, scroll="none", vertical_alignment=ft.CrossAxisAlignment.START
             ) if self.data.get('preview_direction', "vertical") == "vertical" else ft.Column([
                 ft.Container(expand=1), 
-                preview_display, 
+                preview_display_container, 
                 ft.Container(expand=1)
             ], expand=True, spacing=0, scroll="none", horizontal_alignment=ft.CrossAxisAlignment.START
             ),
             expand=3,
-            alignment=ft.Alignment.CENTER
+            alignment=ft.Alignment.CENTER,
+            
         )
+
+        
+
+
 
         # If we're not showing info, just give us a button to show info and return early
         if not self.data.get('show_info', True):
 
             self.body_container.content = ft.Row(
                 [
-                    preview_display_container, 
+                    preview_display_wrapper, 
                     ft.IconButton(
                         ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
                         on_click=self._toggle_show_info, 
@@ -304,15 +312,138 @@ class ComicPreview(Widget):
             self._render_widget()
             return 
         
-        # Mini map with preview of all snapshots (very small) on the left side of the page
+        # Mini map with preview of all featured_canvases (very small) on the left side of the page
         snapshot_mini_map = ft.Column(
             [
+                
+                ft.Text("Featured Canvases", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
+                
+                
+            ],
+            expand=1, scroll="auto", spacing=0
+        )
+
+        # Add featured canvases to the mini map that are reorderable
+        featured_canvases = ft.ReorderableListView(scroll="auto", on_reorder=_reorder_snapshots)
+        for idx, snapshot in enumerate(self.data.get('featured_canvases', [])):
+            featured_canvases.controls.append(
+                ft.ReorderableDragHandle(
+                    ft.Row([
+                        ft.Text(snapshot.get('title', "Untitled"), weight=ft.FontWeight.BOLD),
+                        ft.Image(snapshot.get('image', ""), ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, width=50, height=50),
+                        ft.Container(expand=True, height=50),
+                        ft.IconButton(
+                            ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, on_click=_remove_snapshot, 
+                            mouse_cursor=ft.MouseCursor.CLICK, data=idx
+                        ),  # Only show delete button its an uploaded image
+                        ft.Container(width=40)
+                    ]),
+                    data=snapshot.get('key')
+                )
+            )
+        snapshot_mini_map.controls.append(featured_canvases)
+
+        selectable_snapshots = ft.Column(
+            [
+                ft.Divider(),
+                ft.Text("Available Canvases", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+            ], 
+            scroll="none", #expand=True,
+            visible=True if self.data.get('can_add_canvases', True) else False
+        )
+
+        # For loop to add all canvases in story as options to be featured in the preview
+        for widget in self.story.widgets:
+            if widget.data.get('tag', "") == "canvas":
+                selectable_snapshots.controls.append(
+                    
+                    ft.Row([
+                        ft.IconButton(
+                            ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, widget.data.get('color', ft.Colors.PRIMARY), on_click=_add_canvas_snapshot, 
+                            mouse_cursor=ft.MouseCursor.CLICK, data=widget.data.get('key')
+                        ),
+                        ft.Text(f"{widget.title}\t\t", style=ft.TextStyle(weight=ft.FontWeight.BOLD), color=widget.data.get('color', None)),
+                        ft.Image(self._set_canvas_snapshot(widget.data.get('key')), ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, width=50, height=50),
+                    ], spacing=0, tight=True)
+                )
+
+        selectable_snapshots.controls.append(
+            ft.TextButton(
+                "Upload Images",
+                ft.Icons.FILE_UPLOAD_OUTLINED,
+                on_click=_upload_snapshot_clicked,
+                style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor=ft.MouseCursor.CLICK, color=self.data.get('color', ft.Colors.PRIMARY)),
+            )
+        )
+
+        snapshot_mini_map.controls.append(selectable_snapshots)
+
+        controllers_column = ft.Column([
+            ft.Divider(),
+            ft.Text("Controls", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+            show_available_canvases_button := ft.TextButton(
+                ft.Row([
+                    ft.Text("Show Canvases", color=self.data.get('color', ft.Colors.PRIMARY), weight=ft.FontWeight.BOLD),
+                    ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('can_add_canvases', True) else ft.Icons.EDIT_OFF_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                ], tight=True),          
+                #ft.Icons.EDIT_OUTLINED if self.data.get('can_add_canvases', True) else ft.Icons.EDIT_OFF_OUTLINED,
+                #self.data.get('color', ft.Colors.PRIMARY),
+                tooltip="Add or remove canvases to be featured in the preview",
+                style=ft.ButtonStyle(mouse_cursor="click"),
+                on_click=_toggle_featured_canvases,
+            ), 
+            toggle_preview_direction_button,
+            ft.TextButton(
+                ft.Row([
+                    ft.Text("Refresh Snapshots", color=self.data.get('color', ft.Colors.PRIMARY), weight=ft.FontWeight.BOLD),    
+                    ft.Icon(ft.Icons.REFRESH_OUTLINED, self.data.get('color', ft.Colors.PRIMARY), )
+                ], tight=True),
+                
+                tooltip="Refresh snapshots of outdated canvases", 
+                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), 
+                on_click=self._refresh_canvas_snapshots, 
+            ),
+            
+            ft.Text(
+                "\t\t\tBackground Color", weight=ft.FontWeight.BOLD, color=self.data.get('color', None),
+                tooltip="Change the background color behind your snapshots in the preview",
+            ),
+            BlockPicker(
+                color=self.data.get('preview_background_color', "#00000000"),
+                available_colors=[
+                    "#000000",
+                    "#ffffff",
+                    "#3b3b3b",
+                    "#858585",
+                    "#adadad",
+                    "#ff1100",
+                    "#d9ff00",
+                    "#9c27b0",
+                    "#3f51b5",
+                    "#2196f3",
+                    "#009688",
+                    "#4caf50",
+                    "#795548",
+                    "#00000000",  # Transparent option
+
+                ],
+                on_color_change=_set_background_color,
+            )
+        ], tight=True, )
+
+        snapshot_mini_map.controls.append(controllers_column)
+
+        
+        
+
+        snapshot_mini_map_container = ft.Container(
+            ft.Column([
                 ft.Row([
                     ft.Text(
-                        f"\t{self.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+                        f"{self.title}\t", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
                         color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
                     ),
-                    toggle_preview_direction_button,
+                    
                     
                     ft.Container(expand=True),
                     ft.IconButton(
@@ -321,78 +452,9 @@ class ComicPreview(Widget):
                     ),
                 ], spacing=0),
                 ft.Divider(2, 2),
-                can_add_canvases_button := ft.TextButton(
-                    ft.Row([
-                        ft.Text(
-                        "Included", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)
-                    ), 
-                        ft.Icon(
-                            ft.Icons.EDIT_OUTLINED if self.data.get('can_add_canvases', True) else ft.Icons.EDIT_OFF_OUTLINED,
-                            self.data.get('color', None)
-                        )
-                    ], tight=True),
-                    tooltip="Add or remove canvases to be included in the preview",
-                    style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor="click", color=self.data.get('color', ft.Colors.PRIMARY)),
-                    on_click=_toggle_included_canvases,
-                ),
-            ],
-            expand=1, scroll="none"
-        )
-
-        # Add included canvases to the mini map that are reorderable
-        included_canvases = ft.ReorderableListView(scroll="auto", on_reorder=_reorder_snapshots)
-        for idx, snapshot in enumerate(self.data.get('snapshots', [])):
-            included_canvases.controls.append(
-                ft.ReorderableDragHandle(
-                    ft.Row([
-                        ft.Text(snapshot.get('title', "Untitled"), weight=ft.FontWeight.BOLD),
-                        ft.Image(snapshot.get('image', ""), ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, width=50, height=50),
-                        ft.Container(expand=True),
-                        ft.IconButton(
-                            ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, on_click=_remove_snapshot, 
-                            mouse_cursor=ft.MouseCursor.CLICK, data=idx
-                        ) if not snapshot.get('key') else ft.Container(),  # Only show delete button its an uploaded image
-                        ft.Container(width=40)
-                    ]),
-                    data=snapshot.get('key')
-                )
-            )
-        snapshot_mini_map.controls.append(included_canvases)
-
-        selectable_snapshots = ft.Column(
-            [ft.Divider(2, 2)], 
-            scroll="none", expand=True,
-            visible=True if self.data.get('can_add_canvases', True) else False
-        )
-
-        # For loop to add all canvases in story as options to be included in the preview
-        for widget in self.story.widgets:
-            if widget.data.get('tag', "") == "canvas":
-                selectable_snapshots.controls.append(
-                    ft.Checkbox(
-                        widget.title, 
-                        value=widget.data.get('key') in [snapshot.get('key') for snapshot in self.data.get('snapshots', [])], 
-                        on_change=_toggle_canvas_inclusion, 
-                        data=widget.data.get('key'),
-                        mouse_cursor=ft.MouseCursor.CLICK,
-                        label_style=ft.TextStyle(color=widget.data.get('color', None), weight=ft.FontWeight.BOLD),
-                    )
-                )
-
-        snapshot_mini_map.controls.append(selectable_snapshots)
-
-        selectable_snapshots.controls.append(
-            ft.TextButton(
-                "Upload Image",
-                ft.Icons.FILE_UPLOAD_OUTLINED,
-                on_click=_upload_snapshot_clicked,
-                style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor=ft.MouseCursor.CLICK, color=self.data.get('color', ft.Colors.PRIMARY)),
-            )
-        )
-        
-
-        snapshot_mini_map_container = ft.Container(
-            snapshot_mini_map,
+                #ft.Container(height=10),
+                snapshot_mini_map,
+            ], expand=True, scroll="none"),
             border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             padding=ft.Padding.only(left=11, top=8, bottom=8),
             shadow=ft.BoxShadow(0, 1),
@@ -403,8 +465,7 @@ class ComicPreview(Widget):
         
 
         # Assign the body_container content as whatever view you have built in the widget
-        self.body_container.content = ft.Row([preview_display_container, snapshot_mini_map_container], spacing=0, expand=True)
+        self.body_container.content = ft.Row([preview_display_wrapper, snapshot_mini_map_container], spacing=0, expand=True)
         
         # Build in widget function that will handle loading our mini widgets and rendering the whole thing
         self._render_widget()
-        
