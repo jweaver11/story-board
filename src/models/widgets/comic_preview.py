@@ -69,6 +69,71 @@ class ComicPreview(Widget):
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
 
+    def _get_menu_options(self):
+
+        async def _change_color_clicked(e):
+            # Updates our background color
+            async def _set_background_color(e: ft.ControlEvent):
+                self.data['preview_background_color'] = e.data
+                await self.save_dict()
+                self.preview_display_container.bgcolor = self.data.get('preview_background_color', ft.Colors.BLACK)
+                self.preview_display_container.update()
+
+
+            await self.story.close_menu()
+            
+            self.p.show_dialog(
+                ft.AlertDialog(
+                    title=ft.Text("Select Background Color"),
+                    content=BlockPicker(
+                        color=self.data.get('preview_background_color', "#00000000"),
+                        available_colors=[
+                            "#000000",
+                            "#ffffff",
+                            "#3b3b3b",
+                            "#858585",
+                            "#adadad",
+                            "#ff1100",
+                            "#d9ff00",
+                            "#9c27b0",
+                            "#3f51b5",
+                            "#2196f3",
+                            "#009688",
+                            "#4caf50",
+                            "#795548",
+                            "#00000000",  # Transparent option
+
+                        ],
+                        on_color_change=_set_background_color,
+                    ),
+                    actions=[
+                        ft.TextButton("Close", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))
+                    ]
+                )
+            )
+
+
+
+
+        options = [
+            MenuOptionStyle(
+                on_click=_change_color_clicked,
+                content=ft.Row(
+                    [
+                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', 'primary'),),
+                        ft.Text(
+                            "Set BG Color", 
+                            weight=ft.FontWeight.BOLD, 
+                            
+                        ), 
+                    ],
+                    tooltip="Change the background color of the comic preview",
+                ),
+            ),
+        ]
+        options.extend(super()._get_menu_options())
+        return options
+
     # Called to find a canvas and load a snapshot from all its layers
     def _set_canvas_snapshot(self, canvas_key: str) -> str:
 
@@ -165,12 +230,7 @@ class ComicPreview(Widget):
                 self.story.blocker.visible = False
                 self.story.blocker.update()
 
-        # Updates our background color
-        async def _set_background_color(e: ft.ControlEvent):
-            self.data['preview_background_color'] = e.data
-            await self.save_dict()
-            preview_display_container.bgcolor = self.data.get('preview_background_color', ft.Colors.BLACK)
-            preview_display_container.update()
+        
 
         # Handles toggling the preview direction between vertical and horizontal
         async def _toggle_preview_direction(e):
@@ -234,28 +294,16 @@ class ComicPreview(Widget):
             self.data['can_add_canvases'] = not self.data.get('can_add_canvases', True)
             await self.save_dict()
             if self.data.get('can_add_canvases', True):
-                show_available_canvases_button.content.controls[-1].icon = ft.Icons.EDIT_OUTLINED
+                e.control.icon = ft.Icons.EDIT_OUTLINED
                 selectable_snapshots.visible = True
             else:
-                show_available_canvases_button.content.controls[-1].icon = ft.Icons.EDIT_OFF_OUTLINED
+                e.control.icon = ft.Icons.EDIT_OFF_OUTLINED
                 selectable_snapshots.visible = False
-            show_available_canvases_button.update()
+            e.control.update()
             selectable_snapshots.update()
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
-
-        # Button to toggle the preview direction between vertical and horizontal
-        toggle_preview_direction_button = ft.TextButton(
-            ft.Row([
-                ft.Text("Toggle Preview Direction", color=self.data.get('color', ft.Colors.PRIMARY), weight=ft.FontWeight.BOLD),
-                ft.Icon(ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ),
-            ], tight=True),
-            self.data.get('color', ft.Colors.PRIMARY),
-            tooltip="Toggle preview direction",
-            on_click=_toggle_preview_direction,
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-        )
 
 
         preview_display = ft.Column() if self.data.get('preview_direction', "vertical") == "vertical" else ft.Row()
@@ -268,7 +316,7 @@ class ComicPreview(Widget):
         for snapshot in self.data.get('featured_canvases', []):
             preview_display.controls.append(ft.Image(snapshot.get('image', ""), ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, data=snapshot.get('key')))
 
-        preview_display_container = ft.Container(
+        self.preview_display_container = ft.Container(
             preview_display,
             expand=2,
             bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK),
@@ -277,19 +325,25 @@ class ComicPreview(Widget):
         preview_display_wrapper = ft.Container(
             ft.Row([
                 ft.Container(expand=1), 
-                preview_display_container, 
+                self.preview_display_container, 
                 ft.Container(expand=1)
             ], 
             expand=True, spacing=0, scroll="none", vertical_alignment=ft.CrossAxisAlignment.START
             ) if self.data.get('preview_direction', "vertical") == "vertical" else ft.Column([
                 ft.Container(expand=1), 
-                preview_display_container, 
+                self.preview_display_container, 
                 ft.Container(expand=1)
             ], expand=True, spacing=0, scroll="none", horizontal_alignment=ft.CrossAxisAlignment.START
             ),
             expand=3,
             alignment=ft.Alignment.CENTER,
-            
+        )
+
+        preview_display_wrapper.content = ft.GestureDetector(
+            preview_display_wrapper.content,
+            on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
+            on_hover=self._get_coords,
+            hover_interval=50
         )
 
         
@@ -316,7 +370,15 @@ class ComicPreview(Widget):
         snapshot_mini_map = ft.Column(
             [
                 
-                ft.Text("Featured Canvases", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
+                ft.Row([
+                    ft.Text("Featured Canvases", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
+                    ft.IconButton(
+                        ft.Icons.EDIT_OUTLINED if self.data.get('can_add_canvases', True) else ft.Icons.EDIT_OFF_OUTLINED, self.data.get('color', ft.Colors.PRIMARY),
+                        tooltip="Add or remove canvases to be featured in the preview",
+                        on_click=_toggle_featured_canvases,
+                        mouse_cursor=ft.MouseCursor.CLICK,
+                    )
+                ], spacing=0)
                 
                 
             ],
@@ -329,12 +391,14 @@ class ComicPreview(Widget):
             featured_canvases.controls.append(
                 ft.ReorderableDragHandle(
                     ft.Row([
-                        ft.Text(snapshot.get('title', "Untitled"), weight=ft.FontWeight.BOLD),
                         ft.Image(snapshot.get('image', ""), ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, width=50, height=50),
+                        ft.Text(snapshot.get('title', "Untitled"), weight=ft.FontWeight.BOLD),
+                        
                         ft.Container(expand=True, height=50),
                         ft.IconButton(
                             ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, on_click=_remove_snapshot, 
-                            mouse_cursor=ft.MouseCursor.CLICK, data=idx
+                            mouse_cursor=ft.MouseCursor.CLICK, data=idx,
+                            tooltip="Remove from preview",
                         ),  # Only show delete button its an uploaded image
                         ft.Container(width=40)
                     ]),
@@ -346,7 +410,15 @@ class ComicPreview(Widget):
         selectable_snapshots = ft.Column(
             [
                 ft.Divider(),
-                ft.Text("Available Canvases", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.Row([
+                    ft.Text("Available Canvases", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                    ft.IconButton(
+                        ft.Icons.FILE_UPLOAD_OUTLINED, self.data.get('color', ft.Colors.PRIMARY),
+                        tooltip="Upload image(s) to be featured in the preview without connecting a canvas",
+                        on_click=_upload_snapshot_clicked,
+                        mouse_cursor=ft.MouseCursor.CLICK,
+                    )
+                ], spacing=0)
             ], 
             scroll="none", #expand=True,
             visible=True if self.data.get('can_add_canvases', True) else False
@@ -362,79 +434,15 @@ class ComicPreview(Widget):
                             ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, widget.data.get('color', ft.Colors.PRIMARY), on_click=_add_canvas_snapshot, 
                             mouse_cursor=ft.MouseCursor.CLICK, data=widget.data.get('key')
                         ),
-                        ft.Text(f"{widget.title}\t\t", style=ft.TextStyle(weight=ft.FontWeight.BOLD), color=widget.data.get('color', None)),
                         ft.Image(self._set_canvas_snapshot(widget.data.get('key')), ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, width=50, height=50),
+                        ft.Text(f"\t\t{widget.title}", style=ft.TextStyle(weight=ft.FontWeight.BOLD), color=widget.data.get('color', None)),
+                        
                     ], spacing=0, tight=True)
                 )
 
-        selectable_snapshots.controls.append(
-            ft.TextButton(
-                "Upload Images",
-                ft.Icons.FILE_UPLOAD_OUTLINED,
-                on_click=_upload_snapshot_clicked,
-                style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor=ft.MouseCursor.CLICK, color=self.data.get('color', ft.Colors.PRIMARY)),
-            )
-        )
+       
 
         snapshot_mini_map.controls.append(selectable_snapshots)
-
-        controllers_column = ft.Column([
-            ft.Divider(),
-            ft.Text("Controls", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-            show_available_canvases_button := ft.TextButton(
-                ft.Row([
-                    ft.Text("Show Canvases", color=self.data.get('color', ft.Colors.PRIMARY), weight=ft.FontWeight.BOLD),
-                    ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('can_add_canvases', True) else ft.Icons.EDIT_OFF_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                ], tight=True),          
-                #ft.Icons.EDIT_OUTLINED if self.data.get('can_add_canvases', True) else ft.Icons.EDIT_OFF_OUTLINED,
-                #self.data.get('color', ft.Colors.PRIMARY),
-                tooltip="Add or remove canvases to be featured in the preview",
-                style=ft.ButtonStyle(mouse_cursor="click"),
-                on_click=_toggle_featured_canvases,
-            ), 
-            toggle_preview_direction_button,
-            ft.TextButton(
-                ft.Row([
-                    ft.Text("Refresh Snapshots", color=self.data.get('color', ft.Colors.PRIMARY), weight=ft.FontWeight.BOLD),    
-                    ft.Icon(ft.Icons.REFRESH_OUTLINED, self.data.get('color', ft.Colors.PRIMARY), )
-                ], tight=True),
-                
-                tooltip="Refresh snapshots of outdated canvases", 
-                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), 
-                on_click=self._refresh_canvas_snapshots, 
-            ),
-            
-            ft.Text(
-                "\t\t\tBackground Color", weight=ft.FontWeight.BOLD, color=self.data.get('color', None),
-                tooltip="Change the background color behind your snapshots in the preview",
-            ),
-            BlockPicker(
-                color=self.data.get('preview_background_color', "#00000000"),
-                available_colors=[
-                    "#000000",
-                    "#ffffff",
-                    "#3b3b3b",
-                    "#858585",
-                    "#adadad",
-                    "#ff1100",
-                    "#d9ff00",
-                    "#9c27b0",
-                    "#3f51b5",
-                    "#2196f3",
-                    "#009688",
-                    "#4caf50",
-                    "#795548",
-                    "#00000000",  # Transparent option
-
-                ],
-                on_color_change=_set_background_color,
-            )
-        ], tight=True, )
-
-        snapshot_mini_map.controls.append(controllers_column)
-
-        
-        
 
         snapshot_mini_map_container = ft.Container(
             ft.Column([
@@ -443,6 +451,21 @@ class ComicPreview(Widget):
                         f"{self.title}\t", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
                         color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
                     ),
+                    ft.IconButton(
+                        ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ,
+                        self.data.get('color', ft.Colors.PRIMARY),
+                        tooltip="Toggle preview direction",
+                        on_click=_toggle_preview_direction,
+                        mouse_cursor=ft.MouseCursor.CLICK,
+                    ),
+                    ft.IconButton(
+                        ft.Icons.REFRESH_OUTLINED,
+                        self.data.get('color', ft.Colors.PRIMARY),
+                        tooltip="Refresh snapshots of outdated canvases",
+                        on_click=self._refresh_canvas_snapshots,
+                        mouse_cursor=ft.MouseCursor.CLICK,
+                    ),
+                    
                     
                     
                     ft.Container(expand=True),
