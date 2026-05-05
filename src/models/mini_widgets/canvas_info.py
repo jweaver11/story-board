@@ -631,13 +631,13 @@ class CanvasInformationDisplay(MiniWidget):
                 ft.Icons.REDO_OUTLINED, self.widget.data.get('color', None), tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
                 on_click=self.redo, #disabled=True if len(self.widget.state.redo_list) == 0 else False
             ),
-            ft.Container(expand=True),
-            ft.IconButton(
-                ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
-                tooltip=f"Close {self.title}",
-                mouse_cursor=ft.MouseCursor.CLICK,
-                on_click=self.widget._toggle_show_info,
-            ),
+            #ft.Container(expand=True),
+            #ft.IconButton(
+                #ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
+                #tooltip=f"Close {self.title}",
+                #mouse_cursor=ft.MouseCursor.CLICK,
+                #on_click=self.widget._toggle_show_info,
+            #),
         ], spacing=0)
 
         # Textfield of our canvas description

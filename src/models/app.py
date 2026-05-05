@@ -88,6 +88,17 @@ class App:
         page.on_resize = app.settings.page_resized
         page.on_close = app.settings.save_story
 
+        # Import and set page fonts here
+        #page.fonts = {
+            #"Bangers": "/fonts/Bangers-Regular.ttf",
+            #"PatrickHand": "/fonts/PatrickHand-Regular.ttf",
+            #"Oswald": "/fonts/Oswald-Regular.ttf",
+            #"Caveat": "/fonts/Caveat-Regular.ttf",
+            #"SpecialElite": "/fonts/SpecialElite-Regular.ttf",
+        #}
+
+        #page.theme = ft.Theme(font_family="Bangers")  # Default app font
+
 
       # Called on app startup in main
     async def load_previous_story(self, page: ft.Page):

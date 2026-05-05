@@ -166,7 +166,7 @@ class Canvas(Widget):
         if e: 
             self.canvas_width = int(e.width)
             self.canvas_height = int(e.height)
-            #self.needs_redraw = True           # Prevent resizing for now
+            self.needs_redraw = True           # Prevent resizing for now
             if self.initial_resize:
                 self.initial_resize = False
                 self.needs_redraw = False
@@ -589,7 +589,7 @@ class Canvas(Widget):
         self.story.mouse_x = e.global_position.x
         self.story.mouse_y = e.global_position.y
 
-        return  # Temp before resizing is handled
+        #return  # Temp before resizing is handled
         
         # If we need to redraw, do that
         if self.needs_redraw:
