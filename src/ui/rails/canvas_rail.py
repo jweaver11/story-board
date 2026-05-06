@@ -94,8 +94,9 @@ class CanvasRail(Rail):
         )   # Set our color pickers color 
 
         self.color_selector = ft.SubmenuButton(
-            ft.Icon(ft.Icons.COLOR_LENS_ROUNDED, app.settings.data.get('paint_settings', {}).get('color', ft.Colors.PRIMARY)), 
-            width=40,
+            "Color",
+            trailing=ft.Icon(ft.Icons.COLOR_LENS_ROUNDED, app.settings.data.get('paint_settings', {}).get('color', ft.Colors.PRIMARY)), 
+            #width=40,
             tooltip="The color of your brush strokes.",
             on_close=self._save_color, expand=True,
             controls=[ft.Column([
@@ -109,7 +110,8 @@ class CanvasRail(Rail):
                 mouse_cursor=ft.MouseCursor.CLICK,  
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 shape=ft.RoundedRectangleBorder(radius=4),
-                padding=ft.Padding.all(0),
+                #text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                #padding=ft.Padding.all(0),
             ),
             menu_style=ft.MenuStyle(
                 alignment=ft.Alignment.TOP_RIGHT,
@@ -162,18 +164,50 @@ class CanvasRail(Rail):
             ),
             expand=True,
         )
-           
+
+        text_color_only = app.settings.data.get('canvas_settings', {}).get('text_shape_color', "#FFFFFF").split(",", 1)[0]     # Set color without opacity for the color picker
+        self.text_color_picker = ColorPicker(
+            color=text_color_only, on_color_change=self._set_text_color, 
+            scale=.8, 
+            picker_area_border_radius=ft.BorderRadius.all(6)
+        )   # Set our color pickers color 
+
+        text_shadow_color_only = app.settings.data.get('canvas_settings', {}).get('text_shadow_color', "#00000000").split(",", 1)[0]     # Set color without opacity for the color picker
+        self.text_shadow_color_picker = ColorPicker(
+            color=text_shadow_color_only, on_color_change=self._set_text_shadow_color, 
+            scale=.8, 
+            picker_area_border_radius=ft.BorderRadius.all(6)
+        )   # Set our color pickers color   
+        
         self.reload_rail()
     
     # Set the color pickers color
     async def _set_color(self, e):
         self.color_picker.color = e.data
+
+    async def _set_text_color(self, e):
+        self.text_color_picker.color = e.data
+
+    async def _set_text_shadow_color(self, e):
+        self.text_shadow_color_picker.color = e.data
     
     # Called when color picker is closed
     async def _save_color(self, e=None):
         app.settings.data['paint_settings']['color'] = self.color_picker.color
         await app.settings.save_dict()
         self.story.active_rail.reload_rail()
+
+    async def _save_text_color(self, e=None):   
+        app.settings.data['canvas_settings']['text_shape_color'] = self.text_color_picker.color
+        await app.settings.save_dict()
+        self.story.active_rail.reload_rail()
+        await self._update_live_text_shape()
+
+    async def _save_text_shadow_color(self, e=None):
+        app.settings.data['canvas_settings']['text_shadow_color'] = self.text_shadow_color_picker.color
+        await app.settings.save_dict()
+        self.story.active_rail.reload_rail()
+        await self._update_live_text_shape()
 
     def _set_preview_tool_icon(self) -> ft.Control:
 
@@ -253,17 +287,17 @@ class CanvasRail(Rail):
             ft.Divider(), 
             ft.Text("\tShapes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
             
-            ft.MenuItemButton(
-                ft.Row([
-                    ft.Text("Dialogue Box", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                    ft.Icon(ft.CupertinoIcons.BUBBLE_LEFT_FILL, ft.Colors.PRIMARY)
+            #ft.MenuItemButton(
+                #ft.Row([
+                    #ft.Text("Dialogue Box", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                    #ft.Icon(ft.CupertinoIcons.BUBBLE_LEFT_FILL, ft.Colors.PRIMARY)
                     # ft.CupertinoIcons.CHAT_BUBBLE
-                ]),
-                data="dialogue_box",
-                on_click=self._set_active_tool,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-                tooltip="Add dialogue boxes to your canvas"
-            ),
+                #]),
+                #data="dialogue_box",
+                #on_click=self._set_active_tool,
+                #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                #tooltip="Add dialogue boxes to your canvas"
+            #),
 
             ft.MenuItemButton(
                 ft.Row([
@@ -494,6 +528,19 @@ class CanvasRail(Rail):
             )
 
         return options
+    
+    # Updates any live text tools if we changed a setting that would affect it
+    async def _update_live_text_shape(self):
+        for widget in self.story.widgets:
+            if widget.data.get('tag') == "canvas" and widget.data.get('visible', False):
+                if widget.manipulating_shape and widget.active_tool.shape_type == "text":
+                    widget.active_tool.cv_shape.style = ft.TextStyle(
+                        size=app.settings.data.get('canvas_settings', {}).get('text_shape_size', 20),
+                        weight=ft.FontWeight.BOLD if app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False) else ft.FontWeight.NORMAL,
+                        color=app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE),
+                        italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
+                    )
+                    widget.active_tool.cv_shape.update()
 
 
 
@@ -917,7 +964,6 @@ class CanvasRail(Rail):
 
         # Toggles path smoothing
         async def _path_smoothing_changed(e):
-            new_value = e.control.value
             app.settings.data['canvas_settings']['use_path_smoothing'] = e.control.value
             await app.settings.save_dict()
 
@@ -929,30 +975,78 @@ class CanvasRail(Rail):
             #label_position=ft.LabelPosition.LEFT
         )
 
-        # Updates any live text tools if we changed a setting that would affect it
-        async def _update_live_text_shape():
-            for widget in self.story.widgets:
-                if widget.data.get('tag') == "canvas" and widget.data.get('visible', False):
-                    if widget.manipulating_shape and widget.active_tool.shape_type == "text":
-                        widget.active_tool.cv_shape.style = ft.TextStyle(
-                            # TODO: Set properties here
-                        )
-                        widget.active_tool.cv_shape.update()
+        
 
         async def _change_text_options(e):
             option = e.control.data
             value = e.control.value
-            if option == "bold":
-                app.settings.data['text_settings']['bold'] = value
-            elif option == "italic":
-                app.settings.data['text_settings']['italic'] = value
-            elif option == "underline":
-                app.settings.data['text_settings']['underline'] = value
-            elif option == "strikethough":
-                app.settings.data['text_settings']['strikethough'] = value
+            
+            match option:
+                case "size":
+                    app.settings.data['canvas_settings']['text_shape_size'] = int(value) or 0
+                case "bold":
+                    app.settings.data['canvas_settings']['text_shape_bold'] = value or False
+                case "italic":
+                    app.settings.data['canvas_settings']['text_shape_italic'] = value or False
             await app.settings.save_dict()
-            self.story.active_rail.reload_rail()
-            await _update_live_text_shape()
+            #self.story.active_rail.reload_rail()
+            await self._update_live_text_shape()
+
+
+        text_color_selector = ft.SubmenuButton(
+            "Text Color",
+            trailing=ft.Icon(ft.Icons.COLOR_LENS_ROUNDED, app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE)),
+            #width=40,
+            tooltip="The color of text added with the text tool",
+            on_close=self._save_text_color, expand=True,
+            controls=[ft.Column([
+                self.text_color_picker,  
+                ft.MenuItemButton(
+                    "Set Color", on_click=lambda: None,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
+                )
+            ])],
+            style=ft.ButtonStyle(
+                mouse_cursor=ft.MouseCursor.CLICK,  
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                shape=ft.RoundedRectangleBorder(radius=4),
+                #padding=ft.Padding.all(0),
+            ),
+            menu_style=ft.MenuStyle(
+                alignment=ft.Alignment.TOP_RIGHT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                shape=ft.RoundedRectangleBorder(radius=10),
+                padding=ft.Padding.all(0)
+            ),
+        )
+
+        text_shadow_color_selector = ft.SubmenuButton(
+            "Text Shadow Color",
+            trailing=ft.Icon(ft.Icons.COLOR_LENS_ROUNDED, app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE)),
+            #width=40,
+            tooltip="The color of text added with the text tool",
+            on_close=self._save_text_shadow_color, expand=True,
+            controls=[ft.Column([
+                self.text_shadow_color_picker,  
+                ft.MenuItemButton(
+                    "Set Color", on_click=lambda: None,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
+                )
+            ])],
+            style=ft.ButtonStyle(
+                mouse_cursor=ft.MouseCursor.CLICK,  
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                shape=ft.RoundedRectangleBorder(radius=4),
+                #padding=ft.Padding.all(0),
+            ),
+            menu_style=ft.MenuStyle(
+                alignment=ft.Alignment.TOP_RIGHT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                shape=ft.RoundedRectangleBorder(radius=10),
+                padding=ft.Padding.all(0)
+            ),
+        )
+        
 
         
         
@@ -1094,15 +1188,62 @@ class CanvasRail(Rail):
                 ft.Row([ft.Text("Tool Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
                 #ft.Container(height=10),   # Spacer
 
-                # If widget.manipulating_shape and visible, then modify its curreent shape
-                ft.Text("Text size"),
-                ft.Text("Text color"),
+               
+                
+            
+                ft.Container(
+                    TextField(
+                        label="Text Size", on_blur=_change_text_options, data="size", dense=True,
+                        input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
+                        value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_size', 16))
+                    ),
+                    margin=ft.Margin.only(left=4, right=4, bottom=4),
+                ),
+
+                ft.Container(
+                    ft.MenuBar(
+                        [text_color_selector],
+                        style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)),
+                        #expand=True,
+                    ),
+                    margin=ft.Margin.only(left=4)
+                ),
+                    
+                #ft.Container(
+                    #ft.MenuBar(
+                        #[text_shadow_color_selector],
+                        #style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)),
+                        #expand=True,
+                    #),
+                    #margin=ft.Margin.only(left=4)
+                #),
+
+                
+
+                ft.Switch(
+                    True, "\tText Bold", on_change=_change_text_options, data="bold",
+                    label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
+                    value=app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False),
+                    tooltip="Whether text shapes will be bold or not",
+                    #label_position=ft.LabelPosition.LEFT
+                ),
+                ft.Switch(
+                    True, "\tText Italic", on_change=_change_text_options, data="italic",
+                    label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
+                    value=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
+                    tooltip="Whether text shapes will be italic or not",
+                    #label_position=ft.LabelPosition.LEFT
+                ),
+                
+
+
+                #ft.Text("Text size"),
+                #ft.Text("Text color"),
                 ft.Text("Fonts"),
-                ft.Text("Text Bold"),
-                ft.Text("Text Italic"),
-                ft.Text("Text Decoration"),
-                ft.Text("Background Color"),
-                ft.Text("Shadow Color"),
+                #ft.Text("Text Bold"),
+                #ft.Text("Text Italic"),
+                ft.Text("Text Decoration"),         # Dropdown
+                #ft.Text("Shadow Color"),
                 ft.Text("Letter Spacing"),
                 ft.Text("Word Spacing"),
                 ft.Text("Rectangle border radius"),

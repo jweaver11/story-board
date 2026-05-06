@@ -413,7 +413,8 @@ class CanvasShape(ft.Container):
                         size=app.settings.data.get('canvas_settings', {}).get('text_shape_size', 16),
                         weight=ft.FontWeight.BOLD if app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False) else None,
                         italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
-                        decoration=decoration
+                        decoration=decoration,
+                        shadow=ft.BoxShadow(app.settings.data.get('canvas_settings', {}).get('text_shadow_color', "#00000000"), blur_radius=4, offset=ft.Offset(2, 2)),
                         #font_family=
                     ),
                 )

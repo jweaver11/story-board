@@ -89,9 +89,10 @@ class Settings(ft.View):
                     'use_path_smoothing': True,          # If True, uses cv.Path when drawing, else uses cv.Line
                     'use_default_shape_paint': True,     # If True, shapes are black/white and use default paint settings rather than live brush settings
                     'sampling_distance': 2,             # Minimum distance between points when drawing with brush, to improve performance 
-                    'text_shape_size': 16,                # Font size for text shapes
+                    'text_shape_size': 24,                # Font size for text shapes
                     'text_shape_font': "Arial",              # Font family for text shapes
                     'text_shape_color': "#FFFFFF",          # Font color for text shapes
+                    'text_shadow_color': "#00000000",
                     'text_shape_bold': False,                   # If text shapes are bold or not
                     'text_shape_italic': False,                 # If text shapes are italic or not  
                     'text_shape_decoration': False,              # If text shapes are underlined or not
