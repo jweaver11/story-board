@@ -17,6 +17,9 @@ from io import BytesIO
 from PIL import Image
 from styles.text_field import TextField
 
+MAX_SHAPES_BEFORE_CAPTURE = 30   # Prevent lag from too many paths on the canvas without being removed
+MAX_UNDO_LIST_TASKS = 30         # Max number of undo tasks to store in our undo list before we start deleting old ones
+
 
 class CanvasBoard(Widget):
     # Constructor
@@ -115,6 +118,21 @@ class CanvasBoard(Widget):
     # Called when we click the canvas and don't initiate a drag
     async def add_shape(self, e: ft.TapEvent):
         ''' Adds a point to the canvas if we just clicked and didn't initiate a drag '''
+
+        # Set our paint settings in case we need to change them
+        paint_settings = app.settings.data.get('paint_settings', {}).copy()
+
+        # Check if we're in tool mode, and what tool we're using
+        if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") != "draw":
+
+            tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+            match tool_name:
+
+                # Erase tool - make sure our paint settings don't break the drawing
+                case "erase":
+                    paint_settings['blend_mode'] = "clear"
+                    paint_settings['blur_image'] = 0
+                    paint_settings['style'] = "stroke"
         
 
         canvas: cv.Canvas = e.control.parent
@@ -122,7 +140,7 @@ class CanvasBoard(Widget):
         # Create the point using our paint settings and point mode
         point = cv.Points(
             points=[(e.local_position.x, e.local_position.y)],
-            paint=ft.Paint(**app.settings.data.get('paint_settings', {})),
+            paint=ft.Paint(**paint_settings),
         )
         
         # Add point to the canvas and our state data
@@ -132,7 +150,7 @@ class CanvasBoard(Widget):
         try:
             canvas.update()
         except Exception:
-            print("Failed to update canvas")
+            pass
             
         # Need to save, as this function stands alone and no others will run after it
         await self.save_canvas(e)
@@ -141,16 +159,29 @@ class CanvasBoard(Widget):
     async def start_new_stroke(self, e: ft.DragStartEvent):
         ''' Set our initial starting x and y coordinates for the element we're drawing '''
 
+        # Grab the canvas and paint settings
         canvas: cv.Canvas = e.control.parent
-
-        paint_settings = ft.Paint(**app.settings.data.get('paint_settings', {}))
-        paint_settings.style = ft.PaintingStyle.STROKE
+        paint_settings = app.settings.data.get('paint_settings', {}).copy()
+        #paint_settings.style = ft.PaintingStyle.STROKE
 
         # Update state x and y coordinates
         self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
         # Clear and set our current path and state to match it
-        self.active_path = cv.Path(elements=[], paint=paint_settings)
+        self.active_path = cv.Path(elements=[], paint=ft.Paint(**paint_settings))
+
+        # Check if we're in tool mode, and what tool we're using
+        if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") != "draw":
+
+            tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+            match tool_name:
+
+                # Erase tool - make sure our paint settings don't break the drawing
+                case "erase":
+                    paint_settings['blend_mode'] = "clear"
+                    paint_settings['blur_image'] = 0
+                    paint_settings['style'] = "stroke"
+                    self.active_path.paint = ft.Paint(**paint_settings) # Make the active path match the paint
 
         # Move to our starting position for this element
         move_to_element = cv.Path.MoveTo(e.local_position.x, e.local_position.y)
@@ -166,19 +197,15 @@ class CanvasBoard(Widget):
     async def update_stroke(self, e: ft.DragUpdateEvent):
         ''' Creates our line to add to the canvas as we draw, and saves that paths data to self.state '''
 
-        canvas: cv.Canvas = e.control.parent
-
-        paint_settings = ft.Paint(**app.settings.data.get('paint_settings', {}))
-        paint_settings.style = ft.PaintingStyle.STROKE
+        
         
         path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
-
-        # Add the declared element to our current path and state paths
+        path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
         self.active_path.elements.append(path_element)
-
         self.active_path.update()
-        # Update our state x and y for the next segment
-        self.state.x, self.state.y = e.local_position.x, e.local_position.y
+
+        self.state.x = e.local_position.x
+        self.state.y = e.local_position.y
 
     # Called when we release the mouse to stop drawing a line
     async def save_canvas(self, e: ft.DragEndEvent):
@@ -200,8 +227,13 @@ class CanvasBoard(Widget):
         try:
             await canvas.capture()
     
-            cc = await canvas.get_capture()
-            encoded_capture = base64.b64encode(cc).decode('utf-8')      # Requires encoding to save json
+            capture = await canvas.get_capture()
+            encoded_capture = base64.b64encode(capture).decode('utf-8')      # Requires encoding to save json
+
+            # If capture failed, return
+            if not encoded_capture:
+                await canvas.clear_capture()
+                return
 
             if encoded_capture:
 
@@ -215,6 +247,18 @@ class CanvasBoard(Widget):
             if len(canvas.shapes) > 30:   # Limit our canvas to 30 shapes to save memory, and clear the canvas if we exceed that
                 canvas.shapes.clear()
                 canvas.shapes.append(cv.Image(encoded_capture, 0, 0, 200, 200))   # Re-add most reccent capture as the only shape on the canvas after clearing
+                canvas.update()
+
+            # Always re-render end of erase strokes, or they will appear broken. TEMPORARY FIX
+            elif app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") == "tool" and app.settings.data.get('canvas_settings', {}).get('current_tool_name', "") == "erase":   
+                canvas.shapes.clear()
+                canvas.shapes.append(cv.Image(encoded_capture, 0, 0, 200, 200))
+                canvas.update()
+
+            # Always re-render end of non-none blend mode strokes, or they will appear broken. TEMPORARY FIX
+            elif app.settings.data.get('paint_settings', {}).get('blend_mode', "") is not None:   
+                canvas.shapes.clear()
+                canvas.shapes.append(cv.Image(encoded_capture, 0, 0, 200, 200))
                 canvas.update()
 
         except Exception as e:

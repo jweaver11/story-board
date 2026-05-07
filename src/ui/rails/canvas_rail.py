@@ -201,13 +201,13 @@ class CanvasRail(Rail):
         app.settings.data['canvas_settings']['text_shape_color'] = self.text_color_picker.color
         await app.settings.save_dict()
         self.story.active_rail.reload_rail()
-        await self._update_live_text_shape()
+        await self._update_live_shape()
 
     async def _save_text_shadow_color(self, e=None):
         app.settings.data['canvas_settings']['text_shadow_color'] = self.text_shadow_color_picker.color
         await app.settings.save_dict()
         self.story.active_rail.reload_rail()
-        await self._update_live_text_shape()
+        await self._update_live_shape()
 
     def _set_preview_tool_icon(self) -> ft.Control:
 
@@ -530,17 +530,39 @@ class CanvasRail(Rail):
         return options
     
     # Updates any live text tools if we changed a setting that would affect it
-    async def _update_live_text_shape(self):
+    async def _update_live_shape(self):
+        decoration = app.settings.data.get('canvas_settings', {}).get('text_shape_decoration', "none")
+        match decoration:
+            case "Underline": text_decoration = ft.TextDecoration.UNDERLINE
+            case "Overline": text_decoration = ft.TextDecoration.OVERLINE
+            case "Line Through": text_decoration = ft.TextDecoration.LINE_THROUGH
+            case _: text_decoration = None
         for widget in self.story.widgets:
             if widget.data.get('tag') == "canvas" and widget.data.get('visible', False):
-                if widget.manipulating_shape and widget.active_tool.shape_type == "text":
-                    widget.active_tool.cv_shape.style = ft.TextStyle(
-                        size=app.settings.data.get('canvas_settings', {}).get('text_shape_size', 20),
-                        weight=ft.FontWeight.BOLD if app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False) else ft.FontWeight.NORMAL,
-                        color=app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE),
-                        italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
-                    )
+                if widget.manipulating_shape:
+                   
+                    # Fix any paint changes
+                    widget.active_tool.paint.color = app.settings.data.get('paint_settings', {}).get('color', ft.Colors.BLACK) if not app.settings.data.get('use_default_shape_paint', True) else ft.Colors.BLACK
+                    widget.active_tool.paint.stroke_width=app.settings.data.get('paint_settings', {}).get('stroke_width', 3) if not app.settings.data.get('use_default_shape_paint', True) else 3
+                    widget.active_tool.paint.style=app.settings.data.get('paint_settings', {}).get('style', ft.PaintingStyle.STROKE)
+                
+                    if widget.active_tool.shape_type == "text":
+                        widget.active_tool.cv_shape.style = ft.TextStyle(
+                            size=app.settings.data.get('canvas_settings', {}).get('text_shape_size', 20),
+                            weight=ft.FontWeight.BOLD if app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False) else ft.FontWeight.NORMAL,
+                            color=app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE),
+                            italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
+                            decoration=text_decoration,
+                            letter_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0),
+                            word_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0),
+                        )
+                    elif widget.active_tool.shape_type == "rectangle":
+                        widget.active_tool.cv_shape.border_radius = ft.BorderRadius.all(
+                            app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0)
+                        )
+
                     widget.active_tool.cv_shape.update()
+                    break
 
 
 
@@ -977,7 +999,7 @@ class CanvasRail(Rail):
 
         
 
-        async def _change_text_options(e):
+        async def _change_shape_options(e):
             option = e.control.data
             value = e.control.value
             
@@ -988,9 +1010,16 @@ class CanvasRail(Rail):
                     app.settings.data['canvas_settings']['text_shape_bold'] = value or False
                 case "italic":
                     app.settings.data['canvas_settings']['text_shape_italic'] = value or False
+                case "decoration":
+                    app.settings.data['canvas_settings']['text_shape_decoration'] = value or "None"
+                case "letter_spacing":
+                    app.settings.data['canvas_settings']['text_shape_letter_spacing'] = int(value) or 0
+                case "word_spacing":
+                    app.settings.data['canvas_settings']['text_shape_word_spacing'] = int(value) or 0
+                case "border_radius":
+                    app.settings.data['canvas_settings']['rectangle_border_radius'] = int(value) or 0
             await app.settings.save_dict()
-            #self.story.active_rail.reload_rail()
-            await self._update_live_text_shape()
+            await self._update_live_shape()
 
 
         text_color_selector = ft.SubmenuButton(
@@ -1044,6 +1073,71 @@ class CanvasRail(Rail):
                 bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
                 shape=ft.RoundedRectangleBorder(radius=10),
                 padding=ft.Padding.all(0)
+            ),
+        )
+
+        async def _change_text_decoration(e):
+            decoration = str(e.control.content)
+            app.settings.data['canvas_settings']['text_shape_decoration'] = decoration or "None"
+            match decoration:
+                case "Underline":
+                    new_icon = ft.Icons.FORMAT_UNDERLINE
+                case "Overline":
+                    new_icon = ft.Icons.FORMAT_OVERLINE
+                case "Line Through":
+                    new_icon = ft.Icons.FORMAT_STRIKETHROUGH
+                case _:
+                    new_icon = ft.Icons.FORMAT_CLEAR
+
+            await app.settings.save_dict()
+            await self._update_live_shape()
+            text_decoration_selector.trailing.icon = new_icon
+            text_decoration_selector.update()
+
+        match app.settings.data.get('canvas_settings', {}).get('text_shape_decoration', 'none'):
+            case "Underline":
+                text_decoration_trailing_icon = ft.Icons.FORMAT_UNDERLINE
+            case "Overline":
+                text_decoration_trailing_icon = ft.Icons.FORMAT_OVERLINE    
+
+            case "Line Through":
+                text_decoration_trailing_icon = ft.Icons.FORMAT_STRIKETHROUGH
+            case _:
+                text_decoration_trailing_icon = ft.Icons.FORMAT_CLEAR
+        text_decoration_selector = ft.SubmenuButton(
+            "Text Decoration",
+            [
+                ft.MenuItemButton(
+                    "None", 
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    on_click=_change_text_decoration,
+                ),
+                ft.MenuItemButton(
+                    "Underline", 
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    on_click=_change_text_decoration,
+                ),
+                ft.MenuItemButton(
+                    "Overline",
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    on_click=_change_text_decoration,
+                ),
+                ft.MenuItemButton(
+                    "Line Through", 
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    on_click=_change_text_decoration,
+                ),
+                
+            ],
+            trailing=ft.Icon(text_decoration_trailing_icon, app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE)),
+            
+            tooltip="The text decoration for text shapes",
+            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+            style=ft.ButtonStyle(
+                mouse_cursor=ft.MouseCursor.CLICK,  
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                shape=ft.RoundedRectangleBorder(radius=4),
+                #padding=ft.Padding.all(0),
             ),
         )
         
@@ -1193,7 +1287,7 @@ class CanvasRail(Rail):
             
                 ft.Container(
                     TextField(
-                        label="Text Size", on_blur=_change_text_options, data="size", dense=True,
+                        label="Text Size", on_blur=_change_shape_options, data="size", dense=True,
                         input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
                         value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_size', 16))
                     ),
@@ -1221,28 +1315,77 @@ class CanvasRail(Rail):
                 
 
                 ft.Switch(
-                    True, "\tText Bold", on_change=_change_text_options, data="bold",
+                    True, "\tText Bold", on_change=_change_shape_options, data="bold",
                     label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
                     value=app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False),
                     tooltip="Whether text shapes will be bold or not",
                     #label_position=ft.LabelPosition.LEFT
                 ),
                 ft.Switch(
-                    True, "\tText Italic", on_change=_change_text_options, data="italic",
+                    True, "\tText Italic", on_change=_change_shape_options, data="italic",
                     label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
                     value=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
                     tooltip="Whether text shapes will be italic or not",
                     #label_position=ft.LabelPosition.LEFT
                 ),
+
                 
 
+                ft.Container(
+                    ft.MenuBar(
+                        [text_decoration_selector], 
+                        style=ft.MenuStyle(
+                            bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)
+                        ),
+                        #expand=True,
+                    ),
+                    margin=ft.Margin.only(left=4, top=4, right=4),
+                ),
+                
+                
+                ft.Container(
+                    ft.Row([
+                        TextField(
+                            label="Letter Spacing", on_blur=_change_shape_options, data="letter_spacing", dense=True, expand=True,
+                            input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
+                            value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0))
+                        ),
+                        TextField(
+                            label="Word Spacing", on_blur=_change_shape_options, data="word_spacing", dense=True, expand=True,
+                            input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
+                            value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0))
+                        ),
+                    ]),
+                    margin=ft.Margin.only(left=4, right=4, bottom=4),
+                ),
+                
+                ft.Container(
+                    TextField(
+                        label="Rectangle Border Radius", on_blur=_change_shape_options, data="border_radius", dense=True,
+                        input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
+                        value=str(app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0))
+                    ),
+                    margin=ft.Margin.only(left=4, right=4, bottom=4),
+                ),
 
-                #ft.Text("Text size"),
-                #ft.Text("Text color"),
-                ft.Text("Fonts"),
-                #ft.Text("Text Bold"),
-                #ft.Text("Text Italic"),
-                ft.Text("Text Decoration"),         # Dropdown
+                ft.Switch(
+                    True, "\tUse Paint Settings for Shapes", on_change=_change_shape_options, data="size",
+                    label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
+                    value=app.settings.data.get('canvas_settings', {}).get('shapes_use_paint_settings', False),
+                    tooltip="Whether shapes will use the current paint settings (color, stroke width, etc) or will just be painted with a standard fill or stroke with no effects",
+                    #label_position=ft.LabelPosition.LEFT
+                ),
+
+                ft.Switch(
+                    True, "\tAdjust Sampling Option", on_change=_change_shape_options, data="size",
+                    label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
+                    value=app.settings.data.get('canvas_settings', {}).get('adjust_sampling', False),
+                    tooltip="Whether to adjust the sampling of the canvas when using certain tools. This can help with performance when using tools that require a lot of processing power (like the liquify tool), but can also cause some tools to look worse (like the blur tool).",
+                    #label_position=ft.LabelPosition.LEFT
+                ),
+                
+                #ft.Text("Fonts"),
+                
                 #ft.Text("Shadow Color"),
                 ft.Text("Letter Spacing"),
                 ft.Text("Word Spacing"),
@@ -1250,8 +1393,7 @@ class CanvasRail(Rail):
                 ft.Text("Option to use paint settings for shapes or not"),
                 ft.Text("Adjust sampling option"),
             ]
-        )
-        
+        )        
         
 
        

@@ -95,7 +95,10 @@ class Settings(ft.View):
                     'text_shadow_color': "#00000000",
                     'text_shape_bold': False,                   # If text shapes are bold or not
                     'text_shape_italic': False,                 # If text shapes are italic or not  
-                    'text_shape_decoration': False,              # If text shapes are underlined or not
+                    'text_shape_decoration': "None",              # If text shapes are underlined or not
+                    'text_shape_letter_spacing': 0,                    # Letter spacing for text shapes
+                    'text_shape_word_spacing': 0,                      # Word spacing for text shapes
+                    'rectangle_border_radius': 0,               # Border radius for rectangle shapes
                     'saved_brushes': dict,              # Saved brushes the user has created that we can load
                 },
 
