@@ -380,7 +380,7 @@ class Rail(IsolatedColumn):
     
 
     # Called when changes occure that require rail to be reloaded. Should be overwritten by children
-    def reload_rail(self) -> ft.Control:
+    def reload_rail(self):
         ''' Sets our rail (extended ft.Container) content and applies the page update '''
 
         # Set your content for the rail
@@ -400,4 +400,4 @@ class Rail(IsolatedColumn):
             pass
 
         # Return yourself as the control
-        return self
+        #return self

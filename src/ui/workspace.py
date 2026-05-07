@@ -133,7 +133,7 @@ class Workspace(ft.Container):
     # When a draggable starts dragging, we add our drag targets to the master stack
     def show_pin_drag_targets(self, e=None):
         ''' Adds our drag targets to the master stack so we can drop our widgets into pin locations '''
-        #return
+        return
 
         # If no visible in the top pin
         if len(self.top_pin.controls) == 0:
@@ -174,8 +174,6 @@ class Workspace(ft.Container):
 
     # Accepting drags for our five pin locations
     async def pin_drag_accept(self, e: ft.DragTargetEvent):
-
-        return
 
         # Put our blocker on the page to block events during longer reloads
         self.story.blocker.visible = True

@@ -167,8 +167,6 @@ class App:
     # Called when app creates a new story. Accepts our title, page reference, a template, and a type
     def create_new_story(self, title: str, page: ft.Page, template: str) -> Story:
         ''' Creates the new story object and has it run its 'startup' method. Changes route so our view displays the new story '''
-
-        # TODO: Add a type to accept for novel/comic
         
         story = Story(title.title(), page, data=None, template=template)
         

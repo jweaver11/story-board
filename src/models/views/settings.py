@@ -805,14 +805,14 @@ class Settings(ft.View):
                 self.content = ft.ReorderableDragHandle(
                     content=ft.Row(
                         [
-                            ft.Text(self.field_name, expand=True, theme_style=ft.TextThemeStyle.BODY_MEDIUM),
+                            ft.Text(self.field_name, theme_style=ft.TextThemeStyle.BODY_MEDIUM),
                             ft.IconButton(
-                                icon=ft.Icons.DELETE_OUTLINE,
+                                icon=ft.Icons.DELETE_OUTLINE_OUTLINED,
                                 icon_color=ft.Colors.ERROR,
                                 tooltip="Delete field",
-                                icon_size=18,
+                                #icon_size=18,
                                 on_click=lambda e, k=self.field_name: self.section_ctrl._delete_field(k),
-                                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, padding=ft.Padding.all(0)),
                             ),
                         ],
                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -832,7 +832,7 @@ class Settings(ft.View):
                 self.border_radius = ft.BorderRadius.all(10)
                 self.border        = ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT)
                 self.padding       = ft.Padding.all(10)
-                self.margin        = ft.Margin.only(bottom=8, top=8)
+                self.margin        = ft.Margin.only(bottom=4, top=4)
 
                 # Wired by TemplateCtrl after construction
                 self._delete_callback = None
@@ -952,7 +952,8 @@ class Settings(ft.View):
                     ft.ReorderableListView(
                         controls=field_items,
                         on_reorder=self._reorder_items,
-                        show_default_drag_handles=False,
+                        spacing=0,
+                        #show_default_drag_handles=False,
                         #shrink_wrap=True,
                     )
                     if field_items
@@ -1427,7 +1428,8 @@ class Settings(ft.View):
     def _load_resources_settings(self):
         ''' Loads our resources settings view '''
 
-        # Has resources to help writers, can re-run the tutorial view, examples, discord link, planned features
+        async def _run_tutorial(e=None):
+            await self.p.push_route("/tutorial")
 
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
         content=ft.Column([
@@ -1438,22 +1440,32 @@ class Settings(ft.View):
                     ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
                     mouse_cursor="click", tooltip="Close Settings"
-                )
+                ) 
             ]),
-            ft.Text(f"Resources to help with your masterpiece!", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Text(f"Resources about Story Board!", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
 
             ft.Container(height=10),    # Spacer
 
             ft.Divider(),
             ft.Container(height=10),    # Spacer
 
+            ft.Row([
+                ft.Text("Join our", theme_style=ft.TextThemeStyle.BODY_LARGE,),
+                ft.Text(
+                    "Discord", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_LARGE,
+                    #url="https://discord.gg/4ZtGZsPjz5",  # TODO: replace with real URL
+                ),
+                ft.Text("to be part of our community and see upcoming features!", theme_style=ft.TextThemeStyle.BODY_LARGE,),
+            ], spacing=8), # Link
+
+            ft.TextButton("Click here to Run Tutorial", on_click=_run_tutorial, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)), 
+
+            ft.Text("All Widgets descriptions"),
+
         ])
 
         return content
     
-    
-
-        
     
     # Called when someone expands the drop down holding the color scheme options
     def reload_settings(self):
