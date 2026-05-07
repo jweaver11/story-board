@@ -196,6 +196,7 @@ class CanvasRail(Rail):
         app.settings.data['paint_settings']['color'] = self.color_picker.color
         await app.settings.save_dict()
         self.story.active_rail.reload_rail()
+        await self._update_live_shape()
 
     async def _save_text_color(self, e=None):   
         app.settings.data['canvas_settings']['text_shape_color'] = self.text_color_picker.color
@@ -542,9 +543,13 @@ class CanvasRail(Rail):
                 if widget.manipulating_shape:
                    
                     # Fix any paint changes
-                    widget.active_tool.paint.color = app.settings.data.get('paint_settings', {}).get('color', ft.Colors.BLACK) if not app.settings.data.get('use_default_shape_paint', True) else ft.Colors.BLACK
-                    widget.active_tool.paint.stroke_width=app.settings.data.get('paint_settings', {}).get('stroke_width', 3) if not app.settings.data.get('use_default_shape_paint', True) else 3
+                    widget.active_tool.paint.color = app.settings.data.get('paint_settings', {}).get('color', ft.Colors.BLACK) if app.settings.data.get('use_paint_for_shapes', True) else ft.Colors.BLACK
+                    widget.active_tool.paint.stroke_width=app.settings.data.get('paint_settings', {}).get('stroke_width', 3) if app.settings.data.get('use_paint_for_shapes', True) else 3
                     widget.active_tool.paint.style=app.settings.data.get('paint_settings', {}).get('style', ft.PaintingStyle.STROKE)
+                    widget.active_tool.paint.stroke_cap=app.settings.data.get('paint_settings', {}).get('stroke_cap', "round") if app.settings.data.get('use_paint_for_shapes', True) else "round"
+                    widget.active_tool.paint.stroke_join=app.settings.data.get('paint_settings', {}).get('stroke_join', "round") if app.settings.data.get('use_paint_for_shapes', True) else "round"
+                    widget.active_tool.paint.blur_image=app.settings.data.get('paint_settings', {}).get('blur_image', 0) if app.settings.data.get('use_paint_for_shapes', True) else 0
+                    widget.active_tool.paint.anti_alias=app.settings.data.get('paint_settings', {}).get('anti_alias', True) if app.settings.data.get('use_paint_for_shapes', True) else True
                 
                     if widget.active_tool.shape_type == "text":
                         widget.active_tool.cv_shape.style = ft.TextStyle(
@@ -553,6 +558,7 @@ class CanvasRail(Rail):
                             color=app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE),
                             italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
                             decoration=text_decoration,
+                            #shadow
                             letter_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0),
                             word_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0),
                         )
@@ -571,19 +577,21 @@ class CanvasRail(Rail):
         ''' Reloads the canvas rail with updated data and UI elements. '''
 
         # Called when changing paint width
-        def _paint_width_changed(e):
+        async def _paint_width_changed(e):
             new_width = int(e.control.value)
             # Change the data directly
             app.settings.data['paint_settings']['stroke_width'] = new_width
             self.p.run_task(app.settings.save_dict)
             self.story.active_rail.reload_rail()
+            await self._update_live_shape()
 
         # Called when changing paint anti-aliasing
-        def _paint_anti_alias_changed(e):
+        async def _paint_anti_alias_changed(e):
             new_anti_alias = e.control.value
             app.settings.data['paint_settings']['anti_alias'] = new_anti_alias
             self.p.run_task(app.settings.save_dict)
             self.story.active_rail.reload_rail()
+            await self._update_live_shape()
 
         # Add fill or not to our style based on teh switch state
         async def _paint_fill_changed(e):
@@ -594,27 +602,31 @@ class CanvasRail(Rail):
                 app.settings.data['paint_settings']['style'] = app.settings.data['paint_settings']['style'].replace("_fill", "")
             await app.settings.save_dict()
             self.story.active_rail.reload_rail()
+            await self._update_live_shape()
 
-        def _paint_stroke_cap_changed(e):
+        async def _paint_stroke_cap_changed(e):
             new_stroke_cap = e.control.content.lower()
             app.settings.data['paint_settings']['stroke_cap'] = new_stroke_cap
             self.p.run_task(app.settings.save_dict)
             self.story.active_rail.reload_rail()
+            await self._update_live_shape()
 
-        def _paint_stroke_join_changed(e):
+        async def _paint_stroke_join_changed(e):
             new_stroke_join = e.control.content.lower()
             app.settings.data['paint_settings']['stroke_join'] = new_stroke_join
             self.p.run_task(app.settings.save_dict)
             self.story.active_rail.reload_rail() 
+            await self._update_live_shape()
 
         # Called when changing paint stroke blur
-        def _paint_stroke_blur_changed(e):
+        async def _paint_stroke_blur_changed(e):
             app.settings.data['paint_settings']['blur_image'] = int(e.control.value)
             self.p.run_task(app.settings.save_dict)
             self.story.active_rail.reload_rail()
+            await self._update_live_shape()
             
 
-        def _paint_blend_mode_changed(e):
+        async def _paint_blend_mode_changed(e):
             mode = e.control.data
 
             # Set the new mode and label
@@ -622,6 +634,7 @@ class CanvasRail(Rail):
 
             self.p.run_task(app.settings.save_dict)
             self.story.active_rail.reload_rail()
+            await self._update_live_shape()
 
 
         # Called to save our active brush settings as a custom brush we can load later (Excludes color and opacity)
@@ -810,7 +823,8 @@ class CanvasRail(Rail):
             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
             style=ft.ButtonStyle(
                 padding=ft.Padding.only(left=4, right=4), alignment=ft.Alignment.CENTER, mouse_cursor="click", #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-                shape=ft.RoundedRectangleBorder(radius=4)
+                shape=ft.RoundedRectangleBorder(radius=4),
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
             ),
             controls=[
                 ft.MenuItemButton("Butt", on_click=_paint_stroke_cap_changed, leading=ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
@@ -832,11 +846,11 @@ class CanvasRail(Rail):
                 ft.Icon(stroke_join_icon),
                 
             ], spacing=6),   
-            tooltip="The shape that your brush strokes will have at the join of two line segments.",
+            tooltip="The shape that your brush strokes will have at the join of two line segments, or sharp corners.",
             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
             style=ft.ButtonStyle(
                 padding=ft.Padding.only(left=4, right=4), alignment=ft.Alignment.CENTER, mouse_cursor="click",
-                #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, 
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 shape=ft.RoundedRectangleBorder(radius=4)
             ),
             controls=[
@@ -863,7 +877,7 @@ class CanvasRail(Rail):
             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
             style=ft.ButtonStyle(
                 padding=ft.Padding.only(left=4, right=4), alignment=ft.Alignment.CENTER,
-                #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, 
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click", 
             ),
             controls=[
@@ -1018,6 +1032,8 @@ class CanvasRail(Rail):
                     app.settings.data['canvas_settings']['text_shape_word_spacing'] = int(value) or 0
                 case "border_radius":
                     app.settings.data['canvas_settings']['rectangle_border_radius'] = int(value) or 0
+                case "use_paint_for_shapes":
+                    app.settings.data['canvas_settings']['use_paint_for_shapes'] = value or False
             await app.settings.save_dict()
             await self._update_live_shape()
 
@@ -1276,21 +1292,44 @@ class CanvasRail(Rail):
                     ),
                 ),
 
-
                 # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
                 ft.Divider(),
-                ft.Row([ft.Text("Tool Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
+                ft.Row([ft.Text("Text & Tool Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
                 #ft.Container(height=10),   # Spacer
 
                
                 
             
                 ft.Container(
-                    TextField(
-                        label="Text Size", on_blur=_change_shape_options, data="size", dense=True,
-                        input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
-                        value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_size', 16))
-                    ),
+                    ft.Row([
+                        TextField(
+                            label="Size", on_blur=_change_shape_options, data="size", dense=True,
+                            tooltip="The size of text added with the text tool", expand=True,
+                            input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
+                            value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_size', 16))
+                        ),
+                        TextField(
+                            label="Letter Spacing", on_blur=_change_shape_options, data="letter_spacing", dense=True, expand=True,
+                            input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
+                            value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0))
+                        ),
+                    ]),
+                    margin=ft.Margin.only(left=4, right=4, bottom=4),
+                ),
+                ft.Container(
+                    ft.Row([
+                        TextField(
+                            label="Word Spacing", on_blur=_change_shape_options, data="word_spacing", dense=True, expand=True,
+                            input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
+                            value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0))
+                        ),
+                        TextField(
+                            label="Rectangle Border Radius", on_blur=_change_shape_options, data="border_radius", dense=True,
+                            input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
+                            value=str(app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0)),
+                            expand=True,
+                        ),
+                    ]),
                     margin=ft.Margin.only(left=4, right=4, bottom=4),
                 ),
 
@@ -1301,6 +1340,16 @@ class CanvasRail(Rail):
                         #expand=True,
                     ),
                     margin=ft.Margin.only(left=4)
+                ),
+                ft.Container(
+                    ft.MenuBar(
+                        [text_decoration_selector], 
+                        style=ft.MenuStyle(
+                            bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)
+                        ),
+                        #expand=True,
+                    ),
+                    margin=ft.Margin.only(left=4, right=4),
                 ),
                     
                 #ft.Container(
@@ -1328,70 +1377,19 @@ class CanvasRail(Rail):
                     tooltip="Whether text shapes will be italic or not",
                     #label_position=ft.LabelPosition.LEFT
                 ),
-
-                
-
-                ft.Container(
-                    ft.MenuBar(
-                        [text_decoration_selector], 
-                        style=ft.MenuStyle(
-                            bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)
-                        ),
-                        #expand=True,
-                    ),
-                    margin=ft.Margin.only(left=4, top=4, right=4),
-                ),
-                
-                
-                ft.Container(
-                    ft.Row([
-                        TextField(
-                            label="Letter Spacing", on_blur=_change_shape_options, data="letter_spacing", dense=True, expand=True,
-                            input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
-                            value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0))
-                        ),
-                        TextField(
-                            label="Word Spacing", on_blur=_change_shape_options, data="word_spacing", dense=True, expand=True,
-                            input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
-                            value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0))
-                        ),
-                    ]),
-                    margin=ft.Margin.only(left=4, right=4, bottom=4),
-                ),
-                
-                ft.Container(
-                    TextField(
-                        label="Rectangle Border Radius", on_blur=_change_shape_options, data="border_radius", dense=True,
-                        input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
-                        value=str(app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0))
-                    ),
-                    margin=ft.Margin.only(left=4, right=4, bottom=4),
-                ),
+        
 
                 ft.Switch(
-                    True, "\tUse Paint Settings for Shapes", on_change=_change_shape_options, data="size",
+                    True, "\tUse Brush Paint for Shapes", on_change=_change_shape_options, data="use_paint_for_shapes",
                     label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
-                    value=app.settings.data.get('canvas_settings', {}).get('shapes_use_paint_settings', False),
-                    tooltip="Whether shapes will use the current paint settings (color, stroke width, etc) or will just be painted with a standard fill or stroke with no effects",
-                    #label_position=ft.LabelPosition.LEFT
-                ),
-
-                ft.Switch(
-                    True, "\tAdjust Sampling Option", on_change=_change_shape_options, data="size",
-                    label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
-                    value=app.settings.data.get('canvas_settings', {}).get('adjust_sampling', False),
-                    tooltip="Whether to adjust the sampling of the canvas when using certain tools. This can help with performance when using tools that require a lot of processing power (like the liquify tool), but can also cause some tools to look worse (like the blur tool).",
+                    value=app.settings.data.get('canvas_settings', {}).get('use_paint_for_shapes', False),
+                    tooltip="Whether shapes will use the current paint settings (color, stroke width, etc) or will just be painted with a standard fill or stroke with no effects. \nFill is always used. Text shapes are not affected by this setting",
                     #label_position=ft.LabelPosition.LEFT
                 ),
                 
-                #ft.Text("Fonts"),
                 
-                #ft.Text("Shadow Color"),
-                ft.Text("Letter Spacing"),
-                ft.Text("Word Spacing"),
-                ft.Text("Rectangle border radius"),
-                ft.Text("Option to use paint settings for shapes or not"),
-                ft.Text("Adjust sampling option"),
+                
+                
             ]
         )        
         
@@ -1419,9 +1417,6 @@ class CanvasRail(Rail):
 
 
 # TODO: 
-# Add txt input for brush size as well
-# Use path smoothing for brush strokes, will use cv.Path if true else cv.line. Won't effect shapes
-# Add rest of dialogue boxes, and resizing of them
+# Add fonts and shadow options
 # Build in dialoge bubbles shapes for dialogue (up-left, up-right, down-left, down-right, middle-up, middle-down). See canvas example on flet docs, they have one
 # -- Both round and normal for above dialogue boxes
-# Option to paint shapes as just blank standard paint, not use current paint settings

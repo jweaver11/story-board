@@ -22,6 +22,7 @@ import asyncio
 from styles.menu_option_style import MenuOptionStyle
 from models.dataclasses.canvas_shape import CanvasShape    
 
+MINIMUM_SEGMENT_DISTANCE = 2
 MAX_SHAPES_BEFORE_CAPTURE = 30   # Prevent lag from too many paths on the canvas without being removed
 MAX_UNDO_LIST_TASKS = 30         # Max number of undo tasks to store in our undo list before we start deleting old ones
 
@@ -276,8 +277,8 @@ class Canvas(Widget):
 
             # Align our text to account for size of our layer canvas
             text_shape: cv.Text = self.active_tool.cv_shape
-            text_shape.x += self.active_tool.left + 1
-            text_shape.y += self.active_tool.top + 1
+            text_shape.x += self.active_tool.left + 2
+            text_shape.y += self.active_tool.top + 2
             
             active_canvas.shapes.append(text_shape)
             
@@ -302,8 +303,8 @@ class Canvas(Widget):
         rotated = shape_img.rotate(angle_degrees, expand=True, resample=Image.Resampling.BICUBIC)
 
         # Set rotation (with border padding)
-        rotation_cx = self.active_tool.left + (self.active_tool.canvas.width + 2) / 2
-        rotation_cy = self.active_tool.top + (self.active_tool.canvas.height + 2) / 2
+        rotation_cx = self.active_tool.left + (self.active_tool.canvas.width + 4) / 2
+        rotation_cy = self.active_tool.top + (self.active_tool.canvas.height + 4) / 2
 
 
         paste_x = int(rotation_cx - rotated.width / 2)
@@ -312,11 +313,16 @@ class Canvas(Widget):
         active_layer_idx = self.data.get('canvas_data', {}).get('Active Layer', 0)  
 
         # Decode existing layer capture
-        layer_b64 = self.data['canvas_data']['Layers'][active_layer_idx]['capture']
-        layer_img = Image.open(BytesIO(base64.b64decode(layer_b64))).convert("RGBA")
+        layer_b64 = self.data['canvas_data']['Layers'][active_layer_idx].get('capture')
+        if layer_b64:
+            layer_img = Image.open(BytesIO(base64.b64decode(layer_b64))).convert("RGBA")
+        else:
+            layer_img = Image.new("RGBA", (self.canvas_width, self.canvas_height), (0, 0, 0, 0))
 
         # Composite using the shape's alpha channel as the mask
-        layer_img.paste(rotated, (paste_x, paste_y), rotated)
+        overlay = Image.new("RGBA", layer_img.size, (0, 0, 0, 0))
+        overlay.paste(rotated, (paste_x, paste_y))
+        layer_img = Image.alpha_composite(layer_img, overlay)
 
         output = BytesIO()
         layer_img.save(output, format="PNG")
@@ -448,7 +454,7 @@ class Canvas(Widget):
         ''' Determines which drawing tool we're using, and updates accordingly as we drag our mouse '''
         
         # Set constant for sampling
-        MINIMUM_SEGMENT_DISTANCE = app.settings.data.get('canvas_settings', {}).get('sampling_distance', 2)
+       
         
         # Sampling to improve perforamance. If the line length is too small, we skip it
         dx = e.local_position.x - self.state.x
@@ -562,12 +568,10 @@ class Canvas(Widget):
                 canvas.update()
 
             # Always re-render end of non-none blend mode strokes, or they will appear broken. TEMPORARY FIX
-            elif app.settings.data.get('paint_settings', {}).get('blend_mode', "") is not None:   
+            elif app.settings.data.get('paint_settings', {}).get('blend_mode', "") is not None: 
                 canvas.shapes.clear()
                 canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))
                 canvas.update()
-
-            
 
             
         except Exception as e:
@@ -589,7 +593,6 @@ class Canvas(Widget):
         self.story.mouse_x = e.global_position.x
         self.story.mouse_y = e.global_position.y
 
-        #return  # Temp before resizing is handled
         
         # If we need to redraw, do that
         if self.needs_redraw:
@@ -738,7 +741,7 @@ class Canvas(Widget):
 
         layers_container = ft.Container(
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
-            border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
+            #border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
             aspect_ratio=self.data.get('canvas_data', {}).get('aspect_ratio'),       # If set, ignores width and height
             content=self.layer_stack, 
             opacity=0.99,    # Forces canvas onto its own opacity layer for rendering to avoid blend mode bugs

@@ -21,13 +21,16 @@ class CanvasShape(ft.Container):
         )
 
         self.shape_type = shape_type
-        self.stroke_width = app.settings.data.get('paint_settings', {}).get('stroke_width', 3) if not app.settings.data.get('use_default_shape_paint', True) else 3
         self.paint = ft.Paint(
-            color=app.settings.data.get('paint_settings', {}).get('color', ft.Colors.BLACK) if not app.settings.data.get('use_default_shape_paint', True) else ft.Colors.BLACK,
-            stroke_width=self.stroke_width,
+            color=app.settings.data.get('paint_settings', {}).get('color', ft.Colors.BLACK) if app.settings.data.get('use_paint_for_shapes', True) else ft.Colors.BLACK,
+            stroke_width=app.settings.data.get('paint_settings', {}).get('stroke_width', 3) if app.settings.data.get('use_paint_for_shapes', True) else 3,
             style=app.settings.data.get('paint_settings', {}).get('style', ft.PaintingStyle.STROKE),
-            anti_alias=True
+            stroke_cap=app.settings.data.get('paint_settings', {}).get('stroke_cap', "round") if app.settings.data.get('use_paint_for_shapes', True) else "round",
+            stroke_join=app.settings.data.get('paint_settings', {}).get('stroke_join', "round") if app.settings.data.get('use_paint_for_shapes', True) else "round",
+            blur_image=app.settings.data.get('paint_settings', {}).get('blur_image', 0) if app.settings.data.get('use_paint_for_shapes', True) else 0,
+            anti_alias=app.settings.data.get('paint_settings', {}).get('anti_alias', True) if app.settings.data.get('use_paint_for_shapes', True) else True
         )
+    
 
         # State management for rotation and resizing
         self._prev_mouse_angle = 0
