@@ -162,7 +162,7 @@ class Canvas(Widget):
             
             self.layers.append({'name': name, 'visible': visible, 'canvas': new_layer})
 
-
+    # Sets the size of the canvas for redrawing logic
     async def _set_size(self, e: cv.CanvasResizeEvent):
         if e: 
             self.canvas_width = int(e.width)
@@ -339,8 +339,6 @@ class Canvas(Widget):
         self.active_tool.rotate_handle.visible = False
         self.active_tool.rotate_handle.update()
         self.active_tool.update()
-
-        
 
 
     # Called when we click the canvas and don't initiate a drag

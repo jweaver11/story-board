@@ -496,6 +496,10 @@ class Widget(ft.Container):
         self.save_counter = 1000     # Force a file save
         await self.save_dict()
 
+        if self.data.get('pin_location', '') == "main":
+            self.story.data['main_pin_selected_idx'] = len(self.story.workspace.main_pin)
+            await self.story.save_dict()
+
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
         
         if self.story.blocker.visible:

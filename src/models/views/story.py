@@ -55,6 +55,7 @@ class Story(ft.View):
                 'directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}_story")),
                 'tag': "story",
                 'selected_rail': "content",
+                'main_pin_selected_idx': 0,   # Index of the selected widget in the main pin, used for switching between tabs in the main pin
                 'content_directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}_story"), "content"),
                 'top_pin_height': 200,
                 'left_pin_width': 230,
