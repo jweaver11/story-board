@@ -484,10 +484,10 @@ class Workspace(ft.Container):
                 ], expand=True, spacing=0),
             )   
 
-            # If our selected index is out of range, reset it to 0 and save
+            # If our selected index is out of range, set it to most recent tab
             if int(self.story.data.get('main_pin_selected_idx', 0)) >= len(self.main_pin):
-                self.story.data['main_pin_selected_idx'] = 0
-                main_pin_tabs.selected_index = 0
+                self.story.data['main_pin_selected_idx'] = -1
+                main_pin_tabs.selected_index = -1
                 self.p.run_task(self.story.save_dict)
             
             # Stick it in a container for styling

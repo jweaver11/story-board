@@ -569,6 +569,8 @@ class Story(ft.View):
             self.widgets.append(widget)
 
         # Finish tasks creating widget to make sure the file has enough time to save
+        self.data['main_pin_selected_idx'] = len(self.workspace.main_pin)    
+        await self.save_dict()   
         self.workspace.reload_workspace()
         await asyncio.sleep(0.2)   
 
