@@ -163,7 +163,7 @@ class Settings(ft.View):
                 },   
                 'world_templates': {    
                     'Default': default_world_template_data_dict(),
-                }
+                },
             }, 
         )
 

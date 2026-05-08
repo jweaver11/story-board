@@ -318,9 +318,8 @@ def new_character_connection_clicked(story):
         title=ft.Text(f"Character Connections Editor"),
         content=content,
         actions=[
-            ft.TextButton("Cancel", on_click=lambda e: story.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
-            ft.Container(width=12),   # Spacer
-            ft.TextButton("Save", on_click=_save_and_close, scale=1.2),   # Start enabled to just save existing connections
+            ft.TextButton("Cancel", on_click=lambda e: story.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+            ft.TextButton("Save", on_click=_save_and_close, style=ft.ButtonStyle(mouse_cursor="click")),   # Start enabled to just save existing connections
         ],
     )
     

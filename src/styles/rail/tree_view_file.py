@@ -28,7 +28,6 @@ class TreeViewFile(ft.GestureDetector):
             case "document": self.icon = ft.Icons.DESCRIPTION_OUTLINED
             case "canvas": self.icon = ft.Icons.BRUSH_OUTLINED
             case "canvas_board": self.icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
-            #case "note": self.icon = ft.Icons.STICKY_NOTE_2_OUTLINED
             case "note": self.icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
             case "character": self.icon = ft.Icons.PERSON_OUTLINED
             case "plotline": self.icon = ft.Icons.TIMELINE_OUTLINED

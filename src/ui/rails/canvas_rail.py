@@ -55,6 +55,12 @@ class CanvasRail(Rail):
                         tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                     ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, ft.Colors.PRIMARY), content="Comic Preview", 
+                        data="comic_preview", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                        tooltip="Preview the canvases in your story as a comic strip",
+                    ),
                 ],
                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
@@ -1169,10 +1175,11 @@ class CanvasRail(Rail):
                 ft.Container(self.new_item_textfield, padding=ft.Padding.only(left=10, right=10)),
 
                 # Save brush settings, label for rail, and reset brush settings to defaults buttons
-                ft.Row([
-                    ft.Text("Brush Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER, expand=True),
-                ]),
-                #ft.Container(height=10),
+                #ft.Row([
+                    #ft.Text("Brush Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER, expand=True),
+                #]),
+                ft.Text("\tBrush Settings", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
+                ft.Container(height=2),
             
    
                 #ft.Text(
@@ -1294,8 +1301,9 @@ class CanvasRail(Rail):
 
                 # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
                 ft.Divider(),
-                ft.Row([ft.Text("Text & Tool Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
-                #ft.Container(height=10),   # Spacer
+                #ft.Row([ft.Text("Text & Tool Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
+                ft.Text("\tText & Tool Settings", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
+                ft.Container(height=2),   # Spacer
 
                
                 

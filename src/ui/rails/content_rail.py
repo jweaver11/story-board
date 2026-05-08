@@ -316,7 +316,7 @@ class ContentRail(Rail):
 
         # Wrap the gd in a drag target so we can move characters here
         dt = ft.DragTarget(
-            group="widgets", #on_will_accept=self._highlight_rail, on_leave=self._stop_highlight_rail,
+            group="widgets", on_will_accept=self._highlight_rail, on_leave=self._stop_highlight_rail,
             content=ft.Container(content=content, bgcolor=ft.Colors.with_opacity(0, ft.Colors.ON_SURFACE), border_radius=ft.BorderRadius.all(8)),     # Our content is the content we built above
             on_accept=lambda e: self.on_drag_accept(e, self.directory_path)
         )

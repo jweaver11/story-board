@@ -13,6 +13,8 @@ import json
 from utils.alert_dialogs.character_connection import new_character_connection_clicked
 from models.isolated_controls.column import IsolatedColumn
 from models.isolated_controls.list_view import IsolatedListView
+from styles.rail.tree_view_file import TreeViewFile
+import asyncio
 
 
 
@@ -46,7 +48,7 @@ class CharactersRail(Rail):
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
                         data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
                         tooltip="Visualize the connections between the characters in your story"
                     ),  
                 ],
@@ -55,24 +57,14 @@ class CharactersRail(Rail):
             ),
             ft.SubmenuButton(
                 ft.Container(
-                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
+                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.OUTLINE),
                     shape=ft.BoxShape.CIRCLE,
                     alignment=ft.Alignment.CENTER
                 ),
                 [     
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), content="Character", 
-                        data="character", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new character for your story. Choose from templates or create a default character.",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                    ),
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
-                        data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
-                        tooltip="Visualize the connections between the characters in your story"
-                    ),  
+                    
                 ],
+                disabled=True,
                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
             ),
@@ -84,9 +76,9 @@ class CharactersRail(Rail):
 
 
     # Open our settings to the templates tab
-    async def _open_templates_editor(self, e):    
+    async def _open_templates_editor(self, e=None):    
         from models.app import app
-        app.settings.selected_index = 3     # Set settings to open on the character templates tab
+        app.settings.selected_index = 2     # Set settings to open on the character templates tab
         self.p.overlay.clear()              # If opened from menu, make sure its closed
         await self.p.push_route("/settings")
         
@@ -117,7 +109,7 @@ class CharactersRail(Rail):
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
                             data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                             tooltip="Visualize the connections between the characters in your story"
                         ),
                     ],
@@ -126,6 +118,8 @@ class CharactersRail(Rail):
                 ),
                 no_padding=True, no_effects=True
             ),
+
+            # Upload options
             MenuOptionStyle(
                 content=ft.SubmenuButton(
                     ft.Container(
@@ -144,168 +138,194 @@ class CharactersRail(Rail):
                 ),
                 no_padding=True, no_effects=True, 
             ),
-            MenuOptionStyle(
-                ft.Row([
-                    ft.Icon(ft.Icons.CONNECT_WITHOUT_CONTACT, ft.Colors.PRIMARY),
-                    ft.Text(f"Edit Character\nTemplates", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ]),
-                on_click=self._open_templates_editor
-            ),      
-            MenuOptionStyle(
-                ft.Row([
-                    ft.Icon(ft.Icons.MANAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY, tooltip="Edit Character Connections"),
-                    ft.Text("Edit Character\nConnections", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ]),
-                on_click=lambda e: new_character_connection_clicked(self.story),
-            )
+            #MenuOptionStyle(
+                #ft.Row([
+                    #ft.Icon(ft.Icons.CONNECT_WITHOUT_CONTACT, ft.Colors.PRIMARY),
+                    #ft.Text(f"Edit Character\nTemplates", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
+                #]),
+                #on_click=self._open_templates_editor
+            #),      
+            #MenuOptionStyle(
+                #ft.Row([
+                    #ft.Icon(ft.Icons.MANAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY, tooltip="Edit Character Connections"),
+                    #ft.Text("Edit Character\nConnections", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
+                #]),
+                #on_click=lambda e: new_character_connection_clicked(self.story),
+            #)
         ]
-    
-    # Called when the sort method button is clicked at the top of the rail
-    async def _change_sort_method(self, e=None):
-
-        # Grabs our newly selected sort method and enables the confirm button if needed
-        async def _sort_method_change(e):
-            nonlocal sort_method
-            sort_method = e.data
-            if confirm_sort_button.disabled:
-                confirm_sort_button.disabled = False
-                confirm_sort_button.style.color = ft.Colors.ON_SURFACE
-                confirm_sort_button.update()
-
-        # Sets our selected sort method and saves it, reloads the rail
-        async def _confirm_sort_method(e):
-            if sort_method is None:
-                return
-            self.story.data['settings']['character_rail_sort_by'] = sort_method
-            await self.story.save_dict()
-            self.story.active_rail.reload_rail()
-            self.p.pop_dialog()
-
-        # Returns our list of options for sorting characters
-        def _get_sort_options() -> list[ft.Control]:
-            options = [
-                ft.Radio("Default", value="Default", mouse_cursor="click", tooltip="Whatever order they are stored as files in the system. Windows is alphabetical, but Mac is the order they were created in."),
-                ft.Radio("Role", value="Role", mouse_cursor="click"), 
-                ft.Radio("Morality", value="Morality", mouse_cursor="click"), 
-                ft.Radio("Age", value="Age", mouse_cursor="click"), 
-                ft.Radio("Name", value="Name", mouse_cursor="click")
-            ]
-
-            #all_options = self.story.data.get('settings', {}).get('character_rail_sort_options', [])
-
-
-            return options
-
-        column = ft.Column(_get_sort_options(), tight=True)
-        sort_method = None
-
-        dlg = ft.AlertDialog(
-            title=ft.Text("Sort Characters by: "),
-            content=ft.RadioGroup(column, on_change=_sort_method_change),
-            actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                confirm_sort_button := ft.TextButton("Confirm", disabled=True, on_click=_confirm_sort_method, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.OUTLINE)),
-            ]
-        )
-        self.p.show_dialog(dlg)
-
-
-    # Called when we reorder our characters on the rail
-    async def _handle_character_reorder(self, e):
-        ''' Handles the reordering and reloading of characters based on their new positions on the rail when we drag and drop them '''
-        old_index = e.old_index
-        new_idx = e.new_index
-
-        # If we didn't move, return out
-        if old_index == new_idx:
-            return
-
-        # Grab which character we dragged and update its index
-        rlv = e.control
-        dragged_character = rlv.controls[old_index].content.widget
-        dragged_character.data['rail_index'] = new_idx
-        await dragged_character.save_dict()
-
-        # If we dragged down
-        if old_index < new_idx:
-            for widget in self.story.widgets:
-                if widget.data.get('tag', "") == "character":
-                    if widget.data.get('rail_index', 0) > old_index and widget.data.get('rail_index', 0) <= new_idx and widget != dragged_character:
-                        widget.data['rail_index'] -= 1
-                        await widget.save_dict()
         
-        # If we dragged up
-        elif old_index > new_idx:
-            for widget in self.story.widgets:
-                if widget.data.get('tag', "") == "character":
-                    if widget.data.get('rail_index', 0) >= new_idx and widget.data.get('rail_index', 0) < old_index and widget != dragged_character:
-                        widget.data['rail_index'] += 1
-                        await widget.save_dict()
-                    
-        # Reload the rail
-        self.story.active_rail.reload_rail()
-        
-
 
     # Called on startup and when we have changes to the rail that have to be reloaded 
     def reload_rail(self):
         ''' Builds or rebuilds the character rail content '''
 
-        # Top menu bar for creating characters or character connection maps
-        menubar = ft.MenuBar(
-            self.top_row_buttons,
-            style=ft.MenuStyle(
-                bgcolor="transparent", shadow_color="transparent",
-                shape=ft.RoundedRectangleBorder(radius=10),
-            ),
-        )
+        async def _change_sort_method(e: ft.Event):
+            new_sort_method = e.data
+            self.story.data['character_rail_sort_method'] = new_sort_method
+            await self.story.save_dict()
+            self.story.active_rail.reload_rail()
 
-        # Button to open our character (and world) templates settings page
-        character_templates_button = ft.IconButton(
-            ft.Icons.MANAGE_SEARCH_OUTLINED, "primary", mouse_cursor="click",  
-            tooltip="Edit Character Templates", on_click=self._open_templates_editor
-        )
+        async def _change_sort_direction(e: ft.Event):
+
+            old_sort_method = self.story.data.get('character_rail_sort_direction', "Ascending")
+            if old_sort_method == "Ascending":
+                self.story.data['character_rail_sort_direction'] = "Descending"
+                e.control.tooltip = "Sort Direction: Descending"
+                e.control.icon = ft.CupertinoIcons.SORT_UP
+            else:
+                self.story.data['character_rail_sort_direction'] = "Ascending"
+                e.control.tooltip = "Sort Direction: Ascending"
+                e.control.icon = ft.CupertinoIcons.SORT_DOWN
+
+            await self.story.save_dict()
+
+            characters_list_view.reverse = self.story.data.get('character_rail_sort_direction', "Ascending") == "Descending"
+            ccm_list_view.reverse = self.story.data.get('character_rail_sort_direction', "Ascending") == "Descending"
+            characters_list_view.update()
+            ccm_list_view.update()
+            e.control.update()
+
+        async def _reorder_widget(e: ft.OnReorderEvent):
+            ''' Handles the reordering and reloading of characters based on their new positions on the rail when we drag and drop them '''
+            
+
+            # If we didn't move, return out
+            if e.old_index == e.new_index:
+                return
+            
+            # Move the control up the list
+            e.control.controls.insert(e.new_index, e.control.controls.pop(e.old_index))
+            e.control.update()
+
+            # Update the indices of the characters we dragged past as well
+            for idx, ctrl in enumerate(e.control.controls):
+                widget = ctrl.content.widget
+                if widget.data.get('rail_index', 999) != idx:
+                    widget.data['rail_index'] = idx 
+                    await widget.save_dict()
 
         # Button to open our character connections editor
         character_connections_button = ft.IconButton(
             ft.Icons.CONNECT_WITHOUT_CONTACT, "primary", mouse_cursor="click",
             tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)
         )
+        
 
-        # Hold the menubar for formatting
+        menubar = ft.MenuBar(
+            self.top_row_buttons,
+            #expand=True,
+            style=ft.MenuStyle(
+                bgcolor="transparent", shadow_color="transparent",
+                shape=ft.RoundedRectangleBorder(radius=10),
+            ),
+        )
+
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN, scroll="auto",
-            controls=[character_templates_button, menubar, character_connections_button]
+            alignment=ft.MainAxisAlignment.CENTER,
+            controls=[menubar]
+        )
+
+        # Button to open our character (and world) templates settings page
+        character_templates_button = ft.IconButton(
+            #ft.Icons.MANAGE_SEARCH_OUTLINED, 
+            ft.Icons.EDIT_NOTE_OUTLINED,
+            "primary", mouse_cursor="click",  
+            tooltip="Edit Character Templates", on_click=self._open_templates_editor
         )
 
         
-        
-        # Button to change our sort by method
-        sort_by_button = ft.TextButton(
-            f"Sort by: {self.story.data.get('settings', {}).get('character_rail_sort_by', "Role")}", on_click=self._change_sort_method, expand=True,
-            style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ON_SURFACE)
+        # Methods: index, color
+        sort_dropdown = ft.Dropdown(
+            self.story.data.get('character_rail_sort_method', "Index"),
+            [
+                ft.DropdownOption(
+                    "Default", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10)),
+                    tooltip="Sort characters by the order they were loaded. On Windows, usually alphabetical. On Mac, usually by creation date."
+                ),
+                ft.DropdownOption(
+                    "Index", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10)),
+                    tooltip="Sort characters by a reorderable index so you can drag characters up and down on the rail."
+                ), 
+                ft.DropdownOption(
+                    "Color", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10)),
+                    tooltip="Sort characters by their color."
+                )
+            ],
+            label="Sort by",
+            dense=True, expand=True,
+            on_select=_change_sort_method,
+            border_color=ft.Colors.OUTLINE_VARIANT,
+            leading_icon=ft.IconButton(
+                ft.CupertinoIcons.SORT_DOWN if self.story.data.get('character_rail_sort_direction', "Ascending") == "Ascending" else ft.CupertinoIcons.SORT_UP,
+                ft.Colors.PRIMARY, 
+                tooltip=f"Sort Direction: {self.story.data.get('character_rail_sort_direction', 'Ascending')}", 
+                on_click=_change_sort_direction, mouse_cursor="click", 
+            ),
+            menu_style=ft.MenuStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
         )
-        
-        
-                    
-        # Hold our Tree View File controls for our two widget types
+           
+        # List for our characters and character connection maps
         characters = []
         character_connection_maps = []
 
+        # Add all character and CCM widgets to their respective lists
         for widget in self.story.widgets:
             if widget.data.get('tag', "") == "character":
                 characters.append(widget)
+                continue
             elif widget.data.get('tag', "") == "character_connection_map":
-                character_connection_maps.append(widget)       
-        
+                character_connection_maps.append(widget)    
 
-        characters.sort(key=lambda c: c.data.get('rail_index', 0))
-        reorderable_sorted_characters = [ft.ReorderableDragHandle(WidgetRailItem(char)) for char in characters]
+        # Sort lists by color
+        if self.story.data.get('character_rail_sort_method', "Index") == "Color":
 
-        character_connection_maps.sort(key=lambda c: c.data.get('rail_index', 0))
-        reorderable_sorted_ccms = [WidgetRailItem(ccm) for ccm in character_connection_maps]
+            # Sort our characters and ccms
+            characters.sort(key=lambda c: c.data.get('color', "default"))
+            character_connection_maps.sort(key=lambda c: c.data.get('color', "default"))
+
+            # Build our controls for characters and ccms
+            character_controls = [WidgetRailItem(char) for char in characters]
+            ccm_controls = [WidgetRailItem(ccm) for ccm in character_connection_maps] 
+
+        # Sort lists by index (default)
+        elif self.story.data.get('character_rail_sort_method', "Index") == "Index":
+            characters.sort(key=lambda c: c.data.get('rail_index', 0))
+            character_connection_maps.sort(key=lambda c: c.data.get('rail_index', 0))
+            character_controls = [ft.ReorderableDragHandle(WidgetRailItem(char)) for char in characters]
+            ccm_controls = [ft.ReorderableDragHandle(WidgetRailItem(ccm)) for ccm in character_connection_maps]
+
+            # Update their index by their actual rail position now, since new characters start with index of 999
+            for idx, char in enumerate(characters):
+                if char.data.get('rail_index', 999) != idx:
+                    char.data['rail_index'] = idx 
+                    self.p.run_task(char.save_dict)
+
+            for idx, ccm in enumerate(character_connection_maps):
+                if ccm.data.get('rail_index', 999) != idx:
+                    ccm.data['rail_index'] = idx 
+                    self.p.run_task(ccm.save_dict)
+
+        # Otherwise just sort by the way the system loaded them
+        else:
+            character_controls = [WidgetRailItem(char) for char in characters]
+            ccm_controls = [WidgetRailItem(ccm) for ccm in character_connection_maps]
+      
         
+        
+        characters_list_view = ft.ReorderableListView(
+            character_controls, 
+            on_reorder=_reorder_widget, 
+            spacing=0, show_default_drag_handles=False, 
+            reverse=self.story.data.get('character_rail_sort_direction', "Ascending") == "Descending"
+        )
+
+        ccm_list_view = ft.ReorderableListView(
+            ccm_controls,
+            on_reorder=_reorder_widget,
+            spacing=0, show_default_drag_handles=False, 
+            reverse=self.story.data.get('character_rail_sort_direction', "Ascending") == "Descending"
+        )
         
 
         # Build the content of our rail
@@ -318,15 +338,19 @@ class CharactersRail(Rail):
                 ft.Container(height=6),
                 self.new_item_textfield,
 
+                ft.Text("\tCharacters", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
+
                 # Our characters
-                ft.ReorderableListView(reorderable_sorted_characters, on_reorder=self._handle_character_reorder, show_default_drag_handles=False),
+                characters_list_view,
 
                 # Spacer and label for Character Connection Maps Section
                 ft.Divider(),
-                ft.Text("Character Connection Maps", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
+                ft.Text("\tCharacter Connection Maps", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
                 
                 # Our CCM's
-                ft.ReorderableListView(reorderable_sorted_ccms, on_reorder=self._handle_character_reorder, show_default_drag_handles=False),
+                ccm_list_view,
+
+                ft.Container(expand=True)
             ] 
                 
         )
@@ -344,10 +368,10 @@ class CharactersRail(Rail):
         ]
 
         self.controls = [
-            #header,
-            #ft.Divider(),
-            ft.Text("Coming Soon")
-            #menu_gesture_detector
+            header,
+            ft.Divider(),
+            menu_gesture_detector,
+            ft.Container(ft.Row([sort_dropdown, character_templates_button]), margin=ft.Margin.symmetric(horizontal=4)),
         ]
         
         

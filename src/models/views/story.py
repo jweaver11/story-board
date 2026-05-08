@@ -62,7 +62,9 @@ class Story(ft.View):
                 'bottom_pin_height': 200,
                 'created_at': str,
                 'last_modified': str,
-                'connections': [],    # Connections between characters, places, items, etc. Since they are between multiple widgets, I stuck them here
+                #'connections': [],    # Connections between characters, places, items, etc. Since they are between multiple widgets, I stuck them here
+                'character_rail_sort_method': "Index",
+                'character_rail_sort_direction': "Ascending",
                 
                 'settings': {
                     'type': self.type,             # Novel or comic. Affects templates and default data for new content
