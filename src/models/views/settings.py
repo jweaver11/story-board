@@ -1442,27 +1442,111 @@ class Settings(ft.View):
                     mouse_cursor="click", tooltip="Close Settings"
                 ) 
             ]),
-            ft.Text(f"Resources about Story Board!", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
+             ft.Row([
+                ft.Text(f"Resources about Story Board!", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text("Join our", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text(
+                    "Discord", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM,
+                    #url="https://discord.gg/4ZtGZsPjz5",  # TODO: replace with real URL
+                ),
+                ft.Text("to be part of our community and see upcoming features!", theme_style=ft.TextThemeStyle.BODY_MEDIUM,),
+            ], spacing=8), # Link
+            ft.Container(
+                ft.Text("Click here to Run Tutorial", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM,), 
+                on_click=_run_tutorial,
+            ),
+            
 
-            ft.Container(height=10),    # Spacer
+            #ft.Container(height=10),    # Spacer
 
             ft.Divider(),
             ft.Container(height=10),    # Spacer
 
-            ft.Row([
-                ft.Text("Join our", theme_style=ft.TextThemeStyle.BODY_LARGE,),
-                ft.Text(
-                    "Discord", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_LARGE,
-                    #url="https://discord.gg/4ZtGZsPjz5",  # TODO: replace with real URL
-                ),
-                ft.Text("to be part of our community and see upcoming features!", theme_style=ft.TextThemeStyle.BODY_LARGE,),
-            ], spacing=8), # Link
 
-            ft.TextButton("Click here to Run Tutorial", on_click=_run_tutorial, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)), 
+            ft.Text("Widget Descriptions", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD),
+            #ft.Container(height=10),
 
-            ft.Text("All Widgets descriptions"),
+            ft.Container(
+                ft.Column([
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("Document: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                            ft.TextSpan("The main widget for creating all novel-based stories. Similar to Microsoft Word or Google Docs, use the document widget as a fully built text editor. Add your own comments, notes, and references to the side of any document!", style=ft.TextStyle(size=16))
+                        ],
+                    ),
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("Canvas: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                            ft.TextSpan("The main widget for creating all comic-based stories. This widget allows illustrators to watch their ideas come to life on the Canvas. Create your own drawing masterpiece or upload exported files from another drawing app!", style=ft.TextStyle(size=16))
+                        ],
+                    ),
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("Note: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                            ft.TextSpan("A widget for all your ideas, themes, research, etc. Don't let the magic fade, save it here!", style=ft.TextStyle(size=16))
+                        ],
+                    ),
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("Character: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                            ft.TextSpan("A widget for all the characters in your story. Flesh out your characters physical look, personality, origin, arcs, etc!", style=ft.TextStyle(size=16))
+                        ],
+                    ),
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("Plotline: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                            ft.TextSpan("A widget for visualizing the progression of your story. Create multiple plotlines for arcs, sub arcs, plot points, or regression & multi-timeline stories. Connect events on your plotline to a map and watch your world change over time!", style=ft.TextStyle(size=16))
+                        ],
+                    ),
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("Canvas Board: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                            ft.TextSpan("A widget for planning out comic-based chapters for your story. Describe and sketch out your ideas for all you panels ahead of time. Connect them to an existing canvas in your story to see how progress is coming along!", style=ft.TextStyle(size=16))
+                        ],
+                    ),
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("World: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                            ft.TextSpan("A widget to describe your world(s) for your story. Plan out the lore, history, governments, factions, power systems, etc. You can create templates for your worlds, and connect them to existing maps!", style=ft.TextStyle(size=16))
+                        ],
+                    ),
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("Map: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                            ft.TextSpan("A widget to visualize locations in your story. Create a map for worlds, countries, cities, dungeons, etc. Connect locations on your map to other maps for a connected feel to your story!", style=ft.TextStyle(size=16))
+                        ],
+                    ),
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("Item: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                            ft.TextSpan("A widget for all items, weapons, armor, and MacGuffins in your story!", style=ft.TextStyle(size=16))
+                        ],
+                    ),
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("Comic Preview: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                            ft.TextSpan("A widget for comic-based stories for visualizing all your canvases (and external drawings you want to see), in a nice, scrollable vertical or horizontal format. See how your chapter comes together visually before you present it to the world!", style=ft.TextStyle(size=16))
+                        ],
+                    ),
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("Chart: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                            ft.TextSpan("A widget for visualizing power systems and other ideas in a chart format. Supports manipulation of bar and radar charts, with implicit animations!", style=ft.TextStyle(size=16))
+                        ],
+                    ),
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("Charcter Connection Map: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                            ft.TextSpan("A widget to visualize how your characters connect to each other within a story. See family trees, friends, enemies, guilds, etc.", style=ft.TextStyle(size=16))
+                        ],
+                    ),
+                    
+                ], spacing=24, scroll=ft.ScrollMode.AUTO),
+                margin=ft.Margin.only(left=20, top=10)
+            ),
+        
 
-        ])
+        ], scroll=ft.ScrollMode.HIDDEN)
 
         return content
     
