@@ -244,28 +244,29 @@ class Story(ft.View):
         ''' Deletes a category from our story structure '''
 
         try:
+            # Normalize once for path-boundary prefix matching
+            full_norm = os.path.normcase(os.path.normpath(full_path))
+
             # Delete the folder from storage
             shutil.rmtree(full_path)
 
-            # TODO: Delete this folder and all sub folders and widgets inside of this folder
-
-            # Remove it from data
-            self.data['folders'].pop(full_path, None)
-
-            self.p.run_task(self.save_dict)
-
-            for widget in self.widgets:
-                if widget.directory_path.startswith(full_path):
-                    print("Deleting widget ", widget.title, " in deleted folder")
-                    widget.delete_file()
+            # Delete any widgets that were in this folder or its sub-folders.
+            # Iterate a copy so removing items mid-loop doesn't skip entries.
+            for widget in self.widgets.copy():
+                widget_dir_norm = os.path.normcase(os.path.normpath(widget.directory_path))
+                if widget_dir_norm == full_norm or widget_dir_norm.startswith(full_norm + os.sep):
+                    #widget.delete_file()
                     if widget in self.widgets:
                         self.widgets.remove(widget)
 
-            # Delete any sub folders from inside our storhy data. Technically not needed
+            # Remove this folder and every sub-folder from story data
             for folder in self.data['folders'].copy():
-                if folder.startswith(full_path):
-                    print("Deleting folder ", folder, " in deleted folder")
+                folder_norm = os.path.normcase(os.path.normpath(folder))
+                if folder_norm == full_norm or folder_norm.startswith(full_norm + os.sep):
                     self.data['folders'].pop(folder, None)
+
+            # Save AFTER all data has been cleaned up so nothing orphaned persists
+            self.p.run_task(self.save_dict)
 
             self.blocker.visible = True
             self.blocker.update()
@@ -305,30 +306,35 @@ class Story(ft.View):
         # Does the actual renaming
         os.rename(old_path, new_path)
 
-        
-        # Update the old key in our folders data
-        if old_path in self.data['folders']:
-            #print("Updating old path in story data")
-            self.data['folders'][new_path] = self.data['folders'].pop(old_path)
-            self.p.run_task(self.save_dict)
-
+        # Normalize once for path-boundary prefix matching (avoids matching 'chapters_extra' when looking for 'chapters')
+        old_norm = os.path.normcase(os.path.normpath(old_path))
 
         # Go through each widget and update its directory path if it was in the renamed folder
         for widget in self.widgets:
-            if widget.directory_path.startswith(old_path):
-                # Update the directory path
-                relative_path = widget.directory_path[len(old_path):]
-                widget.directory_path = new_path + relative_path
-                widget.data['directory_path'] = widget.directory_path  # Update its data
-                widget.data['key'] = f"{widget.directory_path}\\{return_safe_name(self.title)}_{self.data.get('tag', '')}"
-                self.p.run_task(widget.save_dict)  # Save the updated widget data
+            widget_dir_norm = os.path.normcase(os.path.normpath(widget.directory_path))
+            if widget_dir_norm == old_norm or widget_dir_norm.startswith(old_norm + os.sep):
+                # Compute the new directory using relpath so casing differences don't break the slice
+                relative = os.path.relpath(widget.directory_path, old_path)
+                widget.directory_path = new_path if relative == '.' else os.path.join(new_path, relative)
+                widget.data['directory_path'] = widget.directory_path
+                # Use the widget's own title/tag, not the story's
+                widget.data['key'] = f"{widget.directory_path}\\{return_safe_name(widget.title)}_{widget.data.get('tag', '')}"
+                self.p.run_task(widget.save_dict)
 
-        # Go through each folder, and if its a sub folder change it to match our new parent path
+        # Update sub-folder keys BEFORE renaming the top-level key so we never match the already-renamed entry
         for folder in self.data['folders'].copy():
-            if folder.startswith(old_path):
-                relative_path = folder[len(old_path):]
-                new_folder_path = new_path + relative_path
-                self.data['folders'][new_folder_path] = self.data['folders'].pop(folder)
+            folder_norm = os.path.normcase(os.path.normpath(folder))
+            # Only touch genuine sub-folders, not the top-level folder itself
+            if folder_norm != old_norm and folder_norm.startswith(old_norm + os.sep):
+                relative = os.path.relpath(folder, old_path)
+                new_folder_path = os.path.join(new_path, relative)
+                folder_data = self.data['folders'].pop(folder)
+                self.data['folders'][new_folder_path] = folder_data
+
+        # Now rename the top-level folder entry
+        if old_path in self.data['folders']:
+            self.data['folders'][old_path]['name'] = os.path.basename(new_path)
+            self.data['folders'][new_path] = self.data['folders'].pop(old_path)
 
         self.p.run_task(self.save_dict)
         

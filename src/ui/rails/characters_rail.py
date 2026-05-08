@@ -188,7 +188,6 @@ class CharactersRail(Rail):
         async def _reorder_widget(e: ft.OnReorderEvent):
             ''' Handles the reordering and reloading of characters based on their new positions on the rail when we drag and drop them '''
             
-
             # If we didn't move, return out
             if e.old_index == e.new_index:
                 return

@@ -7,6 +7,8 @@ from styles.rail.plotline_dropdown import PlotlineDropdown
 from styles.rail.mini_widget_item import MiniWidgetItem
 from styles.menu_option_style import MenuOptionStyle
 from models.isolated_controls.column import IsolatedColumn
+from styles.rail.widget_rail_item import WidgetRailItem
+from models.isolated_controls.list_view import IsolatedListView
 
 
 # Class is created in main on program startup
@@ -27,55 +29,42 @@ class PlotlinesRail(Rail):
 
         # UI elements
         self.top_row_buttons = [
-            ft.IconButton(
-                icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                tooltip="Create New Plotline", 
-                on_click=self.new_item_clicked, data="plotline"
+            ft.SubmenuButton(
+                ft.Container(
+                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
+                    shape=ft.BoxShape.CIRCLE,
+                    alignment=ft.Alignment.CENTER
+                ),
+                [
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
+                        data="plotline", on_click=self.new_item_clicked, close_on_click=True, 
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                        tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
+                    ),
+                ],
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
             ),
-            ft.IconButton(
-                icon=ft.Icons.FILE_UPLOAD_OUTLINED,
-                tooltip="Upload Plotline",
-                #on_click=lambda e: print(""),
+            ft.SubmenuButton(
+                ft.Container(
+                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.OUTLINE),
+                    shape=ft.BoxShape.CIRCLE,
+                    alignment=ft.Alignment.CENTER
+                ),
+                [     
+                    
+                ],
+                disabled=True,
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
             ),
         ]
 
         self.reload_rail()
 
-    # Called when we reorder our plotlines on the rail
-    async def _handle_plotline_reorder(self, e):
-        ''' Handles the reordering and reloading of plotlines based on their new positions on the rail when we drag and drop them '''
-        old_index = e.old_index
-        new_idx = e.new_index
-
-        # Find which plotline we dragged
-        for widget in self.story.widgets:
-            if widget.data.get('tag', "") == "plotline" and widget.data.get('rail_index', 0) == old_index:
-                dragged_plotline = widget
-                break
-        # Set its new index
-        dragged_plotline.data['rail_index'] = new_idx
-        dragged_plotline.save_dict()
-
-        # If we didn't move, return out
-        if old_index == new_idx:
-            return
+    
         
-        # If we dragged down
-        elif old_index < new_idx:
-            for widget in self.story.widgets:
-                if widget.data.get('rail_index', 0) > old_index and widget.data.get('rail_index', 0) <= new_idx and widget != dragged_plotline:
-                    widget.data['rail_index'] -= 1
-                    widget.save_dict()
-        
-        # If we dragged up
-        elif old_index > new_idx:
-            for widget in self.story.widgets:
-                if widget.data.get('rail_index', 0) >= new_idx and widget.data.get('rail_index', 0) < old_index and widget != dragged_plotline:
-                    widget.data['rail_index'] += 1
-                    widget.save_dict()
-                
-        # Apply our changes
-        self.reload_rail()
  
 
     # Called to return our list of menu options when right clicking on the plotline rail
@@ -83,20 +72,49 @@ class PlotlinesRail(Rail):
         ''' Returns our menu options for the plotlines rail. In this case just plotlines '''
 
         return [
-            MenuOptionStyle(
-                ft.Row([
-                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, tooltip="Create New Plotline"),
-                    ft.Text("New Plotline", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ]),
-                on_click=self.new_item_clicked, data="plotline",
+           MenuOptionStyle(
+                content=ft.SubmenuButton(
+                    ft.Container(
+                        ft.Row([
+                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), 
+                            ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Icon(ft.Icons.ARROW_RIGHT),
+                        ], expand=True),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
+                    ),
+                    [
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
+                            data="plotline", on_click=self.new_item_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
+                        ),
+                    ],
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                ),
+                no_padding=True, no_effects=True
             ),
+
+            # Upload options
             MenuOptionStyle(
-                ft.Row([
-                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, tooltip="Upload Plotline"),
-                    ft.Text("Upload Plotline", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                ]),
-                #on_click=self.new_item_clicked, data="plotline", 
-            )
+                content=ft.SubmenuButton(
+                    ft.Container(
+                        ft.Row([
+                            ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY), 
+                            ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Icon(ft.Icons.ARROW_RIGHT),
+                        ], expand=True),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
+                    ),
+                    [
+                        
+                    ],
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                ),
+                no_padding=True, no_effects=True, 
+            ),
         ]
     
 
@@ -104,130 +122,76 @@ class PlotlinesRail(Rail):
     def reload_rail(self) -> ft.Control:
         ''' Reloads the plot and plotline rail, useful when switching stories '''
 
+        async def _reorder_widget(e: ft.OnReorderEvent):
+            ''' Handles the reordering and reloading of characters based on their new positions on the rail when we drag and drop them '''
+            
+            # If we didn't move, return out
+            if e.old_index == e.new_index:
+                return
+            
+            # Move the control up the list
+            e.control.controls.insert(e.new_index, e.control.controls.pop(e.old_index))
+            e.control.update()
+
+            # Update the indices of the characters we dragged past as well
+            for idx, ctrl in enumerate(e.control.controls):
+                widget = ctrl.content.widget
+                if widget.data.get('rail_index', 999) != idx:
+                    widget.data['rail_index'] = idx 
+                    await widget.save_dict()
+
+        menubar = ft.MenuBar(
+            self.top_row_buttons,
+            style=ft.MenuStyle(
+                bgcolor="transparent", shadow_color="transparent",
+                shape=ft.RoundedRectangleBorder(radius=10),
+            ),
+        )
+
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER,
-            controls=self.top_row_buttons
+            controls=[menubar]
+        )
+
+        plotlines = [widget for widget in self.story.widgets if widget.data.get('tag', "") == "plotline"]
+        plotlines.sort(key=lambda pl: pl.data.get('rail_index', 999))
+        plotline_controls = [ft.ReorderableDragHandle(WidgetRailItem(pl)) for pl in plotlines]
+
+
+        plotlines_list_view = ft.ReorderableListView(
+            plotline_controls, 
+            on_reorder=_reorder_widget, 
+            spacing=0, show_default_drag_handles=False, 
         )
 
         # Build the content of our rail
-        content = ft.Column(
+        content = IsolatedListView(
             scroll=ft.ScrollMode.AUTO,
-            spacing=0,
-            controls=[]
-        )
-
-        # Reorderable List for our plotlines on the rail
-        reorderable_plotlines = ft.ReorderableListView(show_default_drag_handles=False, on_reorder=self._handle_plotline_reorder)
-
-        # Sort our plotlines by their index
-        plotlines_list = [w for w in self.story.widgets if w.data.get('tag', "") == "plotline"]
-        sorted_plotlines = sorted(plotlines_list, key=lambda plotline: plotline.data.get('rail_index', 0))
-
-        i = 0   # Start index for our plotlines
-
-        # Run through each plotline in the story
-        for plotline in sorted_plotlines:
-            
-            # Build a column for our dropdown, and a divider under it to seperate each plotline
-            column = ft.Column(expand=False, spacing=0)
-
-            # Create an expansion tile for our plotline that we need in order to load its data
-            dropdown = PlotlineDropdown(
-                title=plotline.title, 
-                story=self.story, 
-                plotline=plotline, 
-                rail=self
-            )
-
-            # Sort our mini widgets by start earliest to latest
-            sorted_plot_points = dict(sorted(plotline.plot_points.items(), key=lambda item: item[1].data.get('left', 0)))  
-            sorted_arcs = dict(sorted(plotline.arcs.items(), key=lambda item: item[1].data.get('left', 0)))
-            sorted_markers = dict(sorted(plotline.markers.items(), key=lambda item: item[1].data.get('left', 0)))
-
-            # Add a label for our plotpoints section in the dropdown
-            dropdown.expansion_tile.controls.append(
-                ft.Row([
-                    ft.Icon(ft.Icons.LOCATION_PIN),
-                    ft.Text("Plot Points", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD)
-                ])
-            )
-            dropdown.expansion_tile.controls.append(ft.Container(height=4))   # Spacer
-            # Go through our plotpoints from our plotline, and add each item
-            for plot_point in sorted_plot_points.values():
-                dropdown.expansion_tile.controls.append(MiniWidgetItem(plot_point))
-            dropdown.expansion_tile.controls.append(ft.Divider())   # Divider between our plot points and arcs sections
-
-            # Arcs label
-            dropdown.expansion_tile.controls.append(
-                ft.Row([
-                    ft.Icon(ft.Icons.CIRCLE_OUTLINED),
-                    ft.Text("Arcs", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD)
-                ])
-            )
-            dropdown.expansion_tile.controls.append(ft.Container(height=4))   # Spacer
-            # Go through all the arcs/sub arcs held in our parent arc or plotline
-            for arc in sorted_arcs.values():
-                dropdown.expansion_tile.controls.append(MiniWidgetItem(arc))
-            dropdown.expansion_tile.controls.append(ft.Divider())       # Divider between our arcs and markers sections
-
-            # Markers label
-            dropdown.expansion_tile.controls.append(
-                ft.Row([
-                    ft.Icon(ft.Icons.FLAG_OUTLINED),
-                    ft.Text("Markers", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD)
-                ])
-            )
-            dropdown.expansion_tile.controls.append(ft.Container(height=4))   # Spacer
-            # Go through all the markers held in our plotline and add them to the dropdown
-            for marker in sorted_markers.values():
-                dropdown.expansion_tile.controls.append(MiniWidgetItem(marker))
-
-            # Set the plotlines dropdown to the one we have just built for it
-            plotline.plotline_dropdown = dropdown
-
-            # Add the dropdown as a reorderable element for the list
-            column.controls.append(
-                ft.ReorderableDragHandle(dropdown)
-            )
-            i += 1      # Increment index
-            column.controls.append(ft.Divider())    # Add a divider under the plotline for visual seperation
-
-            # Add the column to the reorderable list view controls
-            reorderable_plotlines.controls.append(column)
-
-        
-
-        # Finally, add our new item textfield at the bottom
-        content.controls.append(reorderable_plotlines)
-        content.controls.append(self.new_item_textfield)
-        
-
-        # Gesture detector to put on top of stack on the rail to pop open menus on right click
-        menu_gesture_detector = ft.GestureDetector(
-            content=content, expand=True,
-            on_hover=self._set_menu_coords,
-            on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()),
-            hover_interval=20,
-        )
-
-        # Set our content to be a column
-        self.content = IsolatedColumn(
             spacing=0,
             expand=True,
             controls=[
-                header,
-                ft.Divider(),
-                menu_gesture_detector
-            ]
+                # Spacer and new item text field
+                ft.Container(height=6),
+                self.new_item_textfield,
+
+                plotlines_list_view,
+
+                ft.Container(expand=True)
+            ] 
+                
         )
 
+        menu_gesture_detector = ft.GestureDetector(
+            content=content, expand=True, on_hover=self._set_menu_coords,
+            on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()), 
+            hover_interval=20,
+        )
 
         self.controls = [
-            #header,
-            #ft.Divider(),
-            ft.Text("Coming Soon")
-            #menu_gesture_detector
+            header,
+            ft.Divider(),
+            menu_gesture_detector
         ]
 
       

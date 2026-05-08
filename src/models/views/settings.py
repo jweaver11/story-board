@@ -114,9 +114,6 @@ class Settings(ft.View):
                     "world_building",
                     "planning",
                 ],
-                
-                # App settings
-                'confirm_item_delete': True,   # If we should confirm before deleting items
 
                 # Widget settings
                 'default_canvas_color': "primary",

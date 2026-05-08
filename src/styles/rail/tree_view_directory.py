@@ -431,7 +431,7 @@ class TreeViewDirectory(ft.GestureDetector):
             new_key = os.path.normcase(os.path.normpath(self.full_path + "\\" + title))
             new_key = new_key.rstrip()  # Remove trailing spaces for folder names
             for key in self.story.data['folders'].keys():
-                print("Checking folder key:\n", key, "\n", new_key)
+                #print("Checking folder key:\n", key, "\n", new_key)
                 
                 # Path comparisons require normalization
                 if os.path.normcase(os.path.normpath(key)) == new_key:
@@ -666,34 +666,30 @@ class TreeViewDirectory(ft.GestureDetector):
         def _return_folder_content() -> ft.Control:
             ''' Returns our folder/directories sub-folders and widgets so users are aware of what all they're deleting '''
 
-            column = ft.Column([
-                ft.Text("This will also delete the following items:", weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
-            ])
+            column = ft.Column([], tight=True, spacing=0)
 
             return_folder_content(self.full_path, self.story, column)
             
             # If empty folder, make the dialog smaller by returning None
-            return None if column.controls.__len__() == 1 else column
+            return column
             
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Are you sure you want to delete folder {self.title} forever?", weight=ft.FontWeight.BOLD),
+            title=ft.Text(f"Are you sure you want to delete folder {self.title} forever? This will also delete the following Items:", weight=ft.FontWeight.BOLD),
             alignment=ft.Alignment.CENTER,
             title_padding=ft.Padding.all(25),
             content=_return_folder_content(),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog()),
-                ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
+                ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click") ),
             ]
         )
 
-        self.story.close_menu_instant()
+        await self.story.close_menu()
 
-        if app.settings.data.get('confirm_item_delete', False):
-            self.p.show_dialog(dlg)
-        else:
-            _delete_confirmed()
+        self.p.show_dialog(dlg)
+        
 
     # Called when a widget is dragged and dropped into this directory
     async def on_drag_accept(self, e):
