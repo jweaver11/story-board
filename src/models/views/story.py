@@ -24,7 +24,6 @@ class Story(ft.View):
         title: str,             # Title of our story
         page: ft.Page,          # Page reference for updating UI elements
         data: dict=None,        # Data to load our story with (if any)
-        template: str=None,     # Template to use when creating new story (sci-fi, fantasy, etc.)
         type: str=None          # Type of story (novel, comic, etc.)
     ):
         
@@ -44,7 +43,6 @@ class Story(ft.View):
         self.title = title              # Gives our story a title when its created
         self.p = page                   # Reference to our page object for updating UI elements
         self.data = data                # Sets our data (if any) passed in. New stories just have none
-        self.template = template        # Template for our story (sci-fi, fantasy, etc.)
         self.type = type                # Type of story, novel or comic. Affects how templates for creating new content will work
 
         # Verifies this object has the required data fields, and creates them if not
@@ -90,8 +88,6 @@ class Story(ft.View):
         if is_new:
             page.run_task(self.save_dict)
 
-        self.template = template
-
         # Variables to store our mouse position for opening menus
         self.mouse_x: int = 0
         self.mouse_y: int = 0
@@ -131,7 +127,7 @@ class Story(ft.View):
 
         # Stories have required structures as well, so we verify they exist or we will error out
         # We also use this function to create most detailed structures from templates if newly created story
-        self.verify_story_structure(self.template)  
+        self.verify_story_structure()  
 
         if self.data.get('is_new_story', True):
             print("New story created:", self.title)
@@ -194,16 +190,10 @@ class Story(ft.View):
             
 
     # Called when a new story is created and not loaded with any data
-    def verify_story_structure(self, template: str=None):
+    def verify_story_structure(self):
         ''' Creates our story folder structure inside of our stories directory '''
 
-
-        # TODO: Try statements only when writing to files
-        # On story first creation, add default folders inside content: documents, notes, canvases, images
-        # Inside characters: main, side, background
-
         try:
-
 
             # Sets our path to our story folder
             directory_path = os.path.join(data_paths.stories_directory_path, self.route)
@@ -214,10 +204,6 @@ class Story(ft.View):
 
             # Save our data
             self.p.run_task(self.save_dict)
-
-            def _create_template_name():
-
-                pass
 
         # Handle errors
         except Exception as e:

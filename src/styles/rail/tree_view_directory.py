@@ -7,6 +7,7 @@ from styles.colors import colors
 from styles.snack_bar import SnackBar
 from utils.check_widget_unique import check_widget_unique
 from utils.check_folder_content import return_folder_content
+from utils.alert_dialogs.new_canvas import new_canvas_alert_dlg
 from models.app import app
 from models.isolated_controls.expansion_tile import IsolatedExpansionTile
 import asyncio
@@ -183,7 +184,7 @@ class TreeViewDirectory(ft.GestureDetector):
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
                             data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                             tooltip="Visualize the connections between the characters in your story"
                         ),
                         
@@ -319,44 +320,66 @@ class TreeViewDirectory(ft.GestureDetector):
     async def new_item_clicked(self, e=None):
         ''' Shows the textfield for creating new item. Requires what type of item (folder, chapter, note, etc.) '''
 
-        # Clear out any previous value
-        self.new_item_textfield.value = None
-
         tag = e.control.data
-
-        # Make our textfield visible and set values
+        
+        
+        # Make textfield visible, reset its value, and give it right data for logic
         self.new_item_textfield.visible = True
+        self.new_item_textfield.value = None
         self.new_item_textfield.data = tag
+        self.new_item_textfield.error = None
+        self.new_item_textfield.label = None
+        self.new_item_textfield.icon = None
 
-        
-        # TODO: Make hint text match rail
+
         match tag:
-            case "world_building":
-                self.new_item_textfield.hint_text = "World Building Name"
-            case "character" | "folder":
+            case "character_connection_map":
+                self.new_item_textfield.hint_text = "Character Connection Map Title"
+            
+            case "plot_point": 
+                self.new_item_textfield.hint_text = "Plot Point Title"
+            case "character" | "folder" | "item" | "object":
                 self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
+                if tag == "character":
+                    template_name = str(e.control.content)
+                    self.new_item_textfield.label = template_name
+
+            case "canvas":
+                await self.story.close_menu()
+                self.p.show_dialog(new_canvas_alert_dlg(self.p, self.story, self.full_path))
+                return
+                        
+            case "canvas_board":
+                self.new_item_textfield.hint_text = "Canvas Board Title"
+            case "world":
+                self.new_item_textfield.hint_text = "World Title"
+                template_name = str(e.control.content)
+                self.new_item_textfield.label = f"{template_name}"
+            case "comic_preview":
+                self.new_item_textfield.hint_text = "Comic Preview Title"
             case _:
-                self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
+                if ":" in tag:
+                    self.new_item_textfield.hint_text = f"{tag.split(':')[0].capitalize()} Title"
+                else:
+                    self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
+            
 
-        # If we're not expanded, we'll open a dialog to input the name
-        if not self.expansion_tile.expanded:
-
-            dlg = ft.AlertDialog(
-                title=self.new_item_textfield.hint_text, 
-                content=self.new_item_textfield,
-                actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                    ft.TextButton("Submit", on_click=self.new_item_textfield_submit, style=ft.ButtonStyle(mouse_cursor="click")),
-                ]
-            )
-            await self.story.close_menu()
-            self.p.show_dialog(dlg)
-            return
         
-        # If we are expanded, just show the textfield in the expansion tile
-        self.new_item_textfield.update()
+
+        dlg = ft.AlertDialog(
+            title=self.new_item_textfield.hint_text, 
+            content=self.new_item_textfield,
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Submit", on_click=self.new_item_textfield_submit, style=ft.ButtonStyle(mouse_cursor="click")),
+            ]
+        )
+        await self.story.close_menu()
+        self.p.show_dialog(dlg)
         await self.new_item_textfield.focus()
-        await self.story.close_menu()       # Close the menu
+        return
+        
+        
 
     # Called when clicking off the textfield and after submission
     def on_new_item_blur(self, e):
@@ -382,11 +405,11 @@ class TreeViewDirectory(ft.GestureDetector):
                 self.p.run_task(e.control.focus)
         
         # If we're not submitting, just hide the textfield and reset values
-        else:
-            e.control.visible = False
-            e.control.value = None
-            e.control.error = None
-            e.control.update()
+        #else:
+            #e.control.visible = False
+            #e.control.value = None
+            #e.control.error = None
+            #e.control.update()
 
 
     # Called whenever our user inputs a new key into one of our textfields for new items
@@ -408,6 +431,7 @@ class TreeViewDirectory(ft.GestureDetector):
             new_key = os.path.normcase(os.path.normpath(self.full_path + "\\" + title))
             new_key = new_key.rstrip()  # Remove trailing spaces for folder names
             for key in self.story.data['folders'].keys():
+                print("Checking folder key:\n", key, "\n", new_key)
                 
                 # Path comparisons require normalization
                 if os.path.normcase(os.path.normpath(key)) == new_key:
@@ -431,7 +455,7 @@ class TreeViewDirectory(ft.GestureDetector):
         e.control.update()
 
             
-    def new_item_textfield_submit(self, e):
+    async def new_item_textfield_submit(self, e):
 
         self.are_submitting = True
 
@@ -439,11 +463,14 @@ class TreeViewDirectory(ft.GestureDetector):
         tag = self.new_item_textfield.data
 
         if self.item_is_unique:
+            self.p.pop_dialog()
             match tag:
                 case "folder":
                     self.story.create_folder(directory_path=self.full_path, name=title)
                 case _:
-                    self.story.create_widget(directory_path=self.full_path, title=title, tag=tag)
+                    await self.story.create_widget(directory_path=self.full_path, title=title, tag=tag)
+
+            
                 
         else:
             self.p.run_task(self.new_item_textfield.focus)                                  
@@ -736,8 +763,3 @@ class TreeViewDirectory(ft.GestureDetector):
         
         # Set the content
         self.content = drag_target
-
-
-
-
-
