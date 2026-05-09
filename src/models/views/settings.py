@@ -1444,7 +1444,7 @@ class Settings(ft.View):
                 ft.Text("Join our", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Text(
                     "Discord", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM,
-                    #url="https://discord.gg/4ZtGZsPjz5",  # TODO: replace with real URL
+                    url="https://discord.gg/mGn6zXrJJV",  
                 ),
                 ft.Text("to be part of our community and see upcoming features!", theme_style=ft.TextThemeStyle.BODY_MEDIUM,),
             ], spacing=8), # Link
