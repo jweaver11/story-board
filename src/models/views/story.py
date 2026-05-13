@@ -65,13 +65,14 @@ class Story(ft.View):
                 #'connections': [],    # Connections between characters, places, items, etc. Since they are between multiple widgets, I stuck them here
                 'character_rail_sort_method': "Index",
                 'character_rail_sort_direction': "Ascending",
+                'world_building_rail_sort_method': "Index",
+                'world_building_rail_sort_direction': "Ascending",
                 
                 'settings': {
                     'type': self.type,             # Novel or comic. Affects templates and default data for new content
                     'active_character_template': str,    # Which template is being used for new characters
                     'multi_planetary': bool,       # Whether the story will take place on multiple planets
                     'multi_plotlines': bool,       # Whether the story will have multiple plotlines (regression, multiverse, etc.)
-                    'character_rail_sort_by': "Role",
                 },
                 
                 # Dict of all our categories INSIDE of basic story structure (content, characters, plotlines)

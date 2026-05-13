@@ -272,7 +272,6 @@ class CharactersRail(Rail):
         for widget in self.story.widgets:
             if widget.data.get('tag', "") == "character":
                 characters.append(widget)
-                continue
             elif widget.data.get('tag', "") == "character_connection_map":
                 character_connection_maps.append(widget)    
 
