@@ -45,7 +45,7 @@ class Location(MiniWidget):
                 'icon': icon,
                 'left': left, 
                 'top': top,
-                'color': "secondary",           # Color of the plot point on the map
+                'color': "black",           # Color of the plot point on the map
 
                 # Information for our information display
                 'Type': str,   # Type of location (city, town, dungeon, mountain, etc)
@@ -285,6 +285,7 @@ class Location(MiniWidget):
 
         # TODO: Change icon, title, color, description
         # Allow user to pick icon
+        # Labels show an icon that doesnt exist, so get rid of that
 
         # Cities, towns, villages, landmarks, buildings, rooms, natural features, geography, regions, POI
 

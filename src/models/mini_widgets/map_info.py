@@ -54,6 +54,7 @@ class MapInformationDisplay(MiniWidget):
                 'top': 40,
                 'alignment': None,
                 'drawing_mode': bool,            # Whether we are in drawing mode or not
+                'show_bg_map': True,                   # Whether to show the background map image or not
 
                 # Map info
                 'Description': str,
@@ -101,12 +102,18 @@ class MapInformationDisplay(MiniWidget):
             self.widget.canvas.content.mouse_cursor = None
         self.widget.canvas.content.update()
 
-        self.reload_mini_widget()
+        self.reload_mini_widget() 
 
 
     def _drawing_mode_view(self) -> ft.Column:
         # TODO: 
         # Match canvas info mini widget
+
+        async def _toggle_show_bg_map(e=None):
+            self.data['show_bg_map'] = e.control.value
+            await self.save_dict()
+            self.widget.reload_widget()  # Reload our widget to update the background image visibility
+        
         
         # Create our header
         drawing_buttons = ft.Row([
@@ -126,7 +133,13 @@ class MapInformationDisplay(MiniWidget):
             # Button to hide markers
         ])
         return ft.Column([
-            drawing_buttons
+            drawing_buttons,
+            ft.Switch(
+                True, "Show Map Background",
+                label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
+                value=self.data.get('show_bg_map', True), on_change=_toggle_show_bg_map,
+                tooltip="Whether to use the background image for the map or not",
+            ),
         ], expand=True, scroll="auto", spacing=0)
     
     def _map_info_view(self) -> ft.Column:
@@ -141,13 +154,13 @@ class MapInformationDisplay(MiniWidget):
                         ft.Container(
                             ft.Text(title, color=color, expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD), 
                             on_click=lambda _, l=location: self.p.run_task(l.show_mini_widget), 
-                            expand=True, padding=ft.Padding.only(left=20)
+                            expand=True, padding=ft.Padding.only(left=10)
                         ),
                         ft.Container(
                             ft.IconButton(
                                 ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, on_click=lambda _, l=location: l._delete_clicked(),
                                 tooltip="Delete Location", style=ft.ButtonStyle(padding=ft.Padding.all(0), mouse_cursor="click")
-                            ), margin=ft.Margin.only(right=20)
+                            ), margin=ft.Margin.only(right=10)
                         )
                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
                 )
@@ -172,9 +185,9 @@ class MapInformationDisplay(MiniWidget):
             on_blur=lambda e: self.change_data(**{'History': e.control.value}),   # When we click out of the text field, we save our changes
         )
         return ft.Column([
-                description_tf,
-                lore_tf,
-                history_tf,
+                ft.Container(description_tf, margin=ft.Margin.only(right=10)),
+                ft.Container(lore_tf, margin=ft.Margin.only(right=10)),
+                ft.Container(history_tf, margin=ft.Margin.only(right=10)),
                 ft.Divider(2, 2),
                 
                 ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None),),
@@ -199,12 +212,9 @@ class MapInformationDisplay(MiniWidget):
                 on_click=self._toggle_drawing_mode,
             ),
      
-            ft.GestureDetector(
-                ft.Text(f"{self.widget.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
-                color=self.data.get('color', None)),
-                on_double_tap=self.widget.rename_clicked,
-                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", hover_interval=500, 
+            ft.Text(
+                f"{self.widget.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+                color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
             ),
                 
             ft.IconButton(
@@ -239,6 +249,8 @@ class MapInformationDisplay(MiniWidget):
             content.controls.append(self._drawing_mode_view())
         else:
             content.controls.append(self._map_info_view())
+
+        
         
         
         

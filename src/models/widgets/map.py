@@ -58,8 +58,6 @@ class Map(Widget):
                 'key': f"{self.directory_path}\\{return_safe_name(self.title)}_map",
                 'tag': "map", 
                 'color': app.settings.data.get('default_map_color'),
-                'icon': "map_outlined",     # What icon to render on a parent map (if we have one)
-
                 
                 'image_base64': str,                # Saves our icon as img64 string (Used a preview as well from other widgets)
                 'left': int,                        # Our left position on our parent map (if we have one)
@@ -202,7 +200,6 @@ class Map(Widget):
     async def _open_menu(self, e: ft.PointerEvent):
         
         self.lock_position = True
-        print("Opening menu at", self.l, self.t)
         self.story.open_menu(self._get_menu_options())
 
     # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
@@ -402,24 +399,22 @@ class Map(Widget):
 
         # TODO:  
         # Users can choose to create their image or use some default ones, or upload their own
+        # Handle resizing
         # Our stack for map locations
-        map_stack = ft.Stack([
+        map_stack = ft.Stack(
+            [     # Add our background and canvas
             ft.Container(
-                expand=True, ignore_interactions=True,
-                #image=ft.DecorationImage("map_background.png", fit=ft.ImageFit.FILL)    # Our background image
-            ),
-            self.canvas,
-        ], expand=True)
-
-        # Clear our map stack controls so we can re-add them
-        map_stack.controls.clear()
-        map_stack.controls = [     # Add our background and canvas
-            ft.Container(
-                expand=True, ignore_interactions=True, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
-                #image=ft.DecorationImage("map_background.png", fit=ft.BoxFit.FILL)    # Our background image
+                expand=True, ignore_interactions=True, #border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
+                image=ft.DecorationImage(       # Background image
+                    "map_background.png", 
+                    ft.ColorFilter(ft.Colors.with_opacity(1, ft.Colors.BLACK), ft.BlendMode.SOFT_LIGHT),
+                    fit=ft.BoxFit.FILL,
+                ) if self.data.get('map_data', {}).get('show_bg_map', True) else None,
+                #color_filter=ft.ColorFilter(ft.Colors.with_opacity(1, ft.Colors.BLACK), ft.BlendMode.SOFT_LIGHT),
             ),
             self.canvas, 
-        ] 
+         
+        ], expand=True)
 
         # Add our map locations to the stack
         for mw in self.mini_widgets:
@@ -437,7 +432,7 @@ class Map(Widget):
             expand=3,
             scale_factor=500, #boundary_margin=50,
             min_scale=0.5, max_scale=3.0,
-        )
+        ) 
 
         mini_widgets_visible = False
         for mw in self.mini_widgets:
