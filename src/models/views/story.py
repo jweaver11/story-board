@@ -496,6 +496,11 @@ class Story(ft.View):
                     except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
                         print(f"Error loading content from {filename}: {e}")
 
+        # Reload all ccm's, since they need all characters loaded to work
+        for widget in self.widgets:
+            if widget.data.get('tag', "") == "character_connection_map" and widget.data.get('visible', False):
+                widget.reload_widget()
+
         
     # Called to create a new widget based on tag (document, note, character, etc)
     async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict=None, chart_type: str="bar"):

@@ -37,206 +37,173 @@ class CharacterConnectionMap(Widget):
                 # Widget data
                 'tag': "character_connection_map",
                 'color': app.settings.data.get('default_character_connection_map_color'),
-                'show_secondary_connections': bool,     # Whether to show connections of connections
-                'primary_characters': list,    # List of primary characters to build the map around[char_key, char_key]
+                'included_characters': {
+                    #'char_key': (x, y) # position of the character on the map
+                },
+                'connections': [    # List of our connections
+                    {
+                        # char 1 key: str
+                        # char 1 key: str
+                        # description: str
+                        # icon: str -- icon of the connection
+                        # color: str  -- color of the drawn line and icon for the connection
+                        # char1 position: tuple(x,y) -- position of the char1 icon on the map, relative to the center (0,0)
+                        # char2 position: tuple(x,y) -- position of the char2 icon on the
+                        
+                    }
+                ],  
             },
         )
+
+        # State tracker for highlighting purposes
+        self.is_dragging = False
 
         # Saving creates the file if we're new
         if is_new:
             self.p.run_task(self.save_dict)
     
 
-        self.primary_characters = []
-
-        self.canvas = cv.Canvas(
-            content=ft.GestureDetector(
-                mouse_cursor=ft.MouseCursor.CLICK, 
-                expand=True,
-                on_secondary_tap=lambda e: self.story.open_menu(self._get_menu_options()),
-                on_hover=self._get_coords,
-                drag_interval=10, hover_interval=20,
-            ),
-            expand=True, resize_interval=100,
-            #on_resize=self._rebuild_canvas, 
-        )
+        
 
 
-        # Our stack for map locations
-        self.connections_stack = ft.Stack([
-            ft.Container(expand=True, ignore_interactions=True),    # Container to stay expanded (Add bg here)
-            self.canvas,
-        ], expand=True)
+        
 
-        # Requires all widgets to be loaded first, so story calls self.load_primary_characters(), which reloads the widget
+        # Requires all widgets to be loaded first, so story calls reload_widget first
         if self.visible:
             self.reload_widget()
-
-    # Load our primary characters from our data. Then loads the connection mini widgets for each connection involving them
-    def _load_primary_characters(self):
-        ''' Loads our primary characters from our data '''
-
-        self.primary_characters.clear()
-        self.mini_widgets.clear()
-
-        # Go through our primary characters and load them
-        for char_key in self.data.get('primary_characters', []):
-            character = self.story.characters.get(char_key)
-            if character:
-                # Add their live object to our primary characters list
-                self.primary_characters.append(character)  
-
-        # Now go through our story connections and see which ones involve our primary characters
-        for idx, conn_data in enumerate(self.story.data.get('connections', [])):
-            if conn_data.get('char1_key') in self.data.get('primary_characters', []) or conn_data.get('char2_key') in self.data.get('primary_characters', []):
-                # Create a mini widget for this connection
-                mw = CharacterConnection(
-                    title="NONE",       # Not used but needs a value
-                    widget=self,
-                    page=self.p,
-                    index=idx,
-                    data=conn_data,  
-                )
-                self.mini_widgets.append(mw) 
-                
-
-    # Called when app clicks the hide icon in the tab
-    def toggle_visibility(self, e=None, value: bool=None):
-        ''' Hides the widget from our workspace and updates the json to reflect the change '''
-
-        # If we want to specify we're visible or not, we can pass it in
-        if value is not None:
-            self.data['visible'] = value
-            self.visible = value
-        
-        else:
-            # Change our visibility data, save it, then apply it
-            self.data['visible'] = not self.data['visible']
-            self.visible = self.data['visible']
-
-        #if self.visible:
-            #self.load_primary_characters()   # Load our primary characters when we become visible
-
-        # Save our changes and reload the UI
-        self.save_dict()
-        self.reload_widget()
-
-
-    def _set_primary_characters(self, e=None):
-
-        class CharCheckbox(ft.Checkbox):
-            def __init__(self, character: Widget, is_selected: bool=False):
-                super().__init__(
-                    label=character.title,
-                    value=is_selected,
-                )
-                self.character = character
-
-        # Goes through and see what characters were selected and saves them
-        def _save_and_close(e):
-
-            self.data.get('primary_characters').clear()     # Clear current primary characters
-
-            # Go through our checkboxes, and see which characters were selected and add them to our data
-            for control in content.controls:
-                if isinstance(control, CharCheckbox):
-                    if control.value:
-                        self.data.get('primary_characters').append(control.character.data.get('key'))
-                    
-
-            # Save and reload our widget. Close the dialog
-            self.save_dict()
-            
-            self.reload_widget()
-            self.p.pop_dialog()
-
-
-        # Sets our content to add too
-        content = ft.Column(
-            [
-                ft.Divider()
-            ], 
-            scroll="auto",
-            width=self.p.width * .5,
-        )
-        
-        # Go through all our characters and add a checkbox for each one. If they are already primary, have it checked
-        for char in self.story.characters.values():
-            if char.data.get('key') == self.data.get('key'):
-                continue
-            if char in self.primary_characters:
-                content.controls.append(CharCheckbox(character=char, is_selected=True))
-            else:
-                content.controls.append(CharCheckbox(character=char))
-            
-        # Alert dialog to show everything we've built
-        dlg = ft.AlertDialog(
-            title=ft.Text(f"Select Primary Character(s)"),
-            content=content,
-            actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR), scale=1.2),
-                ft.Container(width=12),   # Spacer
-                ft.TextButton("Save", on_click=_save_and_close, scale=1.2),
-            ],
-        )
-        
-        self.p.show_dialog(dlg)        # open the dialog
     
 
     # Called after any changes happen to the data that need to be reflected in the UI
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
+        # TODO: 
         # PURPOSE: To show a character connection map of our characters and their connections to one another
-        # Has primary user(s), and all connections to them, 
-        # and option to expand and show secondary connections (connections of their connections)
+        # character_bank = show all characters in the story not included (dragged out) onto the map already
+        # Inside the character bank, they are a draggable. Inside the stack, they are a gd. (their draggable dragging content is the gd). 
+        # When dragged left less than 200 px, remove from stack and add to char bank
 
-        # Rebuild out tab to reflect any changes
-        self._load_primary_characters()
+
+    
+        
+
+        # Starts highlighting the character bank
+        async def highlight_character_bank(e: ft.Event[ft.Draggable]=None):
+            ''' Highlights the character bank when we hover over a character on the map, so we can see the other characters we can connect to '''
+            if highlight_container.bgcolor != ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE) and self.is_dragging:
+                highlight_container.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
+                highlight_container.update()
+                self.is_dragging = True
+
+        # Stops highlighting the character bank and lets us know we dragged a character from the bank onto the map
+        async def stop_highlight_character_bank(e: ft.Event[ft.Draggable]=None):
+            ''' Stops highlighting the character bank when we stop hovering over a character on the map '''
+            highlight_container.bgcolor = ft.Colors.TRANSPARENT
+            highlight_container.update()
+            #print(e)
+
+        
+
+        
+
+               
         self.reload_tab()
+        
 
-         
+        # Canvas that shows the drawn lines between characters for their connections and icons
+        canvas = cv.Canvas(
+            content=ft.GestureDetector(
+                expand=True,
+                on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
+                on_hover=self._get_coords,
+                #drag_interval=50, 
+                hover_interval=20,
+                #on_pan_start=lambda: print("Pan Started")
+            ),
+            expand=True, resize_interval=100,
+            #on_resize=self._rebuild_canvas, 
+        )
 
-        # Clear our map stack controls so we can re-add them
-        self.connections_stack.controls.clear()
-        self.connections_stack.controls = [     # Add our background and canvas
-            ft.Container(expand=True, ignore_interactions=True, border=ft.Border.all(2, "red")),    # Container to stay expanded (Add bg here)
-            self.canvas,
-        ]
+        # What we need:
+        # scrollable column to hold all unused characters
+        # Ability to drag characters from that column onto the map
+        # Ability to drag characters from map back to column
+        # Ability to drag characters around on the map to rearrange them, with lines following them as we move them
+        
 
-        if not self.primary_characters:
-            self.connections_stack.controls.append(
-                ft.Container(
-                    expand=True, alignment=ft.Alignment.CENTER,
-                    content=ft.Button("Select Primary Character(s)", on_click=self._set_primary_characters, scale=2)
-                )
-            )
 
-        else:
-            standard_length = 150   # some fraction of self.w and self.h
-            max_length = 300    # Some fraction of self.w and self.h // 2 - padding
+        async def _drag_start(e: ft.Event[ft.Draggable]):
+            ''' When we start dragging a character, we want to highlight the character bank so we can see where to drag it '''
+            self.is_dragging = True
+            await highlight_character_bank()
+            #print("Drag start")
+
+        async def _drag_end(e: ft.DragTargetEvent):
+            ''' When we stop dragging a character, we want to check if we dragged it onto the map or back to the bank, and update our data accordingly '''
+            self.is_dragging = False
+            await stop_highlight_character_bank()
+            print(e)
+
+        
+
+
+        # Where we add the characters so we can drag them ont the map
+        character_bank = ft.Column([
+            ft.Container(height=1),
+            ft.Text("\tCharacter Bank", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
+        ] +
+            # Our characters
+            [ft.Draggable(
+                ft.Container(height=100, width=100, bgcolor=ft.Colors.RED), 
+                on_drag_start=_drag_start,
+                content_when_dragging=ft.Container(height=100, width=100, bgcolor=ft.Colors.TRANSPARENT),
+            ) for i in range(20)
+                 
+        ], width=150, scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.START,)
+
+        
+
+        # Container holder bank trigger used for highlighting
+        highlight_container = ft.Container(
+            character_bank, width=152,
+            bgcolor=ft.Colors.TRANSPARENT,
+            border=ft.Border.only(right=ft.BorderSide(2, ft.Colors.OUTLINE)),
+            alignment=ft.Alignment.TOP_CENTER, 
+        )
+
+        
+        connections_stack = ft.Stack([
+            ft.Container(expand=True, ignore_interactions=True, border=ft.Border.all(2, ft.Colors.RED)),    # Container to stay expanded (Add bg here)
+            ft.GestureDetector(
+                highlight_container,
+                on_enter=highlight_character_bank, 
+                on_exit=stop_highlight_character_bank,
+                #on_hover=print_pos,
+            ),
+            
+            
+            #ft.TransparentPointer(canvas),
+            ft.DragTarget(ft.TransparentPointer(canvas), expand=True, on_accept=_drag_end)
+            
+        ], expand=True, alignment=ft.Alignment.CENTER_LEFT) 
+
+        # TODO: Go through connected characters and add their icons to the map
+        # Go through the added character icons and draw the connections between them, with room for icons
+
+
 
 
         iv = ft.InteractiveViewer(
-            content=self.connections_stack, expand=True,
-            scale_factor=750, boundary_margin=50,
+            content=connections_stack, expand=True,
+            scale_factor=750, #boundary_margin=50,
             min_scale=0.5, max_scale=2.0, scale=1.0,
         )
         
         
         # Set our content to the body_container (from Widget class) as the body we just built
-        self.body_container.content = iv
-
-
-        button_title = "Primary Characters: "
-        for idx, char in enumerate(self.primary_characters):
-            if idx > 0:
-                button_title += f" | {char.title}"
-            else:
-                button_title += char.title
-
-        # Build a header for our filters
-        self.header = ft.Row([ft.Button(button_title, tooltip="Change Primary Characters", on_click=self._set_primary_characters)], alignment=ft.MainAxisAlignment.CENTER, height=50)
+        #self.body_container.content = iv
+        self.body_container.content = connections_stack
+        #self.body_container.content = ft.Container(width=100, height=100, bgcolor=ft.Colors.RED)   # TESTING PURPOSES
 
 
         # Call render widget (from Widget class) to update the UI

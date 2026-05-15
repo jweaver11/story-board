@@ -757,7 +757,7 @@ class Canvas(Widget):
         interactive_viewer = ft.InteractiveViewer(
             content=layers_wrapper,
             expand=3,
-            scale_factor=500, boundary_margin=50,
+            scale_factor=500, #boundary_margin=50,
             min_scale=0.5, max_scale=3.0,
         )
 

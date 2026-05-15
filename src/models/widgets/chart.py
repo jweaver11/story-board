@@ -1134,9 +1134,6 @@ class Chart(Widget):
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
-        # TODO: BAR CHART FEATURES --
-
-
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
