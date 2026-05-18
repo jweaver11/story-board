@@ -39,7 +39,7 @@ class Settings(ft.View):
         # Constructor the parent widget class
         super().__init__(
             route=f"/settings",                                      # Sets our route for our new story
-            padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
+            padding=ft.Padding.all(0),      # No padding for the page
             spacing=0,                                                   # No spacing between menubar and rest of page
         )
 
@@ -215,6 +215,10 @@ class Settings(ft.View):
 
     async def save_story(self, e=None):
         ''' Called when the page is closed. Saves any last changes to settings before exit '''
+
+        # Temp
+        self.data['is_first_launch'] = True
+        await self.save_dict()
 
         if self.story is not None:
             for widget in self.story.widgets:
@@ -1428,6 +1432,10 @@ class Settings(ft.View):
         async def _run_tutorial(e=None):
             await self.p.push_route("/tutorial")
 
+        async def _discord_clicked(e=None):
+            import webbrowser
+            webbrowser.open("https://discord.gg/mGn6zXrJJV")
+
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
         content=ft.Column([
             ft.Row([
@@ -1444,7 +1452,7 @@ class Settings(ft.View):
                 ft.Text("Join our", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Text(
                     "Discord", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM,
-                    url="https://discord.gg/mGn6zXrJJV",  
+                    on_tap=_discord_clicked, selectable=True
                 ),
                 ft.Text("to be part of our community and see upcoming features!", theme_style=ft.TextThemeStyle.BODY_MEDIUM,),
             ], spacing=8), # Link

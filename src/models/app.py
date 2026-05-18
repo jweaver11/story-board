@@ -158,7 +158,7 @@ class App:
             
         # Give us home view if no stories were active
         #print("Page route is: ", page.route)
-        await page.push_route("/home")
+        await page.push_route("/")
 
         self.ignore_settings_change = False
 

@@ -16,7 +16,7 @@ from ui.rails.planning_rail import PlanningRail
 
 
 # Class is created in main on program startup
-class Active_Rail(ft.Container):
+class ActiveRail(ft.Container):
     
     # Constructor
     def __init__(self, page: ft.Page, story: Story):

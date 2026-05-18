@@ -198,14 +198,6 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
             else:
                 await page.push_route("/")
 
-
-    # Styling used by lots of menu bar items
-    menubar_style = ft.ButtonStyle(
-        #bgcolor={ft.ControlState.HOVERED: ft.Colors.TRANSPARENT},
-        shape=ft.RoundedRectangleBorder(radius=10),
-        color=ft.Colors.PRIMARY
-    )
-
     # Create our menu bar with submenu items
     menubar = ft.MenuBar(
         expand=True,

@@ -9,6 +9,7 @@ from utils.route_change import route_change
 from models.views.home import create_home_view
 from models.views.loading import create_loading_view
 from models.views.welcome import create_welcome_view, animate_welcome_text
+from models.views.tutorial import create_tutorial_view
 import asyncio
 
 # Remove auto updates so we can improve performance
@@ -19,6 +20,11 @@ async def main(page: ft.Page):
      
     # Load settings and previous story (if one exists)
     app.load_settings(page)  
+
+    # Set our route change function to be called on route changes
+    page.on_route_change = route_change 
+
+    await app.load_previous_story(page) 
  
     # Either welcome to storyboard view, or our loading view
     if app.settings.data.get("is_first_launch", True):
@@ -39,20 +45,18 @@ async def main(page: ft.Page):
         while app.settings.data.get("is_first_launch", True):
             await asyncio.sleep(0.1)
 
-        
 
     # Otherwise they are not new to storyboard, show our loading view
     else:
         page.views.append(create_loading_view(page))
         page.update()
  
-    # Set our route change function to be called on route changes
-    page.on_route_change = route_change 
+        # If a previous story was loaded, we load its route/view here
+        await app.load_previous_story(page)       
  
-    # If a previous story was loaded, we load its route/view here
-    await app.load_previous_story(page)       
- 
-    # I no story was loaded, Give us a basic home view
+    #await app.load_previous_story(page)   
+
+    # If no story was loaded, Give us a basic home view
     if page.route == "/":
         page.views.append(create_home_view(page))   # Simple view so we just use a function, not a class
         page.update()

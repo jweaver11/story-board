@@ -114,18 +114,17 @@ def create_home_view(page: ft.Page) -> ft.View:
             ft.Container(
                 expand=True,
                 alignment=ft.Alignment.CENTER,
-                #gradient=dark_gradient,
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                 content=ft.FloatingActionButton(
                     "Create New Story",
                     ft.Icons.ADD_OUTLINED,
                     on_click=create_new_story_button_clicked,
                     scale=1.5,
-                    #width=200,
-                    #height=100,
+                    mouse_cursor=ft.MouseCursor.CLICK,
                     shape=ft.RoundedRectangleBorder(radius=10),  
                 ),
             ),
         ],
         spacing=0,                                             # No spacing between menubar and rest of page
+        padding=ft.Padding.all(0), 
     )

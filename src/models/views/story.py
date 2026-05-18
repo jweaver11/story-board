@@ -35,7 +35,7 @@ class Story(ft.View):
         # Parent constructor
         super().__init__(
             route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
-            padding=ft.Padding.only(top=0, left=0, right=0, bottom=0),      # No padding for the page
+            padding=ft.Padding.all(0),      # No padding for the page
             spacing=0,                                                      # No spacing between menubar and rest of page
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
         )  
@@ -799,7 +799,7 @@ class Story(ft.View):
         ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
         from ui.menu_bar import create_menu_bar
         from ui.workspaces_rail import WorkspacesRail
-        from ui.active_rail import Active_Rail
+        from ui.active_rail import ActiveRail
         from ui.workspace import Workspace
         from models.app import app
         from models.isolated_controls.row import IsolatedRow
@@ -818,7 +818,7 @@ class Story(ft.View):
         self.workspaces_rail = WorkspacesRail(page, self)  # Create our all workspaces rail
         
         self.workspace = Workspace(page, self)  # Reference to our workspace object for pin locations
-        self.active_rail = Active_Rail(page, self)  # Container stored in story for the active rails
+        self.active_rail = ActiveRail(page, self)  # Container stored in story for the active rails
 
         
 
