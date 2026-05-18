@@ -24,8 +24,6 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
     async def _next_tutorial_step(e: ft.Event=None):
         nonlocal tutorial_step
         tutorial_step += 1
-        
-
         await load_tutorial_step()
        
 
@@ -37,6 +35,10 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
             previous_tip_button.disabled = False
             previous_tip_button.icon_color = ft.Colors.PRIMARY
             previous_tip_button.update()
+        if next_tip_button.disabled:
+            next_tip_button.disabled = False
+            next_tip_button.icon_color = ft.Colors.PRIMARY
+            next_tip_button.update()
             
         match tutorial_step:
             case 0:
@@ -139,7 +141,6 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
     )
     tutorial_arrow = ft.Icon(ft.Icons.ARROW_UPWARD, color=ft.Colors.PRIMARY, scale=1.5, left=20, top=10, animate_position=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT))
     tutorial_step = 0
-    tutorial_complete = False
 
     # Build custom workspaced rail and active rail and workspace. 
     # Only show workspaces railt to start, then active, then workspace
