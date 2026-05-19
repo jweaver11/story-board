@@ -76,8 +76,9 @@ class Document(Widget):
         if e.width <= 0 or e.height <= 0:
             print("No size, skipping")
             return 
-        self.w = int(e.width)
-        self.h = int(e.height)
+        #if e.width.type
+        self.w = int(e.width) or 0
+        self.h = int(e.height) or 0
 
         if self.skip_update:
             self.skip_update = False

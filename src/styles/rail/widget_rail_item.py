@@ -136,7 +136,7 @@ class WidgetRailItem(ft.GestureDetector):
             shape=ft.RoundedRectangleBorder(radius=6),
             bgcolor=ft.Colors.TRANSPARENT, 
             dense=True,
-            content_padding=ft.Padding.only(right=10, left=10),
+            content_padding=ft.Padding.only(left=10),
             min_vertical_padding=0,
             mouse_cursor=ft.MouseCursor.CLICK,
             trailing=ft.IconButton(

@@ -112,7 +112,6 @@ class Settings(ft.View):
                     "characters",
                     "plotlines",
                     "world_building",
-                    "planning",
                 ],
 
                 # Widget settings

@@ -60,7 +60,7 @@ class WorkspacesRail(ft.Container):
 
 
     # Called whenever the rail is reordered
-    def handle_rail_reorder(self, e: ft.OnReorderEvent, story: Story):
+    def handle_rail_reorder(self, e: ft.OnReorderEvent, story: Story=None):
         ''' Reorders our list based on the drag and drop, saves the new order in settings '''
         from models.app import app    # Always grabs updated reference when re-ordering
 
@@ -92,6 +92,7 @@ class WorkspacesRail(ft.Container):
             bgcolor=ft.Colors.TRANSPARENT,  # Make rail background transparent
             selected_index=None,    # All rails start unselected, we set the right one later
             on_change=lambda e: self.change_workspace(e, story),    # When the rail is clicked
+            tooltip="The meat and potatos of your story. Show everything in your story in an organized tree view! Create any widget from here",   # Tooltip on hover
             destinations=[  # Each rail only has one destination
                 # We do it this way so we can change the order when re-ordering the rail
                 ft.NavigationRailDestination(
@@ -114,6 +115,7 @@ class WorkspacesRail(ft.Container):
             bgcolor=ft.Colors.TRANSPARENT,
             selected_index=None,
             on_change=lambda e: self.change_workspace(e, story),  
+            tooltip="The rail for all things characters in your story. Organize your characters, create character connection maps, and more!",
             destinations=[
                 ft.NavigationRailDestination(
                     icon=ft.Icon(ft.Icons.PEOPLE_OUTLINE_ROUNDED), 
@@ -129,7 +131,8 @@ class WorkspacesRail(ft.Container):
             height=70,  
             bgcolor=ft.Colors.TRANSPARENT,
             selected_index=None,
-            on_change=lambda e: self.change_workspace(e, story),   
+            on_change=lambda e: self.change_workspace(e, story),  
+            tooltip="The rail for viewing your plotlines (timelines), with support for ordering them. Help keep track of regression/multi timeline stories.", 
             destinations=[
                 ft.NavigationRailDestination(
                     icon=ft.Icon(ft.Icons.TIMELINE_ROUNDED, scale=1.2), 
@@ -145,7 +148,8 @@ class WorkspacesRail(ft.Container):
             height=70,  
             bgcolor=ft.Colors.TRANSPARENT,
             selected_index=None,
-            on_change=lambda e: self.change_workspace(e, story),    
+            on_change=lambda e: self.change_workspace(e, story),  
+            tooltip="The rail for all your world building needs, such as maps, worlds, charts, lores, and more!",  
             destinations=[
                 ft.NavigationRailDestination(
                     #icon=ft.Icon(ft.Icons.MAP_OUTLINED), selected_icon=ft.Icon(ft.Icons.MAP, color=ft.Colors.PRIMARY),
@@ -163,6 +167,7 @@ class WorkspacesRail(ft.Container):
             bgcolor=ft.Colors.TRANSPARENT,
             selected_index=None,
             on_change=lambda e: self.change_workspace(e, story),  
+            tooltip="The rail for all your drawing needs. Create Canvases (drawings), maps, comic previews, and Canvas Boards here!",
             destinations=[
                 ft.NavigationRailDestination(
                     icon=ft.Icon(ft.Icons.DRAW_OUTLINED), 
@@ -173,22 +178,7 @@ class WorkspacesRail(ft.Container):
                 ),
             ],
         )
-        # Planning workspace rail
-        planning_rail = ft.NavigationRail(
-            height=70,  
-            bgcolor=ft.Colors.TRANSPARENT,
-            selected_index=None,
-            on_change=lambda e: self.change_workspace(e, story),  
-            destinations=[
-                ft.NavigationRailDestination(
-                    icon=ft.Icon(ft.Icons.EVENT_NOTE_OUTLINED),
-                    selected_icon=ft.Icon(ft.Icons.EVENT_NOTE, color=ft.Colors.PRIMARY),
-                    padding=ft.Padding.only(top=10, bottom=10),
-                    data="planning", 
-                    label=ft.Text("Plan & Design" if app.settings.data.get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER) 
-                ),
-            ],
-        )
+        
 
         # Reads our selected workspace from ourself, and toggles the correct workspace selection icon
         if selected_rail == "content":
@@ -201,8 +191,6 @@ class WorkspacesRail(ft.Container):
             world_building_rail.selected_index = 0
         elif selected_rail == "canvas":
             canvas_rail.selected_index = 0
-        elif selected_rail == "planning":
-            planning_rail.selected_index = 0
 
         idx = 0
         # Goes through our workspace order, and adds the correct control to our list for the rail
@@ -218,8 +206,6 @@ class WorkspacesRail(ft.Container):
                 workspaces_rail.append(ft.ReorderableDragHandle(world_building_rail))
             elif workspace == "canvas":
                 workspaces_rail.append(ft.ReorderableDragHandle(canvas_rail))
-            elif workspace == "planning":
-                workspaces_rail.append(ft.ReorderableDragHandle(planning_rail))
 
             idx += 1
 
@@ -229,8 +215,6 @@ class WorkspacesRail(ft.Container):
 
             self.width = 50     # Make the rail less wide
             
-            
-
             # Set our collapsed icon buttons icon depending on collapsed state
             collapse_icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED
 

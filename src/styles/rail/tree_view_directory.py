@@ -163,7 +163,7 @@ class TreeViewDirectory(ft.GestureDetector):
                             tooltip="Create a new world for your story. Choose from templates or create a default world."
                         ),
                         ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.SHIELD_OUTLINED, ft.Colors.PRIMARY), content="Item", 
+                            leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
                             data="item", on_click=self.new_item_clicked, close_on_click=True,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
                             tooltip="New Items and Equipment for your story"
@@ -733,7 +733,7 @@ class TreeViewDirectory(ft.GestureDetector):
             collapsed_shape=ft.RoundedRectangleBorder(radius=10),
             visual_density=ft.VisualDensity.COMPACT,
             expanded=self.is_expanded,
-            tile_padding=ft.Padding(0, 0, 10, 0),
+            tile_padding=ft.Padding(0, 0, 0, 0),
             icon_color=self.color,
             controls_padding=ft.Padding(10, 0, 0, 0),       # Keeps all sub children indented
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
