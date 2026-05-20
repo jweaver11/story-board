@@ -782,6 +782,24 @@ class Widget(ft.Container):
     def reload_tab(self, update: bool=False):
         ''' Creates our tab for our widget that has the title and hide icon '''
 
+        # Re-resolve the icon name based on the current tag.
+        # New widgets have tag="" at Widget.__init__ time (before child verify_data runs),
+        # so reload_tab corrects it the first time reload_widget is called.
+        tag = self.data.get('tag', '')
+        match tag:
+            case "document": self.icon.icon = ft.Icons.DESCRIPTION_OUTLINED
+            case "canvas": self.icon.icon = ft.Icons.BRUSH_OUTLINED
+            case "canvas_board": self.icon.icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
+            case "note": self.icon.icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
+            case "character": self.icon.icon = ft.Icons.PERSON_OUTLINE
+            case "character_connection_map": self.icon.icon = ft.Icons.ACCOUNT_TREE_OUTLINED
+            case "plotline": self.icon.icon = ft.Icons.TIMELINE
+            case "map": self.icon.icon = ft.Icons.MAP_OUTLINED
+            case "world": self.icon.icon = ft.Icons.PUBLIC_OUTLINED
+            case "item": self.icon.icon = ft.Icons.STAR_OUTLINE_ROUNDED
+            case "chart": self.icon.icon = ft.Icons.INSERT_CHART_OUTLINED
+            case "comic_preview": self.icon.icon = ft.Icons.SLIDESHOW_OUTLINED
+
         # Set our color and text if title changed
         self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
         self.tab_text.value = self.title

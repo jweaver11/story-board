@@ -16,7 +16,8 @@ from models.widgets.item import Item
 from models.widgets.comic_preview import ComicPreview
 from models.widgets.chart import Chart
 from models.widgets.canvas_board import CanvasBoard
-
+import shutil
+import os
 
 
 def create_tutorial_view(page: ft.Page) -> ft.View:
@@ -143,14 +144,12 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                 tutorial_tip_container.top = 80
                 tutorial_tip_container.left = 400
                 tutorial_arrow.left = 360
-                widget_descriptions.visible = False
                 tutorial_story.workspace.visible = False
                 tutorial_arrow.icon = ft.Icons.ARROW_BACK
                 
             case 8:
                 if tutorial_story.data.get('selected_rail') != "content":
                     workspaces_rail.change_workspace(e=1, story=tutorial_story, force_rail="content")
-                widget_descriptions.visible = True
                 tutorial_story.workspace.visible = True
                 workspace.content = None
                 workspace.update()
@@ -171,7 +170,7 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                 workspace.update()
                 tutorial_tip.spans=[
                     ft.TextSpan("Document:\n", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                    ft.TextSpan("The main widget for creating all novel-based stories. Similar to Microsoft Word or Google Docs, use the document widget as a fully built text editor. Add your own comments, notes, and references to the side of any document!", style=ft.TextStyle(size=16))
+                    ft.TextSpan("The main widget for creating all novel-based stories. Similar to Microsoft Word or Google Docs, use the document widget as a fully built text editor.\n\nAdd your own comments, notes, and references to the side of any document!", style=ft.TextStyle(size=16))
                 ]
                 tutorial_tip.value = None
             case 10:
@@ -204,7 +203,7 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                 workspace.update()
                 tutorial_tip.spans=[
                     ft.TextSpan("Plotline:\n", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                    ft.TextSpan("A widget for visualizing the progression of your story. Create multiple plotlines for arcs, sub arcs, plot points, or regression & multi-timeline stories. Connect events on your plotline to a map and watch your world change over time!", style=ft.TextStyle(size=16))
+                    ft.TextSpan("A widget for visualizing the progression of your story. Create multiple plotlines for arcs, sub arcs, plot points, or regression & multi-timeline stories.", style=ft.TextStyle(size=16))
                 ]
             case 14:
                 widget = Map("Map Widget", page, tutorial_story.data.get('content_directory_path'), tutorial_story)
@@ -212,7 +211,7 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                 workspace.update()
                 tutorial_tip.spans=[
                     ft.TextSpan("Map:\n", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                    ft.TextSpan("A widget for visualizing the geography of your world. Create your own maps from scratch using the canvas or upload them from another program. Connect locations on your map to events on your plotline and watch your world change over time!", style=ft.TextStyle(size=16))
+                    ft.TextSpan("A widget for visualizing the geography of your world.\n\nCreate maps of continents, countries, cities, forests, dungeons, etc.\n\nMaps allow you to create locations with fleshed out information and label important areas.", style=ft.TextStyle(size=16))
                 ]
             case 15:
                 widget = CharacterConnectionMap("Character Connection Map Widget", page, tutorial_story.data.get('content_directory_path'), tutorial_story)
@@ -220,7 +219,7 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                 workspace.update()
                 tutorial_tip.spans=[
                     ft.TextSpan("Character Connection Map:\n", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                    ft.TextSpan("A widget for visualizing the relationships between your characters. Create your own character connection map from scratch using the canvas or upload them from another program. Connect characters on your map to events on your plotline and watch your world change over time!", style=ft.TextStyle(size=16))
+                    ft.TextSpan("A widget for visualizing the relationships between your characters.\n\nVisualize family trees, social connections, friends, enemies, and anything your heart desires.\n\nThis widget can be particularly useful for romance stories.", style=ft.TextStyle(size=16))
                 ]
             case 16:
                 widget = World("World Widget", page, tutorial_story.data.get('content_directory_path'), tutorial_story)
@@ -228,7 +227,7 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                 workspace.update()
                 tutorial_tip.spans=[
                     ft.TextSpan("World:\n", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                    ft.TextSpan("A widget for visualizing the lore of your world. Create your own world building wiki from scratch using the canvas or upload it from another program. Connect lore entries on your world wiki to events on your plotline and watch your world change over time!", style=ft.TextStyle(size=16))
+                    ft.TextSpan("A widget for fleshing out to ideas of your world.\n\nCreate your lore, power systems, government, geography and more! ", style=ft.TextStyle(size=16))
                 ]
             case 17:
                 widget = Item("Item Widget", page, tutorial_story.data.get('content_directory_path'), tutorial_story)
@@ -236,7 +235,7 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                 workspace.update()
                 tutorial_tip.spans=[
                     ft.TextSpan("Item:\n", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                    ft.TextSpan("A widget for visualizing the important items in your story. Create your own item encyclopedia from scratch using the canvas or upload it from another program. Connect items on your encyclopedia to events on your plotline and watch your world change over time!", style=ft.TextStyle(size=16))
+                    ft.TextSpan("A widget for all items, weapons, armor, and MacGuffins in your story!\n\nFlesh out their size, abilities, looks, cost, and any other ideas you have!", style=ft.TextStyle(size=16))
                 ]
             case 18:
                 widget = ComicPreview("Comic Preview Widget", page, tutorial_story.data.get('content_directory_path'), tutorial_story)
@@ -244,7 +243,7 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                 workspace.update()
                 tutorial_tip.spans=[
                     ft.TextSpan("Comic Preview:\n", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                    ft.TextSpan("A widget for visualizing how your comic pages will look when printed. Create your own comic page previews from scratch using the canvas or upload them from another program. Connect pages on your preview to events on your plotline and watch your world change over time!", style=ft.TextStyle(size=16))
+                    ft.TextSpan("A widget for visualizing how your comic pages will look when stitched together.\n\nChoose either a horizontal or vertical display.", style=ft.TextStyle(size=16))
                 ]
             case 19:
                 widget = Chart("Chart Widget", page, tutorial_story.data.get('content_directory_path'), tutorial_story, type="radar")
@@ -262,6 +261,7 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                     ft.TextSpan("Canvas Board:\n", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
                     ft.TextSpan("A widget for planning out comic-based chapters for your story. Describe and sketch out your ideas for all you panels ahead of time. Connect them to an existing canvas in your story to see how progress is coming along!", style=ft.TextStyle(size=16))
                 ]
+                tutorial_tip.value = None
             
             # TODO: Finish better detail about each widget
             # Finish rest of rails
@@ -274,6 +274,7 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                 tutorial_tip_container.top = (page.height - 90) / 2 - 160
                 tutorial_arrow.left = 410
                 tutorial_tip_container.left = 410
+                tutorial_tip.spans = None
                 tutorial_tip.value = "Next is the canvas rail. This controls all your paint and drawing based settings for your canvases (drawings), maps, and canvas boards."
         tutorial_tip_container.update()
         tutorial_arrow.update()
@@ -326,6 +327,9 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
     
     # Give us 1 of each widget to show them all off
     async def create_tutorial_content():
+        folder_path = tutorial_story.data.get('content_directory_path')
+        if os.path.exists(folder_path) and os.path.isdir(folder_path):  # Delete the folder if it already exists to prevent issues with old data
+            shutil.rmtree(folder_path)   
         tutorial_story.create_folder(tutorial_story.data.get('content_directory_path'), "Folder")
         await tutorial_story.create_widget("Document", "document", no_delay=True)
         await tutorial_story.create_widget("Note", "note", no_delay=True)
@@ -342,25 +346,24 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
         await asyncio.sleep(0.3)
 
     tutorial_story = Story("Tutorial Story", page)
+
+    # Wipe the content directory before startup() so load_widgets() finds nothing,
+    # preventing duplication when the tutorial is opened more than once.
+    content_dir = tutorial_story.data.get('content_directory_path')
+    if content_dir and os.path.exists(content_dir):
+        shutil.rmtree(content_dir)
+    tutorial_story.data['folders'] = {}
+
     page.run_task(create_tutorial_content)   # Create some content for the tutorial story so it doesn't look so sad and empty
     tutorial_story.startup()    # Prepare the story
 
-    for widget in tutorial_story.widgets:
-        widget.visible = False
-        widget.data['visible'] = False
-        page.run_task(widget.save_dict)   # Save that the widgets are not visible in the story data
-        widget.reload_widget()
-
-    tutorial_story.workspace.reload_workspace()
-    tutorial_story.workspace.expand = 2
-    tutorial_story.workspace.visible = False
     workspaces_rail = WorkspacesRail(page, tutorial_story)
     workspaces_rail.visible = False
 
     active_rail = tutorial_story.active_rail
     active_rail.visible = False
     active_rail.expand = False
-    active_rail.width = 225
+    active_rail.width = 250
     active_rail.animate_size = ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN)
     active_rail.animate = ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN)
 
@@ -413,89 +416,10 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
         ft.Icons.ARROW_UPWARD, ft.Colors.PRIMARY, scale=1.5, left=20, top=10, animate_position=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         visible=False
     )
-    widget_descriptions = ft.Container(
-        ft.Column([
-        ft.Text(
-            spans=[
-                ft.TextSpan("Document: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                ft.TextSpan("The main widget for creating all novel-based stories. Similar to Microsoft Word or Google Docs, use the document widget as a fully built text editor. Add your own comments, notes, and references to the side of any document!", style=ft.TextStyle(size=16))
-            ],
-        ),
-        ft.Text(
-            spans=[
-                ft.TextSpan("Canvas: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                ft.TextSpan("The main widget for creating all comic-based stories. This widget allows illustrators to watch their ideas come to life on the Canvas. Create your own drawing masterpiece or upload exported files from another drawing app!", style=ft.TextStyle(size=16))
-            ],
-        ),
-        ft.Text(
-            spans=[
-                ft.TextSpan("Note: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                ft.TextSpan("A widget for all your ideas, themes, research, etc. Don't let the magic fade, save it here!", style=ft.TextStyle(size=16))
-            ],
-        ),
-        ft.Text(
-            spans=[
-                ft.TextSpan("Character: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                ft.TextSpan("A widget for all the characters in your story. Flesh out your characters physical look, personality, origin, arcs, etc!", style=ft.TextStyle(size=16))
-            ],
-        ),
-        ft.Text(
-            spans=[
-                ft.TextSpan("Plotline: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                ft.TextSpan("A widget for visualizing the progression of your story. Create multiple plotlines for arcs, sub arcs, plot points, or regression & multi-timeline stories. Connect events on your plotline to a map and watch your world change over time!", style=ft.TextStyle(size=16))
-            ],
-        ),
-        ft.Text(
-            spans=[
-                ft.TextSpan("Canvas Board: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                ft.TextSpan("A widget for planning out comic-based chapters for your story. Describe and sketch out your ideas for all you panels ahead of time. Connect them to an existing canvas in your story to see how progress is coming along!", style=ft.TextStyle(size=16))
-            ],
-        ),
-        ft.Text(
-            spans=[
-                ft.TextSpan("World: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                ft.TextSpan("A widget to describe your world(s) for your story. Plan out the lore, history, governments, factions, power systems, etc. You can create templates for your worlds, and connect them to existing maps!", style=ft.TextStyle(size=16))
-            ],
-        ),
-        ft.Text(
-            spans=[
-                ft.TextSpan("Map: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                ft.TextSpan("A widget to visualize locations in your story. Create a map for worlds, countries, cities, dungeons, etc. Connect locations on your map to other maps for a connected feel to your story!", style=ft.TextStyle(size=16))
-            ],
-        ),
-        ft.Text(
-            spans=[
-                ft.TextSpan("Item: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                ft.TextSpan("A widget for all items, weapons, armor, and MacGuffins in your story!", style=ft.TextStyle(size=16))
-            ],
-        ),
-        ft.Text(
-            spans=[
-                ft.TextSpan("Comic Preview: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                ft.TextSpan("A widget for comic-based stories for visualizing all your canvases (and external drawings you want to see), in a nice, scrollable vertical or horizontal format. See how your chapter comes together visually before you present it to the world!", style=ft.TextStyle(size=16))
-            ],
-        ),
-        ft.Text(
-            spans=[
-                ft.TextSpan("Chart: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                ft.TextSpan("A widget for visualizing power systems and other ideas in a chart format. Supports manipulation of bar and radar charts, with implicit animations!", style=ft.TextStyle(size=16))
-            ],
-        ),
-        ft.Text(
-            spans=[
-                ft.TextSpan("Charcter Connection Map: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                ft.TextSpan("A widget to visualize how your characters connect to each other within a story. See family trees, friends, enemies, guilds, etc.", style=ft.TextStyle(size=16))
-            ],
-        ),
-        
-    ], spacing=24, scroll=ft.ScrollMode.AUTO, alignment=ft.MainAxisAlignment.START, expand=True,),
-    bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, visible=False, expand=True, margin=ft.Margin.symmetric(vertical=10)
-    )
+    
 
     workspace = ft.Container(expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, padding=ft.Padding.only(right=10, bottom=10, top=10))
                 
-    
-
     return ft.View(
         route="/tutorial",
         controls=[
@@ -509,7 +433,6 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                     active_rail_divider,
                     #tutorial_story.workspace,
                     workspace,
-                    widget_descriptions
                 ], spacing=0, expand=True),
                 tutorial_tip_container, tutorial_arrow
             ], expand=True),

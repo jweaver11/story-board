@@ -76,12 +76,20 @@ class App:
 
         # Set the window size as maximized or not
         if app.settings.data.get('page_is_maximized', True):
-            page.window.maximized = app.settings.data.get('page_is_maximized', True)
+            page.window.maximized = True
         else:
-            page.window.width = app.settings.data.get('page_width')
-            page.window.height = app.settings.data.get('page_height')
-            page.window.left = app.settings.data.get('page_left')
-            page.window.top = app.settings.data.get('page_top')
+            width = app.settings.data.get('page_width')
+            height = app.settings.data.get('page_height')
+            left = app.settings.data.get('page_left')
+            top = app.settings.data.get('page_top')
+            if width is not None:
+                page.window.width = width
+            if height is not None:
+                page.window.height = height
+            if left is not None:
+                page.window.left = left
+            if top is not None:
+                page.window.top = top
 
 
         # Set our logic when page window is resized

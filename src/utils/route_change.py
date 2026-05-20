@@ -16,7 +16,6 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
 
     # Clear our views and any existing controls
     page.views.clear()
-
     
     match page.route:
         case "/":
@@ -43,18 +42,17 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
             page.update()
             return
         case _:
-            # Otherwise its a story route, so we need to find which one it is      
 
-            # Run through our stories and see which ones route matches our new route
+            # Otherwise its a story route, so we need to find which one it is      
             for story in app.stories.values():
                 # If it matches, set our new story 
                 if story.route == page.route:
                     new_story = story
                     app.settings.data['active_story'] = story.route
                     app.settings.story = story
-                    page.run_task(app.settings.save_dict)
+                    await app.settings.save_dict()
 
-                    if not new_story.is_initialized:
+                    if not new_story.is_initialized:    # Check if this story has not already been loaded before
                         new_story.startup()
                     app.settings.story = new_story  # Gives our settings widget the story reference it needs
                     page.views.append(new_story)

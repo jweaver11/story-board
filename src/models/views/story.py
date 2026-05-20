@@ -62,7 +62,7 @@ class Story(ft.View):
                 'bottom_pin_height': 200,
                 'created_at': str,
                 'last_modified': str,
-                #'connections': [],    # Connections between characters, places, items, etc. Since they are between multiple widgets, I stuck them here
+
                 'character_rail_sort_method': "Index",
                 'character_rail_sort_direction': "Ascending",
                 'world_building_rail_sort_method': "Index",
@@ -83,7 +83,6 @@ class Story(ft.View):
                         'is_expanded': True     # Whether this folder is expanded in the tree view
                     }
                 },            
-                'is_new_story': True,      # Whether this story is newly created or loaded from storage
 
             },
         )
@@ -128,24 +127,11 @@ class Story(ft.View):
     # Called from main when our program starts up. Needs a page reference, thats why not called here
     def startup(self):
 
-        # Stories have required structures as well, so we verify they exist or we will error out
-        # We also use this function to create most detailed structures from templates if newly created story
-        self.verify_story_structure()  
-
-        if self.data.get('is_new_story', True):
-            print("New story created:", self.title)
-            # Run logic here to initialize certain things
-
-
+        # Load our widgets
         self.load_widgets() 
 
         # Builds our view (menubar, rails, workspace) and adds it to the page
         self.build_view()
-
-        # After the story has been loaded, make sure this is no longer a new story
-        if self.data.get('is_new_story', True):
-            self.data['is_new_story'] = False 
-            self.p.run_task(self.save_dict)
 
         # Declare the story loaded for loading purposes
         self.is_initialized = True
@@ -190,27 +176,6 @@ class Story(ft.View):
         # Handle errors
         except Exception as e:
             print(f"Error changing data {key}:{value} for story {self.title}: {e}")
-            
-
-    # Called when a new story is created and not loaded with any data
-    def verify_story_structure(self):
-        ''' Creates our story folder structure inside of our stories directory '''
-
-        try:
-
-            # Sets our path to our story folder
-            directory_path = os.path.join(data_paths.stories_directory_path, self.route)
-
-            # Makes sure our content folder exists
-            folder_path = os.path.join(directory_path, "content")
-            os.makedirs(folder_path, exist_ok=True)     # Checks if they exist or not, so they won't be overwritten
-
-            # Save our data
-            self.p.run_task(self.save_dict)
-
-        # Handle errors
-        except Exception as e:
-            print(f"Error verifying/creating story structure for {self.title}: {e}")
 
     # Called when a new folder/category is created.
     def create_folder(self, directory_path: str, name: str):
@@ -343,7 +308,6 @@ class Story(ft.View):
     # Called on story startup to load all our content objects
     def load_widgets(self):
         ''' Loads our content from our content folder inside of our story folder '''
-
         from models.widgets.document import Document
         from models.widgets.note import Note
         from models.widgets.canvas import Canvas
@@ -362,8 +326,11 @@ class Story(ft.View):
         
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder
         if not os.path.exists(self.data['content_directory_path']):
-            os.makedirs(self.data['content_directory_path'])    
-            return
+            try:
+                os.makedirs(self.data['content_directory_path'])    
+            except Exception:
+                pass
+            return  # Since this didn't exist, there is no content
 
         # Loads all files inside the content directory and its sub folders
         for dirpath, dirnames, filenames in os.walk(self.data['content_directory_path']):
@@ -881,7 +848,6 @@ class Story(ft.View):
                 #active_rail_resizer,   # Divider between rail and work area
 
                 # Holds our active rail container and resizer
-                #ft.Container(width=6),
                 active_rail_stack,
                 
                 self.workspace,    # Work area for widgets
@@ -909,15 +875,14 @@ class Story(ft.View):
         self.close_menu_detector = ft.GestureDetector(
             expand=True, visible=False,
             on_tap_down=self.close_menu,
-            #on_secondary_tap=lambda _: self.open_menu()
             on_secondary_tap_down=self.close_menu,
         )
         
 
         # Overlay is a stack, so add the detector, then the menu container
-        self.p.overlay.append(self.close_menu_detector)
-        self.p.overlay.append(self.menu)
-        self.p.overlay.append(self.blocker)   # Add our blocker to the overlay as well, so it sits on top of everything when visible
+        page.overlay.append(self.close_menu_detector)
+        page.overlay.append(self.menu)
+        page.overlay.append(self.blocker)   # Add our blocker to the overlay as well, so it sits on top of everything when visible
 
         # Apply everything to the page
         page.update()

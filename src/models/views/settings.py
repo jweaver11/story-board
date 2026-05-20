@@ -57,7 +57,7 @@ class Settings(ft.View):
                 # Settings the app uses and users do not directly change in the settings view
                 'active_story': "/",    # Route to our active story
                 'workspaces_rail_is_collapsed': bool,  # If the all workspaces rail is collapsed or not
-                'active_rail_width': 225,  # Width of our active rail that we can resize
+                'active_rail_width': 250,  # Width of our active rail that we can resize
                 'page_is_maximized': True,   # If the window is maximized or not
                 'page_width': int,     # Last known page width
                 'page_height': int,    # Last known page height
@@ -267,6 +267,8 @@ class Settings(ft.View):
             self.data['page_is_maximized'] = False
             self.data['page_width'] = self.p.width
             self.data['page_height'] = self.p.height
+            self.data['page_left'] = self.p.window.left
+            self.data['page_top'] = self.p.window.top
             self.p.run_task(self.save_dict)
             return
 
