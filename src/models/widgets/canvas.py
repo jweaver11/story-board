@@ -701,7 +701,7 @@ class Canvas(Widget):
                 await canvas.capture(pixel_ratio)       # Upscale/downscale the capture based on size
                 cc = await canvas.get_capture()
                 captures_list.append(cc)         # Add the capture to the list
-                await canvas.clear_capture()     # Clear the capture to prevent bugs
+                await canvas.clear_capture()     # Clear the capture to prevent bugs 
 
         # Our exportable image bytes from merging all our layers captures together with any scaling needed
         merged_bytes = _merge_captures(captures_list, target_width, target_height)

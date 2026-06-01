@@ -45,7 +45,7 @@ class Location(MiniWidget):
                 'icon': icon,
                 'left': left, 
                 'top': top,
-                'color': "black",           # Color of the plot point on the map
+                'color': "white",           # Color of the plot point on the map
 
                 # Information for our information display
                 'Type': str,   # Type of location (city, town, dungeon, mountain, etc)

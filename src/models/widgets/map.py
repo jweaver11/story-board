@@ -199,7 +199,7 @@ class Map(Widget):
 
     async def _open_menu(self, e: ft.PointerEvent):
         
-        self.lock_position = True
+        self.lock_position = True 
         self.story.open_menu(self._get_menu_options())
 
     # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
@@ -287,7 +287,7 @@ class Map(Widget):
 
         # New (all dif types of locations), rename color
         return [
-             MenuOptionStyle(
+            MenuOptionStyle(
                 content=ft.SubmenuButton(
                     ft.Container(
                         ft.Row([

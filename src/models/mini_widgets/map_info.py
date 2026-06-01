@@ -53,7 +53,6 @@ class MapInformationDisplay(MiniWidget):
                 'left': 40,
                 'top': 40,
                 'alignment': None,
-                'drawing_mode': bool,            # Whether we are in drawing mode or not
                 'show_bg_map': True,                   # Whether to show the background map image or not
 
                 # Map info
@@ -83,31 +82,10 @@ class MapInformationDisplay(MiniWidget):
         except Exception as e:
             print(f"Error saving mini widget data to {self.title}: {e}")
 
+    
+    def _map_info_view(self) -> ft.Column:
 
-    # Called to toggle our drawing mode on/off
-    async def _toggle_drawing_mode(self, e=None):
-        ''' Toggles our drawing mode on/off '''
-
-        # Change our data value for drawing mode and save it
-        self.data['drawing_mode'] = not self.data.get('drawing_mode', False)
-        await self.save_dict()
-
-        e.control.icon = ft.Icons.DRAW_OUTLINED if self.data['drawing_mode'] else ft.Icons.LOCATION_SEARCHING_OUTLINED
-
-        # If we entered drawing mode, show our drawing canvas rail. Otherwise, go back to the previous rail
-        if self.data.get('drawing_mode', False):
-            #self.widget.story.workspaces_rail.change_workspace(None, self.widget.story, force_rail="canvas")
-            self.widget.canvas.content.mouse_cursor = ft.MouseCursor.PRECISE
-        else:
-            self.widget.canvas.content.mouse_cursor = None
-        self.widget.canvas.content.update()
-
-        self.reload_mini_widget() 
-
-
-    def _drawing_mode_view(self) -> ft.Column:
-        # TODO: 
-        # Match canvas info mini widget
+        # TODO: Add export button functionality, show locations type / description
 
         async def _toggle_show_bg_map(e=None):
             self.data['show_bg_map'] = e.control.value
@@ -115,34 +93,13 @@ class MapInformationDisplay(MiniWidget):
             self.widget.reload_widget()  # Reload our widget to update the background image visibility
         
         
-        # Create our header
-        drawing_buttons = ft.Row([
-            
-            # Undo and redo buttons
-            ft.PopupMenuButton(
-                icon=ft.Icons.IMAGE_ASPECT_RATIO_OUTLINED, tooltip="Set the background of your canvas. If one is set, it will be exported with the canvas",
-                menu_padding=ft.Padding.all(0), 
-                #on_cancel=self._set_color,
-                items=[
-                    #ft.PopupMenuItem("None", on_click=self._set_canvas_background, tooltip="No background"),
-                    #ft.PopupMenuItem("Color", on_click=self._set_canvas_background, tooltip="Set a solid color background"),
-                    #ft.PopupMenuItem("Image", on_click=self._set_canvas_background, tooltip="Set an image as the background"),
-                ]
-            ),
-           
-            # Button to hide markers
-        ])
-        return ft.Column([
-            drawing_buttons,
-            ft.Switch(
-                True, "Show Map Background",
-                label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
-                value=self.data.get('show_bg_map', True), on_change=_toggle_show_bg_map,
-                tooltip="Whether to use the background image for the map or not",
-            ),
-        ], expand=True, scroll="auto", spacing=0)
-    
-    def _map_info_view(self) -> ft.Column:
+        
+        show_map_bg_switch = ft.Switch(
+            True, "Show Map Background",
+            label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
+            value=self.data.get('show_bg_map', True), on_change=_toggle_show_bg_map,
+            tooltip="Whether to use the background image for the map or not",
+        )
 
         def _get_locations() -> list[ft.Control]:
             controls = []
@@ -184,16 +141,42 @@ class MapInformationDisplay(MiniWidget):
             capitalization=ft.TextCapitalization.SENTENCES,
             on_blur=lambda e: self.change_data(**{'History': e.control.value}),   # When we click out of the text field, we save our changes
         )
+
+        notes_label = ft.Row([
+            ft.Container(width=6),
+            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None), selectable=True),
+            ft.IconButton(
+                ft.Icons.NEW_LABEL_OUTLINED, self.widget.data.get('color', "primary"), tooltip="Add Note",
+                on_click=self._new_note_clicked,
+                mouse_cursor="click"
+            )
+        ], spacing=0)
+
+        export_button = ft.TextButton(
+            "Export", ft.Icons.FILE_DOWNLOAD_OUTLINED, tooltip="Export canvas as image",
+            #on_click=self.widget.export_canvas_clicked, 
+            style=ft.ButtonStyle(mouse_cursor="click")
+        )
+
+        notes_column = self._build_notes_column()
+
         return ft.Column([
-                ft.Container(description_tf, margin=ft.Margin.only(right=10)),
-                ft.Container(lore_tf, margin=ft.Margin.only(right=10)),
-                ft.Container(history_tf, margin=ft.Margin.only(right=10)),
-                ft.Divider(2, 2),
-                
-                ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None),),
+            #show_map_bg_switch,
+            ft.Container(description_tf, margin=ft.Margin.only(right=10)),
+            ft.Container(lore_tf, margin=ft.Margin.only(right=10)),
+            ft.Container(history_tf, margin=ft.Margin.only(right=10)),
+            ft.Row([export_button, show_map_bg_switch]),
+            
+            ft.Divider(2, 2),
+            
+            ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None),),
                     
             ] 
-            + _get_locations()
+            + _get_locations() + [
+                notes_label,
+                ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
+                # Notes
+            ]
             
             
         , expand=True, scroll="auto", spacing=10)
@@ -204,27 +187,19 @@ class MapInformationDisplay(MiniWidget):
     def reload_mini_widget(self):
 
         title_control = ft.Row([
-            #ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
-            ft.IconButton(
-                ft.Icons.DRAW_OUTLINED if self.data.get('drawing_mode') else ft.Icons.LOCATION_SEARCHING_OUTLINED,
-                self.widget.data.get('color', None), mouse_cursor=ft.MouseCursor.CLICK,
-                tooltip="Enter Drawing Mode" if not self.data.get('drawing_mode') else "Exit Drawing Mode",
-                on_click=self._toggle_drawing_mode,
-            ),
+           
      
             ft.Text(
                 f"{self.widget.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
-                color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
+                color=self.widget.data.get('color', None), weight=ft.FontWeight.BOLD, 
             ),
                 
             ft.IconButton(
                 ft.Icons.UNDO, self.widget.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
-                visible=self.data.get('drawing_mode', False) # Only show in drawing mode
                 #on_click=self.undo, #disabled=True if len(self.widget.state.undo_list) == 0 else False
             ),
             ft.IconButton(
                 ft.Icons.REDO_OUTLINED, self.widget.data.get('color', None), tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
-                visible=self.data.get('drawing_mode', False) # Only show in drawing mode
                 #on_click=self.redo, #disabled=True if len(self.widget.state.redo_list) == 0 else False
             ),
             ft.Container(expand=True),
@@ -245,10 +220,8 @@ class MapInformationDisplay(MiniWidget):
         )
 
 
-        if self.data.get('drawing_mode', False):
-            content.controls.append(self._drawing_mode_view())
-        else:
-            content.controls.append(self._map_info_view())
+       
+        content.controls.append(self._map_info_view())
 
         
         

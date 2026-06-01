@@ -20,7 +20,6 @@ async def main(page: ft.Page):
      
     # Load settings and previous story (if one exists)
     app.load_settings(page) 
-
     page.on_route_change = route_change 
  
     # Either welcome to storyboard view, or our loading view
@@ -53,7 +52,7 @@ async def main(page: ft.Page):
         page.update()
  
         # If a previous story was loaded, we load its route/view here
-        await app.load_previous_story(page)       
+        await app.load_previous_story(page)     
  
     # Set our route change function to be called on route changes
     
@@ -64,6 +63,7 @@ async def main(page: ft.Page):
     if page.route == "/":
         page.views.append(create_home_view(page))   # Simple view so we just use a function, not a class
         page.update()
+
 
 # Runs the app
 ft.run(main)

@@ -216,8 +216,8 @@ class Settings(ft.View):
         ''' Called when the page is closed. Saves any last changes to settings before exit '''
 
         # Temp
-        self.data['is_first_launch'] = True
-        await self.save_dict()
+        #self.data['is_first_launch'] = True
+        #await self.save_dict()
 
         if self.story is not None:
             for widget in self.story.widgets:

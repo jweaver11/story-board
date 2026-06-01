@@ -615,7 +615,7 @@ class CanvasInformationDisplay(MiniWidget):
        
         
 
-        title_control = ft.Row([
+        title_control = ft.Row([ 
             #ft.Icon(ft.Icons.BRUSH, self.widget.data.get('color', None)),
      
             ft.Text(

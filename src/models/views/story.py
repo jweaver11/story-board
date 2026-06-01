@@ -320,6 +320,7 @@ class Story(ft.View):
         from models.widgets.item import Item
         from models.widgets.chart import Chart
         from models.widgets.comic_preview import ComicPreview
+        from models.widgets.plot_chart import PlotChart
 
         # If we are being re-loaded after settings or another story, clear our content so we can load it fresh
         self.widgets.clear()
@@ -447,6 +448,15 @@ class Story(ft.View):
                                 )
                             case "comic_preview":
                                 widget = ComicPreview(
+                                    title=widget_data.get('title', 'Untitled Document'),
+                                    page=self.p,
+                                    directory_path=dir_path,
+                                    story=self,
+                                    data=widget_data,
+                                )
+
+                            case "plot_chart":
+                                widget = PlotChart(
                                     title=widget_data.get('title', 'Untitled Document'),
                                     page=self.p,
                                     directory_path=dir_path,

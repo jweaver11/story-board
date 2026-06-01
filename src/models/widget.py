@@ -799,6 +799,7 @@ class Widget(ft.Container):
             case "item": self.icon.icon = ft.Icons.STAR_OUTLINE_ROUNDED
             case "chart": self.icon.icon = ft.Icons.INSERT_CHART_OUTLINED
             case "comic_preview": self.icon.icon = ft.Icons.SLIDESHOW_OUTLINED
+            case "plot_chart": self.icon.icon = ft.Icons.ACCOUNT_TREE_OUTLINED
 
         # Set our color and text if title changed
         self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
