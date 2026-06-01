@@ -97,6 +97,12 @@ class ContentRail(Rail):
                         tooltip="New Items and Equipment for your story"
                     ),  
                     ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Plot Chart", 
+                        data="plot_chart", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        tooltip="New Items and Equipment for your story", disabled=True
+                    ),  
+                    ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, ft.Colors.PRIMARY), content="Comic Preview", 
                         data="comic_preview", on_click=self.new_item_clicked, close_on_click=True,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
@@ -221,6 +227,12 @@ class ContentRail(Rail):
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
                             tooltip="New Items and Equipment for your story"
                         ),  
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Plot Chart", 
+                            data="plot_chart", on_click=self.new_item_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                            tooltip="New Items and Equipment for your story", disabled=True
+                        ), 
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, ft.Colors.PRIMARY), content="Comic Preview", 
                             data="comic_preview", on_click=self.new_item_clicked, close_on_click=True,

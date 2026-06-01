@@ -157,7 +157,6 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                 tutorial_tip_container.top = (page.height - 90) / 2 - 160
                 tutorial_arrow.left = 410
                 tutorial_tip_container.left = 410
-                #tutorial_arrow.icon = ft.Icons.ARROW_OUTWARD
                 tutorial_arrow.visible = True
                 tutorial_tip.spans = None
                 tutorial_tip.value = "We have created one widget of each type to show what they look like on the rail.\n\nNext we'll go through each widget. Feel free to interact with them, but know your work won't be saved."

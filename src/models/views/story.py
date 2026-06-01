@@ -484,6 +484,7 @@ class Story(ft.View):
         from models.widgets.world import World
         from models.widgets.chart import Chart
         from models.widgets.comic_preview import ComicPreview
+        from models.widgets.plot_chart import PlotChart
         from models.app import app
 
         if not self.blocker.visible:
@@ -525,6 +526,8 @@ class Story(ft.View):
                 widget = Chart(title, self.p, directory_path, self, data, type=chart_type)
             case "comic_preview":
                 widget = ComicPreview(title, self.p, directory_path, self, data)
+            case "plot_chart":
+                widget = PlotChart(title, self.p, directory_path, self, data)
             case _:
                 self.p.show_dialog(SnackBar(f"Error creating widget {title}: Invalid tag {tag}"))
         
@@ -566,6 +569,7 @@ class Story(ft.View):
         from models.widgets.item import Item
         from models.widgets.chart import Chart
         from models.widgets.comic_preview import ComicPreview
+        from models.widgets.plot_chart import PlotChart
         from models.mini_widgets.plotline_arc import Arc
         from models.mini_widgets.plotline_plot_point import PlotPoint
 
@@ -683,6 +687,16 @@ class Story(ft.View):
                 )
             case "comic_preview":
                 new_widget = ComicPreview(
+                    title=widget.data.get('title', 'Untitled Document'),
+                    page=self.p,
+                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=widget.data,
+                    is_rebuilt=True
+                )
+
+            case "plot_chart":
+                new_widget = PlotChart(
                     title=widget.data.get('title', 'Untitled Document'),
                     page=self.p,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
