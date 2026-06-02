@@ -9,7 +9,7 @@ from models.app import app
 from utils.safe_string_checker import return_safe_name
 from styles.text_field import TextField
 import flet.canvas as cv
-    
+from styles.snack_bar import SnackBar
 
 class PlotChart(Widget):
 
@@ -45,10 +45,10 @@ class PlotChart(Widget):
 
                 'description': str,
                 'nodes': [  # List of all our Nodes/events
-                    {'label': "", 'description': "", 'position': (100, 100), 'color': '#FFFFFF'}
+                    #{'label': "", 'description': "", 'position': (100, 100), 'color': '#FFFFFF'}
                 ], 
-                'edges': [    # List of all our Connections between nodes
-                    {'source': "", 'target': "", 'color': '#FFFFFF'}
+                'edges': [    # List of all our Links/Connections between nodes
+                    #{'source': "", 'target': "", 'color': '#FFFFFF'}
                 ] 
             },
         )
@@ -74,23 +74,16 @@ class PlotChart(Widget):
             self.widget = widget
             self.description = description
 
-            #self.w, self.h = 150, 100
-
             super().__init__(
                 left=position[0],
                 top=position[1],
                 width=150, 
-                #height=100,
-                mouse_cursor=ft.MouseCursor.MOVE,
-                drag_interval=50,
+                offset=ft.Offset(0, -0.8),
                 animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-                on_pan_update=self.move_node,
-                on_pan_end=self.save_position,
                 on_secondary_tap=self.open_menu,
                 on_hover=self.widget._set_coords,
                 
             )
-            #ft.GestureDetector()
 
         # Moves the node on the stack and updates the drawing that connects the edges
         async def move_node(self, e: ft.DragUpdateEvent):
@@ -110,7 +103,14 @@ class PlotChart(Widget):
                     node['position'] = (self.left, self.top)
                     break
 
+            for edge in self.widget.data.get('edges', []):
+                if edge['source'] == self.label:
+                    edge['start_position'] = (self.left, self.top)
+                elif edge['target'] == self.label:
+                    edge['end_position'] = (self.left, self.top)
+
             await self.widget.save_dict()
+            self.widget.reload_widget()   # Reload to update the new edge positions
 
         # Opens a menu with our options when right clicking a node
         async def open_menu(self, e: ft.PointerEvent):
@@ -168,28 +168,131 @@ class PlotChart(Widget):
                 #self.w = e.width
                 #self.h = e.height
 
+            async def _highlight_node(e: ft.PointerEvent):
+                e.control.content.content.shadow = ft.BoxShadow(0, 4, ft.Colors.ON_SURFACE_VARIANT)
+                e.control.content.update()
+            async def _stop_highlight_node(e: ft.PointerEvent):
+                e.control.content.content.shadow = None
+                e.control.content.update()
+
+            # Creates our new edge (link) between nodes
+            async def _create_new_edge(e: ft.DragTargetEvent):
+                await _stop_highlight_node(e)   # Stops the highlight
+                draggable = e.page.get_control(e.src_id)
+                source = draggable.data.get('label')
+                target = e.control.data.get('label')
+                source_side = draggable.data.get('side')
+                target_side = e.control.data.get('side')
+                if source == target:    # Don't allow connections to self
+                    self.page.show_dialog(SnackBar("Cannot connct a node to itself."))
+                    return  
+                elif source_side == target_side:   # Don't allow connections from the same side of the node
+                    self.page.show_dialog(SnackBar("Cannot connect from the same side of the node."))
+                    return
+                
+                # Grab our positions so we can draw the link between them
+                #start_x = self.widget.story.mouse_x
+                #start_y = self.widget.story.mouse_y
+                #start_position = draggable.data.get('position', (0, 0))
+                end_x = e.x
+                end_y = e.y
+
+                for node in self.widget.data.get('nodes', []):
+                    if node['label'] == source:
+                        start_position = node['position']
+                    elif node['label'] == target:
+                        end_position = node['position']
+
+                # Save to data
+                self.widget.data['edges'].append({
+                    'source': source,
+                    'target': target,
+                    'color': "#FFFFFF",
+                    'start_position': start_position,  
+                    'end_position': end_position
+                })
+                await self.widget.save_dict()
+                self.widget.reload_widget()   # Reload to show the new edge
+
             self.content = ft.Container(
                 ft.Column([
-                    ft.Text(self.label),
+                    ft.GestureDetector(
+                        ft.Row([ft.Text(self.label, expand=True, overflow=ft.TextOverflow.ELLIPSIS, text_align=ft.TextAlign.CENTER)], alignment=ft.MainAxisAlignment.CENTER),
+                        on_pan_update=self.move_node,
+                        on_pan_end=self.save_position,
+                        mouse_cursor=ft.MouseCursor.MOVE,
+                        drag_interval=50,
+                    ),
                     ft.Divider(2, 2),
                     ft.Text(self.description, italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
                     ft.Row([
-                        ft.Icon(
-                        ft.Icons.CIRCLE_OUTLINED, scale=0.8), ft.Icon(ft.Icons.CIRCLE_OUTLINED, scale=0.8)
+                        ft.DragTarget(
+                            ft.Draggable(
+                                ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED), shape=ft.BoxShape.CIRCLE), 
+                                "edges", content_feedback=None, data={'label': self.label, 'side': "left"},
+                                #on_drag_start=_get_start_coords
+                            ), 
+                            "edges",
+                            on_accept=_create_new_edge,
+                            on_will_accept=_highlight_node,
+                            on_leave=_stop_highlight_node,
+                            data={'label': self.label, 'side': "left"}
+                        ),
+                        ft.DragTarget(
+                            ft.Draggable(
+                                ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED), shape=ft.BoxShape.CIRCLE), 
+                                "edges", content_feedback=None, data={'label': self.label, 'side': "right"},
+                                #on_drag_start=_get_start_coords
+                            ),
+                            "edges",
+                            on_accept=_create_new_edge,
+                            on_will_accept=_highlight_node,
+                            on_leave=_stop_highlight_node,
+                            data={'label': self.label, 'side': "right"}
+                        ),
                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
-                expand=True, shadow=ft.BoxShadow(0, 2),
+                expand=True, shadow=ft.BoxShadow(1, 1),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 border_radius=8, padding=ft.Padding.all(8),
                 alignment=ft.Alignment.TOP_CENTER,
-                on_size_change=_size_change,
+                #on_size_change=_size_change,
             )
                 
         
 
-    class Edge:
-        # End points (connectors on each node), color
-        pass
+    class Edge(cv.Path):
+        def __init__(self, start_position=(0, 0), end_position=(0, 0), color="#FFFFFF"):
+
+            curve_offset: int = (end_position[0] - start_position[0]) / 10
+
+            if end_position[1] < start_position[1]:   # If going up, flip the curve offset to make it curve the other way
+                curve_offset = -curve_offset
+
+            # TODO: Nodes going top -> down work correctly, down -> up do not
+
+            super().__init__(
+                [
+                    cv.Path.MoveTo(start_position[0], start_position[1]),
+                    cv.Path.QuadraticTo(
+                        x=(start_position[0] + end_position[0]) / 2, 
+                        y=(start_position[1] + end_position[1]) / 2,
+                        cp1x=(start_position[0] + end_position[0]) / 2 - curve_offset, 
+                        cp1y=(start_position[1] + end_position[1]) / 2 - curve_offset,
+                        w=2
+                    ),
+                    cv.Path.QuadraticTo(
+                        x=end_position[0], 
+                        y=end_position[1],
+                        cp1x=(start_position[0] + end_position[0]) / 2 + curve_offset, 
+                        cp1y=(start_position[1] + end_position[1]) / 2 + curve_offset,
+                        w=2
+                    ),
+                    
+                    
+                ],
+                ft.Paint(color, stroke_width=3, style="stroke")
+            )
 
         
     async def _open_menu(self, e: ft.PointerEvent):
@@ -205,20 +308,21 @@ class PlotChart(Widget):
 
     
         #TODO: Show nodes and edges in info
-        # Right click to add edges as well
         # Add minimap
+        # Make curved Links not go up/down like they do, and top out at a gradual bend
+        # Update the paths in real time as we move for visual feedback
 
         async def _add_node(e: None):
             async def _create_node(e=None):
 
                 title = node_title.value if node_title.value else "Node"
-                self.data['nodes'].append({'label': title, 'position': self.new_node_position, 'color': '#FFFFFF'})
+                self.data['nodes'].append({'label': title, 'position': self.new_node_position, 'color': '#FFFFFF', 'description': ""})
                 await self.save_dict()
                 self.reload_widget()
                 self.p.pop_dialog()
                 self.new_node_position = (100, 100)
 
-            node_title = TextField(hint_text="Node Label", capitalization=ft.TextCapitalization.SENTENCES, autofocus=True)
+            node_title = TextField(hint_text="Node Label", capitalization=ft.TextCapitalization.SENTENCES, autofocus=True, on_submit=_create_node)
 
             self.p.show_dialog(
                 ft.AlertDialog(
@@ -233,36 +337,45 @@ class PlotChart(Widget):
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
+
+        
         
         # Draws the link between edges, and allows us to create more options
-        link_canvas = cv.Canvas(
+        edge_canvas = cv.Canvas(
+            [],  
             content=ft.GestureDetector(
-                mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('map_data', {}).get('drawing_mode') else None, 
                 expand=True,
-
                 on_secondary_tap=self._open_menu,
-                on_hover=self._get_coords,
+                #on_hover=_set_canvas_coords,
                 #on_tap=self._show_info_display,
                 #on_tap=lambda e: self.story.open_menu(self._get_menu_options()),
-                drag_interval=20, hover_interval=20,
+                hover_interval=20,
             ),
             expand=True
         )
 
+        node_stack = ft.Stack([edge_canvas], expand=True)
+            
         
-
-        stack = ft.Stack([
-            link_canvas,
-        ], expand=3)
-
+        # Add our nodes and edges to the stack/canvas
         for node in self.data.get('nodes', []):
-            stack.controls.append(self.Node(self, label=node['label'], position=node['position'], color=node['color']))
+            node_stack.controls.append(self.Node(self, label=node['label'], position=node['position'], color=node['color']))
 
+        # Go through and draw our edges on the canvas
         for edge in self.data.get('edges', []):
-            pass
-            # TODO: Draw edges using curves on canvas from and too
 
-        
+            # Calculate offsets needed to hit the circles at bottom of nodes
+            if edge.get('start_position', (0, 0))[0] <= (edge.get('end_position', (0, 0)))[0]:
+                start_position = (edge.get('start_position', (0, 0))[0] + 150, edge.get('start_position', (0, 0))[1])
+            else:
+                start_position = edge.get('start_position', (0, 0))
+            if edge.get('end_position', (0, 0))[0] <= (edge.get('start_position', (0, 0)))[0]:
+                end_position = (edge.get('end_position', (0, 0))[0] + 150, edge.get('end_position', (0, 0))[1])
+            else:
+                end_position = edge.get('end_position', (0, 0))
+            
+            # Add the edge
+            edge_canvas.shapes.append(self.Edge(start_position, end_position, edge.get('color', "#FFFFFF")))
 
         info = ft.Container(
             ft.Column([
@@ -285,9 +398,15 @@ class PlotChart(Widget):
             bgcolor=ft.Colors.SURFACE_CONTAINER,
             expand=1
         )
+        iv = ft.InteractiveViewer(
+            content=node_stack, 
+            expand=3,
+            scale_factor=500, #boundary_margin=50,
+            min_scale=0.5, max_scale=3.0,
+        )
 
         # Assign the body_container content as whatever view you have built in the widget
-        self.body_container.content = ft.Row([stack, info], expand=True, spacing=0)
+        self.body_container.content = ft.Row([iv, info], expand=True, spacing=0)
         
         # Build in widget function that will handle loading our mini widgets and rendering the whole thing
         self._render_widget()
