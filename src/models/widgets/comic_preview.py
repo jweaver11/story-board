@@ -392,9 +392,9 @@ class ComicPreview(Widget):
                 ft.ReorderableDragHandle(
                     ft.Row([
                         ft.Image(snapshot.get('image', ""), ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, width=50, height=50),
-                        ft.Text(snapshot.get('title', "Untitled"), weight=ft.FontWeight.BOLD),
+                        ft.Text(snapshot.get('title', "Untitled"), weight=ft.FontWeight.BOLD, expand=True, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                         
-                        ft.Container(expand=True, height=50),
+                        #ft.Container(width=1, height=50),
                         ft.IconButton(
                             ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, on_click=_remove_snapshot, 
                             mouse_cursor=ft.MouseCursor.CLICK, data=idx,

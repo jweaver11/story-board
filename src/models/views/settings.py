@@ -1449,7 +1449,11 @@ class Settings(ft.View):
                 ) 
             ]),
              ft.Row([
-                ft.Text(f"Resources about Story Board!", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
+                #ft.Text(f"Resources about Story Board!", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Container(
+                    ft.Text("Click here to Run Tutorial\t", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500), 
+                    on_click=_run_tutorial,
+                ),
                 ft.Text("Join our", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Text(
                     "Discord", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM,
@@ -1457,10 +1461,7 @@ class Settings(ft.View):
                 ),
                 ft.Text("to be part of our community and see upcoming features!", theme_style=ft.TextThemeStyle.BODY_MEDIUM,),
             ], spacing=8), # Link
-            ft.Container(
-                ft.Text("Click here to Run Tutorial", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM,), 
-                on_click=_run_tutorial,
-            ),
+            
             
 
             #ft.Container(height=10),    # Spacer

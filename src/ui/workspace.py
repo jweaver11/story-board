@@ -27,6 +27,7 @@ class Workspace(ft.Container):
             alignment=ft.Alignment.CENTER,
             padding=ft.Padding.only(top=10, bottom=10, left=2, right=10),
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            
         )
 
         self.p = page
@@ -245,9 +246,89 @@ class Workspace(ft.Container):
             self.story.blocker.update()
 
 
+    def arrange_widgets(self):
+        self.main_pin.clear()
+        sorted_widgets = sorted(self.story.widgets, key=lambda w: w.data.get('index', 0))
+        for w in sorted_widgets:
+            if w.data.get('visible', False):
+                self.main_pin.append(self.story.rebuild_widget(w))
+    
+
+    def reload_workspace(self):
+
+        self.arrange_widgets()
+
+        # If we're empty, skip all logic
+        if len(self.main_pin) <= 0:
+            self.content = None
+            try:
+                self.update()
+            except Exception:
+                pass
+            return
+
+        # Sets our new index when switching tabs
+        async def tab_change(e: ft.Event):
+            from models.widgets.canvas import Canvas
+
+            self.story.data['main_pin_selected_idx'] = e.data
+            await self.story.save_dict()
+
+            for idx, w in enumerate(self.main_pin):
+                if idx == e.data:
+                    tabs.content.controls[0].indicator_color = w.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
+                    tabs.content.controls[0].update()  
+
+                # Make it so canvases don't redraw unneccesarily when switching tabs
+                if isinstance(w, Canvas):
+                    w.skip_first_resize = True
+
+        # Tabs that hold our workspace
+        tabs = ft.Tabs(
+            expand=True, length=len(self.main_pin),
+            selected_index=int(self.story.data.get('main_pin_selected_idx', 0)),
+            on_change=tab_change,
+            animation_duration=100,
+            content=ft.Column([
+                ft.TabBar(
+                    tabs=[widget.tab for widget in self.main_pin], scrollable=True, indicator_color=ft.Colors.ON_SURFACE_VARIANT
+                ), 
+                ft.TabBarView(
+                    controls=[widget.master_stack for widget in self.main_pin],
+                    expand=True
+                )
+            ], expand=True, spacing=0),
+        )   
+
+        # If our selected index is out of range, set it to most recent tab
+        if int(self.story.data.get('main_pin_selected_idx', 0)) >= len(self.main_pin):
+            self.story.data['main_pin_selected_idx'] = -1
+            tabs.selected_index = -1
+            self.p.run_task(self.story.save_dict)
+
+        # Set the divider color to match active tab
+        for widget in self.main_pin:
+            if widget.data.get('index', -1) == self.story.data.get('main_pin_selected_idx', 0):
+                tabs.content.controls[0].indicator_color = widget.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
+                break
+
+        # Set our tabs as the content
+        self.content = ft.Container(
+            expand=True, border_radius=ft.BorderRadius.all(8),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            margin=ft.Margin.all(0),
+            content=tabs
+        )
+
+        try:
+            self.update()
+        except Exception:
+            pass
+
+
 
     # Called when we drag a widget from one pin location to another
-    def arrange_widgets(self):
+    def arrange_widgets_old(self):
         ''' Arranges our widgets to their correct pin locations after a change is made to their pin location.
         Also adds widgets to their correct pin locations if they are missing from any pin location '''
 
@@ -277,23 +358,18 @@ class Workspace(ft.Container):
                 pin_location = widget.data.get('pin_location', "")
 
                 match pin_location:
-
                     case "top":
                         self.top_pin.controls.append(widget)
                         continue
-
                     case "left":
                         self.left_pin.controls.append(widget)
                         continue
-
                     case "right":
                         self.right_pin.controls.append(widget)
                         continue
-
                     case "bottom":
                         self.bottom_pin.controls.append(widget)
                         continue
-
                     case "main":
                         self.main_pin.append(widget)
                         continue
@@ -332,9 +408,8 @@ class Workspace(ft.Container):
                 stolen_widget.data['pin_location'] = "main"
                 self.p.run_task(stolen_widget.save_dict)
 
-
     # Called when we need to reload our workspace content, especially after pin drags
-    def reload_workspace(self):
+    def reload_workspace_old(self):
         ''' Reloads our workspace content by clearing and re-adding our 5 pin locations to the master row '''
 
         # Make sure our widgets are arranged correctly

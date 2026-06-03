@@ -148,9 +148,7 @@ class Widget(ft.Container):
             ft.Row([self.icon, tab_text, hide_tab_icon_button]),
             mouse_cursor=ft.MouseCursor.CLICK,
             hover_interval=100,
-            #on_enter=self._set_coords,
             on_hover=self._set_coords,
-            #on_exit=self._exit_tab,
             on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
         )
 
@@ -499,6 +497,7 @@ class Widget(ft.Container):
         # Fix the selected index to focus this widget's tab if it's in the main pin
         if self.data.get('pin_location', '') == "main":
             self.story.data['main_pin_selected_idx'] = len(self.story.workspace.main_pin)
+            self.data['index'] = self.story.data['main_pin_selected_idx']
             await self.story.save_dict()
 
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
