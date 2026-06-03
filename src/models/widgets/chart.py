@@ -54,7 +54,7 @@ class Chart(Widget):
                 'color': app.settings.data.get('default_chart_color'),
                 'pin_location': app.settings.data.get('default_chart_pin_location', "right") if data is None else data.get('pin_location', "right"),   # Default pin location for items
                 'type': type,             # How our chart is being displayed (bar or radar)
-                'Description': str,
+                'description': str,
 
                 'show_info': True,   # Whether to show the info column on the side of our charts or not.
 
