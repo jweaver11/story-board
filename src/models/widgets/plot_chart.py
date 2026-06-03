@@ -55,6 +55,12 @@ class PlotChart(Widget):
         #self.body_container.padding = ft.Padding.only(left=16, bottom=16)
 
         self.new_node_position = (100, 100)
+
+        # State trackers
+        self.source_node: str = None        # Tracks which node we are dragging from when creating a new edge
+        self.target_node: str = None        # Tracks which node we are dragging to when creating a new edge
+        self.source_side: str = None      # Determines which sides of the nodes we start dragging from
+        self.target_side: str = None       # Determines which sides of the nodes we end dragging on
         
 
         # Saving creates the file if we're new
@@ -163,56 +169,125 @@ class PlotChart(Widget):
             self.widget.story.open_menu(menu_options)
 
         def build(self):
-            async def _size_change(e):
-                pass
-                #self.w = e.width
-                #self.h = e.height
+            
 
             async def _highlight_node(e: ft.PointerEvent):
-                e.control.content.content.shadow = ft.BoxShadow(0, 4, ft.Colors.ON_SURFACE_VARIANT)
-                e.control.content.update()
+                # If we are dragging, update our target as this node side
+                if self.widget.source_node:   # Only highlight if we're dragging from another node
+                    self.widget.target_node = e.control.data.get('label')
+                    self.widget.target_side = e.control.data.get('side')
+
+                # Visual highlight
+                e.control.content.shadow = ft.BoxShadow(0, 4, ft.Colors.ON_SURFACE_VARIANT)
+                e.control.update()
             async def _stop_highlight_node(e: ft.PointerEvent):
-                e.control.content.content.shadow = None
-                e.control.content.update()
+                # Reset state trackers
+                self.widget.target_node = None
+                self.widget.target_side = None
+                # Highlight reset
+                e.control.content.shadow = None
+                e.control.update()
 
             # Creates our new edge (link) between nodes
-            async def _create_new_edge(e: ft.DragTargetEvent):
-                await _stop_highlight_node(e)   # Stops the highlight
-                draggable = e.page.get_control(e.src_id)
-                source = draggable.data.get('label')
-                target = e.control.data.get('label')
-                source_side = draggable.data.get('side')
-                target_side = e.control.data.get('side')
-                if source == target:    # Don't allow connections to self
-                    self.page.show_dialog(SnackBar("Cannot connct a node to itself."))
+            async def _create_new_edge(e: ft.PointerEvent):
+                
+                # Remove our visual feedback
+                self.page.overlay.pop()
+                self.page.update()
+
+                # If its an incomplete edge (we didn't end on another node), reset and exit
+                if not self.widget.source_node or not self.widget.target_node:
+                    self.widget.source_node = None
+                    self.widget.target_node = None
+                    self.widget.source_side = None
+                    self.widget.target_side = None
+                    await _stop_highlight_node(e)   # Stops the highlight
                     return  
-                elif source_side == target_side:   # Don't allow connections from the same side of the node
+                
+                # Don't allow connections from the same side of the node, as that wouldnt make sense
+                elif self.widget.source_side == self.widget.target_side:   
+                    self.widget.source_node = None
+                    self.widget.target_node = None
+                    self.widget.source_side = None
+                    self.widget.target_side = None
+                    await _stop_highlight_node(e)   # Stops the highlight
                     self.page.show_dialog(SnackBar("Cannot connect from the same side of the node."))
                     return
                 
-                # Grab our positions so we can draw the link between them
-                #start_x = self.widget.story.mouse_x
-                #start_y = self.widget.story.mouse_y
-                #start_position = draggable.data.get('position', (0, 0))
-                end_x = e.x
-                end_y = e.y
-
+                # Don't allow connections to self
+                if self.widget.source_node == self.widget.target_node:    # Don't allow connections to self
+                    self.page.show_dialog(SnackBar("Cannot connct a node to itself."))
+                    return  
+                
+                # If the edge already exists, delete it
+                for edge in self.widget.data.get('edges', []):
+                    if (edge['source'] == self.widget.source_node and edge['target'] == self.widget.target_node) or (edge['source'] == self.widget.target_node and edge['target'] == self.widget.source_node):
+                        self.widget.data['edges'].remove(edge)
+                        await self.widget.save_dict()
+                        # Reset state trackers
+                        self.widget.source_node = None
+                        self.widget.target_node = None
+                        self.widget.source_side = None
+                        self.widget.target_side = None
+                        # Reload
+                        self.widget.reload_widget()  
+                        return  
+                
+                # Otherwise we're creating it, so grab the positions for the new edge
                 for node in self.widget.data.get('nodes', []):
-                    if node['label'] == source:
+                    if node['label'] == self.widget.source_node:
                         start_position = node['position']
-                    elif node['label'] == target:
+                    elif node['label'] == self.widget.target_node:
                         end_position = node['position']
 
-                # Save to data
+                # Save new edget to data with source, target, start, end, and default color
                 self.widget.data['edges'].append({
-                    'source': source,
-                    'target': target,
+                    'source': self.widget.source_node,
+                    'target': self.widget.target_node,
                     'color': "#FFFFFF",
                     'start_position': start_position,  
                     'end_position': end_position
                 })
                 await self.widget.save_dict()
+
+                # Reset state trackers
+                self.widget.source_node = None
+                self.widget.target_node = None
+                self.widget.source_side = None
+                self.widget.target_side = None
+
+                # Re-render page to show new edge
+                await _stop_highlight_node(e)   # Stops the highlight
                 self.widget.reload_widget()   # Reload to show the new edge
+                
+
+            # Update our state trackers for new edges and show visual feedback
+            async def start_new_edge(e: ft.PointerEvent):
+                
+                self.widget.source_node = e.control.data.get('label')
+                self.widget.source_side = e.control.data.get('side')
+                self.page.overlay.append(
+                    ft.Container(
+                        cv.Canvas([
+                            cv.Line(
+                                e.global_position.x, e.global_position.y, 
+                                e.global_position.x, e.global_position.y, 
+                                ft.Paint("#FFFFFF", stroke_width=3, style="stroke")
+                            )
+                        ], expand=True), 
+                    expand=True, ignore_interactions=True
+                    )
+                )
+                # Change cursor for visual feedback
+                self.page.update()
+
+            # Update the visual feedback to follow our mouse as we drag to create a new edge
+            async def _update_line(e: ft.PointerEvent):
+                line: cv.Line = self.page.overlay[-1].content.shapes[-1]  # Get the last line we added
+                line.x2 = e.global_position.x
+                line.y2 = e.global_position.y
+                self.page.overlay[-1].update()
+
 
             self.content = ft.Container(
                 ft.Column([
@@ -226,30 +301,29 @@ class PlotChart(Widget):
                     ft.Divider(2, 2),
                     ft.Text(self.description, italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
                     ft.Row([
-                        ft.DragTarget(
-                            ft.Draggable(
-                                ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED), shape=ft.BoxShape.CIRCLE), 
-                                "edges", content_feedback=None, data={'label': self.label, 'side': "left"},
-                                #on_drag_start=_get_start_coords
-                            ), 
-                            "edges",
-                            on_accept=_create_new_edge,
-                            on_will_accept=_highlight_node,
-                            on_leave=_stop_highlight_node,
-                            data={'label': self.label, 'side': "left"}
+                        ft.GestureDetector(
+                            ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED), shape=ft.BoxShape.CIRCLE), 
+                            mouse_cursor=ft.MouseCursor.PRECISE,
+                            data={'label': self.label, 'side': "left"},                            
+                            on_enter=_highlight_node,   # Highlight and set target source trackers if we enter a node while dragging from another
+                            on_pan_start=start_new_edge,   # Show line to follow mouse
+                            on_pan_update=_update_line,   # Update line to follow mouse
+                            on_pan_end=_create_new_edge,  
+                            on_exit=_stop_highlight_node,  
                         ),
-                        ft.DragTarget(
-                            ft.Draggable(
-                                ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED), shape=ft.BoxShape.CIRCLE), 
-                                "edges", content_feedback=None, data={'label': self.label, 'side': "right"},
-                                #on_drag_start=_get_start_coords
-                            ),
-                            "edges",
-                            on_accept=_create_new_edge,
-                            on_will_accept=_highlight_node,
-                            on_leave=_stop_highlight_node,
-                            data={'label': self.label, 'side': "right"}
+                        ft.GestureDetector(
+                            ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED), shape=ft.BoxShape.CIRCLE), 
+                            mouse_cursor=ft.MouseCursor.PRECISE,
+                            data={'label': self.label, 'side': "right"},
+                        
+                            #on_accept=_create_new_edge,
+                            on_enter=_highlight_node,  
+                            on_pan_start=start_new_edge,   
+                            on_pan_update=_update_line,   
+                            on_pan_end=_create_new_edge,  
+                            on_exit=_stop_highlight_node,  
                         ),
+                        
                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
                 expand=True, shadow=ft.BoxShadow(1, 1),
@@ -260,85 +334,96 @@ class PlotChart(Widget):
             )
                 
         
-
+    # OLD -- Class for the Edges/Links between our nodes that show up as a line on the edge_canvas
     class Edge(cv.Path):
         def __init__(self, start_position=(0, 0), end_position=(0, 0), color="#FFFFFF"):
 
-            curve_offset: int = (end_position[0] - start_position[0]) / 10
-
-            if end_position[1] < start_position[1]:   # If going up, flip the curve offset to make it curve the other way
-                curve_offset = -curve_offset
-
-            # TODO: Nodes going top -> down work correctly, down -> up do not
-
+            # Set the offset for curves so lines are not just straight
+            x_curve_offset: int = abs(end_position[0] - start_position[0]) / 8
+            y_curve_offset: int = abs(end_position[1] - start_position[1]) / 8            
+            if start_position[1] >= end_position[1]:   
+                y_curve_offset = -y_curve_offset
+            if start_position[0] >= end_position[0]:
+                x_curve_offset = -x_curve_offset
+            #if abs(x_curve_offset) < 10:   
+                #x_curve_offset = 10 if x_curve_offset >= 0 else -10
+            #if abs(y_curve_offset) < 10:
+                #y_curve_offset = 10 if y_curve_offset >= 0 else -10
+            #print("Adjusted curve offsets: ", x_curve_offset, y_curve_offset)
+           
             super().__init__(
                 [
                     cv.Path.MoveTo(start_position[0], start_position[1]),
                     cv.Path.QuadraticTo(
                         x=(start_position[0] + end_position[0]) / 2, 
                         y=(start_position[1] + end_position[1]) / 2,
-                        cp1x=(start_position[0] + end_position[0]) / 2 - curve_offset, 
-                        cp1y=(start_position[1] + end_position[1]) / 2 - curve_offset,
+                        cp1x=(start_position[0] + end_position[0]) / 2 - x_curve_offset, 
+                        cp1y=(start_position[1] + end_position[1]) / 2 - y_curve_offset,
                         w=2
                     ),
                     cv.Path.QuadraticTo(
                         x=end_position[0], 
                         y=end_position[1],
-                        cp1x=(start_position[0] + end_position[0]) / 2 + curve_offset, 
-                        cp1y=(start_position[1] + end_position[1]) / 2 + curve_offset,
+                        cp1x=(start_position[0] + end_position[0]) / 2 + x_curve_offset, 
+                        cp1y=(start_position[1] + end_position[1]) / 2 + y_curve_offset,
                         w=2
                     ),
-                    
-                    
                 ],
                 ft.Paint(color, stroke_width=3, style="stroke")
             )
 
-        
+    # Adds our options to create new nodes when right clicking on the canvas
     async def _open_menu(self, e: ft.PointerEvent):
-        self.new_node_position = (e.local_position.x, e.local_position.y)
+        
         menu_options = [] + self._get_menu_options()
 
         self.story.open_menu(menu_options)
+
+    # Called when click a button to create a new node
+    async def _add_node_clicked(self, e: None):
+        ''' Opens a dialog to name the node or cancel '''
+        async def _create_node(e=None):
+
+            title = node_title.value if node_title.value else "Node"
+            self.data['nodes'].append({'label': title, 'position': self.new_node_position, 'color': '#FFFFFF', 'description': ""})
+            await self.save_dict()
+            self.reload_widget()
+            self.p.pop_dialog()
+            self.new_node_position = (100, 100)
+
+        # TODO: Check if node name taken
+        node_title = TextField(hint_text="Node Label", capitalization=ft.TextCapitalization.SENTENCES, autofocus=True, on_submit=_create_node)
+
+        self.p.show_dialog(
+            ft.AlertDialog(
+                title="Node Name",
+                content=node_title,
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
+                    ft.TextButton("Create", on_click=_create_node, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))
+                ]
+            )
+        )
    
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
-    
         #TODO: Show nodes and edges in info
         # Add minimap
         # Make curved Links not go up/down like they do, and top out at a gradual bend
         # Update the paths in real time as we move for visual feedback
 
-        async def _add_node(e: None):
-            async def _create_node(e=None):
-
-                title = node_title.value if node_title.value else "Node"
-                self.data['nodes'].append({'label': title, 'position': self.new_node_position, 'color': '#FFFFFF', 'description': ""})
-                await self.save_dict()
-                self.reload_widget()
-                self.p.pop_dialog()
-                self.new_node_position = (100, 100)
-
-            node_title = TextField(hint_text="Node Label", capitalization=ft.TextCapitalization.SENTENCES, autofocus=True, on_submit=_create_node)
-
-            self.p.show_dialog(
-                ft.AlertDialog(
-                    title="Node Name",
-                    content=node_title,
-                    actions=[
-                        ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
-                        ft.TextButton("Create", on_click=_create_node, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))
-                    ]
-                )
-            )
-
+        
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
-        
+        # Sets our canvas coords for when we're creating a new node by right clicking
+        async def _set_canvas_coords(e: ft.HoverEvent):
+            self.new_node_position = (e.local_position.x, e.local_position.y)
+            self.story.mouse_x = e.global_position.x
+            self.story.mouse_y = e.global_position.y        
         
         # Draws the link between edges, and allows us to create more options
         edge_canvas = cv.Canvas(
@@ -346,17 +431,15 @@ class PlotChart(Widget):
             content=ft.GestureDetector(
                 expand=True,
                 on_secondary_tap=self._open_menu,
-                #on_hover=_set_canvas_coords,
+                on_hover=_set_canvas_coords,
                 #on_tap=self._show_info_display,
-                #on_tap=lambda e: self.story.open_menu(self._get_menu_options()),
-                hover_interval=20,
+                hover_interval=30,
             ),
             expand=True
         )
 
         node_stack = ft.Stack([edge_canvas], expand=True)
             
-        
         # Add our nodes and edges to the stack/canvas
         for node in self.data.get('nodes', []):
             node_stack.controls.append(self.Node(self, label=node['label'], position=node['position'], color=node['color']))
@@ -365,17 +448,25 @@ class PlotChart(Widget):
         for edge in self.data.get('edges', []):
 
             # Calculate offsets needed to hit the circles at bottom of nodes
-            if edge.get('start_position', (0, 0))[0] <= (edge.get('end_position', (0, 0)))[0]:
+            if edge.get('start_position', (0, 0))[0] <= (edge.get('end_position', (0, 0)))[0]:  # If x_start is left of x_end
                 start_position = (edge.get('start_position', (0, 0))[0] + 150, edge.get('start_position', (0, 0))[1])
             else:
                 start_position = edge.get('start_position', (0, 0))
-            if edge.get('end_position', (0, 0))[0] <= (edge.get('start_position', (0, 0)))[0]:
+            if edge.get('end_position', (0, 0))[0] <= (edge.get('start_position', (0, 0)))[0]:  # If x_end is left of x_start
                 end_position = (edge.get('end_position', (0, 0))[0] + 150, edge.get('end_position', (0, 0))[1])
             else:
                 end_position = edge.get('end_position', (0, 0))
             
-            # Add the edge
-            edge_canvas.shapes.append(self.Edge(start_position, end_position, edge.get('color', "#FFFFFF")))
+            # Add the edge to the canvas
+            edge_canvas.shapes.append(
+                cv.Line(
+                    start_position[0], start_position[1], 
+                    end_position[0], end_position[1], 
+                    ft.Paint(edge.get('color', "#FFFFFF"), stroke_width=3, style="stroke", anti_alias=True)
+                ),
+                
+            )
+            # OLD -- edge_canvas.shapes.append(self.Edge(start_position, end_position, edge.get('color', "#FFFFFF")))
 
         info = ft.Container(
             ft.Column([
@@ -385,11 +476,11 @@ class PlotChart(Widget):
                         ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                         self.data.get('color', ft.Colors.PRIMARY),
                         mouse_cursor=ft.MouseCursor.CLICK,
-                        on_click=_add_node,
+                        on_click=self._add_node_clicked,
                     ),
                 ]),
 
-                ft.Divider(2, 2),
+                ft.Divider(),
                 ft.Text(f"\tConnections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
             ], expand=True),
             border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),

@@ -609,7 +609,7 @@ class Chart(Widget):
                             mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                         ),
                     ]),
-                    ft.Divider(2, 2),
+                    ft.Divider(),
 
                     info_column
                 ], expand=True, scroll="none", spacing=0),
