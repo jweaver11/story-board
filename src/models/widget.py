@@ -36,12 +36,12 @@ class Widget(ft.Container):
 
         # Sets uniformity for all widgets
         super().__init__(
-            expand=True, 
+            #expand=True, 
             data=data,                              # Sets our data. 
-            border_radius=ft.BorderRadius.all(10),
+            #border_radius=ft.BorderRadius.all(10),
             #gradient=dark_gradient,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            #clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
         )
 
         # Set our parameters we passed in (data set in super())

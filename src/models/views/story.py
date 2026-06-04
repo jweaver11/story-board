@@ -819,29 +819,29 @@ class Story(ft.View):
             ''' Responsible for altering the width of the active rail '''
             self.workspace.is_resizing = True
 
-            active_rail_stack.width += int(e.local_delta.x)    # Apply the change to our rail
-            if active_rail_stack.width < 250:
-                active_rail_stack.width = 250
-            elif active_rail_stack.width > 500:
-                active_rail_stack.width = 500
-            active_rail_stack.update()
+            self.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
+            if self.active_rail.width < 250:
+                self.active_rail.width = 250
+            elif self.active_rail.width > 600:
+                self.active_rail.width = 600
+            self.active_rail.update()
+
 
         # Called when app stops dragging the resizer to resize the active rail
         async def save_active_rail_width(e: ft.DragEndEvent):
             ''' Saves our new width that will be loaded next time app opens the app '''
             self.workspace.is_resizing = False
 
-            app.settings.data['active_rail_width'] = active_rail_stack.width
+            app.settings.data['active_rail_width'] = self.active_rail.width
             await app.settings.save_dict()
 
         # The actual resizer for the active rail (gesture detector)
         active_rail_resizer = ft.GestureDetector(
             content=ft.Container(
                 width=10,   # Total width of the GD, so its easier to find with mouse
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-                # Thin vertical divider, which is what the app will actually drag
                 content=ft.VerticalDivider(2, 2),     # Original
-                padding=ft.Padding.only(right=8),  # Push the 2px divider ^ to the right side
+                padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOW
             ),
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging
@@ -849,37 +849,20 @@ class Story(ft.View):
             drag_interval=50,
         )
 
-        # Isolates the row containing our active rail resizing doesnt lag heckin bac
-        iso_row = IsolatedRow([self.active_rail, active_rail_resizer], spacing=0)
-        active_rail_stack = ft.Stack(     # Stick it in a stack (or any control with 'controls' property) that we can update
-            [iso_row], 
-            width=app.settings.data.get('active_rail_width', 200),
-            animate_size=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-        )   
-
-
-        # Save our 2 rails, divers, and our workspace container in a row
-        row = IsolatedRow(
-            spacing=0,  # No space between elements
-            expand=True,  # Makes sure it takes up the entire window/screen
-
-            controls=[
-                self.workspaces_rail,  # Main rail of all available workspaces
-                ft.VerticalDivider(2, 2),     
-                
-                # OLD
-                #self.active_rail,    # Rail for the selected workspace
-                #active_rail_resizer,   # Divider between rail and work area
-
-                # Holds our active rail container and resizer
-                active_rail_stack,
-                
-                self.workspace,    # Work area for widgets
-            ],
-        )
+        
 
         # Views render like columns, so we add elements top-down
-        self.controls = [self.menubar, row]
+        self.controls = [
+            #self.menubar, row,
+            self.menubar,
+            IsolatedRow([
+                
+                self.workspaces_rail,
+                self.active_rail,
+                active_rail_resizer,
+                self.workspace
+            ], spacing=0, expand=True)
+        ]
 
 
         # Our container that sits on top of the page overlay when right clicking options. Starts invisible

@@ -19,7 +19,8 @@ class WorkspacesRail(ft.Container):
             alignment=ft.Alignment.CENTER,  # Aligns content to the 
             padding=ft.Padding.only(bottom=10, right=2, left=2),
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            bgcolor=ft.Colors.SURFACE,
+            border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOW
         )
 
         # Build our rail on start

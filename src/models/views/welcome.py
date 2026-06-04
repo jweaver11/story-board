@@ -11,7 +11,7 @@ def create_welcome_view(page: ft.Page) -> ft.View:
         ''' Save that we have launched the app before, and route to the tutorial '''
         progress_ring.visible = True
         progress_ring.update()
-        await asyncio.sleep(0.5)
+        #await asyncio.sleep(0.5)
         app.settings.data["is_first_launch"] = False
         await app.settings.save_dict()
         await page.push_route("/tutorial")
@@ -65,6 +65,7 @@ async def animate_welcome_text(text: ft.Text):
             text.opacity = 1.0
 
         text.update()
-        # TEMP
+        
         await asyncio.sleep(.04)   # don't block the UI thread; let the animation run
+        # TEMP
         #await asyncio.sleep(.001)

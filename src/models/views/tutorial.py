@@ -16,6 +16,7 @@ from models.widgets.item import Item
 from models.widgets.comic_preview import ComicPreview
 from models.widgets.chart import Chart
 from models.widgets.canvas_board import CanvasBoard
+from models.widgets.plot_chart import PlotChart
 import shutil
 import os
 
@@ -253,7 +254,17 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                     ft.TextSpan("A widget for visualizing any data you want in your story. Create your own charts from scratch using the canvas or upload them from another program. Connect data points on your chart to events on your plotline and watch your world change over time!", style=ft.TextStyle(size=16))
                 ]
             case 20:
+                widget = PlotChart("Plot Chart Widget", page, tutorial_story.data.get('content_directory_path'), tutorial_story)
+                workspace.content = widget
+                workspace.update()
+                tutorial_tip.spans=[
+                    ft.TextSpan("Plot Chart:\n", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                    ft.TextSpan("A widget for visualizing flow charts of your stories progression. Very useful for managing multiple story routes and arcs at the same time.", style=ft.TextStyle(size=16))
+                ]
+            case 21:
                 widget = CanvasBoard("Canvas Board Widget", page, tutorial_story.data.get('content_directory_path'), tutorial_story)
+                tutorial_tip_container.left = 30
+                tutorial_tip_container.top = 10
                 workspace.content = widget
                 workspace.update()
                 tutorial_tip.spans=[
@@ -264,7 +275,7 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
             
             # TODO: Finish better detail about each widget
             # Finish rest of rails
-            case 21:
+            case 22:
                 workspace.content = None
                 workspace.update()
                 if tutorial_story.data.get('selected_rail') != "canvas":
@@ -277,13 +288,16 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                 tutorial_tip.value = "Next is the canvas rail. This controls all your paint and drawing based settings for your canvases (drawings), maps, and canvas boards."
         tutorial_tip_container.update()
         tutorial_arrow.update()
-        
+
+    previous_tip_button = ft.IconButton(ft.Icons.UNDO, ft.Colors.OUTLINE_VARIANT, on_click=_previous_tutorial_step, mouse_cursor=ft.MouseCursor.CLICK, disabled=True)
+    next_tip_button = ft.IconButton(ft.Icons.REDO, ft.Colors.PRIMARY, on_click=_next_tutorial_step, mouse_cursor=ft.MouseCursor.CLICK)
 
     menubar = ft.Container(
         border=ft.Border.only(bottom=ft.BorderSide(width=1, color=ft.Colors.OUTLINE_VARIANT)),
         bgcolor=ft.Colors.SURFACE,
         content=ft.Row(
             spacing=0,
+            tight=True,
             controls=[
                 ft.MenuBar(
                     expand=True,
@@ -308,7 +322,7 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
                         ),
                     ], 
                 ),   
-                ft.Container(expand=True),  # empty space in middle of menubar
+                
                 # Fix broken widgets button
 
                 ft.Text(
@@ -342,6 +356,7 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
         await tutorial_story.create_widget("Item", "item", no_delay=True)
         await tutorial_story.create_widget("Chart", "chart", no_delay=True)
         await tutorial_story.create_widget("Comic Preview", "comic_preview", no_delay=True)    
+        await tutorial_story.create_widget("Plot Chart", "plot_chart", no_delay=True)
         await asyncio.sleep(0.3)
 
     tutorial_story = Story("Tutorial Story", page)
@@ -400,9 +415,9 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
         tutorial_tip,
         ft.Row([
             
-            previous_tip_button := ft.IconButton(ft.Icons.UNDO, ft.Colors.OUTLINE_VARIANT, on_click=_previous_tutorial_step, mouse_cursor=ft.MouseCursor.CLICK, disabled=True),
+            previous_tip_button,
             ft.TextButton("Exit Tutorial", on_click=_end_tutorial_clicked, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), ),
-            next_tip_button := ft.IconButton(ft.Icons.REDO, ft.Colors.PRIMARY, on_click=_next_tutorial_step, mouse_cursor=ft.MouseCursor.CLICK),
+            next_tip_button,
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
         progress_text := ft.Text(f"{str(tutorial_step)}/30", color=ft.Colors.ON_SURFACE_VARIANT, size=12, visible=False)
     ])

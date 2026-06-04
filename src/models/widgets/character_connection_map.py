@@ -71,6 +71,29 @@ class CharacterConnectionMap(Widget):
         # Requires all widgets to be loaded first, so story calls reload_widget first
         if self.visible:
             self.reload_widget()
+
+    
+    class CharacterNode(ft.GestureDetector):
+        def __init__(self, char_key: str, position: tuple, parent_map: 'CharacterConnectionMap'):
+            super().__init__(
+                content=ft.Container(width=50, height=50, bgcolor=ft.Colors.BLUE, border_radius=25),
+                #on_enter=self._highlight_char_node,
+                #on_pan_start=self._start_drag,  ?
+                #on_pan_end=self.
+            )
+            self.char_key = char_key
+            self.position = position
+            self.parent_map = parent_map
+
+        def _on_hover(self, e):
+            ''' When we hover over a character node, we want to highlight it and show its connections '''
+            self.content.bgcolor = ft.Colors.CYAN
+            self.update()
+
+        def _on_exit(self, e):
+            ''' When we stop hovering over a character node, we want to stop highlighting it '''
+            self.content.bgcolor = ft.Colors.BLUE
+            self.update()
     
 
     # Called after any changes happen to the data that need to be reflected in the UI
@@ -83,28 +106,6 @@ class CharacterConnectionMap(Widget):
         # Inside the character bank, they are a draggable. Inside the stack, they are a gd. (their draggable dragging content is the gd). 
         # When dragged left less than 200 px, remove from stack and add to char bank
 
-
-    
-        
-
-        # Starts highlighting the character bank
-        async def highlight_character_bank(e: ft.Event[ft.Draggable]=None):
-            ''' Highlights the character bank when we hover over a character on the map, so we can see the other characters we can connect to '''
-            if highlight_container.bgcolor != ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE) and self.is_dragging:
-                highlight_container.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
-                highlight_container.update()
-                self.is_dragging = True
-
-        # Stops highlighting the character bank and lets us know we dragged a character from the bank onto the map
-        async def stop_highlight_character_bank(e: ft.Event[ft.Draggable]=None):
-            ''' Stops highlighting the character bank when we stop hovering over a character on the map '''
-            highlight_container.bgcolor = ft.Colors.TRANSPARENT
-            highlight_container.update()
-            #print(e)
-
-        
-
-        
 
                
         self.reload_tab()
@@ -123,67 +124,14 @@ class CharacterConnectionMap(Widget):
             expand=True, resize_interval=100,
             #on_resize=self._rebuild_canvas, 
         )
-
-        # What we need:
-        # scrollable column to hold all unused characters
-        # Ability to drag characters from that column onto the map
-        # Ability to drag characters from map back to column
-        # Ability to drag characters around on the map to rearrange them, with lines following them as we move them
         
-
-
-        async def _drag_start(e: ft.Event[ft.Draggable]):
-            ''' When we start dragging a character, we want to highlight the character bank so we can see where to drag it '''
-            self.is_dragging = True
-            await highlight_character_bank()
-            #print("Drag start")
-
-        async def _drag_end(e: ft.DragTargetEvent):
-            ''' When we stop dragging a character, we want to check if we dragged it onto the map or back to the bank, and update our data accordingly '''
-            self.is_dragging = False
-            await stop_highlight_character_bank()
-            print(e)
-
-        
-
-
-        # Where we add the characters so we can drag them ont the map
-        character_bank = ft.Column([
-            ft.Container(height=1),
-            ft.Text("\tCharacter Bank", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
-        ] +
-            # Our characters
-            [ft.Draggable(
-                ft.Container(height=100, width=100, bgcolor=ft.Colors.RED), 
-                on_drag_start=_drag_start,
-                content_when_dragging=ft.Container(height=100, width=100, bgcolor=ft.Colors.TRANSPARENT),
-            ) for i in range(20)
-                 
-        ], width=150, scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.START,)
-
-        
-
-        # Container holder bank trigger used for highlighting
-        highlight_container = ft.Container(
-            character_bank, width=152,
-            bgcolor=ft.Colors.TRANSPARENT,
-            border=ft.Border.only(right=ft.BorderSide(2, ft.Colors.OUTLINE)),
-            alignment=ft.Alignment.TOP_CENTER, 
-        )
-
         
         connections_stack = ft.Stack([
-            ft.Container(expand=True, ignore_interactions=True, border=ft.Border.all(2, ft.Colors.RED)),    # Container to stay expanded (Add bg here)
-            ft.GestureDetector(
-                highlight_container,
-                on_enter=highlight_character_bank, 
-                on_exit=stop_highlight_character_bank,
-                #on_hover=print_pos,
-            ),
+            
             
             
             #ft.TransparentPointer(canvas),
-            ft.DragTarget(ft.TransparentPointer(canvas), expand=True, on_accept=_drag_end)
+            ft.DragTarget(ft.TransparentPointer(canvas), expand=True, on_accept=lambda e: print(e))
             
         ], expand=True, alignment=ft.Alignment.CENTER_LEFT) 
 

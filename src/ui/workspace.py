@@ -25,9 +25,8 @@ class Workspace(ft.Container):
         super().__init__(
             expand=True,
             alignment=ft.Alignment.CENTER,
-            padding=ft.Padding.only(top=10, bottom=10, left=2, right=10),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            
+            #padding=ft.Padding.only(top=10, bottom=10, left=2, right=10),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
         )
 
         self.p = page
@@ -291,7 +290,7 @@ class Workspace(ft.Container):
             animation_duration=100,
             content=ft.Column([
                 ft.TabBar(
-                    tabs=[widget.tab for widget in self.main_pin], scrollable=True, indicator_color=ft.Colors.ON_SURFACE_VARIANT
+                    tabs=[widget.tab for widget in self.main_pin], scrollable=True, indicator_color=ft.Colors.ON_SURFACE_VARIANT, divider_height=2
                 ), 
                 ft.TabBarView(
                     controls=[widget.master_stack for widget in self.main_pin],
@@ -313,12 +312,7 @@ class Workspace(ft.Container):
                 break
 
         # Set our tabs as the content
-        self.content = ft.Container(
-            expand=True, border_radius=ft.BorderRadius.all(8),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            margin=ft.Margin.all(0),
-            content=tabs
-        )
+        self.content = tabs
 
         try:
             self.update()

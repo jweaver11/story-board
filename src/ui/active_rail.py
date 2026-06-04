@@ -28,10 +28,12 @@ class ActiveRail(ft.Container):
         super().__init__(
             alignment=ft.Alignment.TOP_CENTER,
             padding=ft.Padding.only(top=10, bottom=10),
-            #bgcolor=ft.Colors.SURFACE,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            expand=True
+            width=app.settings.data.get('active_rail_width', 250),
+            animate_size=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOW
         )
+        #print("active rail width:", self.width)
 
         # Loads the active rail
         self.reload_rail()
@@ -72,5 +74,5 @@ class ActiveRail(ft.Container):
 
         try:
             self.update()
-        except Exception as e:
+        except Exception:
             pass

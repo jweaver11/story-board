@@ -1311,7 +1311,7 @@ class CanvasRail(Rail):
                 ft.Container(
                     ft.Row([
                         TextField(
-                            label="Size", on_blur=_change_shape_options, data="size", dense=True,
+                            label="Text Size", on_blur=_change_shape_options, data="size", dense=True,
                             tooltip="The size of text added with the text tool", expand=True,
                             input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
                             value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_size', 16))
@@ -1410,7 +1410,7 @@ class CanvasRail(Rail):
                 expand=True,
                 controls=[
                     header,
-                    ft.Divider(),
+                    ft.Divider(leading_indent=8),
                     content
                 ]
             )

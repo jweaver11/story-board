@@ -215,24 +215,15 @@ class Settings(ft.View):
     async def save_story(self, e=None):
         ''' Called when the page is closed. Saves any last changes to settings before exit '''
 
-        # Temp
-        #self.data['is_first_launch'] = True
-        #await self.save_dict()
-
         if self.story is not None:
             for widget in self.story.widgets:
                 if widget.save_counter > 0:
                     widget.save_counter = 1000   # Will force a file write to widgets who have unwritten changes to their file
                     await widget.save_dict()
         
-        
-
-
     def create_character_template(self, template_name: str, data: dict):
         ''' Creates a new character template with the given name '''
         from utils.safe_string_checker import return_safe_name
-
-        print("Creating new character template: ", template_name, " with data: ", data)
 
         safe_key = return_safe_name(template_name)
 

@@ -596,7 +596,7 @@ class Chart(Widget):
             border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             padding=ft.Padding.only(left=11, top=8, bottom=8,),
             shadow=ft.BoxShadow(0, 1),
-            bgcolor=ft.Colors.SURFACE_CONTAINER,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
             content=ft.Column(
                 [
                     ft.Row([
@@ -1096,7 +1096,7 @@ class Chart(Widget):
             border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             padding=ft.Padding.only(left=11, top=8, bottom=8,),
             shadow=ft.BoxShadow(0, 1),
-            bgcolor=ft.Colors.SURFACE_CONTAINER,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
             content=ft.Column(
                 [
                     ft.Row([

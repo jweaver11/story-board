@@ -345,7 +345,7 @@ class ContentRail(Rail):
 
         self.controls = [
             header,
-            ft.Divider(),
+            ft.Divider(leading_indent=8),
             menu_gesture_detector
         ]
         

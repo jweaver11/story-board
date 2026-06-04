@@ -285,12 +285,12 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
     # Return our formatted menubar
     return ft.Container(
         border=ft.Border.only(bottom=ft.BorderSide(width=1, color=ft.Colors.OUTLINE_VARIANT)),
-        bgcolor=ft.Colors.SURFACE,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
         content=ft.Row(
             spacing=0,
             controls=[
                 menubar,    # Menubar on left
-                ft.Container(expand=True),  # empty space in middle of menubar
+                #ft.Container(expand=True),  # empty space in middle of menubar
                 # Fix broken widgets button
 
                 ft.Text(

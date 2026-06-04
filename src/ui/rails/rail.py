@@ -29,7 +29,7 @@ class Rail(IsolatedColumn):
     ):
         
         # Initialize the parent Container class first
-        super().__init__(spacing=0, expand=True, scroll="none")
+        super().__init__(spacing=0, expand=True, scroll="none",)
             
         # Store our parameters
         self.p = page

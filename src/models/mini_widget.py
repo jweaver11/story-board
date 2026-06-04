@@ -36,7 +36,7 @@ class MiniWidget(ft.Container):
             padding=ft.Padding.only(left=11, top=8, bottom=8),
             shadow=ft.BoxShadow(0, 1),
             data=data,     
-            bgcolor=ft.Colors.SURFACE_CONTAINER,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
             animate=ft.Animation(200, ft.AnimationCurve.DECELERATE)
             #blur=5,
         )
