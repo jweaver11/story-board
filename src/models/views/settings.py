@@ -410,8 +410,7 @@ class Settings(ft.View):
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
         content=ft.Column([
             ft.Row([
-                ft.Text("Appearance", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
-                ft.Container(expand=True),   # Spacer to push title to left
+                ft.Text("Appearance", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
                 ft.IconButton(
                     ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
@@ -490,8 +489,7 @@ class Settings(ft.View):
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
         content=ft.Column([
             ft.Row([
-                ft.Text("Widget Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
-                ft.Container(expand=True),   # Spacer to push title to left
+                ft.Text("Widget Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
                 ft.IconButton(
                     ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
@@ -1440,8 +1438,7 @@ class Settings(ft.View):
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
         content=ft.Column([
             ft.Row([
-                ft.Text("Resources", theme_style=ft.TextThemeStyle.HEADLINE_LARGE),
-                ft.Container(expand=True),   # Spacer to push title to left
+                ft.Text("Resources", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
                 ft.IconButton(
                     ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
@@ -1454,17 +1451,20 @@ class Settings(ft.View):
                     ft.Text("Click here to Run Tutorial\t", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500), 
                     on_click=_run_tutorial,
                 ),
-                ft.Text("Join our", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
-                ft.Text(
-                    "Discord", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM,
-                    on_tap=_discord_clicked, selectable=True
+                ft.Text("Join our", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT, ),
+                ft.Container(
+                    ft.Text(
+                        "Discord", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500,
+                        #on_tap=_discord_clicked, 
+                    ),
+                    on_click=_discord_clicked,
                 ),
                 ft.Text("to be part of our community and see upcoming features!", theme_style=ft.TextThemeStyle.BODY_MEDIUM,),
             ], spacing=8), # Link
             
             
 
-            #ft.Container(height=10),    # Spacer
+            ft.Container(height=10),    # Spacer
 
             ft.Divider(),
             ft.Container(height=10),    # Spacer
@@ -1548,12 +1548,12 @@ class Settings(ft.View):
                         ],
                     ),
                     
-                ], spacing=24, scroll=ft.ScrollMode.AUTO),
+                ], spacing=24, scroll=ft.ScrollMode.AUTO, expand=True, alignment=ft.MainAxisAlignment.START,),
                 margin=ft.Margin.only(left=20, top=10)
             ),
         
 
-        ], scroll=ft.ScrollMode.HIDDEN)
+        ], alignment=ft.MainAxisAlignment.START, expand=True)
 
         return content
     

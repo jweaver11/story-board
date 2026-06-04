@@ -579,15 +579,16 @@ class PlotChart(Widget):
                 self.p.pop_dialog()
                 self.new_node_position = (self.w / 2 * .75, self.h / 2) # Reset new node position to default for next time
 
+        await self.story.close_menu()
         
         node_title = TextField(
-            hint_text="Node Label", capitalization=ft.TextCapitalization.SENTENCES, 
+            capitalization=ft.TextCapitalization.SENTENCES, 
             autofocus=True, on_submit=_create_node,
         )
 
         self.p.show_dialog(
             ft.AlertDialog(
-                title="Node Name",
+                title="Node Title",
                 content=node_title,
                 actions=[
                     ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
