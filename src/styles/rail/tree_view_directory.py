@@ -13,7 +13,9 @@ from models.isolated_controls.expansion_tile import IsolatedExpansionTile
 import asyncio
 
 # Expansion tile for all sub directories (folders) in a directory
+@ft.control
 class TreeViewDirectory(ft.GestureDetector):
+
 
     def __init__(
         self, 
@@ -25,7 +27,6 @@ class TreeViewDirectory(ft.GestureDetector):
         is_expanded: bool = False,                              # Whether this directory is expanded or not
         color: str = "primary",                                 # Color of the folder icon
         father: 'TreeViewDirectory' = None,                     # Optional parent directory tile, if there is one
-        additional_menu_options: list[ft.Control] = None,       # Additional menu options when right clicking a folder, depending on the rail
     ):
         
         # Reference for all our passed in data
@@ -37,7 +38,6 @@ class TreeViewDirectory(ft.GestureDetector):
         self.color = color
         self.is_expanded = is_expanded  
         self.rail = rail
-        self.additional_menu_options = additional_menu_options
 
         # State tracking variables
         self.are_submitting = False
@@ -73,18 +73,50 @@ class TreeViewDirectory(ft.GestureDetector):
             on_exit=self._stop_highlight,
         )
 
-        self.expansion_tile: ft.ExpansionTile
+        #ft.ExpansionTile()
+        leading_control = ft.Container(
+            ft.Icon(ft.Icons.FOLDER_OUTLINED, color=self.color),
+            border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if self.father is not None else None,
+            padding=ft.Padding.only(left=6)
+        )
 
-        # Reload our directory tile to set up initial UI
-        self.reload()
+        self.expansion_tile = IsolatedExpansionTile(
+            title=ft.Row([
+                leading_control, ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True)], 
+                expand=True, spacing=6
+            ),
+            #trailing=ft.IconButton(
+                #icon=ft.Icons.MORE_HORIZ_ROUNDED, 
+                #icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                #visible=False,
+                #on_click=lambda _: self.story.open_menu(self.get_menu_options()),
+                #mouse_cursor=ft.MouseCursor.CLICK,
+            #),
+            
+            dense=True,
+            #affinity=ft.TileAffinity.LEADING,
+            collapsed_shape=ft.RoundedRectangleBorder(radius=4),
+            visual_density=ft.VisualDensity.COMPACT,
+            expanded=self.is_expanded,
+            tile_padding=ft.Padding(0, 0, 6, 0),
+            icon_color=self.color,
+            controls_padding=ft.Padding(10, 0, 0, 0),       # Keeps all sub children indented
+            expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
+            adaptive=True, bgcolor="transparent",
+            shape=ft.RoundedRectangleBorder(radius=4),
+            on_change=self.toggle_expand,
+            controls=[self.new_item_textfield],     
+        )
 
     # Show our button to show options when we enter this folder
     async def _highlight(self, e=None):
+        return
         self.expansion_tile.trailing.visible = True
         self.expansion_tile.update()
 
     # Hide our button to show options when we exit this folder
     async def _stop_highlight(self, e=None):
+        return
         self.expansion_tile.trailing.visible = False
         self.expansion_tile.update()
 
@@ -103,88 +135,88 @@ class TreeViewDirectory(ft.GestureDetector):
                             ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(4), shape=ft.RoundedRectangleBorder(radius=4),
                     ),
                     [
                         ft.MenuItemButton(      # Folders
                             leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, ft.Colors.PRIMARY), content="Folder", 
                             data="folder", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new folder to organize your story",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ), 
                         ft.MenuItemButton(      # Documents
                             leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY), content="Document", 
                             data="document", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new document for text chapters or scenes in your story",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ), 
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
                             data="canvas", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new Canvas for sketching drawing, or visual note taking",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                         ),
                         ft.MenuItemButton(      
                             leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY), content="Note", 
                             data="note", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ), 
                         ft.SubmenuButton(
                             ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                             self.get_template_options("character"), 
                             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             tooltip="Create a new character for your story. Choose from templates or create a default character."
                         ),
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
                             data="plotline", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                             tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
                         ),
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
                             data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ),
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
                             data="map", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                         ),
                         ft.SubmenuButton(
                             ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                             self.get_template_options("world"), 
                             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             tooltip="Create a new world for your story. Choose from templates or create a default world."
                         ),
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
                             data="item", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                             tooltip="New Items and Equipment for your story"
                         ),  
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED, ft.Colors.PRIMARY), content="Plot Chart", 
                             data="plot_chart", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             tooltip="New Items and Equipment for your story", 
                         ),  
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, ft.Colors.PRIMARY), content="Comic Preview", 
                             data="comic_preview", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                             tooltip="Preview the canvases in your story as a comic strip",
                         ), 
                         ft.SubmenuButton(
                             ft.Row([ft.Icon(ft.Icons.INSERT_CHART_OUTLINED, ft.Colors.PRIMARY), ft.Text("Chart", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                             self.get_template_options("chart"), 
                             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             tooltip="New Charts for your story"
                         ), 
                         ft.MenuItemButton(
@@ -196,7 +228,7 @@ class TreeViewDirectory(ft.GestureDetector):
                         
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
                 no_padding=True, no_effects=True
             ),
@@ -210,13 +242,13 @@ class TreeViewDirectory(ft.GestureDetector):
                             ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(4), shape=ft.RoundedRectangleBorder(radius=4),
                     ),
                     [
                         
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
                 no_padding=True, no_effects=True, 
             ),
@@ -243,7 +275,7 @@ class TreeViewDirectory(ft.GestureDetector):
                     ], expand=True),
                     self._get_color_options(), 
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     tooltip="Change this widget's color"
                 ),
                 no_padding=True, no_effects=True
@@ -264,8 +296,6 @@ class TreeViewDirectory(ft.GestureDetector):
     async def toggle_expand(self, e=None):
         ''' Makes sure our state and data match the updated expanded/collapsed state '''
     
-        #print(self.expansion_tile.expanded)
-
         await self.story.change_folder_data(
             full_path=self.full_path,
             key='is_expanded', value=self.expansion_tile.expanded
@@ -283,7 +313,7 @@ class TreeViewDirectory(ft.GestureDetector):
                 template_options.append(
                     ft.MenuItemButton(
                         name, data=widget_type, on_click=self.new_item_clicked, 
-                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10))
+                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
                     )
                 )
 
@@ -295,7 +325,7 @@ class TreeViewDirectory(ft.GestureDetector):
                 template_options.append(
                     ft.MenuItemButton(
                         name, data=widget_type, on_click=self.new_item_clicked, 
-                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10))
+                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
                     )
                 )
 
@@ -303,11 +333,11 @@ class TreeViewDirectory(ft.GestureDetector):
             template_options = [
                 ft.MenuItemButton(
                     "Bar", data=widget_type, on_click=self.new_item_clicked, leading=ft.Icon(ft.Icons.INSERT_CHART_OUTLINED_OUTLINED, ft.Colors.PRIMARY),
-                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10))
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
                 ),
                 ft.MenuItemButton(
                     "Radar", data=widget_type, on_click=self.new_item_clicked, leading=ft.Icon(ft.CupertinoIcons.COMPASS, ft.Colors.PRIMARY),
-                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10))
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
                 ),
             ]
 
@@ -437,7 +467,6 @@ class TreeViewDirectory(ft.GestureDetector):
             new_key = os.path.normcase(os.path.normpath(self.full_path + "\\" + title))
             new_key = new_key.rstrip()  # Remove trailing spaces for folder names
             for key in self.story.data['folders'].keys():
-                #print("Checking folder key:\n", key, "\n", new_key)
                 
                 # Path comparisons require normalization
                 if os.path.normcase(os.path.normpath(key)) == new_key:
@@ -451,7 +480,6 @@ class TreeViewDirectory(ft.GestureDetector):
 
         # If we are NOT unique, show our error text
         if not self.item_is_unique:
-            #print("Setting error text:", error_text)
             e.control.error = error_text
 
         # Otherwise remove our error text
@@ -648,7 +676,7 @@ class TreeViewDirectory(ft.GestureDetector):
                 ft.MenuItemButton(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
                     on_click=_change_icon_color, data=color, close_on_click=True,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 
                 )
             )
@@ -721,40 +749,8 @@ class TreeViewDirectory(ft.GestureDetector):
         await widget.move_file(new_directory=self.full_path)
 
     # Called when we need to reload this directory tile
-    def reload(self):
-        self.expansion_tile = IsolatedExpansionTile(
-            title=ft.Row([
-                ft.Icon(ft.Icons.FOLDER_OUTLINED, color=self.color), ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True)], 
-                expand=True
-            ),
-            trailing=ft.IconButton(
-                icon=ft.Icons.MORE_VERT_ROUNDED, 
-                icon_color=ft.Colors.ON_SURFACE_VARIANT,
-                visible=False,
-                on_click=lambda _: self.story.open_menu(self.get_menu_options()),
-                mouse_cursor=ft.MouseCursor.CLICK,
-            ),
-            dense=True,
-            affinity=ft.TileAffinity.LEADING,
-            collapsed_shape=ft.RoundedRectangleBorder(radius=10),
-            visual_density=ft.VisualDensity.COMPACT,
-            expanded=self.is_expanded,
-            tile_padding=ft.Padding(0, 0, 0, 0),
-            icon_color=self.color,
-            controls_padding=ft.Padding(10, 0, 0, 0),       # Keeps all sub children indented
-            expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
-            adaptive=True, bgcolor="transparent",
-            shape=ft.RoundedRectangleBorder(),
-            on_change=self.toggle_expand,
-            controls=[self.new_item_textfield],     
-        )
-
-        # Re-adds our content controls so we can keep states
-        if self.content is not None:        # Protects against first loads
-            if self.content.content.controls is not None:
-                for control in self.content.content.controls:
-                    if control != self.new_item_textfield:      # Don't re-add our textfield, its already there
-                        self.expansion_tile.controls.append(control)
+    def build(self):
+        
 
         # Wrap in all in a drag target so we can drag to move widgets into different folders
         drag_target = ft.DragTarget(

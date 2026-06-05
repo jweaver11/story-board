@@ -117,24 +117,13 @@ class Story(ft.View):
         self.widgets: list = []    
 
         
-        # Called outside of constructor to avoid circular import issues, or it would be called here
-        #self.startup() # Called when opening our active story to load all its data and build its view
+        
         
     # Isolates stories from page.update calls. Needed for keeper performance when opening menus
     def is_isolated(self): 
         return True
     
-    # Called from main when our program starts up. Needs a page reference, thats why not called here
-    def startup(self):
-
-        # Load our widgets
-        self.load_widgets() 
-
-        # Builds our view (menubar, rails, workspace) and adds it to the page
-        self.build_view()
-
-        # Declare the story loaded for loading purposes
-        self.is_initialized = True
+    
 
 
     # Called whenever there are changes in our data that need to be saved
@@ -786,8 +775,8 @@ class Story(ft.View):
 
         
 
-    # Called when new story object is created, either by program or by being loaded from storage
-    def build_view(self) -> list[ft.Control]:
+    # Builds our view
+    def build(self) -> list[ft.Control]:
         ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
         from ui.menu_bar import create_menu_bar
         from ui.workspaces_rail import WorkspacesRail
@@ -796,21 +785,27 @@ class Story(ft.View):
         from models.app import app
         from models.isolated_controls.row import IsolatedRow
 
-        page = self.p
+        # Declare the story loaded for loading purposes
+        if self.is_initialized:
+            return
+        
 
-        page.title = f"{self.title}"
+        # Load our widgets
+        self.load_widgets() 
+
+        self.page.title = f"{self.title}"
 
         # Clear our controls in our view before building it
         self.controls.clear()
 
-        # Create our page elements as their own pages so they can update
-        self.menubar = create_menu_bar(page, self)
+        # Create our self.page elements as their own self.pages so they can update
+        self.menubar = create_menu_bar(self.page, self)
 
         # Create our rails and workspace objects
-        self.workspaces_rail = WorkspacesRail(page, self)  # Create our all workspaces rail
+        self.workspaces_rail = WorkspacesRail(self.page, self)  # Create our all workspaces rail
         
-        self.workspace = Workspace(page, self)  # Reference to our workspace object for pin locations
-        self.active_rail = ActiveRail(page, self)  # Container stored in story for the active rails
+        self.workspace = Workspace(self.page, self)  # Reference to our workspace object for pin locations
+        self.active_rail = ActiveRail(self.page, self)  # Container stored in story for the active rails
 
         
 
@@ -840,8 +835,8 @@ class Story(ft.View):
             content=ft.Container(
                 width=10,   # Total width of the GD, so its easier to find with mouse
                 content=ft.VerticalDivider(2, 2),     # Original
-                padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOW
+                padding=ft.Padding.only(right=8),  # Push the 2px divider ^ to the right side
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
             ),
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging
@@ -865,13 +860,13 @@ class Story(ft.View):
         ]
 
 
-        # Our container that sits on top of the page overlay when right clicking options. Starts invisible
+        # Our container that sits on top of the self.page overlay when right clicking options. Starts invisible
         self.menu = ft.Container(
             left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
-            border_radius=ft.BorderRadius.all(10), visible=False,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
-            width=160, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-            shadow=ft.BoxShadow(0, 1),
+            border_radius=4, visible=False,
+            bgcolor=ft.Colors.SURFACE_CONTAINER,
+            width=160, #border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
+            shadow=ft.BoxShadow(0, 0.25, offset=ft.Offset(0, 0.25), ),
             content=ft.Column(
                 spacing=0,
                 controls=[]
@@ -887,9 +882,11 @@ class Story(ft.View):
         
 
         # Overlay is a stack, so add the detector, then the menu container
-        page.overlay.append(self.close_menu_detector)
-        page.overlay.append(self.menu)
-        page.overlay.append(self.blocker)   # Add our blocker to the overlay as well, so it sits on top of everything when visible
+        self.page.overlay.append(self.close_menu_detector)
+        self.page.overlay.append(self.menu)
+        self.page.overlay.append(self.blocker)   # Add our blocker to the overlay as well, so it sits on top of everything when visible
 
-        # Apply everything to the page
-        page.update()
+        # Apply everything to the self.page
+        self.page.update()
+
+        self.is_initialized = True

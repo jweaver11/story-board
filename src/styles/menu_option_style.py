@@ -28,7 +28,7 @@ class MenuOptionStyle(ft.GestureDetector):
             content=ft.Container(
                 padding=ft.Padding.all(8) if not no_padding else None,     # Add padding if not disabled
                 content=content,                                                 # Set our content passed in           
-                border_radius=ft.BorderRadius.all(10)                     
+                border_radius=ft.BorderRadius.all(4)                     
             ),
         )
 

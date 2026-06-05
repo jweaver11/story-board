@@ -264,5 +264,5 @@ class WorkspacesRail(ft.Container):
         # Can fail when changing views. It only fails tho when it doesnt need to update
         try: 
             self.update()
-        except Exception as e:
+        except Exception:
             pass

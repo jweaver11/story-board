@@ -18,10 +18,8 @@ def load_directory_data(
     story: Story,                                         # Story reference for any story related data
     directory: str,                                       # The directory to load data from
     rail: ft.Control,                                     # The rail this tree view is in
-    dir_dropdown: TreeViewDirectory = None,             # Optional parent expansion tile for when recursively called
-    column: ft.Column = None,                             # Optional parent column to add elements too when not starting inside a tile
-    additional_directory_menu_options: list[ft.Control] = None,      # Additional menu options passed in from parent rail to be used for directories
-    additional_file_menu_options: list[ft.Control] = None   
+    folder: TreeViewDirectory = None,             # Optional parent expansion tile for when recursively called
+    column: ft.Column = None,                             # Optional column to add to if this is the top most call with no parent expansion tile
 ) -> ft.Control:
     
     def _canon_path(p: str) -> str:
@@ -37,17 +35,14 @@ def load_directory_data(
         directories = []
         files = []  
 
-        # Goes through them all
+        # Goes through all the folders and files
         for entry in entrys:
+            # Set a full path they need for logic
+            full_path =  os.path.join(directory, entry) 
 
-            # Sets the new path
-            full_path =  os.path.join(directory, entry)
-
-            # Add directories to their own list
+            # Add to either directories or files list
             if os.path.isdir(full_path):
                 directories.append(entry)
-
-            # Add files to their own list
             elif os.path.isfile(full_path):
                 files.append(entry)
 
@@ -61,37 +56,35 @@ def load_directory_data(
             # Build a normalized map of folder metadata once per call in order to get the call
             folders_meta = { _canon_path(k): v for k, v in story.data.get('folders', {}).items() }
 
-            # Set our data to pass in for the folder
+            # Set our color and expanded state
             color = folders_meta.get(_canon_path(full_path), {}).get('color', "primary")
-            is_expanded = folders_meta.get(_canon_path(full_path), {}).get('is_expanded', False)
+            is_expanded = folders_meta.get(_canon_path(full_path), {}).get('is_expanded', False)    
 
-            # Create the expansion tile here
-            new_expansion_tile = TreeViewDirectory(
+            # Create the new folder dropdown
+            new_folder = TreeViewDirectory(
                 full_path=full_path,
                 title=capital_dir_path,
                 story=story, page=page,
                 color=color, rail=rail,
                 is_expanded=is_expanded,
-                additional_menu_options=additional_directory_menu_options,
-                father=dir_dropdown if dir_dropdown is not None else None,
+                father=folder,
             )
 
-            # Recursively go through this directory as well to load its data, and any sub directories
+            # Since its a folder, load all its content recursively
             load_directory_data(
-                page=page,                                                # Page reference
-                story=story,                                              # Story reference
-                directory=full_path,                                      # Our new directory to load
-                dir_dropdown=new_expansion_tile,                          # Our new parent expansion tile
+                page=page,                                                
+                story=story,                                            
+                directory=full_path,                                      
+                folder=new_folder,                     
                 rail=rail,
-                additional_directory_menu_options=additional_directory_menu_options,           # Any additional menu options to pass down
-                additional_file_menu_options=additional_file_menu_options
             )
 
-            # Add our expansion tile for the directory to its parent, or the column if top most directory
-            if dir_dropdown is not None:
-                dir_dropdown.content.content.controls.append(new_expansion_tile)
+
+            # After loading the folders content, add it to either a parent folder (if it has one) or the column for the rail
+            if folder is not None:
+                folder.expansion_tile.controls.append(new_folder)
             else:
-                column.controls.append(new_expansion_tile)
+                column.controls.append(new_folder)
 
         # Now go through our files
         for file_name in files:
@@ -117,24 +110,25 @@ def load_directory_data(
             if widget is not None:
 
                 # Create the file item
-                item = TreeViewFile(
+                file = TreeViewFile(
                     widget,
-                    father=dir_dropdown if dir_dropdown is not None else None,
-                )        
+                    father=folder,
+                )       
+
 
                 # Add them to parent expansion tile if one exists, otherwise just add it to the column
-                if dir_dropdown is not None:
-                    dir_dropdown.content.content.controls.append(item)
+                if folder is not None:
+                    folder.expansion_tile.controls.append(file)
                 else: 
-                    column.controls.append(item)
-                pass
+                    column.controls.append(file)
+                
 
             else:
-                print("Widget is none")
+                print("Could not find widget")
                 continue
 
         # Return the parent expansion tile or column depending on what was provided
-        return dir_dropdown if dir_dropdown is not None else column
+        return folder if folder is not None else column
     
     # Handle errors
     except Exception as e:

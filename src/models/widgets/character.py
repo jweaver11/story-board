@@ -521,6 +521,7 @@ class Character(Widget):
             ''' Loads data from a dict into a given container '''
 
             # TODO: Skip empty ones check
+            # Have sections fit inside a container that is lighter in color
 
             control_list = []
             
@@ -544,6 +545,7 @@ class Character(Widget):
                     padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
                     border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), 
                     margin=ft.Margin.only(bottom=10, right=16),
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                     content=ft.Row([ft.Text(expand=True, spans=text_span_list, size=16)]), # Forces container to take up space
                 )
 

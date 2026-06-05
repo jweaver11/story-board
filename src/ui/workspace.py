@@ -25,7 +25,6 @@ class Workspace(ft.Container):
         super().__init__(
             expand=True,
             alignment=ft.Alignment.CENTER,
-            #padding=ft.Padding.only(top=10, bottom=10, left=2, right=10),
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
         )
 

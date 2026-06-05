@@ -190,6 +190,7 @@ class Widget(ft.Container):
     def before_update(self):
         print(f"Successful update for widget {self.title}")
         return super().before_update()
+    
 
     # Called whenever there are changes in our data
     async def save_dict(self) -> bool:

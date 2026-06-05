@@ -48,7 +48,7 @@ class TreeViewFile(ft.GestureDetector):
         self.text_style = ft.TextStyle(
             size=14,
             color=ft.Colors.ON_SURFACE,
-            weight=ft.FontWeight.BOLD,
+            weight=ft.FontWeight.W_500,
             overflow=ft.TextOverflow.ELLIPSIS,
         )
 
@@ -64,8 +64,6 @@ class TreeViewFile(ft.GestureDetector):
             mouse_cursor = ft.MouseCursor.CLICK,
         )
 
-
-        self.reload()
     
     # Called when this item is right clicked
     def get_menu_options(self) -> list[ft.Control]:
@@ -92,7 +90,7 @@ class TreeViewFile(ft.GestureDetector):
                     ], expand=True),
                     self.widget.get_color_options(), 
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     tooltip="Change this widget's color"
                 ),
                 no_padding=True, no_effects=True
@@ -107,53 +105,55 @@ class TreeViewFile(ft.GestureDetector):
         ]
 
     # Called when hovering mouse over a tree view item
-    async def _highlight(self, e):
+    async def _highlight(self, e=None):
         self.content.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
-        self.content.content.trailing.visible = True    
+        #self.options_button.opacity = 1
         self.update()
 
     # Called when stopping hover over a tree view item
-    async def _stop_highlight(self, e):
+    async def _stop_highlight(self, e=None):
         self.content.content.bgcolor = ft.Colors.TRANSPARENT
-        self.content.content.trailing.visible = False
+        #self.options_button.opacity = 0
         self.update()
 
 
     # Called to reload our tree view file display
-    def reload(self):
+    def build(self):
 
-        # If we're in a sub folder in the directory, make leading contorl also have a line
-        if self.father is not None:
-            leading_control = ft.Row([ft.VerticalDivider(2, 2), ft.Icon(self.icon, color=self.icon_color)], tight=True)
-        else:
-            leading_control = ft.Icon(self.icon, color=self.icon_color)
+        
+        leading_control = ft.Container(
+            ft.Icon(self.icon, color=self.icon_color),
+            border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if self.father is not None else None,
+            padding=ft.Padding.only(left=6)
+        )
+
+
+        #self.options_button = ft.IconButton(
+            #icon=ft.Icons.MORE_HORIZ_ROUNDED,
+            #opacity=0,
+            #on_click=lambda _: self.widget.story.open_menu(self.get_menu_options()),
+            #mouse_cursor=ft.MouseCursor.CLICK,
+            #visual_density=ft.VisualDensity.COMPACT
+        #)
 
         self.content = ft.Draggable(
             group="widgets",
             data=self.widget.data['key'],
-            content_feedback=ft.TextButton(ft.Row([ft.Icon(self.icon, expand=True), ft.Text(self.widget.title, style=self.text_style, expand=True)], expand=True)),
-            on_drag_start=lambda _: self.widget.story.workspace.show_pin_drag_targets(),
-            
-            content=ft.ListTile(
-                leading=leading_control, 
-                title=ft.Text(self.widget.title, style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
-                shape=ft.RoundedRectangleBorder(radius=6),
-                bgcolor=ft.Colors.TRANSPARENT, 
-                dense=True,
-                content_padding=ft.Padding.all(0) if self.father is not None else ft.Padding.only(left=10),
-                min_vertical_padding=0,
-                mouse_cursor=ft.MouseCursor.CLICK,
-                trailing=ft.IconButton(
-                    icon=ft.Icons.MORE_VERT_ROUNDED,
-                    visible=False,
-                    on_click=lambda _: self.widget.story.open_menu(self.get_menu_options()),
-                    mouse_cursor=ft.MouseCursor.CLICK,
-                ),
+            content_feedback=ft.TextButton(ft.Row([ft.Icon(self.icon, self.icon_color, expand=True), ft.Text(self.widget.title, style=self.text_style, expand=True)], expand=True)),
+            #on_drag_start=lambda _: self.widget.story.workspace.show_pin_drag_targets(),
+            content=ft.Container(
+                ft.Row([
+                    leading_control, 
+                    ft.Text(self.widget.title, style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                    #self.options_button
+                ], spacing=6),
+                border_radius=4,
+                #border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if self.father is not None else None,
+                on_click=lambda _: self.widget.show_widget(),
+                padding=ft.Padding.only(right=6, top=2, bottom=2),
+                
             ),
-        )
-
+            
+            
         
-        try:
-            self.update()
-        except Exception as _:
-            pass
+    )

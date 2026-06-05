@@ -84,7 +84,7 @@ class Rail(IsolatedColumn):
                 template_options.append(
                     ft.MenuItemButton(
                         name, data=widget_type, on_click=self.new_item_clicked, 
-                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10))
+                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
                     )
                 )
 
@@ -96,7 +96,7 @@ class Rail(IsolatedColumn):
                 template_options.append(
                     ft.MenuItemButton(
                         name, data=widget_type, on_click=self.new_item_clicked, 
-                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10))
+                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
                     )
                 )
 
@@ -105,12 +105,12 @@ class Rail(IsolatedColumn):
                 ft.MenuItemButton(
                     "Bar", data=f"{widget_type}:bar", 
                     on_click=self.new_item_clicked, leading=ft.Icon(ft.Icons.INSERT_CHART_OUTLINED_OUTLINED, ft.Colors.PRIMARY),
-                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10))
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
                 ),
                 ft.MenuItemButton(
                     "Radar", data=f"{widget_type}:radar", 
                     on_click=self.new_item_clicked, leading=ft.Icon(ft.CupertinoIcons.COMPASS, ft.Colors.PRIMARY),
-                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=10))
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
                 ),
             ]
 
@@ -147,8 +147,13 @@ class Rail(IsolatedColumn):
             return
 
         # Call the move file using the new directory path
+        self.story.blocker.visible = True
+        self.story.blocker.update()
+        
 
         if self.p.run_task(widget.move_file, new_directory):
+            self.story.blocker.visible = False
+            self.story.blocker.update()
             return
         
         else:
@@ -156,6 +161,8 @@ class Rail(IsolatedColumn):
             # Update the background color
             e.control.content.bgcolor = ft.Colors.with_opacity(0.0, ft.Colors.ON_SURFACE)
             e.control.content.update()
+            self.story.blocker.visible = False
+            self.story.blocker.update()
 
 
     # Called when new category button or menu option is clicked

@@ -52,8 +52,8 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
                     app.settings.story = story
                     await app.settings.save_dict()
 
-                    if not new_story.is_initialized:    # Check if this story has not already been loaded before
-                        new_story.startup()
+                    #if not new_story.is_initialized:    # Check if this story has not already been loaded before
+                        #new_story.startup()
                     app.settings.story = new_story  # Gives our settings widget the story reference it needs
                     page.views.append(new_story)
                     page.update() 

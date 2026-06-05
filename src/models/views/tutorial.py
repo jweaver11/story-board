@@ -369,7 +369,7 @@ def create_tutorial_view(page: ft.Page) -> ft.View:
     tutorial_story.data['folders'] = {}
 
     page.run_task(create_tutorial_content)   # Create some content for the tutorial story so it doesn't look so sad and empty
-    tutorial_story.startup()    # Prepare the story
+    #tutorial_story.startup()    # Prepare the story
 
     workspaces_rail = WorkspacesRail(page, tutorial_story)
     workspaces_rail.visible = False
