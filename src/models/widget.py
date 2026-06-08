@@ -493,13 +493,11 @@ class Widget(ft.Container):
         self.data['visible'] = True
         self.visible = True
         self.save_counter = 1000     # Force a file save
-        await self.save_dict()
 
-        # Fix the selected index to focus this widget's tab if it's in the main pin
-        if self.data.get('pin_location', '') == "main":
-            self.story.data['main_pin_selected_idx'] = len(self.story.workspace.main_pin)
-            self.data['index'] = self.story.data['main_pin_selected_idx']
-            await self.story.save_dict()
+        # Adds us to the end of the current tabs
+        self.data['index'] = 999    
+        await self.story.save_dict()
+        print(self.title, self.data['visible'])
 
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
         

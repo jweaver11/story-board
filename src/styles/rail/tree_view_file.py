@@ -149,7 +149,7 @@ class TreeViewFile(ft.GestureDetector):
                 ], spacing=6),
                 border_radius=4,
                 #border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if self.father is not None else None,
-                on_click=lambda _: self.widget.show_widget(),
+                on_click=self.widget.show_widget,
                 padding=ft.Padding.only(right=6, top=2, bottom=2),
                 
             ),

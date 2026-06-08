@@ -247,9 +247,19 @@ class Workspace(ft.Container):
     def arrange_widgets(self):
         self.main_pin.clear()
         sorted_widgets = sorted(self.story.widgets, key=lambda w: w.data.get('index', 0))
+        visible_widget_index = 0
         for w in sorted_widgets:
             if w.data.get('visible', False):
-                self.main_pin.append(self.story.rebuild_widget(w))
+
+                # Rebuild and add the widget to the main pin
+                widget = self.story.rebuild_widget(w)    
+                self.main_pin.append(widget)
+
+                # If this widget index is not 999, (meaning we were not just added to workspace), don't set that index 
+                if widget.data['index'] != 999:
+                    widget.data['index'] = visible_widget_index
+
+                visible_widget_index += 1
     
 
     def reload_workspace(self):
@@ -269,6 +279,7 @@ class Workspace(ft.Container):
         async def tab_change(e: ft.Event):
             from models.widgets.canvas import Canvas
 
+            # Save new selected index
             self.story.data['main_pin_selected_idx'] = e.data
             await self.story.save_dict()
 
@@ -283,8 +294,9 @@ class Workspace(ft.Container):
 
         # Tabs that hold our workspace
         tabs = ft.Tabs(
-            expand=True, length=len(self.main_pin),
-            selected_index=int(self.story.data.get('main_pin_selected_idx', 0)),
+            expand=True, 
+            length=len(self.main_pin),
+            #selected_index=int(self.story.data.get('main_pin_selected_idx', 0)),    # Set the selected index from our data
             on_change=tab_change,
             animation_duration=100,
             content=ft.Column([
@@ -298,17 +310,31 @@ class Workspace(ft.Container):
             ], expand=True, spacing=0),
         )   
 
-        # If our selected index is out of range, set it to most recent tab
+        
+
+        # Check our last widget. If its index is 999, it was just added and needs its data updated
+        if self.main_pin[-1].data.get('index', -1) == 999:   
+            tabs.selected_index = len(self.main_pin) - 1    # Set the selected index
+            self.story.data['main_pin_selected_idx'] = len(self.main_pin) - 1 
+            self.main_pin[-1].data['index'] = len(self.main_pin) - 1 
+            self.p.run_task(self.story.save_dict)
+            tabs.content.controls[0].indicator_color = self.main_pin[-1].data.get('color', ft.Colors.ON_SURFACE_VARIANT)
+            
+            self.p.run_task(self.main_pin[-1].save_dict)
+
+        else:
+            for widget in self.main_pin:
+                if widget.data.get('index', -1) == self.story.data.get('main_pin_selected_idx', 0):
+                    tabs.content.controls[0].indicator_color = widget.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
+                    tabs.selected_index = widget.data.get('index', 0)
+                    break
+
+        # If our selected index is out of range (The active tab was last and just hidden), make the last tab active
         if int(self.story.data.get('main_pin_selected_idx', 0)) >= len(self.main_pin):
-            self.story.data['main_pin_selected_idx'] = -1
-            tabs.selected_index = -1
+            self.story.data['main_pin_selected_idx'] = len(self.main_pin) - 1
+            tabs.selected_index = len(self.main_pin) - 1
             self.p.run_task(self.story.save_dict)
 
-        # Set the divider color to match active tab
-        for widget in self.main_pin:
-            if widget.data.get('index', -1) == self.story.data.get('main_pin_selected_idx', 0):
-                tabs.content.controls[0].indicator_color = widget.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
-                break
 
         # Set our tabs as the content
         self.content = tabs

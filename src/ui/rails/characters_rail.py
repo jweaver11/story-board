@@ -9,11 +9,11 @@ from styles.menu_option_style import MenuOptionStyle
 from ui.rails.rail import Rail
 from models.views.story import Story
 from styles.rail.widget_rail_item import WidgetRailItem
+from styles.rail.tree_view_file import TreeViewFile
 import json
 from utils.alert_dialogs.character_connection import new_character_connection_clicked
 from models.isolated_controls.column import IsolatedColumn
 from models.isolated_controls.list_view import IsolatedListView
-from styles.rail.tree_view_file import TreeViewFile
 import asyncio
 
 
