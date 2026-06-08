@@ -119,7 +119,7 @@ class Story(ft.View):
         
         
         
-    # Isolates stories from page.update calls. Needed for keeper performance when opening menus
+    # Isolates stories from page.update calls. Needed for keeping performance when opening menus
     def is_isolated(self): 
         return True
     

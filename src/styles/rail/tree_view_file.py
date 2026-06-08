@@ -136,7 +136,7 @@ class TreeViewFile(ft.GestureDetector):
             #visual_density=ft.VisualDensity.COMPACT
         #)
 
-        self.content = ft.Draggable(
+        self.content = ft.Draggable( 
             group="widgets",
             data=self.widget.data['key'],
             content_feedback=ft.TextButton(ft.Row([ft.Icon(self.icon, self.icon_color, expand=True), ft.Text(self.widget.title, style=self.text_style, expand=True)], expand=True)),
@@ -153,7 +153,4 @@ class TreeViewFile(ft.GestureDetector):
                 padding=ft.Padding.only(right=6, top=2, bottom=2),
                 
             ),
-            
-            
-        
     )

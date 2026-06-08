@@ -61,10 +61,8 @@ class WidgetRailItem(ft.GestureDetector):
             on_exit = self._stop_highlight,
             on_secondary_tap = lambda _: self.widget.story.open_menu(self.get_menu_options()),
             on_tap = self.widget.show_widget,
-            mouse_cursor = ft.MouseCursor.CLICK,
+            #mouse_cursor = ft.MouseCursor.CLICK,
         )
-
-        self.reload()
     
     # Called when this item is right clicked
     def get_menu_options(self) -> list[ft.Control]:
@@ -107,14 +105,14 @@ class WidgetRailItem(ft.GestureDetector):
 
     # Called when hovering mouse over a tree view item
     async def _highlight(self, e=None):
-        self.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
-        self.content.trailing.visible = True    
+        self.content.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
+        #self.content.trailing.visible = True    
         self.update()
 
     # Called when stopping hover over a tree view item
     async def _stop_highlight(self, e=None):
-        self.content.bgcolor = ft.Colors.TRANSPARENT
-        self.content.trailing.visible = False
+        self.content.content.bgcolor = ft.Colors.TRANSPARENT
+        #self.content.trailing.visible = False
         self.update()
 
     
@@ -122,34 +120,22 @@ class WidgetRailItem(ft.GestureDetector):
 
 
     # Called to reload our tree view file display
-    def reload(self):
+    def build(self):
 
-        # If we're in a sub folder in the directory, make leading contorl also have a line
-        if self.father is not None:
-            leading_control = ft.Row([ft.VerticalDivider(2, 2), ft.Icon(self.icon, color=self.icon_color)], tight=True)
-        else:
-            leading_control = ft.Icon(self.icon, color=self.icon_color)
+        leading_control = ft.Container(
+            ft.Icon(self.icon, color=self.icon_color),
+            border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if self.father is not None else None,
+            padding=ft.Padding.only(left=6)
+        )
 
-        self.content = ft.ListTile(
-            leading=leading_control, 
-            title=ft.Text(self.widget.title, style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
-            shape=ft.RoundedRectangleBorder(radius=6),
-            bgcolor=ft.Colors.TRANSPARENT, 
-            dense=True,
-            content_padding=ft.Padding.only(left=10),
-            min_vertical_padding=0,
-            mouse_cursor=ft.MouseCursor.CLICK,
-            trailing=ft.IconButton(
-                icon=ft.Icons.MORE_VERT_ROUNDED,
-                visible=False,
-                on_click=lambda e: self.widget.story.open_menu(self.get_menu_options()),
-                mouse_cursor=ft.MouseCursor.CLICK,
-            ),
+        self.content = ft.Container(
+            ft.Row([
+                leading_control, 
+                ft.Text(self.widget.title, style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                #self.options_button
+            ], spacing=6),
+            border_radius=4,
+            #border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if self.father is not None else None,
+            padding=ft.Padding.only(right=6, top=2, bottom=2),
         )
         
-
-        
-        try:
-            self.update()
-        except Exception as _:
-            pass
