@@ -62,6 +62,9 @@ class CharacterConnectionMap(Widget):
         if is_new:
             self.p.run_task(self.save_dict)
     
+        # State tracking
+        self.source_character: str = None
+        self.target_character: str = None
 
         
 
@@ -74,25 +77,29 @@ class CharacterConnectionMap(Widget):
 
     
     class CharacterNode(ft.GestureDetector):
-        def __init__(self, char_key: str, position: tuple, parent_map: 'CharacterConnectionMap'):
+        def __init__(self, char_key: str, position: tuple, parent_map: 'CharacterConnectionMap', color):
             super().__init__(
                 content=ft.Container(width=50, height=50, bgcolor=ft.Colors.BLUE, border_radius=25),
-                #on_enter=self._highlight_char_node,
+                on_enter=self._highlight,
+                on_exit=self._stop_highlight,
                 #on_pan_start=self._start_drag,  ?
                 #on_pan_end=self.
             )
             self.char_key = char_key
             self.position = position
             self.parent_map = parent_map
+            self.color = color
 
-        def _on_hover(self, e):
+        def _highlight(self, e):
             ''' When we hover over a character node, we want to highlight it and show its connections '''
             self.content.bgcolor = ft.Colors.CYAN
+            self.content.shadow = ft.BoxShadow(8, 8, ft.Colors.with_opacity(0.6, self.color))
             self.update()
 
-        def _on_exit(self, e):
+        def _stop_highlight(self, e):
             ''' When we stop hovering over a character node, we want to stop highlighting it '''
             self.content.bgcolor = ft.Colors.BLUE
+            self.content.shadow = None
             self.update()
     
 
@@ -102,9 +109,12 @@ class CharacterConnectionMap(Widget):
 
         # TODO: 
         # PURPOSE: To show a character connection map of our characters and their connections to one another
-        # character_bank = show all characters in the story not included (dragged out) onto the map already
-        # Inside the character bank, they are a draggable. Inside the stack, they are a gd. (their draggable dragging content is the gd). 
-        # When dragged left less than 200 px, remove from stack and add to char bank
+        # Have checkmarks in a column on the left to add or remove characters from the map
+        # Use canvas to draw lines between characters for their connections
+        # Show info on the right for all connections so we can change color, desc, etc.
+
+        async def draw_connections():
+            pass
 
 
                
