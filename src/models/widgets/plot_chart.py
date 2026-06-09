@@ -97,11 +97,8 @@ class PlotChart(Widget):
 
         # Moves the node on the stack and updates the drawing that connects the edges
         async def move_node(self, e: ft.DragUpdateEvent):
-            delta_x = e.local_delta.x
-            delta_y = e.local_delta.y
-
-            self.left += delta_x
-            self.top += delta_y
+            self.left += e.local_delta.x
+            self.top += e.local_delta.y
             self.update()
 
         # Saves our new position when we are done dragging
