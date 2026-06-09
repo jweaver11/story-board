@@ -305,7 +305,7 @@ class Document(Widget):
             bgcolor=ft.Colors.SURFACE_CONTAINER,
         )
 
-        self.body_container.content = IsolatedRow([
+        self.body_container.content = ft.Row([
             document_container,
             ft.Column([     # Extra column to force vertical expansion
                 

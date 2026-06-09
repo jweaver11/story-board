@@ -95,12 +95,9 @@ def load_directory_data(
                 with open(os.path.join(directory, file_name), 'r', encoding='utf-8') as f:
                     file_data = json.load(f)
 
-                key = file_data.get('key', None)
-
-                for widget in story.widgets:
-                    if widget.data.get('key', None) == key:
-                        widget = widget
-                        break
+                #key = file_data.get('key', None)
+                id = file_data.get('id', None)
+                widget = story.get_widget_by_id(id)
 
             except Exception as e:
                 print(f"Error loading file {file_name} in directory {directory}: {e}")

@@ -949,14 +949,17 @@ class Plotline(Widget):
         )
             
 
-        self.body_container.content = ft.Row(
+        body = ft.Row(
             [
                 plotline_stack, 
                 self.show_info_button
             ], expand=True, spacing=0
         )
 
-        self._render_widget() 
+        self.body_container.content = body
+
+        self._render_widget()
+
 
         self.p.run_task(self.rebuild_plotline_canvas, True)
 

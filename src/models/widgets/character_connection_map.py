@@ -111,9 +111,7 @@ class CharacterConnectionMap(Widget):
                     ft.Text(self.name),
                     # Node here if not in char bank
                 ], tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0),
-                
                 shape=ft.BoxShape.CIRCLE,
-                #offset=ft.Offset(-0.5, 0),
                 data={'char_key': self.char_key}
             )
 
@@ -123,9 +121,8 @@ class CharacterConnectionMap(Widget):
             ''' When we hover over a character node, we want to highlight it and show its connections '''
             self.content.shadow = ft.BoxShadow(8, 8, ft.Colors.with_opacity(0.5, self.color))
             self.update()
-            if self.widget.source_character:
-                await self.widget.highlight_character_bank()
 
+        # Stop highlighting our character node when we stop hovering over it. Ignore if we're dragging
         async def _stop_highlight(self, e=None):
             ''' When we stop hovering over a character node, we want to stop highlighting it '''
             if self.is_dragging:
@@ -254,9 +251,9 @@ class CharacterConnectionMap(Widget):
                 # Re-Draw edges
                 
 
-    
-    class ConnectionEdge(ft.GestureDetector):
-        def __init__(self, char_key: str, position: tuple, widget: 'CharacterConnectionMap', color):
+    # Just for drawing the connection on the canvas, and icon on the stack
+    class ConnectionEdge(cv.Path):
+        def __init__(self, start_position: tuple, end_position: tuple, widget: 'CharacterConnectionMap', color):
             super().__init__(
                 content=ft.Container(width=50, height=50, bgcolor=ft.Colors.BLUE, border_radius=25),
                 #on_enter=self._highlight,
@@ -264,8 +261,7 @@ class CharacterConnectionMap(Widget):
                 #on_pan_start=self._start_drag,  ?
                 #on_pan_end=self.
             )
-            self.char_key = char_key
-            self.position = position
+            
             self.widget = widget
             self.color = color
 
@@ -307,7 +303,7 @@ class CharacterConnectionMap(Widget):
         self.character_bank = ft.Column(
             [], scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER
         )
-        for widget in self.story.widgets:
+        for widget in self.story.widgets.values():
             if widget.data.get('tag') == 'character':
                 if widget.data.get('key') in self.data['characters']:
                     continue
@@ -355,7 +351,8 @@ class CharacterConnectionMap(Widget):
             ),
             border=ft.Border.only(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
             width=100,
-            expand=True
+            expand=True,
+            padding=ft.Padding.symmetric(vertical=10),
         )
 
         self.connections_stack.controls.append(ft.Column([self.character_bank_container]))
@@ -371,10 +368,10 @@ class CharacterConnectionMap(Widget):
         
         # Set our content to the body_container (from Widget class) as the body we just built
         #self.body_container.content = iv
+
+
         self.body_container.content = self.connections_stack
 
-
-        # Call render widget (from Widget class) to update the UI
         self._render_widget()
             
 

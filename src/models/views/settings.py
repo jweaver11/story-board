@@ -216,7 +216,7 @@ class Settings(ft.View):
         ''' Called when the page is closed. Saves any last changes to settings before exit '''
 
         if self.story is not None:
-            for widget in self.story.widgets:
+            for widget in self.story.widgets.values():
                 if widget.save_counter > 0:
                     widget.save_counter = 1000   # Will force a file write to widgets who have unwritten changes to their file
                     await widget.save_dict()

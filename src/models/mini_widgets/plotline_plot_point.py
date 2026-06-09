@@ -314,7 +314,7 @@ class PlotPoint(MiniWidget):
         def _get_Relevant_characters() -> list[str]:
             char_list = []
             
-            for widget in self.widget.story.widgets:
+            for widget in self.widget.story.widgets.values():
                 if widget.data.get('tag', None) == 'character':
                     char_key = widget.data.get('key', "")
                     
@@ -367,7 +367,7 @@ class PlotPoint(MiniWidget):
             ]
             char = None
             for idx, ic_key in enumerate(self.data.get('Relevant Characters', [])):
-                for widget in self.widget.story.widgets:
+                for widget in self.widget.story.widgets.values():
                     if widget.data.get('key', "") == ic_key and widget.data.get('tag', None) == 'character':
                         char = widget
                         break

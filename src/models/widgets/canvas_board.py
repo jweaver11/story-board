@@ -40,7 +40,8 @@ class CanvasBoard(Widget):
             is_rebuilt = is_rebuilt
         )
 
-        self.body_container.padding = ft.Padding.only(bottom=10)
+        #self.body_container.padding = ft.Padding.only(bottom=10)
+        self.padding = ft.Padding.only(bottom=10)
 
         # Verifies this object has the required data fields, and creates them if not
         verify_data(
@@ -147,10 +148,7 @@ class CanvasBoard(Widget):
         canvas.shapes.append(point)
 
         # After dragging canvas widget, it loses page reference and can't update, so the exception handles that.
-        try:
-            canvas.update()
-        except Exception:
-            pass
+        self._render_widget()
             
         # Need to save, as this function stands alone and no others will run after it
         await self.save_canvas(e)
@@ -427,7 +425,7 @@ class CanvasBoard(Widget):
         def _load_canvases() -> list[ft.Control]:
             canvases_list = []
 
-            for widget in self.story.widgets:
+            for widget in self.story.widgets.values():
                 if widget.data['tag'] == 'canvas':
                     
                     canvases_list.append(
@@ -448,7 +446,7 @@ class CanvasBoard(Widget):
         async def _connect_confirmed(e=None):
             nonlocal canvas_key 
             canvas_color = "outline"
-            for w in self.story.widgets:
+            for w in self.story.widgets.values():
                 if w.data['key'] == canvas_key:
                     canvas_color = w.data.get('color', "outline")
                     canvas_title = w.title
@@ -489,7 +487,7 @@ class CanvasBoard(Widget):
     def _set_canvas_snapshot(self, canvas_key: str) -> str:
 
         capture_list = []
-        for widget in self.story.widgets:
+        for widget in self.story.widgets.values():
             if widget.data['key'] == canvas_key:
                 for layer in widget.data.get('canvas_data', {}).get('Layers', []):
                     if layer.get('capture', ""):
@@ -809,13 +807,13 @@ class CanvasBoard(Widget):
 
             ])
     
-
         self.body_container.content = body
 
-        # Add choose file to preview options
-
-        # Call render widget (from Widget class) to update the UI
         self._render_widget()
+
+        # TODO: Add choose file to preview options
+
+       
             
 
 

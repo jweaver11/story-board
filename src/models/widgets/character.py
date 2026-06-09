@@ -43,7 +43,7 @@ class Character(Widget):
             data = data,   
             is_rebuilt = is_rebuilt 
         )
-        self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
+        #self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
 
 
         # Verifies this object has the required data fields, and creates them if not
@@ -629,8 +629,6 @@ class Character(Widget):
         # Load in our character data controls after the header
         body.controls.extend(_load_character_data_controls())   
 
-        # Set the body we built
         self.body_container.content = body
 
-        # Call render widget (from Widget class) to update the UI
         self._render_widget()

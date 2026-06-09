@@ -190,14 +190,17 @@ class Canvas(Widget):
     # Called in the constructor
     def _create_information_display(self) -> CanvasInformationDisplay:
         ''' Creates our plotline information display mini widget '''
-        
-        return CanvasInformationDisplay(
+
+        id = CanvasInformationDisplay(
             title=self.title,
             widget=self,
             page=self.p,
             key="canvas_data",     
             data=self.data.get('canvas_data'),      
         )
+        id.shadow = None
+        
+        return id
         
 
     def _get_menu_options(self):
@@ -779,7 +782,6 @@ class Canvas(Widget):
 
 
         information_display = self._create_information_display()  
-
 
         self.body_container.content = ft.Row([interactive_viewer, information_display], expand=True, spacing=0)
 

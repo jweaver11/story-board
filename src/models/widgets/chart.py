@@ -1141,8 +1141,6 @@ class Chart(Widget):
             self._bar_chart_view()
         else:
             self._radar_chart_view()
-        
-        
-        # Build in widget function that will handle loading our mini widgets and rendering the whole thing
+
         self._render_widget()
         

@@ -339,7 +339,7 @@ class PlotChart(Widget):
                 self.page.overlay[-1].update()
 
 
-            self.content = ft.Container(
+            self.body_container.content = ft.Container(
                 ft.Column([
                     ft.GestureDetector(
                         ft.Row([ft.Text(self.label, expand=True, overflow=ft.TextOverflow.ELLIPSIS, text_align=ft.TextAlign.CENTER)], alignment=ft.MainAxisAlignment.CENTER),
@@ -871,10 +871,7 @@ class PlotChart(Widget):
                 mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
             )
                     
-
-        # Assign the body_container content as whatever view you have built in the widget
+        
         self.body_container.content = ft.Row([iv, plot_chart_info], expand=True, spacing=0)
-        
-        # Build in widget function that will handle loading our mini widgets and rendering the whole thing
+
         self._render_widget()
-        

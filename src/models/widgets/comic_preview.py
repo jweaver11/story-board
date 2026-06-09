@@ -58,8 +58,6 @@ class ComicPreview(Widget):
                 ],                      
             },
         )
-
-        #self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
         
 
         # Saving creates the file if we're new
@@ -144,7 +142,7 @@ class ComicPreview(Widget):
             return base64.b64encode(output.getvalue()).decode("utf-8")
 
         capture_list = []
-        for widget in self.story.widgets:
+        for widget in self.story.widgets.values():
             if widget.data['key'] == canvas_key:
                 for layer in widget.data.get('canvas_data', {}).get('Layers', []):
                     if layer.get('capture', ""):
@@ -216,7 +214,7 @@ class ComicPreview(Widget):
             await asyncio.sleep(0)
             key = e.control.data
             title = None
-            for widget in self.story.widgets:
+            for widget in self.story.widgets.values():
                 if widget.data.get('key') == key:
                     title = widget.title    
             self.data['featured_canvases'].append({
@@ -425,7 +423,7 @@ class ComicPreview(Widget):
         )
 
         # For loop to add all canvases in story as options to be featured in the preview
-        for widget in self.story.widgets:
+        for widget in self.story.widgets.values():
             if widget.data.get('tag', "") == "canvas":
                 selectable_snapshots.controls.append(
                     
@@ -486,9 +484,6 @@ class ComicPreview(Widget):
         )
 
         
-
-        # Assign the body_container content as whatever view you have built in the widget
         self.body_container.content = ft.Row([preview_display_wrapper, snapshot_mini_map_container], spacing=0, expand=True)
-        
-        # Build in widget function that will handle loading our mini widgets and rendering the whole thing
+
         self._render_widget()

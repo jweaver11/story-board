@@ -48,15 +48,13 @@ class Note(Widget):
                 ]
             },
         )
-        self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
-        
 
         # Saving creates the file if we're new
         if is_new:
             self.p.run_task(self.save_dict)
-        
+
         if self.visible:
-            self.reload_widget()         # Build our widget if it's visible on init
+            self.reload_widget()
 
     # Opens a dialog to create a new segment in the note and then saves and reloads
     async def _create_new_segment(self, e=None):
@@ -65,7 +63,7 @@ class Note(Widget):
         async def create_segment(e=None):
             self.data['note_data'].append({"title": new_segment_tf.value, "content": ""})
             await self.save_dict()
-            self.reload_widget()
+            await self.rebuild()
             self.p.pop_dialog()
 
         new_segment_tf = ft.TextField(label="Segment Title", autofocus=True, capitalization=ft.TextCapitalization.WORDS, on_submit=create_segment)
@@ -95,14 +93,17 @@ class Note(Widget):
         if len(self.data['note_data']) > index:
             del self.data['note_data'][index]
             await self.save_dict()
-            self.reload_widget()
+            await self.rebuild()
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
-        # Rebuild out tab to reflect any changes
+        # Run any constistant build from parent class, like setting up the tab
         self.reload_tab()
+
+        # Set our padding
+        self.padding = ft.Padding.only(left=16, top=16, bottom=16)
         
         # Hold our segment controls when we load the note data
         segments_list = []
@@ -141,9 +142,9 @@ class Note(Widget):
             controls=segments_list + [ft.Row([add_segment_button], alignment=ft.MainAxisAlignment.CENTER)]
         )
 
-        # Assign the body_container content as whatever view you have built in the widget
+        # Assign our built widget as our content
+        
+
         self.body_container.content = body
-        
-        # Build in widget function that will handle loading our mini widgets and rendering the whole thing
+
         self._render_widget()
-        

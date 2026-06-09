@@ -193,6 +193,8 @@ class Workspace(ft.Container):
 
         widget = None
 
+        # TODO: Change to widget ID
+
         for w in self.story.widgets:
             if w.data.get('key', "") == widget_key:
                 widget = w
@@ -246,13 +248,14 @@ class Workspace(ft.Container):
 
     def arrange_widgets(self):
         self.main_pin.clear()
-        sorted_widgets = sorted(self.story.widgets, key=lambda w: w.data.get('index', 0))
+        sorted_widgets = sorted(self.story.widgets.values(), key=lambda w: w.data.get('index', 0))
         visible_widget_index = 0
         for w in sorted_widgets:
             if w.data.get('visible', False):
 
                 # Rebuild and add the widget to the main pin
-                widget = self.story.rebuild_widget(w)    
+                widget = self.story.rebuild_widget(w)  
+                #widget = w  
                 self.main_pin.append(widget)
 
                 # If this widget index is not 999, (meaning we were not just added to workspace), don't set that index 
@@ -263,6 +266,9 @@ class Workspace(ft.Container):
     
 
     def reload_workspace(self):
+
+        # TODO: Make the widget itself as the content part, we add its tab portion here.
+        # Will reduce control count a lot
 
         self.arrange_widgets()
 
@@ -304,6 +310,7 @@ class Workspace(ft.Container):
                     tabs=[widget.tab for widget in self.main_pin], scrollable=True, indicator_color=ft.Colors.ON_SURFACE_VARIANT, divider_height=2
                 ), 
                 ft.TabBarView(
+                    #controls=[widget.master_stack for widget in self.main_pin],
                     controls=[widget.master_stack for widget in self.main_pin],
                     expand=True
                 )

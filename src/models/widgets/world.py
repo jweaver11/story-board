@@ -37,7 +37,7 @@ class World(Widget):
             data = data,  
             is_rebuilt = is_rebuilt  
         )
-        self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
+        #self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
         
         # Verifies this object has the required data fields, and creates them if not
         verify_data(
@@ -194,7 +194,7 @@ class World(Widget):
     def _set_canvas_snapshot(self, canvas_key: str) -> str:
 
         capture_list = []
-        for widget in self.story.widgets:
+        for widget in self.story.widgets.values():
             if widget.data['key'] == canvas_key:
                 for layer in widget.data.get('canvas_data', {}).get('Layers', []):
                     if layer.get('capture', ""):
@@ -531,11 +531,10 @@ class World(Widget):
         # Load in our world data controls after the header
         body.controls.extend(_load_world_data_controls())   
 
-        # Set the body we built
         self.body_container.content = body
 
-        # Call render widget (from Widget class) to update the UI
         self._render_widget()
+
 
 
 

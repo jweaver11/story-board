@@ -29,7 +29,7 @@ class Item(Widget):
             data = data,
             is_rebuilt = is_rebuilt
         )
-        self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
+        #self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
 
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
@@ -340,9 +340,7 @@ class Item(Widget):
         # Load in our item data controls after the header
         body.controls.extend(_load_item_data_controls())   
 
-        # Set the body we built
         self.body_container.content = body
-        
-        # Build in widget function that will handle loading our mini widgets and rendering the whole thing
+
         self._render_widget()
         

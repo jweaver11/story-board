@@ -17,6 +17,7 @@ from styles.snack_bar import SnackBar
 from styles.menu_option_style import MenuOptionStyle
 import flet.canvas as cv
 import asyncio
+import uuid
 
 
 
@@ -34,21 +35,17 @@ class Widget(ft.Container):
         is_rebuilt: bool = True   # Whether to verify/create data fields or not. Set to false when rebuilding
     ):
 
-        # Sets uniformity for all widgets
-        super().__init__(
-            #expand=True, 
-            data=data,                              # Sets our data. 
-            #border_radius=ft.BorderRadius.all(10),
-            #gradient=dark_gradient,
-            #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            #clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-        )
-
-        # Set our parameters we passed in (data set in super())
+        # Parent constructor to set data and other attributes
+        super().__init__(data=data)
         self.title: str = title                     
         self.p: ft.Page = page                               
         self.directory_path: str = directory_path        
-        self.story: Story = story                
+        self.story: Story = story    
+
+        # Set an id for the widget
+        id = self.data.get('id', None) if self.data is not None else None
+        if id is None:
+            id = str(uuid.uuid4())            
 
         # Verifies this object has the required data fields, and creates them if not
         if not is_rebuilt:
@@ -56,6 +53,7 @@ class Widget(ft.Container):
                 self,   # Pass in our own data so the function can see the actual data we loaded
                 {
                     #'key': f"{self.directory_path}\\{return_safe_name(self.title)}_tag",  # Unique key for this widget based on directory path + title
+                    'id': id,     # Unique ID for each widget that never changes
                     'title': self.title,                            # Title of our widget  
                     'directory_path': self.directory_path,          # Directory path to the file this widget's data is stored in
                     'tag': str,                                     # Tag to identify what type of widget this is
@@ -104,37 +102,31 @@ class Widget(ft.Container):
 
         # UI ELEMENTS - Tab
         self.tabs: ft.Tabs # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
-        self.tab: ft.Tab  # Tab that holds our title and hide icon button. Nests inside of a ft.Tabs control
         self.icon: ft.Icon
         self.tab_text: ft.Text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
 
         # Grabs our tag to determine the icon we'll use
         tag = self.data.get('tag', '')
-
-        # Set our icon based on what type of widget we are using tag
         match tag:
-            case "document": self.icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
-            case "canvas": self.icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
-            case "canvas_board": self.icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
-            case "note": self.icon = ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED)
-            case "character": self.icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
-            case "character_connection_map": self.icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
-            case "plotline": self.icon = ft.Icon(ft.Icons.TIMELINE)
-            case "map": self.icon = ft.Icon(ft.Icons.MAP_OUTLINED)
-            case "world": self.icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
-            case "item": self.icon = ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED)
-            case "chart": self.icon = ft.Icon(ft.Icons.INSERT_CHART_OUTLINED)
-            case "comic_preview": self.icon = ft.Icon(ft.Icons.SLIDESHOW_OUTLINED)
-            case _: self.icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
+            case "document": icon = ft.Icons.DESCRIPTION_OUTLINED
+            case "canvas": icon = ft.Icons.BRUSH_OUTLINED
+            case "canvas_board": icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
+            case "note": icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
+            case "character": icon = ft.Icons.PERSON_OUTLINE
+            case "character_connection_map": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
+            case "plotline": icon = ft.Icons.TIMELINE
+            case "map": icon = ft.Icons.MAP_OUTLINED
+            case "world": icon = ft.Icons.PUBLIC_OUTLINED
+            case "item": icon = ft.Icons.STAR_OUTLINE_ROUNDED
+            case "chart": icon = ft.Icons.INSERT_CHART_OUTLINED
+            case "comic_preview": icon = ft.Icons.SLIDESHOW_OUTLINED
+            case _: icon = ft.Icons.ERROR_OUTLINE
 
 
-        # Set the color and size
-        self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
-
+        # Create our icon, text, and hide_button for the tab
+        self.icon = ft.Icon(icon, color=self.data.get('color', ft.Colors.PRIMARY))
         tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
-        
-        # Our icon button that will hide the widget when clicked in the workspace
-        hide_tab_icon_button = ft.IconButton(    # Icon to hide the tab from the workspace area
+        hide_tab_icon_button = ft.IconButton(    
             scale=0.8,
             on_click=self.hide_widget,
             icon=ft.Icons.CLOSE_ROUNDED,
@@ -143,34 +135,18 @@ class Widget(ft.Container):
             mouse_cursor=ft.MouseCursor.CLICK,
         )
 
-
+        # GD to hold tab elements and open menus
         self.tab_gd = ft.GestureDetector(
             ft.Row([self.icon, tab_text, hide_tab_icon_button]),
             mouse_cursor=ft.MouseCursor.CLICK,
             hover_interval=100,
             on_hover=self._set_coords,
             on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
+            on_secondary_tap_down=lambda e: print(e)
         )
 
-        # Tab that holds our widget title and 'body'.
-        # Since this is a ft.Tab, it needs to be nested in a ft.Tabs control or it wont render.
-        self.tab = ft.Tab(
-
-            # Content of the tab itself. Has widgets name and hide widget icon, and functionality for dragging
-            label=ft.Draggable(   # Draggable is the control so we can drag and drop to different pin locations
-                group="widgets",    # Group for draggables (and receiving drag targets) to accept each other
-                data=self.data.get('key', ""),  # Pass ourself through the data (of our tab, NOT our object) so we can move ourself around
-
-                # Drag event utils
-                on_drag_start=self._start_drag,    # Shows our pin targets when we start dragging
-
-                # Content when we are dragging the follows the mouse
-                content_feedback=ft.TextButton(self.title), # Normal text won't restrict its own size, so we use a button
-
-                # The content of our draggable. We use a gesture detector so we have more events
-                content=self.tab_gd
-            )                    
-        )
+        # Create the tab itself
+        self.tab = ft.Tab(self.tab_gd)
 
         # Tabs stuff
         self.tabs = ft.Tabs(
@@ -182,7 +158,7 @@ class Widget(ft.Container):
                 ft.TabBarView([self.master_stack], expand=True, clip_behavior=ft.ClipBehavior.NONE)# Holds our body
             ], expand=True, spacing=0),
         )   
-        self.content = self.tabs
+        #self.content = self.tabs
 
         # Called at end of constructor for all child widgets to build their view (not here tho since we're not on page yet)
         #self.reload_widget()
@@ -298,7 +274,7 @@ class Widget(ft.Container):
         new_key = f"{new_directory}\\{self.title}_{self.data.get('tag', '')}"
 
         # Go through our widgtes. If any have the same key as our new key, we cannot move, so we return false
-        for widget in self.story.widgets:
+        for widget in self.story.widgets.values():
 
             # Skip ourselves
             if widget == self:
@@ -497,7 +473,6 @@ class Widget(ft.Container):
         # Adds us to the end of the current tabs
         self.data['index'] = 999    
         await self.story.save_dict()
-        print(self.title, self.data['visible'])
 
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
         
@@ -690,7 +665,7 @@ class Widget(ft.Container):
             if hasattr(self, 'information_display'):
                 if self.information_display.visible:
                     self.information_display.reload_mini_widget()
-            self.reload_widget()
+            await self.rebuild_widget()
             self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
             await self.story.close_menu()
 
@@ -726,10 +701,8 @@ class Widget(ft.Container):
 
             self.p.pop_dialog()
             if self.delete_file():
-                for widget in self.story.widgets:
-                    if widget.data.get('key', '') == self.data.get('key', ''):
-                        self.story.widgets.remove(widget)
-                        break
+                self.story.widgets.pop(self.data.get('key', ''), None)   # Remove ourselves from the story's widgets
+                
             
             await asyncio.sleep(0.2)
             self.story.active_rail.reload_rail()    # Reload the rail to reflect the deletion
@@ -756,17 +729,6 @@ class Widget(ft.Container):
             self.p.show_dialog(dlg)
         else:
             _delete_confirmed()
-
-        
-    async def _set_active_tab(self, e=None):
-        self.data['is_active_tab'] = True
-
-        for w in self.story.widgets:
-            if w != self:
-                w.data['is_active_tab'] = False
-                await w.save_dict()
-
-        await self.save_dict()
 
     # Called when mouse hovers over the map
     async def _get_coords(self, e: ft.PointerEvent):
@@ -809,6 +771,7 @@ class Widget(ft.Container):
             except Exception as _:
                 pass
 
+
     # Called by child classes at the end of their constructor, or when they need UI update to reflect changes
     def reload_widget(self):
         ''' Children build their own content of the widget in their own reload_widget functions '''
@@ -826,10 +789,9 @@ class Widget(ft.Container):
         not_self_header = ft.Row(height=50, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[ft.Text("This is a header")])
         self.body_container.content = ft.Column(controls=[not_self_header, self.body_container.content], expand=True, spacing=0)
 
-        # Call Render widget to handle the rest of the heavy lifting
         self._render_widget()
-
-    # Called when changes inside the widget require a reload to be reflected in the UI, like when adding mini widgets
+    
+     # Called when changes inside the widget require a reload to be reflected in the UI, like when adding mini widgets
     def _render_widget(self):
 
         # Clear out our master stack controls so we start fresh to re-render

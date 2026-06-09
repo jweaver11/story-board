@@ -114,7 +114,7 @@ class Story(ft.View):
 
         
         # Store all our widgets above in a master list for easier rendering in the UI
-        self.widgets: list = []    
+        self.widgets: dict = {} 
 
         
         
@@ -148,7 +148,7 @@ class Story(ft.View):
         
         # Handle errors
         except Exception as e:
-            self.p.open(SnackBar(f"Error saving story data: {e}"))
+            self.p.show_dialog(SnackBar(f"Error saving story data: {e}"))
 
     # Called for little data changes
     def change_data(self, **kwargs):
@@ -165,6 +165,10 @@ class Story(ft.View):
         # Handle errors
         except Exception as e:
             print(f"Error changing data {key}:{value} for story {self.title}: {e}")
+
+    # Get widget object by its unique ID.
+    def get_widget_by_id(self, id: str) -> ft.Control:
+        return self.widgets.get(id, None)
 
     # Called when a new folder/category is created.
     def create_folder(self, directory_path: str, name: str):
@@ -210,9 +214,10 @@ class Story(ft.View):
             for widget in self.widgets.copy():
                 widget_dir_norm = os.path.normcase(os.path.normpath(widget.directory_path))
                 if widget_dir_norm == full_norm or widget_dir_norm.startswith(full_norm + os.sep):
-                    #widget.delete_file()
-                    if widget in self.widgets:
-                        self.widgets.remove(widget)
+                    if widget.data.get('id', None) in self.widgets:
+                        del self.widgets[widget.data['id']]
+                    #if widget in self.widgets:
+                        #self.widgets.remove(widget)
 
             # Remove this folder and every sub-folder from story data
             for folder in self.data['folders'].copy():
@@ -265,7 +270,7 @@ class Story(ft.View):
         old_norm = os.path.normcase(os.path.normpath(old_path))
 
         # Go through each widget and update its directory path if it was in the renamed folder
-        for widget in self.widgets:
+        for widget in self.widgets.values():
             widget_dir_norm = os.path.normcase(os.path.normpath(widget.directory_path))
             if widget_dir_norm == old_norm or widget_dir_norm.startswith(old_norm + os.sep):
                 # Compute the new directory using relpath so casing differences don't break the slice
@@ -326,11 +331,7 @@ class Story(ft.View):
         for dirpath, dirnames, filenames in os.walk(self.data['content_directory_path']):
             for filename in filenames:
 
-                # PHASE OUT, CHAPS WILL BE LOADED FROM WIDGET DATA
-                if filename.endswith("_text.json"):
-                    continue
-
-                # All our objects are stored as JSON
+                # All our objects are stored as JSON, so if not we skip
                 if filename.endswith(".json"):
                     file_path = os.path.join(dirpath, filename)   
                     
@@ -340,9 +341,10 @@ class Story(ft.View):
                         with open(file_path, "r", encoding='utf-8') as f:
                             widget_data = json.load(f)
                         
-                        # Extract the title from the data
+                        # Extract the title, directory, and unique widget id
                         tag = widget_data.get("tag", "")
                         dir_path = widget_data.get("directory_path", "")
+                        id = widget_data.get("id", "")
 
                         widget = None
 
@@ -455,15 +457,15 @@ class Story(ft.View):
                             case _:
                                 print("Widget tag not valid Tag: ", tag)
 
-                        if widget is not None:
-                            self.widgets.append(widget)
+                        if widget is not None and id != "":
+                            self.widgets[id] = widget
                             
                     # Handle errors if the path is wrong
                     except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
                         print(f"Error loading content from {filename}: {e}")
 
         # Reload all ccm's, since they need all characters loaded to work
-        for widget in self.widgets:
+        for widget in self.widgets.values():
             if widget.data.get('tag', "") == "character_connection_map" and widget.data.get('visible', False):
                 widget.reload_widget()
 
@@ -535,7 +537,7 @@ class Story(ft.View):
         if widget is not None:
             widget.save_counter = 100
             await widget.save_dict()
-            self.widgets.append(widget)
+            self.widgets[widget.data['id']] = widget
 
         # Finish tasks creating widget to make sure the file has enough time to save
         self.data['main_pin_selected_idx'] = len(self.workspace.main_pin)    
@@ -707,12 +709,10 @@ class Story(ft.View):
             case _:
                 self.p.show_dialog(SnackBar(f"Error rebuilding widget {widget.title}: Invalid tag {tag}"))
 
-        for w in self.widgets:
-            if w.data.get('key', None) == widget.data.get('key', None):
-                self.widgets.remove(w)
-                break
+        
 
-        self.widgets.append(new_widget)
+        self.widgets[new_widget.data['id']] = new_widget
+
         return new_widget
 
 
@@ -727,9 +727,9 @@ class Story(ft.View):
             self.close_menu_detector.visible = False
             self.close_menu_detector.update()
 
-        for widget in self.widgets:
-            if hasattr(widget, 'lock_position'):
-                widget.lock_position = False
+        #for widget in self.widgets.values():
+            #if hasattr(widget, 'lock_position'):
+                #widget.lock_position = False
 
     def close_menu_instant(self, e=None):
         ''' Closes our right click menu when clicking outside of it '''
@@ -740,9 +740,11 @@ class Story(ft.View):
         if self.close_menu_detector.visible:
             self.close_menu_detector.visible = False
             self.close_menu_detector.update()
-        for widget in self.widgets:
-            if hasattr(widget, 'lock_position'):
-                widget.lock_position = False
+        #for widget in self.widgets:expand=True,
+            alignment=ft.Alignment.CENTER,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            #if hasattr(widget, 'lock_position'):
+                #widget.lock_position = False
  
     # Called to open a right click menu in the page overlay
     def open_menu(self, menu_options: list):

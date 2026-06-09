@@ -456,6 +456,7 @@ class Map(Widget):
                 self.show_info_button
             ], expand=True, spacing=0
         )
+
         self._render_widget()
                
     
