@@ -9,6 +9,7 @@ from utils.verify_data import verify_data
 from models.app import app
 import flet.canvas as cv
 from models.mini_widgets.character_connection import CharacterConnection
+from styles.snack_bar import SnackBar
 
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
 class CharacterConnectionMap(Widget):
@@ -38,10 +39,10 @@ class CharacterConnectionMap(Widget):
                 'tag': "character_connection_map",
                 'color': app.settings.data.get('default_character_connection_map_color'),
                 'characters': {
-                    #'char_key': {name: str} # position of the character on the map
+                    #'id': {position} # position of the character on the map
                 },
                 'connections': [    # List of our connections
-                    {
+                    #{
                         # char 1 key: str
                         # char 1 key: str
                         # description: str
@@ -49,8 +50,7 @@ class CharacterConnectionMap(Widget):
                         # color: str  -- color of the drawn line and icon for the connection
                         # char1 position: tuple(x,y) -- position of the char1 icon on the map, relative to the center (0,0)
                         # char2 position: tuple(x,y) -- position of the char2 icon on the
-                        
-                    }
+                    #}
                 ],  
             },
         )
@@ -61,8 +61,8 @@ class CharacterConnectionMap(Widget):
             self.p.run_task(self.save_dict)
     
         # State tracking
-        self.source_character: str = None
-        self.target_character: str = None
+        self.char1: str = None
+        self.char2: str = None
         self.is_dragging = False
 
         self.character_bank: ft.Column = None
@@ -75,8 +75,8 @@ class CharacterConnectionMap(Widget):
             self.reload_widget()
 
     class CharacterNode(ft.GestureDetector):
-        def __init__(self, char_key: str, widget: 'CharacterConnectionMap', color, char_name: str, image: str, position: tuple=None):
-            self.char_key = char_key
+        def __init__(self, char_id: str, widget: 'CharacterConnectionMap', color, char_name: str, image: str, position: tuple=None):
+            self.char_id = char_id
             self.widget = widget
             self.image = image
             self.color = color
@@ -94,32 +94,149 @@ class CharacterConnectionMap(Widget):
                 on_exit=self._stop_highlight,
                 on_pan_start=self._start_drag,
                 on_pan_end=self._drag_end,
-                on_pan_update=self.drag_update,
+                on_pan_update=self.move_char_node,
                 left=position[0] if position else None,
                 top=position[1] if position else None,
                 animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN) if not self.in_character_bank else None,
                 offset=ft.Offset(-0.5, -0.5) if self.position else None,
                 width=80,
+                mouse_cursor=ft.MouseCursor.MOVE,
+                data={'id': self.char_id, 'position': self.position},   
             )
 
         # Used for building our content in case we need to add it temporarily when dragging from the character bank
         def build_content(self) -> ft.Container:
+
+            # Called to build a connector if this character node is outside the character bank
+            def build_connector() -> ft.GestureDetector:
+
+                # Highlight the node
+                async def _highlight_node(e: ft.PointerEvent):
+                    if self.widget.char1:
+                        self.widget.char2 = e.control.data
+                        print("Set target character to:", self.widget.char2)
+                    e.control.content.shadow = ft.BoxShadow(8, 8, ft.Colors.with_opacity(0.5, ft.Colors.ON_SURFACE))
+                    e.control.update()
+
+                # Stop highlighting the node
+                async def _stop_highlight_node(e: ft.PointerEvent):
+                    e.control.content.shadow = None
+                    e.control.update()
+
+                async def start_new_connection(e: ft.DragStartEvent):
+                    self.widget.char1 = e.control.data
+                    print("Set source character to:", self.widget.char1)
+                    self.page.overlay.append(
+                        ft.Container(
+                            cv.Canvas([
+                                cv.Line(
+                                    e.global_position.x, e.global_position.y, 
+                                    e.global_position.x, e.global_position.y, 
+                                    ft.Paint("#FFFFFF", stroke_width=3, style="stroke")
+                                )
+                            ], expand=True), 
+                        expand=True, ignore_interactions=True
+                        )
+                    )
+                    
+                    # Change cursor for visual feedback
+                    self.page.update()
+
+                # Update the visual feedback to follow our mouse as we drag to create a new edge
+                async def _update_line(e: ft.PointerEvent):
+                    line: cv.Line = self.page.overlay[-1].content.shapes[-1]  # Get the last line we added
+                    line.x2 = e.global_position.x
+                    line.y2 = e.global_position.y
+                    self.page.overlay[-1].update()
+
+                # Creates our new edge (link) between nodes
+                async def _create_new_connection(e: ft.PointerEvent):
+                    
+                    # Remove our visual feedback
+                    self.page.overlay.pop()
+                    self.page.update()
+
+                    # If its an incomplete edge (we didn't end on another node), reset and exit
+                    if not self.widget.char1 or not self.widget.char2:
+                        self.widget.char1 = None
+                        self.widget.char2 = None
+                        print("Incomplete connection, missing source or target character. Resetting.")
+                        return  
+                    
+                    # Don't allow connections to self
+                    if self.widget.char1.get('id') == self.widget.char2.get('id'):    # Don't allow connections to self
+                        self.page.show_dialog(SnackBar("Cannot connct a character to themself."))
+                        return  
+                    
+                    start_position = self.widget.char1.get('position')
+                    end_position = self.widget.char2.get('position')
+
+                    new_connection = {
+                        'char1_id': self.widget.char1.get('id'),
+                        'char2_id': self.widget.char2.get('id'),
+                        'color': "#FFFFFF",
+                        'char1_position': start_position,  
+                        'char2_position': end_position
+                    }
+
+                    # If the connection already exists, delete it and return
+                    for i, connection in enumerate(self.widget.data['connections']):
+                        if (connection['source'] == new_connection['source'] and connection['target'] == new_connection['target']) or (connection['source'] == new_connection['target'] and connection['target'] == new_connection['source']):
+                            self.widget.data['connections'].remove(connection)
+                            await self.widget.save_dict()
+                            self.widget.connections_canvas.shapes.pop(i)
+                            self.widget.connections_canvas.update()
+                            print("Connection exists, deleting it instead")
+                            return
+                    
+                    
+
+                    # Save new edget to data with source, target, start, end, and default color
+                    self.widget.data['connections'].append(new_connection)
+                    await self.widget.save_dict()
+                    print("Created new connection:", new_connection)
+
+                    # Reset state trackers
+                    self.widget.char1 = None
+                    self.widget.char2 = None
+
+                    self.widget.connections_canvas.shapes.append(
+                        self.widget.ConnectionEdge(
+                            self.widget,
+                            new_connection
+                        )
+                    )
+                    self.widget.connections_canvas.update()
+
+                    
+                    
+                return ft.GestureDetector(
+                    ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, scale=1.25), shape=ft.BoxShape.CIRCLE), 
+                    mouse_cursor=ft.MouseCursor.PRECISE,
+                    data={'id': self.char_id, 'position': self.position},                            
+                    on_enter=_highlight_node,   # Highlight and set target source trackers if we enter a node while dragging from another
+                    on_pan_start=start_new_connection,   # Show line to follow mouse
+                    on_pan_update=_update_line,   # Update line to follow mouse
+                    on_pan_end=_create_new_connection,  
+                    on_exit=_stop_highlight_node,  
+                )
             return ft.Container(
-                
-                    ft.Column([
-                    ft.Image(self.image, expand=True) if self.image else ft.Icon(ft.Icons.PERSON_OUTLINE_OUTLINED, self.color, size=40),
+                ft.Column([
+                    ft.Image(self.image, 50, 50) if self.image else ft.Icon(ft.Icons.PERSON_OUTLINE_OUTLINED, self.color, size=40),
                     ft.Text(self.name),
-                    # Node here if not in char bank
+                    ft.Container() if self.in_character_bank else build_connector()
                 ], tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0),
                 shape=ft.BoxShape.CIRCLE,
-                data={'char_key': self.char_key}
+                data={'char_id': self.char_id}
             )
 
 
         # Highlight our character node when we hover over it
         async def _highlight(self, e=None):
             ''' When we hover over a character node, we want to highlight it and show its connections '''
-            self.content.shadow = ft.BoxShadow(8, 8, ft.Colors.with_opacity(0.5, self.color))
+            if self.widget.char1:
+                self.widget.char2 = e.control.data
+            self.content.shadow = ft.BoxShadow(8, 8, ft.Colors.with_opacity(0.2, self.color))
             self.update()
 
         # Stop highlighting our character node when we stop hovering over it. Ignore if we're dragging
@@ -131,7 +248,7 @@ class CharacterConnectionMap(Widget):
             self.update()
 
         async def _start_drag(self, e: ft.DragStartEvent):
-            self.widget.source_character = self.char_key
+            
             self.is_dragging = True
             
             # If we're still in the character bank, don't try and move us, just reflect us moving on the stack
@@ -139,7 +256,7 @@ class CharacterConnectionMap(Widget):
 
                 # Create our content feedback when dragging. Give feedback a shadow, and matching offset
                 self.dragging_content = self.build_content()
-                self.dragging_content.shadow = ft.BoxShadow(8, 8, ft.Colors.with_opacity(0.5, self.color))
+                self.dragging_content.shadow = ft.BoxShadow(8, 8, ft.Colors.with_opacity(0.2, self.color))
                 self.dragging_content.offset = ft.Offset(-0.5, -0.5)
                 self.dragging_content.animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN)
                 
@@ -157,7 +274,7 @@ class CharacterConnectionMap(Widget):
                 pass
             
         # Moves our character node or feedback on teh stack
-        async def drag_update(self, e: ft.DragUpdateEvent):
+        async def move_char_node(self, e: ft.DragUpdateEvent):
             
             # If we're in the char bank, reflect our movement on the appended container on the stack
             if self.in_character_bank:
@@ -194,13 +311,13 @@ class CharacterConnectionMap(Widget):
                 if self.dragging_content.left < 100 or self.dragging_content.top < 0 or self.dragging_content.top > self.widget.cs_height or self.dragging_content.left > self.widget.cs_width:  
                     self.widget.connections_stack.controls.remove(self.dragging_content)
                     self.widget.connections_stack.update()
-                    self.widget.source_character = None
+                    self.widget.char1 = None
                     return
                 
                 self.in_character_bank = False
 
                 # Add to our widgets data
-                self.widget.data['characters'][self.char_key] = (self.dragging_content.left, self.dragging_content.top)
+                self.widget.data['characters'][self.char_id] = (self.dragging_content.left, self.dragging_content.top)
                 await self.widget.save_dict()   
                 
                 
@@ -215,9 +332,9 @@ class CharacterConnectionMap(Widget):
                 self.top = self.dragging_content.top
                 self.offset = ft.Offset(-0.5, -0.5)
                 self.animate_position = ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN)
+                self.content = self.build_content()
 
                 self.widget.connections_stack.update()
-                self.widget.source_character = None
 
                 #self.widget.reload_edges()
 
@@ -231,21 +348,22 @@ class CharacterConnectionMap(Widget):
                     self.top = None
                     self.offset = None
                     self.animate_position = None
+                    self.content = self.build_content()
 
                     self.widget.connections_stack.update()
                     await self._stop_highlight()
                     
                     self.in_character_bank = True
-                    self.widget.source_character = None
+                    self.widget.char1 = None
 
                     # Remove from our widgets data
-                    self.widget.data['characters'].pop(self.char_key, None)
+                    self.widget.data['characters'].pop(self.char_id, None)
                     await self.widget.save_dict()
                     
                     return
                 
                 # Update our positional data
-                self.widget.data['characters'][self.char_key] = (self.left, self.top)
+                self.widget.data['characters'][self.char_id] = (self.left, self.top)
                 await self.widget.save_dict()
 
                 # Re-Draw edges
@@ -253,13 +371,18 @@ class CharacterConnectionMap(Widget):
 
     # Just for drawing the connection on the canvas, and icon on the stack
     class ConnectionEdge(cv.Path):
-        def __init__(self, start_position: tuple, end_position: tuple, widget: 'CharacterConnectionMap', color):
+        def __init__(self, widget: 'CharacterConnectionMap', data: dict):
+            start_position = data.get('char1_position', ())
+            end_position = data.get('char2_position', ())
+            color = data.get('color', "#FFFFFF")
+            #description = data.get('description', '')
             super().__init__(
-                content=ft.Container(width=50, height=50, bgcolor=ft.Colors.BLUE, border_radius=25),
-                #on_enter=self._highlight,
-                #on_exit=self._stop_highlight,
-                #on_pan_start=self._start_drag,  ?
-                #on_pan_end=self.
+                [
+                    cv.Path.MoveTo(start_position[0], start_position[1]), 
+                    cv.Path.LineTo(end_position[0], end_position[1]), 
+                ],
+                paint=ft.Paint(color, stroke_width=3, style="stroke", anti_alias=True),
+                data=data
             )
             
             self.widget = widget
@@ -283,12 +406,10 @@ class CharacterConnectionMap(Widget):
         ''' Reloads/Rebuilds our widget based on current data '''
 
         # TODO: 
-        # PURPOSE: To show a character connection map of our characters and their connections to one another
-        # Use canvas to draw lines between characters for their connections
-        # Show info on the right for all connections so we can change color, desc, etc.
+        # Update connections cv.Paths after/during a character node drag movement
+        # Fix bug where recently added char nodes don't allow for new connections until reload_widget is called
 
-        async def draw_connections():
-            pass
+        
         
         # Set size of stack needed for ratios
         async def _set_connection_stack_size(e: ft.LayoutSizeChangeEvent):
@@ -305,19 +426,19 @@ class CharacterConnectionMap(Widget):
         )
         for widget in self.story.widgets.values():
             if widget.data.get('tag') == 'character':
-                if widget.data.get('key') in self.data['characters']:
+                if widget.data.get('id') in self.data['characters']:
                     continue
-                char_key = widget.data.get('key')
+                char_id = widget.data.get('id')
                 color = widget.data.get('color')
                 char_name = widget.title
                 image = widget.data.get('image_base64')
 
-                self.character_bank.controls.append(self.CharacterNode(char_key, self, color, char_name, image))
+                self.character_bank.controls.append(self.CharacterNode(char_id, self, color, char_name, image))
 
         self.character_bank.controls.append(ft.Container(expand=True))
 
         # Canvas that shows the drawn lines between characters for their connections and icons
-        canvas = cv.Canvas(
+        self.connections_canvas = cv.Canvas(
             content=ft.GestureDetector(
                 expand=True,
                 on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
@@ -329,16 +450,39 @@ class CharacterConnectionMap(Widget):
             expand=True, resize_interval=100,
             #on_resize=self._rebuild_canvas, 
         )
+
+        for connection in self.data['connections']:
+            print("Loading connection: ", connection)
+            self.connections_canvas.shapes.append(
+                self.ConnectionEdge(
+                    self,
+                    connection
+                )
+            )
         
         
         self.connections_stack = ft.Stack([
         
-            canvas
+            self.connections_canvas
             
         ], expand=True, alignment=ft.Alignment.TOP_LEFT, on_size_change=_set_connection_stack_size) 
 
-        for char_key, position in self.data['characters'].items():
-            self.connections_stack.controls.append(self.CharacterNode(char_key, self, ft.Colors.GREY, "Name", "", position))
+        for char_id, position in self.data['characters'].items():
+            
+            char = self.story.get_widget_by_id(char_id)
+            if char is None:
+                continue
+            self.connections_stack.controls.append(
+                self.CharacterNode(
+                    char_id, 
+                    self, 
+                    char.data.get('color'), 
+                    char.title, 
+                    char.data.get('image_base64', ''), 
+                    position
+                )
+                
+            )
 
         # TODO: Go through connected characters and add their icons to the map
         # Go through the added character icons and draw the connections between them, with room for icons

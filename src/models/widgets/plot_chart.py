@@ -339,7 +339,7 @@ class PlotChart(Widget):
                 self.page.overlay[-1].update()
 
 
-            self.body_container.content = ft.Container(
+            self.content = ft.Container(
                 ft.Column([
                     ft.GestureDetector(
                         ft.Row([ft.Text(self.label, expand=True, overflow=ft.TextOverflow.ELLIPSIS, text_align=ft.TextAlign.CENTER)], alignment=ft.MainAxisAlignment.CENTER),
@@ -364,9 +364,7 @@ class PlotChart(Widget):
                         ft.GestureDetector(
                             ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.color, scale=1.25), shape=ft.BoxShape.CIRCLE), 
                             mouse_cursor=ft.MouseCursor.PRECISE,
-                            data={'label': self.label, 'side': "right"},
-                        
-                            #on_accept=_create_new_edge,
+                            data={'label': self.label, 'side': "right"},                        
                             on_enter=_highlight_node,  
                             on_pan_start=start_new_edge,   
                             on_pan_update=_update_line,   
