@@ -837,8 +837,8 @@ class Story(ft.View):
             content=ft.Container(
                 width=10,   # Total width of the GD, so its easier to find with mouse
                 content=ft.VerticalDivider(2, 2),     # Original
-                padding=ft.Padding.only(right=8),  # Push the 2px divider ^ to the right side
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
+                padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOW
             ),
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging

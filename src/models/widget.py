@@ -701,7 +701,7 @@ class Widget(ft.Container):
 
             self.p.pop_dialog()
             if self.delete_file():
-                self.story.widgets.pop(self.data.get('key', ''), None)   # Remove ourselves from the story's widgets
+                self.story.widgets.pop(self.data.get('id', ''), None)   # Remove ourselves from the story's widgets
                 
             
             await asyncio.sleep(0.2)

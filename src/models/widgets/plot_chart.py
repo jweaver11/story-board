@@ -47,12 +47,14 @@ class PlotChart(Widget):
 
                 'description': str,
                 'show_info': True, 
+                'spider_web_view': False,
 
-                'nodes': [  # List of all our Nodes/events
+                'nodes': [],
+                  # List of all our Nodes/events
                     #{'label': "", 'description': "", 'position': (100, 100), 'color': '#FFFFFF'}
-                ], 
+                 
                 'edges': [    # List of all our Links/Connections between nodes
-                    #{'source': "", 'target': "", 'color': '#FFFFFF', 'start_position': (100, 100), 'end_position': (200, 200)}
+                    #{'source': "", 'target': "", 'color': '#FFFFFF', }
                 ] 
             },
         )
@@ -76,7 +78,7 @@ class PlotChart(Widget):
 
     class Node(ft.GestureDetector):
 
-        def __init__(self, widget: Widget, label: str, description: str="", position: tuple=tuple(), color: str="white"):
+        def __init__(self, widget: 'PlotChart', label: str, description: str="", position: tuple=tuple(), color: str="white"):
 
             
             self.label = label
@@ -101,6 +103,16 @@ class PlotChart(Widget):
             self.top += e.local_delta.y
             self.update()
 
+            for node in self.widget.data.get('nodes', []):
+                if node['label'] == self.label:
+                    node['position'] = (self.left, self.top)
+                    break
+
+            for edge in self.widget.edge_canvas.shapes:
+                if isinstance(edge, self.widget.Edge) and (edge.source_node == self.label or edge.target_node == self.label):
+                    edge.draw_edge()   
+                    edge.update()
+
         # Saves our new position when we are done dragging
         async def save_position(self):
             for node in self.widget.data.get('nodes', []):
@@ -108,11 +120,11 @@ class PlotChart(Widget):
                     node['position'] = (self.left, self.top)
                     break
 
-            for edge in self.widget.data.get('edges', []):
-                if edge['source'] == self.label:
-                    edge['start_position'] = (self.left, self.top)
-                elif edge['target'] == self.label:
-                    edge['end_position'] = (self.left, self.top)
+            #for edge in self.widget.data.get('edges', []):
+                #if edge['source'] == self.label:
+                    #edge['start_position'] = (self.left, self.top)
+                #elif edge['target'] == self.label:
+                    #edge['end_position'] = (self.left, self.top)
 
             await self.widget.save_dict()
             self.widget.reload_widget()   # Reload to update the new edge positions
@@ -342,11 +354,11 @@ class PlotChart(Widget):
             self.content = ft.Container(
                 ft.Column([
                     ft.GestureDetector(
-                        ft.Row([ft.Text(self.label, expand=True, overflow=ft.TextOverflow.ELLIPSIS, text_align=ft.TextAlign.CENTER)], alignment=ft.MainAxisAlignment.CENTER),
+                        ft.Row([ft.Text(self.label, expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER)], alignment=ft.MainAxisAlignment.CENTER),
                         on_pan_update=self.move_node,
                         on_pan_end=self.save_position,
                         mouse_cursor=ft.MouseCursor.MOVE,
-                        drag_interval=50,
+                        #drag_interval=50,
                     ),
                     ft.Divider(ft.Colors.SURFACE_CONTAINER_LOW, 2),
                     ft.Text(f"{self.description}\n", italic=True, color=ft.Colors.ON_SURFACE_VARIANT, max_lines=5, overflow=ft.TextOverflow.ELLIPSIS),
@@ -384,41 +396,63 @@ class PlotChart(Widget):
         
     # OLD -- Class for the Edges/Links between our nodes that show up as a line on the edge_canvas
     class Edge(cv.Path):
-        def __init__(self, start_position=(0, 0), end_position=(0, 0), color="#FFFFFF"):
+        def __init__(self, widget: 'PlotChart', data: dict):
+            self.source_node = data.get('source')
+            self.target_node = data.get('target')
+            self.color = data.get('color', "#FFFFFF")
+            self.widget = widget
 
-            # Set the offset for curves so lines are not just straight
-            x_curve_offset: int = abs(end_position[0] - start_position[0]) / 8
-            y_curve_offset: int = abs(end_position[1] - start_position[1]) / 8            
-            if start_position[1] >= end_position[1]:   
-                y_curve_offset = -y_curve_offset
-            if start_position[0] >= end_position[0]:
-                x_curve_offset = -x_curve_offset
-            #if abs(x_curve_offset) < 10:   
-                #x_curve_offset = 10 if x_curve_offset >= 0 else -10
-            #if abs(y_curve_offset) < 10:
-                #y_curve_offset = 10 if y_curve_offset >= 0 else -10
-            #print("Adjusted curve offsets: ", x_curve_offset, y_curve_offset)
-           
-            super().__init__(
-                [
-                    cv.Path.MoveTo(start_position[0], start_position[1]),
-                    cv.Path.QuadraticTo(
-                        x=(start_position[0] + end_position[0]) / 2, 
-                        y=(start_position[1] + end_position[1]) / 2,
-                        cp1x=(start_position[0] + end_position[0]) / 2 - x_curve_offset, 
-                        cp1y=(start_position[1] + end_position[1]) / 2 - y_curve_offset,
-                        w=2
-                    ),
-                    cv.Path.QuadraticTo(
-                        x=end_position[0], 
-                        y=end_position[1],
-                        cp1x=(start_position[0] + end_position[0]) / 2 + x_curve_offset, 
-                        cp1y=(start_position[1] + end_position[1]) / 2 + y_curve_offset,
-                        w=2
-                    ),
-                ],
-                ft.Paint(color, stroke_width=3, style="stroke")
-            )
+            super().__init__([], paint=ft.Paint(self.color, stroke_width=3, style="stroke", anti_alias=True))
+            self.draw_edge()
+
+            
+
+
+        # Changes the edges color
+        def change_color(self, color: str):
+            self.color = color
+            self.paint = ft.Paint(self.color, stroke_width=3, style="stroke", anti_alias=True)
+            self.update()
+
+        def draw_edge(self):
+            for node in self.widget.data.get('nodes', []):
+                if node['label'] == self.source_node:
+                    self.start_position = node.get('position', (0, 0))
+                elif node['label'] == self.target_node:
+                    self.end_position = node.get('position', (0, 0))
+
+
+            if not self.start_position or not self.end_position:
+                return
+
+            # Unpack into local vars so we don't mutate the stored tuples
+            start_x, start_y = self.start_position
+            end_x, end_y = self.end_position
+
+            if start_x > end_x:
+                end_x += 150
+            else:
+                start_x += 150
+
+            mid_x = (start_x + end_x) / 2
+
+            # Straight edges between nodes
+            if self.widget.data.get('spider_web_view', False):
+                self.elements = [
+                    cv.Path.MoveTo(start_x, start_y),
+                    cv.Path.LineTo(end_x, end_y),
+                ]
+
+            # Three-segment turns
+            else:
+                self.elements = [
+                    cv.Path.MoveTo(start_x, start_y),
+                    cv.Path.LineTo(mid_x, start_y),
+                    cv.Path.LineTo(mid_x, end_y),
+                    cv.Path.LineTo(end_x, end_y),
+                ]
+                
+                
 
     async def rename_node_clicked(self, e: ft.Event):
         ''' Opens a dialog to rename the node or cancel '''
@@ -596,6 +630,8 @@ class PlotChart(Widget):
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
+
+        # TODO: Add spider web view. Don't rebuild at all
         
         # Rebuild out tab to reflect any changes
         self.reload_tab()
@@ -613,7 +649,7 @@ class PlotChart(Widget):
             self.reload_widget()    
         
         # Canvas to hold our edge lines betwee nodes
-        edge_canvas = cv.Canvas(
+        self.edge_canvas = cv.Canvas(
             [],  
             content=ft.GestureDetector(
                 expand=True,
@@ -626,7 +662,7 @@ class PlotChart(Widget):
         )
 
         # Stack that holdes our edges and nodes
-        node_stack = ft.Stack([edge_canvas], expand=True)
+        self.node_stack = ft.Stack([self.edge_canvas], expand=True)
 
 
         async def _change_description(e: ft.Event):
@@ -766,7 +802,7 @@ class PlotChart(Widget):
         # Info container on the right to show details of our edges and nodes
         info_column = ft.Column(
             [
-                ft.Row([description_tf]),
+                
                 ft.Row([
                     ft.Text(f"\tNodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                     ft.IconButton(
@@ -795,7 +831,7 @@ class PlotChart(Widget):
             
         # Add our nodes and edges to the stack/canvas
         for node in self.data.get('nodes', []):
-            node_stack.controls.append(
+            self.node_stack.controls.append(
                 self.Node(
                     self, 
                     label=node['label'], 
@@ -808,26 +844,7 @@ class PlotChart(Widget):
         # Go through and draw our edges on the canvas
         for edge in self.data.get('edges', []):
 
-            # Calculate offsets needed to hit the circles at bottom of nodes
-            if edge.get('start_position', (0, 0))[0] <= (edge.get('end_position', (0, 0)))[0]:  # If x_start is left of x_end
-                start_position = (edge.get('start_position', (0, 0))[0] + 150, edge.get('start_position', (0, 0))[1])
-            else:
-                start_position = edge.get('start_position', (0, 0))
-            if edge.get('end_position', (0, 0))[0] <= (edge.get('start_position', (0, 0)))[0]:  # If x_end is left of x_start
-                end_position = (edge.get('end_position', (0, 0))[0] + 150, edge.get('end_position', (0, 0))[1])
-            else:
-                end_position = edge.get('end_position', (0, 0))
-            
-            # Add the edge to the canvas
-            edge_canvas.shapes.append(
-                cv.Line(
-                    start_position[0], start_position[1], 
-                    end_position[0], end_position[1], 
-                    ft.Paint(edge.get('color', "#FFFFFF"), stroke_width=3, style="stroke", anti_alias=True)
-                ),
-                
-            )
-            # OLD -- edge_canvas.shapes.append(self.Edge(start_position, end_position, edge.get('color', "#FFFFFF")))
+            self.edge_canvas.shapes.append(self.Edge(self, edge))
 
         plot_chart_info = ft.Container(
             expand=1,
@@ -840,7 +857,8 @@ class PlotChart(Widget):
                     ft.Row([
                         ft.Text(
                             f"\tPlot Chart Info", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
-                            color=self.data.get('color', None), expand=True
+                            #color=self.data.get('color', None), 
+                            expand=True
                         ),
                         ft.IconButton(
                             ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info, 
@@ -848,13 +866,14 @@ class PlotChart(Widget):
                         ),
                     ]),
                     ft.Divider(),
-                    info_column
+                    info_column,
+                    ft.Row([description_tf]),
                 ], expand=True, scroll="none", spacing=0),
         )
 
         # Interactive viewer to hold the stack for UI manipulation
         iv = ft.InteractiveViewer(
-            content=node_stack, 
+            content=self.node_stack, 
             expand=3,
             scale_factor=500,
             min_scale=0.5, max_scale=3.0,
