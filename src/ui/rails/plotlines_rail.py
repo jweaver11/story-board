@@ -160,7 +160,7 @@ class PlotlinesRail(Rail):
             controls=[menubar]
         )
 
-        plotlines = [widget for widget in self.story.widgets if widget.data.get('tag', "") == "plotline"]
+        plotlines = [widget for widget in self.story.widgets.values() if widget.data.get('tag', "") == "plotline" or widget.data.get('tag', "") == "plot_chart"]
         plotlines.sort(key=lambda pl: pl.data.get('rail_index', 999))
         plotline_controls = [ft.ReorderableDragHandle(WidgetRailItem(pl)) for pl in plotlines]
 

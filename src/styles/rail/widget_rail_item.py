@@ -42,6 +42,7 @@ class WidgetRailItem(ft.GestureDetector):
                     self.icon = ft.Icons.INSERT_CHART_OUTLINED
                 else:
                     self.icon = ft.CupertinoIcons.COMPASS
+            case "plot_chart": self.icon = ft.Icons.ACCOUNT_TREE_OUTLINED
             case _: self.icon = ft.Icons.ERROR_OUTLINE
 
         # Set our text style

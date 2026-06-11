@@ -269,7 +269,7 @@ class CharactersRail(Rail):
         character_connection_maps = []
 
         # Add all character and CCM widgets to their respective lists
-        for widget in self.story.widgets:
+        for widget in self.story.widgets.values():
             if widget.data.get('tag', "") == "character":
                 characters.append(widget)
             elif widget.data.get('tag', "") == "character_connection_map":

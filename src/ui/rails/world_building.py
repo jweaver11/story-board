@@ -256,7 +256,7 @@ class WorldBuildingRail(Rail):
         charts = []
 
         # Add all character and CCM widgets to their respective lists
-        for widget in self.story.widgets:
+        for widget in self.story.widgets.values():
             if widget.data.get('tag', "") == "map":
                 maps.append(widget)
             elif widget.data.get('tag', "") == "world":
