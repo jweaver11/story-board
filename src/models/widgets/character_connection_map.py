@@ -12,6 +12,7 @@ from models.mini_widgets.character_connection import CharacterConnection
 from styles.snack_bar import SnackBar
 from styles.menu_option_style import MenuOptionStyle
 from styles.icons import connection_icons
+from styles.colors import colors
 
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
 class CharacterConnectionMap(Widget):
@@ -108,6 +109,7 @@ class CharacterConnectionMap(Widget):
             )
 
         async def start_new_connection(self, e: ft.DragStartEvent):
+            self.is_dragging = True
             self.widget.char1 = e.control.data
             self.page.overlay.append(
                 ft.Container(
@@ -134,24 +136,28 @@ class CharacterConnectionMap(Widget):
 
         # Creates our new edge (link) between nodes
         async def _create_new_connection(self, e: ft.PointerEvent):
+            self.is_dragging = False
             
             # Remove our visual feedback
             self.page.overlay.pop()
-            self.page.update()
+            self.page.update() 
+
+            #await self._stop_highlight()   # Stop any highlighting from the hover that happens when we end our drag on another node
+            self.content.shadow = ft.BoxShadow(1, 1, blur_style=ft.BlurStyle.OUTER),
+            #self.update()
 
             # If its an incomplete edge (we didn't end on another node), reset and exit
             if not self.widget.char1 or not self.widget.char2:
                 self.widget.char1 = None
                 self.widget.char2 = None
+                self.update()
                 return  
             
             # Don't allow connections to self
             if self.widget.char1.get('id') == self.widget.char2.get('id'):    # Don't allow connections to self
-                self.page.show_dialog(SnackBar("Cannot connct a character to themself."))
                 return  
             
-            
-
+            # Create the new connection
             new_connection = {
                 'char1_id': self.widget.char1.get('id'),
                 'char2_id': self.widget.char2.get('id'),
@@ -162,9 +168,9 @@ class CharacterConnectionMap(Widget):
             # If the connection already exists, delete it and return
             for i, connection in enumerate(self.widget.data['connections']):
                 if (connection['char1_id'] == new_connection['char1_id'] and connection['char2_id'] == new_connection['char2_id']) or (connection['char1_id'] == new_connection['char2_id'] and connection['char2_id'] == new_connection['char1_id']):
-                    self.widget.data['connections'].remove(connection)
-                    await self.widget.save_dict()
-                    self.widget.connections_canvas.shapes.pop(i)
+                    self.widget.data['connections'].remove(connection)  # Remove from data
+                    await self.widget.save_dict()   # Save
+                    self.widget.connections_canvas.shapes.pop(i)    # Remove the edge drawing
                     
                     for j, icon in enumerate(self.widget.connections_stack.controls[:]):
                         if isinstance(icon, self.widget.ConnectionIcon) and ((icon.char1_id == new_connection['char1_id'] and icon.char2_id == new_connection['char2_id']) or (icon.char1_id == new_connection['char2_id'] and icon.char2_id == new_connection['char1_id'])):
@@ -251,6 +257,7 @@ class CharacterConnectionMap(Widget):
         async def _stop_highlight(self, e=None):
             ''' When we stop hovering over a character node, we want to stop highlighting it '''
             if self.is_dragging:
+                
                 return
             if self.widget.char2:
                 self.widget.char2 = None
@@ -404,7 +411,6 @@ class CharacterConnectionMap(Widget):
                     # Remove from our widgets data
                     self.widget.data['characters'].pop(self.char_id, None)
                     await self.widget.save_dict()
-                    
                     return
                 
                 # Update our positional data
@@ -457,7 +463,8 @@ class CharacterConnectionMap(Widget):
                 on_exit=self._stop_highlight_icon,
                 on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
                 on_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
-                offset = ft.Offset(-0.5, -0.5)
+                offset = ft.Offset(-0.5, -0.5),
+                mouse_cursor=ft.MouseCursor.CLICK,
             )
             self.build_icon()   # Set our content
 
@@ -475,17 +482,86 @@ class CharacterConnectionMap(Widget):
                 self.update()
                 await self.widget.story.close_menu()
 
+            async def _delete_connection(e: ft.Event):
+                for i, connection in enumerate(self.widget.data['connections']):
+                    if (connection['char1_id'] == self.char1_id and connection['char2_id'] == self.char2_id) or (connection['char1_id'] == self.char2_id and connection['char2_id'] == self.char1_id):
+                        self.widget.data['connections'].remove(connection)
+                        await self.widget.save_dict()
+                        self.widget.connections_canvas.shapes.pop(i)
+                        
+                        for j, icon in enumerate(self.widget.connections_stack.controls[:]):
+                            if isinstance(icon, self.widget.ConnectionIcon) and ((icon.char1_id == self.char1_id and icon.char2_id == self.char2_id) or (icon.char1_id == self.char2_id and icon.char2_id == self.char1_id)):
+                                self.widget.connections_stack.controls.pop(j)
+                        self.widget.connections_stack.update()
+                        await self.widget.story.close_menu()
+                        return
+
+            async def _change_icon_color(e: ft.Event):
+                color_str = e.control.data
+                self.color = color_str
+                for connection in self.widget.data['connections']:
+                    if (connection['char1_id'] == self.char1_id and connection['char2_id'] == self.char2_id) or (connection['char1_id'] == self.char2_id and connection['char2_id'] == self.char1_id):
+                        connection['color'] = color_str
+                        await self.widget.save_dict()
+                self.build_icon()
+                self.update()
+                await self.widget.story.close_menu()
+            
+
             return [
+                 MenuOptionStyle(
+                    ft.SubmenuButton(
+                        ft.Row([
+                            ft.Icon(ft.Icons.LINK, self.data.get('color', "primary")), 
+                            ft.Text("Icon", weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Icon(ft.Icons.ARROW_RIGHT),
+                        ], expand=True),
+                        [MenuOptionStyle(
+                            ft.Row([ft.Icon(icon, self.color)]),
+                            data=icon_str,
+                            on_click=_new_icon_clicked   
+                        ) for icon_str, icon in connection_icons.items()],
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        tooltip="Change this connections icon"
+                    ),
+                    no_padding=True, no_effects=True
+                ),
                 MenuOptionStyle(
-                    ft.Row([ft.Icon(icon, self.color)]),
-                    data=icon_str,
-                    on_click=_new_icon_clicked   
-                ) for icon_str, icon in connection_icons.items()
+                    ft.SubmenuButton(
+                        ft.Row([
+                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
+                            ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Icon(ft.Icons.ARROW_RIGHT),
+                        ], expand=True),
+                        [ft.MenuItemButton(
+                            content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
+                            on_click=_change_icon_color, close_on_click=True, data=color,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
+                        ) for color in colors],
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        tooltip="Change this connections color"
+                    ),
+                    no_padding=True, no_effects=True
+                ),
+                
+                MenuOptionStyle(
+                    on_click=_delete_connection,
+                    content=ft.Row([
+                        ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR,),
+                        ft.Text(
+                            "Delete", 
+                            weight=ft.FontWeight.BOLD, 
+                            
+                        ), 
+                    ]),
+                ),
             ]
                 
         # Highlight the node
         async def _highlight_icon(self, e: ft.PointerEvent):
-            e.control.content.shadow = ft.BoxShadow(8, 8, ft.Colors.with_opacity(0.5, self.color))
+            e.control.content.shadow = ft.BoxShadow(4, 4, ft.Colors.with_opacity(0.5, self.color))
             e.control.update()
 
         # Stop highlighting the node
@@ -552,7 +628,7 @@ class CharacterConnectionMap(Widget):
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
         )
 
-        
+        # Go through our stor
         for widget in self.story.widgets.values():
             if widget.data.get('tag') == 'character':
                 if widget.data.get('id') in self.data['characters']:
@@ -570,15 +646,11 @@ class CharacterConnectionMap(Widget):
         self.connections_canvas = cv.Canvas(
             content=ft.GestureDetector(
                 expand=True,
-                on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
                 on_hover=self._get_coords,
-                #drag_interval=50, 
                 hover_interval=20,
-                #on_pan_start=lambda: print("Pan Started")
             ),
             expand=True, 
             resize_interval=100,
-            #on_resize=self._rebuild_canvas, 
         )
 
         # Create the stack to hold our bank, character nodes, and connections canvas

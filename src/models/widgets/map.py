@@ -162,7 +162,6 @@ class Map(Widget):
             data=data,      
             left=self.l,
             top=self.t,
-            icon=data.get('icon', "Location")
         )
        
         self.locations[title] = new_location
@@ -236,7 +235,7 @@ class Map(Widget):
                 return
             
             title = new_item_tf.value.strip()
-            await self.create_location(title, data)
+            await self.create_location(title,)
             
 
             self.p.pop_dialog()   # Close the dialog
@@ -246,7 +245,7 @@ class Map(Widget):
 
 
         # Grab the type of mini widget we are creating
-        data = e.control.data
+        #data = e.control.data
 
         # Textfield for the name of the new mw
         new_item_tf = ft.TextField(
@@ -287,6 +286,15 @@ class Map(Widget):
 
         # New (all dif types of locations), rename color
         return [
+            MenuOptionStyle(
+                ft.MenuItemButton(
+                    "Location", leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', "primary")),
+                    on_click=self.new_location_clicked, 
+                    tooltip="Create a new location on your map",
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                ),
+                no_padding=True, no_effects=True 
+            ),
             MenuOptionStyle(
                 content=ft.SubmenuButton(
                     ft.Container(

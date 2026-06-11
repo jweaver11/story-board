@@ -85,7 +85,7 @@ class MapInformationDisplay(MiniWidget):
     
     def _map_info_view(self) -> ft.Column:
 
-        # TODO: Add export button functionality, show locations type / description
+        # TODO: Add export button functionality?, show locations type / description
 
         async def _toggle_show_bg_map(e=None):
             self.data['show_bg_map'] = e.control.value
@@ -165,7 +165,8 @@ class MapInformationDisplay(MiniWidget):
             ft.Container(description_tf, margin=ft.Margin.only(right=10)),
             ft.Container(lore_tf, margin=ft.Margin.only(right=10)),
             ft.Container(history_tf, margin=ft.Margin.only(right=10)),
-            ft.Row([export_button, show_map_bg_switch]),
+            #ft.Row([export_button, show_map_bg_switch]),
+            show_map_bg_switch,
             
             ft.Divider(2, 2),
             

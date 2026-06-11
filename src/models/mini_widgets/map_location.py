@@ -25,7 +25,6 @@ class Location(MiniWidget):
         left: int = None,                   
         top: int = None,                   
         data: dict = None,
-        icon: str = "label"       
     ):
 
         # Parent constructor
@@ -42,7 +41,8 @@ class Location(MiniWidget):
             self,   # Pass in our own data so the function can see the actual data we loaded
             {   
                 'tag': "location",            # Tag to identify what type of object this is
-                'icon': icon,
+                'icon': "location_pin",      # Which icon to use for this location
+                'icon_scale': 1.0,                   # Scale of our icon on the map, default 1.0    
                 'left': left, 
                 'top': top,
                 'color': "white",           # Color of the plot point on the map
@@ -275,7 +275,7 @@ class Location(MiniWidget):
         try:
             self.map_control.update()
             self.map_label.update()
-        except Exception as _:
+        except Exception:
             pass
 
 
