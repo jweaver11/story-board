@@ -42,6 +42,12 @@ class PlotlinesRail(Rail):
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
                         tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
                     ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED, ft.Colors.PRIMARY), content="Plot Chart", 
+                        data="plot_chart", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        tooltip="New Items and Equipment for your story", 
+                    ),  
                 ],
                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
@@ -128,6 +134,32 @@ class PlotlinesRail(Rail):
     def reload_rail(self) -> ft.Control:
         ''' Reloads the plot and plotline rail, useful when switching stories '''
 
+        async def _change_sort_method(e: ft.Event):
+            new_sort_method = e.data
+            self.story.data['plotline_rail_sort_method'] = new_sort_method
+            await self.story.save_dict()
+            self.story.active_rail.reload_rail()
+
+        async def _change_sort_direction(e: ft.Event):
+
+            old_sort_method = self.story.data.get('plotline_rail_sort_direction', "Ascending")
+            if old_sort_method == "Ascending":
+                self.story.data['plotline_rail_sort_direction'] = "Descending"
+                e.control.tooltip = "Sort Direction: Descending"
+                e.control.icon = ft.CupertinoIcons.SORT_UP
+            else:
+                self.story.data['plotline_rail_sort_direction'] = "Ascending"
+                e.control.tooltip = "Sort Direction: Ascending"
+                e.control.icon = ft.CupertinoIcons.SORT_DOWN
+
+            await self.story.save_dict()
+
+            plotlines_list_view.reverse = self.story.data.get('plotline_rail_sort_direction', "Ascending") == "Descending"
+            plot_charts_list_view.reverse = self.story.data.get('plotline_rail_sort_direction', "Ascending") == "Descending"
+            plot_charts_list_view.update()
+            plotlines_list_view.update()
+            e.control.update()
+
         async def _reorder_widget(e: ft.OnReorderEvent):
             ''' Handles the reordering and reloading of characters based on their new positions on the rail when we drag and drop them '''
             
@@ -151,7 +183,7 @@ class PlotlinesRail(Rail):
             style=ft.MenuStyle(
                 bgcolor="transparent", shadow_color="transparent",
                 shape=ft.RoundedRectangleBorder(radius=10),
-            ),
+            ), 
         )
 
         header = ft.Row(
@@ -160,15 +192,25 @@ class PlotlinesRail(Rail):
             controls=[menubar]
         )
 
-        plotlines = [widget for widget in self.story.widgets.values() if widget.data.get('tag', "") == "plotline" or widget.data.get('tag', "") == "plot_chart"]
+        plotlines = [widget for widget in self.story.widgets.values() if widget.data.get('tag', "") == "plotline"]
         plotlines.sort(key=lambda pl: pl.data.get('rail_index', 999))
         plotline_controls = [ft.ReorderableDragHandle(WidgetRailItem(pl)) for pl in plotlines]
 
+        plot_charts = [widget for widget in self.story.widgets.values() if widget.data.get('tag', "") == "plot_chart"]
+        plot_charts.sort(key=lambda pl: pl.data.get('rail_index', 999))
+        plot_chart_controls = [ft.ReorderableDragHandle(WidgetRailItem(pl)) for pl in plot_charts]
+
 
         plotlines_list_view = ft.ReorderableListView(
-            plotline_controls, 
+            plotline_controls,
             on_reorder=_reorder_widget, 
             spacing=0, show_default_drag_handles=False, 
+        )
+
+        plot_charts_list_view = ft.ReorderableListView(
+            plot_chart_controls, expand=True,
+            on_reorder=_reorder_widget,
+            spacing=0, show_default_drag_handles=False,
         )
 
         # Build the content of our rail
@@ -181,7 +223,12 @@ class PlotlinesRail(Rail):
                 ft.Container(height=6),
                 self.new_item_textfield,
 
+                ft.Text("\tPlotlines", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
+
                 plotlines_list_view,
+                ft.Divider(),
+                ft.Text("\tPlot Charts", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
+                plot_charts_list_view,
 
                 ft.Container(expand=True)
             ] 
@@ -194,10 +241,40 @@ class PlotlinesRail(Rail):
             hover_interval=20,
         )
 
+        sort_dropdown = ft.Dropdown(
+            self.story.data.get('plotline_rail_sort_method', "Index"),
+            [
+                ft.DropdownOption(
+                    "Default", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10)),
+                    tooltip="Sort world building widgets by the order they were loaded. On Windows, usually alphabetical. On Mac, usually by creation date."
+                ),
+                ft.DropdownOption(
+                    "Index", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10)),
+                    tooltip="Sort world building widgets by a reorderable index so you can drag them up and down on the rail."
+                ), 
+                ft.DropdownOption(
+                    "Color", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10)),
+                    tooltip="Sort world building widgets by their color."
+                )
+            ],
+            label="Sort by",
+            dense=True, expand=True,
+            on_select=_change_sort_method,
+            border_color=ft.Colors.OUTLINE_VARIANT,
+            leading_icon=ft.IconButton(
+                ft.CupertinoIcons.SORT_DOWN if self.story.data.get('plotline_rail_sort_direction', "Ascending") == "Ascending" else ft.CupertinoIcons.SORT_UP,
+                ft.Colors.PRIMARY, 
+                tooltip=f"Sort Direction: {self.story.data.get('plotline_rail_sort_direction', 'Ascending')}", 
+                on_click=_change_sort_direction, mouse_cursor="click", 
+            ),
+            menu_style=ft.MenuStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+        )
+
         self.controls = [
             header,
             ft.Divider(leading_indent=8),
-            menu_gesture_detector
+            menu_gesture_detector,
+            ft.Container(ft.Row([sort_dropdown]), margin=ft.Margin.symmetric(horizontal=4)),
         ]
 
       

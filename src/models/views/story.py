@@ -65,6 +65,8 @@ class Story(ft.View):
 
                 'character_rail_sort_method': "Index",
                 'character_rail_sort_direction': "Ascending",
+                'plotline_rail_sort_method': "Index",
+                'plotline_rail_sort_direction': "Ascending",
                 'world_building_rail_sort_method': "Index",
                 'world_building_rail_sort_direction': "Ascending",
                 

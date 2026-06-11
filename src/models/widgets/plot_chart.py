@@ -90,11 +90,10 @@ class PlotChart(Widget):
                 left=position[0],
                 top=position[1],
                 width=150, 
-                offset=ft.Offset(0, -0.8),
+                offset=ft.Offset(0, -1),
                 animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
                 on_secondary_tap=self.open_menu,
                 on_hover=self.widget._set_coords,
-                
             )
 
         # Moves the node on the stack and updates the drawing that connects the edges
@@ -350,6 +349,8 @@ class PlotChart(Widget):
                 line.y2 = e.global_position.y
                 self.page.overlay[-1].update()
 
+            self.description_ctrl = ft.Text(f"{self.description}\n", italic=True, color=ft.Colors.ON_SURFACE_VARIANT, max_lines=5, overflow=ft.TextOverflow.ELLIPSIS)
+
 
             self.content = ft.Container(
                 ft.Column([
@@ -361,7 +362,7 @@ class PlotChart(Widget):
                         #drag_interval=50,
                     ),
                     ft.Divider(ft.Colors.SURFACE_CONTAINER_LOW, 2),
-                    ft.Text(f"{self.description}\n", italic=True, color=ft.Colors.ON_SURFACE_VARIANT, max_lines=5, overflow=ft.TextOverflow.ELLIPSIS),
+                    self.description_ctrl,
                     ft.Row([
                         ft.GestureDetector(
                             ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.color, scale=1.25), shape=ft.BoxShape.CIRCLE), 
@@ -394,7 +395,7 @@ class PlotChart(Widget):
             )
                 
         
-    # OLD -- Class for the Edges/Links between our nodes that show up as a line on the edge_canvas
+    # Class for the Edges/Links between our nodes that show up as a line on the edge_canvas
     class Edge(cv.Path):
         def __init__(self, widget: 'PlotChart', data: dict):
             self.source_node = data.get('source')
@@ -405,9 +406,6 @@ class PlotChart(Widget):
             super().__init__([], paint=ft.Paint(self.color, stroke_width=3, style="stroke", anti_alias=True))
             self.draw_edge()
 
-            
-
-
         # Changes the edges color
         def change_color(self, color: str):
             self.color = color
@@ -415,6 +413,8 @@ class PlotChart(Widget):
             self.update()
 
         def draw_edge(self):
+            self.start_position = None
+            self.end_position = None
             for node in self.widget.data.get('nodes', []):
                 if node['label'] == self.source_node:
                     self.start_position = node.get('position', (0, 0))
@@ -429,6 +429,11 @@ class PlotChart(Widget):
             start_x, start_y = self.start_position
             end_x, end_y = self.end_position
 
+            # Offset half way up node connector icons
+            start_y -= 20
+            end_y -= 20
+
+            # Adjust for in/out nodes
             if start_x > end_x:
                 end_x += 150
             else:
@@ -558,17 +563,17 @@ class PlotChart(Widget):
                 no_padding=True, no_effects=True 
             ),
             
-            MenuOptionStyle(
-                on_click=self._toggle_show_info,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.INFO_OUTLINE, self.data.get('color', 'primary')),
-                    ft.Text(
-                        "Show Info", 
-                        weight=ft.FontWeight.BOLD, 
-                        color=ft.Colors.ON_SURFACE
-                    ), 
-                ]),
-            ),
+            #MenuOptionStyle(
+                #on_click=self._toggle_show_info,
+                #content=ft.Row([
+                    #ft.Icon(ft.Icons.INFO_OUTLINE, self.data.get('color', 'primary')),
+                    #ft.Text(
+                        #"Show Info", 
+                        #weight=ft.FontWeight.BOLD, 
+                        #color=ft.Colors.ON_SURFACE
+                    #), 
+                #]),
+            #),
         ] + self._get_menu_options()
 
         self.story.open_menu(menu_options)
@@ -722,9 +727,12 @@ class PlotChart(Widget):
                                 ft.TextSpan(f"{node.get('description', '')}", style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True, overflow=ft.TextOverflow.ELLIPSIS))
                                 
                             ],
-                            expand=True
+                            expand=True, max_lines=1,
+                            overflow=ft.TextOverflow.ELLIPSIS
                         ),
                         ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, on_click=_delete_node, data=idx, mouse_cursor=ft.MouseCursor.CLICK),
+                        
+                        
                     ], spacing=0)
                 )
 
@@ -841,6 +849,18 @@ class PlotChart(Widget):
                 )
             )
 
+        # Button in the bottom right to add new nodes
+        self.node_stack.controls.append(
+            ft.Button(
+                "Node", 
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                on_click=self._add_node_clicked, 
+                data="ignore_position",
+                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                right=20, bottom=20, scale=1.3
+            )
+        )
+
         # Go through and draw our edges on the canvas
         for edge in self.data.get('edges', []):
 
@@ -867,7 +887,7 @@ class PlotChart(Widget):
                     ]),
                     ft.Divider(),
                     info_column,
-                    ft.Row([description_tf]),
+                    ft.Row([ft.Container(description_tf, expand=True, padding=ft.Padding.only(right=11))]),
                 ], expand=True, scroll="none", spacing=0),
         )
 
@@ -889,6 +909,7 @@ class PlotChart(Widget):
             )
                     
         
-        self.body_container.content = ft.Row([iv, plot_chart_info], expand=True, spacing=0)
+        #self.body_container.content = ft.Row([iv, plot_chart_info], expand=True, spacing=0)
+        self.body_container.content = iv
 
         self._render_widget()

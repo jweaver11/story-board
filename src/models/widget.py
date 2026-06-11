@@ -63,8 +63,7 @@ class Widget(ft.Container):
                     'visible': True,                                # Whether this widget is visible in the workspace or not
                     'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
                     #'color': str,                                  # Color of the icon and tab divider for this widget. Child classes set this on creation  
-                    'notes': [],                          # Dictionary for any fields the widget wants to store
-                    'scroll_position': 0,                           # Used to save scroll positions upon rebuilds
+                    'notes': [],                                    # Dictionary for any fields the widget wants to store
                 }
             )
 
@@ -79,7 +78,6 @@ class Widget(ft.Container):
         self.skip_update = False                # Skips applying an update on resizes to prevent update loops
         self.ignore_update = False     # Return and ignore updates, such as when hiding??
         self.save_counter = 0      # Used to check how often we write saving to a file to prevent saving constantly
-        self.scroll_position = self.data.get('scroll_position', 0)   # Used to save scroll positions upon rebuilds
 
         # If widgets display info overtop content rather than next to it (plotline, map, canvas, etc.)
         self.mini_widgets_displayed_overtop: bool = True       # Widgets that set this false need to set their own mini widgets in reload_widget
@@ -91,7 +89,7 @@ class Widget(ft.Container):
 
         # Container that holds our main body content. Gets built in reload_widget of child classes
         self.body_container = ft.Container(
-            expand=3, border_radius=ft.BorderRadius.all(10), 
+            expand=3, #border_radius=ft.BorderRadius.all(10), 
             #padding=ft.Padding.all(16), 
             on_size_change=self._get_size, size_change_interval=500, clip_behavior=ft.ClipBehavior.NONE
         ) 
@@ -665,7 +663,8 @@ class Widget(ft.Container):
             if hasattr(self, 'information_display'):
                 if self.information_display.visible:
                     self.information_display.reload_mini_widget()
-            await self.rebuild_widget()
+            #self.reload_widget()
+            self.story.workspace.reload_workspace()   # Reload workspace to update tab color
             self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
             await self.story.close_menu()
 
