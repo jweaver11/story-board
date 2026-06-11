@@ -29,7 +29,7 @@ class Item(Widget):
             data = data,
             is_rebuilt = is_rebuilt
         )
-        #self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
+        self.body_container.padding = ft.Padding.all(10)
 
         verify_data(
             self,   # Pass in our own data so the function can see the actual data we loaded
@@ -159,7 +159,7 @@ class Item(Widget):
             key = segment.get('title', '')
             value = segment.get('content', '')
             segments_list.append(
-                ft.Row([
+                #ft.Row([
                     TextField(
                         value, expand=True,
                         multiline=True, label=key, dense=True, capitalization=ft.TextCapitalization.SENTENCES, 
@@ -171,10 +171,11 @@ class Item(Widget):
                             on_click=self._delete_segment,
                             mouse_cursor="click", data=idx
                         ),
-                    ),
+                    )
+                        
                     
-                    ft.Container(width=1)
-                ])
+                    
+                #])
             )
 
         description_text_field = TextField(
@@ -212,7 +213,7 @@ class Item(Widget):
                             description_text_field
                         ], horizontal_alignment=ft.CrossAxisAlignment.START, expand=True, tight=True, spacing=0), 
                         ft.Container(width=6)
-                ]
+                    ]
                 )]
                 + segments_list
                 + [add_segment_button]

@@ -399,6 +399,7 @@ class Chart(Widget):
         for idx, group in enumerate(self.data.get('bar_data', {}).get('groups', [])):
             if group.get('visible', True) == False:
                 continue
+            
             x_labels.append(fch.ChartAxisLabel(idx, label=group.get('name', "")))
 
         # Our bar chart

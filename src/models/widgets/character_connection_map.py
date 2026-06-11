@@ -506,6 +506,13 @@ class CharacterConnectionMap(Widget):
                 self.build_icon()
                 self.update()
                 await self.widget.story.close_menu()
+
+                # Update the lines color as well
+                for edge in self.widget.connections_canvas.shapes:
+                    if isinstance(edge, self.widget.ConnectionEdge) and ((edge.char1_id == self.char1_id and edge.char2_id == self.char2_id) or (edge.char1_id == self.char2_id and edge.char2_id == self.char1_id)):
+                        edge.color = color_str
+                        edge.draw_connection()
+                        edge.update()
             
 
             return [
