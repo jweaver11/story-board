@@ -12,7 +12,7 @@ from models.app import app
 import flet.canvas as cv
 from models.isolated_controls.column import IsolatedColumn
 from utils.safe_string_checker import return_safe_name
-from styles.text_field import TextField
+from styles.text_fields import TextField
 
 
 # Class for our Canvas Board rail

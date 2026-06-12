@@ -7,7 +7,7 @@ from models.mini_widget import MiniWidget
 from models.widget import Widget
 from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
-from styles.text_field import TextField
+from styles.text_fields import TextField
 
 
 # Class that holds our mini note objects inside images or chapters

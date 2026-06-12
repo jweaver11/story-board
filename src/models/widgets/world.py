@@ -13,7 +13,7 @@ from utils.safe_string_checker import return_safe_name
 from PIL import Image
 from io import BytesIO
 import base64
-from styles.text_field import TextField
+from styles.text_fields import TextField
 from models.dataclasses.world_template import default_world_template_data_dict
 
 

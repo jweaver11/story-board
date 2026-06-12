@@ -15,7 +15,7 @@ from styles.colors import dark_gradient
 from ui.menu_bar import create_menu_bar
 from ui.workspaces_rail import WorkspacesRail
 from models.dataclasses.character_template import default_character_template_data_dict
-from styles.text_field import TextField
+from styles.text_fields import TextField
 from models.dataclasses.world_template import default_world_template_data_dict
 
  

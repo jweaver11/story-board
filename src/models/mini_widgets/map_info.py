@@ -15,7 +15,7 @@ import flet as ft
 from models.widget import Widget
 from models.mini_widget import MiniWidget
 from utils.verify_data import verify_data
-from styles.text_field import TextField
+from styles.text_fields import TextField
 
 class MapInformationDisplay(MiniWidget):
 

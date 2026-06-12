@@ -7,7 +7,7 @@ from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 from models.app import app
 from utils.safe_string_checker import return_safe_name
-from styles.text_field import TextField
+from styles.text_fields import SmallTextField, TextField
 import flet.canvas as cv
 from styles.snack_bar import SnackBar
 from styles.colors import colors
@@ -349,7 +349,18 @@ class PlotChart(Widget):
                 line.y2 = e.global_position.y
                 self.page.overlay[-1].update()
 
-            self.description_ctrl = ft.Text(f"{self.description}\n", italic=True, color=ft.Colors.ON_SURFACE_VARIANT, max_lines=5, overflow=ft.TextOverflow.ELLIPSIS)
+            async def _save_description(e: ft.Event):
+                for node in self.widget.data.get('nodes', []):
+                    if node['label'] == self.label:
+                        node['description'] = e.control.value
+                        break
+                await self.widget.save_dict()
+
+            self.description_ctrl = SmallTextField(
+                self.description, 
+                expand=True,  on_blur=_save_description,
+                
+            )
 
 
             self.content = ft.Container(

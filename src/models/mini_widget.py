@@ -14,7 +14,7 @@ from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
 import asyncio
 from utils.safe_string_checker import return_safe_name
-from styles.text_field import TextField
+from styles.text_fields import TextField
 
 class MiniWidget(ft.Container):
 

@@ -10,7 +10,7 @@ import math
 from styles.text_styles import text_style
 import flet.canvas as cv 
 from styles.icons import icons
-from styles.text_field import TextField
+from styles.text_fields import TextField
 
 # Locations that appear on our map
 class Location(MiniWidget):

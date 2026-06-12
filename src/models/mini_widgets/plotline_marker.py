@@ -11,7 +11,7 @@ from models.widget import Widget
 from utils.verify_data import verify_data
 from styles.text_styles import text_style
 import flet.canvas as cv
-from styles.text_field import TextField
+from styles.text_fields import TextField
 
 # Plotpoint mini widget object that appear on plotlines and arcs
 class Marker(MiniWidget):

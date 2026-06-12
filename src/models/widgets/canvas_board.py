@@ -15,7 +15,7 @@ import asyncio
 import base64
 from io import BytesIO
 from PIL import Image
-from styles.text_field import TextField
+from styles.text_fields import TextField
 
 MAX_SHAPES_BEFORE_CAPTURE = 30   # Prevent lag from too many paths on the canvas without being removed
 MAX_UNDO_LIST_TASKS = 30         # Max number of undo tasks to store in our undo list before we start deleting old ones

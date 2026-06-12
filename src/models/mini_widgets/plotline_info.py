@@ -4,7 +4,7 @@ from models.widgets.plotline import Plotline
 import asyncio
 from models.dataclasses.plotline_event import Event
 from utils.verify_data import verify_data
-from styles.text_field import TextField
+from styles.text_fields import TextField
 
 
 # Display that makes Plotlines share much uniformaty in their information display like arcs do

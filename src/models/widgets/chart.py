@@ -9,7 +9,7 @@ from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 from models.app import app
 from utils.safe_string_checker import return_safe_name
-from styles.text_field import TextField
+from styles.text_fields import TextField
 import flet_charts as fch
 from styles.colors import colors
 import math
