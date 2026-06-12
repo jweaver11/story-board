@@ -366,7 +366,7 @@ class PlotChart(Widget):
             self.content = ft.Container(
                 ft.Column([
                     ft.GestureDetector(
-                        ft.Row([ft.Text(self.label, expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER)], alignment=ft.MainAxisAlignment.CENTER),
+                        ft.Row([ft.Text(self.label, expand=True,  weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER)], alignment=ft.MainAxisAlignment.CENTER),
                         on_pan_update=self.move_node,
                         on_pan_end=self.save_position,
                         mouse_cursor=ft.MouseCursor.MOVE,

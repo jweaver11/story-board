@@ -80,58 +80,6 @@ class Character(Widget):
 
     # TODO: RENAME AND DELETE Will need to be unique here, to alter ccm and connections that used our old name and key
         
-    
-    # Called when a field is changed in edit mode
-    def _update_character_data(self, **kwargs):
-        ''' Updates the character data dict or up to one sub dict '''
-
-        for key, value in kwargs.items():
-            if 'character_data' not in self.data:
-                self.data['character_data'] = {}
-
-            if key in self.data['character_data']:
-                self.data['character_data'][key] = value
-            else:
-                # Check if this key is in a sub dict, and update it there if it is
-                for sub_key, sub_dict in self.data['character_data'].items():
-                    if isinstance(sub_dict, dict) and key in sub_dict:
-                        self.data['character_data'][sub_key][key] = value
-                        break
-        
-        self.p.run_task(self.save_dict)
-
-    
-
-    # Called when clicking our upload image button 
-    async def _upload_image(self, e: ft.Event):
-
-        files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
-        if files:
-
-            file_path = files[0].path
-            try:
-                import base64
-
-                with open(file_path, "rb") as image_file:
-                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                    # Save to our data
-                    self.data['image_base64'] = f"{encoded_string}"
-                    await self.save_dict()
-
-                # Update the image in our widget
-                e.control.icon = ft.Container(
-                    ft.Image(
-                        src=self.data.get('image_base64', ""),
-                        width=100,
-                        height=100,
-                        fit=ft.BoxFit.FILL,
-                    ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
-                )
-                e.control.update()
-
-            except Exception:
-                pass
-        
 
     # Called after any changes happen to the data that need to be reflected in the UI
     def reload_widget(self): #this is the edit view currently
@@ -140,6 +88,55 @@ class Character(Widget):
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()
+
+        # Called when clicking our upload image button 
+        async def upload_image(e: ft.Event):
+
+            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            if files:
+
+                file_path = files[0].path
+                try:
+                    import base64
+
+                    with open(file_path, "rb") as image_file:
+                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                        # Save to our data
+                        self.data['image_base64'] = f"{encoded_string}"
+                        await self.save_dict()
+
+                    # Update the image in our widget
+                    e.control.icon = ft.Container(
+                        ft.Image(
+                            src=self.data.get('image_base64', ""),
+                            width=100,
+                            height=100,
+                            fit=ft.BoxFit.FILL,
+                        ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                    )
+                    e.control.update()
+
+                except Exception:
+                    pass
+
+        # Called when a field is changed in edit mode
+        def update_character_data(**kwargs):
+            ''' Updates the character data dict or up to one sub dict '''
+
+            for key, value in kwargs.items():
+                if 'character_data' not in self.data:
+                    self.data['character_data'] = {}
+
+                if key in self.data['character_data']:
+                    self.data['character_data'][key] = value
+                else:
+                    # Check if this key is in a sub dict, and update it there if it is
+                    for sub_key, sub_dict in self.data['character_data'].items():
+                        if isinstance(sub_dict, dict) and key in sub_dict:
+                            self.data['character_data'][sub_key][key] = value
+                            break
+            
+            self.p.run_task(self.save_dict)
         
         # Called by button to create a new section. Just shows our text field to enter the section name
         async def new_section_clicked(e: ft.Event=None):
@@ -249,6 +246,7 @@ class Character(Widget):
             
             # Add the field to data if it doesn't exist
             if field_name and field_name not in self.data['character_data'][section]:
+                empty_section = self.data['character_data'].get(section, {}) == {}  # Check if this is the first field being added
                 self.data['character_data'][section][field_name] = ""
             else:
                 self.p.show_dialog(SnackBar("Field name already exists or is invalid!"))
@@ -266,18 +264,19 @@ class Character(Widget):
             if not parent_column:
                 return
             
+            
             # Set new control to add
             row_ctrl = ft.Row(spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
 
             # Add text label for the field name
             row_ctrl.controls.append(
-                ft.Text(f"{field_name}:\t", size=16, selectable=True, weight=ft.FontWeight.BOLD,)
+                ft.Text(f"{field_name}:\t", size=16, selectable=True, weight=ft.FontWeight.BOLD)
             )
             # Add textfield we can change
             row_ctrl.controls.append(
                 TextField(
                     "", expand=True, cursor_color=self.data.get('color', None),
-                    on_blur=lambda e, k=field_name: self._update_character_data(**{k: e.control.value}), 
+                    on_blur=lambda e, k=field_name: update_character_data(**{k: e.control.value}), 
                 ),
             )
             # Add delete button at the end which is small
@@ -291,9 +290,12 @@ class Character(Widget):
                     tooltip=f"Delete Field: {field_name}", 
                 )
             )
+            # If this is the first field being added, remove the no fields text and delete section button
+            if empty_section:   
+                parent_column.controls.pop(0)
             parent_column.controls.append(row_ctrl)
             parent_column.update()  
-            body.update()
+
 
         # Deletes a field from our character data dict
         async def delete_field(e: ft.Event):
@@ -381,7 +383,7 @@ class Character(Widget):
                         row_ctrl.controls.append(
                             TextField(
                                 value, expand=True, cursor_color=self.data.get('color', None),
-                                on_blur=lambda e, k=key: self._update_character_data(**{k: e.control.value}), 
+                                on_blur=lambda e, k=key: update_character_data(**{k: e.control.value}), 
                             ),
                         )
                         # Add delete button at the end which is small
@@ -437,7 +439,7 @@ class Character(Widget):
                 
             ], spacing=0),
             ft.TextField(
-                self.data.get('About', ""), on_blur=lambda e: self._update_character_data(**{"About": e.control.value}), expand=True, 
+                self.data.get('About', ""), on_blur=lambda e: update_character_data(**{"About": e.control.value}), expand=True, 
                 dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
                 border_color=ft.Colors.OUTLINE_VARIANT, margin=ft.Margin.only(right=10),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=10,
@@ -449,7 +451,7 @@ class Character(Widget):
         
         # Header that holds our image, edit mode button, and about section
         header = ft.Row([
-            ft.IconButton(img, tooltip="Upload an Image of your character", on_click=self._upload_image, mouse_cursor="click"),
+            ft.IconButton(img, tooltip="Upload an Image of your character", on_click=upload_image, mouse_cursor="click"),
             about_section
         ], vertical_alignment=ft.CrossAxisAlignment.START)
 

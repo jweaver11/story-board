@@ -4,8 +4,6 @@ class TextField(ft.TextField):
     
     def __init__(self, *args, **kwargs):
 
-        
-
         super().__init__(*args, **kwargs)
 
         # Default styles
@@ -17,9 +15,8 @@ class TextField(ft.TextField):
         self.text_style=ft.TextStyle(size=14)
         self.multiline=True
         self.capitalization=ft.TextCapitalization.SENTENCES
+        self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
         
-        
-
 # Small textfields with no borders
 class SmallTextField(TextField):
     
@@ -34,3 +31,4 @@ class SmallTextField(TextField):
         self.multiline=True
         self.border=ft.InputBorder.NONE
         self.text_align=ft.TextAlign.CENTER
+        self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST

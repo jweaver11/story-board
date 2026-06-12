@@ -15,6 +15,7 @@ from io import BytesIO
 import base64
 from styles.text_fields import TextField
 from models.dataclasses.world_template import default_world_template_data_dict
+from styles.snack_bar import SnackBar
 
 
 
@@ -67,129 +68,6 @@ class World(Widget):
             self.reload_widget()         # Build our widget if it's visible on init
     
 
-    
-
-    # Called when a field is changed in edit mode
-    def _update_world_data(self, **kwargs):
-        ''' Updates the world data dict or up to one sub dict '''
-
-        for key, value in kwargs.items():
-            if 'world_data' not in self.data:
-                self.data['world_data'] = {}
-
-            if key in self.data['world_data']:
-                self.data['world_data'][key] = value
-            else:
-                # Check if this key is in a sub dict, and update it there if it is
-                for sub_key, sub_dict in self.data['world_data'].items():
-                    if isinstance(sub_dict, dict) and key in sub_dict:
-                        self.data['world_data'][sub_key][key] = value
-                        break
-        
-        self.p.run_task(self.save_dict)
-
-    
-
-    # Deletes a field from our world data dict
-    def _delete_world_data(self, **kwargs):
-        ''' Deletes fields from the world data dict or up to one sub dict '''
-
-        for key in kwargs.keys():
-            if 'world_data' not in self.data:
-                return
-
-            if key in self.data['world_data']:
-                del self.data['world_data'][key]
-            else:
-                # Check if this key is in a sub dict, and delete it there if it is
-                for sub_key, sub_dict in self.data['world_data'].items():
-                    if isinstance(sub_dict, dict) and key in sub_dict:
-                        del self.data['world_data'][sub_key][key]
-                        break
-                
-        self.p.run_task(self.save_dict)
-        self.reload_widget()
-
-    async def _new_section_clicked(self, e=None):
-
-        # Called to create the new section
-        async def _create_new_section(e=None):
-            nonlocal new_section_tf
-            section_name = return_safe_name(new_section_tf.value)
-            
-            
-            # Don't create if already exists
-            if 'world_data' not in self.data:
-                self.data['world_data'] = {}
-            if section_name in self.data['world_data']:
-                self.p.pop_dialog()
-                return  
-            
-            self.data['world_data'][section_name] = {}
-            await self.save_dict()
-            self.p.pop_dialog()
-            self.reload_widget()
-
-        new_section_tf = ft.TextField(label="Section Name", autofocus=True, capitalization=ft.TextCapitalization.WORDS, on_submit=_create_new_section)
-
-        dlg = ft.AlertDialog(
-            title=ft.Text("New Section Name"),
-            content=new_section_tf,
-            actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                ft.TextButton("Create", on_click=_create_new_section, style=ft.ButtonStyle(mouse_cursor="click")),
-            ]
-        )
-        self.p.show_dialog(dlg)
-
-    # Called when adding a new field to a section
-    def _new_field_clicked(self, section: str):
-        ''' Opens a dialog to name a new field inside a section '''
-
-        if 'world_data' not in self.data:
-            self.data['world_data'] = {}
-
-        if section not in self.data['world_data']:
-            self.data['world_data'][section] = {}
-
-        def create_field(e): #show in edit view
-            '''Called when user confirms the field name'''
-            
-            field_name = return_safe_name(field_name_input.value)
-            
-            #if not field_name:
-                #self.p.pop_dialog()
-                #return  # Don't create if empty
-            
-            # Add the field to data if it doesn't exist
-            if field_name not in self.data['world_data'][section]:
-                self.data['world_data'][section][field_name] = ""
-            
-            # Save and reload
-            self.p.run_task(self.save_dict)
-            self.p.pop_dialog()
-            self.reload_widget()
-                                
-            
-
-        # Create a dialog to ask for the field name
-        field_name_input = ft.TextField(
-            label="Field Name",
-            autofocus=True, capitalization=ft.TextCapitalization.SENTENCES,
-            on_submit=create_field,     # Closes the overlay when submitting
-        )
-        
-        dlg = ft.AlertDialog(
-            title=ft.Text(f"Create New Field in {section}"),
-            content=field_name_input,
-            actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                ft.TextButton("Create", on_click=create_field, style=ft.ButtonStyle(mouse_cursor="click")),
-            ],
-        )
-     
-        self.p.show_dialog(dlg)
-
     # Called to find a canvas and load a snapshot from all its layers
     def _set_canvas_snapshot(self, canvas_key: str) -> str:
 
@@ -229,62 +107,267 @@ class World(Widget):
         merged.save(output, format="PNG")
         return base64.b64encode(output.getvalue()).decode("utf-8")
 
-    # Called when clicking our upload image button
-    async def _upload_world_image(self, e=None):
+    # Called after any changes happen to the data that need to be reflected in the UI
+    def reload_widget(self): #this is the edit view currently
+        ''' Reloads/Rebuilds our widget based on current data '''
 
-        files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
-        if files:
 
-            file_path = files[0].path
-            try:
-                import base64
+        # Rebuild out tab to reflect any changes
+        self.reload_tab()
 
-                with open(file_path, "rb") as image_file:
-                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                    # Save to our data
-                    self.data['image_base64'] = f"{encoded_string}"
-                    await self.save_dict()
-                    self.reload_widget()
+        # Called when clicking our upload image button 
+        async def upload_image(e: ft.Event):
 
-            except Exception as _:
-                pass
-    
-    # Called when clicking the edit mode button
-    async def _edit_mode_clicked(self, e=None):
-        ''' Switches between edit mode and not for the world '''
+            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            if files:
 
-        # Change our edit mode data flag, and save it to file
-        self.data['edit_mode'] = not self.data['edit_mode']
-        await self.save_dict()
+                file_path = files[0].path
+                try:
+                    import base64
 
-        # Reload the widget. The reload widget should load differently depending on if we're in edit mode or not
-        self.reload_widget()
+                    with open(file_path, "rb") as image_file:
+                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                        # Save to our data
+                        self.data['image_base64'] = f"{encoded_string}"
+                        await self.save_dict()
 
-    # Called if our widget is in edit view. 
-    def _edit_mode_view(self):
-        ''' Returns our world data with input capabilities '''
+                    # Update the image in our widget
+                    e.control.icon = ft.Container(
+                        ft.Image(
+                            src=self.data.get('image_base64', ""),
+                            width=100,
+                            height=100,
+                            fit=ft.BoxFit.FILL,
+                        ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                    )
+                    e.control.update()
 
-        def _get_help_text(key: str="") -> str:
-            ''' Returns help text for certain fields '''
-            match key:
-                
-                case "Locations":
-                    return "Detail the key locations within the world, including cities, landmarks, and significant sites."
-                case "Lore":
-                    return "Detail the myths, legends, and historical narratives that shape the world's culture and identity."
-                case "Power Systems":
-                    return "Magic systems, supernatural abilities, or other extraordinary powers."
-                case "Social Systems":
-                    return "Describe the social structures, hierarchies, and interactions within the world."
+                except Exception:
+                    pass
+
+        # Called when a field is changed in edit mode
+        def update_world_data(**kwargs):
+            ''' Updates the world data dict or up to one sub dict '''
+
+            for key, value in kwargs.items():
+                if 'world_data' not in self.data:
+                    self.data['world_data'] = {}
+
+                if key in self.data['world_data']:
+                    self.data['world_data'][key] = value
+                else:
+                    # Check if this key is in a sub dict, and update it there if it is
+                    for sub_key, sub_dict in self.data['world_data'].items():
+                        if isinstance(sub_dict, dict) and key in sub_dict:
+                            self.data['world_data'][sub_key][key] = value
+                            break
             
-                case _:
-                    return None
+            self.p.run_task(self.save_dict)
+        
+        # Called by button to create a new section. Just shows our text field to enter the section name
+        async def new_section_clicked(e: ft.Event=None):
+            nonlocal new_section_tf
+            new_section_tf.visible = True
+            new_section_tf.value = ""
+            new_section_tf.error = None
+            new_section_tf.update()
+            await new_section_tf.focus()
+
+        # Called when bluring the new section text field
+        async def hide_new_section_tf(e: ft.Event=None):
+            nonlocal new_section_tf
+            new_section_tf.visible = False
+            new_section_tf.value = ""
+            new_section_tf.error = None
+            new_section_tf.update()
+
+        # Called when pressing enter on the new section text field or when it loses focus
+        async def create_new_section(e: ft.Event=None):
+            nonlocal new_section_tf, body
+            
+
+            # Grab our section name
+            section_name = return_safe_name(new_section_tf.value)
+            
+            # If name is empty, just hide the text field and return
+            if not section_name:
+                return  
+            
+            # If section name already exists, show that as error
+            if section_name in self.data['world_data']:
+                self.p.show_dialog(SnackBar("Section name already exists!"))
+                return  
+            
+            # Otherwise we passed checks, add it to data
+            self.data['world_data'][section_name] = {}
+            await self.save_dict()
+
+            # Add new label for the section name
+            body.controls.append(
+                ft.Row([
+                    ft.Text(f"\t\t{section_name}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
+                    ft.IconButton(
+                        tooltip="Add New Field", icon=ft.Icons.NEW_LABEL_OUTLINED, mouse_cursor="click",
+                        on_click=new_field_clicked, icon_color=self.data.get('color', None),
+                        data=section_name
+                    ),
+                ], spacing=0, data=section_name))
+            
+            # Add new container for the section info
+            body.controls.append(
+                ft.Container(         # For template data
+                    padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+                    border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
+                    margin=ft.Margin.only(left=10, bottom=10, right=10),
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                    content=ft.Column(
+                        [
+                            ft.Row([
+                                ft.Text("No fields yet. Click the button above to add one, or", italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
+                                ft.TextButton(
+                                    "Delete Section",
+                                    on_click=delete_section, data=section_name,
+                                    style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)
+                                )
+                            ], spacing=0)
+                        ], tight=True, spacing=0),
+                    data=section_name
+                )
+            )
+            
+            body.update()
+            await body.scroll_to(offset=-1, duration=200)  # Scroll to bottom
+            
+        # Deletes an entire section from our data dict
+        async def delete_section(e: ft.Event):
+            ''' Deletes an entire section from the world data dict '''
+            nonlocal body
+            section = e.control.data
+            del self.data['world_data'][section]
+            await self.save_dict()
+
+            # Grab the body's column control to remove the label and section container from the UI and update
+            for ctrl in reversed(body.controls): # Work backwards so we don't skip any controls when removing
+                if ctrl.data == section:
+                    body.controls.remove(ctrl)
+            body.update()   
+
+        async def new_field_clicked(e: ft.Event):
+            ''' Opens the new field text field when clicking the add new field button on a section '''
+            nonlocal new_field_tf
+            section = e.control.data
+            new_field_tf.data = section   # Set the section as data on the text field so we know which section to add the field to when we submit
+            new_field_tf.visible = True
+            new_field_tf.value = ""
+            new_field_tf.error = None
+            new_field_tf.update()
+            await new_field_tf.focus()
+        
+        # Creates the new field
+        async def create_new_field(e: ft.Event): #show in edit view 
+            '''Called when user confirms the field name'''
+            nonlocal new_field_tf, body
+            section = e.control.data
+            field_name = return_safe_name(e.control.value)
+            
+            # Add the field to data if it doesn't exist
+            if field_name and field_name not in self.data['world_data'][section]:
+                empty_section = self.data['world_data'].get(section, {}) == {}  # Check if this is the first field being added
+                self.data['world_data'][section][field_name] = ""
+            else:
+                self.p.show_dialog(SnackBar("Field name already exists or is invalid!"))
+                return
+            
+            
+            
+            # Save and reload
+            await self.save_dict()
+            
+            # Add new field to the UI
+            # Find the parent column for this section so we can add field info to it
+            parent_column = None  
+            for ctrl in body.controls:
+                if isinstance(ctrl, ft.Container) and ctrl.data == section:
+                    parent_column = ctrl.content
+            if not parent_column:
+                return
+        
+            
+            # Set new control to add
+            row_ctrl = ft.Row(spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
+
+            # Add text label for the field name
+            row_ctrl.controls.append(
+                ft.Text(f"{field_name}:\t", size=16, selectable=True, weight=ft.FontWeight.BOLD,)
+            )
+            # Add textfield we can change
+            row_ctrl.controls.append(
+                TextField(
+                    "", expand=True, cursor_color=self.data.get('color', None),
+                    on_blur=lambda e, k=field_name: update_world_data(**{k: e.control.value}), 
+                ),
+            )
+            # Add delete button at the end which is small
+            row_ctrl.controls.append(
+                ft.Container(
+                    ft.Icon(
+                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                    ),
+                    on_click=delete_field, 
+                    data=(section, field_name), ink=True, shape=ft.BoxShape.CIRCLE,
+                    tooltip=f"Delete Field: {field_name}", 
+                )
+            )
+            if empty_section:   
+                parent_column.controls.pop(0)
+            parent_column.controls.append(row_ctrl)
+            parent_column.update()  
+
+        # Deletes a field from our world data dict
+        async def delete_field(e: ft.Event):
+            ''' Deletes fields from the world data dict or up to one sub dict '''
+            section, key = e.control.data
+
+            del self.data['world_data'][section][key]
+            await self.save_dict()
+
+            # Reference the column that holds this field in case we're the last field being deleted so we can reference it later
+            body = e.control.parent.parent 
+
+            # Remove the row from the column UI and update
+            body.controls.remove(e.control.parent)  
+            body.parent.update()   
+
+            # Check the length of parent, if its empty, add our no fields text and delete section button
+            if len(self.data['world_data'][section]) == 0:
+                body.controls.append(
+                    ft.Row([
+                        ft.Text("No fields yet. Click the button above to add one, or", italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
+                        ft.TextButton(
+                            "Delete Section",
+                            on_click=delete_section, data=section,
+                            style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)
+                        )
+                    ], spacing=0, data=section)
+                )
+                body.update()
+
+        # Hides the new field text field when it loses focus
+        async def hide_new_field_tf(e: ft.Event):
+            nonlocal new_field_tf
+            new_field_tf.visible = False
+            new_field_tf.value = ""
+            new_field_tf.error = None
+            new_field_tf.data = None
+            new_field_tf.update()
 
 
-        # Loads our world data dict into text controls for editing
         def _load_world_data_controls() -> list[ft.Control]:
             ''' Loads data from a dict into a given container '''
-            control_list = []
+
+
+            # Our list of controls that will be added to the body column
+            control_list = []   
             
             # Go through our sections inside of our world data
             for section, values in self.data.get('world_data', {}).items():
@@ -298,191 +381,65 @@ class World(Widget):
                     ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
                     ft.IconButton(
                         tooltip="Add New Field", icon=ft.Icons.NEW_LABEL_OUTLINED, mouse_cursor="click",
-                        on_click=lambda _, s=section:self._new_field_clicked(s), icon_color=self.data.get('color', None)
+                        on_click=new_field_clicked, icon_color=self.data.get('color', None),
+                        data=section
                     ),
-                    
-                ])
-                control_list.append(label)
-
-                # If the dict is empty, show the delete button
-                if len(values) == 0:
-                    control_list.append(ft.Text(f"\t\tNo fields yet...", italic=True, color=ft.Colors.ON_SURFACE_VARIANT))
-                    label.controls.append(
-                        ft.TextButton(
-                            "Delete Section",
-                            on_click=lambda _, s=section: self._delete_world_data(**{s: ""}),
-                            style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)
-                        )
-                    )
-                    continue
+                ], spacing=0, data=section)
                 
-
-                # Go through every key/value pair in this section and add it to our text span list with formatting
-                for key, value in values.items():
-
-                    if isinstance(value, str):
-
-                        # Add the each key for this section
-                        control_list.append(
-                            ft.Row([
-                                TextField(
-                                    label=key, hint_text=_get_help_text(key), value=value, 
-                                    on_blur=lambda e, k=key: self._update_world_data(**{k: e.control.value}), expand=True,
-                                    dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
-                                    border_color=ft.Colors.OUTLINE_VARIANT,
-                                    suffix_icon=ft.IconButton(
-                                        tooltip="Delete Field", icon=ft.Icons.DELETE_OUTLINE, mouse_cursor="click",
-                                        on_click=lambda _, k=key: self._delete_world_data(**{k: ""}), icon_color=ft.Colors.ERROR
-                                    ),
-                                ),
-                                
-                                ft.Container(width=1)   # Spacing
-                            ])
-                        )
-    
-
-                # Add the label and container with our text spans to the control list for this section
-                #control_list.append(ft.Container(height=10))    # Spacing
-                
-
-            return control_list
-
-        
-        if self.data.get('image_base64', ""):
-            img = ft.Container(
-                ft.Image(
-                    src=self.data.get('image_base64', ""),
-                    width=100,
-                    height=100,
-                    fit=ft.BoxFit.FILL,
-                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
-            )
-        else:
-            img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
-
-        # Changes for the about section
-        async def _change_about_data(e):
-            ''' Called when the about section is changed in edit mode '''
-            self.data['About'] = e.control.value
-            await self.save_dict()
-
-        about_section = ft.Column([
-            ft.Row([
-                ft.Text(f"\t\tAbout", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
-                ft.IconButton(
-                    tooltip="Edit Mode", icon=ft.Icons.EDIT_OFF_OUTLINED, icon_color=self.data.get('color', None), 
-                    on_click=self._edit_mode_clicked, mouse_cursor="click"
-                ),
-            ]),
-            ft.Container(
-                TextField(
-                    self.data.get('About', ""), on_blur=_change_about_data, expand=True, 
-                    dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
-                    border_color=ft.Colors.OUTLINE_VARIANT
-                ), 
-                margin=ft.Margin.only(right=16)
-            ),
-            #ft.Container(width=10)
-            
-        ], expand=True, spacing=0)
-
-        
-        # Header that holds our image, edit mode button, and about section
-        header = ft.Row([
-            ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_world_image, mouse_cursor="click"),
-            about_section
-        ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.CENTER)
-
-        body = ft.Column([
-            header,
-            
-        ], scroll="auto", expand=True, spacing=6)
-
-        body.controls.extend(_load_world_data_controls())   
-        body.controls.append(
-            ft.TextButton(
-                "Add New Section", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                on_click=self._new_section_clicked,
-                style=ft.ButtonStyle(self.data.get('color', ft.Colors.PRIMARY), icon_size=20, mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-            )
-        )
-
-        self.body_container.content = body
-
-
-    # Called after any changes happen to the data that need to be reflected in the UI
-    def reload_widget(self): #this is the edit view currently
-        ''' Reloads/Rebuilds our widget based on current data '''
-
-        # Rebuild out tab to reflect any changes
-        self.reload_tab()
-
-        # Check if we're in edit mode or not. If yes, build the edit view like this
-        if self.data.get('edit_mode', False):
-            self._edit_mode_view()
-            self._render_widget()
-            return
-
-        def _load_world_data_controls() -> list[ft.Control]:
-            ''' Loads data from a dict into a given container '''
-
-            control_list = []
-            
-            # Go through our sections inside of our world data
-            for section, values in self.data.get('world_data', {}).items():
-
-                # Skip non-dict sections 
-                if not isinstance(values, dict):
-                    continue
-
-                # Set a label and container to hold our text spans for each section
-                label = ft.Text(f"\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None))
-                
-                control_list.append(label)
-
-                # List to hold text spans for each text control in the container
-                text_span_list = []
 
                 # Container to hold the text control of our section info
                 container = ft.Container(         # For template data
                     padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
                     border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), 
-                    margin=ft.Margin.only(bottom=10, right=16),
-                    content=ft.Row([ft.Text(expand=True, spans=text_span_list, size=16)]), # Forces container to take up space
+                    margin=ft.Margin.only(left=10, bottom=10, right=10),
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                    content=ft.Column(tight=True, spacing=0),
+                    data=section
                 )
-
-                # Go through every key/value pair in this section and add it to our text span list with formatting
                 for key, value in values.items():
+
+                    row_ctrl = ft.Row(spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
+
                     if isinstance(value, str):
-
-
-                        # If artifically created new lines, treat as bullet point list
-                        if "\n" in value:
-                            text_span_list.append(
-                                ft.TextSpan(f"{key.capitalize()}:\n", ft.TextStyle(16, weight=ft.FontWeight.BOLD))
+                        # Add text label for the field name
+                        row_ctrl.controls.append(
+                            ft.Text(f"{key}:\t", size=16, selectable=True, weight=ft.FontWeight.BOLD,)
+                        )
+                        # Add textfield we can change
+                        row_ctrl.controls.append(
+                            TextField(
+                                value, expand=True, cursor_color=self.data.get('color', None),
+                                on_blur=lambda e, k=key: update_world_data(**{k: e.control.value}), 
+                            ),
+                        )
+                        # Add delete button at the end which is small
+                        row_ctrl.controls.append(
+                            ft.Container(
+                                ft.Icon(
+                                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                                ),
+                                on_click=delete_field, 
+                                data=(section, key), ink=True, shape=ft.BoxShape.CIRCLE,
+                                tooltip=f"Delete Field: {key}", 
                             )
+                        )
+                        container.content.controls.append(row_ctrl)
 
-                            # Add the value for this key, with a bullet point if there are multiple values separated by new lines
-                            values = [v.strip() for v in value.replace('\n', ',').split(',') if v.strip()]
-                            for val in values:
-                                text_span_list.append(ft.TextSpan(f"\t\u2022\t{val.capitalize()}\n"))
-
-                        # Otherwise, just add the key and value normally
-                        else:
-
-                            # Add the each key for this section
-                            text_span_list.append(
-                                ft.TextSpan(f"{key.capitalize()}:\t\t", ft.TextStyle(16, weight=ft.FontWeight.BOLD))
+                if len(values) == 0:
+                    container.content.controls.append(
+                        ft.Row([
+                            ft.Text("No fields yet. Click the button above to add one, or", italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
+                            ft.TextButton(
+                                "Delete Section",
+                                on_click=delete_section, data=section,
+                                style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)
                             )
-                            text_span_list.append(ft.TextSpan(f"{value}\n"))     # Rest of the value
-
-
-                # Remove unnecessary new line at the end for cleaner formatting
-                last_span = text_span_list[-1] if text_span_list else None
-                if last_span and last_span.text.endswith("\n"):
-                    last_span.text = last_span.text[:-1]  # Remove the last new line for cleaner formatting
+                        ], spacing=0)
+                    )
+                
 
                 # Add the label and container with our text spans to the control list for this section
+                control_list.append(label)
                 control_list.append(container)
 
             return control_list
@@ -500,41 +457,64 @@ class World(Widget):
                 ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
             )
         else:
-            img = ft.Icon(ft.Icons.PUBLIC_OUTLINED, size=100, color=self.data.get('color', "primary"), expand=False)
+            img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
 
         about_section = ft.Column([
             ft.Row([
                 ft.Text(f"About", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
-                ft.IconButton(
-                    tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), 
-                    on_click=self._edit_mode_clicked, mouse_cursor="click"
-                ),
+                
             ], spacing=0),
-            ft.Container(ft.Text(f"{self.data.get('About', "")}", expand=True, size=16), margin=ft.Margin.only(right=16)), # Forces container to take up space
-
-        ], expand=True, spacing=0)
+            ft.TextField(
+                self.data.get('About', ""), on_blur=lambda e: update_world_data(**{"About": e.control.value}), expand=True, 
+                dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
+                border_color=ft.Colors.OUTLINE_VARIANT, margin=ft.Margin.only(right=10),
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=10,
+                content_padding=ft.Padding.all(6), min_lines=3, cursor_color=self.data.get('color', None)
+            )
+            
+        ], expand=True, spacing=0, alignment=ft.MainAxisAlignment.CENTER)
 
         
         # Header that holds our image, edit mode button, and about section
         header = ft.Row([
-            ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_world_image, mouse_cursor="click"),
+            ft.IconButton(img, tooltip="Upload an Image of your world", on_click=upload_image, mouse_cursor="click"),
             about_section
-        ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
+        ], vertical_alignment=ft.CrossAxisAlignment.START)
 
 
         # Body that holds the rest of our widget
         body = ft.Column(
             controls=[header],
-            scroll="auto", expand=True, spacing=4
+            scroll="auto", expand=True, spacing=0
         )
 
         # Load in our world data controls after the header
-        body.controls.extend(_load_world_data_controls())   
+        body.controls.extend(_load_world_data_controls())
 
-        self.body_container.content = body
+        new_section_tf = ft.TextField(
+            autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.WORDS, visible=False,
+            on_submit=create_new_section, on_blur=hide_new_section_tf, dense=True
+        )
+
+        new_field_tf = ft.TextField(
+            label="New Field Name", capitalization=ft.TextCapitalization.SENTENCES, visible=False,
+            on_submit=create_new_field, on_blur=hide_new_field_tf, dense=True,
+            #data=section   # Gets set when we click the new field button for a specific section
+        )
+
+        self.body_container.content = ft.Column([
+            body,
+            ft.Divider(2, 2),
+            ft.Row([
+                ft.TextButton(
+                    "Add New Section", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                    on_click=new_section_clicked,
+                    style=ft.ButtonStyle(self.data.get('color', ft.Colors.PRIMARY), mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
+                ),
+            new_section_tf, new_field_tf
+            ])
+        ], expand=True, spacing=0)
 
         self._render_widget()
 
-
-
-
+# READY FOR BUILD
