@@ -247,7 +247,7 @@ class CanvasRail(Rail):
         app.settings.data['canvas_settings']['current_tool_name'] = tool_name
         await app.settings.save_dict()
         self.story.active_rail.reload_rail()
-        for widget in self.story.widgets:
+        for widget in self.story.widgets.values():
             if widget.data.get('tag') == "canvas":
                 if widget.data.get('visible', True):
                     await widget.set_mouse_cursor()
@@ -373,7 +373,7 @@ class CanvasRail(Rail):
         self.p.run_task(app.settings.save_dict)
 
         self.story.active_rail.reload_rail()
-        for widget in self.story.widgets:
+        for widget in self.story.widgets.values():
             if widget.data.get('tag') == "canvas":
                 if widget.data.get('visible', True):
                     self.p.run_task(widget.set_mouse_cursor)
@@ -544,7 +544,7 @@ class CanvasRail(Rail):
             case "Overline": text_decoration = ft.TextDecoration.OVERLINE
             case "Line Through": text_decoration = ft.TextDecoration.LINE_THROUGH
             case _: text_decoration = None
-        for widget in self.story.widgets:
+        for widget in self.story.widgets.values():
             if widget.data.get('tag') == "canvas" and widget.data.get('visible', False):
                 if widget.manipulating_shape:
                    
@@ -945,7 +945,7 @@ class CanvasRail(Rail):
                     app.settings.data['paint_settings']['blend_mode'] = "src_over"
             await app.settings.save_dict()
             self.story.active_rail.reload_rail()
-            for widget in self.story.widgets:
+            for widget in self.story.widgets.values():
                 if widget.data.get('tag') == "canvas":
                     if widget.data.get('visible', True):
                         await widget.set_mouse_cursor()

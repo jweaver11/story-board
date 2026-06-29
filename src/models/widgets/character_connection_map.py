@@ -257,7 +257,6 @@ class CharacterConnectionMap(Widget):
         async def _stop_highlight(self, e=None):
             ''' When we stop hovering over a character node, we want to stop highlighting it '''
             if self.is_dragging:
-                
                 return
             if self.widget.char2:
                 self.widget.char2 = None

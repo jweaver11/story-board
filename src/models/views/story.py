@@ -41,7 +41,6 @@ class Story(ft.View):
         )  
 
         self.title = title              # Gives our story a title when its created
-        self.p = page                   # Reference to our page object for updating UI elements
         self.data = data                # Sets our data (if any) passed in. New stories just have none
         self.type = type                # Type of story, novel or comic. Affects how templates for creating new content will work
 
@@ -150,7 +149,7 @@ class Story(ft.View):
         
         # Handle errors
         except Exception as e:
-            self.p.show_dialog(SnackBar(f"Error saving story data: {e}"))
+            self.page.show_dialog(SnackBar(f"Error saving story data: {e}"))
 
     # Called for little data changes
     def change_data(self, **kwargs):
@@ -162,7 +161,7 @@ class Story(ft.View):
             for key, value in kwargs.items():
                 self.data.update({key: value})
 
-            self.p.run_task(self.save_dict)
+            self.page.run_task(self.save_dict)
 
         # Handle errors
         except Exception as e:
@@ -191,7 +190,7 @@ class Story(ft.View):
 
             # Add this folder to our folders data so we can save stuff like colors
             self.data['folders'].update({folder_path: {'name': name, 'color': app.settings.data.get('default_category_color', "primary"), 'is_expanded': True}})
-            self.p.run_task(self.save_dict)
+            self.page.run_task(self.save_dict)
 
 
             self.active_rail.reload_rail()
@@ -228,11 +227,11 @@ class Story(ft.View):
                     self.data['folders'].pop(folder, None)
 
             # Save AFTER all data has been cleaned up so nothing orphaned persists
-            self.p.run_task(self.save_dict)
+            self.page.run_task(self.save_dict)
 
             self.blocker.visible = True
             self.blocker.update()
-            self.p.run_task(asyncio.sleep, 0)
+            self.page.run_task(asyncio.sleep, 0)
 
             self.active_rail.reload_rail()
             self.workspace.reload_workspace()
@@ -281,7 +280,7 @@ class Story(ft.View):
                 widget.data['directory_path'] = widget.directory_path
                 # Use the widget's own title/tag, not the story's
                 widget.data['key'] = f"{widget.directory_path}\\{return_safe_name(widget.title)}_{widget.data.get('tag', '')}"
-                self.p.run_task(widget.save_dict)
+                self.page.run_task(widget.save_dict)
 
         # Update sub-folder keys BEFORE renaming the top-level key so we never match the already-renamed entry
         for folder in self.data['folders'].copy():
@@ -298,7 +297,7 @@ class Story(ft.View):
             self.data['folders'][old_path]['name'] = os.path.basename(new_path)
             self.data['folders'][new_path] = self.data['folders'].pop(old_path)
 
-        self.p.run_task(self.save_dict)
+        self.page.run_task(self.save_dict)
         
 
     # Called on story startup to load all our content objects
@@ -354,7 +353,7 @@ class Story(ft.View):
                             case "document": 
                                 widget = Document(     # Create the object in its dict
                                     title=widget_data.get('title', 'Untitled Document'),
-                                    page=self.p,
+                                    page=self.page,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -362,7 +361,7 @@ class Story(ft.View):
                             case "canvas":
                                 widget = Canvas(
                                     title=widget_data.get('title', 'Untitled Document'),
-                                    page=self.p,
+                                    page=self.page,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -370,7 +369,7 @@ class Story(ft.View):
                             case "canvas_board":
                                 widget = CanvasBoard(
                                     widget_data.get('title', 'Untitled Document'),
-                                    page=self.p,
+                                    page=self.page,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -378,7 +377,7 @@ class Story(ft.View):
                             case "note":
                                 widget = Note(
                                     title=widget_data.get('title', 'Untitled Document'),
-                                    page=self.p,
+                                    page=self.page,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -386,7 +385,7 @@ class Story(ft.View):
                             case "character":
                                 widget = Character(
                                     widget_data.get('title', 'Untitled Document'),
-                                    page=self.p,
+                                    page=self.page,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -394,7 +393,7 @@ class Story(ft.View):
                             case "plotline":
                                 widget = Plotline(
                                     title=widget_data.get('title', 'Untitled Document'),
-                                    page=self.p,
+                                    page=self.page,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -402,7 +401,7 @@ class Story(ft.View):
                             case "map":
                                 widget = Map(
                                     title=widget_data.get('title', 'Untitled Document'),
-                                    page=self.p,
+                                    page=self.page,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -410,7 +409,7 @@ class Story(ft.View):
                             case "world":
                                 widget = World(
                                     title=widget_data.get('title', 'Untitled Document'),
-                                    page=self.p,
+                                    page=self.page,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -418,7 +417,7 @@ class Story(ft.View):
                             case "character_connection_map":
                                 widget = CharacterConnectionMap(
                                     widget_data.get('title', 'Untitled Document'),
-                                    page=self.p,
+                                    page=self.page,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -426,7 +425,7 @@ class Story(ft.View):
                             case "item":
                                 widget = Item(
                                     title=widget_data.get('title', 'Untitled Document'),
-                                    page=self.p,
+                                    page=self.page,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -434,7 +433,7 @@ class Story(ft.View):
                             case "chart":
                                 widget = Chart(
                                     title=widget_data.get('title', 'Untitled Document'),
-                                    page=self.p,
+                                    page=self.page,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -442,7 +441,7 @@ class Story(ft.View):
                             case "comic_preview":
                                 widget = ComicPreview(
                                     title=widget_data.get('title', 'Untitled Document'),
-                                    page=self.p,
+                                    page=self.page,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -451,7 +450,7 @@ class Story(ft.View):
                             case "plot_chart":
                                 widget = PlotChart(
                                     title=widget_data.get('title', 'Untitled Document'),
-                                    page=self.p,
+                                    page=self.page,
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -502,37 +501,37 @@ class Story(ft.View):
 
         match tag:
             case "document":
-                widget = Document(title, self.p, directory_path, self, data)
+                widget = Document(title, self.page, directory_path, self, data)
             case "note":
-                widget = Note(title, self.p, directory_path, self, data)
+                widget = Note(title, self.page, directory_path, self, data)
             case "canvas":
                 d = {'canvas_data': data} if data is not None else None
-                widget = Canvas(title, self.p, directory_path, self, d)
+                widget = Canvas(title, self.page, directory_path, self, d)
             case "character":
                 if app.settings.data.get('active_character_template', "None") != "None":
                     data = app.settings.data['character_templates'].get(app.settings.data['active_character_template'], {}).copy()
                     data = {'character_data': data}
-                widget = Character(title, self.p, directory_path, self, data)
+                widget = Character(title, self.page, directory_path, self, data)
             case "plotline":
-                widget = Plotline(title, self.p, directory_path, self, data)
+                widget = Plotline(title, self.page, directory_path, self, data)
             case "map":
-                widget = Map(title, self.p, directory_path, self, data)
+                widget = Map(title, self.page, directory_path, self, data)
             case "character_connection_map":
-                widget = CharacterConnectionMap(title, self.p, directory_path, self, data)
+                widget = CharacterConnectionMap(title, self.page, directory_path, self, data)
             case "world":
-                widget = World(title, self.p, directory_path, self, data)
+                widget = World(title, self.page, directory_path, self, data)
             case "canvas_board":
-                widget = CanvasBoard(title, self.p, directory_path, self, data)   
+                widget = CanvasBoard(title, self.page, directory_path, self, data)   
             case "item":
-                widget = Item(title, self.p, directory_path, self, data)  
+                widget = Item(title, self.page, directory_path, self, data)  
             case "chart":
-                widget = Chart(title, self.p, directory_path, self, data, type=chart_type)
+                widget = Chart(title, self.page, directory_path, self, data, type=chart_type)
             case "comic_preview":
-                widget = ComicPreview(title, self.p, directory_path, self, data)
+                widget = ComicPreview(title, self.page, directory_path, self, data)
             case "plot_chart":
-                widget = PlotChart(title, self.p, directory_path, self, data)
+                widget = PlotChart(title, self.page, directory_path, self, data)
             case _:
-                self.p.show_dialog(SnackBar(f"Error creating widget {title}: Invalid tag {tag}"))
+                self.page.show_dialog(SnackBar(f"Error creating widget {title}: Invalid tag {tag}"))
         
 
         # Force a file save and write
@@ -582,7 +581,7 @@ class Story(ft.View):
             case "document":
                 new_widget = Document(
                     title=widget.data.get('title', 'Untitled Document'),
-                    page=self.p,
+                    page=self.page,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -592,7 +591,7 @@ class Story(ft.View):
             case "canvas":
                 new_widget = Canvas(
                     title=widget.data.get('title', 'Untitled Document'),
-                    page=self.p,
+                    page=self.page,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -602,7 +601,7 @@ class Story(ft.View):
             case "note":
                 new_widget = Note(
                     title=widget.data.get('title', 'Untitled Document'),
-                    page=self.p,
+                    page=self.page,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -612,7 +611,7 @@ class Story(ft.View):
             case "character":
                 new_widget = Character(
                     widget.data.get('title', 'Untitled Document'),
-                    page=self.p,
+                    page=self.page,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -622,7 +621,7 @@ class Story(ft.View):
             case "plotline":
                 new_widget = Plotline(
                     title=widget.data.get('title', 'Untitled Document'),
-                    page=self.p,
+                    page=self.page,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -632,7 +631,7 @@ class Story(ft.View):
             case "map":
                 new_widget = Map(
                     title=widget.data.get('title', 'Untitled Document'),
-                    page=self.p,
+                    page=self.page,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -642,7 +641,7 @@ class Story(ft.View):
             case "world":
                 new_widget = World(
                     title=widget.data.get('title', 'Untitled Document'),
-                    page=self.p,
+                    page=self.page,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -652,7 +651,7 @@ class Story(ft.View):
             case "character_connection_map":
                 new_widget = CharacterConnectionMap(
                     widget.data.get('title', 'Untitled Document'),
-                    page=self.p,
+                    page=self.page,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -662,7 +661,7 @@ class Story(ft.View):
             case "canvas_board":
                 new_widget = CanvasBoard(
                     widget.data.get('title', 'Untitled Document'),
-                    page=self.p,
+                    page=self.page,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -672,7 +671,7 @@ class Story(ft.View):
             case "item":
                 new_widget = Item(
                     widget.data.get('title', 'Untitled Document'),
-                    page=self.p,
+                    page=self.page,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -682,7 +681,7 @@ class Story(ft.View):
             case "chart":
                 new_widget = Chart(
                     title=widget.data.get('title', 'Untitled Document'),
-                    page=self.p,
+                    page=self.page,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -691,7 +690,7 @@ class Story(ft.View):
             case "comic_preview":
                 new_widget = ComicPreview(
                     title=widget.data.get('title', 'Untitled Document'),
-                    page=self.p,
+                    page=self.page,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -701,7 +700,7 @@ class Story(ft.View):
             case "plot_chart":
                 new_widget = PlotChart(
                     title=widget.data.get('title', 'Untitled Document'),
-                    page=self.p,
+                    page=self.page,
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -709,7 +708,7 @@ class Story(ft.View):
                 )
                 
             case _:
-                self.p.show_dialog(SnackBar(f"Error rebuilding widget {widget.title}: Invalid tag {tag}"))
+                self.page.show_dialog(SnackBar(f"Error rebuilding widget {widget.title}: Invalid tag {tag}"))
 
         
 
@@ -729,10 +728,6 @@ class Story(ft.View):
             self.close_menu_detector.visible = False
             self.close_menu_detector.update()
 
-        #for widget in self.widgets.values():
-            #if hasattr(widget, 'lock_position'):
-                #widget.lock_position = False
-
     def close_menu_instant(self, e=None):
         ''' Closes our right click menu when clicking outside of it '''
        
@@ -742,11 +737,6 @@ class Story(ft.View):
         if self.close_menu_detector.visible:
             self.close_menu_detector.visible = False
             self.close_menu_detector.update()
-        #for widget in self.widgets:expand=True,
-            alignment=ft.Alignment.CENTER,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            #if hasattr(widget, 'lock_position'):
-                #widget.lock_position = False
  
     # Called to open a right click menu in the page overlay
     def open_menu(self, menu_options: list):
@@ -761,9 +751,9 @@ class Story(ft.View):
             self.close_menu_instant()
 
         # Adjust mouse positions if the menu would go off screen
-        if self.mouse_x + 160 > self.p.width:
+        if self.mouse_x + 160 > self.page.width:
             self.mouse_x -= 160
-        if self.mouse_y + 230 > self.p.height:
+        if self.mouse_y + 230 > self.page.height:
             self.mouse_y -= 115
 
         # Set the content and position

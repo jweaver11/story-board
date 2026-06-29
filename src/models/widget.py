@@ -139,7 +139,7 @@ class Widget(ft.Container):
             mouse_cursor=ft.MouseCursor.CLICK,
             hover_interval=100,
             on_hover=self._set_coords,
-            on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
+            on_secondary_tap=lambda: self.story.open_menu(self._get_menu_options()),
             on_secondary_tap_down=lambda e: print(e)
         )
 

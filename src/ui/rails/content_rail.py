@@ -339,7 +339,7 @@ class ContentRail(Rail):
             content=dt,
             expand=True,
             on_hover=self._set_menu_coords,
-            on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()),  
+            on_secondary_tap=lambda: self.story.open_menu(self.get_menu_options()),  
             hover_interval=20,
         )
 

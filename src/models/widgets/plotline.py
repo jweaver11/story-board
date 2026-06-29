@@ -408,30 +408,6 @@ class Plotline(Widget):
                     ), 
                 ]),
             ),
-            MenuOptionStyle(
-                on_click=self.rename_clicked,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
-                    ft.Text(
-                        "Rename", 
-                        weight=ft.FontWeight.BOLD, 
-                    ), 
-                ]),
-            ),
-            MenuOptionStyle(
-                ft.SubmenuButton(
-                    ft.Row([
-                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
-                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
-                        ft.Icon(ft.Icons.ARROW_RIGHT),
-                    ], expand=True),
-                    self.get_color_options(), 
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                    tooltip="Change this widget's color"
-                ),
-                no_padding=True, no_effects=True
-            ),
         ]
     
 
