@@ -299,6 +299,37 @@ class Story(ft.View):
 
         self.page.run_task(self.save_dict)
         
+    # Called every 5 minutes to save our widgets that need file writes
+    async def save_widgets_to_file(self):
+        for widget in self.widgets.values():
+            await widget.write_to_file()
+
+    # Wrapper function to call save widgets to file every 5 minutes
+    async def _periodic_worker_loop(self):
+        '''Runs our periodic task every 5 minutes until this view unmounts.'''
+        while self._periodic_worker_running:
+            
+            # Sleep in 1-second chunks so unmount stops quickly.
+            for _ in range(300):
+                if not self._periodic_worker_running:
+                    break
+                await asyncio.sleep(1)
+
+            await self.save_widgets_to_file()
+
+    def did_mount(self):
+        return  # Temp
+
+        # Start once per mounted lifecycle.
+        if self._periodic_worker_running:
+            return
+
+        self._periodic_worker_running = True
+        self.page.run_task(self._periodic_worker_loop)
+
+    def will_unmount(self):
+        # Stop the periodic worker when this view leaves the page.
+        self._periodic_worker_running = False
 
     # Called on story startup to load all our content objects
     def load_widgets(self):
@@ -469,6 +500,25 @@ class Story(ft.View):
         for widget in self.widgets.values():
             if widget.data.get('tag', "") == "character_connection_map" and widget.data.get('visible', False):
                 widget.reload_widget()
+
+    async def import_clicked(self, e: ft.Event):
+
+        # TODO: Go through each file. Make sure a widget with that name/key doesnt already exist in that directory
+        # Otherwise, figure out what type of widget it should be and add it to story
+
+        dir_path = e.control.data or self.data.get('content_directory_path',  '')
+
+        files = await ft.FilePicker().pick_files(allow_multiple=True, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+        if files:
+            print(files)
+
+    # Opens the dialog to export
+    async def export_clicked(self, e=ft.Event):
+        dlg = ft.AlertDialog(
+            title="Export"
+        )
+
+        self.page.show_dialog(dlg)
 
         
     # Called to create a new widget based on tag (document, note, character, etc)

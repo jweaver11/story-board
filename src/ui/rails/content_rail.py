@@ -127,13 +127,27 @@ class ContentRail(Rail):
             ),
             ft.SubmenuButton(
                 ft.Container(
-                    ft.Icon(ft.Icons.IMPORT_EXPORT_OUTLINED, ft.Colors.OUTLINE),
+                    ft.Icon(ft.Icons.IMPORT_EXPORT_OUTLINED, ft.Colors.PRIMARY),
                     padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
                     width=40, height=40, alignment=ft.Alignment.CENTER
                 ),
+                [
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.UPLOAD_OUTLINED, ft.Colors.PRIMARY), content="Import", 
+                        on_click=self.story.import_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        tooltip="Import files to create new widgets.", 
+                    ),  
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), content="Export", 
+                        on_click=self.story.export_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                        tooltip="Export parts of your story.", disabled=True
+                    ),
+                ],
                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                tooltip="Import/Export(Coming Soon!)", disabled=True
+                tooltip="Import or Export",
             ),
         ]
 
