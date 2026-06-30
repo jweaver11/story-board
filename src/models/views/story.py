@@ -14,6 +14,7 @@ from utils.verify_data import verify_data
 from styles.snack_bar import SnackBar
 from utils.safe_string_checker import return_safe_name
 import asyncio
+from utils.import_widgets import import_widgets
 
  
 class Story(ft.View):
@@ -505,6 +506,7 @@ class Story(ft.View):
 
 
     async def import_files_clicked(self, e: ft.Event):
+        from models.widget import Widget
 
         # TODO: Go through each file. Make sure a widget with that name/key doesnt already exist in that directory
         # Otherwise, figure out what type of widget it should be and add it to story
@@ -513,9 +515,10 @@ class Story(ft.View):
 
         files = await ft.FilePicker().pick_files(allow_multiple=True, allowed_extensions=["jpg", "jpeg", "png", "webp", "json", "txt", "pdf", "docx", "md"])
         if files:
-            for file in files:
-                print(file.name)
-                #print(file.)
+            widgets: list[Widget] = import_widgets([file.path for file in files], dir_path)
+
+            # Check if widget exists already in story
+            
             
 
     # Opens the dialog to export
