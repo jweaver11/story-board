@@ -133,13 +133,19 @@ class ContentRail(Rail):
                 ),
                 [
                     ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.UPLOAD_OUTLINED, ft.Colors.PRIMARY), content="Import", 
-                        on_click=self.story.import_clicked, close_on_click=True,
+                        leading=ft.Icon(ft.Icons.DRIVE_FOLDER_UPLOAD_OUTLINED, ft.Colors.PRIMARY), content="Import Folder", 
+                        on_click=self.story.import_folder_clicked, close_on_click=True,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="Import files to create new widgets.", 
+                        tooltip="Import all files within a folder to create new widgets.", 
                     ),  
                     ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), content="Export", 
+                        leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Import File(s)", 
+                        on_click=self.story.import_files_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        tooltip="Import file(s) to create new widgets.", 
+                    ),  
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), content="Export Widget(s)", 
                         on_click=self.story.export_clicked, close_on_click=True,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                         tooltip="Export parts of your story.", disabled=True
@@ -305,6 +311,7 @@ class ContentRail(Rail):
             style=ft.MenuStyle(
                 bgcolor="transparent", shadow_color="transparent",
                 shape=ft.RoundedRectangleBorder(radius=4),
+                padding=ft.Padding.all(0)
             ),
         )
 
@@ -344,7 +351,7 @@ class ContentRail(Rail):
         dt = ft.DragTarget(
             group="widgets", on_will_accept=self._highlight_rail, on_leave=self._stop_highlight_rail,
             content=content,     # Our content is the content we built above
-            on_accept=lambda e: self.on_drag_accept(e, self.directory_path)
+            on_accept=lambda e: self.move_widget_file(e, self.directory_path)
         )
         
 

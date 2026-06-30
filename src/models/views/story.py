@@ -501,19 +501,34 @@ class Story(ft.View):
             if widget.data.get('tag', "") == "character_connection_map" and widget.data.get('visible', False):
                 widget.reload_widget()
 
-    async def import_clicked(self, e: ft.Event):
+    async def import_folder_clicked(self, e: ft.Event):
+        dir_path = e.control.data or self.data.get('content_directory_path',  '')
+
+        folder_path = await ft.FilePicker().get_directory_path()
+        if not folder_path:
+            self.page.show_dialog(SnackBar("No folder selected."))
+            return  
+        
+
+
+    async def import_files_clicked(self, e: ft.Event):
 
         # TODO: Go through each file. Make sure a widget with that name/key doesnt already exist in that directory
         # Otherwise, figure out what type of widget it should be and add it to story
 
         dir_path = e.control.data or self.data.get('content_directory_path',  '')
 
-        files = await ft.FilePicker().pick_files(allow_multiple=True, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+        files = await ft.FilePicker().pick_files(allow_multiple=True, allowed_extensions=["jpg", "jpeg", "png", "webp", "json", "txt", "pdf", "docx", "md"])
         if files:
-            print(files)
+            for file in files:
+                print(file.name)
+                #print(file.)
+            
 
     # Opens the dialog to export
     async def export_clicked(self, e=ft.Event):
+        # TODO: Save an export path to auto open with save files. Users cannot name their files
+        # Export file types for canvas and document have dif settings
         dlg = ft.AlertDialog(
             title="Export"
         )

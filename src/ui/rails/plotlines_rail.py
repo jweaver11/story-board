@@ -272,7 +272,7 @@ class PlotlinesRail(Rail):
 
         self.controls = [
             header,
-            ft.Divider(leading_indent=8),
+            ft.Divider(thickness=2, leading_indent=8),
             menu_gesture_detector,
             ft.Container(ft.Row([sort_dropdown]), margin=ft.Margin.symmetric(horizontal=4)),
         ]

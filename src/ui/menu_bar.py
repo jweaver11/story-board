@@ -243,7 +243,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                         on_click=_rename_clicked,
                     ),
                     ft.MenuItemButton(
-                        content=ft.Text("Upload", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                        content=ft.Text("Upload Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         disabled=True,
                         # Options: story, chapter, map, drawing, character, note
                         leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
@@ -252,7 +252,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                         #on_click=_open_clicked,
                     ),
                     ft.MenuItemButton(
-                        content=ft.Text("Export", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                        content=ft.Text("Export Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         disabled=True,
                         # Options: story, chapter, map, drawing, character, note
                         leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),

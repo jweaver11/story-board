@@ -75,7 +75,6 @@ class Rail(IsolatedColumn):
     def get_template_options(self, widget_type: str) -> list[ft.Control]:
         ''' Returns a list of template options when right clicking empty space in the rail '''
 
-
         template_options = []
 
         if widget_type == "character":
@@ -125,25 +124,16 @@ class Rail(IsolatedColumn):
         return template_options
     
     # Called when a widget is dragged and dropped into this directory
-    def on_drag_accept(self, e: ft.DragTargetEvent, new_directory: str):
+    def move_widget_file(self, e: ft.DragTargetEvent, new_directory: str):
         ''' Moves our widgets into this directory from wherever they were '''
         #print("Drag accepting")
 
         draggable = e.page.get_control(e.src_id)
-            
-        # Grab our key and set the widget
-        widget_key = draggable.data
 
-        widget = None
-
-        for w in self.story.widgets:
-            if w.data.get('key', "") == widget_key:
-                widget = w
-                break
+        widget = self.story.get_widget_by_id(draggable.data)
 
         if widget is None:
             print("Error: Widget not found for drag accept")
-            print(f"Widget key: {widget_key}")
             return
 
         # Call the move file using the new directory path

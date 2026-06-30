@@ -726,20 +726,12 @@ class TreeViewDirectory(ft.GestureDetector):
         
 
     # Called when a widget is dragged and dropped into this directory
-    async def on_drag_accept(self, e):
+    async def on_drag_accept(self, e: ft.DragTargetEvent):
         ''' Moves our widgets into this directory from wherever they were '''
         
         draggable = e.page.get_control(e.src_id)
-            
-        # Grab our key and set the widget
-        widget_key = draggable.data
 
-        widget = None
-
-        for w in self.story.widgets:
-            if w.data.get('key', "") == widget_key:
-                widget = w
-                break
+        widget = self.story.get_widget_by_id(draggable.data)
 
         if widget is None:
             print("Error: Widget not found for drag accept")

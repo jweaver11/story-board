@@ -1410,7 +1410,7 @@ class CanvasRail(Rail):
                 expand=True,
                 controls=[
                     header,
-                    ft.Divider(leading_indent=8),
+                    ft.Divider(thickness=2, leading_indent=8),
                     content
                 ]
             )

@@ -254,6 +254,7 @@ class WorldBuildingRail(Rail):
         maps = []
         worlds = []
         charts = []
+        items = []
 
         # Add all character and CCM widgets to their respective lists
         for widget in self.story.widgets.values():
@@ -263,6 +264,8 @@ class WorldBuildingRail(Rail):
                 worlds.append(widget)    
             elif widget.data.get('tag', "") == "chart":
                 charts.append(widget)
+            elif widget.data.get('tag', "") == "item":
+                items.append(widget)
 
         # Sort lists by color
         if self.story.data.get('world_building_rail_sort_method', "Index") == "Color":
@@ -271,21 +274,25 @@ class WorldBuildingRail(Rail):
             maps.sort(key=lambda c: c.data.get('color', "default"))
             worlds.sort(key=lambda c: c.data.get('color', "default"))
             charts.sort(key=lambda c: c.data.get('color', "default"))
+            items.sort(key=lambda c: c.data.get('color', "default"))    
 
             # Build our controls for maps and ccms
             map_controls = [WidgetRailItem(char) for char in maps]
             world_controls = [WidgetRailItem(ccm) for ccm in worlds] 
             chart_controls = [WidgetRailItem(chart) for chart in charts]
+            item_controls = [WidgetRailItem(item) for item in items]
 
         # Sort lists by index (default)
         elif self.story.data.get('world_building_rail_sort_method', "Index") == "Index":
             maps.sort(key=lambda c: c.data.get('rail_index', 0))
             worlds.sort(key=lambda c: c.data.get('rail_index', 0))
             charts.sort(key=lambda c: c.data.get('rail_index', 0))
+            items.sort(key=lambda c: c.data.get('rail_index', 0))
 
             map_controls = [ft.ReorderableDragHandle(WidgetRailItem(char)) for char in maps]
             world_controls = [ft.ReorderableDragHandle(WidgetRailItem(ccm)) for ccm in worlds]
             chart_controls = [ft.ReorderableDragHandle(WidgetRailItem(chart)) for chart in charts]
+            item_controls = [ft.ReorderableDragHandle(WidgetRailItem(item)) for item in items]
 
             # Update their index by their actual rail position now, since new maps start with index of 999
             for idx, map in enumerate(maps):
@@ -303,11 +310,17 @@ class WorldBuildingRail(Rail):
                     chart.data['rail_index'] = idx 
                     self.p.run_task(chart.save_dict)
 
+            for idx, item in enumerate(items):
+                if item.data.get('rail_index', 999) != idx:
+                    item.data['rail_index'] = idx 
+                    self.p.run_task(item.save_dict)
+
         # Otherwise just sort by the way the system loaded them
         else:
             map_controls = [WidgetRailItem(char) for char in maps]
             world_controls = [WidgetRailItem(ccm) for ccm in worlds]
             chart_controls = [WidgetRailItem(chart) for chart in charts]
+            item_controls = [WidgetRailItem(item) for item in items]
         
         
         maps_list_view = ft.ReorderableListView(
@@ -326,6 +339,13 @@ class WorldBuildingRail(Rail):
 
         charts_list_view = ft.ReorderableListView(   
             chart_controls,
+            on_reorder=_reorder_widget,
+            spacing=0, show_default_drag_handles=False,
+            reverse=self.story.data.get('world_building_rail_sort_direction', "Ascending") == "Descending"
+        )
+
+        items_list_view = ft.ReorderableListView(
+            item_controls,
             on_reorder=_reorder_widget,
             spacing=0, show_default_drag_handles=False,
             reverse=self.story.data.get('world_building_rail_sort_direction', "Ascending") == "Descending"
@@ -358,6 +378,10 @@ class WorldBuildingRail(Rail):
                 ft.Text("\tCharts", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
                 charts_list_view,
 
+                ft.Divider(),
+                ft.Text("\tItems", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.BOLD, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
+                items_list_view,
+
                 ft.Container(expand=True)
             ] 
                 
@@ -371,13 +395,7 @@ class WorldBuildingRail(Rail):
 
         self.controls = [
             header,
-            ft.Divider(),
-            menu_gesture_detector
-        ]
-
-        self.controls = [
-            header,
-            ft.Divider(leading_indent=8),
+            ft.Divider(thickness=2, leading_indent=8),
             menu_gesture_detector,
             ft.Container(ft.Row([sort_dropdown]), margin=ft.Margin.symmetric(horizontal=4)),
         ]
