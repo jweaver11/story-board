@@ -43,7 +43,7 @@ class Widget(ft.Container):
         self.story: Story = story    
 
         # Set an id for the widget
-        id = self.data.get('id', None) if self.data is not None else None
+        id = self.data.get('id', None) if self.data is not None and isinstance(self.data, dict) else None
         if id is None:
             id = str(uuid.uuid4())            
 
@@ -73,15 +73,15 @@ class Widget(ft.Container):
         # State tracking for widgets
         self.w: int = 0          # Width of content space of the widget
         self.h: int = 0          # Height of content space of the widget
-        self.l: int = 0          # Left position to pass into mini widgets
-        self.t: int = 0          # Top position to pass into mini widgets
+        
+        # Canvas tracking
         self.skip_update = False                # Skips applying an update on resizes to prevent update loops
         self.ignore_update = False     # Return and ignore updates, such as when hiding??
-        self.save_counter = 0      # Used to check how often we write saving to a file to prevent saving constantly
+        self.needs_file_write: bool = False        # Whether we need to write to file or not. Set to true when data changes, and false when saved
 
         # If widgets display info overtop content rather than next to it (plotline, map, canvas, etc.)
         self.mini_widgets_displayed_overtop: bool = True       # Widgets that set this false need to set their own mini widgets in reload_widget
-        self.no_render_mini_widgets: bool = False    # If we should let the widget render its own mini widgets, or have it handled here
+        self.no_render_mini_widgets: bool = False           # If we should let the widget render its own mini widgets, or have it handled here
 
 
         # UI ELEMENTS - Body                  
@@ -156,91 +156,51 @@ class Widget(ft.Container):
                 ft.TabBarView([self.master_stack], expand=True, clip_behavior=ft.ClipBehavior.NONE)# Holds our body
             ], expand=True, spacing=0),
         )   
-        #self.content = self.tabs
 
-        # Called at end of constructor for all child widgets to build their view (not here tho since we're not on page yet)
-        #self.reload_widget()
-
+    # Temp to improve performance
     def before_update(self):
-        print(f"Successful update for widget {self.title}")
+        print(f"Widget Update: {self.title}")
         return super().before_update()
-    
 
-    # Called whenever there are changes in our data
-    async def save_dict(self) -> bool:
-        ''' Saves our current data to the json file '''
+    # Updates data for this widget and marks it as dirty for the next file save
+    def update_data(self, **kwargs):
+        
+        # Allow updating of nested dicts without overriding the entire dict
+        def _merge_data(target: dict, updates: dict):
+            for key, value in updates.items():
+                current_value = target.get(key)
+                if isinstance(current_value, dict) and isinstance(value, dict):
+                    _merge_data(current_value, value)
+                else:
+                    target[key] = value
 
-        print(f"Saving widget: {self.title}")
+        _merge_data(self.data, kwargs)  # Merge the new data into the existing data
 
-        self.save_counter += 1      # Increiment the save counter
+        # Mark widget as dirty for file write
+        if self.needs_file_write == False:
+            self.needs_file_write = True
 
-        # Check if we need to write to file so we're not making constant writes
-        if self.save_counter >= 15:
+    # Writes our current data to the correct json file if we are dirty
+    async def save_file(self):
+        if self.needs_file_write:
+            print("Saving widget to file: ", self.title)
+
+            self.data['key'] = f"{self.directory_path}\\{self.title}_{self.data.get('tag', '')}"    # Make sure key is updated in case title changed
+            file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json") # Set the file path
 
             try:
-                print("Saving widget to file: ", self.title)
-
-                # Make sure our key is accurate if it changed (renamed or moved)
-                self.data['key'] = f"{self.directory_path}\\{self.title}_{self.data.get('tag', '')}"
-
-                # File path to save our json data to
-                file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json")
-
-                # Create the directory if it doesn't exist. Catches errors from users deleting folders
-                os.makedirs(self.directory_path, exist_ok=True)
+                os.makedirs(self.directory_path, exist_ok=True)     # Make sure directory exists still
                 
-                # Save the data to the file (creates file if doesnt exist)
+                # Save our json data to the file
                 with open(file_path, "w", encoding='utf-8') as f:   
                     json.dump(self.data, f, indent=4)
 
-                self.save_counter = 0   # Reset the save counter
-
-                return True
-            
-            # Handle errors
+                self.needs_file_write = False   # Mark as clean
             except Exception as e:
-                print(f"Error saving widget to {file_path}: {e}") 
-                print("Widget data that failed to save:\n")
-                for key, value in self.data.items():
-                    print(f"{key}: {value}")
-                print("\n")
-                return False
-
-    # Called for little data changes
-    async def change_data(self, **kwargs):
-        ''' Changes a key/value pair in our data and saves the json file '''
-        # Called by:
-        # widget.change_data(**{'key': value, 'key2': value2})
-
-        try:
-            for key, value in kwargs.items():
-                self.data.update({key: value})
-
-            self.p.run_task(self.save_dict)
-
-        # Handle errors
-        except Exception as e:
-            print(f"Error changing data {key}:{value} in widget {self.title}: {e}")
-
-        return
-
-    def change_notes_field(self, **kwargs):
-        ''' Changes a key/value pair in our notess dictionary and saves the json file '''
-        # Called by:
-        # widget.change_notes_field(**{'key': value, 'key2': value2})
-
-        try:
-            for key, value in kwargs.items():
-                self.data['notes'].update({key: value})
-
-            self.p.run_task(self.save_dict)
-
-        # Handle errors
-        except Exception as e:
-            print(f"Error changing notes {key}:{value} in widget {self.title}: {e}")
-
+                self.p.show_dialog(SnackBar(f"Error saving widget {self.title} to file: {e}"))
+            
     # Called when moving widget files
-    def delete_file(self) -> bool:
+    async def delete_file(self) -> bool:
         ''' Deletes our widget's json file from the directory '''
 
         try:
@@ -288,10 +248,9 @@ class Widget(ft.Container):
 
             # If it was successful, update our directory path and key, then save our new file
             self.directory_path = new_directory
-            self.data['directory_path'] = new_directory
-            self.data['key'] = new_key
-            self.save_counter = 1000        # Force a save to file call
-            self.p.run_task(self.save_dict)
+            
+            self.update_data(**{'directory_path': new_directory, 'key': new_key})
+            await self.save_file()
             await asyncio.sleep(0.2)    # Make sure file has time to save before reload
 
             # Reload the rail to apply changes
@@ -323,13 +282,13 @@ class Widget(ft.Container):
         self.title = title.capitalize()                              
         self.data['title'] = self.title     
         self.data['key'] = f"{self.directory_path}\\{return_safe_name(self.title)}_{self.data.get('tag', '')}"  
+        self.update_data(**{'title': self.title, 'key': self.data['key']})   # Update our data with the new title and key
 
         # Rename our json file so it doesnt just create a new one
         os.rename(old_file_path, self.data['key'] + ".json")  
 
         # Save our data to this new file
-        self.save_counter = 1000         # Force a save to file call
-        self.p.run_task(self.save_dict)      
+        await self.save_file() 
 
         await asyncio.sleep(0.2)     # Wait for file writes to finish and take effect                     
 
@@ -417,8 +376,7 @@ class Widget(ft.Container):
         self.mini_widgets.append(
             new_comment
         )
-        await new_comment.save_dict()
-        await asyncio.sleep(0.2)
+        
 
         self.reload_widget()
 
@@ -448,8 +406,7 @@ class Widget(ft.Container):
         self.story.blocker.update()
         await asyncio.sleep(0)  # Spaces update so the page won't batch them
         
-        self.data['visible'] = False
-        await self.save_dict() 
+        self.update_data(**{'visible': False})
 
         self.story.workspace.reload_workspace()   # Reload workspace to hide the widget and show the placeholder in its pin location
 
@@ -464,13 +421,8 @@ class Widget(ft.Container):
         self.story.blocker.update()
         await asyncio.sleep(0)
         
-        self.data['visible'] = True
         self.visible = True
-        self.save_counter = 1000     # Force a file save
-
-        # Adds us to the end of the current tabs
-        self.data['index'] = 999    
-        await self.story.save_dict()
+        self.update_data(**{'visible': True, 'index': 999})
 
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
         
@@ -520,8 +472,7 @@ class Widget(ft.Container):
     
     # Shows the info column on the side of our chart or not
     async def _toggle_show_info(self, e=None):
-        self.data['show_info'] = not self.data.get('show_info', True)
-        await self.save_dict()
+        self.update_data(**{'show_info': not self.data.get('show_info', True)})
         self.reload_widget()
         await self.story.close_menu()
     
@@ -652,8 +603,8 @@ class Widget(ft.Container):
             ''' Passes in our kwargs to the widget, and applies the updates '''
             color = e.control.data
 
-            # Change the data
-            await self.change_data(**{'color': color})
+            # Update the data
+            self.update_data(**{'color': color})
 
             self.story.blocker.visible = True
             self.story.blocker.update()

@@ -71,7 +71,8 @@ class Character(Widget):
 
         # Saving creates the file if we're new
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.needs_file_write = True
+            self.p.run_task(self.save_file)
  
 
         if self.visible:
@@ -102,8 +103,7 @@ class Character(Widget):
                     with open(file_path, "rb") as image_file:
                         encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                         # Save to our data
-                        self.data['image_base64'] = f"{encoded_string}"
-                        await self.save_dict()
+                        self.update_data(**{'image_base64': f"{encoded_string}"})
 
                     # Update the image in our widget
                     e.control.icon = ft.Container(
@@ -136,7 +136,7 @@ class Character(Widget):
                             self.data['character_data'][sub_key][key] = value
                             break
             
-            self.p.run_task(self.save_dict)
+            self.update_data(**{'character_data': self.data['character_data']})  # Save our updated character data dict
         
         # Called by button to create a new section. Just shows our text field to enter the section name
         async def new_section_clicked(e: ft.Event=None):
@@ -174,7 +174,7 @@ class Character(Widget):
             
             # Otherwise we passed checks, add it to data
             self.data['character_data'][section_name] = {}
-            await self.save_dict()
+            self.update_data(**{'character_data': self.data['character_data']})  # Save our updated character data dict 
 
             # Add new label for the section name
             body.controls.append(
@@ -218,7 +218,7 @@ class Character(Widget):
             nonlocal body
             section = e.control.data
             del self.data['character_data'][section]
-            await self.save_dict()
+            self.update_data(**{'character_data': self.data['character_data']})  # Save our updated character data dict
 
             # Grab the body's column control to remove the label and section container from the UI and update
             for ctrl in reversed(body.controls): # Work backwards so we don't skip any controls when removing
@@ -253,7 +253,7 @@ class Character(Widget):
                 return
             
             # Save and reload
-            await self.save_dict()
+            self.update_data(**{'character_data': self.data['character_data']})  # Save our updated character data dict
             
             # Add new field to the UI
             # Find the parent column for this section so we can add field info to it
@@ -303,7 +303,7 @@ class Character(Widget):
             section, key = e.control.data
 
             del self.data['character_data'][section][key]
-            await self.save_dict()
+            self.update_data(**{'character_data': self.data['character_data']})  # Save our updated character data dict
 
             # Reference the column that holds this field in case we're the last field being deleted so we can reference it later
             body = e.control.parent.parent 

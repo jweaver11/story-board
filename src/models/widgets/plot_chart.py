@@ -71,7 +71,8 @@ class PlotChart(Widget):
 
         # Saving creates the file if we're new
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.needs_file_write = True
+            self.p.run_task(self.save_file)
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -125,7 +126,7 @@ class PlotChart(Widget):
                 #elif edge['target'] == self.label:
                     #edge['end_position'] = (self.left, self.top)
 
-            await self.widget.save_dict()
+            self.widget.needs_file_write = True
             self.widget.reload_widget()   # Reload to update the new edge positions
 
         # Opens a menu with our options when right clicking a node
@@ -193,7 +194,7 @@ class PlotChart(Widget):
                 if edge['source'] == self.label or edge['target'] == self.label:
                     self.widget.data['edges'].remove(edge)
 
-            await self.widget.save_dict()
+            self.widget.needs_file_write = True
             self.widget.reload_widget()
             await self.widget.story.close_menu()
 
@@ -209,7 +210,7 @@ class PlotChart(Widget):
                     if node['label'] == self.label:
                         node['color'] = color
                         break
-                await self.widget.save_dict()
+                self.widget.needs_file_write = True
 
                 self.widget.reload_widget()
                 await self.widget.story.close_menu()
@@ -284,7 +285,7 @@ class PlotChart(Widget):
                 for edge in self.widget.data.get('edges', []):
                     if (edge['source'] == self.widget.source_node and edge['target'] == self.widget.target_node) or (edge['source'] == self.widget.target_node and edge['target'] == self.widget.source_node):
                         self.widget.data['edges'].remove(edge)
-                        await self.widget.save_dict()
+                        self.widget.needs_file_write = True
                         # Reset state trackers
                         self.widget.source_node = None
                         self.widget.target_node = None
@@ -309,7 +310,7 @@ class PlotChart(Widget):
                     'start_position': start_position,  
                     'end_position': end_position
                 })
-                await self.widget.save_dict()
+                self.widget.update_data(**{'edges': self.widget.data.get('edges', [])})   # Update our data with the new edge
 
                 # Reset state trackers
                 self.widget.source_node = None
@@ -354,7 +355,7 @@ class PlotChart(Widget):
                     if node['label'] == self.label:
                         node['description'] = e.control.value
                         break
-                await self.widget.save_dict()
+                self.widget.needs_file_write = True
 
             self.description_ctrl = SmallTextField(
                 self.description, 
@@ -503,7 +504,7 @@ class PlotChart(Widget):
                         edge['source'] = node_title.value
                     elif edge['target'] == old_label:
                         edge['target'] = node_title.value
-                await self.save_dict()
+                self.needs_file_write = True
                 self.reload_widget()
                 self.p.pop_dialog()
 
@@ -534,7 +535,7 @@ class PlotChart(Widget):
                 if node['label'] == node_label:
                     node['description'] = description.value
                     break
-            await self.save_dict()
+            self.needs_file_write = True    
             self.reload_widget()
             self.p.pop_dialog()
 
@@ -619,7 +620,7 @@ class PlotChart(Widget):
 
                 title = node_title.value if node_title.value else "Node"
                 self.data['nodes'].append({'label': title, 'position': self.new_node_position, 'color': '#FFFFFF', 'description': ""})
-                await self.save_dict()
+                self.needs_file_write = True
                 self.reload_widget()
                 self.p.pop_dialog()
                 self.new_node_position = (self.w / 2 * .75, self.h / 2) # Reset new node position to default for next time
@@ -660,8 +661,7 @@ class PlotChart(Widget):
 
         # Show the info whenever we click the background
         async def _show_info_display(e: ft.PointerEvent=None):
-            self.data['show_info'] = True
-            await self.save_dict()
+            self.update_data(**{'show_info': True})   # Update our data with the new edge
             self.reload_widget()    
         
         # Canvas to hold our edge lines betwee nodes
@@ -682,7 +682,7 @@ class PlotChart(Widget):
 
 
         async def _change_description(e: ft.Event):
-            await self.change_data(**{'description': e.control.value})
+            self.update_data(**{'description': e.control.value})
 
         description_tf = TextField(
             label="Description", value=self.data.get('description', ""), dense=True, multiline=True,
@@ -699,7 +699,7 @@ class PlotChart(Widget):
                 color = str(e.control.content)
                 idx = e.control.data
                 self.data['nodes'][idx]['color'] = color
-                await self.save_dict()
+                self.needs_file_write = True    
                 self.reload_widget()
 
             # Deletes a node and all connected edges
@@ -710,7 +710,7 @@ class PlotChart(Widget):
                 for edge in self.data.get('edges', []):
                     if edge['source'] == node_label or edge['target'] == node_label:
                         self.data['edges'].remove(edge)
-                await self.save_dict()
+                self.needs_file_write = True    
                 self.reload_widget()
 
             controls = []
@@ -757,14 +757,14 @@ class PlotChart(Widget):
                 color = str(e.control.content)
                 idx = e.control.data
                 self.data['edges'][idx]['color'] = color
-                await self.save_dict()
+                self.needs_file_write = True
                 self.reload_widget()
 
             # Deletes an edge
             async def _delete_edge(e: ft.Event):
                 idx = e.control.data
                 self.data['edges'].pop(idx)
-                await self.save_dict()
+                self.needs_file_write = True
                 self.reload_widget()
 
             controls = []

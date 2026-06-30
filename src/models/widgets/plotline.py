@@ -84,7 +84,8 @@ class Plotline(Widget):
 
         # Saving creates the file if we're new
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.needs_file_write = True
+            self.p.run_task(self.save_file)
                 
         # Declare dicts of our data types   
         self.arcs: dict = {}       
@@ -127,22 +128,6 @@ class Plotline(Widget):
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
 
-    # Called for little data changes
-    async def change_data(self, **kwargs):
-        ''' Changes a key/value pair in our data and saves the json file '''
-        # Called by:
-        # widget.change_data(**{'key': value, 'key2': value2})
-
-        try:
-            for key, value in kwargs.items():
-                self.data.update({key: value})
-
-            await self.save_dict()
-            #await self.rebuild_plotline_canvas(update=True)
-
-        # Handle errors
-        except Exception as e:
-            print(f"Error changing data {key}:{value} in widget {self.title}: {e}")
 
     # Called in the constructor
     def _create_information_display(self):
@@ -319,7 +304,7 @@ class Plotline(Widget):
         if plot_point.title in self.plot_points:
             self.plot_points.pop(plot_point.title)
             self.data['plot_points'].pop(plot_point.title, None)
-            self.p.run_task(self.save_dict)
+            self.update_data(**{'plot_points': self.data['plot_points']})
 
         # Apply changes
         if self.information_display.visible:
@@ -332,7 +317,7 @@ class Plotline(Widget):
         if arc.title in self.arcs:
             self.arcs.pop(arc.title)
             self.data['arcs'].pop(arc.title, None)
-            self.p.run_task(self.save_dict)
+            self.update_data(**{'arcs': self.data['arcs']})
 
         if self.information_display.visible:
             self.information_display.reload_mini_widget()
@@ -345,7 +330,7 @@ class Plotline(Widget):
         if marker.title in self.markers:
             self.markers.pop(marker.title)
             self.data['markers'].pop(marker.title, None)
-            self.p.run_task(self.save_dict)
+            self.update_data(**{'markers': self.data['markers']})
 
         if self.information_display.visible:
             self.information_display.reload_mini_widget()
@@ -587,11 +572,8 @@ class Plotline(Widget):
     # Called for any size changes to our plotline canvas
     async def rebuild_plotline_canvas(self, update: bool = False):
         ''' Redraws our plotline on the canvas when it is resized. Does it on startup as well '''
-
-        self.data['old_plotline_width'] = self.plotline_width
-        self.data['old_plotline_height'] = self.plotline_height
-        await self.save_dict()   # Save our new size to our data
-
+        
+        self.update_data(**{'old_plotline_width': self.plotline_width, 'old_plotline_height': self.plotline_height})
         
         # Draw our plotline on the canvas with its two end markers ------------------------------------------------
         self.plotline_canvas.shapes = [

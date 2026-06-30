@@ -173,7 +173,7 @@ class App:
     
     
     # Called when app creates a new story. Accepts our title, page reference, a template, and a type
-    def create_new_story(self, title: str, page: ft.PageTransitionsTheme) -> Story:
+    def create_new_story(self, title: str, page: ft.Page) -> Story:
         ''' Creates the new story object and has it run its 'startup' method. Changes route so our view displays the new story '''
         
         story = Story(title.title(), page, data=None)
@@ -187,7 +187,7 @@ class App:
         asyncio.create_task(page.push_route(story.route))
         self.settings.data['active_story'] = story.route
         self.settings.story = story
-        page.run_task(self.settings.save_dict)
+        page.run_task(self.settings.save_file)
 
         
     

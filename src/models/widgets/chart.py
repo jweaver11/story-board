@@ -121,7 +121,8 @@ class Chart(Widget):
 
         # Saving creates the file if we're new
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.needs_file_write = True
+            self.p.run_task(self.save_file)
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -136,14 +137,14 @@ class Chart(Widget):
             idx = e.control.data
             group = self.data.get('bar_data', {}).get('groups', [])[idx]
             group['visible'] = not group.get('visible', True)
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             self.reload_widget()
 
         async def _update_group_title(e):
             idx = e.control.data
             new_title = e.control.value
             self.data.get('bar_data', {}).get('groups', [])[idx]['name'] = new_title
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.bottom_axis.labels[idx].label = new_title
             chart.update()
 
@@ -153,7 +154,7 @@ class Chart(Widget):
             async def _delete_group_confirm(_):
                 
                 self.data.get('bar_data', {}).get('groups', []).pop(idx)
-                await self.save_dict()
+                self.update_data(**{'bar_data': self.data.get('bar_data', {})})
                 self.reload_widget()
                 self.p.pop_dialog()
                 
@@ -173,7 +174,7 @@ class Chart(Widget):
             expanded = e.control.expanded
             idx = e.control.data
             self.data.get('bar_data', {}).get('groups', [])[idx]['expanded'] = expanded
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
 
         async def _add_rod_clicked(e):
             idx = e.control.data
@@ -185,7 +186,7 @@ class Chart(Widget):
                 'to_y': median_value, 
                 'color': "primary"
             })
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             self.reload_widget()
 
         async def _update_rod_value(e):
@@ -212,7 +213,7 @@ class Chart(Widget):
 
             
             self.data['bar_data']['groups'][idx]['rods'].pop(rod_idx)
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             self.reload_widget()
             self.p.pop_dialog()
 
@@ -223,7 +224,7 @@ class Chart(Widget):
             e.control.parent.update()   
 
             self.data['bar_data']['groups'][idx]['rods'][rod_idx]['color'] = new_color
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.groups[idx].rods[rod_idx].color = new_color
             chart.update()
 
@@ -329,7 +330,7 @@ class Chart(Widget):
                     chart.right_axis.title = ft.Text(new_title, theme_style=ft.TextThemeStyle.LABEL_LARGE,  size=18)
 
 
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.update()
 
         async def _set_max_value(e):
@@ -339,7 +340,7 @@ class Chart(Widget):
             new_value = int(e.control.value)
             self.data['bar_data']['max_y'] = new_value       
 
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.max_y = new_value
             chart.update()   
 
@@ -348,7 +349,7 @@ class Chart(Widget):
             chart.left_axis.show_labels = e.control.value
             chart.bottom_axis.show_labels = e.control.value
 
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.update()
         
         async def _set_rod_width(e):
@@ -359,7 +360,7 @@ class Chart(Widget):
                 for rod in group.rods:
                     rod.width = new_width
 
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.update()
 
         async def _set_stacked_rods(e):
@@ -367,7 +368,7 @@ class Chart(Widget):
             for group in chart.groups:
                 group.group_vertically = e.control.value
 
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.update()
 
         async def _set_rod_shape(e):
@@ -377,7 +378,7 @@ class Chart(Widget):
                 for rod in group.rods:
                     rod.border_radius = None if new_shape == "rounded" else ft.BorderRadius.only(top_left=2, top_right=2)
 
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.update()
 
         async def _set_grid_lines(e):
@@ -392,7 +393,7 @@ class Chart(Widget):
                     self.data['bar_data']['show_vertical_grid_lines'] = show_grid_lines
                     chart.vertical_grid_lines = fch.ChartGridLines() if show_grid_lines else None
 
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.update()
 
         x_labels = []
@@ -486,7 +487,7 @@ class Chart(Widget):
                     }
                 ]
             })
-            await self.save_dict()
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             self.reload_widget()
         
         def _get_groups_info() -> list[ft.Control]:
@@ -651,7 +652,7 @@ class Chart(Widget):
             new_title = e.control.value
 
             self.data.get('radar_data', {}).get('data_sets', [])[entry_idx]['title'] = new_title
-            await self.save_dict()
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             self.reload_widget()
 
         # Updates whether our dataset is expanded in the info column or not
@@ -659,7 +660,7 @@ class Chart(Widget):
             expanded = e.control.expanded
             idx = e.control.data
             self.data.get('radar_data', {}).get('data_sets', [])[idx]['expanded'] = expanded
-            await self.save_dict()
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
 
         # Class to hold our datasets in the dropdown menu in the info column
         class DataSet(ft.ExpansionTile):
@@ -683,7 +684,7 @@ class Chart(Widget):
                             items=[
                                 ft.PopupMenuItem(
                                     color.capitalize(), label_text_style=ft.TextStyle(color=color, weight=ft.FontWeight.BOLD),
-                                    data=idx, on_click=_change_dataset_color, mouse_cursor=ft.MouseCursor.CLICK
+                                    data=idx, on_click=_update_dataset_color, mouse_cursor=ft.MouseCursor.CLICK
                                 ) for color in colors
                             ]
                         ),
@@ -801,7 +802,7 @@ class Chart(Widget):
         # Renames a node title on the chart
         async def _update_node_title(e):
             self.data['radar_data']['nodes'][e.control.data] = e.control.value
-            await self.save_dict()
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             chart.titles[e.control.data].text = e.control.value
             chart.update()
 
@@ -812,7 +813,7 @@ class Chart(Widget):
                 del self.data['radar_data']['nodes'][e.control.data]
                 for ds in self.data.get('radar_data', {}).get('data_sets', []):
                     del ds['entries'][e.control.data]
-                await self.save_dict()
+                self.update_data(**{'radar_data': self.data.get('radar_data', {})})
                 self.reload_widget()
                 self.p.pop_dialog()
 
@@ -835,7 +836,7 @@ class Chart(Widget):
                 default_value = int(self.data.get('radar_data', {}).get('min_value', 0))
             for ds in self.data.get('radar_data', {}).get('data_sets', []):
                 ds['entries'].append(default_value)   
-            await self.save_dict()
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             self.reload_widget()
 
         # Toggles the chart either polygon or circle shaped
@@ -846,7 +847,7 @@ class Chart(Widget):
             else:
                 chart.radar_shape = fch.RadarShape.POLYGON
                
-            await self.save_dict()
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             chart.update()
 
         # Adding a new dataset with default values in each node
@@ -861,7 +862,7 @@ class Chart(Widget):
                 'title': f"Data Set {len(self.data['radar_data']['data_sets'])}",
                 'expanded': False
             })
-            await self.save_dict()
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             self.reload_widget()
 
         # Delete a dataset and all its info
@@ -870,7 +871,7 @@ class Chart(Widget):
             async def _delete_data_set_confirm(_):
                 idx = e.control.data
                 del self.data['radar_data']['data_sets'][idx]
-                await self.save_dict()
+                self.update_data(**{'radar_data': self.data.get('radar_data', {})})
                 self.reload_widget()
                 self.p.pop_dialog()
 
@@ -890,15 +891,15 @@ class Chart(Widget):
             idx = e.control.data
             ds = self.data['radar_data']['data_sets'][idx]
             ds['visible'] = not ds.get('visible', True)
-            await self.save_dict()
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             self.reload_widget()
 
         # Change datasets color on the chart
-        async def _change_dataset_color(e):
+        async def _update_dataset_color(e):
             idx = e.control.data
             color = str(e.control.content)
             self.data['radar_data']['data_sets'][idx]['color'] = color
-            await self.save_dict()
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             self.reload_widget()
 
         # Go through and add our titles/nodes to the chart
@@ -989,7 +990,7 @@ class Chart(Widget):
                         ds['entries'][i] = self.data['radar_data'].get('min_value', 0)
                     elif ds['entries'][i] > self.data['radar_data'].get('max_value', 20):
                         ds['entries'][i] = self.data['radar_data'].get('max_value', 20)
-            await self.save_dict()
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             self.reload_widget()
            
 
@@ -1020,27 +1021,25 @@ class Chart(Widget):
                 self.data['radar_data']['tick_count'] = self.data['radar_data'].get('tick_count', 2) - 1
 
             chart.tick_count = self.data['radar_data'].get('tick_count', 2)
-            await self.save_dict()
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             chart.update()
 
         async def _update_show_tick_labels(e):
             self.data['radar_data']['show_tick_labels'] = not self.data['radar_data'].get('show_tick_labels', False)
             chart.ticks_text_style = ft.TextStyle(size=16, color=self.data.get('color', ft.Colors.ON_SURFACE_VARIANT) if self.data['radar_data'].get('show_tick_labels', False) else ft.Colors.TRANSPARENT, italic=True)
-            await self.save_dict()
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             chart.update()
 
         async def _toggle_rotate_node_titles(e):
             self.data['radar_data']['rotate_node_titles'] = not self.data['radar_data'].get('rotate_node_titles', False)
             for title in chart.titles:
                 title.angle = None if self.data['radar_data'].get('rotate_node_titles', False) else 360
-            await self.save_dict()
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             chart.update()
 
         info_column = ft.Column(
             data_sets + [
                 ft.Divider(),
-                
-                
                 
                 ft.Row([
                     ft.Text(f"\tNodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),

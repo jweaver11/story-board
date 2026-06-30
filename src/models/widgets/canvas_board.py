@@ -94,7 +94,8 @@ class CanvasBoard(Widget):
 
         # Saving creates the file if we're new
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.needs_file_write = True
+            self.p.run_task(self.save_file)
 
 
         self.state: State = State()     # State model from tracking our drawing state
@@ -113,7 +114,7 @@ class CanvasBoard(Widget):
 
         if isinstance(value, str):
             self.data['matrix'][row][column] = value
-            self.p.run_task(self.save_dict)
+            self.update_data(**{'matrix': self.data['matrix']})
 
 
     # Called when we click the canvas and don't initiate a drag
@@ -237,7 +238,7 @@ class CanvasBoard(Widget):
 
                 # Save the capture, but we don't use it until a reload_widget is called
                 self.data['matrix'][row][column]['capture'] = encoded_capture
-                await self.save_dict()     # Save our data with the new capture
+                self.update_data(**{'matrix': self.data['matrix']}) 
 
             # Must clear the capture or weird UI bugs
             await canvas.clear_capture()
@@ -285,7 +286,7 @@ class CanvasBoard(Widget):
         canvas.shapes.append(cv.Image(undo_capture, 0, 0, 200, 200))   # Re-add most reccent capture
         canvas.update()
 
-        await self.save_dict()
+        self.update_data(**{'matrix': self.data['matrix']})  # Update our data so it saves the undo/redo lists  
 
     # Called when redoing a stroke on the canvas after a previous undo
     async def redo(self, e=None):
@@ -345,7 +346,7 @@ class CanvasBoard(Widget):
 
         # Add the new row to our matrix data
         self.data['matrix'].append(new_row)
-        await self.save_dict()     # Save our data with the new row
+        self.update_data(**{'matrix': self.data['matrix']})  # Update our data so it saves the new row
 
         #self.story.workspace.reload_workspace()
         self.reload_widget()
@@ -363,7 +364,7 @@ class CanvasBoard(Widget):
             await asyncio.sleep(0)
 
             del self.data['matrix'][row]
-            await self.save_dict()     # Save our data with the deleted row
+            self.update_data(**{'matrix': self.data['matrix']})  # Update our data so it saves the deleted row
 
             #self.story.workspace.reload_workspace()
             self.reload_widget()
@@ -388,7 +389,7 @@ class CanvasBoard(Widget):
             await asyncio.sleep(0)
 
 
-            await self.save_dict()     # Save our data with the deleted row
+            self.update_data(**{'matrix': self.data['matrix'], 'matrix_labels': self.data['matrix_labels']})  # Update our data so it saves the deleted column
 
             #self.story.workspace.reload_workspace()
             self.reload_widget()
@@ -462,7 +463,7 @@ class CanvasBoard(Widget):
             self.data['matrix'][row][column]['preview_canvas_title'] = canvas_title
             self.data['matrix'][row][column]['preview_canvas_color'] = canvas_color
             self.data['matrix'][row][column]['preview_canvas_snapshot'] = self._set_canvas_snapshot(canvas_key)
-            await self.save_dict()     
+            self.update_data(**{'matrix': self.data['matrix']})  # Update our data so it saves the new canvas connection
 
             #self.story.workspace.reload_workspace()
             self.reload_widget()
@@ -532,7 +533,7 @@ class CanvasBoard(Widget):
         await asyncio.sleep(0)
 
         self.data['matrix'][row][column]['preview_canvas_snapshot'] = self._set_canvas_snapshot(canvas_key)
-        await self.save_dict()     # Save our data with the deleted row
+        self.update_data(**{'matrix': self.data['matrix']})  # Update our data so it saves the new canvas connection
 
         #self.story.workspace.reload_workspace()
         self.reload_widget()
@@ -554,7 +555,7 @@ class CanvasBoard(Widget):
         self.data['matrix'][row][column]['preview_canvas_snapshot'] = ""
         self.data['matrix'][row][column]['preview_canvas_title'] = ""
         self.data['matrix'][row][column]['preview_canvas_color'] = ""
-        await self.save_dict()     # Save our data with the deleted row
+        self.update_data(**{'matrix': self.data['matrix']})  # Update our data so it saves the new canvas connection
 
         #self.story.workspace.reload_workspace()
         self.reload_widget()
@@ -575,7 +576,7 @@ class CanvasBoard(Widget):
             expand=True, value=self.data.get('description', ""), dense=True, multiline=True,
             label="Description",
             capitalization=ft.TextCapitalization.SENTENCES, 
-            on_blur=lambda e: self.p.run_task(self.change_data, **{'description': e.control.value}),
+            on_blur=lambda e: self.p.run_task(self.update_data, **{'description': e.control.value}),
             hint_text="Description of the scope of this Canvas Board..."       
         )
 

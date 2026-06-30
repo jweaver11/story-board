@@ -78,7 +78,8 @@ class Canvas(Widget):
 
         # Saving creates the file if we're new
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.needs_file_write = True
+            self.p.run_task(self.save_file)
 
         
 
@@ -552,7 +553,7 @@ class Canvas(Widget):
                 if layer.get('name') == layer_name:
                     layer['capture'] = encoded_capture
                     break
-            await self.save_dict()     
+            self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})   # Update our data with the new capture  
                 
             await canvas.clear_capture()
 

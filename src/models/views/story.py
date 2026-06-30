@@ -89,7 +89,7 @@ class Story(ft.View):
         )
 
         if is_new:
-            page.run_task(self.save_dict)
+            page.run_task(self.save_file)
 
         # Variables to store our mouse position for opening menus
         self.mouse_x: int = 0
@@ -127,18 +127,33 @@ class Story(ft.View):
     
 
 
+    
+
+    # Updates data for this widget and marks it as dirty for the next file save
+    def update_data(self, **kwargs):
+        
+        # Allow updating of nested dicts without overriding the entire dict
+        def _merge_data(target: dict, updates: dict):
+            for key, value in updates.items():
+                current_value = target.get(key)
+                if isinstance(current_value, dict) and isinstance(value, dict):
+                    _merge_data(current_value, value)
+                else:
+                    target[key] = value
+
+        _merge_data(self.data, kwargs)  # Merge the new data into the existing data
+
+        self.page.run_task(self.save_file)  # Save the updated data to the file
+
     # Called whenever there are changes in our data that need to be saved
-    async def save_dict(self):
+    async def save_file(self):
         ''' Saves the data of our story to its JSON File, and all its folders as well '''
 
-        print("Saved story: ", self.title)
+        print("Saved story to file: ", self.title)
+        self.data['directory_path'] = os.path.join(data_paths.stories_directory_path, self.route)   # Make sure our directory path is updated
+        file_path = os.path.join(self.data['directory_path'], f"{self.route}.json") # Make sure our file path is updated
 
         try:
-            # Makes sure our directory path is always right. 
-            self.data['directory_path'] = os.path.join(data_paths.stories_directory_path, self.route)
-                
-            # Our file path we store our data in
-            file_path = os.path.join(self.data['directory_path'], f"{self.route}.json")
 
             # Create the directory if it doesn't exist. Catches errors from users deleting folders
             os.makedirs(self.data['directory_path'], exist_ok=True)
@@ -150,22 +165,6 @@ class Story(ft.View):
         # Handle errors
         except Exception as e:
             self.page.show_dialog(SnackBar(f"Error saving story data: {e}"))
-
-    # Called for little data changes
-    def change_data(self, **kwargs):
-        ''' Changes a key/value pair in our data and saves the json file '''
-        # Called by:
-        # story.change_data(**{'key': value, 'key2': value2})
-
-        try:
-            for key, value in kwargs.items():
-                self.data.update({key: value})
-
-            self.page.run_task(self.save_dict)
-
-        # Handle errors
-        except Exception as e:
-            print(f"Error changing data {key}:{value} for story {self.title}: {e}")
 
     # Get widget object by its unique ID.
     def get_widget_by_id(self, id: str) -> ft.Control:
@@ -190,8 +189,7 @@ class Story(ft.View):
 
             # Add this folder to our folders data so we can save stuff like colors
             self.data['folders'].update({folder_path: {'name': name, 'color': app.settings.data.get('default_category_color', "primary"), 'is_expanded': True}})
-            self.page.run_task(self.save_dict)
-
+            self.page.run_task(self.update_data, **{'folders': self.data['folders']})
 
             self.active_rail.reload_rail()
 
@@ -227,7 +225,7 @@ class Story(ft.View):
                     self.data['folders'].pop(folder, None)
 
             # Save AFTER all data has been cleaned up so nothing orphaned persists
-            self.page.run_task(self.save_dict)
+            self.page.run_task(self.update_data, **{'folders': self.data['folders']})   
 
             self.blocker.visible = True
             self.blocker.update()
@@ -252,7 +250,7 @@ class Story(ft.View):
             # Check if the folder exists in our data
             if full_path in self.data.get('folders', {}):
                 self.data['folders'][full_path][key] = value
-                await self.save_dict()
+                await self.update_data(**{'folders': self.data['folders']})
                 #print("Changed folder data:", full_path, key, value)
             else:
                 print(f"Folder {full_path} not found in story data.")
@@ -280,7 +278,7 @@ class Story(ft.View):
                 widget.data['directory_path'] = widget.directory_path
                 # Use the widget's own title/tag, not the story's
                 widget.data['key'] = f"{widget.directory_path}\\{return_safe_name(widget.title)}_{widget.data.get('tag', '')}"
-                self.page.run_task(widget.save_dict)
+                self.page.run_task(widget.update_data, **{'directory_path': widget.directory_path, 'key': widget.data['key']})
 
         # Update sub-folder keys BEFORE renaming the top-level key so we never match the already-renamed entry
         for folder in self.data['folders'].copy():
@@ -297,7 +295,7 @@ class Story(ft.View):
             self.data['folders'][old_path]['name'] = os.path.basename(new_path)
             self.data['folders'][new_path] = self.data['folders'].pop(old_path)
 
-        self.page.run_task(self.save_dict)
+        self.page.run_task(self.save_file)
         
     # Called every 5 minutes to save our widgets that need file writes
     async def save_widgets_to_file(self):
@@ -305,11 +303,11 @@ class Story(ft.View):
             await widget.write_to_file()
 
     # Wrapper function to call save widgets to file every 5 minutes
-    async def _periodic_worker_loop(self):
+    async def _periodic_save_widget(self):
         '''Runs our periodic task every 5 minutes until this view unmounts.'''
         while self._periodic_worker_running:
             
-            # Sleep in 1-second chunks so unmount stops quickly.
+            # Save dirty widgets every 5 minutes 
             for _ in range(300):
                 if not self._periodic_worker_running:
                     break
@@ -317,15 +315,10 @@ class Story(ft.View):
 
             await self.save_widgets_to_file()
 
-    def did_mount(self):
-        return  # Temp
-
-        # Start once per mounted lifecycle.
-        if self._periodic_worker_running:
-            return
+    def did_mount(self):        
 
         self._periodic_worker_running = True
-        self.page.run_task(self._periodic_worker_loop)
+        self.page.run_task(self._periodic_save_widget)  # Start the periodic task in the background
 
     def will_unmount(self):
         # Stop the periodic worker when this view leaves the page.
@@ -601,13 +594,13 @@ class Story(ft.View):
 
         # Force a file save and write
         if widget is not None:
-            widget.save_counter = 100
-            await widget.save_dict()
+            widget.needs_file_write = True
+            await widget.save_file()
             self.widgets[widget.data['id']] = widget
 
         # Finish tasks creating widget to make sure the file has enough time to save
         self.data['main_pin_selected_idx'] = len(self.workspace.main_pin)    
-        await self.save_dict()   
+        await self.save_file()
         self.workspace.reload_workspace()
         if not no_delay:
             await asyncio.sleep(0.2)   
@@ -887,7 +880,7 @@ class Story(ft.View):
             self.workspace.is_resizing = False
 
             app.settings.data['active_rail_width'] = self.active_rail.width
-            await app.settings.save_dict()
+            await app.settings.save_file()
 
         # The actual resizer for the active rail (gesture detector)
         active_rail_resizer = ft.GestureDetector(

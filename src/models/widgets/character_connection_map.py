@@ -60,7 +60,8 @@ class CharacterConnectionMap(Widget):
 
         # Saving creates the file if we're new
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.needs_file_write = True
+            self.p.run_task(self.save_file)
     
         # State tracking
         self.char1: str = None
@@ -169,7 +170,7 @@ class CharacterConnectionMap(Widget):
             for i, connection in enumerate(self.widget.data['connections']):
                 if (connection['char1_id'] == new_connection['char1_id'] and connection['char2_id'] == new_connection['char2_id']) or (connection['char1_id'] == new_connection['char2_id'] and connection['char2_id'] == new_connection['char1_id']):
                     self.widget.data['connections'].remove(connection)  # Remove from data
-                    await self.widget.save_dict()   # Save
+                    self.widget.needs_file_write = True
                     self.widget.connections_canvas.shapes.pop(i)    # Remove the edge drawing
                     
                     for j, icon in enumerate(self.widget.connections_stack.controls[:]):
@@ -182,7 +183,7 @@ class CharacterConnectionMap(Widget):
 
             # Save new edget to data with source, target, start, end, and default color
             self.widget.data['connections'].append(new_connection)
-            await self.widget.save_dict()
+            self.widget.needs_file_write = True
 
             # Reset state trackers
             self.widget.char1 = None
@@ -343,7 +344,7 @@ class CharacterConnectionMap(Widget):
 
                 # Add to our widgets data
                 self.widget.data['characters'][self.char_id] = (self.dragging_content.left, self.dragging_content.top)
-                await self.widget.save_dict()   
+                self.widget.update_data(**{'characters': self.widget.data['characters']})
                 
                 
 
@@ -409,11 +410,11 @@ class CharacterConnectionMap(Widget):
 
                     # Remove from our widgets data
                     self.widget.data['characters'].pop(self.char_id, None)
-                    await self.widget.save_dict()
+                    self.widget.update_data(**{'characters': self.widget.data['characters']})
                     return
                 
                 # Update our positional data
-                await self.widget.save_dict()
+                self.widget.update_data(**{'characters': self.widget.data['characters']})
                 
 
     # Just for drawing the connection on the canvas, and icon on the stack
@@ -476,7 +477,7 @@ class CharacterConnectionMap(Widget):
                 for connection in self.widget.data['connections']:
                     if (connection['char1_id'] == self.char1_id and connection['char2_id'] == self.char2_id) or (connection['char1_id'] == self.char2_id and connection['char2_id'] == self.char1_id):
                         connection['icon'] = icon_str
-                        await self.widget.save_dict()
+                        self.widget.update_data(**{'connections': self.widget.data['connections']})
                 self.build_icon()
                 self.update()
                 await self.widget.story.close_menu()
@@ -485,7 +486,7 @@ class CharacterConnectionMap(Widget):
                 for i, connection in enumerate(self.widget.data['connections']):
                     if (connection['char1_id'] == self.char1_id and connection['char2_id'] == self.char2_id) or (connection['char1_id'] == self.char2_id and connection['char2_id'] == self.char1_id):
                         self.widget.data['connections'].remove(connection)
-                        await self.widget.save_dict()
+                        self.widget.needs_file_write = True 
                         self.widget.connections_canvas.shapes.pop(i)
                         
                         for j, icon in enumerate(self.widget.connections_stack.controls[:]):
@@ -501,7 +502,7 @@ class CharacterConnectionMap(Widget):
                 for connection in self.widget.data['connections']:
                     if (connection['char1_id'] == self.char1_id and connection['char2_id'] == self.char2_id) or (connection['char1_id'] == self.char2_id and connection['char2_id'] == self.char1_id):
                         connection['color'] = color_str
-                        await self.widget.save_dict()
+                        self.widget.update_data(**{'connections': self.widget.data['connections']})
                 self.build_icon()
                 self.update()
                 await self.widget.story.close_menu()

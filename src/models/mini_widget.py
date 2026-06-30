@@ -64,7 +64,7 @@ class MiniWidget(ft.Container):
         self.first_load: bool = True    # State tracking
 
         if data is None:
-            self.p.run_task(self.save_dict)
+            self.update_data(**self.data)  # Save our data to the parent widget's data dictionary if we don't have any data passed in
 
         # Apply our visibility
         self.visible = self.data.get('visible', True)
@@ -75,28 +75,7 @@ class MiniWidget(ft.Container):
         self.widget.story.mouse_x = e.global_position.x 
         self.widget.story.mouse_y = e.global_position.y
 
-    # Called when saving changes in our mini widgets data to the widgetS json file
-    async def save_dict(self):
-        ''' Saves our current data to the widgetS json file using this objects dictionary path '''
-
-        try:
-        
-            # If our data is None (we just got deleted), we don't save ourselves to widgets data
-            if self.data is None:
-                self.widget.data[self.key].pop(self.title, None)
-
-            # Otherwise, save like normal
-            else:
-
-                # Our data is correct, so we update our immidiate parents data to match
-                self.widget.data[self.key][self.title] = self.data
-
-            await self.widget.save_dict()
-
-        except Exception as e:
-            print(f"Error saving mini widget data to {self.title}: {e}")
             
-
     # Called when deleting our mini widget
     def delete_dict(self):
         ''' Deletes our data from all live widget/mini widget objects that we nest in, and saves the widgets file '''
@@ -127,7 +106,7 @@ class MiniWidget(ft.Container):
 
             # Remove our data.
             self.data = None
-            self.p.run_task(self.save_dict)
+            self.p.run_task(self.update_data(**self.data))  # Clear our notes before deleting so we don't have any lingering data
 
             # Reload the widget if we have to
             self.widget.reload_widget()
@@ -140,31 +119,44 @@ class MiniWidget(ft.Container):
         except Exception as e:
             print(f"Error deleting mini widget {self.title}: {e}")
 
-    # Called for little data changes
-    def change_data(self, **kwargs):
-        ''' Changes a key/value pair in our data and saves the json file '''
-        # Called by:
-        # mini_widget.change_data(**{'key': value, 'key2': value2})
+    # Updates data for this widget and marks it as dirty for the next file save
+    def update_data(self, **kwargs):
+        
+        # Allow updating of nested dicts without overriding the entire dict
+        def _merge_data(target: dict, updates: dict):
+            for key, value in updates.items():
+                current_value = target.get(key)
+                if isinstance(current_value, dict) and isinstance(value, dict):
+                    _merge_data(current_value, value)
+                else:
+                    target[key] = value
 
-        try:
-            for key, value in kwargs.items():
-                self.data.update({key: value})
+        _merge_data(self.data, kwargs)  # Merge the new data into the existing data
 
-            self.p.run_task(self.save_dict)
+        # If our data is None (we just got deleted), we don't save ourselves to widgets data
+        if self.data is None:
+            self.widget.data[self.key].pop(self.title, None)
+            self.widget.needs_file_write = True
 
-        # Handle errors
-        except Exception as e:
-            print(f"Error changing data {key}:{value} in widget {self.title}: {e}")
+        # Otherwise, save like normal
+        else:
 
-    async def change_note(self, e):
+            # Our data is correct, so we update our immidiate parents data to match
+            self.widget.data[self.key][self.title] = self.data
+            self.widget.update_data(**{self.key})
+
+    
+
+    async def update_note(self, e):
         ''' Changes a key/value pair in our custom fields dictionary and saves the json file '''
-        # Called by:
-        # widget.change_note(**{'key': value, 'key2': value2})
+        
         note_idx = e.control.data
         note_value = e.control.value
 
         self.data['notes'][note_idx]['value'] = note_value
-        await self.save_dict()
+
+    
+        self.update_data(**{'notes': self.data['notes']})
 
 
     def rename(self, new_name: str):
@@ -198,8 +190,7 @@ class MiniWidget(ft.Container):
                 case _:
                     print("Invalid mw key")
 
-            # Save the changes up the chain
-            self.p.run_task(self.save_dict)
+            
 
             # Reload the UI to reflect changes
             if hasattr(self, 'reload_plotline_control'):
@@ -220,35 +211,6 @@ class MiniWidget(ft.Container):
         except Exception as e:
             print(f"Error renaming mini widget {old_name} to {new_name}: {e}")
 
-    # Called to toggle pin
-    async def _toggle_pin(self, e):
-        ''' Pins or unpins our information display '''
-            
-        self.data['is_pinned'] = not self.data.get('is_pinned', False)
-        await self.save_dict()
-        e.control.icon = ft.Icons.PUSH_PIN_OUTLINED if not self.data.get('is_pinned', False) else ft.Icons.PUSH_PIN_ROUNDED
-        e.control.tooltip = "Pin Connection" if not self.data.get('is_pinned', False) else "Unpin Connection"
-        e.control.update()
-
-    async def _pin(self, e):
-        self.data['is_pinned'] = True
-        await self.save_dict()
-        e.control.icon = ft.Icons.PUSH_PIN_ROUNDED
-        e.control.tooltip = "Unpin Connection"
-        e.control.on_click = self._unpin
-        e.control.update()
-        
-        
-
-    async def _unpin(self, e):
-        self.data['is_pinned'] = False
-        await self.save_dict()
-        e.control.icon = ft.Icons.PUSH_PIN_OUTLINED
-        e.control.tooltip = "Pin Connection"
-        e.control.on_click = self._pin
-        e.control.update()
-        
-
     async def show_mini_widget(self, e=None):
         ''' Shows our mini widget '''
 
@@ -268,8 +230,7 @@ class MiniWidget(ft.Container):
         #self.widget.story.blocker.update()
         #await asyncio.sleep(0)
 
-        self.data['visible'] = True
-        await self.save_dict()
+        self.update_data(**{'visible': True})
         self.visible = True
         self.reload_mini_widget()
         self.widget.mini_widgets_wrapper.visible = True
@@ -299,10 +260,9 @@ class MiniWidget(ft.Container):
         #await asyncio.sleep(0)
         
         # Update our visibility
-        self.data['visible'] = False
+        self.update_data(**{'visible': False})
         self.visible = False
         
-        await self.save_dict()
 
         # If we're not updating, just return out
         if not update:
@@ -369,8 +329,7 @@ class MiniWidget(ft.Container):
             note_title = note_name_input.value.strip()
             self.data['notes'].append({'name': note_title, 'value': ''})
 
-            # Save and reload
-            await self.save_dict()
+            self.update_data(**{'notes': self.data['notes']})
             self.reload_mini_widget()      
             self.p.pop_dialog() 
             
@@ -399,8 +358,7 @@ class MiniWidget(ft.Container):
     async def _delete_note_clicked(self, e):
 
         idx = e.control.data
-        self.data.get('notes', []).pop(idx)
-        await self.save_dict()
+        self.update_data(**{'notes': [note for i, note in enumerate(self.data.get('notes', [])) if i != idx]})
         self.reload_mini_widget()
 
     def _build_notes_column(self) -> ft.Column:
@@ -413,7 +371,7 @@ class MiniWidget(ft.Container):
                 ft.Row([
                     TextField(
                         value=note_value, expand=True, label=note_title, capitalization=ft.TextCapitalization.SENTENCES,   
-                        on_blur=self.change_note, dense=True, data=idx,
+                        on_blur=self.update_note, dense=True, data=idx,
                         suffix_icon=ft.IconButton(
                             ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, tooltip="Delete Note",
                             on_click=self._delete_note_clicked,
@@ -587,9 +545,7 @@ class MiniWidget(ft.Container):
         async def _change_icon_color(e):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
-            self.data['color'] = e.control.data
-            await self.save_dict()
-
+            self.update_data(**{'color': e.control.data})
             
             self.reload_mini_widget()
             if hasattr(self, 'reload_plotline_control'):

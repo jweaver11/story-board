@@ -51,7 +51,8 @@ class Note(Widget):
 
         # Saving creates the file if we're new
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.needs_file_write = True
+            self.p.run_task(self.save_file)
 
         if self.visible:
             self.reload_widget()
@@ -62,8 +63,8 @@ class Note(Widget):
         # Adds our new segment to the bottom of the list
         async def create_segment(e=None):
             self.data['note_data'].append({"title": new_segment_tf.value, "content": ""})
-            await self.save_dict()
-            await self.rebuild()
+            self.update_data(**{'note_data': self.data['note_data']})
+            await self.reload_widget()
             self.p.pop_dialog()
 
         new_segment_tf = ft.TextField(label="Segment Title", autofocus=True, capitalization=ft.TextCapitalization.WORDS, on_submit=create_segment)
@@ -85,15 +86,15 @@ class Note(Widget):
         index = e.control.data
         if len(self.data['note_data']) > index:
             self.data['note_data'][index]['content'] = e.control.value
-            await self.save_dict()
+            self.update_data(**{'note_data': self.data['note_data']})
 
     # Deletes a segment from the note
     async def _delete_segment(self, e):
         index = e.control.data
         if len(self.data['note_data']) > index:
             del self.data['note_data'][index]
-            await self.save_dict()
-            await self.rebuild()
+            self.update_data(**{'note_data': self.data['note_data']})
+            await self.reload_widget()
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def reload_widget(self):

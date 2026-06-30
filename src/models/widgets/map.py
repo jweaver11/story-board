@@ -77,7 +77,8 @@ class Map(Widget):
 
         # Saving creates the file if we're new
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.needs_file_write = True
+            self.p.run_task(self.save_file)
 
         
         # Drawing elements
@@ -272,7 +273,7 @@ class Map(Widget):
         if location.title in self.locations:
             self.locations.pop(location.title)
             self.data['locations'].pop(location.title, None)
-            self.p.run_task(self.save_dict)
+            self.update_data(**{'locations': self.data['locations']})
 
         if self.information_display.visible:
             self.information_display.reload_mini_widget()

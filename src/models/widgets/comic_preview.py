@@ -62,7 +62,8 @@ class ComicPreview(Widget):
 
         # Saving creates the file if we're new
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.needs_file_write = True
+            self.p.run_task(self.save_file)
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -72,8 +73,7 @@ class ComicPreview(Widget):
         async def _change_color_clicked(e):
             # Updates our background color
             async def _set_background_color(e: ft.ControlEvent):
-                self.data['preview_background_color'] = e.data
-                await self.save_dict()
+                self.update_data(**{'preview_background_color': e.data})
                 self.preview_display_container.bgcolor = self.data.get('preview_background_color', ft.Colors.BLACK)
                 self.preview_display_container.update()
 
@@ -184,7 +184,8 @@ class ComicPreview(Widget):
         for snapshot in self.data.get('featured_canvases', []):
             if snapshot.get('key'):
                 snapshot['image'] = self._set_canvas_snapshot(snapshot['key'])
-        await self.save_dict()
+
+        self.update_data(**{'featured_canvases': self.data.get('featured_canvases', [])})
         self.reload_widget()
         if self.story.blocker.visible:
             self.story.blocker.visible = False
@@ -201,7 +202,7 @@ class ComicPreview(Widget):
             await asyncio.sleep(0)
             idx = e.control.data
             self.data['featured_canvases'].pop(idx)
-            await self.save_dict()
+            self.update_data(**{'featured_canvases': self.data.get('featured_canvases', [])})
 
             self.reload_widget()
             if self.story.blocker.visible:
@@ -222,7 +223,7 @@ class ComicPreview(Widget):
                 'title': title,
                 'image': self._set_canvas_snapshot(key)
             })
-            await self.save_dict()
+            self.update_data(**{'featured_canvases': self.data.get('featured_canvases', [])})
             self.reload_widget()
             if self.story.blocker.visible:
                 self.story.blocker.visible = False
@@ -236,7 +237,7 @@ class ComicPreview(Widget):
                 self.data['preview_direction'] = "horizontal"
             else:
                 self.data['preview_direction'] = "vertical"
-            await self.save_dict()
+            self.update_data(**{'preview_direction': self.data.get('preview_direction', "vertical")})
             self.story.blocker.visible = True
             self.story.blocker.update()
             await asyncio.sleep(0)
@@ -265,7 +266,7 @@ class ComicPreview(Widget):
 
                     except Exception as _:
                         pass
-                await self.save_dict()
+                self.update_data(**{'featured_canvases': self.data.get('featured_canvases', [])})
                 self.story.blocker.visible = True
                 self.story.blocker.update()
                 await asyncio.sleep(0)
@@ -281,7 +282,7 @@ class ComicPreview(Widget):
             self.story.blocker.update()
             await asyncio.sleep(0)
             self.data['featured_canvases'].insert(e.new_index, self.data['featured_canvases'].pop(e.old_index))
-            await self.save_dict()
+            self.update_data(**{'featured_canvases': self.data.get('featured_canvases', [])})
             self.reload_widget()
             if self.story.blocker.visible:
                 self.story.blocker.visible = False
@@ -290,7 +291,7 @@ class ComicPreview(Widget):
         # Handles showing/hiding all the canvases that are featured or could be featured in the preview
         async def _toggle_featured_canvases(e):
             self.data['can_add_canvases'] = not self.data.get('can_add_canvases', True)
-            await self.save_dict()
+            self.update_data(**{'can_add_canvases': self.data.get('can_add_canvases', True)})
             if self.data.get('can_add_canvases', True):
                 e.control.icon = ft.Icons.EDIT_OUTLINED
                 selectable_snapshots.visible = True

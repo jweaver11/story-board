@@ -57,7 +57,8 @@ class Document(Widget):
 
         # Saving creates the file if we're new
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.needs_file_write = True
+            self.p.run_task(self.save_file)
 
         # We render our own mini widgets (comments), so we don't need parent class to render them as well
         self.no_render_mini_widgets = True  
@@ -151,7 +152,7 @@ class Document(Widget):
         )
         self.reference_images[title] = reference_image
         self.mini_widgets.append(reference_image)
-        self.p.run_task(reference_image.save_dict)
+        
     
    
 
@@ -171,7 +172,7 @@ class Document(Widget):
                     encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
 
                 self._create_reference_image(title=file_name, side_location=side_location, image_str=encoded_string)
-                await self.save_dict()  # Save to our data
+                
                 #await asyncio.sleep(0.2)  # Small delay to ensure data is saved before reloading
                 self.reload_widget() # Reload workspace to update the UI with our new image
                     
@@ -188,9 +189,7 @@ class Document(Widget):
             ''' Saves our quill data, but marks that it needs to be saved '''
         
             self.data['document_data'] = await quill_editor.save()
-            self.save_counter += 1
-            if self.save_counter >= 100:   # Dont make file writes to often, since default is 15 changes
-                await self.save_dict()
+            
 
         # Rebuild out tab to reflect any changes
         self.reload_tab()

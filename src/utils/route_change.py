@@ -50,7 +50,7 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
                     new_story = story
                     app.settings.data['active_story'] = story.route
                     app.settings.story = story
-                    await app.settings.save_dict()
+                    await app.settings.save_file()
 
                     #if not new_story.is_initialized:    # Check if this story has not already been loaded before
                         #new_story.startup()

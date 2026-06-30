@@ -164,7 +164,7 @@ class Settings(ft.View):
         )
 
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.p.run_task(self.save_file)
 
     def before_update(self):
         print(f"Successful update for settings")
@@ -172,10 +172,10 @@ class Settings(ft.View):
         
 
     # Called whenever there are changes in our data
-    async def save_dict(self):
+    async def save_file(self):
         ''' Saves our current data to the json file '''
 
-        print("Saved settings")
+        print("Saved settings to file")
 
         try:
             
@@ -183,25 +183,19 @@ class Settings(ft.View):
             with open(self.file_path, "w", encoding='utf-8') as f:   
                 json.dump(self.data, f, indent=4)
         
-        # Handle errors
-        
         except Exception as e:
             print(f"Error saving widget to {self.file_path}: {e}") 
             print("Data that failed to save: ", self.data)
 
     # Called for little data changes
-    def change_data(self, **kwargs):
+    def update_data(self, **kwargs):
         ''' Changes a key/value pair in our data and saves the json file '''
-        # Called by:
-        # app.settings.change_data(**{'key': value, 'key2': value2})
-        # or
-        # app.settings.change_data(key=value)
 
         try:
             for key, value in kwargs.items():
                 self.data.update({key: value})
 
-            self.p.run_task(self.save_dict)
+            self.p.run_task(self.save_file)
 
         # Handle errors
         except Exception as e:
@@ -213,13 +207,10 @@ class Settings(ft.View):
         await self.p.push_route(self.story.route if self.story is not None else "/")
 
     async def save_story(self, e=None):
-        ''' Called when the page is closed. Saves any last changes to settings before exit '''
-
+        ''' Called when the page is closed. Saves any dirty changes '''
         if self.story is not None:
             for widget in self.story.widgets.values():
-                if widget.save_counter > 0:
-                    widget.save_counter = 1000   # Will force a file write to widgets who have unwritten changes to their file
-                    await widget.save_dict()
+                await widget.save_file()
         
     def create_character_template(self, template_name: str, data: dict):
         ''' Creates a new character template with the given name '''
@@ -231,7 +222,7 @@ class Settings(ft.View):
             'title': template_name,
             'template_data': data,
         }
-        self.p.run_task(self.save_dict)
+        self.p.run_task(self.save_file)
         
 
     # Called when the page is resized
@@ -250,7 +241,7 @@ class Settings(ft.View):
         # If we maximized the page, just save that, not the size
         if self.p.window.maximized:
             self.data['page_is_maximized'] = True
-            self.p.run_task(self.save_dict)
+            self.p.run_task(self.save_file)
             return
         
         # If page not maximized or minimized, save the size
@@ -260,7 +251,7 @@ class Settings(ft.View):
             self.data['page_height'] = self.p.height
             self.data['page_left'] = self.p.window.left
             self.data['page_top'] = self.p.window.top
-            self.p.run_task(self.save_dict)
+            self.p.run_task(self.save_file)
             return
 
         
@@ -333,7 +324,7 @@ class Settings(ft.View):
             self.p.dark_theme = ft.Theme(color_scheme_seed=self.data.get('theme_color', "blue"))
 
             # Save the updated settings to the JSON file and update the page
-            self.p.run_task(self.save_dict)
+            self.p.run_task(self.save_file)
             self.p.update()
 
         # Dropdown so app can change their color scheme
@@ -367,7 +358,7 @@ class Settings(ft.View):
                     self.dark_theme_button.border = ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT)
 
             self.data['theme_mode'] = new_theme_mode
-            self.p.run_task(self.save_dict)
+            self.p.run_task(self.save_file)
             self.p.theme_mode = self.data['theme_mode']
             self.p.update()
 
@@ -379,7 +370,7 @@ class Settings(ft.View):
             self.data['default_category_color'] = new_color
 
             # Save our updated settings
-            self.p.run_task(self.save_dict)
+            self.p.run_task(self.save_file)
             e.control.color = new_color   # Changes the dropdown text color to match the selected color
             e.control.update()
 
@@ -472,7 +463,7 @@ class Settings(ft.View):
                     self.data['default_world_color'] = new_color
 
             # Save our updated settings
-            self.p.run_task(self.save_dict)
+            self.p.run_task(self.save_file)
             e.control.color = new_color   # Changes the dropdown text color to match the selected color
             e.control.update()
 
@@ -516,7 +507,7 @@ class Settings(ft.View):
                         value=self.data.get('default_canvas_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_select=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.update_data(default_chapter_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -541,7 +532,7 @@ class Settings(ft.View):
                         value=self.data.get('default_canvas_board_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_select=lambda e: self.change_data(default_canvas_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.update_data(default_canvas_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -566,7 +557,7 @@ class Settings(ft.View):
                         value=self.data.get('default_chapter_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_select=lambda e: self.change_data(default_chapter_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.update_data(default_chapter_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -591,7 +582,7 @@ class Settings(ft.View):
                         value=self.data.get('default_character_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_select=lambda e: self.change_data(default_character_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.update_data(default_character_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -616,7 +607,7 @@ class Settings(ft.View):
                         value=self.data.get('default_character_connection_map_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_select=lambda e: self.change_data(default_character_connection_map_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.update_data(default_character_connection_map_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -642,7 +633,7 @@ class Settings(ft.View):
                         value=self.data.get('default_map_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_select=lambda e: self.change_data(default_map_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.update_data(default_map_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -667,7 +658,7 @@ class Settings(ft.View):
                         value=self.data.get('default_note_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_select=lambda e: self.change_data(default_note_pin_location=e.control.value.lower()), 
+                        on_select=lambda e: self.update_data(default_note_pin_location=e.control.value.lower()), 
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -692,7 +683,7 @@ class Settings(ft.View):
                         value=self.data.get('default_planning_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_select=lambda e: self.change_data(default_planning_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.update_data(default_planning_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -719,7 +710,7 @@ class Settings(ft.View):
                         value=self.data.get('default_plotline_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                         dense=True,
-                        on_select=lambda e: self.change_data(default_plotline_pin_location=e.control.value.lower()),
+                        on_select=lambda e: self.update_data(default_plotline_pin_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -743,7 +734,7 @@ class Settings(ft.View):
                         options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
                         value=self.data.get('default_world_pin_location', "main").capitalize(),
                         text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), dense=True,
-                        on_select=lambda e: self.change_data(default_world_location=e.control.value.lower()),
+                        on_select=lambda e: self.update_data(default_world_location=e.control.value.lower()),
                     ),
                     ft.Container(width=10),   # Spacer
                 ]),
@@ -772,7 +763,7 @@ class Settings(ft.View):
             ''' Pushes local template dicts back to settings data and writes to disk '''
             self.data['character_templates'] = character_templates
             self.data['world_templates']     = world_templates
-            self.p.run_task(self.save_dict)
+            self.p.run_task(self.save_file)
 
         # Declared early so inner helpers that need it can reference it via closure
         edit_container = ft.Container(

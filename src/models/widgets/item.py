@@ -63,7 +63,8 @@ class Item(Widget):
 
         # Saving creates the file if we're new
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.needs_file_write = True
+            self.p.run_task(self.save_file)
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -74,7 +75,7 @@ class Item(Widget):
         # Adds our new segment to the bottom of the list
         async def create_segment(e=None):
             self.data['item_data'].append({"title": new_segment_tf.value, "content": ""})
-            await self.save_dict()
+            self.update_data(**{'item_data': self.data['item_data']})   
             self.reload_widget()
             self.p.pop_dialog()
 
@@ -97,14 +98,14 @@ class Item(Widget):
         index = e.control.data
         if len(self.data['item_data']) > index:
             self.data['item_data'][index]['content'] = e.control.value
-            await self.save_dict()
+            self.update_data(**{'item_data': self.data['item_data']})
 
     # Deletes a segment from the item
     async def _delete_segment(self, e):
         index = e.control.data
         if len(self.data['item_data']) > index:
             del self.data['item_data'][index]
-            await self.save_dict()
+            self.update_data(**{'item_data': self.data['item_data']})
             self.reload_widget()
 
     # Called when clicking our upload image button
@@ -120,8 +121,7 @@ class Item(Widget):
                 with open(file_path, "rb") as image_file:
                     encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                     # Save to our data
-                    self.data['image_base64'] = f"{encoded_string}"
-                    await self.save_dict()
+                    self.update_data(**{'image_base64': f"{encoded_string}"})
                     self.reload_widget()
 
             except Exception as _:
@@ -132,8 +132,7 @@ class Item(Widget):
         ''' Switches between edit mode and not for the item  '''
 
         # Change our edit mode data flag, and save it to file
-        self.data['edit_mode'] = not self.data['edit_mode']
-        self.p.run_task(self.save_dict)
+        self.update_data(**{'edit_mode': not self.data['edit_mode']})
 
         # Reload the widget. The reload widget should load differently depending on if we're in edit mode or not
         self.reload_widget()
@@ -182,7 +181,7 @@ class Item(Widget):
             self.data.get('Description', ""),
             multiline=True, expand=True,
             capitalization=ft.TextCapitalization.SENTENCES, 
-            on_blur=lambda e: self.data.__setitem__('Description', e.control.value) or self.p.run_task(self.save_dict)
+            on_blur=lambda e: self.update_data(**{'Description': e.control.value})
         )
 
 
