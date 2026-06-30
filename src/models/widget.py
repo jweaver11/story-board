@@ -293,7 +293,7 @@ class Widget(ft.Container):
         await asyncio.sleep(0.2)     # Wait for file writes to finish and take effect                     
 
         # Reload our widget ui and rail to reflect changes 
-        self.reload_widget()           
+        #self.reload_widget()           
         self.story.active_rail.reload_rail()  
         self.story.workspace.reload_workspace()   # Reload workspace to update tab title and sorting if needed 
         if self.story.blocker.visible:
@@ -361,33 +361,7 @@ class Widget(ft.Container):
 
         self.p.show_dialog(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
 
-    # Called when a new mini note is created inside a widget
-    async def create_comment(self, title: str):
-        ''' Creates a mini note inside an image or document '''
-        from models.mini_widgets.comment import Comment
-
-        new_comment = Comment(
-            title=title, 
-            widget=self, 
-            page=self.p, 
-            key="comments",
-        )
-        self.comments[title] = new_comment
-        self.mini_widgets.append(
-            new_comment
-        )
-        
-
-        self.reload_widget()
-
-    def delete_comment(self, title: str):
-        del self.comments[title]
-
-
-    # Called when a draggable starts dragging.
-    async def _start_drag(self, e: ft.DragStartEvent):
-        ''' Shows our pin drag targets. Needs its own function or story is not initialized on first launch, causing crash '''
-        self.story.workspace.show_pin_drag_targets() 
+   
 
     # Called when mouse hovers over the tab part of the widget
     async def _set_coords(self, e: ft.PointerEvent):

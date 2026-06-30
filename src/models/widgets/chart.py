@@ -243,7 +243,7 @@ class Chart(Widget):
                         mouse_cursor=ft.MouseCursor.CLICK, 
                         data=idx,
                     ),
-                    title=TextField(
+                    title=ft.TextField(
                         title, dense=True, data=idx, expand=True,
                         suffix_icon=ft.IconButton(
                             ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 
@@ -537,11 +537,11 @@ class Chart(Widget):
 
                 # Axis titles
                 ft.Row([
-                    TextField(
+                    ft.TextField(
                         label="Left Axis Title", value=self.data.get('bar_data', {}).get('left_axis_title', ""), 
                         expand=True, data="left", on_blur=_set_axis_title
                     ),
-                    TextField(
+                    ft.TextField(
                         label="Bottom Axis Title", value=self.data.get('bar_data', {}).get('bottom_axis_title', ""), 
                         expand=True, data="bottom", on_blur=_set_axis_title
                     ),
@@ -550,7 +550,7 @@ class Chart(Widget):
                 ft.Container(height=10),
 
                 # Max y value   
-                TextField(
+                ft.TextField(
                     label="Max Y Value", value=str(self.data.get('bar_data', {}).get('max_y', 20)), 
                     input_filter=ft.NumbersOnlyInputFilter(), data="max", on_blur=_set_max_value
                 ),
@@ -674,7 +674,7 @@ class Chart(Widget):
                         on_click=_toggle_dataset_visibility,
                         mouse_cursor=ft.MouseCursor.CLICK, data=idx,
                     ),
-                    title=TextField(
+                    title=ft.TextField(
                         title, dense=True, data=idx, expand=True,
                         prefix_icon=ft.PopupMenuButton(
                             icon=ft.Icons.COLOR_LENS_OUTLINED, 
@@ -906,20 +906,16 @@ class Chart(Widget):
         titles = []
         for idx, title in enumerate(self.data.get('radar_data', {}).get('nodes', [])):
             titles.append(
-                ft.Container(
-                    TextField(
-                        value=title, 
-                        dense=True, data=idx, expand=True,
-                        on_blur=_update_node_title,
-                        suffix_icon=ft.IconButton(
-                            ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 
-                            mouse_cursor="click", data=idx,
-                            on_click=_delete_node_title
-                        ) if idx >= 3 else None   # Minimum 3 nodes
-                    ),
-                    margin=ft.Margin.only(bottom=10, right=11), expand=True
+                TextField(
+                    value=title, margin=ft.Margin.only(bottom=10, right=11),
+                    dense=True, data=idx, expand=True,
+                    on_blur=_update_node_title,
+                    suffix_icon=ft.IconButton(
+                        ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 
+                        mouse_cursor="click", data=idx,
+                        on_click=_delete_node_title
+                    ) if idx >= 3 else None   # Minimum 3 nodes
                 )
-                
             )      
 
         # Go through and add our Data Sets to the info column on the side
@@ -995,7 +991,7 @@ class Chart(Widget):
            
 
 
-        min_value_tf = TextField(
+        min_value_tf = ft.TextField(
             value=str(self.data.get('radar_data', {}).get('min_value', 0)),
             label="Min Value", dense=True, expand=True,
             on_blur=_update_min_max_value,
@@ -1003,7 +999,7 @@ class Chart(Widget):
             tooltip="Minimum value in the center of the chart. Must be less than max value. If values in data sets are below this, they will be set to this value. ",
             data="min_value"
         )
-        max_value_tf = TextField(
+        max_value_tf = ft.TextField(
             value=str(self.data.get('radar_data', {}).get('max_value', 20)),
             label="Max Value", dense=True, expand=True,
             on_blur=_update_min_max_value,
