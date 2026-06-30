@@ -7,7 +7,6 @@ from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 from models.app import app
 from utils.safe_string_checker import return_safe_name
-from styles.text_fields import TextField
     
 
 class Note(Widget):
@@ -48,6 +47,7 @@ class Note(Widget):
                 ]
             },
         )
+        self.body_container.padding = ft.Padding.only(top=10)
 
         # Saving creates the file if we're new
         if is_new:
@@ -56,49 +56,60 @@ class Note(Widget):
 
         if self.visible:
             self.reload_widget()
-
-    # Opens a dialog to create a new segment in the note and then saves and reloads
-    async def _create_new_segment(self, e=None):
-
-        # Adds our new segment to the bottom of the list
-        async def create_segment(e=None):
-            self.data['note_data'].append({"title": new_segment_tf.value, "content": ""})
-            self.update_data(**{'note_data': self.data['note_data']})
-            await self.reload_widget()
-            self.p.pop_dialog()
-
-        new_segment_tf = ft.TextField(label="Segment Title", autofocus=True, capitalization=ft.TextCapitalization.WORDS, on_submit=create_segment)
-
-        dlg = ft.AlertDialog(
-            title=ft.Text("Add New Note Segment"),
-            content=new_segment_tf,
-            actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                ft.TextButton("Create", on_click=create_segment, style=ft.ButtonStyle(mouse_cursor="click"))
-            ],
-            actions_alignment=ft.MainAxisAlignment.END
-        )
-
-        self.p.show_dialog(dlg)
-
-    # Saves content when text field is unfocused
-    async def _save_segment(self, e):
-        index = e.control.data
-        if len(self.data['note_data']) > index:
-            self.data['note_data'][index]['content'] = e.control.value
-            self.update_data(**{'note_data': self.data['note_data']})
-
-    # Deletes a segment from the note
-    async def _delete_segment(self, e):
-        index = e.control.data
-        if len(self.data['note_data']) > index:
-            del self.data['note_data'][index]
-            self.update_data(**{'note_data': self.data['note_data']})
-            await self.reload_widget()
+    
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
+
+        # Column to hold our segments textfields
+        segments_column = ft.Column(
+            expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, 
+            controls=[], scroll="auto",
+        )
+
+        
+        # Adds our new segment to data and our column
+        async def create_segment(e=None):
+            self.data['note_data'].append({"title": self.new_segment_tf.value, "content": ""})
+            self.update_data(**{'note_data': self.data['note_data']})
+            segments_column.controls.append(new_segment_textfield(len(self.data['note_data']) - 1, self.new_segment_tf.value, ""))
+            segments_column.update()
+
+        # Deletes a segment from data and our column
+        async def delete_segment(e: ft.Event):
+            index = e.control.data
+            if len(self.data['note_data']) > index:
+                del self.data['note_data'][index]
+                self.update_data(**{'note_data': self.data['note_data']})
+                segments_column.controls.pop(index)
+                segments_column.update()
+
+                for i, ctrl in enumerate(segments_column.controls):
+                    ctrl.data = i
+                    ctrl.suffix_icon.data = i
+
+        # Saves content when text field is unfocused
+        async def save_segment(e):
+            index = e.control.data
+            if len(self.data['note_data']) > index:
+                self.data['note_data'][index]['content'] = e.control.value
+                self.update_data(**{'note_data': self.data['note_data']})
+
+        # Gives us a new textfield for each note segment
+        def new_segment_textfield(idx: int, key: str='', value: str='') -> ft.TextField:
+            return ft.TextField(
+                value, expand=True, capitalization=ft.TextCapitalization.SENTENCES, 
+                multiline=True, label=key, dense=True, 
+                on_blur=save_segment, border_color=ft.Colors.OUTLINE_VARIANT,
+                data=idx, margin=ft.Margin.symmetric(horizontal=10),
+                suffix_icon=ft.IconButton(
+                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                    tooltip=f"Delete segment {key}",
+                    on_click=delete_segment,
+                    mouse_cursor="click", data=idx
+                )
+            )
 
         # Run any constistant build from parent class, like setting up the tab
         self.reload_tab()
@@ -106,46 +117,48 @@ class Note(Widget):
         # Set our padding
         self.padding = ft.Padding.only(left=16, top=16, bottom=16)
         
-        # Hold our segment controls when we load the note data
-        segments_list = []
+        
 
         # Go through the note data and load the segments
         for idx, segment in enumerate(self.data.get('note_data', [])):
             key = segment.get('title', '')
             value = segment.get('content', '')
-            segments_list.append(
-                ft.Row([
-                    TextField(
-                        value, expand=True,
-                        multiline=True, label=key, dense=True, capitalization=ft.TextCapitalization.SENTENCES, 
-                        on_blur=self._save_segment,
-                        data=idx,
-                        suffix_icon=ft.IconButton(
-                            ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
-                            tooltip=f"Delete segment {key}",
-                            on_click=self._delete_segment,
-                            mouse_cursor="click", data=idx
-                        )
-                    ),
-                    ft.Container(width=1)
-                    
-                ])
-            )
+            segments_column.controls.append(new_segment_textfield(idx, key, value))
 
-        add_segment_button = ft.IconButton(
-            ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+        async def _create_new_segment_clicked(e):
+            if self.new_segment_tf.visible:
+                await create_segment()
+                return
+            self.new_segment_tf.value = ""
+            self.new_segment_tf.visible = True
+            self.new_segment_tf.label = "New Segment Label"
+            self.new_segment_tf.update() 
+            await self.new_segment_tf.focus()
+
+        async def _hide_new_segment_tf(e):
+            self.new_segment_tf.visible = False
+            self.new_segment_tf.update()
+
+        add_segment_button = ft.Button(
+            "Add Segment", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
             tooltip="Add New Segment to Note",
-            on_click=self._create_new_segment, mouse_cursor="click",
-        )
-        
-        body = ft.Column(
-            expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll="auto",
-            controls=segments_list + [ft.Row([add_segment_button], alignment=ft.MainAxisAlignment.CENTER)]
+            on_click=_create_new_segment_clicked, 
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
         )
 
-        # Assign our built widget as our content
-        
+        self.new_segment_tf = ft.TextField(
+            label="Add New Segment", dense=True, 
+            capitalization=ft.TextCapitalization.WORDS,
+            on_blur=_hide_new_segment_tf,
+            on_submit=create_segment, visible=False, autofocus=True,
+        ) 
 
-        self.body_container.content = body
+        self.body_container.content = ft.Column([
+            segments_column, 
+            ft.Divider(2, 2),
+            ft.Container(ft.Row([add_segment_button, self.new_segment_tf],), bgcolor=ft.Colors.SURFACE_CONTAINER_LOW)
+        ], scroll=None, expand=True, spacing=0)
 
         self._render_widget()
+
+# READY FOR BUILD

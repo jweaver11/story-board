@@ -424,6 +424,8 @@ class Widget(ft.Container):
         self.visible = True
         self.update_data(**{'visible': True, 'index': 999})
 
+        await self.save_file()  # We lose state tracking upon being shown since we get rebuilt, so force a save
+
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
         
         if self.story.blocker.visible:

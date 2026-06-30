@@ -300,7 +300,7 @@ class Story(ft.View):
     # Called every 5 minutes to save our widgets that need file writes
     async def save_widgets_to_file(self):
         for widget in self.widgets.values():
-            await widget.write_to_file()
+            await widget.save_file()
 
     # Wrapper function to call save widgets to file every 5 minutes
     async def _periodic_save_widget(self):
@@ -893,7 +893,7 @@ class Story(ft.View):
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging
             on_pan_end=save_active_rail_width,  # Save the resize when app is done dragging
-            drag_interval=50,
+            #drag_interval=30,
         )
 
         

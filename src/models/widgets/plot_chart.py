@@ -627,7 +627,7 @@ class PlotChart(Widget):
 
         await self.story.close_menu()
         
-        node_title = TextField(
+        node_title = ft.TextField(
             capitalization=ft.TextCapitalization.SENTENCES, 
             autofocus=True, on_submit=_create_node,
         )

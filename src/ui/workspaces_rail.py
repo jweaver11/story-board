@@ -36,13 +36,12 @@ class WorkspacesRail(ft.Container):
             return
         
         if force_rail is not None:      # Use manual setting if one is passed in
-            story.data['selected_rail'] = force_rail
+            story.update_data(**{'selected_rail': force_rail})
 
         else:   # Otherwise, we are called from ourselves, so just use the data from the rail we clicked on
-            story.data['selected_rail'] = e.control.destinations[0].data
+            story.update_data(**{'selected_rail': e.control.destinations[0].data})
 
         # Save data and apply the rail updates
-        self.p.run_task(story.save_dict)
         story.active_rail.reload_rail() 
         self.reload_rail(story)  
 
@@ -54,8 +53,7 @@ class WorkspacesRail(ft.Container):
         from models.app import app    # Always grabs updated reference when collapsing/expanding
 
         # Toggle our collapsed state
-        app.settings.data['workspaces_rail_is_collapsed'] = not app.settings.data['workspaces_rail_is_collapsed']
-        self.p.run_task(app.settings.save_dict)
+        app.settings.update_data(**{'workspaces_rail_is_collapsed': not app.settings.data['workspaces_rail_is_collapsed']})
         
         self.reload_rail(story)  # Reload the rail to apply changes
 
@@ -72,8 +70,7 @@ class WorkspacesRail(ft.Container):
         workspaces_rail_order.insert(e.new_index, item)
 
         # Save the new order to settings
-        app.settings.data['workspaces_rail_order'] = workspaces_rail_order
-        self.p.run_task(app.settings.save_dict)
+        app.settings.update_data(**{'workspaces_rail_order': workspaces_rail_order})
 
         self.reload_rail(story)  # Reload the rail to apply changes
 

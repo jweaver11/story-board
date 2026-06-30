@@ -480,12 +480,13 @@ class Character(Widget):
             body,
             ft.Divider(2, 2),
             ft.Row([
-                ft.TextButton(
+                ft.Button(
                     "Add New Section", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                     on_click=new_section_clicked,
                     style=ft.ButtonStyle(self.data.get('color', ft.Colors.PRIMARY), mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
                 ),
-            new_section_tf, new_field_tf
+                new_section_tf, 
+                new_field_tf
             ])
         ], expand=True, spacing=0)
 
