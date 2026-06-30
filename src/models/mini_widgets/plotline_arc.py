@@ -391,28 +391,28 @@ class Arc(MiniWidget):
 
         summary_tf = TextField(
             value=self.data.get('Summary', ''), multiline=True, expand=True, 
-            on_blur=lambda e: self.change_data(**{'Summary': e.control.value}), 
+            on_blur=lambda e: self.update_data(**{'Summary': e.control.value}), 
             label="Summary", capitalization=ft.TextCapitalization.SENTENCES,
             tooltip="Summary of what happened during this arc", dense=True
         )
 
         start_tf = TextField(
             value=self.data.get('Start', ''), multiline=True, expand=True, 
-            on_blur=lambda e: self.change_data(**{'Start': e.control.value}), 
+            on_blur=lambda e: self.update_data(**{'Start': e.control.value}), 
             label="Start", capitalization=ft.TextCapitalization.SENTENCES,
             tooltip="When this arc began", dense=True
         )
 
         end_tf = TextField(
             value=self.data.get('End', ''), multiline=True, expand=True, 
-            on_blur=lambda e: self.change_data(**{'End': e.control.value}), 
+            on_blur=lambda e: self.update_data(**{'End': e.control.value}), 
             label="End", capitalization=ft.TextCapitalization.SENTENCES,
             tooltip="When this arc ends", dense=True
         )
 
         where_tf = TextField(
             value=self.data.get('Where'), multiline=True, expand=True, 
-            on_blur=lambda e: self.change_data(**{'Where': e.control.value}), 
+            on_blur=lambda e: self.update_data(**{'Where': e.control.value}), 
             label="Where", capitalization=ft.TextCapitalization.SENTENCES,
             tooltip="List of location(s) related to this plot point", dense=True
         )

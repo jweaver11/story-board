@@ -332,20 +332,20 @@ class Location(MiniWidget):
 
         type_tf = TextField(
             value=self.data.get('Type', ''), multiline=False, expand=True,
-            on_blur=lambda e: self.change_data(**{'Type': e.control.value}),
+            on_blur=lambda e: self.update_data(**{'Type': e.control.value}),
             label="Type", capitalization=ft.TextCapitalization.WORDS, dense=True,
             hint_text="Village, Mountains, Dungeon, etc"
         )
 
         description_tf = TextField(
             value=self.data.get('Description', ''), multiline=True, expand=True, 
-            on_blur=lambda e: self.change_data(**{'Description': e.control.value}), 
+            on_blur=lambda e: self.update_data(**{'Description': e.control.value}), 
             label="Description", capitalization=ft.TextCapitalization.SENTENCES, dense=True
         )
 
         history_tf = TextField(
             value=self.data.get('History', ''), multiline=True, expand=True,
-            on_blur=lambda e: self.change_data(**{'History': e.control.value}),
+            on_blur=lambda e: self.update_data(**{'History': e.control.value}),
             label="History", capitalization=ft.TextCapitalization.SENTENCES, dense=True
         )
 

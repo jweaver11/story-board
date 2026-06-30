@@ -47,11 +47,11 @@ class ReferenceImage(MiniWidget):
 
     def expand_mini_widget(self, e=None):
         ''' Shows our mini widget on the side of the document '''
-        self.change_data(**{'collapsed': False})  # Change our data to not collapsed, which will trigger a reload
+        self.update_data(**{'collapsed': False})  # Change our data to not collapsed, which will trigger a reload
         self.reload_mini_widget()
 
     def collapse_mini_widget(self, e=None):
-        self.change_data(**{'collapsed': True})  # Change our data to collapsed, which will trigger a reload
+        self.update_data(**{'collapsed': True})  # Change our data to collapsed, which will trigger a reload
         self.reload_mini_widget()
 
 

@@ -229,7 +229,7 @@ class Marker(MiniWidget):
 
         description_tf = TextField(
             value=self.data.get('description', ''), multiline=True, expand=True, 
-            on_blur=lambda e: self.change_data(**{'description': e.control.value}), 
+            on_blur=lambda e: self.update_data(**{'description': e.control.value}), 
             label="Description", dense=True, capitalization=ft.TextCapitalization.SENTENCES,
         )
 

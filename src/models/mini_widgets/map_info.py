@@ -129,17 +129,17 @@ class MapInformationDisplay(MiniWidget):
         description_tf = TextField(
             expand=True, label="Description", value=self.data.get('Description', ""), dense=True, multiline=True,
             capitalization=ft.TextCapitalization.SENTENCES,
-            on_blur=lambda e: self.change_data(**{'Description': e.control.value}),   # When we click out of the text field, we save our changes
+            on_blur=lambda e: self.update_data(**{'Description': e.control.value}),   # When we click out of the text field, we save our changes
         )
         lore_tf = TextField(
             expand=True, label="Lore", value=self.data.get('Lore', ""), dense=True, multiline=True,
             capitalization=ft.TextCapitalization.SENTENCES,
-            on_blur=lambda e: self.change_data(**{'Lore': e.control.value}),   # When we click out of the text field, we save our changes
+            on_blur=lambda e: self.update_data(**{'Lore': e.control.value}),   # When we click out of the text field, we save our changes
         )
         history_tf = TextField(
             expand=True, label="History", value=self.data.get('History', ""), dense=True, multiline=True,
             capitalization=ft.TextCapitalization.SENTENCES,
-            on_blur=lambda e: self.change_data(**{'History': e.control.value}),   # When we click out of the text field, we save our changes
+            on_blur=lambda e: self.update_data(**{'History': e.control.value}),   # When we click out of the text field, we save our changes
         )
 
         notes_label = ft.Row([

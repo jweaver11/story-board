@@ -268,21 +268,21 @@ class PlotPoint(MiniWidget):
 
         description_tf = TextField(
             value=self.data.get('Description', ''), multiline=True, expand=True, 
-            on_blur=lambda e: self.change_data(**{'Description': e.control.value}), 
+            on_blur=lambda e: self.update_data(**{'Description': e.control.value}), 
             label="Description", capitalization=ft.TextCapitalization.SENTENCES,
             dense=True
         )
 
         when_tf = TextField(
             value=self.data.get('When', ''), multiline=True, expand=True, 
-            on_blur=lambda e: self.change_data(**{'When': e.control.value}), 
+            on_blur=lambda e: self.update_data(**{'When': e.control.value}), 
             label="When", capitalization=ft.TextCapitalization.SENTENCES,
             dense=True
         )
 
         where_tf = TextField(
             value=self.data.get('Where'), multiline=True, expand=True, 
-            on_blur=lambda e: self.change_data(**{'Where': e.control.value}), 
+            on_blur=lambda e: self.update_data(**{'Where': e.control.value}), 
             label="Where", capitalization=ft.TextCapitalization.SENTENCES,
             dense=True
         )

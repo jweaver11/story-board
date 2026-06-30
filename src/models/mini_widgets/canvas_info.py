@@ -644,7 +644,7 @@ class CanvasInformationDisplay(MiniWidget):
         description_tf = TextField(
             expand=True, label="Description", value=self.data.get('Description', ""), dense=True, multiline=True,
             capitalization=ft.TextCapitalization.SENTENCES,
-            on_blur=lambda e: self.change_data(**{'Description': e.control.value}),   # When we click out of the text field, we save our changes
+            on_blur=lambda e: self.update_data(**{'Description': e.control.value}),   # When we click out of the text field, we save our changes
             label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
         )            
         
@@ -671,7 +671,7 @@ class CanvasInformationDisplay(MiniWidget):
             leading=ft.Icons.LAYERS_OUTLINED,
             #tile_padding=ft.Padding.symmetric(horizontal=6),
             expanded=self.data.get('layers_expansion_tile_expanded', True),
-            on_change=lambda e: self.change_data(**{'layers_expansion_tile_expanded': e.control.expanded})
+            on_change=lambda e: self.update_data(**{'layers_expansion_tile_expanded': e.control.expanded})
         )
 
         # Add each layer to the expansion tile

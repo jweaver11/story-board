@@ -46,11 +46,11 @@ class Comment(MiniWidget):
 
     def expand_mini_widget(self, e=None):
         ''' Shows our mini widget on the side of the document '''
-        self.change_data(**{'collapsed': False})  # Change our data to not collapsed, which will trigger a reload
+        self.update_data(**{'collapsed': False})  # Change our data to not collapsed, which will trigger a reload
         self.reload_mini_widget()
 
     def collapse_mini_widget(self, e=None):
-        self.change_data(**{'collapsed': True})  # Change our data to collapsed, which will trigger a reload
+        self.update_data(**{'collapsed': True})  # Change our data to collapsed, which will trigger a reload
         self.reload_mini_widget()
 
 
@@ -93,7 +93,7 @@ class Comment(MiniWidget):
 
         content_tf = TextField(
             self.data['content'], expand=True, 
-            multiline=True, on_blur=lambda e: self.change_data(**{'content': e.control.value}),
+            multiline=True, on_blur=lambda e: self.update_data(**{'content': e.control.value}),
             dense=True, capitalization=ft.TextCapitalization.SENTENCES
         )
 
