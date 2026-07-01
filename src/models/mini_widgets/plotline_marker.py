@@ -116,9 +116,7 @@ class Marker(MiniWidget):
 
         x_alignment = (self.data.get('left', 0) / (self.widget.plotline_width - 10)) * 2.0 - 1.0
 
-        self.data['x_alignment'] = x_alignment
- 
-        await self.save_dict()
+        self.update_data(**{'x_alignment': x_alignment, 'left': self.data.get('left', 0)})
 
 
         if self.widget.information_display.visible:
@@ -143,8 +141,7 @@ class Marker(MiniWidget):
 
         # Change the control visibility, data, and save it
         self.plotline_control.visible = value
-        self.data['is_shown_on_widget'] = value
-        self.page.run_task(self.save_dict)
+        self.update_data(**{'is_shown_on_widget': value})
         
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:

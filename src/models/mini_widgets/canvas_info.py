@@ -88,27 +88,15 @@ class CanvasInformationDisplay(MiniWidget):
         
 
         # Saving creates the file if we're new
-        if is_new:
-            self.page.run_task(self.save_dict)
+        if data is None:
+            self.update_data(**self.data)  # Save our data to the parent widget's data dictionary if we don't have any data passed in
 
         self.visible = True     # Always set to visible, the parent will choose to add it or not
 
         # Reloads the information display of the canvas
         self.reload_mini_widget()
 
-    # Called when saving changes in our mini widgets data to the widgetS json file
-    async def save_dict(self):
-        ''' Saves our current data to the widgetS json file using this objects dictionary path '''
-
-        try:
-            # Our data is correct, so we update our immidiate parents data to match
-            self.widget.data[self.key] = self.data
-
-            # Recursively updates the parents data until widget=widget (widget), which saves to file
-            await self.widget.save_dict()
-
-        except Exception as e:
-            print(f"Error saving mini widget data to {self.title}: {e}")
+    
         
 
     async def _set_layer_content(self, e):

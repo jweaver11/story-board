@@ -46,25 +46,10 @@ class PlotlineInformationDisplay(MiniWidget):
         self.divisions_column = ft.Column(scroll="none")
 
         if is_new:
-            self.page.run_task(self.save_dict)
+            self.update_data(**self.data)
 
         # Reloads the information display of the canvas
         self.reload_mini_widget()
-
-    # Called when saving changes in our mini widgets data to the widgetS json file
-    async def save_dict(self):
-        ''' Saves our current data to the widgetS json file using this objects dictionary path '''
-
-        try:
-            # Our data is correct, so we update our immidiate parents data to match
-            self.widget.data[self.key] = self.data
-
-            # Recursively updates the parents data until widget=widget (widget), which saves to file
-            await self.widget.save_dict()
-
-        except Exception as e:
-            print(f"Error saving mini widget data to {self.title}: {e}")
-
 
     # Called when changing our widgets data from some event
     async def _change_our_data(self, e):
@@ -78,7 +63,7 @@ class PlotlineInformationDisplay(MiniWidget):
             # If we're deleting from a list, we'll need a reload
             if delete_idx:
                 self.data.get(key, []).pop(idx)
-                await self.save_dict()
+                self.update_data(**{key: self.data.get(key, [])})
 
                 # Rebuild our canvas
                 await self.widget.rebuild_plotline_canvas(update=True)
@@ -88,7 +73,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
             else:
                 self.data.get(key, [])[idx] = e.control.value
-                await self.save_dict()
+                self.update_data(**{key: self.data.get(key, [])})
                 await self.widget.rebuild_plotline_canvas(update=True)
                 
         else:
@@ -100,8 +85,7 @@ class PlotlineInformationDisplay(MiniWidget):
     
     def _change_our_data_instant(self, key, value):
         ''' Changes our widgets data instantly '''
-        self.data[key] = value
-        self.page.run_task(self.widget.save_dict)
+        self.update_data(**{key: value})
         
 
     # Called when reloading our mini widget UI
@@ -130,7 +114,7 @@ class PlotlineInformationDisplay(MiniWidget):
             current_divisions.append(str(len(current_divisions) + 1))
 
             self.data['Divisions'] = current_divisions
-            await self.save_dict()
+            self.update_data(**{'Divisions': current_divisions})
             self.update()
 
         plotline_title_text = ft.GestureDetector(

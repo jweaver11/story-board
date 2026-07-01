@@ -195,8 +195,7 @@ class Location(MiniWidget):
                 with open(file_path, "rb") as image_file:
                     encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                     # Save to our data
-                    self.data['image_base64'] = f"{encoded_string}"
-                    await self.save_dict()
+                    self.update_data(**{'image_base64': f"{encoded_string}"})
                     self.reload_mini_widget()
 
             except Exception as _:

@@ -63,7 +63,7 @@ class PlotPoint(MiniWidget):
         self.is_first_launch: bool = True            # If this is the first time we're loading this plot point, used to trigger animations on first load
 
         if is_new:
-            self.page.run_task(self.save_dict)
+            self.update_data(**self.data)
 
         # Reloads the information display of the canvas
         self.reload_plotline_control()
@@ -107,8 +107,7 @@ class PlotPoint(MiniWidget):
 
         # Change the control visibility, data, and save it
         self.plotline_control.visible = value
-        self.data['is_shown_on_widget'] = value
-        await self.save_dict()
+        self.update_data(**{'is_shown_on_widget': value})
         
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:
@@ -143,9 +142,7 @@ class PlotPoint(MiniWidget):
         
         x_alignment = (self.data.get('left', 0) / (self.widget.plotline_width - 10)) * 2.0 - 1.0
 
-        self.data['x_alignment'] = x_alignment
-
-        await self.save_dict()
+        self.update_data(**{'x_alignment': x_alignment, 'left': self.data.get('left', 0)})
 
         if self.widget.information_display.visible:
             self.widget.information_display.reload_mini_widget()
@@ -181,8 +178,7 @@ class PlotPoint(MiniWidget):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
             # Set our data and update our button icon
-            self.data['icon'] = e.control.data
-            await self.save_dict()
+            self.update_data(**{'icon': e.control.data})
 
             # Update the UI to match. Plotline control needs widget to reload as well
             self.reload_mini_widget()
@@ -302,7 +298,7 @@ class PlotPoint(MiniWidget):
                 #print("Adding key")
                 self.data.get('Relevant Characters', []).append(char_key)
 
-            self.page.run_task(self.save_dict)
+            self.update_data(**{'Relevant Characters': self.data.get('Relevant Characters', [])})
 
             Relevant_characters_row.controls = _set_Relevant_characters_controls()
             Relevant_characters_selector.controls = _get_Relevant_characters()

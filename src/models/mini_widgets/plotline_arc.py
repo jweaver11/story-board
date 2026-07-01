@@ -109,8 +109,7 @@ class Arc(MiniWidget):
         # Add this new event to our data and save it
         events = self.data.get('Events', [])
         events.append({'title': title, 'description': ""})
-        self.data['Events'] = events
-        await self.save_dict()
+        self.update_data(**{'Events': events})
 
         # Reload our mini widget to show this new event
         self.reload_mini_widget()
@@ -252,13 +251,15 @@ class Arc(MiniWidget):
 
         # Update our x alignment based on our new left and right positions, and save it to our data
         x_align_pixel = self.data.get('left', 0) + ((self.widget.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)) / 2)
-        self.data['x_alignment'] = ((x_align_pixel) / max(self.widget.plotline_width, 1)) * 2 - 1
   
         width = self.widget.plotline_width - self.data.get('left', 0) - self.data.get('right', 0)
-        self.data['width'] = width
-
-        self.data['left_ratio'] = self.data.get('left', 0) / max(self.widget.plotline_width, 1)
-        self.data['right_ratio'] = self.data.get('right', 0) / max(self.widget.plotline_width, 1)
+        
+        self.update_data(**{
+            'x_alignment': ((x_align_pixel) / max(self.widget.plotline_width, 1)) * 2 - 1,
+            'width': width,
+            'left_ratio': self.data.get('left', 0) / max(self.widget.plotline_width, 1),
+            'right_ratio': self.data.get('right', 0) / max(self.widget.plotline_width, 1)
+        })
 
         # Hide all other info displays while dragging
         for mw in self.widget.mini_widgets:
@@ -269,8 +270,7 @@ class Arc(MiniWidget):
         self.plotline_control.content.mouse_cursor = ft.MouseCursor.CLICK
         self.plotline_control.update()
             
-        # Save our new positions to file
-        await self.save_dict()
+        
 
         if self.widget.information_display.visible:
             self.widget.information_display.reload_mini_widget()
@@ -287,8 +287,7 @@ class Arc(MiniWidget):
 
         # Change the control visibility, data, and save it
         self.plotline_control.visible = value
-        self.data['is_shown_on_widget'] = value
-        await self.save_dict()
+        self.update_data(**{'is_shown_on_widget': value})
         
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:
@@ -429,7 +428,7 @@ class Arc(MiniWidget):
                     if isinstance(event, dict):
                         event['description'] = new_description
                         self.data['Events'][event_idx] = event
-                        await self.save_dict()
+                        self.update_data(**{'Events': self.data['Events']})
 
             async def _delete_event(e):
                 event_idx = e.control.data
@@ -437,7 +436,7 @@ class Arc(MiniWidget):
                 if event_idx < len(events):
                     events.pop(event_idx)
                     self.data['Events'] = events
-                    await self.save_dict()
+                    self.update_data(**{'Events': events})
                     self.reload_mini_widget()
 
 
@@ -466,7 +465,7 @@ class Arc(MiniWidget):
 
             events_list.controls = _get_events_controls()
             self.data['Events'] = events
-            await self.save_dict()
+            self.update_data(**{'Events': events})
             self.update()
         
         events_label = ft.Row([
@@ -508,7 +507,7 @@ class Arc(MiniWidget):
                 #print("Adding key")
                 self.data.get('Relevant Characters', []).append(char_key)
 
-            self.page.run_task(self.save_dict)
+            self.update_data(**{'Relevant Characters': self.data.get('Relevant Characters', [])})
 
             Relevant_characters_row.controls = _set_Relevant_characters_controls()
             Relevant_characters_selector.controls = _get_Relevant_characters()

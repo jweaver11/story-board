@@ -60,8 +60,8 @@ class MapInformationDisplay(MiniWidget):
             },
         )
 
-        if is_new:
-            self.page.run_task(self.save_dict)
+        if data is None:
+            self.update_data(**self.data)  # Save our data to the parent widget's data dictionary if we don't have any data passed in
 
         # Reloads the information display of the map
         self.reload_mini_widget()
@@ -75,8 +75,7 @@ class MapInformationDisplay(MiniWidget):
         # TODO: Add export button functionality?, show locations type / description
 
         async def _toggle_show_bg_map(e=None):
-            self.data['show_bg_map'] = e.control.value
-            await self.save_dict()
+            self.update_data(**('show_bg_map', e.control.value))
             self.widget.reload_widget()  # Reload our widget to update the background image visibility
         
         
