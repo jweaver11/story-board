@@ -10,7 +10,6 @@ import os
 import shutil
 import json
 from constants import data_paths
-from utils.verify_data import verify_data
 from styles.snack_bar import SnackBar
 from utils.safe_string_checker import return_safe_name
 import asyncio
@@ -42,7 +41,6 @@ class Story(ft.View):
 
         # Verifies this object has the required data fields, and creates them if not
         if data is None:
-            self.is_new = True
             self.data = {
                 'title': self.title,
                 'directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}_story")),
@@ -51,8 +49,8 @@ class Story(ft.View):
                 'workspace_selected_index': 0,   # Index of the selected widget in the main pin, used for switching between tabs in the main pin
                 'content_directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}_story"), "content"),
                 
-                'created_at': str,
-                'last_modified': str,
+                'created_at': str(),
+                'last_modified': str(),
 
                 # Sort methods for our specialized rails
                 'character_rail_sort_method': "Index",
@@ -67,14 +65,13 @@ class Story(ft.View):
                 # Dict of all our categories INSIDE of basic story structure (content, characters, plotlines)
                 'folders': {
                     'path': {                   # Path to the category folder (used as the key, since all will be unique)
-                        'name': str,            # Name of category just in case
-                        'color': str,           # Color of that folder
+                        'name': str(),            # Name of category just in case
+                        'color': str(),           # Color of that folder
                         'is_expanded': True     # Whether this folder is expanded in the tree view
                     }
                 },            
             }
-        else:
-            self.is_new = False
+        
 
         # Variables to store our mouse position for opening menus
         self.mouse_x: int = 0
@@ -97,7 +94,6 @@ class Story(ft.View):
             ft.Row([ft.ProgressRing(width=100, height=100)], alignment=ft.MainAxisAlignment.CENTER), 
             expand=True, visible=False, blur=5, left=0, right=0, top=0, bottom=0
         )
-
         
         # Store all our widgets above in a master list for easier rendering in the UI
         self.widgets: dict = {} 
@@ -791,14 +787,6 @@ class Story(ft.View):
         from models.app import app
         from models.isolated_controls.row import IsolatedRow
 
-        if self.is_new:
-            self.page.run_task(self.save_file)
-
-        # Declare the story loaded for loading purposes
-        if self.is_initialized:
-            return
-        
-
         # Load our widgets
         self.load_widgets() 
 
@@ -845,7 +833,7 @@ class Story(ft.View):
                 width=10,   # Total width of the GD, so its easier to find with mouse
                 content=ft.VerticalDivider(2, 2),     # Original
                 padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOW
+                bgcolor=ft.Colors.SURFACE
             ),
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging

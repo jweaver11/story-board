@@ -217,7 +217,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                     alignment=ft.Alignment.CENTER
                 ), 
                 #style=menubar_style,    # styling for the button
-                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 menu_style=ft.MenuStyle(padding=ft.Padding.all(0)),
                 
                 controls=[      # The options shown inside of our button
@@ -225,21 +225,21 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                         content=ft.Text("New Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, ft.Colors.PRIMARY),
                         close_on_click=True,
-                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
                         on_click=_create_new_story_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Open Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.CupertinoIcons.BOOK, ft.Colors.PRIMARY),
                         close_on_click=True,
-                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
                         on_click=_open_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Rename Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY),
                         close_on_click=True,
-                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
                         on_click=_rename_clicked,
                     ),
                     ft.MenuItemButton(
@@ -247,7 +247,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                         tooltip="Import a folder containing an exported story from Story Board on another device.",
                         leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
                         close_on_click=True,
-                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
                         #on_click=_open_clicked,
                     ),
                     ft.MenuItemButton(
@@ -255,7 +255,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                         leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
                         close_on_click=True,
                         tooltip="Export's your story to a folder on your device. Allows for easy import to Story Board on another device.",
-                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
                         #on_click=_open_clicked,
                     ),
                     
@@ -263,14 +263,14 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                         content=ft.Text("Settings", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
                         close_on_click=True,
-                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
                         on_click=_settings_clicked,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Delete Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.DELETE_FOREVER_ROUNDED, ft.Colors.ERROR),
                         close_on_click=True,
-                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
+                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
                         #on_click=_delete_clicked,
                     ),
                 ],
@@ -283,7 +283,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
     # Return our formatted menubar
     return ft.Container(
         border=ft.Border.only(bottom=ft.BorderSide(width=1, color=ft.Colors.OUTLINE_VARIANT)),
-        bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
+        bgcolor=ft.Colors.SURFACE,
         content=ft.Row(
             spacing=0,
             controls=[

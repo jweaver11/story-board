@@ -29,14 +29,6 @@ class Map(Widget):
         data: dict = None,
         is_new: bool = False
     ):
-        
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-        elif data.get('tag') is None:
-            is_new = True
-        
                 
         # Parent constructor
         super().__init__(
@@ -48,24 +40,22 @@ class Map(Widget):
         ) 
 
 
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,   
-            {
+        # If we're new, give default values for our data 
+        if self.is_new == True:
+            self.data.update({
                 # Widget data
-                'key': f"{self.directory_path}\\{return_safe_name(self.title)}_map",
                 'tag': "map", 
                 'color': app.settings.data.get('default_map_color'),
                 
-                'image_base64': str,                # Saves our icon as img64 string (Used a preview as well from other widgets)
-                'left': int,                        # Our left position on our parent map (if we have one)
-                'top': int,                         # Our top position on our parent map (if we have one)
+                'image_base64': str(),                # Saves our icon as img64 string (Used a preview as well from other widgets)
+                'left': int(),                        # Our left position on our parent map (if we have one)
+                'top': int(),                         # Our top position on our parent map (if we have one)
                               
-                'locations': dict,        # Our locations on this map. Locations can also be maps
+                'locations': dict(),        # Our locations on this map. Locations can also be maps
                 # If location is a map, it just has a tag and the maps key to reference it so we can open its information display when clicking it
 
                 # Map data for the map part of the information display
-                'map_data': dict,
+                'map_data': dict(),
             
                 # Used for drawing
                 'undo_list': [],    

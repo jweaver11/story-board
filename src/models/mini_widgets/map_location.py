@@ -34,10 +34,9 @@ class Location(MiniWidget):
             data=data,    
         ) 
 
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,   # Pass in our own data so the function can see the actual data we loaded
-            {   
+        # If we're new, give default values for our data 
+        if data is None:
+            self.data = { 
                 'tag': "location",            # Tag to identify what type of object this is
                 'icon': "location_pin",      # Which icon to use for this location
                 'icon_scale': 1.0,                   # Scale of our icon on the map, default 1.0    
@@ -46,12 +45,11 @@ class Location(MiniWidget):
                 'color': "white",           # Color of the plot point on the map
 
                 # Information for our information display
-                'Type': str,   # Type of location (city, town, dungeon, mountain, etc)
-                'Description': str, 
-                'History': str,
-                'image_base64': str,  
-            },
-        )
+                'Type': "",   # Type of location (city, town, dungeon, mountain, etc)
+                'Description': "", 
+                'History': "",
+                'image_base64': "",  
+            }
 
         # Set our x alignment to position on our map. -1 is left, 0 is center, 1 is right. Default 0
         self.alignment = ft.Alignment(self.data.get('alignment', 0), 0)

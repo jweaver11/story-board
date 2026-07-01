@@ -22,11 +22,6 @@ class PlotPoint(MiniWidget):
         data: dict = None       
     ):
         
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-        
         # Parent constructor
         super().__init__(
             title=title,        
@@ -35,22 +30,20 @@ class PlotPoint(MiniWidget):
             data=data,    
         ) 
 
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,   # Pass in our own data so the function can see the actual data we loaded
-            {   
+        # If we're new, give default values for our data 
+        if data is None:
+            self.data = {
                 'tag': "plot_point",            # Tag to identify what type of object this is
-                'x_alignment': x_alignment if x_alignment is not None else float,           # Float between -1 and 1 on x axis of plotline. 0 is center
+                'x_alignment': x_alignment if x_alignment is not None else float(),           # Float between -1 and 1 on x axis of plotline. 0 is center
                 'left': left, 
                 'color': "primary",           # Color of the plot point on the plotline
 
                 # Information for our information display
-                'Description': str,
-                'When': str,
-                'Where': str,
-                'Relevant Characters': list,
-            },
-        )
+                'Description': str(),
+                'When': str(),
+                'Where': str(),
+                'Relevant Characters': list(),
+            }
 
         # Set our x alignment to position on our plotline. -1 is left, 0 is center, 1 is right. Default 0
         self.x_alignment = ft.Alignment(self.data.get('x_alignment', 0), 0)
@@ -61,9 +54,6 @@ class PlotPoint(MiniWidget):
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our plot point
         self.is_first_launch: bool = True            # If this is the first time we're loading this plot point, used to trigger animations on first load
-
-        if is_new:
-            self.update_data(**self.data)
 
         # Reloads the information display of the canvas
         self.reload_plotline_control()

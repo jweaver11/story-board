@@ -7,7 +7,6 @@ import os
 import flet as ft
 from models.widget import Widget
 from models.views.story import Story
-from utils.verify_data import verify_data
 from models.app import app
 from utils.safe_string_checker import return_safe_name
 from PIL import Image

@@ -28,12 +28,6 @@ class MapInformationDisplay(MiniWidget):
         data: dict = None               # No data is used here, so NEVER reference it. Use self.widget.data instead
     ):
         
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-        
-
         # Parent constructor
         super().__init__(
             title=title,           
@@ -42,10 +36,9 @@ class MapInformationDisplay(MiniWidget):
             key=key     
         ) 
 
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,   # Pass in our object so we can access its data and change it
-            {   
+        # If we're new, give default values for our data 
+        if data is None:
+            self.data = {
                 'title': self.title,          # Title of the mini widget, should match the object title
                 'tag': "map_information_display",        
                 'left': 40,
@@ -54,14 +47,11 @@ class MapInformationDisplay(MiniWidget):
                 'show_bg_map': True,                   # Whether to show the background map image or not
 
                 # Map info
-                'Description': str,
-                'Lore': str,
-                'History': str,
-            },
-        )
+                'Description': "",
+                'Lore': "",
+                'History': "",
+            }
 
-        if data is None:
-            self.update_data(**self.data)  # Save our data to the parent widget's data dictionary if we don't have any data passed in
 
         # Reloads the information display of the map
         self.reload_mini_widget()

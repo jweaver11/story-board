@@ -11,15 +11,13 @@ def create_welcome_view(page: ft.Page) -> ft.View:
         ''' Save that we have launched the app before, and route to the tutorial '''
         progress_ring.visible = True
         progress_ring.update()
-        #await asyncio.sleep(0.5)
-        app.settings.data["is_first_launch"] = False
-        await app.settings.save_dict()
+        app.settings.update_data(**{'is_first_launch': False})
         await page.push_route("/tutorial")
 
     async def _skip_tutorial_clicked(e):
         ''' Save that we have launched the app before, and route to the home view '''
-        app.settings.data["is_first_launch"] = False
-        await app.settings.save_dict()
+        
+        app.settings.update_data(**{'is_first_launch': False})
         page.show_dialog(SnackBar("You can access the tutorial anytime in Settings -> Resources", duration=7000))
 
     text = ft.Text(

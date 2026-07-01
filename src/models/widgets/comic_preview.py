@@ -21,11 +21,6 @@ class ComicPreview(Widget):
     # Constructor
     def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_new: bool = False):
 
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-
         # Initialize from our parent class 'Widget'. 
         super().__init__(
             title = title,                      # Title of the note
@@ -36,14 +31,12 @@ class ComicPreview(Widget):
         )
 
 
-        verify_data(
-            self,   # Pass in our own data so the function can see the actual data we loaded
-            {
+        # If we're new, give default values for our data 
+        if self.is_new == True:
+            self.data.update({
                 # Widget data
-                'key': f"{self.directory_path}\\{return_safe_name(self.title)}_comic_preview", 
                 'tag': "comic_preview",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('default_comic_preview_color', "primary"),
-                'pin_location': app.settings.data.get('default_comic_preview_pin_location', "right") if data is None else data.get('pin_location', "right"),   # Default pin location for notes
                 'preview_direction': "vertical",      # Default direction for comic preview, can be vertical or horizontal
                 'preview_background_color': "#00000000",  # Background color shown in comic preview widgets
                 'show_info': True,                    # Whether or not to show the info column on the left side of the page

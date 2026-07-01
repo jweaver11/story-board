@@ -20,7 +20,7 @@ class WorkspacesRail(ft.Container):
             padding=ft.Padding.only(bottom=10, right=2, left=2),
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOW
+            bgcolor=ft.Colors.SURFACE
         )
 
         # Build our rail on start
@@ -53,7 +53,7 @@ class WorkspacesRail(ft.Container):
         from models.app import app    # Always grabs updated reference when collapsing/expanding
 
         # Toggle our collapsed state
-        app.settings.update_data(**{'workspaces_rail_is_collapsed': not app.settings.data['workspaces_rail_is_collapsed']})
+        app.settings.update_data(**{'workspaces_rail_is_collapsed': not app.settings.data.get('workspaces_rail_is_collapsed', False)})
         
         self.reload_rail(story)  # Reload the rail to apply changes
 
@@ -63,7 +63,7 @@ class WorkspacesRail(ft.Container):
         ''' Reorders our list based on the drag and drop, saves the new order in settings '''
         from models.app import app    # Always grabs updated reference when re-ordering
 
-        workspaces_rail_order = app.settings.data['workspaces_rail_order']
+        workspaces_rail_order = app.settings.data.get('workspaces_rail_order', ["content", "characters", "plotlines", "world_building", "canvas"])
 
         # Reorders our list based on the drag and drop
         item = workspaces_rail_order.pop(e.old_index)
@@ -192,7 +192,7 @@ class WorkspacesRail(ft.Container):
 
         # Goes through our workspace order, and adds the correct control to our list for the rail
         # We do it this way so when the app re-orders the rail, it will save their changes
-        for workspace in app.settings.data['workspaces_rail_order']:     # Just a list of strings
+        for workspace in app.settings.data.get('workspaces_rail_order', []):     # Just a list of strings
             if workspace == "content":
                 workspaces_rail.append(ft.ReorderableDragHandle(content_rail))   # Add our corresponding workspace selector rail to the list
             elif workspace == "characters":
@@ -206,7 +206,7 @@ class WorkspacesRail(ft.Container):
 
 
         # If we're collapsed...
-        if app.settings.data['workspaces_rail_is_collapsed']:
+        if app.settings.data.get('workspaces_rail_is_collapsed', False):
 
             self.width = 50     # Make the rail less wide
             

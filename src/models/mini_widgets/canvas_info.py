@@ -29,12 +29,6 @@ class CanvasInformationDisplay(MiniWidget):
         key: str,                       
         data: dict = None               
     ):
-        
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-        
 
         # Parent constructor
         super().__init__(
@@ -44,10 +38,9 @@ class CanvasInformationDisplay(MiniWidget):
             key=key     
         ) 
 
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,   # Pass in our object so we can access its data and change it
-            {   
+        # If we're new, give default values for our data 
+        if data is None:
+            self.data = {
                 'title': self.title,          # Title of the mini widget, should match the object title
                 'tag': "canvas_information_display",     
                 'layers_expansion_tile_expanded': True,  
@@ -62,7 +55,7 @@ class CanvasInformationDisplay(MiniWidget):
                 #'bg_type': None,                # "color", "image", or None so we know how to display it
 
                 # Canvas info
-                'Description': str,
+                'Description': "",
                 "width": None,              # Resolution size used for exporting
                 "height": None,
                 "aspect_ratio": None,       # Actually used for displaying the canvas, and we scale up when exporting
@@ -82,16 +75,7 @@ class CanvasInformationDisplay(MiniWidget):
                     }
                 ],     # {'name': str, 'visible': bool, 'index': int, 'capture': str
                 'Active Layer': 0,   # Index of our active layer we are drawing on
-            },
-        )
-
-        
-
-        # Saving creates the file if we're new
-        if data is None:
-            self.update_data(**self.data)  # Save our data to the parent widget's data dictionary if we don't have any data passed in
-
-        self.visible = True     # Always set to visible, the parent will choose to add it or not
+            }
 
         # Reloads the information display of the canvas
         self.reload_mini_widget()

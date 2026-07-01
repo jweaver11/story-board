@@ -25,7 +25,7 @@ class Workspace(ft.Container):
         super().__init__(
             expand=True,
             alignment=ft.Alignment.CENTER,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            bgcolor=ft.Colors.with_opacity(0.8, ft.Colors.SURFACE_CONTAINER_HIGH),
         )
 
         self.p = page

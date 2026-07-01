@@ -9,7 +9,6 @@ Some mini widgets can have their own files IN ADDITION to normal storage, such a
 
 import flet as ft
 from models.widget import Widget
-from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
 import asyncio
@@ -18,8 +17,7 @@ from styles.text_fields import TextField
 
 class MiniWidget(ft.Container):
 
-    # Constructor. All mini widgets require a title, widget widget, page reference...
-    # Dictionary path, and optional data dictionary
+    # Constructor
     def __init__(
         self, 
         title: str,                     # Title of the widget that will show up on its tab
@@ -35,9 +33,8 @@ class MiniWidget(ft.Container):
             padding=ft.Padding.only(left=11, top=8, bottom=8),
             shadow=ft.BoxShadow(0, 1),
             data=data,     
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
+            bgcolor=ft.Colors.SURFACE,
             animate=ft.Animation(200, ft.AnimationCurve.DECELERATE)
-            #blur=5,
         )
 
         
@@ -47,22 +44,15 @@ class MiniWidget(ft.Container):
         self.key: str = key     
 
 
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,   # Pass in our object so we can access its data and change it
-            {   
+        # If we're new, give default values for our data 
+        if data is None:
+            self.data = {
                 'title': self.title,          # Title of the mini widget, should match the object title
                 'tag': "mini_widget",         # Default mini widget tag, but should be overwritten by child classes
                 'visible': True,              # If the widget is visible
                 'is_shown_on_widget': True,          # If the mini widget is shown on the parent widget. Some widgets can toggle this off
                 'notes': [],        # Dictionary for any custom fields the mini widget wants to store
-            },
-        )
-
-        self.first_load: bool = True    # State tracking
-
-        if data is None:
-            self.update_data(**self.data)  # Save our data to the parent widget's data dictionary if we don't have any data passed in
+            }
 
         # Apply our visibility
         self.visible = self.data.get('visible', True)
@@ -72,7 +62,6 @@ class MiniWidget(ft.Container):
         ''' Stores our mouse positioning so we know where to open menus '''
         self.widget.story.mouse_x = e.global_position.x 
         self.widget.story.mouse_y = e.global_position.y
-
             
     # Called when deleting our mini widget
     def delete_dict(self):
@@ -141,8 +130,6 @@ class MiniWidget(ft.Container):
 
             # Our data is correct, so we update our immidiate parents data to match
             self.widget.update_data(**{self.key: self.data})
-    
-
     
 
     async def update_note(self, e):

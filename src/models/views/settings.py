@@ -6,7 +6,6 @@ A Settings object is created for every story
 import flet as ft
 from models.views.story import Story
 from models.widget import Widget
-from utils.verify_data import verify_data
 from utils.alert_dialogs.character_connection import new_character_connection_clicked
 from styles.colors import colors
 import os
@@ -31,11 +30,6 @@ class Settings(ft.View):
         selected_index: int = 0,   # Which category to show when opening settings. 0 = Appearance, 1 = Widgets, 2 = Story, 3 = Templates, 4 = Resources
     ):
         
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-        
         # Constructor the parent widget class
         super().__init__(
             route=f"/settings",                                      # Sets our route for our new story
@@ -50,17 +44,16 @@ class Settings(ft.View):
         self.data = data
         self.selected_index = selected_index
 
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,   # Pass in our own data so the function can see the actual data we loaded
-            {
+        # If we're new, give default values for our data 
+        if data is None or data == {}:
+            self.data.update({
                 # Settings the app uses and users do not directly change in the settings view
                 'active_story': "/",    # Route to our active story
-                'workspaces_rail_is_collapsed': bool,  # If the all workspaces rail is collapsed or not
+                'workspaces_rail_is_collapsed': False,  # If the all workspaces rail is collapsed or not
                 'active_rail_width': 250,  # Width of our active rail that we can resize
                 'page_is_maximized': True,   # If the window is maximized or not
-                'page_width': int,     # Last known page width
-                'page_height': int,    # Last known page height
+                'page_width': int(),     # Last known page width
+                'page_height': int(),    # Last known page height
                 'is_first_launch': True,    # If this is the first time the app has been launched or not
 
                 # Paint settings for our canvas drawings to use as default that users can change
@@ -77,7 +70,7 @@ class Settings(ft.View):
 
                     # Effects
                     'anti_alias': True,
-                    'blur_image': int,
+                    'blur_image': 0,
                     'blend_mode': "src_over",
                 },               
 
@@ -98,7 +91,7 @@ class Settings(ft.View):
                     'text_shape_letter_spacing': 0,                    # Letter spacing for text shapes
                     'text_shape_word_spacing': 0,                      # Word spacing for text shapes
                     'rectangle_border_radius': 0,               # Border radius for rectangle shapes
-                    'saved_brushes': dict,              # Saved brushes the user has created that we can load
+                    'saved_brushes': dict(),              # Saved brushes the user has created that we can load
                 },
 
                 # Settings the user can change in the settings view
@@ -160,17 +153,13 @@ class Settings(ft.View):
                 'world_templates': {    
                     'Default': default_world_template_data_dict(),
                 },
-            }, 
-        )
+            })
+            page.run_task(self.save_file)
 
-        if is_new:
-            self.p.run_task(self.save_file)
 
     def before_update(self):
-        print(f"Successful update for settings")
+        #print(f"Successful update for settings")
         return super().before_update()
-        
-
     
 
     # Called for little data changes

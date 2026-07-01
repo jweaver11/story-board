@@ -5,7 +5,6 @@ Simple mini widget that consists of a title, and a body that is a string
 import flet as ft
 from models.mini_widget import MiniWidget
 from models.widget import Widget
-from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 from styles.text_fields import TextField
 
@@ -24,21 +23,15 @@ class Comment(MiniWidget):
             data=data,          
         ) 
 
-        verify_data(
-            self,   # Pass in our object so we can access its data and change it
-            {   # Pass in the required fields and their types``
+        # If we're new, give default values for our data 
+        if data is None:
+            self.data = {
                 'tag': "comment",
-                'content': str,
-                'collapsed': bool,
-            },
-        )
+                'content': "",
+                'collapsed': False,
+            }
 
-        self.bgcolor = ft.Colors.TRANSPARENT
-        self.border = None
         self.padding = ft.Padding.only(right=11, bottom=8)
-        self.margin = None
-        self.shadow = None
-        self.expand = False
 
         # Load our widget UI on start after we have loaded our data
         self.reload_mini_widget()

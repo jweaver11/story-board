@@ -573,6 +573,12 @@ class Widget(ft.Container):
         self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
         self.tab_text.value = self.title
 
+        # Chart stuff for future
+        #if self.data.get('type', "") == "bar":
+            #self.icon.icon = ft.Icons.INSERT_CHART_OUTLINED
+        #else:
+            #self.icon.icon = ft.CupertinoIcons.COMPASS
+
         if update:
             try:
                 self.tab.update()

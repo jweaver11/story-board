@@ -18,10 +18,6 @@ class Document(Widget):
     # Constructor
     def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
 
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
 
         # Initialize from our parent class 'Widget'. 
         super().__init__(
@@ -32,10 +28,9 @@ class Document(Widget):
             is_new = is_new  
         )
 
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            object=self,   # Pass in our own data so the function can see the actual data we loaded
-            required_data={
+        # If we're new, give default values for our data 
+        if self.is_new == True:
+            self.data.update({
                 # Widget data
                 'tag': "document",
                 'color': app.settings.data.get('default_canvas_color'),
@@ -53,11 +48,6 @@ class Document(Widget):
                 'document_data': list,       
             }
         )
-
-        # Saving creates the file if we're new
-        if is_new:
-            self.needs_file_write = True
-            self.page.run_task(self.save_file)
 
         # We render our own mini widgets (comments), so we don't need parent class to render them as well
         self.no_render_mini_widgets = True  

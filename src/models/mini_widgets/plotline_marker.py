@@ -27,8 +27,6 @@ class Marker(MiniWidget):
         data: dict = None       
     ):
         
-        
-        
         # Parent constructor
         super().__init__(
             title=title,        
@@ -37,18 +35,16 @@ class Marker(MiniWidget):
             data=data,    
         ) 
 
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,   # Pass in our own data so the function can see the actual data we loaded
-            {   
+        # If we're new, give default values for our data 
+        if data is None:
+            self.data = {
                 'tag': "marker",            # Tag to identify what type of object this is
                 'title': str,
                 'x_alignment': x_alignment,           # Float from -1 to 1 representing where we are on the plotline. Used for resizing calcs
                 'left': left,                       # Integer Absolute left position on plotline
                 'color': "note",           # Color of the plot point on the plotline
                 'description': str,
-            },
-        )
+            }
         
 
         # Set our x alignment to position on our plotline. -1 is left, 0 is center, 1 is right. Default 0

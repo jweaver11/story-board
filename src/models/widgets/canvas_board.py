@@ -25,11 +25,6 @@ class CanvasBoard(Widget):
     # Constructor
     def __init__(self, name: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
 
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-
         # Parent class constructor
         super().__init__(
             title = name,  
@@ -39,17 +34,13 @@ class CanvasBoard(Widget):
             is_new = is_new
         )
 
-        #self.body_container.padding = ft.Padding.only(bottom=10)
-        self.padding = ft.Padding.only(bottom=10)
-
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            object=self,   # Pass in our own data so the function can see the actual data we loaded
-            required_data={
+        # If we're new, give default values for our data 
+        if self.is_new == True:
+            self.data.update({
                 'tag': "canvas_board",
                 'color': app.settings.data.get('default_canvas_board_color'),
 
-                'summary': str, # Description of this canvas board. Some could be for chapters (multiple canvas) or just one board
+                'summary': str(), # Description of this canvas board. Some could be for chapters (multiple canvas) or just one board
 
                 # Labels on the top part of our grid. Users can add onto these as needed
                 # Preview -> Ties to a specific Canvas and shows a preview of that Canvas in real time
@@ -66,8 +57,8 @@ class CanvasBoard(Widget):
                         },         
                         {
                             'capture': "",
-                            'undo_list': [],
-                            'redo_list': []
+                            'undo_list': list(),
+                            'redo_list': list()
                         },             # Sketch capture to be loaded into canvas
                         "",             # Concept description text
                         ""              # Any other notes for this row
@@ -81,8 +72,8 @@ class CanvasBoard(Widget):
                         },         
                         {
                             'capture': "",
-                            'undo_list': [],
-                            'redo_list': []
+                            'undo_list': list(),
+                            'redo_list': list()
                         },          # Second column
                         "",         # Third column
                         ""          # Fourth column
@@ -91,10 +82,6 @@ class CanvasBoard(Widget):
             },
         )
 
-        # Saving creates the file if we're new
-        if is_new:
-            self.needs_file_write = True
-            self.page.run_task(self.save_file)
 
 
         self.state: State = State()     # State model from tracking our drawing state

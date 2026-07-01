@@ -20,7 +20,6 @@ class Arc(MiniWidget):
         data: dict = None
     ):
         
-        
         # Parent constructor
         super().__init__(
             title=title,        
@@ -61,10 +60,9 @@ class Arc(MiniWidget):
             right_ratio = 0
     
 
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,   # Pass in our own data so the function can see the actual data we loaded
-            {   
+        # If we're new, give default values for our data 
+        if data is None:
+            self.data = { 
                 # Mini widget data
                 'tag': "arc",                               # Tag to identify what type of object this is
                 'color': "primary",                       # Color of the arc in the plotline
@@ -80,14 +78,13 @@ class Arc(MiniWidget):
                 'width': 100,           # Default width of the arc in pixels, used for new arcs that don't have left and right values yet, but need for calcs  
                 
                 # Arc Data
-                'Summary': str,
-                'Events': list,             # Simple list of events during this arc["event 1", "event 2", ...]
-                'Start': str,                          
-                'End': str, 
-                'Where': str, 
-                'Relevant Characters': list,
-            },
-        )
+                'Summary': str(),
+                'Events': list(),             # Simple list of events during this arc["event 1", "event 2", ...]
+                'Start': str(),                          
+                'End': str(), 
+                'Where': str(), 
+                'Relevant Characters': list(),
+            }
 
 
         # UI elements

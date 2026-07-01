@@ -23,13 +23,11 @@ class Item(Widget):
             data = data,
             is_new = is_new
         )
-        self.body_container.padding = ft.Padding.all(10)
 
          # If we're new, give default values for our data 
         if self.is_new == True:
             self.data.update({
                 # Widget data
-                'key': f"{self.directory_path}\\{return_safe_name(self.title)}_item", 
                 'tag': "item",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('default_item_color'),
 

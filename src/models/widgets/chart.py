@@ -28,11 +28,6 @@ class Chart(Widget):
         type: str = "bar"           # Type of chart we are (either bar or radar)
     ):
 
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-
         # Initialize from our parent class 'Widget'. 
         super().__init__(
             title = title,                      
@@ -43,14 +38,12 @@ class Chart(Widget):
         )
         
 
-        verify_data(
-            self,   # Pass in our own data so the function can see the actual data we loaded
-            {
+        # If we're new, give default values for our data 
+        if self.is_new == True:
+            self.data.update({
                 # Widget data
-                'key': f"{self.directory_path}\\{return_safe_name(self.title)}_chart", 
                 'tag': "chart",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('default_chart_color'),
-                'pin_location': app.settings.data.get('default_chart_pin_location', "right") if data is None else data.get('pin_location', "right"),   # Default pin location for items
                 'type': type,             # How our chart is being displayed (bar or radar)
                 'description': str,
 
@@ -116,11 +109,6 @@ class Chart(Widget):
             self.icon.icon = ft.Icons.INSERT_CHART_OUTLINED
         else:
             self.icon.icon = ft.CupertinoIcons.COMPASS
-
-        # Saving creates the file if we're new
-        if is_new:
-            self.needs_file_write = True
-            self.page.run_task(self.save_file)
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init

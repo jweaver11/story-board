@@ -10,7 +10,6 @@ from styles.menu_option_style import MenuOptionStyle
 from models.views.story import Story
 from models.widget import Widget
 from models.mini_widgets.plotline_arc import Arc
-from utils.verify_data import verify_data
 import flet.canvas as cv
 from models.app import app
 import asyncio 
@@ -20,11 +19,6 @@ class Plotline(Widget):
 
     # Constructor
     def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
-
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
         
         # Parent constructor
         super().__init__(
@@ -36,10 +30,9 @@ class Plotline(Widget):
         ) 
 
 
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,   # Pass in our own data so the function can see the actual data we loaded
-            {
+        # If we're new, give default values for our data 
+        if self.is_new == True:
+            self.data.update({
                 # Widget Data
                 'tag': "plotline",
                 'color': app.settings.data.get('default_plotline_color'),
@@ -47,7 +40,7 @@ class Plotline(Widget):
                 'old_plotline_height': 0,       
 
                 # State and filter management   
-                'hide_division_labels': bool,                       # If the division labels are hidden on the plotline
+                'hide_division_labels': bool(),                       # If the division labels are hidden on the plotline
                 
                 # Our rail dropdown states
                 'dropdown_is_expanded': True,               # If the branch dropdown is expanded on the rail
@@ -58,9 +51,9 @@ class Plotline(Widget):
                 'divisions_are_expanded': True,             # If the divisions section is expanded
 
                 # Filter dropdown states
-                'arcs_filter_dropdown_expanded': bool,          # If the arcs filter dropdown is expanded
-                'plot_points_filter_dropdown_expanded': bool,   # If the plot points filter dropdown is
-                'markers_filter_dropdown_expanded': bool,       # If the markers filter dropdown is expanded
+                'arcs_filter_dropdown_expanded': bool(),          # If the arcs filter dropdown is expanded
+                'plot_points_filter_dropdown_expanded': bool(),   # If the plot points filter dropdown is
+                'markers_filter_dropdown_expanded': bool(),       # If the markers filter dropdown is expanded
                 'show_all_plot_points': True,                   # If all plot points are shown regardless of individual settings
                 'show_all_arcs': True,                          # If all arcs are shown regardless of individual settings
                 'show_all_markers': True,                       # If all markers are shown regardless of individual settings
@@ -72,19 +65,14 @@ class Plotline(Widget):
                 'markers_id_are_expanded': True,                # If the markers IDs are expanded in the filter
                 
                 # Mini Widgets Data. Keep it seperate and safe from regular Plotline data below
-                'plot_points': dict,                        # Dict of plot points in this branch
-                'arcs': dict,                               # Dict of arcs in this branch
-                'markers': dict,                            # Simple markers with a title
+                'plot_points': dict(),                        # Dict of plot points in this branch
+                'arcs': dict(),                               # Dict of arcs in this branch
+                'markers': dict(),                            # Simple markers with a title
 
                 # Plotline data shown in the info display mini widget
-                'plotline_data': dict
+                'plotline_data': dict()
             },
         ) 
-
-        # Saving creates the file if we're new
-        if is_new:
-            self.needs_file_write = True
-            self.page.run_task(self.save_file)
                 
         # Declare dicts of our data types   
         self.arcs: dict = {}       

@@ -3,10 +3,8 @@
 import flet as ft
 from models.views.story import Story
 from models.widget import Widget
-from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 from models.app import app
-from utils.safe_string_checker import return_safe_name
 from styles.text_fields import SmallTextField, TextField
 import flet.canvas as cv
 from styles.snack_bar import SnackBar
@@ -18,11 +16,6 @@ class PlotChart(Widget):
     # Constructor
     def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_new: bool = False):
 
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-
         # Initialize from our parent class 'Widget'. 
         super().__init__(
             title = title,                      # Title of the note
@@ -32,19 +25,15 @@ class PlotChart(Widget):
             is_new = is_new
         )
 
-        # Verifies this object has the required data fields, and creates them if not.
-        # If the fields exist already, they will be skipped. Example, loaded notes have the "note" tag, so that would be skipped
-        # If you provide default types, it gives it default values, otherwise you can specify values
-        verify_data(
-            self,   # Pass in our own data so the function can see the actual data we loaded
-            {
+        # If we're new, give default values for our data 
+        if self.is_new == True:
+            self.data.update({
                 # Widget data
-                'key': f"{self.directory_path}\\{return_safe_name(self.title)}_plot_chart", 
                 'tag': "plot_chart",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('default_note_color'),
                 'pin_location': app.settings.data.get('default_note_pin_location', "right") if data is None else data.get('pin_location', "right"),   # Default pin location for notes
 
-                'description': str,
+                'description': str(),
                 'show_info': True, 
                 'spider_web_view': False,
 
@@ -67,11 +56,6 @@ class PlotChart(Widget):
         self.source_side: str = None      # Determines which sides of the nodes we start dragging from
         self.target_side: str = None       # Determines which sides of the nodes we end dragging on
         
-
-        # Saving creates the file if we're new
-        if is_new:
-            self.needs_file_write = True
-            self.page.run_task(self.save_file)
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init

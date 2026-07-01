@@ -13,11 +13,6 @@ class PlotlineInformationDisplay(MiniWidget):
     # Constructor. Requires title, widget widget, page reference, and optional data dictionary
     def __init__(self, title: str, widget: Plotline,  key: str, data: dict=None):
 
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-
         # Parent constructor
         super().__init__(
             title=title,        
@@ -26,27 +21,24 @@ class PlotlineInformationDisplay(MiniWidget):
             data=data,      
         )  
         
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,   # Pass in our object so we can access its data and change it
-            {   
+        # If we're new, give default values for our data 
+        if data is None:
+            self.data = {
                 'title': self.title,          # Title of the mini widget, should match the object title
                 'tag': "plotline_information_display",         # Default mini widget tag, but should be overwritten by child classes
 
                 # Plotline data
-                'Summary': str,
+                'Summary': str(),
                 'Time Label': "Years",                          # Label for the time axis (any str they want)
                 'Left Label': "0",                              # Start label
                 'Right Label': "10",                            # Start and end date of the branch, for plotline view
                 'Divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
-            },
-        )
+            }
 
         # Holds our row controls for our divisions so we can add/remove without rebuilding
         self.divisions_column = ft.Column(scroll="none")
 
-        if is_new:
-            self.update_data(**self.data)
+        
 
         # Reloads the information display of the canvas
         self.reload_mini_widget()

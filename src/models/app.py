@@ -177,6 +177,7 @@ class App:
         ''' Creates the new story object and has it run its 'startup' method. Changes route so our view displays the new story '''
         
         story = Story(title.title(), page, data=None)
+        page.run_task(story.save_file)
         
         # Create a new story object and add it to our stories dict
         self.stories[title.title()] = story

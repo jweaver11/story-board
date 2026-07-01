@@ -37,12 +37,6 @@ class Canvas(Widget):
         is_new: bool = False
     ):
         
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-        elif data.get('tag') is None:
-            is_new = True
         
         # Parent constructor
         super().__init__(
@@ -52,13 +46,11 @@ class Canvas(Widget):
             data=data,  
             is_new = is_new
         ) 
-        self.body_container.padding = ft.Padding.only(left=16)
 
 
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,
-            {
+        # If we're new, give default values for our data 
+        if self.is_new == True:
+            self.data.update({
                 # Widget data
                 "tag": "canvas",
                 'color': app.settings.data.get('default_canvas_color'),
@@ -73,13 +65,6 @@ class Canvas(Widget):
                 
             },
         )
-
-        # Saving creates the file if we're new
-        if is_new:
-            self.needs_file_write = True
-            self.page.run_task(self.save_file)
-
-        
 
         # State tracking for canvas drawing info
         self.state = State()                # Used for tracking our coords and current drawing data for the active stroke/shape being applied
