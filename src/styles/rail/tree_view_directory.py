@@ -6,7 +6,6 @@ from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
 from styles.snack_bar import SnackBar
 from utils.check_widget_unique import check_widget_unique
-from utils.check_folder_content import return_folder_content
 from utils.alert_dialogs.new_canvas import new_canvas_alert_dlg
 from models.app import app
 from models.isolated_controls.expansion_tile import IsolatedExpansionTile
@@ -496,7 +495,7 @@ class TreeViewDirectory(ft.GestureDetector):
             self.p.pop_dialog()
             match tag:
                 case "folder":
-                    self.story.create_folder(directory_path=self.full_path, name=title)
+                    await self.story.create_folder(directory_path=self.full_path, name=title)
                 case _:
                     await self.story.create_widget(directory_path=self.full_path, title=title, tag=tag)
 
@@ -507,25 +506,6 @@ class TreeViewDirectory(ft.GestureDetector):
             self.update()
 
     
-
-    def folder_submit(self, e):
-        # Get our name and check if its unique
-        name = e.control.value
-
-        # Set submitting to True
-        self.are_submitting = True
-
-        # If it is, call the rename function. It will do everything else
-        if self.item_is_unique:
-            self.story.create_folder(
-                directory_path=self.full_path,
-                name=name,
-            )
-            
-        # Otherwise make sure we show our error
-        #else:
-            #self.new_item_textfield.focus()                                  # Auto focus the textfield
-            #self.update()
 
     # Called when rename button is clicked
     async def rename_clicked(self, e):
@@ -608,13 +588,13 @@ class TreeViewDirectory(ft.GestureDetector):
                     new_path=new_path
                 )
 
-                self.story.blocker.visible = True
-                self.story.blocker.update()
-                await asyncio.sleep(0)
+                #self.story.blocker.visible = True
+                #self.story.blocker.update()
+                #await asyncio.sleep(0)
                 self.story.active_rail.reload_rail()
                 self.p.pop_dialog()
-                self.story.blocker.visible = False
-                self.story.blocker.update()
+                #self.story.blocker.visible = False
+                #self.story.blocker.update()
                 
                 
             # Otherwise make sure we show our error
@@ -692,24 +672,13 @@ class TreeViewDirectory(ft.GestureDetector):
             self.p.pop_dialog()
             self.story.delete_folder(self.full_path)
 
-        # Called to add our folder contents to the confirmation dialog
-        def _return_folder_content() -> ft.Control:
-            ''' Returns our folder/directories sub-folders and widgets so users are aware of what all they're deleting '''
-
-            column = ft.Column([], tight=True, spacing=0)
-
-            return_folder_content(self.full_path, self.story, column)
-            
-            # If empty folder, make the dialog smaller by returning None
-            return column
             
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Are you sure you want to delete folder {self.title} forever? This will also delete the following Items:", weight=ft.FontWeight.BOLD),
+            title=ft.Text(f"Are you sure you want to delete folder {self.title} forever?", weight=ft.FontWeight.BOLD),
             alignment=ft.Alignment.CENTER,
             title_padding=ft.Padding.all(25),
-            content=_return_folder_content(),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click") ),

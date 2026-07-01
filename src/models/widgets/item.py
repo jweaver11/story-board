@@ -15,11 +15,6 @@ class Item(Widget):
     # Constructor
     def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_new: bool = False):
 
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-
         # Initialize from our parent class 'Widget'. 
         super().__init__(
             title = title,                      
@@ -30,18 +25,16 @@ class Item(Widget):
         )
         self.body_container.padding = ft.Padding.all(10)
 
-        verify_data(
-            self,   # Pass in our own data so the function can see the actual data we loaded
-            {
+         # If we're new, give default values for our data 
+        if self.is_new == True:
+            self.data.update({
                 # Widget data
                 'key': f"{self.directory_path}\\{return_safe_name(self.title)}_item", 
                 'tag': "item",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('default_item_color'),
-                'pin_location': app.settings.data.get('default_item_pin_location', "right") if data is None else data.get('pin_location', "right"),   # Default pin location for items
 
-                'edit_mode': True,      # Whether we are in edit mode or not
                 'image_base64': str, 
-                'Description': str,
+                'description': str,
 
                 # Item data - list of segments with title and string
                 'item_data': [
@@ -60,10 +53,7 @@ class Item(Widget):
             },
         )
 
-        # Saving creates the file if we're new
-        if is_new:
-            self.needs_file_write = True
-            self.page.run_task(self.save_file)
+        
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -177,10 +167,10 @@ class Item(Widget):
             )
 
         description_text_field = TextField(
-            self.data.get('Description', ""),
+            self.data.get('description', ""),
             multiline=True, expand=True,
             capitalization=ft.TextCapitalization.SENTENCES, 
-            on_blur=lambda e: self.update_data(**{'Description': e.control.value})
+            on_blur=lambda e: self.update_data(**{'description': e.control.value})
         )
 
 
@@ -202,7 +192,7 @@ class Item(Widget):
                         upload_image_button, 
                         ft.Column([
                             ft.Row([
-                                ft.Text(f"Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
+                                ft.Text(f"description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
                                 ft.IconButton(
                                     tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), 
                                     on_click=self._edit_mode_clicked, mouse_cursor="click"
@@ -309,7 +299,7 @@ class Item(Widget):
 
         description_section = ft.Column([
             ft.Row([
-                ft.Text(f"Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
+                ft.Text(f"description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
                 ft.IconButton(
                     tooltip="Edit Mode", icon=ft.Icons.EDIT_OUTLINED, icon_color=self.data.get('color', None), 
                     on_click=self._edit_mode_clicked, mouse_cursor="click"
@@ -317,7 +307,7 @@ class Item(Widget):
             ]),
             ft.Container(
                 ft.Text(
-                    f"{self.data.get('Description', '')}", expand=True, size=16
+                    f"{self.data.get('description', '')}", expand=True, size=16
                 ), margin=ft.Margin.only(right=16)), # Forces container to take up space
             
         ], expand=True, spacing=0)

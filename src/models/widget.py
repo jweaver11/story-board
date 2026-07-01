@@ -184,6 +184,7 @@ class Widget(ft.Container):
                 self.needs_file_write = False   # Mark as clean
                 self.is_new = False   # Mark as not new anymore
             except Exception as e:
+                print(f"Error saving widget {self.title} to file: {e}")
                 self.page.show_dialog(SnackBar(f"Error saving widget {self.title} to file: {e}"))
             
     # Called when moving widget files
@@ -314,35 +315,36 @@ class Widget(ft.Container):
         if not self.visible:
             return
         
-        self.story.blocker.visible = True
-        self.story.blocker.update()
-        await asyncio.sleep(0)  # Spaces update so the page won't batch them
+        #self.story.blocker.visible = True
+        #self.story.blocker.update()
+        #await asyncio.sleep(0)  # Spaces update so the page won't batch them
         
         self.update_data(**{'visible': False})
 
         self.story.workspace.reload_workspace()   # Reload workspace to hide the widget and show the placeholder in its pin location
 
-        self.story.blocker.visible = False
-        self.story.blocker.update()
+        #self.story.blocker.visible = False
+        #self.story.blocker.update()
 
     # Called to show the widget in the workspace
     async def show_widget(self, e=None):
         ''' Shows this widget in the workspace if it is hidden '''
 
-        self.story.blocker.visible = True
-        self.story.blocker.update()
-        await asyncio.sleep(0)
+        #self.story.blocker.visible = True
+        #self.story.blocker.update()
+        #await asyncio.sleep(0)
         
         self.visible = True
         self.update_data(**{'visible': True, 'index': 999})
+        self.story.update_data(**{'workspace_selected_index': len(self.story.workspace.main_pin)}) 
 
         await self.save_file()  # We lose state tracking upon being shown since we get rebuilt, so force a save
 
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
         
-        if self.story.blocker.visible:
-            self.story.blocker.visible = False
-            self.story.blocker.update()
+        #if self.story.blocker.visible:
+            #self.story.blocker.visible = False
+            #self.story.blocker.update()
         
 
     # Called when right clicking our tab
@@ -401,9 +403,9 @@ class Widget(ft.Container):
 
             name = text_field.value.strip()
 
-            self.story.blocker.visible = True
-            self.story.blocker.update()
-            await asyncio.sleep(0)
+            #self.story.blocker.visible = True
+            #self.story.blocker.update()
+            #await asyncio.sleep(0)
                                                     
             # Update our live title, and associated data
             self.title = name.capitalize()                              
@@ -412,9 +414,9 @@ class Widget(ft.Container):
                     
             self.story.active_rail.reload_rail()  
             self.story.workspace.reload_workspace()   # Reload workspace to update tab title and sorting if needed 
-            if self.story.blocker.visible:
-                self.story.blocker.visible = False
-                self.story.blocker.update()
+            #if self.story.blocker.visible:
+                #self.story.blocker.visible = False
+                #self.story.blocker.update()
             e.page.pop_dialog()
                 
             
@@ -461,9 +463,9 @@ class Widget(ft.Container):
             self.update_data(**{'color': color})
             await self.save_file()  # Force a file save to persist the color change
 
-            self.story.blocker.visible = True
-            self.story.blocker.update()
-            await asyncio.sleep(0)
+            #self.story.blocker.visible = True
+            #self.story.blocker.update()
+            #await asyncio.sleep(0)
             
             # Change our icon to match, apply the update
             if hasattr(self, 'information_display'):
@@ -474,9 +476,9 @@ class Widget(ft.Container):
             self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
             await self.story.close_menu()
 
-            if self.story.blocker.visible:
-                self.story.blocker.visible = False
-                self.story.blocker.update()
+            #if self.story.blocker.visible:
+                #self.story.blocker.visible = False
+                #self.story.blocker.update()
 
         # List for our colors when formatted
         color_controls = [] 
@@ -500,20 +502,21 @@ class Widget(ft.Container):
 
         async def _delete_confirmed(e=ft.Event):
             ''' Deletes the widget after confirmation '''
-            self.story.blocker.visible = True
-            self.story.blocker.update()
-            await asyncio.sleep(0)
+            #self.story.blocker.visible = True
+            #self.story.blocker.update()
+            #await asyncio.sleep(0)
 
-            e.page.pop_dialog()
+            
             if await self.delete_file():
                 self.story.widgets.pop(self.data.get('id', ''), None)   # Remove ourselves from the story's widgets
                 
             self.story.active_rail.reload_rail()    # Reload the rail to reflect the deletion
             self.story.workspace.reload_workspace()
 
-            if self.story.blocker.visible:
-                self.story.blocker.visible = False
-                self.story.blocker.update()
+            #if self.story.blocker.visible:
+                #self.story.blocker.visible = False
+                #self.story.blocker.update()
+            e.page.pop_dialog()
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(

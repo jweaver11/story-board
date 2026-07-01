@@ -30,7 +30,7 @@ class Note(Widget):
                 'color': app.settings.data.get('default_note_color'),
 
                 # Note segment data. Stored as list so we can duplicate titles
-                'segment_data': [
+                'segment_data': [ 
                     {"title": "", "content": ""},
                 ]
             })
@@ -39,7 +39,6 @@ class Note(Widget):
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def build(self):
         ''' Reloads/Rebuilds our widget based on current data '''
-
 
         # Run any constistant build from parent class, like setting up the tab
         self.create_tab()
@@ -59,6 +58,10 @@ class Note(Widget):
             self.update_data(**{'segment_data': self.data['segment_data']})
             segments_column.controls.append(new_segment_textfield(len(self.data['segment_data']) - 1, self.new_segment_tf.value, ""))
             segments_column.update()
+            self.new_segment_tf.value = ""
+            self.new_segment_tf.update()
+            add_segment_button.visible = True
+            add_segment_button.update()
 
         # Deletes a segment from data and our column
         async def delete_segment(e: ft.Event):
@@ -103,9 +106,8 @@ class Note(Widget):
 
         # Show the textfield to label the new segment
         async def _create_new_segment_clicked(e):
-            if self.new_segment_tf.visible:
-                await create_segment()
-                return
+            add_segment_button.visible = False
+            add_segment_button.update()
             self.new_segment_tf.value = ""
             self.new_segment_tf.visible = True
             self.new_segment_tf.label = "New Segment Label"
@@ -116,13 +118,15 @@ class Note(Widget):
         async def _hide_new_segment_tf(e):
             self.new_segment_tf.visible = False
             self.new_segment_tf.update()
+            add_segment_button.visible = True
+            add_segment_button.update()
 
         # Button to click to add a new segment
         add_segment_button = ft.Button(
             "New Segment", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
             tooltip="Add a new segment to your note.", 
             on_click=_create_new_segment_clicked, 
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=30)),
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
         )
 
         self.new_segment_tf = ft.TextField(
@@ -139,7 +143,6 @@ class Note(Widget):
                 add_segment_button, 
             ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
         ], alignment=ft.Alignment.TOP_RIGHT, expand=True)
-
 
     def reload_widget(self):    # TEMP TO PREVENT ERRORS FROM CALLS
         return

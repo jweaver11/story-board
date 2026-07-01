@@ -19,11 +19,6 @@ class CharacterConnectionMap(Widget):
     # Constructor
     def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
 
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-
         # Parent class constructor
         super().__init__(
             title = title,  
@@ -33,10 +28,9 @@ class CharacterConnectionMap(Widget):
             is_new = is_new
         )
 
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            object=self,   # Pass in our own data so the function can see the actual data we loaded
-            required_data={
+        # If we're new, give default values for our data 
+        if self.is_new == True:
+            self.data.update({
                 # Widget data
                 'tag': "character_connection_map",
                 'color': app.settings.data.get('default_character_connection_map_color'),
@@ -56,11 +50,6 @@ class CharacterConnectionMap(Widget):
             },
         )
 
-
-        # Saving creates the file if we're new
-        if is_new:
-            self.needs_file_write = True
-            self.page.run_task(self.save_file)
     
         # State tracking
         self.char1: str = None
@@ -72,9 +61,6 @@ class CharacterConnectionMap(Widget):
         self.cs_width: int = 0
         self.cs_height: int = 0
         
-        # Requires all widgets to be loaded first, so story calls reload_widget first
-        if self.visible:
-            self.reload_widget()
 
     class CharacterNode(ft.GestureDetector):
         def __init__(self, char_id: str, widget: 'CharacterConnectionMap', color, char_name: str, image: str, position: tuple=None):
@@ -604,7 +590,7 @@ class CharacterConnectionMap(Widget):
     
 
     # Called after any changes happen to the data that need to be reflected in the UI
-    def reload_widget(self):
+    def build(self):
         ''' Reloads/Rebuilds our widget based on current data '''
         
         # Set size of stack needed for ratios
@@ -694,11 +680,10 @@ class CharacterConnectionMap(Widget):
                 
             )
 
-        # Set our content to the body_container (from Widget class) as the body we just built
-        self.body_container.content = self.connections_stack
 
-        self._render_widget()
+        self.content = self.connections_stack
             
+    def reload_widget(self):    # TEMP TO PREVENT ERRORS FROM CALLS
+        return
 
-
-# READY FOR BUILD
+# DONE BUILD

@@ -28,11 +28,6 @@ class Story(ft.View):
         type: str=None          # Type of story (novel, comic, etc.)
     ):
         
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-        
         # Parent constructor
         super().__init__(
             route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
@@ -46,36 +41,28 @@ class Story(ft.View):
         self.type = type                # Type of story, novel or comic. Affects how templates for creating new content will work
 
         # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,           # Pass in our own data so the function can see the actual data we loaded
-            {
+        if data is None:
+            self.is_new = True
+            self.data = {
                 'title': self.title,
                 'directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}_story")),
                 'tag': "story",
                 'selected_rail': "content",
-                'main_pin_selected_idx': 0,   # Index of the selected widget in the main pin, used for switching between tabs in the main pin
+                'workspace_selected_index': 0,   # Index of the selected widget in the main pin, used for switching between tabs in the main pin
                 'content_directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}_story"), "content"),
-                'top_pin_height': 200,
-                'left_pin_width': 230,
-                'main_pin_height': int,
-                'right_pin_width': 230,
-                'bottom_pin_height': 200,
+                
                 'created_at': str,
                 'last_modified': str,
 
+                # Sort methods for our specialized rails
                 'character_rail_sort_method': "Index",
                 'character_rail_sort_direction': "Ascending",
+
                 'plotline_rail_sort_method': "Index",
                 'plotline_rail_sort_direction': "Ascending",
+
                 'world_building_rail_sort_method': "Index",
                 'world_building_rail_sort_direction': "Ascending",
-                
-                'settings': {
-                    'type': self.type,             # Novel or comic. Affects templates and default data for new content
-                    'active_character_template': str,    # Which template is being used for new characters
-                    'multi_planetary': bool,       # Whether the story will take place on multiple planets
-                    'multi_plotlines': bool,       # Whether the story will have multiple plotlines (regression, multiverse, etc.)
-                },
                 
                 # Dict of all our categories INSIDE of basic story structure (content, characters, plotlines)
                 'folders': {
@@ -85,12 +72,9 @@ class Story(ft.View):
                         'is_expanded': True     # Whether this folder is expanded in the tree view
                     }
                 },            
-
-            },
-        )
-
-        if is_new:
-            page.run_task(self.save_file)
+            }
+        else:
+            self.is_new = False
 
         # Variables to store our mouse position for opening menus
         self.mouse_x: int = 0
@@ -202,34 +186,36 @@ class Story(ft.View):
             # Delete the folder from storage
             shutil.rmtree(full_path)
 
+
             # Delete any widgets that were in this folder or its sub-folders.
             # Iterate a copy so removing items mid-loop doesn't skip entries.
-            for widget in self.widgets.copy():
-                widget_dir_norm = os.path.normcase(os.path.normpath(widget.data.get('directory_path')))
+            for widget_id, widget in list(self.widgets.items()):
+                widget_dir = widget.data.get('directory_path')
+                if not widget_dir:
+                    continue
+
+                widget_dir_norm = os.path.normcase(os.path.normpath(widget_dir))
                 if widget_dir_norm == full_norm or widget_dir_norm.startswith(full_norm + os.sep):
-                    if widget.data.get('id', None) in self.widgets:
-                        del self.widgets[widget.data['id']]
-                    #if widget in self.widgets:
-                        #self.widgets.remove(widget)
+                    self.widgets.pop(widget_id, None)            
 
             # Remove this folder and every sub-folder from story data
-            for folder in self.data['folders'].copy():
-                folder_norm = os.path.normcase(os.path.normpath(folder))
+            for folder_path in list(self.data['folders'].keys()):
+                folder_norm = os.path.normcase(os.path.normpath(folder_path))
                 if folder_norm == full_norm or folder_norm.startswith(full_norm + os.sep):
-                    self.data['folders'].pop(folder, None)
+                    self.data['folders'].pop(folder_path, None)
 
             # Save AFTER all data has been cleaned up so nothing orphaned persists
-            self.page.run_task(self.update_data, **{'folders': self.data['folders']})   
+            self.update_data(**{'folders': self.data['folders']})   
 
-            self.blocker.visible = True
-            self.blocker.update()
-            self.page.run_task(asyncio.sleep, 0)
+            #self.blocker.visible = True
+            #self.blocker.update()
+            #self.page.run_task(asyncio.sleep, 0)
 
             self.active_rail.reload_rail()
             self.workspace.reload_workspace()
             self.close_menu_instant()
-            self.blocker.visible = False
-            self.blocker.update()
+            #self.blocker.visible = False
+            #self.blocker.update()
 
         # Handle errors
         except Exception as e:
@@ -528,10 +514,10 @@ class Story(ft.View):
         from models.widgets.plot_chart import PlotChart
         from models.app import app
 
-        if not self.blocker.visible:
-            self.blocker.visible = True
-            self.blocker.update()
-            await asyncio.sleep(0)   # Wait for blocker to update before creating the new item, which will update the UI again
+        #if not self.blocker.visible:
+            #self.blocker.visible = True
+            #self.blocker.update()
+            #await asyncio.sleep(0)   # Wait for blocker to update before creating the new item, which will update the UI again
 
         if directory_path is None:
             directory_path = self.data.get('content_directory_path',  '')
@@ -581,7 +567,7 @@ class Story(ft.View):
         self.widgets[widget.data['id']] = widget        
 
         # Finish tasks creating widget to make sure the file has enough time to save
-        self.update_data(**{'main_pin_selected_idx': len(self.workspace.main_pin)})  
+        self.update_data(**{'workspace_selected_index': len(self.workspace.main_pin)})  
         self.workspace.reload_workspace()
         #if not no_delay:
             #await asyncio.sleep(0.2)   
@@ -591,9 +577,9 @@ class Story(ft.View):
         
     
         # Unhide the blocker
-        if self.blocker.visible:
-            self.blocker.visible = False
-            self.blocker.update()
+        #if self.blocker.visible:
+            #self.blocker.visible = False
+            #self.blocker.update()
 
 
     def rebuild_widget(self, widget) -> ft.Control:
@@ -804,6 +790,9 @@ class Story(ft.View):
         from ui.workspace import Workspace
         from models.app import app
         from models.isolated_controls.row import IsolatedRow
+
+        if self.is_new:
+            self.page.run_task(self.save_file)
 
         # Declare the story loaded for loading purposes
         if self.is_initialized:

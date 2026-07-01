@@ -83,7 +83,7 @@ class Workspace(ft.Container):
             from models.widgets.canvas import Canvas
 
             # Save new selected index
-            self.story.update_data(**{'main_pin_selected_idx': e.data})
+            self.story.update_data(**{'workspace_selected_index': e.data})
 
             for idx, w in enumerate(self.main_pin):
                 if idx == e.data:
@@ -94,11 +94,13 @@ class Workspace(ft.Container):
                 if isinstance(w, Canvas):
                     w.skip_first_resize = True
 
+        sel_idx = int(self.story.data.get('workspace_selected_index', 0))
+
         # Tabs that hold our workspace
         tabs = ft.Tabs(
             expand=True, 
             length=len(self.main_pin),
-            #selected_index=int(self.story.data.get('main_pin_selected_idx', 0)),    # Set the selected index from our data
+            selected_index=sel_idx if sel_idx < len(self.main_pin) else len(self.main_pin) - 1,  
             on_change=tab_change,
             animation_duration=100,
             content=ft.Column([
@@ -117,23 +119,24 @@ class Workspace(ft.Container):
 
         # Check our last widget. If its index is 999, it was just added and needs its data updated
         if self.main_pin[-1].data.get('index', -1) == 999:   
-            tabs.selected_index = len(self.main_pin) - 1    # Set the selected index
-            self.story.data['main_pin_selected_idx'] = len(self.main_pin) - 1 
-            self.story.update_data(**{'main_pin_selected_idx': len(self.main_pin) - 1})  # Update our story data to reflect the new selected index
-            tabs.content.controls[0].indicator_color = self.main_pin[-1].data.get('color', ft.Colors.ON_SURFACE_VARIANT)
+            #tabs.selected_index = len(self.main_pin) - 1    # Set the selected index
+            #self.story.data['workspace_selected_index'] = len(self.main_pin) - 1 
+            #self.story.update_data(**{'workspace_selected_index': len(self.main_pin) - 1})  # Update our story data to reflect the new selected index
+            #tabs.content.controls[0].indicator_color = self.main_pin[-1].data.get('color', ft.Colors.ON_SURFACE_VARIANT)
+            pass
             
 
         else:
             for widget in self.main_pin:
-                if widget.data.get('index', -1) == self.story.data.get('main_pin_selected_idx', 0):
+                if widget.data.get('index', -1) == self.story.data.get('workspace_selected_index', 0):
                     tabs.content.controls[0].indicator_color = widget.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
                     tabs.selected_index = widget.data.get('index', 0)
                     break
 
         # If our selected index is out of range (The active tab was last and just hidden), make the last tab active
-        if int(self.story.data.get('main_pin_selected_idx', 0)) >= len(self.main_pin):
+        if int(self.story.data.get('workspace_selected_index', 0)) >= len(self.main_pin):
             tabs.selected_index = len(self.main_pin) - 1
-            self.story.update_data(**{'main_pin_selected_idx': len(self.main_pin) - 1})  # Update our story data to reflect the new selected index
+            self.story.update_data(**{'workspace_selected_index': len(self.main_pin) - 1})  # Update our story data to reflect the new selected index
 
 
         # Set our tabs as the content

@@ -23,11 +23,6 @@ class World(Widget):
 
     # Constructor
     def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
-
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
         
         # Initialize from our parent class 'Widget'. 
         super().__init__(
@@ -37,21 +32,19 @@ class World(Widget):
             data = data,  
             is_new = is_new  
         )
-        #self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
         
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            self,   # Pass in our own data so the function can see the actual data we loaded
-            {
+        # If we're new, give default values for our data 
+        if self.is_new == True:
+            self.data.update({
                 # Widget data
                 'tag': "world",     
                 'color': app.settings.data.get('default_world_color'),   
 
                 # State and view data
                 'edit_mode': True,              # Whether we are in edit mode or not
-                'image_base64': str,            # Saves our image as img64 string
+                'image_base64': str(),            # Saves our image as img64 string
 
-                'About': str,
+                'About': str(),
 
                 # World data
                 'world_data': app.settings.data.get('world_templates', {}).get(app.settings.data.get('active_world_template', ""), default_world_template_data_dict()) 
@@ -59,14 +52,6 @@ class World(Widget):
             }
         )
  
-        # Saving creates the file if we're new
-        if is_new:
-            self.needs_file_write = True
-            self.page.run_task(self.save_file)
-      
-        if self.visible:
-            self.reload_widget()         # Build our widget if it's visible on init
-    
 
     # Called to find a canvas and load a snapshot from all its layers
     def _set_canvas_snapshot(self, canvas_key: str) -> str:
@@ -108,9 +93,10 @@ class World(Widget):
         return base64.b64encode(output.getvalue()).decode("utf-8")
 
     # Called after any changes happen to the data that need to be reflected in the UI
-    def reload_widget(self): #this is the edit view currently
+    def build(self): #this is the edit view currently
         ''' Reloads/Rebuilds our widget based on current data '''
 
+        self.padding = ft.Padding.all(16)   # Set padding
 
         # Rebuild out tab to reflect any changes
         self.create_tab()
@@ -161,20 +147,24 @@ class World(Widget):
                             self.data['world_data'][sub_key][key] = value
                             break
             
-            self.update_data(**{'world_data': self.data['world_data']})  # Update our data with the new world data dict 
+            self.update_data(**{'world_data': self.data['world_data']})  # Save our updated world data dict
         
         # Called by button to create a new section. Just shows our text field to enter the section name
         async def new_section_clicked(e: ft.Event=None):
-            nonlocal new_section_tf
+            nonlocal new_section_tf, new_section_button
+            new_section_button.visible = False
             new_section_tf.visible = True
             new_section_tf.value = ""
             new_section_tf.error = None
             new_section_tf.update()
             await new_section_tf.focus()
+            new_section_button.update()
 
         # Called when bluring the new section text field
         async def hide_new_section_tf(e: ft.Event=None):
-            nonlocal new_section_tf
+            nonlocal new_section_tf, new_section_button
+            new_section_button.visible = True
+            new_section_button.update()
             new_section_tf.visible = False
             new_section_tf.value = ""
             new_section_tf.error = None
@@ -199,7 +189,7 @@ class World(Widget):
             
             # Otherwise we passed checks, add it to data
             self.data['world_data'][section_name] = {}
-            self.update_data(**{'world_data': self.data['world_data']})  # Update our data with the new world data dict
+            self.update_data(**{'world_data': self.data['world_data']})  # Save our updated world data dict 
 
             # Add new label for the section name
             body.controls.append(
@@ -211,6 +201,9 @@ class World(Widget):
                         data=section_name
                     ),
                 ], spacing=0, data=section_name))
+            
+            new_section_button.visible = True
+            new_section_button.update()
             
             # Add new container for the section info
             body.controls.append(
@@ -243,7 +236,7 @@ class World(Widget):
             nonlocal body
             section = e.control.data
             del self.data['world_data'][section]
-            self.update_data(**{'world_data': self.data['world_data']})  # Update our data with the new world data dict
+            self.update_data(**{'world_data': self.data['world_data']})  # Save our updated world data dict
 
             # Grab the body's column control to remove the label and section container from the UI and update
             for ctrl in reversed(body.controls): # Work backwards so we don't skip any controls when removing
@@ -253,7 +246,9 @@ class World(Widget):
 
         async def new_field_clicked(e: ft.Event):
             ''' Opens the new field text field when clicking the add new field button on a section '''
-            nonlocal new_field_tf
+            nonlocal new_field_tf, new_section_button
+            new_section_button.visible = False
+            new_section_button.update()
             section = e.control.data
             new_field_tf.data = section   # Set the section as data on the text field so we know which section to add the field to when we submit
             new_field_tf.visible = True
@@ -277,9 +272,8 @@ class World(Widget):
                 self.page.show_dialog(SnackBar("Field name already exists or is invalid!"))
                 return
             
-            
-            
-            self.needs_file_write = True
+            # Save and reload
+            self.update_data(**{'world_data': self.data['world_data']})  # Save our updated world data dict
             
             # Add new field to the UI
             # Find the parent column for this section so we can add field info to it
@@ -289,14 +283,14 @@ class World(Widget):
                     parent_column = ctrl.content
             if not parent_column:
                 return
-        
+            
             
             # Set new control to add
             row_ctrl = ft.Row(spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
 
             # Add text label for the field name
             row_ctrl.controls.append(
-                ft.Text(f"{field_name}:\t", size=16, selectable=True, weight=ft.FontWeight.BOLD,)
+                ft.Text(f"{field_name}:\t", size=16, selectable=True, weight=ft.FontWeight.BOLD)
             )
             # Add textfield we can change
             row_ctrl.controls.append(
@@ -316,10 +310,15 @@ class World(Widget):
                     tooltip=f"Delete Field: {field_name}", 
                 )
             )
+            # If this is the first field being added, remove the no fields text and delete section button
             if empty_section:   
                 parent_column.controls.pop(0)
             parent_column.controls.append(row_ctrl)
             parent_column.update()  
+
+            new_section_button.visible = True
+            new_section_button.update()
+
 
         # Deletes a field from our world data dict
         async def delete_field(e: ft.Event):
@@ -327,7 +326,7 @@ class World(Widget):
             section, key = e.control.data
 
             del self.data['world_data'][section][key]
-            self.update_data(**{'world_data': self.data['world_data']})  # Update our data with the new world data dict
+            self.update_data(**{'world_data': self.data['world_data']})  # Save our updated world data dict
 
             # Reference the column that holds this field in case we're the last field being deleted so we can reference it later
             body = e.control.parent.parent 
@@ -352,7 +351,9 @@ class World(Widget):
 
         # Hides the new field text field when it loses focus
         async def hide_new_field_tf(e: ft.Event):
-            nonlocal new_field_tf
+            nonlocal new_field_tf, new_section_button
+            new_section_button.visible = True
+            new_section_button.update()
             new_field_tf.visible = False
             new_field_tf.value = ""
             new_field_tf.error = None
@@ -463,7 +464,7 @@ class World(Widget):
                 
             ], spacing=0),
             ft.TextField(
-                self.data.get('About', ""), on_blur=lambda e: update_world_data(**{"About": e.control.value}), expand=True, 
+                self.data.get('about', ""), on_blur=lambda e: self.update_data(**{"about": e.control.value}), expand=True, 
                 dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
                 border_color=ft.Colors.OUTLINE_VARIANT, margin=ft.Margin.only(right=10),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=10,
@@ -489,30 +490,33 @@ class World(Widget):
         # Load in our world data controls after the header
         body.controls.extend(_load_world_data_controls())
 
+        new_section_button = ft.Button(
+            "New Section", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+            on_click=new_section_clicked,
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
+        )
+
         new_section_tf = ft.TextField(
             autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.WORDS, visible=False,
-            on_submit=create_new_section, on_blur=hide_new_section_tf, dense=True
+            on_submit=create_new_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE_CONTAINER,
         )
 
         new_field_tf = ft.TextField(
             label="New Field Name", capitalization=ft.TextCapitalization.SENTENCES, visible=False,
-            on_submit=create_new_field, on_blur=hide_new_field_tf, dense=True,
+            on_submit=create_new_field, on_blur=hide_new_field_tf, dense=True, bgcolor=ft.Colors.SURFACE_CONTAINER,
             #data=section   # Gets set when we click the new field button for a specific section
         )
 
-        self.body_container.content = ft.Column([
+        self.content = ft.Stack([
             body,
-            ft.Divider(2, 2),
-            ft.Row([
-                ft.TextButton(
-                    "Add New Section", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                    on_click=new_section_clicked,
-                    style=ft.ButtonStyle(self.data.get('color', ft.Colors.PRIMARY), mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-                ),
-            new_section_tf, new_field_tf
-            ])
-        ], expand=True, spacing=0)
+            ft.Column([
+                new_section_button,
+                new_section_tf, 
+                new_field_tf
+            ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
+        ], alignment=ft.Alignment.TOP_RIGHT, expand=True)
 
-        self._render_widget()
+    def reload_widget(self):    # TEMP TO PREVENT ERRORS FROM CALLS
+        return
 
-# READY FOR BUILD
+# DONE BUILD

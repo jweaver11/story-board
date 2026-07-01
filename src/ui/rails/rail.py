@@ -135,22 +135,22 @@ class Rail(IsolatedColumn):
             return
 
         # Call the move file using the new directory path
-        self.story.blocker.visible = True
-        self.story.blocker.update()
+        #self.story.blocker.visible = True
+        #self.story.blocker.update()
         
 
         if self.p.run_task(widget.move_file, new_directory):
-            self.story.blocker.visible = False
-            self.story.blocker.update()
+            #self.story.blocker.visible = False
+            #self.story.blocker.update()
             return
         
         else:
 
             # Update the background color
             e.control.content.bgcolor = ft.Colors.with_opacity(0.0, ft.Colors.ON_SURFACE)
-            e.control.content.update()
-            self.story.blocker.visible = False
-            self.story.blocker.update()
+            #e.control.content.update()
+            #self.story.blocker.visible = False
+            #self.story.blocker.update()
 
 
     # Called when new category button or menu option is clicked
@@ -237,8 +237,8 @@ class Rail(IsolatedColumn):
         # If our new title unique (check from on_new_item_change), create the new item
         if self.item_is_unique:
 
-            self.story.blocker.visible = True 
-            self.story.blocker.update()
+            #blocker.visible = True 
+            #self.story.blocker.update()
             self.p.pop_dialog()   # Close the textfield dialog
             await asyncio.sleep(0)   # Wait for the dialog to close before creating the new
 
@@ -267,9 +267,9 @@ class Rail(IsolatedColumn):
                     # Create the widget and reload all our rails
                     await self.story.create_widget(title, tag, chart_type=chart_type if tag == "chart" else None)
 
-            if self.story.blocker.visible:
-                self.story.blocker.visible = False
-                self.story.blocker.update()
+            #if self.story.blocker.visible:
+                #self.story.blocker.visible = False
+                #self.story.blocker.update()
 
 
 

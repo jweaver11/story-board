@@ -28,13 +28,6 @@ class Character(Widget):
     # Constructor
     def __init__(self, name: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
 
-        # Check if we're new and need to create file
-        is_new = False
-        if data is None:
-            is_new = True
-        elif data.get('tag', None) is None:   # Since chars have data passed in from templates, check something else to determine if new or not
-            is_new = True
-
         # Parent class constructor
         super().__init__(
             title = name,  
@@ -43,48 +36,37 @@ class Character(Widget):
             data = data,   
             is_new = is_new 
         )
-        #self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
 
-
-        # Verifies this object has the required data fields, and creates them if not
-        verify_data(
-            object=self,   # Pass in our own data so the function can see the actual data we loaded
-            required_data={
+        # If we're new, give default values for our data 
+        if self.is_new == True:
+            self.data.update({
                 # Widget data
                 'tag': "character",
-                'pin_location': "left" if data is None else data.get('pin_location', "left"),     # Start our characters on the left pin
                 'color': app.settings.data.get('default_character_color'),
  
                 # State and view data
-                'image_base64': str,    # Saves our icon as img64 string 
+                'image_base64': str(),    # Saves our icon as img64 string 
 
                 # Character data
-                'About': "",
+                'about': "",
                 # If this dict doesn't exist, we create it with our active template data. If we fail to pull that, we use a default template (which has quite a lot)
                 'character_data': app.settings.data.get('character_templates', {}).get(app.settings.data.get('active_character_template', ""), default_character_template_data_dict()) 
                 if data is None or 'character_data' not in data else data['character_data'],
 
                 'charts': {}
-            },
-        ) 
+            }) 
 
-        # Saving creates the file if we're new
-        if is_new:
-            self.needs_file_write = True
-            self.page.run_task(self.save_file)
- 
-
-        if self.visible:
-            self.reload_widget()         # Build our widget if it's visible on init
+        
 
 
     # TODO: RENAME AND DELETE Will need to be unique here, to alter ccm and connections that used our old name and key
         
 
     # Called after any changes happen to the data that need to be reflected in the UI
-    def reload_widget(self): #this is the edit view currently
+    def build(self): #this is the edit view currently
         ''' Reloads/Rebuilds our widget based on current data '''
 
+        self.padding = ft.Padding.all(16)   # Set padding
 
         # Rebuild out tab to reflect any changes
         self.create_tab()
@@ -139,16 +121,20 @@ class Character(Widget):
         
         # Called by button to create a new section. Just shows our text field to enter the section name
         async def new_section_clicked(e: ft.Event=None):
-            nonlocal new_section_tf
+            nonlocal new_section_tf, new_section_button
+            new_section_button.visible = False
             new_section_tf.visible = True
             new_section_tf.value = ""
             new_section_tf.error = None
             new_section_tf.update()
             await new_section_tf.focus()
+            new_section_button.update()
 
         # Called when bluring the new section text field
         async def hide_new_section_tf(e: ft.Event=None):
-            nonlocal new_section_tf
+            nonlocal new_section_tf, new_section_button
+            new_section_button.visible = True
+            new_section_button.update()
             new_section_tf.visible = False
             new_section_tf.value = ""
             new_section_tf.error = None
@@ -185,6 +171,9 @@ class Character(Widget):
                         data=section_name
                     ),
                 ], spacing=0, data=section_name))
+            
+            new_section_button.visible = True
+            new_section_button.update()
             
             # Add new container for the section info
             body.controls.append(
@@ -227,7 +216,9 @@ class Character(Widget):
 
         async def new_field_clicked(e: ft.Event):
             ''' Opens the new field text field when clicking the add new field button on a section '''
-            nonlocal new_field_tf
+            nonlocal new_field_tf, new_section_button
+            new_section_button.visible = False
+            new_section_button.update()
             section = e.control.data
             new_field_tf.data = section   # Set the section as data on the text field so we know which section to add the field to when we submit
             new_field_tf.visible = True
@@ -295,6 +286,9 @@ class Character(Widget):
             parent_column.controls.append(row_ctrl)
             parent_column.update()  
 
+            new_section_button.visible = True
+            new_section_button.update()
+
 
         # Deletes a field from our character data dict
         async def delete_field(e: ft.Event):
@@ -327,7 +321,9 @@ class Character(Widget):
 
         # Hides the new field text field when it loses focus
         async def hide_new_field_tf(e: ft.Event):
-            nonlocal new_field_tf
+            nonlocal new_field_tf, new_section_button
+            new_section_button.visible = True
+            new_section_button.update()
             new_field_tf.visible = False
             new_field_tf.value = ""
             new_field_tf.error = None
@@ -438,7 +434,7 @@ class Character(Widget):
                 
             ], spacing=0),
             ft.TextField(
-                self.data.get('About', ""), on_blur=lambda e: update_character_data(**{"About": e.control.value}), expand=True, 
+                self.data.get('about', ""), on_blur=lambda e: self.update_data(**{"about": e.control.value}), expand=True, 
                 dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
                 border_color=ft.Colors.OUTLINE_VARIANT, margin=ft.Margin.only(right=10),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=10,
@@ -464,31 +460,33 @@ class Character(Widget):
         # Load in our character data controls after the header
         body.controls.extend(_load_character_data_controls())
 
+        new_section_button = ft.Button(
+            "New Section", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+            on_click=new_section_clicked,
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
+        )
+
         new_section_tf = ft.TextField(
             autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.WORDS, visible=False,
-            on_submit=create_new_section, on_blur=hide_new_section_tf, dense=True
+            on_submit=create_new_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE_CONTAINER,
         )
 
         new_field_tf = ft.TextField(
             label="New Field Name", capitalization=ft.TextCapitalization.SENTENCES, visible=False,
-            on_submit=create_new_field, on_blur=hide_new_field_tf, dense=True,
+            on_submit=create_new_field, on_blur=hide_new_field_tf, dense=True, bgcolor=ft.Colors.SURFACE_CONTAINER,
             #data=section   # Gets set when we click the new field button for a specific section
         )
 
-        self.body_container.content = ft.Column([
+        self.content = ft.Stack([
             body,
-            ft.Divider(2, 2),
-            ft.Row([
-                ft.Button(
-                    "Add New Section", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                    on_click=new_section_clicked,
-                    style=ft.ButtonStyle(self.data.get('color', ft.Colors.PRIMARY), mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-                ),
+            ft.Column([
+                new_section_button,
                 new_section_tf, 
                 new_field_tf
-            ])
-        ], expand=True, spacing=0)
+            ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
+        ], alignment=ft.Alignment.TOP_RIGHT, expand=True)
 
-        self._render_widget()
+    def reload_widget(self):    # TEMP TO PREVENT ERRORS FROM CALLS
+        return
 
-# READY FOR BUILD
+# DONE BUILD
