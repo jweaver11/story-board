@@ -31,38 +31,28 @@ class Widget(ft.Container):
         directory_path: str,    # Path to our directory that will contain our json file
         story: Story,           # Reference to our story object that owns this widget
         data: dict = None,       # Our data passed in if loaded (or none if new object)
-        is_rebuilt: bool = True   # Whether to verify/create data fields or not. Set to false when rebuilding
+        is_new: bool = False   # Whether to verify/create data fields or not. Set to false when rebuilding
     ):
 
         # Parent constructor to set data and other attributes
         super().__init__(data=data)
         self.title: str = title                     
-        self.directory_path: str = directory_path        
-        self.story: Story = story    
+        self.story: Story = story   
+        self.is_new = is_new 
 
-        # Set an id for the widget
-        id = self.data.get('id', None) if self.data is not None and isinstance(self.data, dict) else None
-        if id is None:
-            id = str(uuid.uuid4())            
-
-        # Verifies this object has the required data fields, and creates them if not
-        if not is_rebuilt:
-            verify_data(
-                self,   # Pass in our own data so the function can see the actual data we loaded
-                {
-                    'id': id,     # Unique ID for each widget that never changes
-                    'title': self.title,                            # Title of our widget  
-                    'directory_path': self.directory_path,          # Directory path to the file this widget's data is stored in
-                    'tag': str,                                     # Tag to identify what type of widget this is
-                    'pin_location': "main" if data is None else data.get('pin_location', "main"),       # Pin location this widget is rendered in the workspace (main, left, right, top, or bottom)
-                    'index': 999,                                   # Index of this widget in its pin location (start at end)
-                    'rail_index': 999,                                 # Index of this widget in the rail for sorting
-                    'visible': True,                                # Whether this widget is visible in the workspace or not
-                    'is_active_tab': True,                          # Whether this widget's tab is the active tab in the main pin
-                    #'color': str,                                  # Color of the icon and tab divider for this widget. Child classes set this on creation  
-                    'notes': [],                                    # Dictionary for any fields the widget wants to store
-                }
-            )
+        # Give us default data if we're new. Child class will for a file save
+        if self.is_new == True:
+            self.data = {
+                'id': str(uuid.uuid4()),       # Unique ID for each widget
+                'title': title,                            # Title of our widget  
+                'directory_path': directory_path,          # Directory path to the file this widget's data is stored in
+                'tag': str(),                                     # Tag to identify what type of widget this is
+                'index': 999,                  # Index of this widget in the workspace (start at end)
+                'rail_index': 999,                 # Index of this widget in the rail for sorting (start at end)
+                'visible': True,                  # Whether this widget is visible in the workspace or not
+                'color': "primary",                   # Color of this widget's tab and icon in workspace and on rail
+                'notes': list(),          # Several widgets have notes
+            } 
 
         # Apply our visibility
         self.visible = self.data.get('visible', True)
@@ -71,7 +61,7 @@ class Widget(ft.Container):
         self.w: int = 0          # Width of content space of the widget
         self.h: int = 0          # Height of content space of the widget
         
-        # Canvas tracking
+        # State tracking
         self.skip_update = False                # Skips applying an update on resizes to prevent update loops
         self.ignore_update = False     # Return and ignore updates, such as when hiding??
         self.needs_file_write: bool = False        # Whether we need to write to file or not. Set to true when data changes, and false when saved
@@ -135,7 +125,7 @@ class Widget(ft.Container):
             ft.Row([self.icon, tab_text, hide_tab_icon_button]),
             mouse_cursor=ft.MouseCursor.CLICK,
             hover_interval=100,
-            on_hover=self._set_coords,
+            on_hover=self.set_mouse_coords,
             on_secondary_tap=lambda: self.story.open_menu(self._get_menu_options()),
             #on_secondary_tap_down=lambda e: print(e)
         )
@@ -156,7 +146,7 @@ class Widget(ft.Container):
 
     # Temp to improve performance
     def before_update(self):
-        print(f"Widget Update: {self.title}")
+        #print(f"Widget Update: {self.title}")
         return super().before_update()
 
     # Updates data for this widget and marks it as dirty for the next file save
@@ -192,6 +182,7 @@ class Widget(ft.Container):
                     json.dump(self.data, f, indent=4)
 
                 self.needs_file_write = False   # Mark as clean
+                self.is_new = False   # Mark as not new anymore
             except Exception as e:
                 self.page.show_dialog(SnackBar(f"Error saving widget {self.title} to file: {e}"))
             
@@ -225,13 +216,12 @@ class Widget(ft.Container):
             return
     
         # Delete our old file
-        if self.delete_file():
+        if await self.delete_file():
 
             # If it was successful, update our directory path and key, then save our new file
             
             self.update_data(**{'directory_path': new_directory})
             await self.save_file()
-            await asyncio.sleep(0.2)    # Make sure file has time to save before reload
 
             # Reload the rail to apply changes
             self.story.active_rail.reload_rail()
@@ -247,36 +237,6 @@ class Widget(ft.Container):
         self.w = int(e.width)
         self.h = int(e.height)
         
-    # Called when renaming a widget
-    async def rename(self, title: str):
-        ''' Renames our widget in live title, data, and json file '''
-
-        self.story.blocker.visible = True
-        self.story.blocker.update()
-        await asyncio.sleep(0)
-
-        # Save our old file path for renaming later
-        old_file_path = os.path.join(self.data.get('directory_path'), f"{self.title}_{self.data.get('tag', '')}.json")  
-                                                 
-        # Update our live title, and associated data
-        self.title = title.capitalize()                              
-        self.update_data(**{'title': title.capitalize()})   # Update our data with the new title and key
-
-        # Rename our json file so it doesnt just create a new one
-        os.rename(old_file_path, f"{self.data.get('directory_path')}\\{self.data.get('id')}.json")  
-
-        # Save our data to this new file
-        await self.save_file() 
-
-        await asyncio.sleep(0.2)     # Wait for file writes to finish and take effect                     
-
-        # Reload our widget ui and rail to reflect changes 
-        #self.reload_widget()           
-        self.story.active_rail.reload_rail()  
-        self.story.workspace.reload_workspace()   # Reload workspace to update tab title and sorting if needed 
-        if self.story.blocker.visible:
-            self.story.blocker.visible = False
-            self.story.blocker.update()
 
     def create_comment_clicked(self, e=None):
         ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
@@ -342,7 +302,7 @@ class Widget(ft.Container):
    
 
     # Called when mouse hovers over the tab part of the widget
-    async def _set_coords(self, e: ft.PointerEvent):
+    async def set_mouse_coords(self, e: ft.PointerEvent):
         ''' Updates our mouse x/y state for opening menu at mouse position '''
         self.story.mouse_x = e.global_position.x
         self.story.mouse_y = e.global_position.y
@@ -430,56 +390,34 @@ class Widget(ft.Container):
         self.reload_widget()
         await self.story.close_menu()
     
-    async def rename_clicked(self, e=None):
+    async def rename_clicked(self, e: ft.Event):
         ''' Replaces our widget title with a text field to rename it '''
 
         await self.story.close_menu()   # Close the menu so it doesn't interfere with the dialog
 
-        # Track if our name is unique for checks, and if we're submitting or not
-        is_unique = True
-        submitting = False
-
-        # Grab our current name for comparison
-        current_name = self.title.lower()
-
-        # Called when clicking outside the input field to cancel renaming
-        def _cancel_rename(e):
-            ''' Puts our name back to static and unalterable '''
-
-            # Grab our submitting state
-            nonlocal submitting
-
-            # Since this auto calls on submit, we need to check. If it is cuz of a submit, do nothing
-            if submitting:
-                submitting = not submitting     # Change submit status to False so we can de-select the textbox
-                return
-            
-
         # Called when submitting our textfield.
-        async def _submit_name(e):
+        async def _submit_name(e: ft.Event):
             ''' Checks that we're unique and renames the widget if so. on_blur is auto called after this, so we handle that as well '''          
 
-            # Non local variables
-            nonlocal is_unique, text_field, submitting, current_name
-        
-            name = text_field.value
-            if name == current_name:
-                self.page.pop_dialog()
-                return
+            name = text_field.value.strip()
 
-            # Set submitting to True
-            submitting = True
-
-            # If it is, call the rename function. It will do everything else
-            if is_unique:
-                await self.rename(name)
-                self.page.pop_dialog()
+            self.story.blocker.visible = True
+            self.story.blocker.update()
+            await asyncio.sleep(0)
+                                                    
+            # Update our live title, and associated data
+            self.title = name.capitalize()                              
+            self.update_data(**{'title': name.capitalize()})   # Update our data with the new title and key
+            await self.save_file()  # Force a file save
+                    
+            self.story.active_rail.reload_rail()  
+            self.story.workspace.reload_workspace()   # Reload workspace to update tab title and sorting if needed 
+            if self.story.blocker.visible:
+                self.story.blocker.visible = False
+                self.story.blocker.update()
+            e.page.pop_dialog()
                 
-            # Otherwise make sure we show our error
-            else:
-                text_field.error = "Name already exists"
-                text_field.focus()                                  # Auto focus the textfield
-                
+            
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
             value=self.title, 
@@ -494,7 +432,7 @@ class Widget(ft.Container):
                 overflow=ft.TextOverflow.ELLIPSIS,
             ),
             on_submit=_submit_name,
-            on_blur=_cancel_rename,
+            on_blur=lambda: e.page.pop_dialog(),
         )
 
         rename_button = ft.TextButton("Rename", on_click=_submit_name, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click"))
@@ -503,14 +441,12 @@ class Widget(ft.Container):
             title=ft.Text(f"Rename {self.title}", weight=ft.FontWeight.BOLD),
             content=text_field,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.page.pop_dialog()),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda: e.page.pop_dialog()),
                 rename_button   
             ]
         )
 
-        # Clears our popup menu button and applies to the UI
-        self.story.close_menu_instant()
-        self.page.show_dialog(dlg)
+        e.page.show_dialog(dlg)
         
     
     def get_color_options(self) -> list[ft.Control]:
@@ -523,6 +459,7 @@ class Widget(ft.Container):
 
             # Update the data
             self.update_data(**{'color': color})
+            await self.save_file()  # Force a file save to persist the color change
 
             self.story.blocker.visible = True
             self.story.blocker.update()
@@ -557,22 +494,20 @@ class Widget(ft.Container):
         return color_controls
     
     # Called when the delete button is clicked in the menu options
-    def delete_clicked(self, e):
+    def delete_clicked(self, e: ft.Event):
         ''' Deletes this file from the story '''
         from models.app import app
 
-        async def _delete_confirmed(e=None):
+        async def _delete_confirmed(e=ft.Event):
             ''' Deletes the widget after confirmation '''
             self.story.blocker.visible = True
             self.story.blocker.update()
             await asyncio.sleep(0)
 
-            self.page.pop_dialog()
-            if self.delete_file():
+            e.page.pop_dialog()
+            if await self.delete_file():
                 self.story.widgets.pop(self.data.get('id', ''), None)   # Remove ourselves from the story's widgets
                 
-            
-            await asyncio.sleep(0.2)
             self.story.active_rail.reload_rail()    # Reload the rail to reflect the deletion
             self.story.workspace.reload_workspace()
 
@@ -586,7 +521,7 @@ class Widget(ft.Container):
             alignment=ft.Alignment.CENTER,
             title_padding=ft.Padding.all(25),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda: e.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
             ]
         )
@@ -594,7 +529,7 @@ class Widget(ft.Container):
         self.story.close_menu_instant()
 
         if app.settings.data.get('confirm_item_delete', False):
-            self.page.show_dialog(dlg)
+            e.page.show_dialog(dlg)
         else:
             _delete_confirmed()
 
@@ -607,12 +542,14 @@ class Widget(ft.Container):
         self.t = e.local_position.y
     
     # Called at end of constructor
-    def reload_tab(self, update: bool=False):
+    def create_tab(self, update: bool=False):
         ''' Creates our tab for our widget that has the title and hide icon '''
+
+        # TODO: Change to create_tab and only called in build
 
         # Re-resolve the icon name based on the current tag.
         # New widgets have tag="" at Widget.__init__ time (before child verify_data runs),
-        # so reload_tab corrects it the first time reload_widget is called.
+        # so create_tab corrects it the first time reload_widget is called.
         tag = self.data.get('tag', '')
         match tag:
             case "document": self.icon.icon = ft.Icons.DESCRIPTION_OUTLINED
@@ -644,10 +581,10 @@ class Widget(ft.Container):
     def reload_widget(self):
         ''' Children build their own content of the widget in their own reload_widget functions '''
 
-        # TODO: If new, create our data for that widget inside of build, and force a file save. Then just use safe data, and if someone deletes it oh well
+        # TODO: Build tab then have it update correctly
 
         # Rebuild out tab to reflect any changes
-        self.reload_tab()
+        self.create_tab()
 
         # Setting a header displayed OVERTOP our content we want to build
         self.header = ft.Row(height=50, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[ft.Text("This is a header")])

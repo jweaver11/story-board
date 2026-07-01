@@ -19,7 +19,7 @@ from flet_color_pickers import BlockPicker
 class ComicPreview(Widget):
 
     # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_new: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -32,7 +32,7 @@ class ComicPreview(Widget):
             directory_path = directory_path,    # Path to our notes json file
             story = story,                      # Reference to our story object
             data = data,
-            is_rebuilt = is_rebuilt
+            is_new = is_new
         )
 
 
@@ -301,7 +301,7 @@ class ComicPreview(Widget):
             selectable_snapshots.update()
 
         # Rebuild out tab to reflect any changes
-        self.reload_tab()
+        self.create_tab()
 
 
         preview_display = ft.Column() if self.data.get('preview_direction', "vertical") == "vertical" else ft.Row()

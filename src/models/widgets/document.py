@@ -16,7 +16,7 @@ import asyncio
 # Class that holds our text document objects
 class Document(Widget):
     # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -29,7 +29,7 @@ class Document(Widget):
             directory_path = directory_path,  
             story = story,       
             data = data,  
-            is_rebuilt = is_rebuilt  
+            is_new = is_new  
         )
 
         # Verifies this object has the required data fields, and creates them if not
@@ -188,7 +188,7 @@ class Document(Widget):
             
 
         # Rebuild out tab to reflect any changes
-        self.reload_tab()
+        self.create_tab()
 
         quill = FletQuill(
             show_toolbar_divider=False,

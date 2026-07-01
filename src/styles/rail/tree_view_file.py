@@ -76,7 +76,6 @@ class TreeViewFile(ft.GestureDetector):
                     ft.Text(
                         "Rename", 
                         weight=ft.FontWeight.BOLD, 
-                        
                     ), 
                 ]),
             ),

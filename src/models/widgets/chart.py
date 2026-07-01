@@ -24,7 +24,7 @@ class Chart(Widget):
         directory_path: str, 
         story: Story, 
         data: dict = None, 
-        is_rebuilt: bool = False,
+        is_new: bool = False,
         type: str = "bar"           # Type of chart we are (either bar or radar)
     ):
 
@@ -39,7 +39,7 @@ class Chart(Widget):
             directory_path = directory_path,    
             story = story,                     
             data = data,
-            is_rebuilt = is_rebuilt
+            is_new = is_new
         )
         
 
@@ -1128,7 +1128,7 @@ class Chart(Widget):
         ''' Reloads/Rebuilds our widget based on current data '''
 
         # Rebuild out tab to reflect any changes
-        self.reload_tab()
+        self.create_tab()
 
         if self.data.get('type', "") == "bar":
             self._bar_chart_view()

@@ -19,7 +19,7 @@ import asyncio
 class Plotline(Widget):
 
     # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -32,7 +32,7 @@ class Plotline(Widget):
             directory_path = directory_path, 
             story = story,     
             data = data,  
-            is_rebuilt = is_rebuilt
+            is_new = is_new
         ) 
 
 
@@ -845,7 +845,7 @@ class Plotline(Widget):
     def reload_widget(self):
 
         # Rebuild our tab to reflect any changes
-        self.reload_tab()
+        self.create_tab()
         
         # Create a stack so we can sit our plotpoints and arcs on our plotline
         plotline_stack = ft.Stack(

@@ -13,7 +13,7 @@ from styles.text_fields import TextField
 class Item(Widget):
 
     # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_new: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -26,7 +26,7 @@ class Item(Widget):
             directory_path = directory_path,    
             story = story,                     
             data = data,
-            is_rebuilt = is_rebuilt
+            is_new = is_new
         )
         self.body_container.padding = ft.Padding.all(10)
 
@@ -225,7 +225,7 @@ class Item(Widget):
         ''' Reloads/Rebuilds our widget based on current data '''
 
         # Rebuild out tab to reflect any changes
-        self.reload_tab()
+        self.create_tab()
 
         # Check if we're in edit mode or not. If yes, build the edit view like this
         if self.data.get('edit_mode', False):

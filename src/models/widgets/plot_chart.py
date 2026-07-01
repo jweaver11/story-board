@@ -16,7 +16,7 @@ import asyncio
 class PlotChart(Widget):
 
     # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_new: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -29,7 +29,7 @@ class PlotChart(Widget):
             directory_path = directory_path,    # Path to our notes json file
             story = story,                      # Reference to our story object
             data = data,
-            is_rebuilt = is_rebuilt
+            is_new = is_new
         )
 
         # Verifies this object has the required data fields, and creates them if not.
@@ -650,7 +650,7 @@ class PlotChart(Widget):
         # TODO: Add spider web view. Don't rebuild at all
         
         # Rebuild out tab to reflect any changes
-        self.reload_tab()
+        self.create_tab()
 
         # Sets our canvas coords for when we're creating a new node by right clicking
         async def _set_canvas_coords(e: ft.HoverEvent):

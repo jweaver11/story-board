@@ -23,7 +23,7 @@ MAX_UNDO_LIST_TASKS = 30         # Max number of undo tasks to store in our undo
 
 class CanvasBoard(Widget):
     # Constructor
-    def __init__(self, name: str, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
+    def __init__(self, name: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -36,7 +36,7 @@ class CanvasBoard(Widget):
             directory_path = directory_path, 
             story = story,   
             data = data,  
-            is_rebuilt = is_rebuilt
+            is_new = is_new
         )
 
         #self.body_container.padding = ft.Padding.only(bottom=10)
@@ -569,7 +569,7 @@ class CanvasBoard(Widget):
         ''' Reloads/Rebuilds our widget based on current data '''
 
         # Rebuild out tab to reflect any changes
-        self.reload_tab()
+        self.create_tab()
 
         description_tf = TextField(
             expand=True, value=self.data.get('description', ""), dense=True, multiline=True,

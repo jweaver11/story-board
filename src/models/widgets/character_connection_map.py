@@ -17,7 +17,7 @@ from styles.colors import colors
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
 class CharacterConnectionMap(Widget):
     # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -30,7 +30,7 @@ class CharacterConnectionMap(Widget):
             directory_path = directory_path, 
             story = story,   
             data = data,    
-            is_rebuilt = is_rebuilt
+            is_new = is_new
         )
 
         # Verifies this object has the required data fields, and creates them if not
@@ -612,7 +612,7 @@ class CharacterConnectionMap(Widget):
             self.cs_width = e.width
             self.cs_height = e.height
                
-        self.reload_tab()
+        self.create_tab()
 
         self.character_bank = ft.Column(
             [

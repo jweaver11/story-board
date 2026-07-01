@@ -124,6 +124,22 @@ def load_directory_data(
                 print("Could not find widget")
                 continue
 
+        # Sort files alphabetically
+        if folder is not None:
+            sorted_files = []
+            for control in folder.expansion_tile.controls:
+                if isinstance(control, TreeViewFile):
+                    sorted_files.append(control)
+            sorted_files.sort(key=lambda x: x.widget.data.get('title', '').lower())
+            folder.expansion_tile.controls = [control for control in folder.expansion_tile.controls if not isinstance(control, TreeViewFile)] + sorted_files
+        else:
+            sorted_files = []
+            for control in column.controls:
+                if isinstance(control, TreeViewFile):
+                    sorted_files.append(control)
+            sorted_files.sort(key=lambda x: x.widget.data.get('title', '').lower())
+            column.controls = [control for control in column.controls if not isinstance(control, TreeViewFile)] + sorted_files
+
         # Return the parent expansion tile or column depending on what was provided
         return folder if folder is not None else column
     

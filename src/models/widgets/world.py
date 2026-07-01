@@ -22,7 +22,7 @@ from styles.snack_bar import SnackBar
 class World(Widget):
 
     # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -35,7 +35,7 @@ class World(Widget):
             directory_path = directory_path,  
             story = story,       
             data = data,  
-            is_rebuilt = is_rebuilt  
+            is_new = is_new  
         )
         #self.body_container.padding = ft.Padding.only(left=16, top=16, bottom=16)
         
@@ -113,7 +113,7 @@ class World(Widget):
 
 
         # Rebuild out tab to reflect any changes
-        self.reload_tab()
+        self.create_tab()
 
         # Called when clicking our upload image button 
         async def upload_image(e: ft.Event):

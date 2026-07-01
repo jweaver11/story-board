@@ -34,7 +34,7 @@ class Canvas(Widget):
         directory_path: str, 
         story: Story, 
         data: dict = None,
-        is_rebuilt: bool = False
+        is_new: bool = False
     ):
         
         # Check if we're new and need to create file
@@ -50,7 +50,7 @@ class Canvas(Widget):
             directory_path=directory_path, 
             story=story,
             data=data,  
-            is_rebuilt = is_rebuilt
+            is_new = is_new
         ) 
         self.body_container.padding = ft.Padding.only(left=16)
 
@@ -724,7 +724,7 @@ class Canvas(Widget):
         self._load_layers()
 
         # Rebuild out tab to reflect any changes
-        self.reload_tab()
+        self.create_tab()
 
         self.layer_stack = ft.Stack([
             ft.Container(   # Make sure we're expanded

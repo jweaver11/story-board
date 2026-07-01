@@ -27,7 +27,7 @@ class Map(Widget):
         directory_path: str, 
         story: Story,                  
         data: dict = None,
-        is_rebuilt: bool = False
+        is_new: bool = False
     ):
         
         # Check if we're new and need to create file
@@ -44,7 +44,7 @@ class Map(Widget):
             directory_path=directory_path, 
             story=story,
             data=data,  
-            is_rebuilt = is_rebuilt
+            is_new = is_new
         ) 
 
 
@@ -399,7 +399,7 @@ class Map(Widget):
         ''' Rebuilds/reloads our map UI '''
 
         # Rebuild out tab to reflect any changes
-        self.reload_tab()
+        self.create_tab()
 
         # TODO:  
         # Users can choose to create their image or use some default ones, or upload their own

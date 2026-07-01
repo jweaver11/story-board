@@ -52,12 +52,10 @@ class Rail(IsolatedColumn):
             visible=False,                                      # Hidden by default
             text_style=self.text_style,                         # Text style for consistency
             on_blur=self.on_new_item_blur,                      # Called when clicking off the textfield and after submitting
-            on_change=self.on_new_item_change,                  # Called on every key input
             on_submit=self.submit_item,                         # Called when enter is pressed and textfield is focused
             icon=None,
         )
         
-
 
         # State variables used for our UI to track logic
         self.item_is_unique = True          # If the new folder, chapter, note, etc. title is unique within its directory
@@ -210,99 +208,12 @@ class Rail(IsolatedColumn):
         await self.new_item_textfield.focus()
         
         await self.story.close_menu()
-        
-
-    # Called whenever our user inputs a new key into one of our textfields for new items
-    def on_new_item_change(self, e):
-        ''' Checks if our title is unique within its directory (default in this case) '''
-
-        # Start out assuming we are unique
-        self.item_is_unique = True
-
-        # Grab out title and tag from the textfield, and set our new key to compare
-        title = e.control.value
-        tag = e.control.data
-        if ":" in tag:
-            tag = tag.split(":")[0]
-
-        # Generate our new key to compare. Requires normalization
-        nk = self.directory_path + "\\" + title + "_" + tag
-        new_key = os.path.normpath(nk)
-
-        if tag == "folder":
-            new_key = os.path.normcase(os.path.normpath(self.directory_path + "\\" + title))
-            new_key = new_key.strip()  # Remove trailing spaces for folder names
-            for key in self.story.data['folders'].keys():
-                
-                # Path comparisons require normalization
-                if os.path.normcase(os.path.normpath(key)) == new_key:
-                    self.item_is_unique = False
-                    error_text = "Folder must be unique."
-                    break
-
-        # Some mini widgets that have their own uniquess checks
-        elif tag == "plot_point" and self.plotline is not None:
-            for key in self.plotline.plot_points.keys():
-                if key == title:
-                    self.item_is_unique = False
-                    error_text = "Title must be unique"
-                    break
-            
-        elif tag == "arc" and self.plotline is not None:
-            for key in self.plotline.arcs.keys():
-                if key == title:
-                    self.item_is_unique = False
-                    error_text = "Title must be unique"
-                    break
-        elif tag == "marker" and self.plotline is not None:
-            for key in self.plotline.markers.keys():
-                if key == title:
-                    self.item_is_unique = False
-                    error_text = "Title must be unique"
-                    break
-
-        # Not a category, so we check the widget
-        else:
-            error_text, self.item_is_unique = check_widget_unique(self.story, new_key)
-
-        # If we are NOT unique, show our error text
-        if not self.item_is_unique:
-            e.control.error = error_text
-
-        # Otherwise remove our error text
-        else:
-            e.control.error = None
-            
-        e.control.update()
 
 
     # Called when clicking off the textfield and after submission
     def on_new_item_blur(self, e):
-
-        # Check if we're submitting, or normal blur
-        if self.are_submitting:
-
-            # Change submitting to false
-            self.are_submitting = False     
-
-            # If our item is unique, hide the textfield and update
-            if self.item_is_unique:
-                self.new_item_textfield.visible = False
-                self.new_item_textfield.value = None
-                self.new_item_textfield.error = None
-                self.new_item_textfield.update()
-                return
-            
-            # Otherwise its not unique, re-focus our textfield
-            else:
-                self.new_item_textfield.visible = True
-                self.p.run_task(self.new_item_textfield.focus)
-                self.new_item_textfield.update()
-        
-        # If we're not submitting, just hide Textfield
-        else:
-            self.new_item_textfield.visible = False
-            self.new_item_textfield.update()
+        self.new_item_textfield.visible = False
+        self.new_item_textfield.update()
 
 
     # Called whenever we submit a new item (Chapter, note, category, etc.) via enter key
@@ -335,7 +246,7 @@ class Rail(IsolatedColumn):
                 # New categories
                 case "folder":
                     # Create our new category
-                    self.story.create_folder(directory_path=self.directory_path, name=title)
+                    await self.story.create_folder(directory_path=self.directory_path, name=title)
 
                 # Mini widgets
                 case "plot_point":
