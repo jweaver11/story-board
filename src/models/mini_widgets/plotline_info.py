@@ -11,7 +11,7 @@ from styles.text_fields import TextField
 class PlotlineInformationDisplay(MiniWidget):
 
     # Constructor. Requires title, widget widget, page reference, and optional data dictionary
-    def __init__(self, title: str, widget: Plotline,  page: ft.Page, key: str, data: dict=None):
+    def __init__(self, title: str, widget: Plotline,  key: str, data: dict=None):
 
         # Check if we're new and need to create file
         is_new = False
@@ -22,7 +22,6 @@ class PlotlineInformationDisplay(MiniWidget):
         super().__init__(
             title=title,        
             widget=widget,                    
-            page=page,          
             key=key,  
             data=data,      
         )  
@@ -47,7 +46,7 @@ class PlotlineInformationDisplay(MiniWidget):
         self.divisions_column = ft.Column(scroll="none")
 
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.page.run_task(self.save_dict)
 
         # Reloads the information display of the canvas
         self.reload_mini_widget()
@@ -102,7 +101,7 @@ class PlotlineInformationDisplay(MiniWidget):
     def _change_our_data_instant(self, key, value):
         ''' Changes our widgets data instantly '''
         self.data[key] = value
-        self.p.run_task(self.widget.save_dict)
+        self.page.run_task(self.widget.save_dict)
         
 
     # Called when reloading our mini widget UI
@@ -293,7 +292,7 @@ class PlotlineInformationDisplay(MiniWidget):
                         ft.Row([
                             ft.Container(
                                 ft.Text(pp.title, color=pp.data.get('color', None), expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD), 
-                                on_click=lambda e, p=pp: self.p.run_task(p.show_mini_widget), expand=True, padding=ft.Padding.only(left=20)
+                                on_click=lambda e, p=pp: self.page.run_task(p.show_mini_widget), expand=True, padding=ft.Padding.only(left=20)
                             ),
                             ft.Container(
                                 ft.IconButton(
@@ -312,7 +311,7 @@ class PlotlineInformationDisplay(MiniWidget):
                         ft.Row([
                             ft.Container(
                                 ft.Text(arc.title, color=arc.data.get('color', None), expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD), 
-                                on_click=lambda e, a=arc: self.p.run_task(a.show_mini_widget), expand=True, padding=ft.Padding.only(left=20)
+                                on_click=lambda e, a=arc: self.page.run_task(a.show_mini_widget), expand=True, padding=ft.Padding.only(left=20)
                             ),
                             ft.Container(
                                 ft.IconButton(
@@ -331,7 +330,7 @@ class PlotlineInformationDisplay(MiniWidget):
                         ft.Row([
                             ft.Container(
                                 ft.Text(marker.title, color=marker.data.get('color', None), expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD),
-                                on_click=lambda e, m=marker: self.p.run_task(m.show_mini_widget), expand=True, padding=ft.Padding.only(left=20)
+                                on_click=lambda e, m=marker: self.page.run_task(m.show_mini_widget), expand=True, padding=ft.Padding.only(left=20)
                             ),
                             ft.Container(
                                 ft.IconButton(

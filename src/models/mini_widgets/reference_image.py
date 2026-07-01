@@ -15,13 +15,12 @@ from styles.menu_option_style import MenuOptionStyle
 class ReferenceImage(MiniWidget):
     
     # Constructor
-    def __init__(self, title: str, widget: Widget, page: ft.Page, key: str, data: dict=None):
+    def __init__(self, title: str, widget: Widget, key: str, data: dict=None):
 
         # Parent constructor
         super().__init__(
             title=title,        
-            widget=widget,   
-            page=page,          
+            widget=widget,           
             key=key,  
             data=data,          
         ) 

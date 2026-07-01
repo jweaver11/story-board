@@ -16,7 +16,7 @@ import asyncio
 # Class that holds our text document objects
 class Document(Widget):
     # Constructor
-    def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -26,7 +26,6 @@ class Document(Widget):
         # Initialize from our parent class 'Widget'. 
         super().__init__(
             title = title,  
-            page = page,  
             directory_path = directory_path,  
             story = story,       
             data = data,  
@@ -58,7 +57,7 @@ class Document(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.needs_file_write = True
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
 
         # We render our own mini widgets (comments), so we don't need parent class to render them as well
         self.no_render_mini_widgets = True  
@@ -118,7 +117,6 @@ class Document(Widget):
             self.comments[title] = Comment(
                 title=title, 
                 widget=self, 
-                page=self.p, 
                 key="comments",
                 data=comment_data
             )
@@ -131,7 +129,6 @@ class Document(Widget):
             self.reference_images[title] = ReferenceImage(
                 title=title, 
                 widget=self, 
-                page=self.p, 
                 key="reference_images",
                 data=image_data
             )
@@ -143,7 +140,6 @@ class Document(Widget):
         reference_image = ReferenceImage(
             title=title,
             widget=self,
-            page=self.p,
             key="reference_images",
             data={
                 'image': image_str,

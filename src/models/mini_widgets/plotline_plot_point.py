@@ -16,7 +16,6 @@ class PlotPoint(MiniWidget):
         self, 
         title: str, 
         widget: Widget, 
-        page: ft.Page, 
         key: str,                           # Key is plot_points for plotlines
         x_alignment: float = None,          # Position of plot point on plotline if we pass one in (between -1 and 1)
         left: int = None,                   # Absolute left position on plotline. If not provided, will be calculated from x_alignment
@@ -31,8 +30,7 @@ class PlotPoint(MiniWidget):
         # Parent constructor
         super().__init__(
             title=title,        
-            widget=widget,        
-            page=page,          
+            widget=widget,             
             key=key,  
             data=data,    
         ) 
@@ -65,7 +63,7 @@ class PlotPoint(MiniWidget):
         self.is_first_launch: bool = True            # If this is the first time we're loading this plot point, used to trigger animations on first load
 
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.page.run_task(self.save_dict)
 
         # Reloads the information display of the canvas
         self.reload_plotline_control()
@@ -304,7 +302,7 @@ class PlotPoint(MiniWidget):
                 #print("Adding key")
                 self.data.get('Relevant Characters', []).append(char_key)
 
-            self.p.run_task(self.save_dict)
+            self.page.run_task(self.save_dict)
 
             Relevant_characters_row.controls = _set_Relevant_characters_controls()
             Relevant_characters_selector.controls = _get_Relevant_characters()

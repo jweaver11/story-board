@@ -27,8 +27,7 @@ class Widget(ft.Container):
     # Constructor. All widgets require a title,  page reference, directory path, and story reference
     def __init__(
         self, 
-        title: str,             # Title of our object
-        page: ft.Page,          # Grabs a page reference for updates
+        title: str,             # Title of our widget
         directory_path: str,    # Path to our directory that will contain our json file
         story: Story,           # Reference to our story object that owns this widget
         data: dict = None,       # Our data passed in if loaded (or none if new object)
@@ -38,7 +37,6 @@ class Widget(ft.Container):
         # Parent constructor to set data and other attributes
         super().__init__(data=data)
         self.title: str = title                     
-        self.p: ft.Page = page                               
         self.directory_path: str = directory_path        
         self.story: Story = story    
 
@@ -52,7 +50,6 @@ class Widget(ft.Container):
             verify_data(
                 self,   # Pass in our own data so the function can see the actual data we loaded
                 {
-                    #'key': f"{self.directory_path}\\{return_safe_name(self.title)}_tag",  # Unique key for this widget based on directory path + title
                     'id': id,     # Unique ID for each widget that never changes
                     'title': self.title,                            # Title of our widget  
                     'directory_path': self.directory_path,          # Directory path to the file this widget's data is stored in
@@ -140,7 +137,7 @@ class Widget(ft.Container):
             hover_interval=100,
             on_hover=self._set_coords,
             on_secondary_tap=lambda: self.story.open_menu(self._get_menu_options()),
-            on_secondary_tap_down=lambda e: print(e)
+            #on_secondary_tap_down=lambda e: print(e)
         )
 
         # Create the tab itself
@@ -185,11 +182,10 @@ class Widget(ft.Container):
         if self.needs_file_write:
             print("Saving widget to file: ", self.title)
 
-            self.data['key'] = f"{self.directory_path}\\{self.title}_{self.data.get('tag', '')}"    # Make sure key is updated in case title changed
-            file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json") # Set the file path
+            file_path = f"{self.data.get('directory_path')}\\{self.data.get('id')}.json"
 
             try:
-                os.makedirs(self.directory_path, exist_ok=True)     # Make sure directory exists still
+                os.makedirs(self.data.get('directory_path'), exist_ok=True)     # Make sure directory exists still
                 
                 # Save our json data to the file
                 with open(file_path, "w", encoding='utf-8') as f:   
@@ -197,7 +193,7 @@ class Widget(ft.Container):
 
                 self.needs_file_write = False   # Mark as clean
             except Exception as e:
-                self.p.show_dialog(SnackBar(f"Error saving widget {self.title} to file: {e}"))
+                self.page.show_dialog(SnackBar(f"Error saving widget {self.title} to file: {e}"))
             
     # Called when moving widget files
     async def delete_file(self) -> bool:
@@ -206,7 +202,7 @@ class Widget(ft.Container):
         try:
 
             # File path to save our json data to
-            old_file_path = os.path.normpath(os.path.join(self.data.get('key', "") + ".json"))
+            old_file_path = os.path.normpath(f"{self.data.get('directory_path')}\\{self.data.get('id')}.json")
 
             # Delete the file if it exists
             if os.path.exists(old_file_path):
@@ -218,7 +214,7 @@ class Widget(ft.Container):
 
         # Handle errors
         except Exception as e:
-            self.p.show_dialog(SnackBar(f"Error deleting file {old_file_path}: {e}"))
+            self.page.show_dialog(SnackBar(f"Error deleting file {old_file_path}: {e}"))
             return False
         
     # Called when moving widget files
@@ -227,29 +223,13 @@ class Widget(ft.Container):
 
         if new_directory == self.data.get('directory_path', ''):
             return
-
-        # New key to check for duplicates
-        new_key = f"{new_directory}\\{self.title}_{self.data.get('tag', '')}"
-
-        # Go through our widgtes. If any have the same key as our new key, we cannot move, so we return false
-        for widget in self.story.widgets.values():
-
-            # Skip ourselves
-            if widget == self:
-                continue
-
-            # If this gets triggered, we cannot move since a widget with that name already exists in the target directory. Return out of function
-            elif widget.data.get('key', '') == new_key:
-                self.p.show_dialog(SnackBar(f"Cannot move {self.title}. A widget with that name already exists in the target directory."))
-                return 
-            
+    
         # Delete our old file
         if self.delete_file():
 
             # If it was successful, update our directory path and key, then save our new file
-            self.directory_path = new_directory
             
-            self.update_data(**{'directory_path': new_directory, 'key': new_key})
+            self.update_data(**{'directory_path': new_directory})
             await self.save_file()
             await asyncio.sleep(0.2)    # Make sure file has time to save before reload
 
@@ -276,16 +256,14 @@ class Widget(ft.Container):
         await asyncio.sleep(0)
 
         # Save our old file path for renaming later
-        old_file_path = os.path.join(self.directory_path, f"{self.title}_{self.data.get('tag', '')}.json")  
+        old_file_path = os.path.join(self.data.get('directory_path'), f"{self.title}_{self.data.get('tag', '')}.json")  
                                                  
         # Update our live title, and associated data
         self.title = title.capitalize()                              
-        self.data['title'] = self.title     
-        self.data['key'] = f"{self.directory_path}\\{return_safe_name(self.title)}_{self.data.get('tag', '')}"  
-        self.update_data(**{'title': self.title, 'key': self.data['key']})   # Update our data with the new title and key
+        self.update_data(**{'title': title.capitalize()})   # Update our data with the new title and key
 
         # Rename our json file so it doesnt just create a new one
-        os.rename(old_file_path, self.data['key'] + ".json")  
+        os.rename(old_file_path, f"{self.data.get('directory_path')}\\{self.data.get('id')}.json")  
 
         # Save our data to this new file
         await self.save_file() 
@@ -334,7 +312,7 @@ class Widget(ft.Container):
             title = new_item_tf.value.strip()
             await self.create_comment(title)
             
-            self.p.pop_dialog()   # Close the dialog
+            self.page.pop_dialog()   # Close the dialog
             await self.story.close_menu()       
 
         # Grab the type of mini widget we are creating
@@ -354,12 +332,12 @@ class Widget(ft.Container):
             title=ft.Text(f"New {tag.replace('_', ' ').title()} Name"),
             content=new_item_tf,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.p.pop_dialog()),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.page.pop_dialog()),
                 submit_button
             ],
         )
 
-        self.p.show_dialog(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
+        self.page.show_dialog(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
 
    
 
@@ -437,13 +415,13 @@ class Widget(ft.Container):
                 ),
                 no_padding=True, no_effects=True
             ),
-            MenuOptionStyle(
-                on_click=self.delete_clicked,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
-                    ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
-                ]),
-            )
+            #MenuOptionStyle(
+                #on_click=self.delete_clicked,
+                #content=ft.Row([
+                    #ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
+                    #ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
+                #]),
+            #)
         ]
     
     # Shows the info column on the side of our chart or not
@@ -454,7 +432,6 @@ class Widget(ft.Container):
     
     async def rename_clicked(self, e=None):
         ''' Replaces our widget title with a text field to rename it '''
-        from utils.check_widget_unique import check_widget_unique
 
         await self.story.close_menu()   # Close the menu so it doesn't interfere with the dialog
 
@@ -478,40 +455,6 @@ class Widget(ft.Container):
                 return
             
 
-        # Called everytime a change in textbox occurs
-        def _name_check(e):
-            ''' Checks if the name is unique within its type of widget '''
-
-
-            # Nonlocal variables
-            nonlocal is_unique
-            nonlocal submitting
-
-            # Set submitting to false, and unique to True
-            submitting = False
-            is_unique = True
-
-            # Grab out title and tag from the textfield, and set our new key to compare
-            title = e.control.value
-            if title.lower() == current_name:
-                return
-
-            # Generate our new key to compare. Requires normalization
-            nk = self.directory_path + "\\" + title + "_" + e.control.data
-            new_key = os.path.normpath(nk)
-
-            error_text, is_unique = check_widget_unique(self.story, new_key)
-
-            # If we are NOT unique, show our error text
-            if not is_unique:
-                text_field.error = error_text
-
-            # Otherwise remove our error text
-            else:
-                text_field.error = None
-                
-            text_field.update()   # Update our text field to show error or not
-
         # Called when submitting our textfield.
         async def _submit_name(e):
             ''' Checks that we're unique and renames the widget if so. on_blur is auto called after this, so we handle that as well '''          
@@ -521,7 +464,7 @@ class Widget(ft.Container):
         
             name = text_field.value
             if name == current_name:
-                self.p.pop_dialog()
+                self.page.pop_dialog()
                 return
 
             # Set submitting to True
@@ -530,7 +473,7 @@ class Widget(ft.Container):
             # If it is, call the rename function. It will do everything else
             if is_unique:
                 await self.rename(name)
-                self.p.pop_dialog()
+                self.page.pop_dialog()
                 
             # Otherwise make sure we show our error
             else:
@@ -551,7 +494,6 @@ class Widget(ft.Container):
                 overflow=ft.TextOverflow.ELLIPSIS,
             ),
             on_submit=_submit_name,
-            on_change=_name_check,
             on_blur=_cancel_rename,
         )
 
@@ -561,14 +503,14 @@ class Widget(ft.Container):
             title=ft.Text(f"Rename {self.title}", weight=ft.FontWeight.BOLD),
             content=text_field,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.p.pop_dialog()),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.page.pop_dialog()),
                 rename_button   
             ]
         )
 
         # Clears our popup menu button and applies to the UI
         self.story.close_menu_instant()
-        self.p.show_dialog(dlg)
+        self.page.show_dialog(dlg)
         
     
     def get_color_options(self) -> list[ft.Control]:
@@ -625,7 +567,7 @@ class Widget(ft.Container):
             self.story.blocker.update()
             await asyncio.sleep(0)
 
-            self.p.pop_dialog()
+            self.page.pop_dialog()
             if self.delete_file():
                 self.story.widgets.pop(self.data.get('id', ''), None)   # Remove ourselves from the story's widgets
                 
@@ -644,7 +586,7 @@ class Widget(ft.Container):
             alignment=ft.Alignment.CENTER,
             title_padding=ft.Padding.all(25),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
             ]
         )
@@ -652,7 +594,7 @@ class Widget(ft.Container):
         self.story.close_menu_instant()
 
         if app.settings.data.get('confirm_item_delete', False):
-            self.p.show_dialog(dlg)
+            self.page.show_dialog(dlg)
         else:
             _delete_confirmed()
 
@@ -702,6 +644,8 @@ class Widget(ft.Container):
     def reload_widget(self):
         ''' Children build their own content of the widget in their own reload_widget functions '''
 
+        # TODO: If new, create our data for that widget inside of build, and force a file save. Then just use safe data, and if someone deletes it oh well
+
         # Rebuild out tab to reflect any changes
         self.reload_tab()
 
@@ -743,17 +687,11 @@ class Widget(ft.Container):
             ], spacing=0, expand=True)
         ]
 
+        self.content = self.master_stack
+
         try:
 
-            # If we are in the main pin, our tab and master_stack are shown, so update those
-            if self.data.get('pin_location', '') == 'main':
-
-                self.master_stack.update()       
-                #self.tab.update()
-                #self.update()       
-
-            # If not in the main pin, we are directly on the page, so just update ourselves
-            else:
-                self.update()
+            
+            self.update()
         except Exception as _:
             pass

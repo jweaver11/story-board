@@ -24,7 +24,6 @@ class MiniWidget(ft.Container):
         self, 
         title: str,                     # Title of the widget that will show up on its tab
         widget: Widget,                  # The widget that contains this mini widget.
-        page: ft.Page,                  # Grabs our original page for convenience and consistency
         key: str,                       # Key to identify this mini widget (by title) within its widgets data
         data: dict = None               # Data passed in for this mini widget
     ):
@@ -45,7 +44,6 @@ class MiniWidget(ft.Container):
         # Set our parameters
         self.title: str = title                      
         self.widget: Widget = widget                          
-        self.p: ft.Page = page                               
         self.key: str = key     
 
 
@@ -106,7 +104,7 @@ class MiniWidget(ft.Container):
 
             # Remove our data.
             self.data = None
-            self.p.run_task(self.update_data(**self.data))  # Clear our notes before deleting so we don't have any lingering data
+            self.page.run_task(self.update_data(**self.data))  # Clear our notes before deleting so we don't have any lingering data
 
             # Reload the widget if we have to
             self.widget.reload_widget()
@@ -142,8 +140,8 @@ class MiniWidget(ft.Container):
         else:
 
             # Our data is correct, so we update our immidiate parents data to match
-            self.widget.data[self.key][self.title] = self.data
-            self.widget.update_data(**{self.key})
+            self.widget.update_data(**{self.key: self.data})
+    
 
     
 
@@ -331,7 +329,7 @@ class MiniWidget(ft.Container):
 
             self.update_data(**{'notes': self.data['notes']})
             self.reload_mini_widget()      
-            self.p.pop_dialog() 
+            self.page.pop_dialog() 
             
 
         # Create a dialog to ask for the field name
@@ -345,14 +343,14 @@ class MiniWidget(ft.Container):
             title=ft.Text(f"Create Note"),
             content=note_name_input,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                 ft.TextButton("Create", on_click=create_note, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),
             ],
         )
         
         
         dlg.open = True
-        self.p.show_dialog(dlg)
+        self.page.show_dialog(dlg)
 
 
     async def _delete_note_clicked(self, e):
@@ -493,7 +491,7 @@ class MiniWidget(ft.Container):
             
             name = text_field.value
             if name == current_name:
-                self.p.pop_dialog()
+                self.page.pop_dialog()
                 return
 
             # Set submitting to True
@@ -502,7 +500,7 @@ class MiniWidget(ft.Container):
             # If it is, call the rename function. It will do everything else
             if is_unique:
                 self.rename(name)
-                self.p.pop_dialog()
+                self.page.pop_dialog()
                 
             # Otherwise make sure we show our error
             else:
@@ -528,14 +526,14 @@ class MiniWidget(ft.Container):
             title=ft.Text(f"Rename {self.title}", weight=ft.FontWeight.BOLD),
             content=text_field,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.p.pop_dialog()),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.page.pop_dialog()),
                 rename_button   
             ]
         )
 
         # Clears our popup menu button and applies to the UI
         self.widget.story.close_menu_instant()
-        self.p.show_dialog(dlg)
+        self.page.show_dialog(dlg)
 
     # Called when color button is clicked
     def _get_color_options(self) -> list[ft.Control]:
@@ -585,7 +583,7 @@ class MiniWidget(ft.Container):
 
         def _delete_confirmed(e=None):
             ''' Deletes the widget after confirmation '''
-            self.p.pop_dialog()
+            self.page.pop_dialog()
             self.delete_dict()
             
 
@@ -595,7 +593,7 @@ class MiniWidget(ft.Container):
             alignment=ft.Alignment.CENTER,
             title_padding=ft.Padding.all(25),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
             ]
         )
@@ -603,7 +601,7 @@ class MiniWidget(ft.Container):
         self.widget.story.close_menu_instant()
 
         if app.settings.data.get('confirm_item_delete', False):
-            self.p.show_dialog(dlg)
+            self.page.show_dialog(dlg)
         else:
             _delete_confirmed()
 

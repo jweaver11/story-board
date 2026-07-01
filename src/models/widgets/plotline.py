@@ -19,7 +19,7 @@ import asyncio
 class Plotline(Widget):
 
     # Constructor
-    def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -29,7 +29,6 @@ class Plotline(Widget):
         # Parent constructor
         super().__init__(
             title = title,  
-            page = page,   
             directory_path = directory_path, 
             story = story,     
             data = data,  
@@ -85,7 +84,7 @@ class Plotline(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.needs_file_write = True
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
                 
         # Declare dicts of our data types   
         self.arcs: dict = {}       
@@ -137,7 +136,6 @@ class Plotline(Widget):
         self.information_display = PlotlineInformationDisplay(
             title=self.title,
             widget=self,
-            page=self.p,
             key="plotline_data",     # Not used, but its required so just whatever works
             data=self.data.get('plotline_data'),      # Uses our dataa 
         )
@@ -153,7 +151,6 @@ class Plotline(Widget):
             self.arcs[key] = Arc(
                 title=key, 
                 widget=self, 
-                page=self.p, 
                 key="arcs",
                 data=data
             )
@@ -169,7 +166,6 @@ class Plotline(Widget):
             self.plot_points[key] = PlotPoint(
                 title=key, 
                 widget=self, 
-                page=self.p, 
                 key="plot_points", 
                 data=data
             )
@@ -183,7 +179,6 @@ class Plotline(Widget):
             self.markers[key] = Marker(
                 title=key, 
                 widget=self, 
-                page=self.p, 
                 key="markers", 
                 data=data
             )
@@ -206,7 +201,6 @@ class Plotline(Widget):
         new_arc = Arc(
             title=title, 
             widget=self, 
-            page=self.p, 
             key="arcs", 
             x_alignment=self.x_alignment,
             data=None
@@ -239,7 +233,6 @@ class Plotline(Widget):
         new_plot_point = PlotPoint(
             title=title, 
             widget=self, 
-            page=self.p, 
             key="plot_points", 
             x_alignment=self.x_alignment,
             left=self.left_position,
@@ -273,7 +266,6 @@ class Plotline(Widget):
         new_marker = Marker(
             title=title, 
             widget=self, 
-            page=self.p, 
             key="markers", 
             x_alignment=self.x_alignment,
             left=self.left_position,
@@ -525,7 +517,7 @@ class Plotline(Widget):
                     await arc.create_event(title)
 
             await self.story.close_menu()  
-            self.p.pop_dialog()   # Close the dialog
+            self.page.pop_dialog()   # Close the dialog
 
                  
 
@@ -547,12 +539,12 @@ class Plotline(Widget):
             title=ft.Text(f"New {tag.replace('_', ' ').title()} Name"),
             content=new_item_tf,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.p.pop_dialog()),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.page.pop_dialog()),
                 submit_button
             ],
         )
 
-        self.p.show_dialog(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
+        self.page.show_dialog(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
         
 
     async def _set_size(self, e: cv.CanvasResizeEvent):
@@ -919,7 +911,7 @@ class Plotline(Widget):
         self._render_widget()
 
 
-        self.p.run_task(self.rebuild_plotline_canvas, True)
+        self.page.run_task(self.rebuild_plotline_canvas, True)
 
 
 

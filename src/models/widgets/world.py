@@ -22,7 +22,7 @@ from styles.snack_bar import SnackBar
 class World(Widget):
 
     # Constructor
-    def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -32,7 +32,6 @@ class World(Widget):
         # Initialize from our parent class 'Widget'. 
         super().__init__(
             title = title,  
-            page = page,   
             directory_path = directory_path,  
             story = story,       
             data = data,  
@@ -63,7 +62,7 @@ class World(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.needs_file_write = True
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
       
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -195,7 +194,7 @@ class World(Widget):
             
             # If section name already exists, show that as error
             if section_name in self.data['world_data']:
-                self.p.show_dialog(SnackBar("Section name already exists!"))
+                self.page.show_dialog(SnackBar("Section name already exists!"))
                 return  
             
             # Otherwise we passed checks, add it to data
@@ -275,7 +274,7 @@ class World(Widget):
                 empty_section = self.data['world_data'].get(section, {}) == {}  # Check if this is the first field being added
                 self.data['world_data'][section][field_name] = ""
             else:
-                self.p.show_dialog(SnackBar("Field name already exists or is invalid!"))
+                self.page.show_dialog(SnackBar("Field name already exists or is invalid!"))
                 return
             
             

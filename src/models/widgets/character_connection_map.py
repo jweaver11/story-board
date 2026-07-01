@@ -17,7 +17,7 @@ from styles.colors import colors
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
 class CharacterConnectionMap(Widget):
     # Constructor
-    def __init__(self, name: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -26,8 +26,7 @@ class CharacterConnectionMap(Widget):
 
         # Parent class constructor
         super().__init__(
-            title = name,  
-            page = page,   
+            title = title,  
             directory_path = directory_path, 
             story = story,   
             data = data,    
@@ -61,7 +60,7 @@ class CharacterConnectionMap(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.needs_file_write = True
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
     
         # State tracking
         self.char1: str = None

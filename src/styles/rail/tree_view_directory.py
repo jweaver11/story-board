@@ -474,10 +474,6 @@ class TreeViewDirectory(ft.GestureDetector):
                     error_text = "folder must be unique."
                     break
 
-        # Not a folder, so we check the widget
-        else:
-            error_text, self.item_is_unique = check_widget_unique(self.story, new_key)
-
         # If we are NOT unique, show our error text
         if not self.item_is_unique:
             e.control.error = error_text

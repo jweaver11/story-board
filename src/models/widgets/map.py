@@ -24,7 +24,6 @@ class Map(Widget):
     def __init__(
         self, 
         title: str, 
-        page: ft.Page, 
         directory_path: str, 
         story: Story,                  
         data: dict = None,
@@ -42,7 +41,6 @@ class Map(Widget):
         # Parent constructor
         super().__init__(
             title=title,           
-            page=page,                         
             directory_path=directory_path, 
             story=story,
             data=data,  
@@ -78,7 +76,7 @@ class Map(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.needs_file_write = True
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
 
         
         # Drawing elements
@@ -146,7 +144,6 @@ class Map(Widget):
         self.information_display = MapInformationDisplay(
             title=self.title,
             widget=self,
-            page=self.p,
             key="map_data",    
             data=self.data.get('map_data'),      
         )
@@ -158,7 +155,6 @@ class Map(Widget):
         new_location = Location(
             title=title,
             widget=self,
-            page=self.p,
             key="locations",   
             data=data,      
             left=self.l,
@@ -185,7 +181,6 @@ class Map(Widget):
             self.locations[title] = Location(
                 title=title,
                 widget=self,
-                page=self.p,
                 key="locations",     # Not used, but its required so just whatever works
                 data=data,
             )
@@ -239,7 +234,7 @@ class Map(Widget):
             await self.create_location(title,)
             
 
-            self.p.pop_dialog()   # Close the dialog
+            self.page.pop_dialog()   # Close the dialog
 
             #await asyncio.sleep(0)        # Needs a buffer or wont work for some reason
             await self.story.close_menu()       
@@ -262,12 +257,12 @@ class Map(Widget):
             title=ft.Text(f"New Location Name"),
             content=new_item_tf,
             actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda _: self.p.pop_dialog()),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda _: self.page.pop_dialog()),
                 submit_button
             ],
         )
 
-        self.p.show_dialog(dlg)    
+        self.page.show_dialog(dlg)    
 
     def delete_location(self, location: Location):# Remove from our dict
         if location.title in self.locations:

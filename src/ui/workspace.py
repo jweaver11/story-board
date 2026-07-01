@@ -107,7 +107,7 @@ class Workspace(ft.Container):
                 ), 
                 ft.TabBarView(
                     #controls=[widget.master_stack for widget in self.main_pin],
-                    controls=[widget.master_stack for widget in self.main_pin],
+                    controls=[widget for widget in self.main_pin],
                     expand=True
                 )
             ], expand=True, spacing=0),

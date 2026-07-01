@@ -23,7 +23,7 @@ MAX_UNDO_LIST_TASKS = 30         # Max number of undo tasks to store in our undo
 
 class CanvasBoard(Widget):
     # Constructor
-    def __init__(self, name: str, page: ft.Page, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
+    def __init__(self, name: str, directory_path: str, story: Story, data: dict=None, is_rebuilt: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -33,7 +33,6 @@ class CanvasBoard(Widget):
         # Parent class constructor
         super().__init__(
             title = name,  
-            page = page,   
             directory_path = directory_path, 
             story = story,   
             data = data,  
@@ -95,7 +94,7 @@ class CanvasBoard(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.needs_file_write = True
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
 
 
         self.state: State = State()     # State model from tracking our drawing state
@@ -455,7 +454,7 @@ class CanvasBoard(Widget):
             self.story.blocker.visible = True
             self.story.blocker.update()
             await asyncio.sleep(0)
-            self.p.pop_dialog()
+            self.page.pop_dialog()
             await asyncio.sleep(0)
 
             # Set the new key to our data and save
@@ -478,11 +477,11 @@ class CanvasBoard(Widget):
             title=ft.Text("Choose a Canvas"),
             content=ft.RadioGroup(ft.Column(_load_canvases(), tight=True, scroll="auto"), on_change=_set_new_canvas_key),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
                 confirm_button
             ]
         )
-        self.p.show_dialog(dlg)
+        self.page.show_dialog(dlg)
 
     # Called to find a canvas and load a snapshot from all its layers
     def _set_canvas_snapshot(self, canvas_key: str) -> str:
@@ -576,7 +575,7 @@ class CanvasBoard(Widget):
             expand=True, value=self.data.get('description', ""), dense=True, multiline=True,
             label="Description",
             capitalization=ft.TextCapitalization.SENTENCES, 
-            on_blur=lambda e: self.p.run_task(self.update_data, **{'description': e.control.value}),
+            on_blur=lambda e: self.page.run_task(self.update_data, **{'description': e.control.value}),
             hint_text="Description of the scope of this Canvas Board..."       
         )
 

@@ -4,6 +4,7 @@ def verify_data(object, required_data: dict) -> bool:
     ''' 
     Verifys an object's data has all required keys and sub keys passed in. Accepts default values or types.
     So long as the key exists, it will not override it or do type checking, else it will set it to the default value passed in
+    Objects MUST have a save_dict() method, and a data attribute thats a dict.
     '''
 
     # Internal recursive function to handle nested dicts, typing, and values all in one
@@ -63,6 +64,8 @@ def verify_data(object, required_data: dict) -> bool:
         # Run our objects data through the recursive function, and the required data
         _verify_data(object.data, required_data)
 
+        # Save our updated data back to the file
+        #object.p.run_task(object.save_dict)      
         return True
     
     # Catch errors

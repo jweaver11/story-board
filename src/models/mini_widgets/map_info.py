@@ -24,7 +24,6 @@ class MapInformationDisplay(MiniWidget):
         self, 
         title: str, 
         widget: Widget,                  # The widget is always our map widget
-        page: ft.Page, 
         key: str,                       # Not used, but its required so just whatever works
         data: dict = None               # No data is used here, so NEVER reference it. Use self.widget.data instead
     ):
@@ -39,7 +38,6 @@ class MapInformationDisplay(MiniWidget):
         super().__init__(
             title=title,           
             widget=widget, 
-            page=page,              
             data=data,              
             key=key     
         ) 
@@ -63,24 +61,13 @@ class MapInformationDisplay(MiniWidget):
         )
 
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.page.run_task(self.save_dict)
 
         # Reloads the information display of the map
         self.reload_mini_widget()
 
-    # Called when saving changes in our mini widgets data to the widgetS json file
-    async def save_dict(self):
-        ''' Saves our current data to the widgetS json file using this objects dictionary path '''
+    
 
-        try:
-            # Our data is correct, so we update our immidiate parents data to match
-            self.widget.data[self.key] = self.data
-
-            # Recursively updates the parents data until widget=widget (widget), which saves to file
-            await self.widget.save_dict()
-
-        except Exception as e:
-            print(f"Error saving mini widget data to {self.title}: {e}")
 
     
     def _map_info_view(self) -> ft.Column:
@@ -110,7 +97,7 @@ class MapInformationDisplay(MiniWidget):
                     ft.Row([
                         ft.Container(
                             ft.Text(title, color=color, expand=True, overflow=ft.TextOverflow.ELLIPSIS, weight=ft.FontWeight.BOLD), 
-                            on_click=lambda _, l=location: self.p.run_task(l.show_mini_widget), 
+                            on_click=lambda _, l=location: self.page.run_task(l.show_mini_widget), 
                             expand=True, padding=ft.Padding.only(left=10)
                         ),
                         ft.Container(

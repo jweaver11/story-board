@@ -21,7 +21,6 @@ class Chart(Widget):
     def __init__(
         self, 
         title: str, 
-        page: ft.Page, 
         directory_path: str, 
         story: Story, 
         data: dict = None, 
@@ -37,7 +36,6 @@ class Chart(Widget):
         # Initialize from our parent class 'Widget'. 
         super().__init__(
             title = title,                      
-            page = page,                        
             directory_path = directory_path,    
             story = story,                     
             data = data,
@@ -122,7 +120,7 @@ class Chart(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.needs_file_write = True
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -156,7 +154,7 @@ class Chart(Widget):
                 self.data.get('bar_data', {}).get('groups', []).pop(idx)
                 self.update_data(**{'bar_data': self.data.get('bar_data', {})})
                 self.reload_widget()
-                self.p.pop_dialog()
+                self.page.pop_dialog()
                 
 
             group_title = self.data.get('bar_data', {}).get('groups', [])[idx].get('name', "Group")
@@ -164,11 +162,11 @@ class Chart(Widget):
             dlg = ft.AlertDialog(
                 title=f"Are you sure you want to delete {group_title}?",
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
+                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
                     ft.TextButton("Delete", on_click=_delete_group_confirm, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
                 ]
             )
-            self.p.show_dialog(dlg)
+            self.page.show_dialog(dlg)
 
         async def _update_expanded_state(e):
             expanded = e.control.expanded
@@ -215,7 +213,7 @@ class Chart(Widget):
             self.data['bar_data']['groups'][idx]['rods'].pop(rod_idx)
             self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             self.reload_widget()
-            self.p.pop_dialog()
+            self.page.pop_dialog()
 
         async def _change_rod_color(e):
             idx, rod_idx = e.control.data
@@ -815,18 +813,18 @@ class Chart(Widget):
                     del ds['entries'][e.control.data]
                 self.update_data(**{'radar_data': self.data.get('radar_data', {})})
                 self.reload_widget()
-                self.p.pop_dialog()
+                self.page.pop_dialog()
 
             node_title = self.data['radar_data']['nodes'][e.control.data]
 
             dlg = ft.AlertDialog(
                 title=f"Are you sure you want to delete {node_title}?",
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
+                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
                     ft.TextButton("Delete", on_click=_delete_node_title_confirm, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
                 ]
             )
-            self.p.show_dialog(dlg)
+            self.page.show_dialog(dlg)
 
         # Adds a new title to the end of our titles list, and a default value for each dataset
         async def _add_node_title(e):
@@ -873,18 +871,18 @@ class Chart(Widget):
                 del self.data['radar_data']['data_sets'][idx]
                 self.update_data(**{'radar_data': self.data.get('radar_data', {})})
                 self.reload_widget()
-                self.p.pop_dialog()
+                self.page.pop_dialog()
 
             dataset_title = self.data['radar_data']['data_sets'][e.control.data]['title']
 
             dlg = ft.AlertDialog(
                 title=f"Are you sure you want to delete {dataset_title}?",
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
+                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
                     ft.TextButton("Delete", on_click=_delete_data_set_confirm, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
                 ]
             )
-            self.p.show_dialog(dlg)
+            self.page.show_dialog(dlg)
 
         # Toggle whether a dataset is visible on the chart
         async def _toggle_dataset_visibility(e):

@@ -16,7 +16,7 @@ import asyncio
 class PlotChart(Widget):
 
     # Constructor
-    def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict = None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_rebuilt: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -26,7 +26,6 @@ class PlotChart(Widget):
         # Initialize from our parent class 'Widget'. 
         super().__init__(
             title = title,                      # Title of the note
-            page = page,                        # Grabs our original page for convenience and consistency
             directory_path = directory_path,    # Path to our notes json file
             story = story,                      # Reference to our story object
             data = data,
@@ -72,7 +71,7 @@ class PlotChart(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.needs_file_write = True
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -491,7 +490,7 @@ class PlotChart(Widget):
                 return
             
             if old_label == node_title.value:
-                self.p.pop_dialog()
+                self.page.pop_dialog()
                 return
 
             if await _check_node_title(node_title.value):
@@ -506,7 +505,7 @@ class PlotChart(Widget):
                         edge['target'] = node_title.value
                 self.needs_file_write = True
                 self.reload_widget()
-                self.p.pop_dialog()
+                self.page.pop_dialog()
 
         await self.story.close_menu()
 
@@ -517,12 +516,12 @@ class PlotChart(Widget):
             autofocus=True, on_submit=_rename_node,
         )
 
-        self.p.show_dialog(
+        self.page.show_dialog(
             ft.AlertDialog(
                 title="Rename Node",
                 content=node_title,
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
+                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
                     ft.TextButton("Rename", on_click=_rename_node, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))
                 ]
             )
@@ -537,7 +536,7 @@ class PlotChart(Widget):
                     break
             self.needs_file_write = True    
             self.reload_widget()
-            self.p.pop_dialog()
+            self.page.pop_dialog()
 
         await self.story.close_menu()
 
@@ -549,12 +548,12 @@ class PlotChart(Widget):
             autofocus=True, on_submit=_set_node_description, multiline=True
         )
 
-        self.p.show_dialog(
+        self.page.show_dialog(
             ft.AlertDialog(
                 title=f"Edit Description for {node_label}",
                 content=description,
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
+                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
                     ft.TextButton("Save", on_click=_set_node_description, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))
                 ]
             )
@@ -622,7 +621,7 @@ class PlotChart(Widget):
                 self.data['nodes'].append({'label': title, 'position': self.new_node_position, 'color': '#FFFFFF', 'description': ""})
                 self.needs_file_write = True
                 self.reload_widget()
-                self.p.pop_dialog()
+                self.page.pop_dialog()
                 self.new_node_position = (self.w / 2 * .75, self.h / 2) # Reset new node position to default for next time
 
         await self.story.close_menu()
@@ -632,12 +631,12 @@ class PlotChart(Widget):
             autofocus=True, on_submit=_create_node,
         )
 
-        self.p.show_dialog(
+        self.page.show_dialog(
             ft.AlertDialog(
                 title="Node Title",
                 content=node_title,
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
+                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
                     ft.TextButton("Create", on_click=_create_node, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))
                 ]
             )

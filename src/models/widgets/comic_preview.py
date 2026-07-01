@@ -19,7 +19,7 @@ from flet_color_pickers import BlockPicker
 class ComicPreview(Widget):
 
     # Constructor
-    def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict = None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_rebuilt: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -29,7 +29,6 @@ class ComicPreview(Widget):
         # Initialize from our parent class 'Widget'. 
         super().__init__(
             title = title,                      # Title of the note
-            page = page,                        # Grabs our original page for convenience and consistency
             directory_path = directory_path,    # Path to our notes json file
             story = story,                      # Reference to our story object
             data = data,
@@ -63,7 +62,7 @@ class ComicPreview(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.needs_file_write = True
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -80,7 +79,7 @@ class ComicPreview(Widget):
 
             await self.story.close_menu()
             
-            self.p.show_dialog(
+            self.page.show_dialog(
                 ft.AlertDialog(
                     title=ft.Text("Select Background Color"),
                     content=BlockPicker(
@@ -105,7 +104,7 @@ class ComicPreview(Widget):
                         on_color_change=_set_background_color,
                     ),
                     actions=[
-                        ft.TextButton("Close", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))
+                        ft.TextButton("Close", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))
                     ]
                 )
             )

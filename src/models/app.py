@@ -64,7 +64,7 @@ class App:
         ''' Page styling '''
 
         # Sets our app title
-        page.title = "StoryBoard"
+        page.title = "StoryBoard (alpha)"
 
         # Sets our themes and which one we use. Default to dark mode with blue
         page.theme = ft.Theme(color_scheme_seed=app.settings.data.get('theme_color', "blue"))    

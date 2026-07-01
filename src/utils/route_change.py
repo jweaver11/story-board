@@ -9,13 +9,13 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
     from models.app import app
     from models.views.home import create_home_view
     from models.views.loading import create_loading_view
-    from models.views.tutorial import create_tutorial_view
 
     # Grabs our page from the event for easier reference
     page: ft.Page = e.page
 
     # Clear our views and any existing controls
     page.views.clear()
+
     
     match page.route:
         case "/":
@@ -37,23 +37,18 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
             page.views.append(create_loading_view(page))
             page.update()
             return
-        case "/tutorial":
-            page.views.append(create_tutorial_view(page))
-            page.update()
-            return
         case _:
-
             # Otherwise its a story route, so we need to find which one it is      
+            # new_story = None    # Set new story to none intially to handle routes that don't match any stories
+
+            # Run through our stories and see which ones route matches our new route
             for story in app.stories.values():
                 # If it matches, set our new story 
                 if story.route == page.route:
                     new_story = story
-                    app.settings.data['active_story'] = story.route
+                    app.settings.update_data(**{'active_story': story.route})
                     app.settings.story = story
-                    await app.settings.save_file()
 
-                    #if not new_story.is_initialized:    # Check if this story has not already been loaded before
-                        #new_story.startup()
                     app.settings.story = new_story  # Gives our settings widget the story reference it needs
                     page.views.append(new_story)
                     page.update() 

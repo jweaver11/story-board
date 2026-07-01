@@ -14,13 +14,12 @@ from styles.text_fields import TextField
 class Comment(MiniWidget):
     
     # Constructor
-    def __init__(self, title: str, widget: Widget, page: ft.Page, key: str, data: dict=None):
+    def __init__(self, title: str, widget: Widget, key: str, data: dict=None):
 
         # Parent constructor
         super().__init__(
             title=title,        
             widget=widget,   
-            page=page,          
             key=key,  
             data=data,          
         ) 

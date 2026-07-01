@@ -190,7 +190,6 @@ class WorkspacesRail(ft.Container):
         elif selected_rail == "canvas":
             canvas_rail.selected_index = 0
 
-        idx = 0
         # Goes through our workspace order, and adds the correct control to our list for the rail
         # We do it this way so when the app re-orders the rail, it will save their changes
         for workspace in app.settings.data['workspaces_rail_order']:     # Just a list of strings
@@ -204,8 +203,6 @@ class WorkspacesRail(ft.Container):
                 workspaces_rail.append(ft.ReorderableDragHandle(world_building_rail))
             elif workspace == "canvas":
                 workspaces_rail.append(ft.ReorderableDragHandle(canvas_rail))
-
-            idx += 1
 
 
         # If we're collapsed...
@@ -250,13 +247,7 @@ class WorkspacesRail(ft.Container):
         self.content.controls.append(ft.Container(expand=True))
 
         # Add our collapse icon button to the right side of the rail
-        self.content.controls.append(ft.Row(
-            spacing=0, 
-            controls=[
-                ft.Container(expand=True),  # Fills left side of row
-                collapse_icon_button,
-            ]), 
-        )
+        self.content.controls.append(ft.Row([collapse_icon_button], alignment=ft.MainAxisAlignment.END))
 
         # Can fail when changing views. It only fails tho when it doesnt need to update
         try: 

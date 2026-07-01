@@ -6,7 +6,6 @@ from styles.menu_option_style import MenuOptionStyle
 from styles.rail.tree_view_directory import TreeViewDirectory
 from models.app import app
 from styles.colors import colors
-from utils.check_widget_unique import check_widget_unique
 import os
 import math
 

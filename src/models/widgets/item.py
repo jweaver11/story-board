@@ -13,7 +13,7 @@ from styles.text_fields import TextField
 class Item(Widget):
 
     # Constructor
-    def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict = None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_rebuilt: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -23,7 +23,6 @@ class Item(Widget):
         # Initialize from our parent class 'Widget'. 
         super().__init__(
             title = title,                      
-            page = page,                        
             directory_path = directory_path,    
             story = story,                     
             data = data,
@@ -64,7 +63,7 @@ class Item(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.needs_file_write = True
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -77,7 +76,7 @@ class Item(Widget):
             self.data['item_data'].append({"title": new_segment_tf.value, "content": ""})
             self.update_data(**{'item_data': self.data['item_data']})   
             self.reload_widget()
-            self.p.pop_dialog()
+            self.page.pop_dialog()
 
         new_segment_tf = ft.TextField(autofocus=True, capitalization=ft.TextCapitalization.WORDS, on_submit=create_segment)
 
@@ -85,13 +84,13 @@ class Item(Widget):
             title=ft.Text("Segment Title"),
             content=new_segment_tf,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                 ft.TextButton("Create", on_click=create_segment, style=ft.ButtonStyle(mouse_cursor="click"))
             ],
             actions_alignment=ft.MainAxisAlignment.END
         )
 
-        self.p.show_dialog(dlg)
+        self.page.show_dialog(dlg)
 
     # Saves content when text field is unfocused
     async def _save_segment(self, e):

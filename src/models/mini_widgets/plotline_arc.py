@@ -15,7 +15,6 @@ class Arc(MiniWidget):
         self, 
         title: str, 
         widget: Widget, 
-        page: ft.Page, 
         key: str, 
         x_alignment: float = None,          # Position of center of arc on plotline if we pass one in (between -1 and 1)
         data: dict = None
@@ -26,7 +25,6 @@ class Arc(MiniWidget):
         super().__init__(
             title=title,        
             widget=widget,                    # Top most plotline this arc belongs too
-            page=page,          
             key=key,  
             data=data,         
         ) 
@@ -480,7 +478,7 @@ class Arc(MiniWidget):
                 ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, 
                 self.data.get('color', "primary"),
                 tooltip="Add Event", 
-                on_click=lambda e: self.p.run_task(self.widget.new_item_clicked, e, self), data="event",
+                on_click=lambda e: self.page.run_task(self.widget.new_item_clicked, e, self), data="event",
                 mouse_cursor="click"
             ),
         ], spacing=0)
@@ -510,7 +508,7 @@ class Arc(MiniWidget):
                 #print("Adding key")
                 self.data.get('Relevant Characters', []).append(char_key)
 
-            self.p.run_task(self.save_dict)
+            self.page.run_task(self.save_dict)
 
             Relevant_characters_row.controls = _set_Relevant_characters_controls()
             Relevant_characters_selector.controls = _get_Relevant_characters()

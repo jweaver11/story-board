@@ -21,7 +21,6 @@ class Marker(MiniWidget):
         self, 
         title: str, 
         widget: Widget, 
-        page: ft.Page, 
         key: str,                           # Key is markers for plotlines
         x_alignment: float = 0.0,           # Float from -1 to 1 representing where we are on the plotline. -1 is left, 0 is center, 1 is right
         left: int = None,                   # Absolute left position on plotline. If not provided, will be calculated from x_alignment
@@ -33,8 +32,7 @@ class Marker(MiniWidget):
         # Parent constructor
         super().__init__(
             title=title,        
-            widget=widget,        
-            page=page,          
+            widget=widget,                 
             key=key,  
             data=data,    
         ) 
@@ -138,9 +136,6 @@ class Marker(MiniWidget):
         self.plotline_control.content.content.opacity = .7 if self.plotline_control.content.content.opacity != .7 else 1
         self.plotline_control.update()
 
-        # Apply it to the UI
-        #self.p.update()
-
             
     # Called when toggling whether this plot point is shown on the plotline in the plotline filters
     def toggle_plotline_control(self, value: bool):
@@ -149,7 +144,7 @@ class Marker(MiniWidget):
         # Change the control visibility, data, and save it
         self.plotline_control.visible = value
         self.data['is_shown_on_widget'] = value
-        self.p.run_task(self.save_dict)
+        self.page.run_task(self.save_dict)
         
         # If we're hiding it, also hide our mini widget if it's open
         if value == False:

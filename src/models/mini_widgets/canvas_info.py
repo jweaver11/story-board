@@ -26,7 +26,6 @@ class CanvasInformationDisplay(MiniWidget):
         self, 
         title: str, 
         widget: Widget,                  
-        page: ft.Page, 
         key: str,                       
         data: dict = None               
     ):
@@ -41,7 +40,6 @@ class CanvasInformationDisplay(MiniWidget):
         super().__init__(
             title=title,           
             widget=widget, 
-            page=page,              
             data=data,              
             key=key     
         ) 
@@ -91,7 +89,7 @@ class CanvasInformationDisplay(MiniWidget):
 
         # Saving creates the file if we're new
         if is_new:
-            self.p.run_task(self.save_dict)
+            self.page.run_task(self.save_dict)
 
         self.visible = True     # Always set to visible, the parent will choose to add it or not
 
@@ -140,7 +138,7 @@ class CanvasInformationDisplay(MiniWidget):
                                 break
                         break
 
-                self.p.pop_dialog()
+                self.page.pop_dialog()
                 
 
             color_picker = ColorPicker(
@@ -151,11 +149,11 @@ class CanvasInformationDisplay(MiniWidget):
                 ft.Column([color_picker], tight=True, expand=False),
                 title=f"Set {layer_name} to a Color",
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
                     ft.TextButton("Set", on_click=_set_color_confirmed, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
                 ]
             )
-            self.p.show_dialog(dlg)
+            self.page.show_dialog(dlg)
 
         # If its not a color, its an image
         else:
@@ -181,7 +179,7 @@ class CanvasInformationDisplay(MiniWidget):
                                         await self.widget.save_canvas(canvas=ctrl.content)
                                         break
                                 break
-                    self.p.pop_dialog()
+                    self.page.pop_dialog()
 
                 except Exception as _:
                     pass   
@@ -195,13 +193,13 @@ class CanvasInformationDisplay(MiniWidget):
             if layer.get('name') == layer_name:
                 if layer.get('capture', "") == "":
                     
-                    self.p.show_dialog(SnackBar("Layer must have existing content to set blur"))
+                    self.page.show_dialog(SnackBar("Layer must have existing content to set blur"))
                     return
                 capture = layer.get('capture', "")
                 break
 
         if capture is None:
-            self.p.show_dialog(SnackBar("Error finding layer capture for blur"))
+            self.page.show_dialog(SnackBar("Error finding layer capture for blur"))
             return
         
         # Updates the visual canvas with new blur amount
@@ -224,7 +222,7 @@ class CanvasInformationDisplay(MiniWidget):
                             break
                     break
 
-            self.p.pop_dialog()
+            self.page.pop_dialog()
         
         blur_strength_slider = ft.Slider(1, "{value}", min=0, max=50, on_change=_blur_amount_changed)
         
@@ -251,7 +249,7 @@ class CanvasInformationDisplay(MiniWidget):
             preview_canvas.content.shapes.append(cv.Image(layer.get('capture', ""), 0, 0, self.widget.canvas_width / 2, self.widget.canvas_height / 2))
                
         if active_preview_image is None:
-            self.p.show_dialog(SnackBar("Error finding layer capture for blur"))
+            self.page.show_dialog(SnackBar("Error finding layer capture for blur"))
             return
 
         dlg = ft.AlertDialog(
@@ -262,11 +260,11 @@ class CanvasInformationDisplay(MiniWidget):
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
             title=f"Set Blur for {layer_name}",
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
                 ft.TextButton("Apply", on_click=_apply_blur, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
             ]
         )
-        self.p.show_dialog(dlg)     
+        self.page.show_dialog(dlg)     
 
     # Called when we reorder our layers list and updates to new positions
     async def _reorder_layers(self, e: ft.OnReorderEvent):
@@ -277,7 +275,7 @@ class CanvasInformationDisplay(MiniWidget):
         
         layers = self.data.get('Layers', [])
         if new_index < 0 or old_index < 0 or new_index >= len(layers) or old_index >= len(layers):
-            self.p.show_dialog(SnackBar(f"Invalid layer reorder indices. New index: {new_index}, -- Old Index: {old_index}"))
+            self.page.show_dialog(SnackBar(f"Invalid layer reorder indices. New index: {new_index}, -- Old Index: {old_index}"))
             return
         layers.insert(new_index, layers.pop(old_index))
         self.data['Layers'] = layers
@@ -299,7 +297,7 @@ class CanvasInformationDisplay(MiniWidget):
         name = e.control.data 
 
         if len(self.data.get('Layers', [])) <= 1:
-            self.p.show_dialog(SnackBar(f"A canvas must have at least one layer. {name} was NOT deleted"))
+            self.page.show_dialog(SnackBar(f"A canvas must have at least one layer. {name} was NOT deleted"))
             return
 
         async def _delete_layer_confirmed(e=None):
@@ -321,7 +319,7 @@ class CanvasInformationDisplay(MiniWidget):
             self.widget.story.blocker.visible = True
             self.widget.story.blocker.update()
             await asyncio.sleep(0)
-            self.p.pop_dialog()
+            self.page.pop_dialog()
 
             self.widget.reload_widget()
             self.widget.story.blocker.visible = False
@@ -332,11 +330,11 @@ class CanvasInformationDisplay(MiniWidget):
         dlg = ft.AlertDialog(
             title=f"Delete {name}? This action cannot be undone.",
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
+                ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
                 ft.TextButton("Delete", on_click=_delete_layer_confirmed, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
             ]
         )
-        self.p.show_dialog(dlg)
+        self.page.show_dialog(dlg)
 
     # Sets the new active layer
     async def _toggle_selected_layer_visibility(self, e):
@@ -441,7 +439,7 @@ class CanvasInformationDisplay(MiniWidget):
             name = new_layer_tf.value or f"Layer {len(self.data.get('Layers', []))+1}"
             self.data['Layers'].append({'name': name, 'visible': True, 'capture': ""})
             await self.save_dict()
-            self.p.pop_dialog()
+            self.page.pop_dialog()
 
             self.widget.reload_widget()
             self.widget.story.blocker.visible = False
@@ -453,11 +451,11 @@ class CanvasInformationDisplay(MiniWidget):
             title="Layer Name",
             content=new_layer_tf,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
                 create_button
             ]
         )
-        self.p.show_dialog(dlg)
+        self.page.show_dialog(dlg)
 
     async def _rename_layer_clicked(self, e):
 
@@ -501,7 +499,7 @@ class CanvasInformationDisplay(MiniWidget):
                 if task.get('layer_name') == old_name:
                     task['layer_name'] = new_name
             await self.save_dict()
-            self.p.pop_dialog()
+            self.page.pop_dialog()
 
             self.widget.reload_widget()
             if self.widget.story.blocker.visible:
@@ -518,11 +516,11 @@ class CanvasInformationDisplay(MiniWidget):
             title="Layer Name",
             content=rename_layer_tf,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
                 rename_button
             ]
         )
-        self.p.show_dialog(dlg)
+        self.page.show_dialog(dlg)
 
     # Called when undoing a stroke on the canvas
     async def undo(self, e=None):

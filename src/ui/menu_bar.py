@@ -243,9 +243,8 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                         on_click=_rename_clicked,
                     ),
                     ft.MenuItemButton(
-                        content=ft.Text("Upload Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                        disabled=True,
-                        # Options: story, chapter, map, drawing, character, note
+                        content=ft.Text("Import Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                        tooltip="Import a folder containing an exported story from Story Board on another device.",
                         leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
                         close_on_click=True,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
@@ -253,10 +252,9 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Export Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                        disabled=True,
-                        # Options: story, chapter, map, drawing, character, note
                         leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
                         close_on_click=True,
+                        tooltip="Export's your story to a folder on your device. Allows for easy import to Story Board on another device.",
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10),),
                         #on_click=_open_clicked,
                     ),

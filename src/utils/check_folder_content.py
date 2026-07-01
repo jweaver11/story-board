@@ -6,7 +6,7 @@ import json
 from models.views.story import Story
 
 
-def return_folder_content(directory: str, story: Story, parent_folder_expansion_tile: ft.ExpansionTile | ft.Column):
+def return_folder_content(directory: str, story: Story, expansion_tile: ft.ExpansionTile | ft.Column):
     ''' Returns a list of flet controls representing the contents of the folder '''
 
     # Return normalized path for folder comparison
@@ -47,22 +47,21 @@ def return_folder_content(directory: str, story: Story, parent_folder_expansion_
         # Set our data to pass in for the folder
         color = folders_meta.get(_canon_path(full_path), {}).get('color', "primary")
 
-        sub_folder_expansion_tile = ft.ExpansionTile(
+        new_expansion_tile = ft.ExpansionTile(
             title=ft.Text(capital_dir_path, color=color, weight=ft.FontWeight.BOLD), 
             leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, color=color),
-            controls_padding=ft.Padding(12, 0, 0, 0), dense=True,
-            tile_padding=ft.Padding(0, 0, 0, 0), 
-            shape=ft.RoundedRectangleBorder(),
-            expanded=True,
-            controls=[],
-            
+            controls_padding=ft.Padding(15, 5, 0, 5), dense=True,
+            tile_padding=ft.Padding(5, 0, 0, 0), shape=ft.RoundedRectangleBorder(),
         )
 
         # Recursivly load the new folders content as well
-        return_folder_content(full_path, story, sub_folder_expansion_tile)
+        return_folder_content(full_path, story, new_expansion_tile)
+
+        if new_expansion_tile.controls:
+            new_expansion_tile.expanded = True
 
         # Add our expansion tile for the directory to its parent, or the column if top most directory
-        parent_folder_expansion_tile.controls.append(sub_folder_expansion_tile)
+        expansion_tile.controls.append(new_expansion_tile)
         
     # Now go through our files
     for file_name in files:
@@ -74,29 +73,20 @@ def return_folder_content(directory: str, story: Story, parent_folder_expansion_
         title = file_data.get('title', None)
         tag = file_data.get('tag', [])
         color = file_data.get('color', ft.Colors.PRIMARY)
-        type = file_data.get('type', "")
 
+        # Set our icon based on what type of widget we are using tag
         match tag:
-            case "document": icon = ft.Icons.DESCRIPTION_OUTLINED
-            case "canvas": icon = ft.Icons.BRUSH_OUTLINED
-            case "canvas_board": icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
-            case "note": icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
-            case "character": icon = ft.Icons.PERSON_OUTLINED
-            case "plotline": icon = ft.Icons.TIMELINE_OUTLINED
-            case "map": icon = ft.Icons.MAP_OUTLINED
-            case "world": icon = ft.Icons.PUBLIC_OUTLINED
-            case "character_connection_map": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
-            case "item": icon = ft.Icons.STAR_OUTLINE_ROUNDED 
-            case "comic_preview": icon = ft.Icons.SLIDESHOW_OUTLINED
-            case "chart": 
-                if type == "bar": icon = ft.Icons.INSERT_CHART_OUTLINED
-                else: icon = ft.CupertinoIcons.COMPASS
-            case _: icon = ft.Icons.ERROR_OUTLINE
+            case "document": icon = ft.Icon(ft.Icons.DESCRIPTION_OUTLINED)
+            case "canvas": icon = ft.Icon(ft.Icons.BRUSH_OUTLINED)
+            case "canvas_board": icon = ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED)
+            case "note": icon = ft.Icon(ft.Icons.STICKY_NOTE_2_OUTLINED)
+            case "character": icon = ft.Icon(ft.Icons.PERSON_OUTLINE)
+            case "character_connection_map": icon = ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED)
+            case "plotline": icon = ft.Icon(ft.Icons.TIMELINE)
+            case "map": icon = ft.Icon(ft.Icons.MAP_OUTLINED)
+            case "world": icon = ft.Icon(ft.Icons.PUBLIC_OUTLINED)
+            case "object": icon = ft.Icon(ft.Icons.SHIELD_OUTLINED)
+            case _: icon = ft.Icon(ft.Icons.ERROR_OUTLINE)
 
-        parent_folder_expansion_tile.controls.append(
-            ft.Container(
-                ft.Row([ft.Icon(icon, color), ft.Text(f"{title}", weight=ft.FontWeight.BOLD)]),
-                margin=ft.Margin.only(bottom=5)
-            )
-        )
+        expansion_tile.controls.append(ft.Row([icon, ft.Text(f"{title}", weight=ft.FontWeight.BOLD)]))
 

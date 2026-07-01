@@ -12,7 +12,7 @@ from utils.safe_string_checker import return_safe_name
 class Note(Widget):
 
     # Constructor
-    def __init__(self, title: str, page: ft.Page, directory_path: str, story: Story, data: dict = None, is_rebuilt: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_rebuilt: bool = False):
 
         # Check if we're new and need to create file
         is_new = False
@@ -22,7 +22,6 @@ class Note(Widget):
         # Initialize from our parent class 'Widget'. 
         super().__init__(
             title = title,                      # Title of the note
-            page = page,                        # Grabs our original page for convenience and consistency
             directory_path = directory_path,    # Path to our notes json file
             story = story,                      # Reference to our story object
             data = data,
@@ -52,7 +51,7 @@ class Note(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.needs_file_write = True
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
 
         if self.visible:
             self.reload_widget()

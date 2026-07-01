@@ -20,7 +20,6 @@ class Location(MiniWidget):
         self, 
         title: str, 
         widget: Widget, 
-        page: ft.Page, 
         key: str,                          
         left: int = None,                   
         top: int = None,                   
@@ -31,7 +30,6 @@ class Location(MiniWidget):
         super().__init__(
             title=title,        
             widget=widget,        
-            page=page,          
             key=key,  
             data=data,    
         ) 
@@ -62,9 +60,6 @@ class Location(MiniWidget):
         self.map_control: ft.Container    # Circle container to shows our location icon on the map
         self.map_label: ft.Text
         
-        
-                    
-
         # State variables
         self.is_dragging: bool = False              # If we are currently dragging our plot point
 

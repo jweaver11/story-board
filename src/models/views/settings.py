@@ -171,6 +171,24 @@ class Settings(ft.View):
         return super().before_update()
         
 
+    
+
+    # Called for little data changes
+    def update_data(self, **kwargs):
+        ''' Changes a key/value pair in our data and saves the json file '''
+
+        # Allow updating of nested dicts without overriding the entire dict
+        def _merge_data(target: dict, updates: dict):
+            for key, value in updates.items():
+                current_value = target.get(key)
+                if isinstance(current_value, dict) and isinstance(value, dict):
+                    _merge_data(current_value, value)
+                else:
+                    target[key] = value
+
+        _merge_data(self.data, kwargs)  # Merge the new data into the existing data
+
+    
     # Called whenever there are changes in our data
     async def save_file(self):
         ''' Saves our current data to the json file '''
@@ -186,21 +204,6 @@ class Settings(ft.View):
         except Exception as e:
             print(f"Error saving widget to {self.file_path}: {e}") 
             print("Data that failed to save: ", self.data)
-
-    # Called for little data changes
-    def update_data(self, **kwargs):
-        ''' Changes a key/value pair in our data and saves the json file '''
-
-        try:
-            for key, value in kwargs.items():
-                self.data.update({key: value})
-
-            self.p.run_task(self.save_file)
-
-        # Handle errors
-        except Exception as e:
-            print(f"Error changing settings data: {e}")
-
 
     async def _close_settings(self, e=None):
         ''' Closes the settings view and returns to the story or home view '''

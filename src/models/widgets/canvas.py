@@ -31,7 +31,6 @@ class Canvas(Widget):
     def __init__(
         self, 
         title: str, 
-        page: ft.Page, 
         directory_path: str, 
         story: Story, 
         data: dict = None,
@@ -48,7 +47,6 @@ class Canvas(Widget):
         # Parent constructor
         super().__init__(
             title=title,           
-            page=page,                         
             directory_path=directory_path, 
             story=story,
             data=data,  
@@ -79,7 +77,7 @@ class Canvas(Widget):
         # Saving creates the file if we're new
         if is_new:
             self.needs_file_write = True
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
 
         
 
@@ -195,7 +193,6 @@ class Canvas(Widget):
         id = CanvasInformationDisplay(
             title=self.title,
             widget=self,
-            page=self.p,
             key="canvas_data",     
             data=self.data.get('canvas_data'),      
         )
