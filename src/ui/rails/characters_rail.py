@@ -9,7 +9,6 @@ from styles.menu_option_style import MenuOptionStyle
 from ui.rails.rail import Rail
 from models.views.story import Story
 from styles.rail.widget_rail_item import WidgetRailItem
-from styles.rail.tree_view_file import TreeViewFile
 import json
 from utils.alert_dialogs.character_connection import new_character_connection_clicked
 from models.isolated_controls.column import IsolatedColumn
@@ -161,23 +160,20 @@ class CharactersRail(Rail):
 
         async def _change_sort_method(e: ft.Event):
             new_sort_method = e.data
-            self.story.data['character_rail_sort_method'] = new_sort_method
-            await self.story.save_dict()
+            self.story.update_data(**{'character_rail_sort_method': new_sort_method})
             self.story.active_rail.reload_rail()
 
         async def _change_sort_direction(e: ft.Event):
 
             old_sort_method = self.story.data.get('character_rail_sort_direction', "Ascending")
             if old_sort_method == "Ascending":
-                self.story.data['character_rail_sort_direction'] = "Descending"
+                self.story.update_data(**{'character_rail_sort_direction': "Descending"})
                 e.control.tooltip = "Sort Direction: Descending"
                 e.control.icon = ft.CupertinoIcons.SORT_UP
             else:
-                self.story.data['character_rail_sort_direction'] = "Ascending"
+                self.story.update_data(**{'character_rail_sort_direction': "Ascending"})
                 e.control.tooltip = "Sort Direction: Ascending"
                 e.control.icon = ft.CupertinoIcons.SORT_DOWN
-
-            await self.story.save_dict()
 
             characters_list_view.reverse = self.story.data.get('character_rail_sort_direction', "Ascending") == "Descending"
             ccm_list_view.reverse = self.story.data.get('character_rail_sort_direction', "Ascending") == "Descending"
@@ -200,8 +196,7 @@ class CharactersRail(Rail):
             for idx, ctrl in enumerate(e.control.controls):
                 widget = ctrl.content.widget
                 if widget.data.get('rail_index', 999) != idx:
-                    widget.data['rail_index'] = idx 
-                    await widget.save_dict()
+                    widget.update_data(**{'rail_index': idx})
 
         # Button to open our character connections editor
         character_connections_button = ft.IconButton(
@@ -296,13 +291,11 @@ class CharactersRail(Rail):
             # Update their index by their actual rail position now, since new characters start with index of 999
             for idx, char in enumerate(characters):
                 if char.data.get('rail_index', 999) != idx:
-                    char.data['rail_index'] = idx 
-                    self.p.run_task(char.save_dict)
+                    char.update_data(**{'rail_index': idx})
 
             for idx, ccm in enumerate(character_connection_maps):
                 if ccm.data.get('rail_index', 999) != idx:
-                    ccm.data['rail_index'] = idx 
-                    self.p.run_task(ccm.save_dict)
+                    char.update_data(**{'rail_index': idx})
 
         # Otherwise just sort by the way the system loaded them
         else:

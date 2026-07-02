@@ -13,7 +13,7 @@ import asyncio
 
 # Expansion tile for all sub directories (folders) in a directory
 @ft.control
-class TreeViewDirectory(ft.GestureDetector):
+class RailFolder(ft.GestureDetector):
 
 
     def __init__(
@@ -25,7 +25,7 @@ class TreeViewDirectory(ft.GestureDetector):
         rail: ft.Control,                                       # Reference to the rail this directory is in
         is_expanded: bool = False,                              # Whether this directory is expanded or not
         color: str = "primary",                                 # Color of the folder icon
-        father: 'TreeViewDirectory' = None,                     # Optional parent directory tile, if there is one
+        father: 'RailFolder' = None,                     # Optional parent directory tile, if there is one
     ):
         
         # Reference for all our passed in data

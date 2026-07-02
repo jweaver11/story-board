@@ -38,66 +38,14 @@ class Document(Widget):
 
                 'show_info': True,   # Whether to show the info column on the side of our charts or not.
 
-                # Comments displayed on the side of the document
-                'comments': {           
-                    'Summary': dict,      # Default comment for summaries.
-                },       
-                'reference_images': {},   # Reference images 
+                # Holds our comments and reference images in data
+                'mini_widgets': [],
 
                 # The text as json list data that is loaded and saved
                 'document_data': list,       
             }
         )
-
-        # We render our own mini widgets (comments), so we don't need parent class to render them as well
-        self.no_render_mini_widgets = True  
-
-        self.comments = {}
-        self.reference_images = {}
-        self.load_comments()
-        self.load_reference_images()
-
-        if self.visible:
-            self.reload_widget()         # Build our widget if it's visible on init        
-
-    # Called when our canvas resizes
-    async def _get_size(self, e: ft.LayoutSizeChangeEvent[ft.Container]):
-        ''' Updates our w and h variables when sizing canvas resizes '''
-        if e.width <= 0 or e.height <= 0:
-            print("No size, skipping")
-            return 
-        #if e.width.type
-        self.w = int(e.width) or 0
-        self.h = int(e.height) or 0
-
-        if self.skip_update:
-            self.skip_update = False
-            return
-        
-        self.skip_update = True
-        return
-
-        min_document_height = 1000        # Minimum doument height to maintain readability and usability
-        actual_document_height = self.h - 32    # Actual Document height
-
-        # Check we're tall enough
-        if actual_document_height < min_document_height:
-
-            # If not, set our height unset aspect ratio, since its used over height
-            self.document_container.height = min_document_height
-            self.document_container.aspect_ratio = None
-
-            # Only update every other time this is called, or updating re-calls this function
-            self.document_container.update()
-            self.skip_update = True
-                
-        else:
-
-            # If we're already tall enough ignore an update
-            self.document_container.aspect_ratio = 8.5/11.0
-            self.document_container.height = None
-            self.document_container.update()
-            self.skip_update = True
+      
 
     def load_comments(self):
         ''' Loads our mini notes from our data into live objects '''
@@ -138,9 +86,6 @@ class Document(Widget):
         )
         self.reference_images[title] = reference_image
         self.mini_widgets.append(reference_image)
-        
-    
-   
 
     async def _create_reference_image_clicked(self, e):
 
@@ -167,9 +112,90 @@ class Document(Widget):
                 pass
                 #print(f"Error loading image: {e}")
 
+    class Comment(ft.Container):
+
+        # TODO: Started re-doing documents to use build only!!!!
+
+
+
+
+        ############
+
+        # Constructor
+        def __init__(self, title: str, widget: Widget, key: str, data: dict=None):
+
+            # Parent constructor
+            super().__init__(data=data) 
+
+            self.key = key
+            self.widget = widget
+            self.title = title
+
+            # If we're new, give default values for our data 
+            if data is None:
+                self.data = {
+                    'tag': "comment",
+                    'content': "",
+                    'collapsed': False,
+                }
+
+            self.padding = ft.Padding.all(10)
+
+        def build(self):
+            async def _show_options_button(e=None):
+                options_button.visible = True
+                options_button.update()
+
+            async def _hide_options_button(e=None):
+                options_button.visible = False
+                options_button.update()
+
+            title_control = ft.GestureDetector(
+                content=ft.Row([
+                    ft.Text(
+                        f"{self.data['title']}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), 
+                        color=self.data.get('color', None), weight=ft.FontWeight.BOLD, expand=True,
+                    ),
+                    options_button := ft.IconButton(
+                        icon=ft.Icons.MORE_VERT_ROUNDED,
+                        visible=False,
+                        on_click=lambda _: self.widget.story.open_menu(self._get_menu_options()),
+                        mouse_cursor=ft.MouseCursor.CLICK,
+                    ),
+                ], height=35),
+                #on_double_tap=self._rename_clicked,
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
+                on_hover=self._set_menu_coords,
+                on_enter=_show_options_button,
+                on_exit=_hide_options_button,
+                #mouse_cursor="click", 
+                hover_interval=100,
+            )
+                
+            
+
+
+            content_tf = ft.TextField(
+                self.data['content'], expand=True, 
+                multiline=True, on_blur=lambda e: self.widget.update_data(**{'content': e.control.value}),
+                dense=True, capitalization=ft.TextCapitalization.SENTENCES
+            )
+
+            self.content = ft.Column(
+                tight=True, 
+                alignment=ft.MainAxisAlignment.START, #spacing=6,
+                controls=[
+                    title_control,
+                    content_tf,
+                ]
+            )
+
     # Called after any changes happen to the data that need to be reflected in the UI
-    def reload_widget(self):
+    def build(self):
         ''' Reloads/Rebuilds our widget based on current data '''
+
+        def load_sidebar() -> ft.Column:
+            pass
 
         async def _save_quill():
             ''' Saves our quill data, but marks that it needs to be saved '''
@@ -290,7 +316,7 @@ class Document(Widget):
             bgcolor=ft.Colors.SURFACE_CONTAINER,
         )
 
-        self.body_container.content = ft.Row([
+        self.content = ft.Row([
             document_container,
             ft.Column([     # Extra column to force vertical expansion
                 
@@ -299,10 +325,10 @@ class Document(Widget):
         ], expand=True)
 
 
-        self._render_widget()
+    def reload_widget(self):    # TEMP TO PREVENT ERRORS FROM CALLS
+        return
 
-        
-
+# DONE BUILD
         
 
         

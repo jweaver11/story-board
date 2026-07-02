@@ -8,8 +8,8 @@ import flet as ft
 import os
 import json
 from models.views.story import Story
-from styles.rail.tree_view_directory import TreeViewDirectory
-from styles.rail.tree_view_file import TreeViewFile
+from styles.rail.rail_folder import RailFolder
+from styles.rail.rail_file import RailFile
 import math
 
 
@@ -18,7 +18,7 @@ def load_directory_data(
     story: Story,                                         # Story reference for any story related data
     directory: str,                                       # The directory to load data from
     rail: ft.Control,                                     # The rail this tree view is in
-    folder: TreeViewDirectory = None,             # Optional parent expansion tile for when recursively called
+    folder: RailFolder = None,             # Optional parent expansion tile for when recursively called
     column: ft.Column = None,                             # Optional column to add to if this is the top most call with no parent expansion tile
 ) -> ft.Control:
     
@@ -61,7 +61,7 @@ def load_directory_data(
             is_expanded = folders_meta.get(_canon_path(full_path), {}).get('is_expanded', False)    
 
             # Create the new folder dropdown
-            new_folder = TreeViewDirectory(
+            new_folder = RailFolder(
                 full_path=full_path,
                 title=capital_dir_path,
                 story=story, page=page,
@@ -107,7 +107,7 @@ def load_directory_data(
             if widget is not None:
 
                 # Create the file item
-                file = TreeViewFile(
+                file = RailFile(
                     widget,
                     father=folder,
                 )       
@@ -128,17 +128,17 @@ def load_directory_data(
         if folder is not None:
             sorted_files = []
             for control in folder.expansion_tile.controls:
-                if isinstance(control, TreeViewFile):
+                if isinstance(control, RailFile):
                     sorted_files.append(control)
             sorted_files.sort(key=lambda x: x.widget.data.get('title', '').lower())
-            folder.expansion_tile.controls = [control for control in folder.expansion_tile.controls if not isinstance(control, TreeViewFile)] + sorted_files
+            folder.expansion_tile.controls = [control for control in folder.expansion_tile.controls if not isinstance(control, RailFile)] + sorted_files
         else:
             sorted_files = []
             for control in column.controls:
-                if isinstance(control, TreeViewFile):
+                if isinstance(control, RailFile):
                     sorted_files.append(control)
             sorted_files.sort(key=lambda x: x.widget.data.get('title', '').lower())
-            column.controls = [control for control in column.controls if not isinstance(control, TreeViewFile)] + sorted_files
+            column.controls = [control for control in column.controls if not isinstance(control, RailFile)] + sorted_files
 
         # Return the parent expansion tile or column depending on what was provided
         return folder if folder is not None else column

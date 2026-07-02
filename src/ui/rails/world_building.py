@@ -158,23 +158,20 @@ class WorldBuildingRail(Rail):
 
         async def _change_sort_method(e: ft.Event):
             new_sort_method = e.data
-            self.story.data['world_building_rail_sort_method'] = new_sort_method
-            await self.story.save_dict()
+            self.story.update_data(**{'world_building_rail_sort_method': new_sort_method})
             self.story.active_rail.reload_rail()
 
         async def _change_sort_direction(e: ft.Event):
 
             old_sort_method = self.story.data.get('world_building_rail_sort_direction', "Ascending")
             if old_sort_method == "Ascending":
-                self.story.data['world_building_rail_sort_direction'] = "Descending"
+                self.story.update_data(**{'world_building_rail_sort_direction': "Descending"})
                 e.control.tooltip = "Sort Direction: Descending"
                 e.control.icon = ft.CupertinoIcons.SORT_UP
             else:
-                self.story.data['world_building_rail_sort_direction'] = "Ascending"
+                self.story.update_data(**{'world_building_rail_sort_direction': "Ascending"})
                 e.control.tooltip = "Sort Direction: Ascending"
                 e.control.icon = ft.CupertinoIcons.SORT_DOWN
-
-            await self.story.save_dict()
 
             maps_list_view.reverse = self.story.data.get('world_building_rail_sort_direction', "Ascending") == "Descending"
             worlds_list_view.reverse = self.story.data.get('world_building_rail_sort_direction', "Ascending") == "Descending"
@@ -199,8 +196,7 @@ class WorldBuildingRail(Rail):
             for idx, ctrl in enumerate(e.control.controls):
                 widget = ctrl.content.widget
                 if widget.data.get('rail_index', 999) != idx:
-                    widget.data['rail_index'] = idx 
-                    await widget.save_dict()
+                    widget.update_data(**{'rail_index': idx})
         
 
         menubar = ft.MenuBar(
@@ -297,23 +293,19 @@ class WorldBuildingRail(Rail):
             # Update their index by their actual rail position now, since new maps start with index of 999
             for idx, map in enumerate(maps):
                 if map.data.get('rail_index', 999) != idx:
-                    map.data['rail_index'] = idx 
-                    self.p.run_task(map.save_dict)
+                    map.update_data(**{'rail_index': idx})
 
             for idx, world in enumerate(worlds):
                 if world.data.get('rail_index', 999) != idx:
-                    world.data['rail_index'] = idx 
-                    self.p.run_task(world.save_dict)
+                    world.update_data(**{'rail_index': idx})
 
             for idx, chart in enumerate(charts):
                 if chart.data.get('rail_index', 999) != idx:
-                    chart.data['rail_index'] = idx 
-                    self.p.run_task(chart.save_dict)
+                    chart.update_data(**{'rail_index': idx})
 
             for idx, item in enumerate(items):
                 if item.data.get('rail_index', 999) != idx:
-                    item.data['rail_index'] = idx 
-                    self.p.run_task(item.save_dict)
+                    item.update_data(**{'rail_index': idx})
 
         # Otherwise just sort by the way the system loaded them
         else:

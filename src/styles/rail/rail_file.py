@@ -1,7 +1,7 @@
 import flet as ft
 from models.widget import Widget
 from styles.menu_option_style import MenuOptionStyle
-from styles.rail.tree_view_directory import TreeViewDirectory
+from styles.rail.rail_folder import RailFolder
 from models.app import app
 from styles.colors import colors
 import os
@@ -9,12 +9,12 @@ import asyncio
 import math
 
 # Class for items within a tree view on the rail
-class TreeViewFile(ft.GestureDetector):
+class RailFile(ft.GestureDetector):
 
     def __init__(
         self, 
         widget: Widget, 
-        father: TreeViewDirectory = None,
+        father: RailFolder = None,
     ):
         
         
