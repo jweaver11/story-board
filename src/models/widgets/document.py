@@ -11,6 +11,9 @@ import math
 from models.mini_widgets.reference_image import ReferenceImage
 from utils.safe_string_checker import return_safe_name
 import asyncio
+import uuid
+from styles.text_field import TextField
+from styles.snack_bar import SnackBar
 
 
 # Class that holds our text document objects
@@ -34,301 +37,353 @@ class Document(Widget):
                 # Widget data
                 'tag': "document",
                 'color': app.settings.data.get('default_canvas_color'),
-                'mini_widgets_displayed_overtop': False,  
 
                 'show_info': True,   # Whether to show the info column on the side of our charts or not.
 
                 # Holds our comments and reference images in data
-                'mini_widgets': [],
+                'mini_widgets': dict(),
 
                 # The text as json list data that is loaded and saved
-                'document_data': list,       
+                'document_data': list(),       
             }
-        )
-      
+        )  
 
-    def load_comments(self):
-        ''' Loads our mini notes from our data into live objects '''
-        from models.mini_widgets.comment import Comment
-
-        for title, comment_data in self.data['comments'].items():
-            self.comments[title] = Comment(
-                title=title, 
-                widget=self, 
-                key="comments",
-                data=comment_data
-            )
-            self.mini_widgets.append(
-                self.comments[title]
-            )
-
-    def load_reference_images(self):
-        for title, image_data in self.data['reference_images'].items():
-            self.reference_images[title] = ReferenceImage(
-                title=title, 
-                widget=self, 
-                key="reference_images",
-                data=image_data
-            )
-            self.mini_widgets.append(
-                self.reference_images[title]
-            )
-
-    def _create_reference_image(self, title: str, side_location: str, image_str: str):
-        reference_image = ReferenceImage(
-            title=title,
-            widget=self,
-            key="reference_images",
-            data={
-                'image': image_str,
-                'side_location': side_location
-            }
-        )
-        self.reference_images[title] = reference_image
-        self.mini_widgets.append(reference_image)
-
-    async def _create_reference_image_clicked(self, e):
-
-        side_location = e.control.data  
-
-        files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
-        if files:
-
-            file_path = files[0].path
-            file_name = files[0].name.split(".")[0]
-            try:
-                import base64
-
-                with open(file_path, "rb") as image_file:
-                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-
-                self._create_reference_image(title=file_name, side_location=side_location, image_str=encoded_string)
-                
-                #await asyncio.sleep(0.2)  # Small delay to ensure data is saved before reloading
-                self.reload_widget() # Reload workspace to update the UI with our new image
-                    
-
-            except Exception as _:
-                pass
-                #print(f"Error loading image: {e}")
-
-    class Comment(ft.Container):
-
-        # TODO: Started re-doing documents to use build only!!!!
-
-
-
-
-        ############
+    class Comment(TextField):
 
         # Constructor
-        def __init__(self, title: str, widget: Widget, key: str, data: dict=None):
+        def __init__(self, title: str, widget: Widget, data: dict=None):
 
-            # Parent constructor
-            super().__init__(data=data) 
-
-            self.key = key
             self.widget = widget
-            self.title = title
 
             # If we're new, give default values for our data 
             if data is None:
-                self.data = {
+                data = {
+                    'id': str(uuid.uuid4()),
+                    'title': title,
                     'tag': "comment",
                     'content': "",
-                    'collapsed': False,
                 }
 
-            self.padding = ft.Padding.all(10)
+            # Parent constructor
+            super().__init__(
+                data=data, 
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+                multiline=True, dense=True, expand=True, border_radius=10,
+                on_blur=lambda e: self.update_data(**{'content': e.control.value}),
+                capitalization=ft.TextCapitalization.SENTENCES,
+                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, mouse_cursor="click", on_click=self.delete_comment)
+            ) 
 
+        # Updates our data then the associated dict inside parents 'mini_widgets' dict
+        def update_data(self, **kwargs):
+            self.data.update(kwargs)
+            self.widget.update_data(mini_widgets={self.data["id"]: self.data})
+
+        # Deletes this comment from parents data and controls
+        def delete_comment(self, e: ft.Event):
+            self.widget.data['mini_widgets'].pop(self.data["id"], None)
+            self.widget.update_data(mini_widgets=self.widget.data['mini_widgets'])
+            self.widget.mini_widgets_column.controls.remove(self)
+            self.widget.mini_widgets_column.update()
+
+        # Build the comment
         def build(self):
-            async def _show_options_button(e=None):
-                options_button.visible = True
-                options_button.update()
+            self.value = self.data.get('content', "")
+            self.label = self.data.get('title', "")
+    
+    class ReferenceImage(ft.Container):
+        def __init__(self, widget: Widget, data: dict=None):
 
-            async def _hide_options_button(e=None):
-                options_button.visible = False
-                options_button.update()
+            self.widget = widget
 
-            title_control = ft.GestureDetector(
-                content=ft.Row([
-                    ft.Text(
-                        f"{self.data['title']}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), 
-                        color=self.data.get('color', None), weight=ft.FontWeight.BOLD, expand=True,
-                    ),
-                    options_button := ft.IconButton(
-                        icon=ft.Icons.MORE_VERT_ROUNDED,
-                        visible=False,
-                        on_click=lambda _: self.widget.story.open_menu(self._get_menu_options()),
-                        mouse_cursor=ft.MouseCursor.CLICK,
-                    ),
-                ], height=35),
-                #on_double_tap=self._rename_clicked,
-                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
-                on_hover=self._set_menu_coords,
-                on_enter=_show_options_button,
-                on_exit=_hide_options_button,
-                #mouse_cursor="click", 
-                hover_interval=100,
-            )
-                
+            # If we're new, give default values for our data 
+            if data is None:
+                data = {
+                    'id': str(uuid.uuid4()),
+                    'tag': "reference_image",
+                    'image': "",
+                }
             
+            # Parent constructor
+            super().__init__(
+                data=data,
+                border_radius=10,
+                expand=True,
+                padding=10,
+            ) 
 
+        # Updates our data then the associated dict inside parents 'mini_widgets' dict
+        def update_data(self, **kwargs):
+            self.data.update(kwargs)
+            self.widget.update_data(mini_widgets={self.data["id"]: self.data})
+            
+        # Deletes this comment from parents data and controls
+        def delete_image(self, e: ft.Event):
+            self.widget.data['mini_widgets'].pop(self.data["id"], None)
+            self.widget.update_data(mini_widgets=self.widget.data['mini_widgets'])
+            self.widget.mini_widgets_column.controls.remove(self)
+            self.widget.mini_widgets_column.update()
 
-            content_tf = ft.TextField(
-                self.data['content'], expand=True, 
-                multiline=True, on_blur=lambda e: self.widget.update_data(**{'content': e.control.value}),
-                dense=True, capitalization=ft.TextCapitalization.SENTENCES
+        # Build the image
+        def build(self):
+
+            async def show_delete_icon(e: ft.Event):
+                self.content.content.controls[1].opacity = 1
+                self.content.update()
+            async def hide_delete_icon(e: ft.Event):
+                self.content.content.controls[1].opacity = 0
+                self.content.update()
+            
+            self.image = ft.DecorationImage()
+            self.content = ft.GestureDetector(
+                ft.Stack([
+                    ft.Image(src=self.data['image'], fit=ft.BoxFit.CONTAIN),
+                    ft.IconButton(
+                        ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, tooltip="Delete reference image?",
+                        opacity=0, scale=1.5, on_click=self.delete_image, mouse_cursor="click",
+                        animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                    ),
+                ], alignment=ft.Alignment.CENTER),
+                on_enter=show_delete_icon,
+                on_exit=hide_delete_icon,
             )
-
-            self.content = ft.Column(
-                tight=True, 
-                alignment=ft.MainAxisAlignment.START, #spacing=6,
-                controls=[
-                    title_control,
-                    content_tf,
-                ]
-            )
+            
 
     # Called after any changes happen to the data that need to be reflected in the UI
     def build(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
-        def load_sidebar() -> ft.Column:
-            pass
+        async def new_mini_widget_clicked(e: ft.Event):
+            
+            # Get the type of mini widget (comment or reference image)
+            mw_type = e.control.data   
+
+            # If reference image, handle that seperately and return
+            if mw_type == "reference_image":
+                await new_ref_image_clicked(e)
+                return
+            
+            # Otherwise its a comment, so hide our button and show our textfield
+            new_mini_widget_button.parent.visible = False
+            new_mini_widget_button.parent.update()
+            new_comment_tf_placeholder.visible = False
+            new_comment_tf_placeholder.update()
+            new_comment_tf.visible = True
+            new_comment_tf.value = ""
+            new_comment_tf.data = mw_type
+            new_comment_tf.update()
+            await new_comment_tf.focus()  
+
+        # Shows our new mini widget button and hides our textfield after creating/blurring comment tf
+        async def show_new_mini_widget_button(e: ft.Event):
+            new_mini_widget_button.parent.visible = True
+            new_mini_widget_button.parent.update()
+            new_comment_tf.value = ""
+            new_comment_tf.visible = False
+            new_comment_tf.update()
+            new_comment_tf_placeholder.visible = True
+            new_comment_tf_placeholder.update()
+
+        # Creates our new comment in data then adds it to the column
+        async def create_comment(e: ft.Event):
+            comment_title = e.control.value.strip()
+            new_comment = self.Comment(title=comment_title, widget=self)
+            self.update_data(**{'mini_widgets': {new_comment.data["id"]: new_comment.data}})
+            self.mini_widgets_column.controls.append(new_comment)
+            self.mini_widgets_column.update()
+
+            
+        # Opens our file picker to imoprt our image
+        async def new_ref_image_clicked(e: ft.Event):
+            files = await ft.FilePicker().pick_files(allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            if files:
+
+                file_path = files[0].path
+                try:
+                    import base64
+
+                    with open(file_path, "rb") as image_file:
+                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+
+                    reference_image = self.ReferenceImage(
+                        widget=self, 
+                        data={
+                            'id': str(uuid.uuid4()),
+                            'tag': "reference_image",
+                            'image': encoded_string,
+                        }
+                    )
+                    self.update_data(**{'mini_widgets': {reference_image.data["id"]: reference_image.data}})
+                    self.mini_widgets_column.controls.append(reference_image)
+                    self.mini_widgets_column.update()
+                        
+                except Exception as e:
+                    e.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
+
+
+
+        # Loads our comments and ref images from data into controls to display on right side of document
+        def load_mini_widgets() -> list:
+            mini_widget_controls = []
+            for mw_data in self.data.get('mini_widgets', {}).values():
+                if mw_data['tag'] == "comment":
+                    mini_widget_controls.append(self.Comment(title=mw_data.get('title'), widget=self, data=mw_data))
+                elif mw_data['tag'] == "reference_image":
+                    mini_widget_controls.append(self.ReferenceImage(widget=self, data=mw_data))
+            return mini_widget_controls
+        
+        # Shows our info column
+        async def show_mini_widgets_container(e: ft.Event):
+            self.update_data(**{'show_info': True})
+
+            # 
+            show_info_button.opacity = 0
+            show_info_button.disabled = True
+            show_info_button.mouse_cursor = None
+            show_info_button.update()
+
+            await self.show_mini_widgets_container()
+
+        # Hides our info column
+        async def hide_mini_widgets_container(e: ft.Event):
+            self.update_data(**{'show_info': False})
+            
+            await self.hide_mini_widgets_container()
+            
+            show_info_button.opacity = 1
+            show_info_button.mouse_cursor = ft.MouseCursor.CLICK
+            show_info_button.disabled = False
+            show_info_button.update()
+            
 
         async def _save_quill():
             ''' Saves our quill data, but marks that it needs to be saved '''
-        
-            self.data['document_data'] = await quill_editor.save()
+            self.update_data(**{'document_data': await quill_editor.save()})
+            print("Save quill called")
             
 
         # Rebuild out tab to reflect any changes
         self.create_tab()
-
-        quill = FletQuill(
-            show_toolbar_divider=False,
-            center_toolbar=False,
-            text_data=[{"insert": "Hello from the combined control!\n"}],
-        )
         
+        # Toolbar only
         quill_toolbar = FletQuillToolbar(
             show_toolbar_divider=False,
-                center_toolbar=True,
+            center_toolbar=True,
         )
+        # Editor only 
         quill_editor = FletQuillEditor(
             text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),
             placeholder_text="Start your masterpiece here...",
         )
+        # Both
+        #quill = FletQuill(
+            #show_toolbar_divider=False,
+            #center_toolbar=False,
+            #text_data=[{"insert": "Hello from the combined control!\n"}],
+        #)
 
         # Holds our flet quill
-        document_container = ft.Container(
+        editor_container = ft.Container(
             expand=3, 
             alignment=ft.Alignment.TOP_CENTER, 
             padding=ft.Padding.all(10),
-            content=ft.Column([
-                quill_toolbar, 
-                ft.Container(
-                    ft.KeyboardListener(quill_editor, on_key_down=_save_quill, expand=True),
-                    expand=True, 
-                    border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
-                    border_radius=ft.BorderRadius.all(4),
-                    padding=ft.Padding.all(20),  
-                ),
-            ], expand=True, spacing=0),
-            #height=1200,
-            #aspect_ratio=8.5/11.0,  # paper-like ratio
+            content=ft.Container(
+                ft.KeyboardListener(quill_editor, on_key_down=_save_quill, expand=True),
+                border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
+                border_radius=4,
+                padding=ft.Padding.all(20), expand=True, 
+            ),
+            aspect_ratio=8.5/11.0,  # paper-like ratio
         )
 
-        # If we're not showing info, just give us a button to show info and return early
-        if not self.data.get('show_info', True):
-
-            self.body_container.content = ft.Row(
-                [
-                    document_container, 
-                    ft.IconButton(
-                        ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
-                        on_click=self._toggle_show_info, 
-                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                    )
-                ], expand=True, spacing=0
-            )
-            self._render_widget()
-            return      
+            
         
         # Otherwise, build our info column
-        info_column = ft.Column([
-            
-        ], expand=1, spacing=0, scroll="auto")
-
-        # Add our mini widgets to our info column, with dividers in between
-        for idx, mw in enumerate(self.mini_widgets):
-            info_column.controls.append(mw)
-            if idx != len(self.mini_widgets) - 1:   # Don't add divider after last mini widget
-                info_column.controls.append(ft.Divider())
-            else:
-                info_column.controls.append(ft.Container(expand=True))  # Little padding at the end of the list
-
+        self.mini_widgets_column = ft.Column(load_mini_widgets(), expand=1, scroll="auto")
         
-
-        info_container = ft.Container(
-            ft.Column([
+        self.mini_widgets_container.expand = 1 if self.data.get('show_info', True) else None
+        self.mini_widgets_container.content = ft.Column([
                 ft.Row([
                     ft.Text(
-                        f"\t{self.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+                        f"\t\t{self.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
                         color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
                     ),
-                    ft.PopupMenuButton(
-                        icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, icon_color=self.data.get('color', "primary"),
-                        tooltip="Create new comment or reference image",
-                        style=ft.ButtonStyle(mouse_cursor="click"),
-                        menu_padding=ft.Padding.all(0),
-                        items=[
-                            ft.PopupMenuItem(
-                                "Comment",
-                                ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, self.data.get('color', "primary")), 
-                                on_click=self.create_comment_clicked,
-                                mouse_cursor="click",
-                            ),
-                            ft.PopupMenuItem(
-                                "Reference Image", 
-                                ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), 
-                                on_click=self._create_reference_image_clicked,
-                                data="left",
-                                mouse_cursor="click",
+                    ft.MenuBar(
+                        [
+                            new_mini_widget_button := ft.SubmenuButton(
+                                ft.Container(
+                                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
+                                    padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
+                                    width=40, height=40, alignment=ft.Alignment.CENTER
+                                ),
+                                [
+                                    ft.MenuItemButton(      # Folders
+                                        leading=ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, self.data.get('color', "primary")), content="Comment", 
+                                        data="comment", on_click=new_mini_widget_clicked, close_on_click=True,
+                                        tooltip="Create a new folder to organize your story",
+                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                    ), 
+                                    ft.MenuItemButton(      # Documents
+                                        leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), content="Reference Image", 
+                                        data="reference_image", on_click=new_mini_widget_clicked, close_on_click=True,
+                                        tooltip="Create a new document for text chapters or scenes in your story",
+                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                    ), 
+                                ],
+                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                             ),
                         ],
+                        style=ft.MenuStyle(
+                            bgcolor="transparent", shadow_color="transparent",
+                            shape=ft.RoundedRectangleBorder(radius=4),
+                            padding=ft.Padding.all(0)
+                        ),
                     ),
+                    new_comment_tf := ft.TextField(
+                        label="Comment Title", dense=True, margin=ft.Margin.symmetric(horizontal=6),
+                        capitalization=ft.TextCapitalization.WORDS,
+                        on_blur=show_new_mini_widget_button, #bgcolor=ft.Colors.SURFACE_CONTAINER,
+                        on_submit=create_comment, animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                        visible=False, autofocus=True, expand=True,
+                    ),
+                    new_comment_tf_placeholder := ft.Container(expand=True, visible=True),
                         
-                    ft.Container(expand=True),
                     ft.IconButton(
-                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info,
+                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=hide_mini_widgets_container,
                         mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                     ),
                 ], spacing=0),
-                ft.Divider(),
-                info_column, 
-            ], expand=True, scroll="none", spacing=0),
-            border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
-            padding=ft.Padding.only(left=11, top=8, bottom=8),
-            shadow=ft.BoxShadow(0, 1),
-            expand=1,
+                ft.Divider(2, 2),
+                ft.Container(height=10, opacity=0),
+                self.mini_widgets_column, 
+        ], expand=True, scroll="none", spacing=0)
+            
+
+
+        show_info_button = ft.IconButton(
+            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
+            on_click=show_mini_widgets_container, 
+            opacity=1 if not self.data.get('show_info', True) else 0,
+            disabled=self.data.get('show_info', True),
+            mouse_cursor=ft.MouseCursor.CLICK if not self.data.get('show_info', True) else None,
             bgcolor=ft.Colors.SURFACE_CONTAINER,
         )
 
-        self.content = ft.Row([
-            document_container,
-            ft.Column([     # Extra column to force vertical expansion
-                
-                info_container
-            ], scroll="none", expand=True, spacing=0)
-        ], expand=True)
+
+        self.content = ft.Column([
+            ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE, alignment=ft.Alignment.CENTER_LEFT),
+            ft.Row([
+                editor_container,
+                show_info_button,
+                self.mini_widgets_container,
+            ], expand=True)
+        ], spacing=0, expand=True)
 
 
     def reload_widget(self):    # TEMP TO PREVENT ERRORS FROM CALLS
         return
 
 # DONE BUILD
-        
 
-        
+

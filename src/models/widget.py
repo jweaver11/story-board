@@ -35,7 +35,7 @@ class Widget(ft.Container):
     ):
 
         # Parent constructor to set data and other attributes
-        super().__init__(data=data)
+        super().__init__(data=data, on_size_change=self._set_size, size_change_interval=500)
         self.title: str = title                     
         self.story: Story = story   
         self.is_new = is_new 
@@ -78,7 +78,7 @@ class Widget(ft.Container):
         self.body_container = ft.Container(
             expand=3, #border_radius=ft.BorderRadius.all(10), 
             #padding=ft.Padding.all(16), 
-            on_size_change=self._get_size, size_change_interval=500, clip_behavior=ft.ClipBehavior.NONE
+            on_size_change=self._set_size, size_change_interval=500, clip_behavior=ft.ClipBehavior.NONE
         ) 
 
         # Holds our sizing canvas, body container, header, and mini widgets all under the tab
@@ -143,6 +143,19 @@ class Widget(ft.Container):
                 ft.TabBarView([self.master_stack], expand=True, clip_behavior=ft.ClipBehavior.NONE)# Holds our body
             ], expand=True, spacing=0),
         )   
+
+
+        # TODO: Use this in future for mini widgets:
+        self.mini_widgets_container = ft.Container(
+            border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
+            padding=ft.Padding.symmetric(horizontal=10),
+            shadow=ft.BoxShadow(0, 1), 
+            bgcolor=ft.Colors.SURFACE,
+            width=0, 
+            animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            on_animation_end=self.set_mini_widgets_container_expand,
+        )
+        
 
     # Temp to improve performance
     def before_update(self):
@@ -230,76 +243,10 @@ class Widget(ft.Container):
         else:
             return False
 
-    # Called when our canvas resizes
-    async def _get_size(self, e: ft.LayoutSizeChangeEvent[ft.Container]):
-        ''' Updates our w and h when our widgets body container resizes. Widgets who need to run logic override this '''
-        if e.width <= 0 or e.height <= 0:
-            return 
-        self.w = int(e.width)
-        self.h = int(e.height)
-        
-
-    def create_comment_clicked(self, e=None):
-        ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
-
-        # Checks that the name in the textfield does not match any of the existing mini widgets of that type, and updates visually to reflect
-        async def _check_name_unique(e):
-            name = new_item_tf.value.strip()
-            submit_button.disabled = False
-            new_item_tf.error = None
-            if not name:
-                submit_button.disabled = True
-            elif tag == "comment" and name in self.comments.keys():
-                submit_button.disabled = True
-                new_item_tf.error = "Name must be unique"
-                await new_item_tf.focus()
-            
-            else:
-                submit_button.disabled = False
-                new_item_tf.error = None
-
-            
-            new_item_tf.update()
-            submit_button.update()
-            
-        # Create the nwew mini widget with the current text field value. Makes sure we passed checks first
-        async def _create_new_mw(e):
-
-            # Button is disabled if name is the same
-            if submit_button.disabled:
-                await new_item_tf.focus()
-                return
-            
-            title = new_item_tf.value.strip()
-            await self.create_comment(title)
-            
-            self.page.pop_dialog()   # Close the dialog
-            await self.story.close_menu()       
-
-        # Grab the type of mini widget we are creating
-        tag = "comment"
-
-        # Textfield for the name of the new mw
-        new_item_tf = ft.TextField(
-            label=f"Title", expand=True, on_change=_check_name_unique, autofocus=True,
-            capitalization=ft.TextCapitalization.WORDS, on_submit=_create_new_mw
-        )
-
-        # Button for creating new mw. Can also press enter in the textfield
-        submit_button = ft.TextButton("Create", on_click=_create_new_mw, disabled=True, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click"))
-
-        # Dialog we open onto the page
-        dlg = ft.AlertDialog(
-            title=ft.Text(f"New {tag.replace('_', ' ').title()} Name"),
-            content=new_item_tf,
-            actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.page.pop_dialog()),
-                submit_button
-            ],
-        )
-
-        self.page.show_dialog(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
-
+    # Called when our widget resizes so we can track size 
+    async def _set_size(self, e: ft.LayoutSizeChangeEvent[ft.Container]):
+        self.w = e.width
+        self.h = e.height
    
 
     # Called when mouse hovers over the tab part of the widget
@@ -307,6 +254,39 @@ class Widget(ft.Container):
         ''' Updates our mouse x/y state for opening menu at mouse position '''
         self.story.mouse_x = e.global_position.x
         self.story.mouse_y = e.global_position.y
+
+    # Auto called after mwc is shown, and sets its expand for auto sizing
+    async def set_mini_widgets_container_expand(self, e: ft.Event):
+
+        if self.mini_widgets_container.width > 0:
+            self.mini_widgets_container.expand = 1
+            self.mini_widgets_container.update()
+
+        
+
+    # Animates to show our mini widgets container
+    async def show_mini_widgets_container(self, e: ft.Event=None):
+        
+        # Sets our width and removes auto sizing so we can animate to a width of 1/4 of the widget - button offset
+        self.mini_widgets_container.width = self.w / 4 - 15  
+        self.mini_widgets_container.expand = None
+        self.mini_widgets_container.update()
+        
+
+    # Animates to hide our mini widgets container
+    async def hide_mini_widgets_container(self, e: ft.Event=None):
+        
+        # Get rid of expand (auto sizing) since it prevents animation, and set width to 1/4 of widget - button offset
+        self.mini_widgets_container.expand = None
+        self.mini_widgets_container.width = self.w / 4 - 15  
+        self.mini_widgets_container.update()
+
+        # Forces seperate UI Updates that prevent animation from being skipped
+        await asyncio.sleep(0.01)  
+        
+        # Run animation to width of 0
+        self.mini_widgets_container.width = 0
+        self.mini_widgets_container.update()
         
 
     # Called to hide the widget from the workspace
