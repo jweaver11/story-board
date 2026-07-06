@@ -13,7 +13,6 @@ from models.mini_widgets.character_connection import CharacterConnection
 from models.app import app
 from utils.safe_string_checker import return_safe_name
 from models.dataclasses.character_template import default_character_template_data_dict
-from utils.alert_dialogs.character_connection import new_character_connection_clicked
 import flet.canvas as cv
 import asyncio
 from styles.text_fields import TextField, NoLabelTextField
@@ -21,9 +20,6 @@ from styles.snack_bar import SnackBar
 
 
 
-
-# Sets our Character as an extended Widget object, which is a subclass of a flet Container
-# Widget requires a title, tag, page reference, and a pin location
 class Character(Widget):
     # Constructor
     def __init__(self, name: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
@@ -98,19 +94,19 @@ class Character(Widget):
             new_section_tf.visible = True
             new_section_tf.value = ""
             new_section_tf.error = None
+            new_section_button.update()
             new_section_tf.update()
             await new_section_tf.focus()
-            new_section_button.update()
 
         # Called when bluring the new section text field
         async def hide_new_section_tf(e: ft.Event=None):
             nonlocal new_section_tf, new_section_button
-            new_section_button.visible = True
-            new_section_button.update()
             new_section_tf.visible = False
             new_section_tf.value = ""
             new_section_tf.error = None
             new_section_tf.update()
+            new_section_button.visible = True
+            new_section_button.update()
 
         # Called when pressing enter on the new section text field or when it loses focus
         async def create_new_section(e: ft.Event=None):

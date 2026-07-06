@@ -68,10 +68,11 @@ class Document(Widget):
             super().__init__(
                 data=data, 
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-                multiline=True, dense=True, expand=True, border_radius=10,
+                multiline=True, dense=True, expand=True, border_radius=4,
                 on_blur=lambda e: self.update_data(**{'content': e.control.value}),
                 capitalization=ft.TextCapitalization.SENTENCES,
-                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, mouse_cursor="click", on_click=self.delete_comment)
+                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, mouse_cursor="click", on_click=self.delete_comment),
+                label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
             ) 
 
         # Updates our data then the associated dict inside parents 'mini_widgets' dict
@@ -90,6 +91,7 @@ class Document(Widget):
         def build(self):
             self.value = self.data.get('content', "")
             self.label = self.data.get('title', "")
+            self.label_style = ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
     
     class ReferenceImage(ft.Container):
         def __init__(self, widget: Widget, data: dict=None):

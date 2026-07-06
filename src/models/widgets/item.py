@@ -51,28 +51,6 @@ class Item(Widget):
             },
         )
 
-    
-
-    # Called when clicking our upload image button
-    async def _upload_item_image(self, e=None):
-
-        files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
-        if files:
-
-            file_path = files[0].path
-            try:
-                import base64
-
-                with open(file_path, "rb") as image_file:
-                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                    # Save to our data
-                    self.update_data(**{'image_base64': f"{encoded_string}"})
-                    self.reload_widget()
-
-            except Exception as _:
-                pass
-
-
     def build(self):
 
         # Run any constistant build from parent class, like setting up the tab
@@ -208,3 +186,4 @@ class Item(Widget):
     def reload_widget(self):
         return
         
+# BUILD DONE

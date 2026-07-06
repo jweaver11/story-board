@@ -45,7 +45,7 @@ class Chart(Widget):
                 'tag': "chart",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('default_chart_color'),
                 'type': type,             # How our chart is being displayed (bar or radar)
-                'description': str,
+                'description': str(),
 
                 'show_info': True,   # Whether to show the info column on the side of our charts or not.
 
@@ -892,7 +892,7 @@ class Chart(Widget):
         titles = []
         for idx, title in enumerate(self.data.get('radar_data', {}).get('nodes', [])):
             titles.append(
-                TextField(
+                ft.TextField(
                     value=title, margin=ft.Margin.only(bottom=10, right=11),
                     dense=True, data=idx, expand=True,
                     on_blur=_update_node_title,

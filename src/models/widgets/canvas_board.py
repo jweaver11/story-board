@@ -562,7 +562,7 @@ class CanvasBoard(Widget):
             expand=True, value=self.data.get('description', ""), dense=True, multiline=True,
             label="Description",
             capitalization=ft.TextCapitalization.SENTENCES, 
-            on_blur=lambda e: self.page.run_task(self.update_data, **{'description': e.control.value}),
+            on_blur=lambda e: self.update_data(**{'description': e.control.value}),
             hint_text="Description of the scope of this Canvas Board..."       
         )
 
@@ -575,12 +575,12 @@ class CanvasBoard(Widget):
             # Add each label as a text control
             for idx, label in enumerate(self.data['matrix_labels']):
                 text_control = ft.Text(
-                        label, style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")),
-                        tooltip="Connect to one of your canvases and show a live preview of your progress!" if label == "Preview" else None,
-                        width=225 if idx <= 1 else None,
-                         
-                        text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS
-                    )
+                    label, style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")),
+                    tooltip="Connect to one of your canvases and show a live preview of your progress!" if label == "Preview" else None,
+                    width=225 if idx <= 1 else None,
+                        
+                    text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS
+                )
                 
                 if idx <= 1:
                     controls.append(text_control)
@@ -784,9 +784,9 @@ class CanvasBoard(Widget):
                 
                 ft.Row([
                     ft.TextButton(
-                        "Add New Row",
+                        "New Row",
                         on_click=self._new_row_clicked,
-                        style=ft.ButtonStyle(self.data.get('color', ft.Colors.PRIMARY), icon_size=20, mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
+                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
                     ),
                     description_tf,
                     ft.Container(width=10)

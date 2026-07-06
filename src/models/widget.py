@@ -359,7 +359,7 @@ class Widget(ft.Container):
                 ]),
             ),
             MenuOptionStyle(
-                on_click=set_canvas_as_image,
+            on_click=set_canvas_as_image,
                 content=ft.Row([
                     ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', 'primary'),),
                     ft.Text("Set Canvas (WIP)", weight=ft.FontWeight.BOLD), 
@@ -555,7 +555,7 @@ class Widget(ft.Container):
         ''' Deletes this file from the story '''
         from models.app import app
 
-        async def _delete_confirmed(e=ft.Event):
+        async def _delete_confirmed(_=ft.Event):
             ''' Deletes the widget after confirmation '''
             #self.story.blocker.visible = True
             #self.story.blocker.update()
@@ -589,7 +589,7 @@ class Widget(ft.Container):
         if app.settings.data.get('confirm_item_delete', False):
             e.page.show_dialog(dlg)
         else:
-            _delete_confirmed()
+            e.page.run_task(_delete_confirmed)
 
     # Called when mouse hovers over the map
     async def _get_coords(self, e: ft.PointerEvent):
