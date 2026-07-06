@@ -51,6 +51,7 @@ class Widget(ft.Container):
                 'rail_index': 999,                 # Index of this widget in the rail for sorting (start at end)
                 'visible': True,                  # Whether this widget is visible in the workspace or not
                 'color': "primary",                   # Color of this widget's tab and icon in workspace and on rail
+                'image_base64': str(),                 # Base64 string of the image for this widget, if it has one
                 'notes': list(),          # Several widgets have notes
             } 
 
@@ -154,6 +155,25 @@ class Widget(ft.Container):
             width=0, 
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             on_animation_end=self.set_mini_widgets_container_expand,
+        )
+
+        # Button certain widgets use when they have an image to represent them (world, character, item, etc.)
+        self.select_image_button = ft.GestureDetector(
+            ft.IconButton(
+                ft.Container(
+                    ft.Image(
+                        src=self.data.get('image_base64', ""),
+                        width=150,
+                        height=150,
+                        fit=ft.BoxFit.FILL,
+                    ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                ) if self.data.get('image_base64', '') else ft.Icons.IMAGE_OUTLINED, 
+                self.data.get('color'), icon_size=150,
+                tooltip="Upload an Image for this widget", mouse_cursor=ft.MouseCursor.CLICK,
+                on_click=lambda: self.story.open_menu(self.set_widget_image_options()), 
+            ),
+            on_hover=self.set_mouse_coords,
+            hover_interval=100
         )
         
 
@@ -262,8 +282,6 @@ class Widget(ft.Container):
             self.mini_widgets_container.expand = 1
             self.mini_widgets_container.update()
 
-        
-
     # Animates to show our mini widgets container
     async def show_mini_widgets_container(self, e: ft.Event=None):
         
@@ -272,7 +290,6 @@ class Widget(ft.Container):
         self.mini_widgets_container.expand = None
         self.mini_widgets_container.update()
         
-
     # Animates to hide our mini widgets container
     async def hide_mini_widgets_container(self, e: ft.Event=None):
         
@@ -287,6 +304,75 @@ class Widget(ft.Container):
         # Run animation to width of 0
         self.mini_widgets_container.width = 0
         self.mini_widgets_container.update()
+
+    # Options when setting the image of a widget. Either upload, set a canvas, or clear image
+    def set_widget_image_options(self) -> list[ft.Control]:
+
+        # Called when clicking our upload image button 
+        async def upload_image(e: ft.Event):
+            await self.story.close_menu()   # Close menu
+
+            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            if files:
+
+                file_path = files[0].path
+                try:
+                    import base64
+
+                    with open(file_path, "rb") as image_file:
+                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                        # Save to our data
+                        self.update_data(**{'image_base64': f"{encoded_string}"})
+
+                    # Update the image in our widget
+                    self.select_image_button.content.icon = ft.Container(
+                        ft.Image(
+                            src=self.data.get('image_base64', ""),
+                            width=150,
+                            height=150,
+                            fit=ft.BoxFit.FILL,
+                        ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                    )
+                    self.select_image_button.update()
+
+                except Exception:
+                    pass
+
+        # Sets a canvas as our image
+        async def set_canvas_as_image(e: ft.Event):
+            await self.story.close_menu()   # Close menu
+
+        # Resets our image to nothing and our button to the placeholder
+        async def clear_image(e: ft.Event):
+            await self.story.close_menu()   # Close menu
+            self.update_data(**{'image_base64': ""})
+            self.select_image_button.content.icon = ft.Icons.IMAGE_OUTLINED
+            self.select_image_button.update()
+
+        # Build the options
+        return [
+            MenuOptionStyle(
+                on_click=upload_image,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, self.data.get('color', 'primary'),),
+                    ft.Text("Upload Image", weight=ft.FontWeight.BOLD), 
+                ]),
+            ),
+            MenuOptionStyle(
+                on_click=set_canvas_as_image,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', 'primary'),),
+                    ft.Text("Set Canvas (WIP)", weight=ft.FontWeight.BOLD), 
+                ], tooltip="Set a canvas as the image for this widget"),
+            ),
+            MenuOptionStyle(
+                on_click=clear_image,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, self.data.get('color', 'primary'),),
+                    ft.Text("Clear Image", weight=ft.FontWeight.BOLD), 
+                ]),
+            ),
+        ]
         
 
     # Called to hide the widget from the workspace
@@ -295,36 +381,25 @@ class Widget(ft.Container):
         if not self.visible:
             return
         
-        #self.story.blocker.visible = True
-        #self.story.blocker.update()
-        #await asyncio.sleep(0)  # Spaces update so the page won't batch them
-        
         self.update_data(**{'visible': False})
-
-        self.story.workspace.reload_workspace()   # Reload workspace to hide the widget and show the placeholder in its pin location
-
-        #self.story.blocker.visible = False
-        #self.story.blocker.update()
+        self.story.workspace.reload_workspace()  
 
     # Called to show the widget in the workspace
     async def show_widget(self, e=None):
         ''' Shows this widget in the workspace if it is hidden '''
 
-        #self.story.blocker.visible = True
-        #self.story.blocker.update()
-        #await asyncio.sleep(0)
+        # Skip if we're already visible
+        if self.data.get('visible', False) == True:
+            return
         
-        self.visible = True
+        #self.visible = True
         self.update_data(**{'visible': True, 'index': 999})
-        self.story.update_data(**{'workspace_selected_index': len(self.story.workspace.main_pin)}) 
+        self.story.update_data(**{'workspace_selected_index': len(self.story.workspace.main_pin)}) # Select us as active pin
 
         await self.save_file()  # We lose state tracking upon being shown since we get rebuilt, so force a save
 
         self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
-        
-        #if self.story.blocker.visible:
-            #self.story.blocker.visible = False
-            #self.story.blocker.update()
+       
         
 
     # Called when right clicking our tab

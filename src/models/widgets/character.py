@@ -16,7 +16,7 @@ from models.dataclasses.character_template import default_character_template_dat
 from utils.alert_dialogs.character_connection import new_character_connection_clicked
 import flet.canvas as cv
 import asyncio
-from styles.text_fields import TextField, SmallTextField
+from styles.text_fields import TextField, NoLabelTextField
 from styles.snack_bar import SnackBar
 
 
@@ -71,34 +71,6 @@ class Character(Widget):
         # Rebuild out tab to reflect any changes
         self.create_tab()
 
-        # Called when clicking our upload image button 
-        async def upload_image(e: ft.Event):
-
-            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
-            if files:
-
-                file_path = files[0].path
-                try:
-                    import base64
-
-                    with open(file_path, "rb") as image_file:
-                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                        # Save to our data
-                        self.update_data(**{'image_base64': f"{encoded_string}"})
-
-                    # Update the image in our widget
-                    e.control.icon = ft.Container(
-                        ft.Image(
-                            src=self.data.get('image_base64', ""),
-                            width=100,
-                            height=100,
-                            fit=ft.BoxFit.FILL,
-                        ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
-                    )
-                    e.control.update()
-
-                except Exception:
-                    pass
 
         # Called when a field is changed in edit mode
         def update_character_data(**kwargs):
@@ -264,7 +236,7 @@ class Character(Widget):
             )
             # Add textfield we can change
             row_ctrl.controls.append(
-                TextField(
+                NoLabelTextField(
                     "", expand=True, cursor_color=self.data.get('color', None),
                     on_blur=lambda e, k=field_name: update_character_data(**{k: e.control.value}), 
                 ),
@@ -376,7 +348,7 @@ class Character(Widget):
                         )
                         # Add textfield we can change
                         row_ctrl.controls.append(
-                            TextField(
+                            NoLabelTextField(
                                 value, expand=True, cursor_color=self.data.get('color', None),
                                 on_blur=lambda e, k=key: update_character_data(**{k: e.control.value}), 
                             ),
@@ -414,19 +386,7 @@ class Character(Widget):
             return control_list
 
 
-        # If NOT in edit mode, build our normal view
-        # Set either our image or a default icon
-        if self.data.get('image_base64', ""):
-            img = ft.Container(
-                ft.Image(
-                    src=self.data.get('image_base64', ""),
-                    width=100,
-                    height=100,
-                    fit=ft.BoxFit.FILL,
-                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
-            )
-        else:
-            img = ft.Icon(ft.Icons.PERSON_OUTLINE, size=100, color=self.data.get('color', "primary"), expand=False)
+        
 
         about_section = ft.Column([
             ft.Row([
@@ -446,7 +406,7 @@ class Character(Widget):
         
         # Header that holds our image, edit mode button, and about section
         header = ft.Row([
-            ft.IconButton(img, tooltip="Upload an Image of your character", on_click=upload_image, mouse_cursor="click"),
+            self.select_image_button,
             about_section
         ], vertical_alignment=ft.CrossAxisAlignment.START)
 

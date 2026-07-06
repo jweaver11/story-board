@@ -3,9 +3,8 @@
 import flet as ft
 from models.views.story import Story
 from models.widget import Widget
-from styles.menu_option_style import MenuOptionStyle
 from models.app import app
-from utils.safe_string_checker import return_safe_name
+from styles.text_fields import TextField, UnderlinedTextField
     
 
 class Note(Widget):
@@ -42,7 +41,7 @@ class Note(Widget):
         # Run any constistant build from parent class, like setting up the tab
         self.create_tab()
 
-        self.padding = ft.Padding.all(16)   # Set padding
+        self.padding = ft.Padding.all(10)   # Set padding
 
         # Column to hold our segments textfields
         segments_column = ft.Column(
@@ -83,18 +82,18 @@ class Note(Widget):
                 self.update_data(**{'segment_data': self.data['segment_data']})
 
         # Gives us a new textfield for each note segment
-        def new_segment_textfield(idx: int, key: str='', value: str='') -> ft.TextField:
-            return ft.TextField(
+        def new_segment_textfield(idx: int, key: str='', value: str='') -> TextField:
+            return TextField(
                 value, expand=True, capitalization=ft.TextCapitalization.SENTENCES, 
                 multiline=True, label=key, dense=True, 
-                on_blur=save_segment, border_color=ft.Colors.OUTLINE_VARIANT,
+                on_blur=save_segment, 
                 data=idx,
                 suffix_icon=ft.IconButton(
                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
                     tooltip=f"Delete segment {key}",
                     on_click=delete_segment,
                     mouse_cursor="click", data=idx
-                )
+                ),
             )
 
         # Go through the note data and load the segments
@@ -133,7 +132,9 @@ class Note(Widget):
             capitalization=ft.TextCapitalization.WORDS,
             on_blur=_hide_new_segment_tf, bgcolor=ft.Colors.SURFACE_CONTAINER,
             on_submit=create_segment, visible=False, autofocus=True,
+            
         ) 
+
 
         self.content = ft.Stack([
             segments_column,
