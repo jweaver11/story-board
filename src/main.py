@@ -31,6 +31,7 @@ async def main(page: ft.Page):
 
         # Grab our text and begin animating it
         text = welcome_view.controls[1]   
+        await asyncio.sleep(0.5)   # Wait a bit before animating the text so it doesn't feel too abrupt
         await animate_welcome_text(text)  
 
         button: ft.Button = welcome_view.controls[2]

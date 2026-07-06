@@ -9,6 +9,7 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
     from models.app import app
     from models.views.home import create_home_view
     from models.views.loading import create_loading_view
+    from models.views.tutorial import create_tutorial_view
 
     # Grabs our page from the event for easier reference
     page: ft.Page = e.page
@@ -37,6 +38,11 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
             page.views.append(create_loading_view(page))
             page.update()
             return
+        case "/tutorial":
+            page.views.append(create_tutorial_view(page))
+            page.update()
+            await page.views[0].create_tutorial_content()  # Call the tutorial content creation function after the view is added
+            return
         case _:
             # Otherwise its a story route, so we need to find which one it is      
             # new_story = None    # Set new story to none intially to handle routes that don't match any stories
@@ -56,7 +62,7 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
                 
             
             # If theres an error loading the story, go to home view
-            page.controls.append(create_home_view(page))
+            page.views.append(create_home_view(page))
             page.update()
             page.show_dialog(SnackBar(f"Error loading story for route: {page.route}"))     
             return

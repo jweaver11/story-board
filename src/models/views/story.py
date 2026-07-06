@@ -493,7 +493,7 @@ class Story(ft.View):
 
         
     # Called to create a new widget based on tag (document, note, character, etc)
-    async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict=None, chart_type: str="bar", no_delay=False):
+    async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict=None, chart_type: str="bar"):
         ''' Creates our new widget based on the tag passed in and directory_path passed in'''
         from models.widgets.document import Document
         from models.widgets.note import Note
@@ -565,12 +565,10 @@ class Story(ft.View):
         # Finish tasks creating widget to make sure the file has enough time to save
         self.update_data(**{'workspace_selected_index': len(self.workspace.main_pin)})  
         self.workspace.reload_workspace()
-        #if not no_delay:
-            #await asyncio.sleep(0.2)   
 
         # Apply the UI changes
-        self.active_rail.reload_rail()
-        
+        if self.data.get('selected_rail', "content") != "canvas":
+            self.active_rail.reload_rail()
     
         # Unhide the blocker
         #if self.blocker.visible:
@@ -593,8 +591,6 @@ class Story(ft.View):
         from models.widgets.chart import Chart
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
-        from models.mini_widgets.plotline_arc import Arc
-        from models.mini_widgets.plotline_plot_point import PlotPoint
 
         tag = widget.data.get('tag', None)
         new_widget = None
@@ -787,25 +783,6 @@ class Story(ft.View):
         from models.app import app
         from models.isolated_controls.row import IsolatedRow
 
-        # Load our widgets
-        self.load_widgets() 
-
-        self.page.title = f"{self.title}"
-
-        # Clear our controls in our view before building it
-        self.controls.clear()
-
-        # Create our self.page elements as their own self.pages so they can update
-        self.menubar = create_menu_bar(self.page, self)
-
-        # Create our rails and workspace objects
-        self.workspaces_rail = WorkspacesRail(self.page, self)  # Create our all workspaces rail
-        
-        self.workspace = Workspace(self.page, self)  # Reference to our workspace object for pin locations
-        self.active_rail = ActiveRail(self.page, self)  # Container stored in story for the active rails
-
-        
-
         # Called when resizing the active rail by dragging the resizer
         async def move_active_rail_divider(e: ft.DragUpdateEvent):
             ''' Responsible for altering the width of the active rail '''
@@ -827,6 +804,18 @@ class Story(ft.View):
             app.settings.data['active_rail_width'] = self.active_rail.width
             await app.settings.save_file()
 
+        # Load our widgets
+        self.load_widgets() 
+
+        self.page.title = f"{self.title}"   # Set our page title
+
+        # Create our menubar, workspaces rail, active rail, and workspace objects
+        self.menubar = create_menu_bar(self.page, self)
+        self.workspaces_rail = WorkspacesRail(self.page, self) 
+        self.workspace = Workspace(self.page, self)  
+        self.active_rail = ActiveRail(self.page, self) 
+
+
         # The actual resizer for the active rail (gesture detector)
         active_rail_resizer = ft.GestureDetector(
             content=ft.Container(
@@ -845,7 +834,6 @@ class Story(ft.View):
 
         # Views render like columns, so we add elements top-down
         self.controls = [
-            #self.menubar, row,
             self.menubar,
             IsolatedRow([
                 
@@ -887,3 +875,47 @@ class Story(ft.View):
         self.page.update()
 
         self.is_initialized = True
+
+
+    # Only called after loading the tutorial story
+    async def create_tutorial_content(self):
+        from models.widgets.document import Document
+        from models.widgets.note import Note
+        from models.widgets.canvas import Canvas
+        from models.widgets.canvas_board import CanvasBoard
+        from models.widgets.character import Character
+        from models.widgets.plotline import Plotline
+        from models.widgets.map import Map
+        from models.widgets.character_connection_map import CharacterConnectionMap
+        from models.widgets.world import World
+        from models.widgets.item import Item
+        from models.widgets.chart import Chart
+        from models.widgets.comic_preview import ComicPreview
+        from models.widgets.plot_chart import PlotChart
+
+        # Clear out content folder to reset tutorial content
+        folder_path = self.data.get('content_directory_path')
+        if os.path.exists(folder_path) and os.path.isdir(folder_path):  
+            shutil.rmtree(folder_path)   
+
+        # Create a default folder and widget for each widget
+        await self.create_folder(self.data.get('content_directory_path'), "Folder")
+        await self.create_widget("Document", "document", self.data.get('content_directory_path'))
+        await self.create_widget("Note", "note", self.data.get('content_directory_path'))
+        await self.create_widget("Character", "character", self.data.get('content_directory_path'))
+        await self.create_widget("Character Connection Map", "character_connection_map", self.data.get('content_directory_path'))
+        await self.create_widget("World", "world", self.data.get('content_directory_path'))
+        # await self.create_widget("Canvas", "canvas", self.data.get('content_directory_path'))
+        # await self.create_widget("Plotline", "plotline", self.data.get('content_directory_path'))
+        # await self.create_widget("Map", "map", self.data.get('content_directory_path'))
+        # await self.create_widget("Canvas Board", "canvas_board", self.data.get('content_directory_path'))
+        # await self.create_widget("Item", "item", self.data.get('content_directory_path'))
+        # await self.create_widget("Radar Chart", "chart", self.data.get('content_directory_path'))
+        # await self.create_widget("Bar Chart", "chart", self.data.get('content_directory_path'), chart_type="bar")
+        # await self.create_widget("Comic Preview", "comic_preview", self.data.get('content_directory_path'))
+        # await self.create_widget("Plot Chart", "plot_chart", self.data.get('content_directory_path'))
+        
+        # Reload rail to apply
+        self.active_rail.reload_rail()
+        
+       

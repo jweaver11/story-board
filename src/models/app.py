@@ -6,7 +6,6 @@ from models.views.story import Story
 import flet as ft
 import os
 import json
-from models.widget import Widget
 import asyncio
 
 
@@ -16,7 +15,7 @@ class App:
     def __init__(self):
 
         # Declares settings and workspace rail here, but we create/load them later in main
-        self.settings: Widget = ft.Container()
+        self.settings: ft.View = ft.Container()
         
         # Dict of all our stories.
         self.stories = {}

@@ -1543,7 +1543,7 @@ class Settings(ft.View):
         menubar = create_menu_bar(self.p, self.story)   
 
         # Set our workspaces rail
-        self.workspaces_rail = WorkspacesRail(self.p, self.story)  
+        #self.workspaces_rail = WorkspacesRail(self.p, self.story)  
 
         # Set the rail we use for different settings categories
         nav_rail = ft.NavigationRail(
@@ -1576,9 +1576,8 @@ class Settings(ft.View):
         )
 
         nav_rail_container = ft.Container(
-            bgcolor=ft.Colors.with_opacity(.5, ft.Colors.SURFACE),
-            border_radius=ft.BorderRadius.only(top_left=20, bottom_left=20),
-            padding=ft.Padding.all(20),
+            bgcolor=ft.Colors.SURFACE,
+            padding=ft.Padding.all(10),
             content=nav_rail,
         )
 
@@ -1594,31 +1593,18 @@ class Settings(ft.View):
         # View is like a column, so top down layout
         self.controls = [
             menubar,
-            ft.Row(
-                spacing=0, 
-                expand=True,
-                controls=[
-                    self.workspaces_rail,
-                    ft.VerticalDivider(thickness=2, width=2),
-                    ft.Container(
-                        ft.Container(
-                            expand=True,
-                            #gradient=dark_gradient, 
-                            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-                            border_radius=ft.BorderRadius.all(20),
-                            margin=ft.Margin.all(10),
-                            content=ft.Row(
-                                controls=[
-                                    nav_rail_container,
-                                    ft.VerticalDivider(thickness=2, width=2),   
+            ft.Container(
+                ft.Row(
+                    [
+                        nav_rail_container,
+                        ft.VerticalDivider(thickness=2, width=2),   
 
-                                    self.body_container
-                                ],
-                                spacing=0,
-                            )
-                        ), bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, expand=True
-                    )
-                ]
-            ),  
+                        self.body_container
+                    ],
+                    spacing=0, expand=True
+                ),
+                expand=True, bgcolor=ft.Colors.with_opacity(0.8, ft.Colors.SURFACE_CONTAINER_HIGH),
+            )
+            
         ]
 

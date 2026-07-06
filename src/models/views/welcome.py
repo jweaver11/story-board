@@ -12,19 +12,23 @@ def create_welcome_view(page: ft.Page) -> ft.View:
         progress_ring.visible = True
         progress_ring.update()
         app.settings.update_data(**{'is_first_launch': False})
+        await app.settings.save_file()
         await page.push_route("/tutorial")
 
     async def _skip_tutorial_clicked(e):
         ''' Save that we have launched the app before, and route to the home view '''
         
         app.settings.update_data(**{'is_first_launch': False})
+        await app.settings.save_file()
         page.show_dialog(SnackBar("You can access the tutorial anytime in Settings -> Resources", duration=7000))
 
     text = ft.Text(
         "Welcome to Story Board", 
         theme_style="headlineLarge", 
+        weight=ft.FontWeight.W_500,
         expand=1,
         opacity=0.00,      # Opacity gets changed in main
+        animate_opacity=ft.Animation(5000, ft.AnimationCurve.EASE_IN_OUT),
     )
 
     run_tutorial_button = ft.Button(
@@ -47,23 +51,17 @@ def create_welcome_view(page: ft.Page) -> ft.View:
                 ft.Container(width=75),
                 skip_tutorial_button,
             ], alignment=ft.MainAxisAlignment.CENTER, visible=False),
-            ft.Text("plz run tutorial, I worked really hard on it", visible=False, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Text("\nplz run tutorial, I worked really hard on it", visible=False, color=ft.Colors.ON_SURFACE_VARIANT),
             progress_ring := ft.ProgressRing(visible=False),
             ft.Container(expand=4)     # Spacing
         ],
         horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10,
+        vertical_alignment=ft.MainAxisAlignment.CENTER,
     )
 
 
 async def animate_welcome_text(text: ft.Text):
     ''' Animates the welcome text opacity '''
-    while text.opacity < 1.0:
-        text.opacity += round(0.01, 2)
-        if text.opacity >= 0.99:
-            text.opacity = 1.0
-
-        text.update()
-        
-        await asyncio.sleep(.04)   # don't block the UI thread; let the animation run
-        # TEMP
-        #await asyncio.sleep(.001)
+    text.opacity = 1
+    text.update()
+    await asyncio.sleep(5)    

@@ -114,7 +114,7 @@ def create_home_view(page: ft.Page) -> ft.View:
             ft.Container(
                 expand=True,
                 alignment=ft.Alignment.CENTER,
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                #bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                 content=ft.FloatingActionButton(
                     "Create New Story",
                     ft.Icons.ADD_OUTLINED,
