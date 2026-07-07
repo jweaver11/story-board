@@ -131,7 +131,7 @@ class WidgetRailItem(ft.GestureDetector):
         self.content = ft.Container(
             ft.Row([
                 leading_control, 
-                ft.Text(self.widget.title, style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
                 #self.options_button
             ], spacing=6),
             border_radius=4,

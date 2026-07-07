@@ -9,8 +9,6 @@ import flet as ft
 from models.views.story import Story
 import os
 import json
-from utils.verify_data import verify_data
-from utils.safe_string_checker import return_safe_name
 from styles.colors import dark_gradient
 from styles.colors import colors
 from styles.snack_bar import SnackBar
@@ -18,7 +16,6 @@ from styles.menu_option_style import MenuOptionStyle
 import flet.canvas as cv
 import asyncio
 import uuid
-
 
 
 @ft.control
@@ -35,10 +32,9 @@ class Widget(ft.Container):
     ):
 
         # Parent constructor to set data and other attributes
-        super().__init__(data=data, on_size_change=self._set_size, size_change_interval=100)
-        self.title: str = title                     
-        self.story: Story = story   
-        self.is_new = is_new 
+        super().__init__(data=data, on_size_change=self._set_size, size_change_interval=50)
+        
+        self.is_new: bool = is_new 
 
         # Give us default data if we're new. Child class will for a file save
         if self.is_new == True:
@@ -55,6 +51,11 @@ class Widget(ft.Container):
                 'notes': list(),          # Several widgets have notes
             } 
 
+        # Set title and story references
+        self.title = ft.Text(self.data.get('title', ''), weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
+        self.story: Story = story   
+        
+
         # Apply our visibility
         self.visible = self.data.get('visible', True)
 
@@ -67,9 +68,7 @@ class Widget(ft.Container):
         self.ignore_update = False     # Return and ignore updates, such as when hiding??
         self.needs_file_write: bool = False        # Whether we need to write to file or not. Set to true when data changes, and false when saved
 
-        self.tab_text: ft.Text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
-
-        # Grabs our tag to determine the icon we'll use
+        # TAB ELEMENTS -----------------------------------------------
         tag = self.data.get('tag', '')
         match tag:
             case "document": icon = ft.Icons.DESCRIPTION_OUTLINED
@@ -91,10 +90,8 @@ class Widget(ft.Container):
             case _: icon = ft.Icons.ERROR_OUTLINE
 
 
-        # Create our icon, text, and hide_button for the tab
-        self.icon = ft.Icon(icon, color=self.data.get('color', ft.Colors.PRIMARY))
-        tab_text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
-        hide_tab_icon_button = ft.IconButton(    
+        self.tab_icon = ft.Icon(icon, color=self.data.get('color', ft.Colors.PRIMARY))  # Icon for the tab
+        hide_widget_button = ft.IconButton(    # Hide widget button on right side of tab
             scale=0.8,
             on_click=self.hide_widget,
             icon=ft.Icons.CLOSE_ROUNDED,
@@ -103,17 +100,16 @@ class Widget(ft.Container):
             mouse_cursor=ft.MouseCursor.CLICK,
         )
 
-        # GD to hold tab elements and open menus
+        # Gesture Detector for opening menus that holds our tab icon, title, and hide button
         self.tab_gd = ft.GestureDetector(
-            ft.Row([self.icon, tab_text, hide_tab_icon_button]),
+            ft.Row([self.tab_icon, self.title, hide_widget_button]),
             mouse_cursor=ft.MouseCursor.CLICK,
             hover_interval=100,
             on_hover=self.set_mouse_coords,
             on_secondary_tap=lambda: self.story.open_menu(self._get_menu_options()),
         )
 
-        # Create the tab itself
-        self.tab = ft.Tab(self.tab_gd)
+        self.tab = ft.Tab(self.tab_gd)  # The tab itself
 
 
         # UI ELEMENTS - Body                  
@@ -122,7 +118,7 @@ class Widget(ft.Container):
         # Container that holds our main body content. Gets built in reload_widget of child classes
         self.body_container = ft.Container(
             expand=3, clip_behavior=ft.ClipBehavior.NONE,
-            on_size_change=self._set_size, size_change_interval=100, 
+            on_size_change=self._set_size, size_change_interval=50, 
         ) 
 
         # Holds our sizing canvas, body container, header, and mini widgets all under the tab
@@ -170,12 +166,6 @@ class Widget(ft.Container):
             on_hover=self.set_mouse_coords,
             hover_interval=100
         )
-        
-
-    # Temp to improve performance
-    def before_update(self):
-        #print(f"Widget Update: {self.title}")
-        return super().before_update()
 
     # Updates data for this widget and marks it as dirty for the next file save
     def update_data(self, **kwargs):
@@ -198,7 +188,7 @@ class Widget(ft.Container):
     # Writes our current data to the correct json file if we are dirty
     async def save_file(self):
         if self.needs_file_write:
-            print("Saving widget to file: ", self.title)
+            print("Saving widget to file: ", self.data.get('title', 'Untitled'))
 
             file_path = f"{self.data.get('directory_path')}\\{self.data.get('id')}.json"
 
@@ -212,8 +202,7 @@ class Widget(ft.Container):
                 self.needs_file_write = False   # Mark as clean
                 self.is_new = False   # Mark as not new anymore
             except Exception as e:
-                print(f"Error saving widget {self.title} to file: {e}")
-                self.page.show_dialog(SnackBar(f"Error saving widget {self.title} to file: {e}"))
+                print(f"Error saving widget {self.data.get('title', 'untitled')} to file: {e}")
             
     # Called when moving widget files
     async def delete_file(self) -> bool:
@@ -270,7 +259,7 @@ class Widget(ft.Container):
         self.h = e.height
         await self._set_sidebar_size()  # Adjusts our sidebar size
 
-    # Adjust our sidebars size if visibles
+    # Adjust our sidebars size if visible
     async def _set_sidebar_size(self):
         if self.data.get('show_sidebar', True):
             self.sidebar.width = self.w / 4 
@@ -278,6 +267,10 @@ class Widget(ft.Container):
 
     # Animates to show our mini widgets container
     async def show_sidebar(self, e: ft.Event=None):
+        # If we're already showing, return early
+        if self.data.get('show_sidebar', True):
+            return
+        
         # Update data
         self.update_data(**{'show_sidebar': True})
  
@@ -293,6 +286,10 @@ class Widget(ft.Container):
         
     # Animates to hide our mini widgets container
     async def hide_sidebar(self, e: ft.Event=None):
+        # If we're already hidden, return early
+        if not self.data.get('show_sidebar', True):
+            return
+        
         # Update data
         self.update_data(**{'show_sidebar': False})
         
@@ -464,7 +461,6 @@ class Widget(ft.Container):
             #await asyncio.sleep(0)
                                                     
             # Update our live title, and associated data
-            self.title = name.capitalize()                              
             self.update_data(**{'title': name.capitalize()})   # Update our data with the new title and key
             await self.save_file()  # Force a file save
                     
@@ -478,7 +474,7 @@ class Widget(ft.Container):
             
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
-            value=self.title, 
+            value=self.data.get('title', ''), 
             dense=True, capitalization=ft.TextCapitalization.WORDS,
             focus_color=self.data.get('color', ft.Colors.PRIMARY),
             border_color=self.data.get('color', ft.Colors.PRIMARY),
@@ -496,7 +492,7 @@ class Widget(ft.Container):
         rename_button = ft.TextButton("Rename", on_click=_submit_name, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click"))
 
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Rename {self.title}", weight=ft.FontWeight.BOLD),
+            title=ft.Text(f"Rename {self.data.get('title', '')}", weight=ft.FontWeight.BOLD),
             content=text_field,
             actions=[
                 ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda: e.page.pop_dialog()),
@@ -576,7 +572,7 @@ class Widget(ft.Container):
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Are you sure you want to delete {self.title} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
+            title=ft.Text(f"Are you sure you want to delete {self.data.get('title', '')} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
             alignment=ft.Alignment.CENTER,
             title_padding=ft.Padding.all(25),
             actions=[
@@ -605,37 +601,22 @@ class Widget(ft.Container):
         ''' Creates our tab for our widget that has the title and hide icon '''
 
         # Set our color and text if title changed
-        self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
-        self.tab_text.value = self.title
+        self.tab_icon.color = self.data.get('color', ft.Colors.PRIMARY)
+        self.title.value = self.data.get('title', '')
 
         # Chart stuff for future
         if self.data.get('tag', '') == "chart":
             if self.data.get('type', "") == "bar":
-                self.icon.icon = ft.Icons.INSERT_CHART_OUTLINED
+                self.tab_icon.icon = ft.Icons.INSERT_CHART_OUTLINED
             else:
-                self.icon.icon = ft.CupertinoIcons.COMPASS
-
-        
-
+                self.tab_icon.icon = ft.CupertinoIcons.COMPASS
 
     # Called by child classes at the end of their constructor, or when they need UI update to reflect changes
     def reload_widget(self):
         ''' Children build their own content of the widget in their own reload_widget functions '''
 
-        # TODO: Build tab then have it update correctly
-
         # Rebuild out tab to reflect any changes
         self.build_tab()
-
-        # Setting a header displayed OVERTOP our content we want to build
-        self.header = ft.Row(height=50, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[ft.Text("This is a header")])
-
-        # Set the body_container content to the body of our widget
-        self.body_container.content = ft.Container(expand=True, content=ft.Text(f"hello from: {self.title}"))
-
-        # If we wanted to have a header ABOVE the content, and pushing the content down, set it as a column in the body container
-        not_self_header = ft.Row(height=50, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[ft.Text("This is a header")])
-        self.body_container.content = ft.Column(controls=[not_self_header, self.body_container.content], expand=True, spacing=0)
 
         self._render_widget()
     
@@ -667,9 +648,10 @@ class Widget(ft.Container):
 
         self.content = self.master_stack
 
+
+
         try:
 
-            
             self.update()
         except Exception as _:
             pass

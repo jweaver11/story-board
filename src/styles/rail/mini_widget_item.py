@@ -102,7 +102,7 @@ class MiniWidgetItem(ft.GestureDetector):
         submitting = False
 
         # Grab our current name for comparison
-        current_name = self.mini_widget.title.lower()
+        current_name = self.mini_widget.data.get('title', 'untitled').lower()
 
         # Called when clicking outside the input field to cancel renaming
         def _cancel_rename(e):
@@ -185,7 +185,7 @@ class MiniWidgetItem(ft.GestureDetector):
                 
         # Our text field that our functions use for renaming and referencing
         text_field = ft.TextField(
-            value=self.mini_widget.title,
+            value=self.mini_widget.data.get('title', 'untitled'),
             expand=True,
             dense=True,
             autofocus=True,
@@ -256,7 +256,7 @@ class MiniWidgetItem(ft.GestureDetector):
 
         # Append an overlay to confirm the deletion
         dlg = ft.AlertDialog(
-            title=ft.Text(f"Are you sure you want to delete {self.mini_widget.title} forever?", weight=ft.FontWeight.BOLD),
+            title=ft.Text(f"Are you sure you want to delete {self.mini_widget.data.get('title', 'untitled')} forever?", weight=ft.FontWeight.BOLD),
             alignment=ft.Alignment.CENTER,
             title_padding=ft.padding.all(25),
             actions=[
@@ -279,7 +279,7 @@ class MiniWidgetItem(ft.GestureDetector):
             content=ft.Row(
                 expand=True, #alignment=ft.MainAxisAlignment.CENTER,
                 controls=[
-                    ft.Text(value=f"{self.mini_widget.title}", style=self.text_style, overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                    ft.Text(value=f"{self.mini_widget.data.get('title', 'untitled')}", style=self.text_style, overflow=ft.TextOverflow.ELLIPSIS, expand=True),
                 ],
             ),
         )

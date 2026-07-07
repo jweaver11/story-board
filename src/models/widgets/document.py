@@ -285,7 +285,7 @@ class Document(Widget):
         self.sidebar.content = ft.Column([
                 ft.Row([
                     ft.Text(
-                        f"\t\t{self.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+                        f"\t\t{self.data.get('title', 'untitled')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
                         color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
                     ),
                     ft.MenuBar(
