@@ -833,7 +833,7 @@ class Plotline(Widget):
     def reload_widget(self):
 
         # Rebuild our tab to reflect any changes
-        self.create_tab()
+        self.build_tab()
         
         # Create a stack so we can sit our plotpoints and arcs on our plotline
         plotline_stack = ft.Stack(

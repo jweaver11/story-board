@@ -410,7 +410,7 @@ class World(Widget):
             return control_list
         
         # Rebuild out tab to reflect any changes
-        self.create_tab()
+        self.build_tab()
 
         self.padding = ft.Padding.all(10)   # Set padding
 

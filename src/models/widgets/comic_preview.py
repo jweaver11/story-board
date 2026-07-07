@@ -41,7 +41,7 @@ class ComicPreview(Widget):
                 'preview_direction': "vertical",      # Default direction for comic preview, can be vertical or horizontal
                 'preview_background_color': "#00000000" if app.settings.data.get('theme_mode', '') == "dark" else "#ffffffff",  # Background color behind images
                 'preview_spacing': 0,               # Spacing between images
-                'show_info': True,                    # Whether or not to show the info column on the left side of the page
+                'show_sidebar': True,                    # Whether or not to show the info column on the left side of the page
 
                 # List to hold our featured_images of the canvases. Also allows png uploads
                 'featured_images': [              
@@ -123,26 +123,26 @@ class ComicPreview(Widget):
         ''' Reloads/Rebuilds our widget based on current data '''
 
         # Shows our info column
-        async def show_mini_widgets_container(e: ft.Event):
-            self.update_data(**{'show_info': True})
+        async def show_sidebar(e: ft.Event):
+            self.update_data(**{'show_sidebar': True})
 
-            show_info_button.opacity = 0
-            show_info_button.disabled = True
-            show_info_button.mouse_cursor = None
-            show_info_button.update()
+            show_sidebar_button.opacity = 0
+            show_sidebar_button.disabled = True
+            show_sidebar_button.mouse_cursor = None
+            show_sidebar_button.update()
 
-            await self.show_mini_widgets_container()
+            await self.show_sidebar()
 
         # Hides our info column
-        async def hide_mini_widgets_container(e: ft.Event):
-            self.update_data(**{'show_info': False})
+        async def hide_sidebar(e: ft.Event):
+            self.update_data(**{'show_sidebar': False})
             
-            await self.hide_mini_widgets_container()
+            await self.hide_sidebar()
             
-            show_info_button.opacity = 1
-            show_info_button.mouse_cursor = ft.MouseCursor.CLICK
-            show_info_button.disabled = False
-            show_info_button.update()
+            show_sidebar_button.opacity = 1
+            show_sidebar_button.mouse_cursor = ft.MouseCursor.CLICK
+            show_sidebar_button.disabled = False
+            show_sidebar_button.update()
 
         async def _remove_snapshot(e):
             self.story.blocker.visible = True
@@ -250,7 +250,7 @@ class ComicPreview(Widget):
             selectable_snapshots.update()
 
         # Rebuild out tab to reflect any changes
-        self.create_tab()
+        self.build_tab()
 
 
         preview_display = ft.Column() if self.data.get('preview_direction', "vertical") == "vertical" else ft.Row()
@@ -373,7 +373,7 @@ class ComicPreview(Widget):
 
         snapshot_mini_map.controls.append(selectable_snapshots)
 
-        self.mini_widgets_container.content = ft.Container(
+        self.sidebar.content = ft.Container(
             ft.Column([
                 ft.Row([
                     ft.Text(
@@ -399,7 +399,7 @@ class ComicPreview(Widget):
                     
                     ft.Container(expand=True),
                     ft.IconButton(
-                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=hide_mini_widgets_container,
+                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=hide_sidebar,
                         mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                     ),
                 ], spacing=0),
@@ -462,19 +462,19 @@ class ComicPreview(Widget):
         
 
 
-        show_info_button = ft.IconButton(
+        show_sidebar_button = ft.IconButton(
             ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
-            on_click=show_mini_widgets_container, 
-            opacity=1 if not self.data.get('show_info', True) else 0,
-            disabled=self.data.get('show_info', True),
-            mouse_cursor=ft.MouseCursor.CLICK if not self.data.get('show_info', True) else None,
+            on_click=show_sidebar, 
+            opacity=1 if not self.data.get('show_sidebar', True) else 0,
+            disabled=self.data.get('show_sidebar', True),
+            mouse_cursor=ft.MouseCursor.CLICK if not self.data.get('show_sidebar', True) else None,
             bgcolor=ft.Colors.SURFACE_CONTAINER,
         )
 
         self.content = ft.Row([
             preview_stack,
-            show_info_button,
-            self.mini_widgets_container,
+            show_sidebar_button,
+            self.sidebar,
         ], expand=True)
         
 

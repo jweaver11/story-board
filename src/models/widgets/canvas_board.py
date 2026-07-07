@@ -556,7 +556,7 @@ class CanvasBoard(Widget):
         ''' Reloads/Rebuilds our widget based on current data '''
 
         # Rebuild out tab to reflect any changes
-        self.create_tab()
+        self.build_tab()
 
         description_tf = TextField(
             expand=True, value=self.data.get('description', ""), dense=True, multiline=True,

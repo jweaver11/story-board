@@ -35,7 +35,7 @@ class Widget(ft.Container):
     ):
 
         # Parent constructor to set data and other attributes
-        super().__init__(data=data, on_size_change=self._set_size, size_change_interval=500)
+        super().__init__(data=data, on_size_change=self._set_size, size_change_interval=100)
         self.title: str = title                     
         self.story: Story = story   
         self.is_new = is_new 
@@ -67,28 +67,6 @@ class Widget(ft.Container):
         self.ignore_update = False     # Return and ignore updates, such as when hiding??
         self.needs_file_write: bool = False        # Whether we need to write to file or not. Set to true when data changes, and false when saved
 
-        # If widgets display info overtop content rather than next to it (plotline, map, canvas, etc.)
-        self.mini_widgets_displayed_overtop: bool = True       # Widgets that set this false need to set their own mini widgets in reload_widget
-        self.no_render_mini_widgets: bool = False           # If we should let the widget render its own mini widgets, or have it handled here
-
-
-        # UI ELEMENTS - Body                  
-        self.mini_widgets_wrapper = ft.Column(expand=1, spacing=0)   # Container that holds our active mini widget. We can add/remove it without having to rebuild
-
-        # Container that holds our main body content. Gets built in reload_widget of child classes
-        self.body_container = ft.Container(
-            expand=3, #border_radius=ft.BorderRadius.all(10), 
-            #padding=ft.Padding.all(16), 
-            on_size_change=self._set_size, size_change_interval=500, clip_behavior=ft.ClipBehavior.NONE
-        ) 
-
-        # Holds our sizing canvas, body container, header, and mini widgets all under the tab
-        self.master_stack: ft.Stack = ft.Stack(expand=True)   # Master stack that holds all our elements together. Gets added to our tab content in reload_widget
-        self.mini_widgets = []                      # List of mini widgets that belong to this widget
-
-        # UI ELEMENTS - Tab
-        self.tabs: ft.Tabs # Tabs control to hold our tab. We only have one tab, but this is needed for it to render. Nests in self.content
-        self.icon: ft.Icon
         self.tab_text: ft.Text = ft.Text(self.title, weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
 
         # Grabs our tag to determine the icon we'll use
@@ -104,7 +82,11 @@ class Widget(ft.Container):
             case "map": icon = ft.Icons.MAP_OUTLINED
             case "world": icon = ft.Icons.PUBLIC_OUTLINED
             case "item": icon = ft.Icons.STAR_OUTLINE_ROUNDED
-            case "chart": icon = ft.Icons.INSERT_CHART_OUTLINED
+            case "chart": 
+                if self.data.get('chart_type', 'radar') == 'radar':
+                    icon = ft.Icons.INSERT_CHART_OUTLINED
+                else:
+                    icon = ft.Icons.INSIGHTS_OUTLINED
             case "comic_preview": icon = ft.Icons.SLIDESHOW_OUTLINED
             case _: icon = ft.Icons.ERROR_OUTLINE
 
@@ -128,33 +110,46 @@ class Widget(ft.Container):
             hover_interval=100,
             on_hover=self.set_mouse_coords,
             on_secondary_tap=lambda: self.story.open_menu(self._get_menu_options()),
-            #on_secondary_tap_down=lambda e: print(e)
         )
 
         # Create the tab itself
         self.tab = ft.Tab(self.tab_gd)
 
-        # Tabs stuff
-        self.tabs = ft.Tabs(
-            expand=True,  
-            length=1,
-            selected_index=0,
-            content=ft.Column([
-                ft.TabBar(tabs=[self.tab], indicator_color=self.data.get('color', ft.Colors.ON_SURFACE_VARIANT)),     # Holds our tab at the top of the widget
-                ft.TabBarView([self.master_stack], expand=True, clip_behavior=ft.ClipBehavior.NONE)# Holds our body
-            ], expand=True, spacing=0),
-        )   
+
+        # UI ELEMENTS - Body                  
+        self.mini_widgets_wrapper = ft.Column(expand=1, spacing=0)   # Container that holds our active mini widget. We can add/remove it without having to rebuild
+
+        # Container that holds our main body content. Gets built in reload_widget of child classes
+        self.body_container = ft.Container(
+            expand=3, clip_behavior=ft.ClipBehavior.NONE,
+            on_size_change=self._set_size, size_change_interval=100, 
+        ) 
+
+        # Holds our sizing canvas, body container, header, and mini widgets all under the tab
+        self.master_stack: ft.Stack = ft.Stack(expand=True)   # Master stack that holds all our elements together. Gets added to our tab content in reload_widget
+        self.mini_widgets = []                      # List of mini widgets that belong to this widget 
 
 
-        # TODO: Use this in future for mini widgets:
-        self.mini_widgets_container = ft.Container(
+        # Container on right side of widgets to hold mini widgets or sidebar info
+        self.sidebar = ft.Container(
             border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             padding=ft.Padding.symmetric(horizontal=10),
             shadow=ft.BoxShadow(0, 1), 
             bgcolor=ft.Colors.SURFACE,
             width=0, 
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            on_animation_end=self.set_mini_widgets_container_expand,
+            on_animation_end=self._set_sidebar_size
+        )
+
+        # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
+        self.show_sidebar_button = ft.IconButton(
+            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
+            on_click=self.show_sidebar, 
+            mouse_cursor=ft.MouseCursor.CLICK,
+            bgcolor=ft.Colors.SURFACE,
+            visible=not self.data.get('show_sidebar', True),
+            tooltip="Show Sidebar",
+            
         )
 
         # Button certain widgets use when they have an image to represent them (world, character, item, etc.)
@@ -262,48 +257,53 @@ class Widget(ft.Container):
             return True
         else:
             return False
-
-    # Called when our widget resizes so we can track size 
-    async def _set_size(self, e: ft.LayoutSizeChangeEvent[ft.Container]):
-        self.w = e.width
-        self.h = e.height
-   
-
+        
     # Called when mouse hovers over the tab part of the widget
     async def set_mouse_coords(self, e: ft.PointerEvent):
         ''' Updates our mouse x/y state for opening menu at mouse position '''
         self.story.mouse_x = e.global_position.x
         self.story.mouse_y = e.global_position.y
 
-    # Auto called after mwc is shown, and sets its expand for auto sizing
-    async def set_mini_widgets_container_expand(self, e: ft.Event):
+    # Called when our widget resizes so we can track size 
+    async def _set_size(self, e: ft.LayoutSizeChangeEvent[ft.Container]):
+        self.w = e.width
+        self.h = e.height
+        await self._set_sidebar_size()  # Adjusts our sidebar size
 
-        if self.mini_widgets_container.width > 0:
-            self.mini_widgets_container.expand = 1
-            self.mini_widgets_container.update()
+    # Adjust our sidebars size if visibles
+    async def _set_sidebar_size(self):
+        if self.data.get('show_sidebar', True):
+            self.sidebar.width = self.w / 4 
+            self.sidebar.update()
 
     # Animates to show our mini widgets container
-    async def show_mini_widgets_container(self, e: ft.Event=None):
+    async def show_sidebar(self, e: ft.Event=None):
+        # Update data
+        self.update_data(**{'show_sidebar': True})
+ 
+        # Make button hiddent and seperate update to prevent animation from being skipped
+        self.show_sidebar_button.visible = False
+        self.show_sidebar_button.update()
+        await asyncio.sleep(0.01)
         
-        # Sets our width and removes auto sizing so we can animate to a width of 1/4 of the widget - button offset
-        self.mini_widgets_container.width = self.w / 4 - 15  
-        self.mini_widgets_container.expand = None
-        self.mini_widgets_container.update()
+        # Set our sidebar's width
+        self.sidebar.width = self.w / 4 
+        self.sidebar.update()   
+        
         
     # Animates to hide our mini widgets container
-    async def hide_mini_widgets_container(self, e: ft.Event=None):
+    async def hide_sidebar(self, e: ft.Event=None):
+        # Update data
+        self.update_data(**{'show_sidebar': False})
         
-        # Get rid of expand (auto sizing) since it prevents animation, and set width to 1/4 of widget - button offset
-        self.mini_widgets_container.expand = None
-        self.mini_widgets_container.width = self.w / 4 - 15  
-        self.mini_widgets_container.update()
+        # Show the button to show the sidebar again, and update it so it shows before the animation starts
+        self.show_sidebar_button.visible = True
+        self.show_sidebar_button.update()
+        await asyncio.sleep(0.01)
 
-        # Forces seperate UI Updates that prevent animation from being skipped
-        await asyncio.sleep(0.01)  
-        
         # Run animation to width of 0
-        self.mini_widgets_container.width = 0
-        self.mini_widgets_container.update()
+        self.sidebar.width = 0
+        self.sidebar.update()
 
     # Options when setting the image of a widget. Either upload, set a canvas, or clear image
     def set_widget_image_options(self) -> list[ft.Control]:
@@ -378,6 +378,7 @@ class Widget(ft.Container):
     # Called to hide the widget from the workspace
     async def hide_widget(self, e=None):
         ''' Hides this widget from the workspace but keeps it in the story and rail '''
+        # Skip if already hidden (should be impossible)
         if not self.visible:
             return
         
@@ -442,8 +443,8 @@ class Widget(ft.Container):
         ]
     
     # Shows the info column on the side of our chart or not
-    async def _toggle_show_info(self, e=None):
-        self.update_data(**{'show_info': not self.data.get('show_info', True)})
+    async def _toggle_show_sidebar(self, e=None):
+        self.update_data(**{'show_sidebar': not self.data.get('show_sidebar', True)})
         self.reload_widget()
         await self.story.close_menu()
     
@@ -600,45 +601,21 @@ class Widget(ft.Container):
         self.t = e.local_position.y
     
     # Called at end of constructor
-    def create_tab(self, update: bool=False):
+    def build_tab(self):
         ''' Creates our tab for our widget that has the title and hide icon '''
-
-        # TODO: Change to create_tab and only called in build
-
-        # Re-resolve the icon name based on the current tag.
-        # New widgets have tag="" at Widget.__init__ time (before child verify_data runs),
-        # so create_tab corrects it the first time reload_widget is called.
-        tag = self.data.get('tag', '')
-        match tag:
-            case "document": self.icon.icon = ft.Icons.DESCRIPTION_OUTLINED
-            case "canvas": self.icon.icon = ft.Icons.BRUSH_OUTLINED
-            case "canvas_board": self.icon.icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
-            case "note": self.icon.icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
-            case "character": self.icon.icon = ft.Icons.PERSON_OUTLINE
-            case "character_connection_map": self.icon.icon = ft.Icons.ACCOUNT_TREE_OUTLINED
-            case "plotline": self.icon.icon = ft.Icons.TIMELINE
-            case "map": self.icon.icon = ft.Icons.MAP_OUTLINED
-            case "world": self.icon.icon = ft.Icons.PUBLIC_OUTLINED
-            case "item": self.icon.icon = ft.Icons.STAR_OUTLINE_ROUNDED
-            case "chart": self.icon.icon = ft.Icons.INSERT_CHART_OUTLINED
-            case "comic_preview": self.icon.icon = ft.Icons.SLIDESHOW_OUTLINED
-            case "plot_chart": self.icon.icon = ft.Icons.ACCOUNT_TREE_OUTLINED
 
         # Set our color and text if title changed
         self.icon.color = self.data.get('color', ft.Colors.PRIMARY)
         self.tab_text.value = self.title
 
         # Chart stuff for future
-        #if self.data.get('type', "") == "bar":
-            #self.icon.icon = ft.Icons.INSERT_CHART_OUTLINED
-        #else:
-            #self.icon.icon = ft.CupertinoIcons.COMPASS
+        if self.data.get('tag', '') == "chart":
+            if self.data.get('type', "") == "bar":
+                self.icon.icon = ft.Icons.INSERT_CHART_OUTLINED
+            else:
+                self.icon.icon = ft.CupertinoIcons.COMPASS
 
-        if update:
-            try:
-                self.tab.update()
-            except Exception as _:
-                pass
+        
 
 
     # Called by child classes at the end of their constructor, or when they need UI update to reflect changes
@@ -648,7 +625,7 @@ class Widget(ft.Container):
         # TODO: Build tab then have it update correctly
 
         # Rebuild out tab to reflect any changes
-        self.create_tab()
+        self.build_tab()
 
         # Setting a header displayed OVERTOP our content we want to build
         self.header = ft.Row(height=50, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[ft.Text("This is a header")])
@@ -669,15 +646,15 @@ class Widget(ft.Container):
         self.master_stack.controls.clear()
 
         self.mini_widgets_wrapper.visible = False   # Set false for widgets that dont use this or dont have any mini widgets
-        if not self.no_render_mini_widgets:
+        #if not self.no_render_mini_widgets:
             
-            self.mini_widgets_wrapper.controls = [mw for mw in self.mini_widgets]
-            
-            # Check if any mini widgets are visible, so we show the wrapper or not
-            for mw in self.mini_widgets_wrapper.controls:
-                if mw.visible:
-                    self.mini_widgets_wrapper.visible = True
-                    break
+        self.mini_widgets_wrapper.controls = [mw for mw in self.mini_widgets]
+        
+        # Check if any mini widgets are visible, so we show the wrapper or not
+        for mw in self.mini_widgets_wrapper.controls:
+            if mw.visible:
+                self.mini_widgets_wrapper.visible = True
+                break
 
 
         # Add our sizing canvas and body container to the stack first

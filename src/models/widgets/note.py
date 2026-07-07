@@ -39,7 +39,7 @@ class Note(Widget):
         ''' Reloads/Rebuilds our widget based on current data '''
 
         # Run any constistant build from parent class, like setting up the tab
-        self.create_tab()
+        self.build_tab()
 
         self.padding = ft.Padding.all(10)   # Set padding
 

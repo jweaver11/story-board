@@ -44,10 +44,10 @@ class Chart(Widget):
                 # Widget data
                 'tag': "chart",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('default_chart_color'),
-                'type': type,             # How our chart is being displayed (bar or radar)
+                'chart_type': type,             # How our chart is being displayed (bar or radar)
                 'description': str(),
 
-                'show_info': True,   # Whether to show the info column on the side of our charts or not.
+                'show_sidebar': True,   # Whether to show the info column on the side of our charts or not.
 
                 'bar_data': {
                     'left_axis_title': "Left Axis",
@@ -104,11 +104,6 @@ class Chart(Widget):
 
             },
         )
-
-        if self.data.get('type', "") == "bar":
-            self.icon.icon = ft.Icons.INSERT_CHART_OUTLINED
-        else:
-            self.icon.icon = ft.CupertinoIcons.COMPASS
         
         if self.visible:
             self.reload_widget()         # Build our widget if it's visible on init
@@ -443,14 +438,14 @@ class Chart(Widget):
 
         
         # If we're not showing info, just give us a button to show info and return early
-        if not self.data.get('show_info', True):
+        if not self.data.get('show_sidebar', True):
 
             self.body_container.content = ft.Row(
                 [
                     ft.Container(chart, expand=3, padding=ft.Padding.only(left=20, bottom=20)), 
                     ft.IconButton(
                         ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
-                        on_click=self._toggle_show_info, 
+                        on_click=self._toggle_show_sidebar, 
                         mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                     )
                 ], expand=True, spacing=0
@@ -592,7 +587,7 @@ class Chart(Widget):
                             color=self.data.get('color', None), expand=True
                         ),
                         ft.IconButton(
-                            ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info,
+                            ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_sidebar,
                             mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                         ),
                     ]),
@@ -767,7 +762,7 @@ class Chart(Widget):
 
         
         
-        if not self.data.get('show_info', True):
+        if not self.data.get('show_sidebar', True):
 
             self.body_container.content = ft.Column([
                 ft.Container(height=1),
@@ -777,7 +772,7 @@ class Chart(Widget):
                         chart, 
                         ft.IconButton(
                             ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
-                            on_click=self._toggle_show_info, 
+                            on_click=self._toggle_show_sidebar, 
                             mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                         )
                     ], expand=True, spacing=0
@@ -1086,7 +1081,7 @@ class Chart(Widget):
                             color=self.data.get('color', None), expand=True
                         ),
                         ft.IconButton(
-                            ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_info, 
+                            ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_sidebar, 
                             mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                         ),
                     ]),
@@ -1116,7 +1111,7 @@ class Chart(Widget):
         ''' Reloads/Rebuilds our widget based on current data '''
 
         # Rebuild out tab to reflect any changes
-        self.create_tab()
+        self.build_tab()
 
         if self.data.get('type', "") == "bar":
             self._bar_chart_view()

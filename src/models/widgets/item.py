@@ -54,7 +54,7 @@ class Item(Widget):
     def build(self):
 
         # Run any constistant build from parent class, like setting up the tab
-        self.create_tab()
+        self.build_tab()
 
         self.padding = ft.Padding.all(10)   # Set padding
 

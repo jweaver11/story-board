@@ -389,7 +389,7 @@ class Map(Widget):
         ''' Rebuilds/reloads our map UI '''
 
         # Rebuild out tab to reflect any changes
-        self.create_tab()
+        self.build_tab()
 
         # TODO:  
         # Users can choose to create their image or use some default ones, or upload their own

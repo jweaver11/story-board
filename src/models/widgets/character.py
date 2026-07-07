@@ -65,7 +65,7 @@ class Character(Widget):
         self.padding = ft.Padding.all(16)   # Set padding
 
         # Rebuild out tab to reflect any changes
-        self.create_tab()
+        self.build_tab()
 
 
         # Called when a field is changed in edit mode

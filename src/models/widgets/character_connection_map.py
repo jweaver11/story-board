@@ -598,7 +598,7 @@ class CharacterConnectionMap(Widget):
             self.cs_width = e.width
             self.cs_height = e.height
                
-        self.create_tab()
+        self.build_tab()
 
         self.character_bank = ft.Column(
             [

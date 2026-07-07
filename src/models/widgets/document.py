@@ -38,7 +38,7 @@ class Document(Widget):
                 'tag': "document",
                 'color': app.settings.data.get('default_canvas_color'),
 
-                'show_info': True,   # Whether to show the info column on the side of our charts or not.
+                'show_sidebar': True,   # Whether to show the info column on the side of our charts or not.
 
                 # Holds our comments and reference images in data
                 'mini_widgets': dict(),
@@ -234,28 +234,7 @@ class Document(Widget):
                     mini_widget_controls.append(self.ReferenceImage(widget=self, data=mw_data))
             return mini_widget_controls
         
-        # Shows our info column
-        async def show_mini_widgets_container(e: ft.Event):
-            self.update_data(**{'show_info': True})
-
-            # 
-            show_info_button.opacity = 0
-            show_info_button.disabled = True
-            show_info_button.mouse_cursor = None
-            show_info_button.update()
-
-            await self.show_mini_widgets_container()
-
-        # Hides our info column
-        async def hide_mini_widgets_container(e: ft.Event):
-            self.update_data(**{'show_info': False})
-            
-            await self.hide_mini_widgets_container()
-            
-            show_info_button.opacity = 1
-            show_info_button.mouse_cursor = ft.MouseCursor.CLICK
-            show_info_button.disabled = False
-            show_info_button.update()
+        
             
 
         async def _save_quill():
@@ -265,7 +244,7 @@ class Document(Widget):
             
 
         # Rebuild out tab to reflect any changes
-        self.create_tab()
+        self.build_tab()
         
         # Toolbar only
         quill_toolbar = FletQuillToolbar(
@@ -303,8 +282,7 @@ class Document(Widget):
         # Otherwise, build our info column
         self.mini_widgets_column = ft.Column(load_mini_widgets(), expand=1, scroll="auto")
         
-        self.mini_widgets_container.expand = 1 if self.data.get('show_info', True) else None
-        self.mini_widgets_container.content = ft.Column([
+        self.sidebar.content = ft.Column([
                 ft.Row([
                     ft.Text(
                         f"\t\t{self.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
@@ -352,7 +330,7 @@ class Document(Widget):
                     new_comment_tf_placeholder := ft.Container(expand=True, visible=True),
                         
                     ft.IconButton(
-                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=hide_mini_widgets_container,
+                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self.hide_sidebar,
                         mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                     ),
                 ], spacing=0),
@@ -360,25 +338,14 @@ class Document(Widget):
                 ft.Container(height=10, opacity=0),
                 self.mini_widgets_column, 
         ], expand=True, scroll="none", spacing=0)
-            
-
-
-        show_info_button = ft.IconButton(
-            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
-            on_click=show_mini_widgets_container, 
-            opacity=1 if not self.data.get('show_info', True) else 0,
-            disabled=self.data.get('show_info', True),
-            mouse_cursor=ft.MouseCursor.CLICK if not self.data.get('show_info', True) else None,
-            bgcolor=ft.Colors.SURFACE_CONTAINER,
-        )
 
 
         self.content = ft.Column([
             ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE, alignment=ft.Alignment.CENTER_LEFT),
             ft.Row([
                 editor_container,
-                show_info_button,
-                self.mini_widgets_container,
+                self.show_sidebar_button,
+                self.sidebar,
             ], expand=True)
         ], spacing=0, expand=True)
 
