@@ -2,6 +2,7 @@ import flet as ft
 from models.views.story import Story
 from styles.snack_bar import SnackBar
 import asyncio
+from utils.tutorial import run_tutorial
 
 # Called whenever a new story is laoded
 async def route_change(e: ft.RouteChangeEvent) -> Story:
@@ -9,13 +10,13 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
     from models.app import app
     from models.views.home import create_home_view
     from models.views.loading import create_loading_view
-    from models.views.tutorial import create_tutorial_view
 
     # Grabs our page from the event for easier reference
     page: ft.Page = e.page
 
-    # Clear our views and any existing controls
+    # Clear our views and any existing overlay controls
     page.views.clear()
+    page.overlay.clear()
 
     
     match page.route:
@@ -39,9 +40,12 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
             page.update()
             return
         case "/tutorial":
-            page.views.append(create_tutorial_view(page))
+            tutorial_story = Story("Tutorial Story")
+            page.views.append(tutorial_story)
             page.update()
-            await page.views[0].create_tutorial_content()  # Call the tutorial content creation function after the view is added
+            # Add tutorial elements to the overlay
+            page.overlay.extend(run_tutorial(tutorial_story))
+            page.update()
             return
         case _:
             # Otherwise its a story route, so we need to find which one it is      

@@ -31,7 +31,7 @@ class ActiveRail(ft.Container):
             width=app.settings.data.get('active_rail_width', 250),
             animate_size=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            bgcolor=ft.Colors.SURFACE
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
         )
         #print("active rail width:", self.width)
 

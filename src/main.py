@@ -9,7 +9,6 @@ from utils.route_change import route_change
 from models.views.home import create_home_view
 from models.views.loading import create_loading_view
 from models.views.welcome import create_welcome_view, animate_welcome_text
-from models.views.tutorial import create_tutorial_view
 import asyncio
 
 # Remove auto updates so we can improve performance

@@ -13,6 +13,7 @@ from constants import data_paths
 from styles.snack_bar import SnackBar
 from utils.safe_string_checker import return_safe_name
 import asyncio
+from utils.tutorial import run_tutorial
 
 
  
@@ -22,9 +23,7 @@ class Story(ft.View):
     def __init__(
         self, 
         title: str,             # Title of our story
-        page: ft.Page,          # Page reference for updating UI elements
         data: dict=None,        # Data to load our story with (if any)
-        type: str=None          # Type of story (novel, comic, etc.)
     ):
         
         # Parent constructor
@@ -32,12 +31,11 @@ class Story(ft.View):
             route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
             padding=ft.Padding.all(0),      # No padding for the page
             spacing=0,                                                      # No spacing between menubar and rest of page
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
         )  
 
         self.title = title              # Gives our story a title when its created
         self.data = data                # Sets our data (if any) passed in. New stories just have none
-        self.type = type                # Type of story, novel or comic. Affects how templates for creating new content will work
 
         # Verifies this object has the required data fields, and creates them if not
         if data is None:
@@ -125,6 +123,7 @@ class Story(ft.View):
 
         #print("Saved story to file: ", self.title)
         self.data['directory_path'] = os.path.join(data_paths.stories_directory_path, self.route)   # Make sure our directory path is updated
+        self.data['content_directory_path'] = os.path.join(data_paths.stories_directory_path, self.route, "content")  # Make sure our content directory path is updated
         file_path = os.path.join(self.data['directory_path'], f"{self.route}.json") # Make sure our file path is updated
 
         try: 
@@ -306,7 +305,7 @@ class Story(ft.View):
         from models.widgets.character import Character
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
-        from models.widgets.character_connection_map import CharacterConnectionMap
+        from models.widgets.character_relationship_map import CharacterRelationshipMap
         from models.widgets.world import World
         from models.widgets.item import Item
         from models.widgets.chart import Chart
@@ -403,7 +402,7 @@ class Story(ft.View):
                                     data=widget_data,
                                 )
                             case "character_connection_map":
-                                widget = CharacterConnectionMap(
+                                widget = CharacterRelationshipMap(
                                     widget_data.get('title', 'Untitled Document'),
                                     directory_path=dir_path,
                                     story=self,
@@ -502,7 +501,7 @@ class Story(ft.View):
         from models.widgets.character import Character
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
-        from models.widgets.character_connection_map import CharacterConnectionMap
+        from models.widgets.character_relationship_map import CharacterRelationshipMap
         from models.widgets.item import Item
         from models.widgets.world import World
         from models.widgets.chart import Chart
@@ -538,8 +537,11 @@ class Story(ft.View):
             case "map":
                 widget = Map(title, directory_path, self, data, True)
             case "character_connection_map":
-                widget = CharacterConnectionMap(title, directory_path, self, data, True)
+                widget = CharacterRelationshipMap(title, directory_path, self, data, True)
             case "world":
+                if app.settings.data.get('active_world_template', "None") != "None":
+                    data = app.settings.data['world_templates'].get(app.settings.data['active_world_template'], {}).copy()
+                    data = {'world_data': data}
                 widget = World(title, directory_path, self, data, True)
             case "canvas_board":
                 widget = CanvasBoard(title, directory_path, self, data, True)   
@@ -585,7 +587,7 @@ class Story(ft.View):
         from models.widgets.character import Character
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
-        from models.widgets.character_connection_map import CharacterConnectionMap
+        from models.widgets.character_relationship_map import CharacterRelationshipMap
         from models.widgets.world import World
         from models.widgets.item import Item
         from models.widgets.chart import Chart
@@ -659,7 +661,7 @@ class Story(ft.View):
                 )
                 
             case "character_connection_map":
-                new_widget = CharacterConnectionMap(
+                new_widget = CharacterRelationshipMap(
                     widget.data.get('title', 'Untitled Document'),
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
@@ -817,12 +819,12 @@ class Story(ft.View):
 
 
         # The actual resizer for the active rail (gesture detector)
-        active_rail_resizer = ft.GestureDetector(
+        self.active_rail_resizer = ft.GestureDetector(
             content=ft.Container(
                 width=10,   # Total width of the GD, so its easier to find with mouse
                 content=ft.VerticalDivider(2, 2),     # Original
                 padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
-                bgcolor=ft.Colors.SURFACE
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
             ),
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging
@@ -839,7 +841,7 @@ class Story(ft.View):
                 
                 self.workspaces_rail,
                 self.active_rail,
-                active_rail_resizer,
+                self.active_rail_resizer,
                 self.workspace
             ], spacing=0, expand=True)
         ]
@@ -875,47 +877,4 @@ class Story(ft.View):
         self.page.update()
 
         self.is_initialized = True
-
-
-    # Only called after loading the tutorial story
-    async def create_tutorial_content(self):
-        from models.widgets.document import Document
-        from models.widgets.note import Note
-        from models.widgets.canvas import Canvas
-        from models.widgets.canvas_board import CanvasBoard
-        from models.widgets.character import Character
-        from models.widgets.plotline import Plotline
-        from models.widgets.map import Map
-        from models.widgets.character_connection_map import CharacterConnectionMap
-        from models.widgets.world import World
-        from models.widgets.item import Item
-        from models.widgets.chart import Chart
-        from models.widgets.comic_preview import ComicPreview
-        from models.widgets.plot_chart import PlotChart
-
-        # Clear out content folder to reset tutorial content
-        folder_path = self.data.get('content_directory_path')
-        if os.path.exists(folder_path) and os.path.isdir(folder_path):  
-            shutil.rmtree(folder_path)   
-
-        # Create a default folder and widget for each widget
-        await self.create_folder(self.data.get('content_directory_path'), "Folder")
-        await self.create_widget("Document", "document", self.data.get('content_directory_path'))
-        await self.create_widget("Note", "note", self.data.get('content_directory_path'))
-        await self.create_widget("Character", "character", self.data.get('content_directory_path'))
-        await self.create_widget("Character Connection Map", "character_connection_map", self.data.get('content_directory_path'))
-        await self.create_widget("World", "world", self.data.get('content_directory_path'))
-        # await self.create_widget("Canvas", "canvas", self.data.get('content_directory_path'))
-        # await self.create_widget("Plotline", "plotline", self.data.get('content_directory_path'))
-        # await self.create_widget("Map", "map", self.data.get('content_directory_path'))
-        # await self.create_widget("Canvas Board", "canvas_board", self.data.get('content_directory_path'))
-        # await self.create_widget("Item", "item", self.data.get('content_directory_path'))
-        # await self.create_widget("Radar Chart", "chart", self.data.get('content_directory_path'))
-        # await self.create_widget("Bar Chart", "chart", self.data.get('content_directory_path'), chart_type="bar")
-        # await self.create_widget("Comic Preview", "comic_preview", self.data.get('content_directory_path'))
-        # await self.create_widget("Plot Chart", "plot_chart", self.data.get('content_directory_path'))
-        
-        # Reload rail to apply
-        self.active_rail.reload_rail()
-        
-       
+    

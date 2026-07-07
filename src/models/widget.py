@@ -76,7 +76,7 @@ class Widget(ft.Container):
             case "canvas_board": icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
             case "note": icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
             case "character": icon = ft.Icons.PERSON_OUTLINE
-            case "character_connection_map": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
+            case "character_relationship_map": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
             case "plotline": icon = ft.Icons.TIMELINE
             case "map": icon = ft.Icons.MAP_OUTLINED
             case "world": icon = ft.Icons.PUBLIC_OUTLINED
@@ -131,7 +131,7 @@ class Widget(ft.Container):
             border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             padding=ft.Padding.symmetric(horizontal=10),
             shadow=ft.BoxShadow(0, 1), 
-            bgcolor=ft.Colors.SURFACE,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             width=0, 
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             on_animation_end=self._set_sidebar_size
@@ -142,7 +142,7 @@ class Widget(ft.Container):
             ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
             on_click=self.show_sidebar, 
             mouse_cursor=ft.MouseCursor.CLICK,
-            bgcolor=ft.Colors.SURFACE,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             visible=not self.data.get('show_sidebar', True),
             tooltip="Show Sidebar",
             
@@ -296,7 +296,7 @@ class Widget(ft.Container):
         # Show the button to show the sidebar again, and update it so it shows before the animation starts
         self.show_sidebar_button.visible = True
         self.show_sidebar_button.update()
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.02)
 
         # Run animation to width of 0
         self.sidebar.width = 0

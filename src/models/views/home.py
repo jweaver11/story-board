@@ -127,4 +127,5 @@ def create_home_view(page: ft.Page) -> ft.View:
         ],
         spacing=0,                                             # No spacing between menubar and rest of page
         padding=ft.Padding.all(0), 
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
     )

@@ -5,17 +5,15 @@ Class for showing all our characters laid out in a family tree view.
 import flet as ft
 from models.widget import Widget
 from models.views.story import Story
-from utils.verify_data import verify_data
 from models.app import app
 import flet.canvas as cv
-from models.mini_widgets.character_connection import CharacterConnection
 from styles.snack_bar import SnackBar
 from styles.menu_option_style import MenuOptionStyle
 from styles.icons import connection_icons
 from styles.colors import colors
 
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
-class CharacterConnectionMap(Widget):
+class CharacterRelationshipMap(Widget):
     # Constructor
     def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
 
@@ -32,7 +30,7 @@ class CharacterConnectionMap(Widget):
         if self.is_new == True:
             self.data.update({
                 # Widget data
-                'tag': "character_connection_map",
+                'tag': "character_relationship_map",
                 'color': app.settings.data.get('default_character_connection_map_color'),
                 'description': '',
                 'spider_web_view': False, # Whether lines/edges between characters are straight or have 3 segments
@@ -63,7 +61,7 @@ class CharacterConnectionMap(Widget):
         
 
     class CharacterNode(ft.GestureDetector):
-        def __init__(self, char_id: str, widget: 'CharacterConnectionMap', color, char_name: str, image: str, position: tuple=None):
+        def __init__(self, char_id: str, widget: 'CharacterRelationshipMap', color, char_name: str, image: str, position: tuple=None):
             self.char_id = char_id
             self.widget = widget
             self.image = image
@@ -404,7 +402,7 @@ class CharacterConnectionMap(Widget):
 
     # Just for drawing the connection on the canvas, and icon on the stack
     class ConnectionEdge(cv.Path):
-        def __init__(self, widget: 'CharacterConnectionMap', data: dict):
+        def __init__(self, widget: 'CharacterRelationshipMap', data: dict):
 
             # Set our attributes
             self.char1_id = data.get('char1_id')
@@ -436,7 +434,7 @@ class CharacterConnectionMap(Widget):
             
 
     class ConnectionIcon(ft.GestureDetector):
-        def __init__(self, widget: 'CharacterConnectionMap', data: dict):
+        def __init__(self, widget: 'CharacterRelationshipMap', data: dict):
             self.char1_id = data.get('char1_id')
             self.char2_id = data.get('char2_id')
             self.color = data.get('color', "#FFFFFF")

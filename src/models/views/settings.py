@@ -35,6 +35,7 @@ class Settings(ft.View):
             route=f"/settings",                                      # Sets our route for our new story
             padding=ft.Padding.all(0),      # No padding for the page
             spacing=0,                                                   # No spacing between menubar and rest of page
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
         )
 
         self.p = page   # Grabs our original page, as sometimes the reference gets lost. with all the UI changes that happen. p.update() always works
@@ -1576,7 +1577,7 @@ class Settings(ft.View):
         )
 
         nav_rail_container = ft.Container(
-            bgcolor=ft.Colors.SURFACE,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             padding=ft.Padding.all(10),
             content=nav_rail,
         )
@@ -1603,7 +1604,7 @@ class Settings(ft.View):
                     ],
                     spacing=0, expand=True
                 ),
-                expand=True, bgcolor=ft.Colors.with_opacity(0.8, ft.Colors.SURFACE_CONTAINER_HIGH),
+                expand=True,
             )
             
         ]

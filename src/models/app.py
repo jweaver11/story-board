@@ -142,7 +142,7 @@ class App:
                         # Our story title is the same as the folder
                         story_title = story_data.get("title", file_path.replace(".json", ""))
                             
-                        app.stories[story_title] = Story(story_title, page, data=story_data)
+                        app.stories[story_title] = Story(story_title, story_data)
 
                         break
                     # Else, continue through the next story folder
@@ -175,7 +175,7 @@ class App:
     def create_new_story(self, title: str, page: ft.Page) -> Story:
         ''' Creates the new story object and has it run its 'startup' method. Changes route so our view displays the new story '''
         
-        story = Story(title.title(), page, data=None)
+        story = Story(title)
         page.run_task(story.save_file)
         
         # Create a new story object and add it to our stories dict
