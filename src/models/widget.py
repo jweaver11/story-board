@@ -261,7 +261,7 @@ class Widget(ft.Container):
 
     # Adjust our sidebars size if visible
     async def _set_sidebar_size(self):
-        if self.data.get('show_sidebar', True):
+        if self.data.get('show_sidebar', False):
             self.sidebar.width = self.w / 4 
             self.sidebar.update()
 
@@ -610,6 +610,11 @@ class Widget(ft.Container):
                 self.tab_icon.icon = ft.Icons.INSERT_CHART_OUTLINED
             else:
                 self.tab_icon.icon = ft.CupertinoIcons.COMPASS
+
+    # Auto-called by each child widget when being loaded onto the page
+    def build(self):
+        self.build_tab()  
+        self.reload_widget()
 
     # Called by child classes at the end of their constructor, or when they need UI update to reflect changes
     def reload_widget(self):

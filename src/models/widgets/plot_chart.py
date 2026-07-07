@@ -55,10 +55,6 @@ class PlotChart(Widget):
         self.target_node: str = None        # Tracks which node we are dragging to when creating a new edge
         self.source_side: str = None      # Determines which sides of the nodes we start dragging from
         self.target_side: str = None       # Determines which sides of the nodes we end dragging on
-        
-        
-        if self.visible:
-            self.reload_widget()         # Build our widget if it's visible on init
 
     class Node(ft.GestureDetector):
 

@@ -105,8 +105,7 @@ class Chart(Widget):
             },
         )
         
-        if self.visible:
-            self.reload_widget()         # Build our widget if it's visible on init
+        
 
 
     # Returns our widgets view for bar charts

@@ -63,11 +63,6 @@ class Map(Widget):
             },  
         )
 
-        # Saving creates the file if we're new
-        if is_new:
-            self.needs_file_write = True
-            self.page.run_task(self.save_file)
-
         
         # Drawing elements
         self.state = State()
@@ -112,10 +107,6 @@ class Map(Widget):
 
         self.needs_redraw = False
         self.initial_resize = True    # 
-
-           
-        if self.visible:
-            self.reload_widget()         # Build our widget if it's visible on init
 
     # Called when mouse hovers over the map
     async def _get_coords(self, e: ft.PointerEvent):

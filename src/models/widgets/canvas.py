@@ -89,9 +89,6 @@ class Canvas(Widget):
         # We render our own mini widgets (comments), so we don't need parent class to render them as well
         self.no_render_mini_widgets = True  
 
-        if self.visible:
-            self.reload_widget()         # Build our widget if it's visible on init
-
 
     def _load_layers(self):
         self.layers.clear()

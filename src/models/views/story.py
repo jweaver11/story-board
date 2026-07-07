@@ -127,7 +127,7 @@ class Story(ft.View):
         self.data['directory_path'] = os.path.join(data_paths.stories_directory_path, self.route)   # Make sure our directory path is updated
         file_path = os.path.join(self.data['directory_path'], f"{self.route}.json") # Make sure our file path is updated
 
-        try:
+        try: 
 
             # Create the directory if it doesn't exist. Catches errors from users deleting folders
             os.makedirs(self.data['directory_path'], exist_ok=True)

@@ -112,9 +112,6 @@ class Plotline(Widget):
         # Dropdown on the rail. We don't use it here, let the rail handle it
         self.plotline_dropdown = None      # 'Plotline_Dropdown'
 
-        if self.visible:
-            self.reload_widget()         # Build our widget if it's visible on init
-
 
     # Called in the constructor
     def _create_information_display(self):

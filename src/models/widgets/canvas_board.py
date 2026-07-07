@@ -87,8 +87,6 @@ class CanvasBoard(Widget):
         self.state: State = State()     # State model from tracking our drawing state
         self.active_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
         
-        if self.visible:
-            self.reload_widget()         # Build our widget if it's visible on init
 
     # Called when making changes to the data in a matrix cell
     def _update_matrix_cell(self, e):
@@ -786,7 +784,7 @@ class CanvasBoard(Widget):
                     ft.TextButton(
                         "New Row",
                         on_click=self._new_row_clicked,
-                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
+                        style=ft.ButtonStyle(bgcolor=ft.Colors.SURFACE, mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
                     ),
                     description_tf,
                     ft.Container(width=10)
