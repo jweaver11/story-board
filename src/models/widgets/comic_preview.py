@@ -14,6 +14,7 @@ from io import BytesIO
 from styles.snack_bar import SnackBar
 import asyncio
 from flet_color_pickers import BlockPicker
+from styles.colors import colors
     
 
 class ComicPreview(Widget):
@@ -113,8 +114,8 @@ class ComicPreview(Widget):
 
 
         
-            
-        async def handle_add_canvas(e):
+        # Adds canvases to the preview
+        async def handle_add_canvas_panel(e):
 
             async def save_canvas(_):
             
@@ -131,7 +132,7 @@ class ComicPreview(Widget):
                 self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
 
         # Called to refresh any connected canvases featured_panels that might be outdated
-        async def refresh_canvas_panels():
+        async def handle_refresh_panels():
             
             # Go through panels. If they are connected to a canvas, refresh the image from the canvas
             for idx, panel in enumerate(self.data.get('featured_panels', [])):
@@ -145,7 +146,6 @@ class ComicPreview(Widget):
             self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
             self.update()
         
-
         # Handles toggling the preview direction between vertical and horizontal
         async def toggle_preview_direction(e):
             # Show the appropriate wrapper and update the button icon
@@ -162,8 +162,6 @@ class ComicPreview(Widget):
                 toggle_preview_direction_button.icon = ft.Icons.SWAP_VERT
             self.update()
             
-            
-
         # Handles uploading new panel(s) from external files
         async def handle_upload_panel(e):
             files = await ft.FilePicker().pick_files(allow_multiple=True, allowed_extensions=["jpg", "jpeg", "png", "webp"])
@@ -198,33 +196,60 @@ class ComicPreview(Widget):
 
 
         # TODO:
-        # Adjust scaling of column/row
-        # Set background color
-        # Build images
+        # Upload canvases
         # Refresh canvas panels
-        # Swap preview direction
-        # Reorder the panels
-        # Adjust spacing between images
 
         # Returns the image control from the given string
         def build_preview_panel(idx: int, image_str: str) -> ft.Image:
             return ft.Image(image_str, fit=ft.BoxFit.CONTAIN, expand=True, data=idx)
         
-        async def remove_panel(e):
+        # Returns a small image in the mini map with a delete button that appears on hover
+        def build_minimap_panel(idx: int, image_str: str) -> ft.GestureDetector:
+            async def show_delete_icon(e: ft.Event):
+                delete_button.opacity = 1
+                delete_button.update()
+            async def hide_delete_icon(e: ft.Event):
+                delete_button.opacity = 0
+                delete_button.update()
             
+            return ft.GestureDetector(
+                ft.Stack([
+                    ft.Image(
+                        image_str, fit=ft.BoxFit.CONTAIN, margin=ft.Margin.symmetric(horizontal=10), expand=True, 
+                        placeholder_src=image_str, placeholder_fit=ft.BoxFit.CONTAIN,
+                        fade_in_animation=ft.Animation(100, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                        placeholder_fade_out_animation=ft.Animation(100, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                    ),
+                    delete_button := ft.IconButton(
+                        ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, tooltip="Remove panel from preview?",
+                        opacity=0, scale=1.2, data=idx, on_click=remove_panel, mouse_cursor="click",
+                        animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                    ),
+                ], alignment=ft.Alignment.CENTER, expand=True,),
+                on_enter=show_delete_icon,
+                on_exit=hide_delete_icon,
+                width=100, expand=True
+            )
+        
+        # Update index in minimap list
+        async def update_minimap_indices():
+            for i, ctrl in enumerate(panel_minimap.controls):
+                ctrl.content.controls[1].data = i 
+        
+        # Removes panel from data, minimap and both previews. Updates minimap indices to match new order
+        async def remove_panel(e: ft.Event):
             idx = e.control.data
             self.data['featured_panels'].pop(idx)
             self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
+            vertical_preview.controls.pop(idx)
+            horizontal_preview.controls.pop(idx)
+            panel_minimap.controls.pop(idx)
+            self.update()
+            await update_minimap_indices()
         
 
-        # Sets the background color of the preview display
-        async def set_preview_background_color(e):
-            pass
+        
 
-        # Switch between vertical and horizontal preview display
-        async def swap_preview_direction(e):
-            new_direction = e.control.data
-            self.update_data(**{'preview_direction': new_direction})
 
         # Handles reordering of panels in the mini map and applying to the previews
         async def reorder_panels(e: ft.OnReorderEvent):
@@ -237,37 +262,33 @@ class ComicPreview(Widget):
             horizontal_preview.controls.insert(e.new_index, horizontal_preview.controls.pop(e.old_index))
             panel_minimap.controls.insert(e.new_index, panel_minimap.controls.pop(e.old_index)) 
             self.update()
+            await update_minimap_indices()
+
+        # Adjusts the spacing between panels in the preview display
+        async def adjust_spacing(e: ft.Event):
+            new_spacing = int(e.data)
+            self.update_data(**{'preview_spacing': new_spacing})
+            vertical_preview.spacing = new_spacing
+            horizontal_preview.spacing = new_spacing
+            self.update()
             
+        # Adjusts the scaling of the preview display
         async def adjust_scaling(e: ft.Event):
-            print("New scaling value:", e.data)
             new_scaling = int(e.data)
             self.update_data(**{'preview_scale': new_scaling})
             vertical_preview.parent.expand = new_scaling
             horizontal_preview.parent.expand = new_scaling
             self.update()
 
-        # Returns a small image in the mini map with a delete button that appears on hover
-        def build_minimap_panel(idx: int, image_str: str) -> ft.GestureDetector:
-            async def show_delete_icon(e: ft.Event):
-                delete_button.opacity = 1
-                delete_button.update()
-            async def hide_delete_icon(e: ft.Event):
-                delete_button.opacity = 0
-                delete_button.update()
-            
-            return ft.GestureDetector(
-                ft.Stack([
-                    ft.Image(image_str, fit=ft.BoxFit.CONTAIN, margin=ft.Margin.symmetric(horizontal=10), expand=True, placeholder_src=image_str),
-                    delete_button := ft.IconButton(
-                        ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, tooltip="Remove panel from preview?",
-                        opacity=0, scale=1.5, data=idx, on_click=remove_panel, mouse_cursor="click",
-                        animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-                    ),
-                ], alignment=ft.Alignment.CENTER, expand=True,),
-                on_enter=show_delete_icon,
-                on_exit=hide_delete_icon,
-                height=100, expand=True
-            )
+        # Sets the background color of the preview display
+        async def set_preview_background_color(e: ft.Event):
+            new_color = e.data
+            self.update_data(**{'preview_background_color': new_color})
+            vertical_preview.parent.bgcolor = new_color
+            horizontal_preview.parent.bgcolor = new_color
+            self.update()
+
+        
             
             
         vertical_preview = ft.Column(
@@ -325,7 +346,7 @@ class ComicPreview(Widget):
                             [
                                 ft.MenuItemButton(      # Folders
                                     leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', "primary")), content="Add Canvas", 
-                                    on_click=handle_add_canvas, close_on_click=True,
+                                    on_click=handle_add_canvas_panel, close_on_click=True,
                                     tooltip="Add Canvases created in Story Board to the comic preview.",
                                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                 ), 
@@ -368,18 +389,37 @@ class ComicPreview(Widget):
                 ft.Icons.REFRESH_OUTLINED,
                 self.data.get('color', ft.Colors.PRIMARY),
                 tooltip="Refresh panels connected to Canvases that may be outdated",
-                on_click=refresh_canvas_panels,
+                on_click=handle_refresh_panels,
                 style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
                 margin=ft.Margin.only(top=10, bottom=10)
             ),
 
-            ft.Text("Preview Scale", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),
+            # Spacing
+            ft.Row([
+                ft.Text("Preview Spacing", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),
+                ft.Slider(
+                    min=0, max=20, divisions=20, value=self.data.get('preview_spacing', 2), label="Preview Spacing: {value}",
+                    on_change=adjust_spacing, data="preview_scale", expand=True,
+                    tooltip="Adjust the spacing between panels in the preview display.", 
+                ),
+            ]),
 
-            ft.Slider(
-                min=1, max=5, divisions=4, value=self.data.get('preview_scale', 2), label="Preview Scale: {value}x",
-                on_change=adjust_scaling, data="preview_scale", 
-                tooltip="Adjust the scale of the preview display.",
-                
+            # Scaling
+            ft.Row([
+                ft.Text("Preview Scale", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),
+                ft.Slider(
+                    min=1, max=5, divisions=4, value=self.data.get('preview_scale', 2), label="Preview Scale: {value}",
+                    on_change=adjust_scaling, data="preview_scale", expand=True,
+                    tooltip="Adjust the scale of the preview display.", 
+                ),
+            ]),
+
+            # Change background color
+            ft.Text("Background Color", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),
+            BlockPicker(
+                self.data.get('preview_background_color', ft.Colors.BLACK), 
+                [color for color in colors] + ["#00000000"],
+                on_color_change=set_preview_background_color
             ),
             
 
