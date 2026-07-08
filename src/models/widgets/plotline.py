@@ -314,12 +314,9 @@ class Plotline(Widget):
         
 
     # Called when right clicking our controls for either plotline or an arc
-    def get_menu_options(self) -> list[ft.Control]:
+    def get_plotline_menu_options(self) -> list[ft.Control]:
 
-        async def _show_info_display(e):
-            ''' Shows our information display mini widget '''
-            await self.information_display.show_mini_widget()
-            await self.story.close_menu()
+        
 
         
         return [
@@ -359,17 +356,7 @@ class Plotline(Widget):
                 no_padding=True, no_effects=True 
             ),
             
-            MenuOptionStyle(
-                on_click=_show_info_display,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.INFO_OUTLINE, self.data.get('color', 'primary')),
-                    ft.Text(
-                        "Show Info", 
-                        weight=ft.FontWeight.BOLD, 
-                        color=ft.Colors.ON_SURFACE
-                    ), 
-                ]),
-            ),
+            
         ]
     
 
@@ -447,7 +434,7 @@ class Plotline(Widget):
     async def _open_menu(self, e=None):
         ''' Opens our menu for the options of our related plotline '''
         if self.can_open_menu:
-            self.story.open_menu(self.get_menu_options())
+            self.story.open_menu(self.get_plotline_menu_options())
 
     # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
     async def new_item_clicked(self, e, arc: Arc=None):

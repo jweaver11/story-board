@@ -118,7 +118,6 @@ class Canvas(Widget):
                         on_pan_update=self.update_stroke,           # Updates the current stroke based on mouse movement
                         on_pan_end=self.save_canvas,                # Saves the now complete stroke to our data and canvas capture
                         on_tap_up=self.add_shape,                   # Handles adding dots and tools
-                        on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
                         on_hover=self._redraw_canvas,       # Redraws canvas if it needs it from resizing, otherwise just sets coords
                         hover_interval=20,
                         drag_interval=10,                   
@@ -183,25 +182,7 @@ class Canvas(Widget):
         return id
         
 
-    def _get_menu_options(self):
-        ''' Gets the menu options for when we right click on the canvas '''
-
-        options = [
-            MenuOptionStyle(
-                on_click=self._toggle_show_info,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.INFO_OUTLINE, self.data.get('color', 'primary'),),
-                    ft.Text(
-                        "Show Info", 
-                        weight=ft.FontWeight.BOLD, 
-                        
-                    ), 
-                ]),
-            ),
-        ]
-
-        options.extend(super()._get_menu_options())     # Get the default menu options for widgets and add them to our information display options
-        return options
+    
     
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     async def set_mouse_cursor(self, e=None):

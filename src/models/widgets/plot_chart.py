@@ -553,19 +553,7 @@ class PlotChart(Widget):
                 ),
                 no_padding=True, no_effects=True 
             ),
-            
-            #MenuOptionStyle(
-                #on_click=self._toggle_show_info,
-                #content=ft.Row([
-                    #ft.Icon(ft.Icons.INFO_OUTLINE, self.data.get('color', 'primary')),
-                    #ft.Text(
-                        #"Show Info", 
-                        #weight=ft.FontWeight.BOLD, 
-                        #color=ft.Colors.ON_SURFACE
-                    #), 
-                #]),
-            #),
-        ] + self._get_menu_options()
+        ]
 
         self.story.open_menu(menu_options)
 

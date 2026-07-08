@@ -376,7 +376,7 @@ class MiniWidget(ft.Container):
         self.widget.story.mouse_y = e.global_position.y
 
 
-    def _get_menu_options(self) -> list[ft.Control]:
+    def get_menu_options(self) -> list[ft.Control]:
 
         # Color, rename, delete
         return [

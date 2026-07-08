@@ -814,7 +814,7 @@ class Story(ft.View):
         # Create our menubar, workspaces rail, active rail, and workspace objects
         self.menubar = create_menu_bar(self.page, self)
         self.workspaces_rail = WorkspacesRail(self.page, self) 
-        self.workspace = Workspace(self.page, self)  
+        self.workspace = Workspace(self)  
         self.active_rail = ActiveRail(self.page, self) 
 
 

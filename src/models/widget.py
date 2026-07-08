@@ -107,7 +107,7 @@ class Widget(ft.Container):
             mouse_cursor=ft.MouseCursor.CLICK,
             hover_interval=100,
             on_hover=self.set_mouse_coords,
-            on_secondary_tap=lambda: self.story.open_menu(self._get_menu_options()),
+            on_secondary_tap=lambda: self.story.open_menu(self.get_menu_options()),
         )
 
         self.tab = ft.Tab(self.tab_gd)  # The tab itself
@@ -402,7 +402,7 @@ class Widget(ft.Container):
         
 
     # Called when right clicking our tab
-    def _get_menu_options(self) -> list[ft.Control]:
+    def get_menu_options(self) -> list[ft.Control]:
 
         # Color, rename
         return [

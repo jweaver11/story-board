@@ -94,11 +94,9 @@ class Map(Widget):
                 #on_tap_up=self.add_point,      # Handles so we can add points
 
                 # Non-drawing event handlers
-                #on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
-                on_secondary_tap=self._open_menu,
+                on_secondary_tap=lambda: self.story.open_menu(self.get_map_menu_options()),
                 on_hover=self._get_coords,
-                on_tap=self._show_info_display,
-                #on_tap=lambda e: self.story.open_menu(self._get_menu_options()),
+                on_tap=lambda: self.story.open_menu(self.get_map_menu_options()),
                 drag_interval=20, hover_interval=20,
             ),
             expand=True, resize_interval=100,
@@ -176,7 +174,7 @@ class Map(Widget):
     async def _open_menu(self, e: ft.PointerEvent):
         
         self.lock_position = True 
-        self.story.open_menu(self._get_menu_options())
+        self.story.open_menu(self.get_map_menu_options())
 
     # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
     async def new_location_clicked(self, e):
@@ -255,7 +253,7 @@ class Map(Widget):
             self.information_display.reload_mini_widget()
     
  
-    def _get_menu_options(self) -> list[ft.Control]:
+    def get_map_menu_options(self) -> list[ft.Control]:
         
 
         # TODO: Add Valley, Plains, Rivers, Storm, Lake, Village, Desert, Castle, Other (Rest of options)
@@ -324,31 +322,6 @@ class Map(Widget):
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                     style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                 ), 
-                no_padding=True, no_effects=True
-            ),
-            
-            MenuOptionStyle(
-                on_click=self.rename_clicked,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
-                    ft.Text(
-                        "Rename", 
-                        weight=ft.FontWeight.BOLD, 
-                    ), 
-                ]),
-            ),
-            MenuOptionStyle(
-                ft.SubmenuButton(
-                    ft.Row([
-                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
-                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
-                        ft.Icon(ft.Icons.ARROW_RIGHT),
-                    ], expand=True),
-                    self.get_color_options(), 
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                    tooltip="Change this widget's color"
-                ),
                 no_padding=True, no_effects=True
             ),
         ]

@@ -43,6 +43,8 @@ class ComicPreview(Widget):
                 'preview_background_color': "#00000000" if app.settings.data.get('theme_mode', '') == "dark" else "#ffffffff",  # Background color behind images
                 'preview_spacing': 0,               # Spacing between images
                 'preview_scale': 2,                 # Scale of the images in the preview, 1 = 1:1, 2 = 2:1, etc. 
+                'filter_quality': "medium",                # Filter quality for the images in the preview, can be low, medium, or high
+                'use_anti_aliasing': True,             # Whether to use anti-aliasing when rendering the images in the preview
 
                 # List to hold our featured_panels of the canvases. Also allows png uploads
                 'featured_panels': [              
@@ -198,10 +200,16 @@ class ComicPreview(Widget):
         # TODO:
         # Upload canvases
         # Refresh canvas panels
+        # Adjust image filter quality
 
         # Returns the image control from the given string
         def build_preview_panel(idx: int, image_str: str) -> ft.Image:
-            return ft.Image(image_str, fit=ft.BoxFit.CONTAIN, expand=True, data=idx)
+            filter_quality = {
+                "low": ft.FilterQuality.LOW,
+                "medium": ft.FilterQuality.MEDIUM,
+                "high": ft.FilterQuality.HIGH
+            }.get(self.data.get('filter_quality', "medium"), ft.FilterQuality.MEDIUM)
+            return ft.Image(image_str, fit=ft.BoxFit.CONTAIN, expand=True, data=idx, filter_quality=filter_quality)
         
         # Returns a small image in the mini map with a delete button that appears on hover
         def build_minimap_panel(idx: int, image_str: str) -> ft.GestureDetector:
@@ -216,9 +224,7 @@ class ComicPreview(Widget):
                 ft.Stack([
                     ft.Image(
                         image_str, fit=ft.BoxFit.CONTAIN, margin=ft.Margin.symmetric(horizontal=10), expand=True, 
-                        placeholder_src=image_str, placeholder_fit=ft.BoxFit.CONTAIN,
-                        fade_in_animation=ft.Animation(100, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-                        placeholder_fade_out_animation=ft.Animation(100, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                        filter_quality=ft.FilterQuality.LOW, 
                     ),
                     delete_button := ft.IconButton(
                         ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, tooltip="Remove panel from preview?",
@@ -290,20 +296,51 @@ class ComicPreview(Widget):
             vertical_preview.parent.bgcolor = new_color
             horizontal_preview.parent.bgcolor = new_color
             self.update()
+
+        # Sets the filter quality of the preview display
+        async def set_filter_quality(e: ft.Event):
+            new_quality = str(e.control.data)
+            self.update_data(**{'filter_quality': new_quality})
+            e.control.parent.content = f"Filter Quality: {new_quality.capitalize()}"
+            fq = {
+                "low": ft.FilterQuality.LOW,
+                "medium": ft.FilterQuality.MEDIUM,
+                "high": ft.FilterQuality.HIGH
+            }.get(new_quality, ft.FilterQuality.MEDIUM)
+            for idx, panel in enumerate(self.data.get('featured_panels', [])):
+                vertical_preview.controls[idx].filter_quality = fq
+                horizontal_preview.controls[idx].filter_quality = fq
+                panel_minimap.controls[idx].content.controls[0].filter_quality = fq
+            self.update()
+
+        async def toggle_anti_aliasing(e: ft.Event):
+            new_value = not self.data.get('use_anti_aliasing', True)
+            self.update_data(**{'use_anti_aliasing': new_value})
+            e.control.content = f"Anti-Aliasing: {str(new_value)}"
+            for idx, panel in enumerate(self.data.get('featured_panels', [])):
+                vertical_preview.controls[idx].use_anti_aliasing = new_value
+                horizontal_preview.controls[idx].use_anti_aliasing = new_value
+                panel_minimap.controls[idx].content.controls[0].use_anti_aliasing = new_value
+            self.update()
         
+        preview_panel_controls = [build_preview_panel(idx, panel.get('image')) for idx, panel in enumerate(self.data.get('featured_panels', []))]
             
         # Column that holds our images when in vertical preview mode
-        vertical_preview = ft.Column(
-            [build_preview_panel(idx, panel.get('image')) for idx, panel in enumerate(self.data.get('featured_panels', []))],
+        vertical_preview = ft.ListView(
+            preview_panel_controls,
+            #preview_panel_controls.copy() if self.data.get('preview_direction', "vertical") == "vertical" else [],
             spacing=self.data.get('preview_spacing', 0),
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=True, scroll=ft.ScrollMode.AUTO
+            #horizontal_alignment=ft.CrossAxisAlignment.CENTER, 
+            expand=True, scroll=ft.ScrollMode.AUTO
         )
 
         # Row that holds our images when in horizontal preview mode
-        horizontal_preview = ft.Row(
-            [build_preview_panel(idx, panel.get('image')) for idx, panel in enumerate(self.data.get('featured_panels', []))],
-            spacing=self.data.get('preview_spacing', 0),
-            vertical_alignment=ft.CrossAxisAlignment.CENTER, expand=True, scroll=ft.ScrollMode.AUTO
+        horizontal_preview = ft.ListView(
+            preview_panel_controls,
+            #preview_panel_controls.copy() if self.data.get('preview_direction', "vertical") == "horizontal" else [],
+            spacing=self.data.get('preview_spacing', 0), horizontal=True,
+            #vertical_alignment=ft.CrossAxisAlignment.CENTER, 
+            expand=True, scroll=ft.ScrollMode.AUTO
         )
 
         # Wrapper for vertical preview, allows us to hide/show based on the preview_direction setting
@@ -375,7 +412,26 @@ class ComicPreview(Widget):
                                     on_click=handle_refresh_panels,
                                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
                                 ),
-
+                                ft.MenuItemButton(
+                                    f"Anti-Aliasing: {self.data.get('use_anti_aliasing', True)}",
+                                    leading=ft.Icon(ft.Icons.ANIMATION_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                    tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
+                                    on_click=toggle_anti_aliasing,
+                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+                                ),
+                                ft.SubmenuButton(
+                                    f"Change Background Color",
+                                    [
+                                        ft.MenuItemButton(
+                                            ft.Icon(ft.Icons.CIRCLE, color), data=color,
+                                            on_click=set_preview_background_color,
+                                        ) for color in colors
+                                    ] + [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_preview_background_color,)],
+                                    tooltip="Adjust the scale of the preview display.",
+                                    leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
+                                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                                ),
                                 ft.SubmenuButton(
                                     f"Preview Spacing: {self.data.get('preview_spacing', 0)}",
                                     [
@@ -389,6 +445,7 @@ class ComicPreview(Widget):
                                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                                     style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                                 ),
+                                
                                 ft.SubmenuButton(
                                     f"Preview Scaling: {self.data.get('preview_scale', 0)}",
                                     [
@@ -402,16 +459,16 @@ class ComicPreview(Widget):
                                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                                     style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                                 ),
+                                
                                 ft.SubmenuButton(
-                                    f"Change Background Color",
+                                    f"Image Filter Quality: {self.data.get('filter_quality', 'medium').capitalize()}",
                                     [
-                                        ft.MenuItemButton(
-                                            ft.Icon(ft.Icons.CIRCLE, color), data=color,
-                                            on_click=set_preview_background_color,
-                                        ) for color in colors
-                                    ] + [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_preview_background_color,)],
-                                    tooltip="Adjust the scale of the preview display.",
-                                    leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
+                                        ft.MenuItemButton("Low", data="low", on_click=set_filter_quality),
+                                        ft.MenuItemButton("Medium", data="medium", on_click=set_filter_quality),
+                                        ft.MenuItemButton("High", data="high", on_click=set_filter_quality),
+                                    ],
+                                    tooltip="Adjust the filter quality of the preview display. This will affect performance and image quality",
+                                    leading=ft.Icon(ft.Icons.PHOTO_FILTER_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                                     style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                                 ),
@@ -439,6 +496,7 @@ class ComicPreview(Widget):
             
         ], expand=True, scroll="none", spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         
+        # Set our content
         self.content = ft.Row([
             preview_stack,
             self.show_sidebar_button,

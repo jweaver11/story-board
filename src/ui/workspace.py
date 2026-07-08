@@ -19,7 +19,7 @@ import asyncio
 # Our workspace object that is stored in our story object
 class Workspace(ft.Container):
     # Constructor
-    def __init__(self, page: ft.Page, story: Story):
+    def __init__(self, story: Story):
 
         # Set our container properties for the workspace
         super().__init__(
@@ -27,21 +27,21 @@ class Workspace(ft.Container):
             alignment=ft.Alignment.CENTER,
         )
 
-        self.p = page
         self.story = story
 
         self.is_resizing = False # State tracking if we're resizing a canvas
 
-        
 
         # Main pin is not rendered directly since it changes based on active tab when more than one widget is present
         self.main_pin = []      # List to hold all our widgets in the main pin that we manipulate easier
         self.main_pin_tabs: ft.Tabs = None
         self.main_pin_column = ft.Column(expand=True)
 
-        self.reload_workspace()   # Load our workspace content for the first time without updating the UI, since we're still in the constructor
+    # Builds our workspace on first launch
+    def build(self):
+        self.reload_workspace(update=False)   
 
-
+    # Arranges our widgets into the main pin
     def arrange_widgets(self):
         self.main_pin.clear()
         sorted_widgets = sorted(self.story.widgets.values(), key=lambda w: w.data.get('index', 0))
@@ -61,20 +61,22 @@ class Workspace(ft.Container):
                 visible_widget_index += 1
     
 
-    def reload_workspace(self):
+    # Reloads the workspace
+    def reload_workspace(self, update: bool=True):
 
-        # TODO: Make the widget itself as the content part, we add its tab portion here.
-        # Will reduce control count a lot
+        self.story.blocker.visible = True
+        self.story.blocker.update()
+        self.page.run_task(asyncio.sleep, 0)
 
         self.arrange_widgets()
 
         # If we're empty, skip all logic
         if len(self.main_pin) <= 0:
             self.content = None
-            try:
+            if update:
                 self.update()
-            except Exception:
-                pass
+            self.story.blocker.visible = False
+            self.story.blocker.update()
             return
 
         # Sets our new index when switching tabs
@@ -141,7 +143,8 @@ class Workspace(ft.Container):
         # Set our tabs as the content
         self.content = tabs
 
-        try:
+        if update:
             self.update()
-        except Exception:
-            pass
+        
+        self.story.blocker.visible = False
+        self.story.blocker.update()
