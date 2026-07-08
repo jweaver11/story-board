@@ -1109,8 +1109,6 @@ class Chart(Widget):
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
-        # Rebuild out tab to reflect any changes
-        self.build_tab()
 
         if self.data.get('type', "") == "bar":
             self._bar_chart_view()

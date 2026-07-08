@@ -379,8 +379,7 @@ class Map(Widget):
     def reload_widget(self):       
         ''' Rebuilds/reloads our map UI '''
 
-        # Rebuild out tab to reflect any changes
-        self.build_tab()
+       
 
         # TODO:  
         # Users can choose to create their image or use some default ones, or upload their own

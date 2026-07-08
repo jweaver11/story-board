@@ -829,8 +829,6 @@ class Plotline(Widget):
     # Called when we need to rebuild out plotline UI
     def reload_widget(self):
 
-        # Rebuild our tab to reflect any changes
-        self.build_tab()
         
         # Create a stack so we can sit our plotpoints and arcs on our plotline
         plotline_stack = ft.Stack(

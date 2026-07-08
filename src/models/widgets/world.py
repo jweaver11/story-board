@@ -409,8 +409,7 @@ class World(Widget):
 
             return control_list
         
-        # Rebuild out tab to reflect any changes
-        self.build_tab()
+       
 
         self.padding = ft.Padding.all(10)   # Set padding
 
@@ -472,8 +471,3 @@ class World(Widget):
                 new_field_tf
             ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
         ], alignment=ft.Alignment.TOP_RIGHT, expand=True)
-
-    def reload_widget(self):    # TEMP TO PREVENT ERRORS FROM CALLS
-        return
-
-# DONE BUILD

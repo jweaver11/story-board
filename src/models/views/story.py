@@ -401,7 +401,7 @@ class Story(ft.View):
                                     story=self,
                                     data=widget_data,
                                 )
-                            case "character_connection_map":
+                            case "character_relationship_map":
                                 widget = CharacterRelationshipMap(
                                     widget_data.get('title', 'Untitled Document'),
                                     directory_path=dir_path,
@@ -450,7 +450,7 @@ class Story(ft.View):
         # Reload all ccm's, since they need all characters loaded to work
         # TODO: Just put all these into a list so when we build later, we actually create them here
         for widget in self.widgets.values():
-            if widget.data.get('tag', "") == "character_connection_map" and widget.data.get('visible', False):
+            if widget.data.get('tag', "") == "character_relationship_map" and widget.data.get('visible', False):
                 widget.reload_widget()
 
     async def import_folder_clicked(self, e: ft.Event):
@@ -536,7 +536,7 @@ class Story(ft.View):
                 widget = Plotline(title, directory_path, self, data, True)
             case "map":
                 widget = Map(title, directory_path, self, data, True)
-            case "character_connection_map":
+            case "character_relationship_map":
                 widget = CharacterRelationshipMap(title, directory_path, self, data, True)
             case "world":
                 if app.settings.data.get('active_world_template', "None") != "None":
@@ -660,7 +660,7 @@ class Story(ft.View):
                     is_new=widget.is_new
                 )
                 
-            case "character_connection_map":
+            case "character_relationship_map":
                 new_widget = CharacterRelationshipMap(
                     widget.data.get('title', 'Untitled Document'),
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),

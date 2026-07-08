@@ -23,7 +23,7 @@ class Note(Widget):
 
         # If we're new, give default values for our data 
         if self.is_new == True:
-            self.data.update({
+            self.data.update({ 
                 'tag': "note", 
                 'color': app.settings.data.get('default_note_color'),
 
@@ -37,9 +37,6 @@ class Note(Widget):
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def build(self):
         ''' Reloads/Rebuilds our widget based on current data '''
-
-        # Run any constistant build from parent class, like setting up the tab
-        self.build_tab()
 
         self.padding = ft.Padding.all(10)   # Set padding
 
@@ -143,8 +140,3 @@ class Note(Widget):
                 add_segment_button, 
             ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
         ], alignment=ft.Alignment.TOP_RIGHT, expand=True)
-
-    def reload_widget(self):    # TEMP TO PREVENT ERRORS FROM CALLS
-        return
-
-# DONE BUILD

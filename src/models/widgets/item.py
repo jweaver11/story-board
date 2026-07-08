@@ -53,8 +53,7 @@ class Item(Widget):
 
     def build(self):
 
-        # Run any constistant build from parent class, like setting up the tab
-        self.build_tab()
+      
 
         self.padding = ft.Padding.all(10)   # Set padding
 
@@ -181,9 +180,3 @@ class Item(Widget):
                 add_segment_button, 
             ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
         ], alignment=ft.Alignment.TOP_RIGHT, expand=True)
-
-
-    def reload_widget(self):
-        return
-        
-# BUILD DONE

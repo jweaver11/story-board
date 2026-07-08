@@ -595,8 +595,7 @@ class CharacterRelationshipMap(Widget):
         async def _set_connection_stack_size(e: ft.LayoutSizeChangeEvent):
             self.cs_width = e.width
             self.cs_height = e.height
-               
-        self.build_tab()
+            
 
         self.character_bank = ft.Column(
             [
@@ -681,7 +680,3 @@ class CharacterRelationshipMap(Widget):
 
         self.content = self.connections_stack
             
-    def reload_widget(self):    # TEMP TO PREVENT ERRORS FROM CALLS
-        return
-
-# DONE BUILD

@@ -41,161 +41,134 @@ class ComicPreview(Widget):
                 'preview_direction': "vertical",      # Default direction for comic preview, can be vertical or horizontal
                 'preview_background_color': "#00000000" if app.settings.data.get('theme_mode', '') == "dark" else "#ffffffff",  # Background color behind images
                 'preview_spacing': 0,               # Spacing between images
-                'show_sidebar': True,                    # Whether or not to show the info column on the left side of the page
+                'preview_scale': 2,                 # Scale of the images in the preview, 1 = 1:1, 2 = 2:1, etc. 
 
-                # List to hold our featured_images of the canvases. Also allows png uploads
-                'featured_images': [              
+                # List to hold our featured_panels of the canvases. Also allows png uploads
+                'featured_panels': [              
                     #{
                         #'id': "canvas_id or None" is None if its an uploaded image
-                        #'title': "title of the snapshot, either canvas name or file name",
+                        #'title': "title of the panel, either canvas name or file name",
                         #'image': "base64 string of the image"
                     #}
                 ],                      
             },
         )
-            
-        
 
-
-
-    # Called to find a canvas and load a snapshot from all its layers
-    def _set_canvas_snapshot(self, canvas_id: str) -> str:
-
-        def _blank_png() -> str:
-            blank = Image.new("RGBA", (1, 1), (0, 0, 0, 0))
-            output = BytesIO()
-            blank.save(output, format="PNG")
-            return base64.b64encode(output.getvalue()).decode("utf-8")
-
-        capture_list = []
-        for widget in self.story.widgets.values():
-            if widget.data['id'] == canvas_id:
-                for layer in widget.data.get('canvas_data', {}).get('Layers', []):
-                    if layer.get('capture', ""):
-                        capture_list.append(layer['capture'])
-                break
-
-        if not capture_list:
-            return _blank_png()
-
-        images = []
-        for capture in capture_list:
-            try:
-                image_bytes = base64.b64decode(capture)
-                image = Image.open(BytesIO(image_bytes)).convert("RGBA")
-                images.append(image)
-            except Exception:
-                continue
-
-        if not images:
-            return _blank_png()
-
-        width, height = images[0].size
-        merged = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-
-        for image in images:
-            if image.size != (width, height):
-                image = image.resize((width, height), Image.Resampling.LANCZOS)
-            merged = Image.alpha_composite(merged, image)
-
-        output = BytesIO()
-        merged.save(output, format="PNG")
-        return base64.b64encode(output.getvalue()).decode("utf-8")
     
-    # Called to refresh any connected canvases featured_images that might be outdated
-    async def _refresh_canvas_snapshots(self):
-        self.story.blocker.visible = True
-        self.story.blocker.update()
-        await asyncio.sleep(0)
-        for snapshot in self.data.get('featured_images', []):
-            if snapshot.get('id'):
-                snapshot['image'] = self._set_canvas_snapshot(snapshot['id'])
-
-        self.update_data(**{'featured_images': self.data.get('featured_images', [])})
-        self.reload_widget()
-        if self.story.blocker.visible:
-            self.story.blocker.visible = False
-            self.story.blocker.update()
+    
+    
+        
 
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def build(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
-        # Shows our info column
-        async def show_sidebar(e: ft.Event):
-            self.update_data(**{'show_sidebar': True})
+        # Called to find a canvas and load a rendered image string given all its layers
+        def refresh_canvas_panel(canvas_id: str) -> str:
 
-            show_sidebar_button.opacity = 0
-            show_sidebar_button.disabled = True
-            show_sidebar_button.mouse_cursor = None
-            show_sidebar_button.update()
+            # Gives a blank image to start
+            def _blank_png() -> str:
+                blank = Image.new("RGBA", (1, 1), (0, 0, 0, 0))
+                output = BytesIO()
+                blank.save(output, format="PNG")
+                return base64.b64encode(output.getvalue()).decode("utf-8")
 
-            await self.show_sidebar()
-
-        # Hides our info column
-        async def hide_sidebar(e: ft.Event):
-            self.update_data(**{'show_sidebar': False})
+            capture_list = []
+            widget = self.story.get_widget_by_id(canvas_id)
+            if not widget:
+                return _blank_png()
             
-            await self.hide_sidebar()
+            for layer in widget.data.get('canvas_data', {}).get('Layers', []):
+                if layer.get('capture', ""):
+                    capture_list.append(layer['capture'])
+                   
+
+            if not capture_list:
+                return _blank_png()
+
+            images = []
+            for capture in capture_list:
+                try:
+                    image_bytes = base64.b64decode(capture)
+                    image = Image.open(BytesIO(image_bytes)).convert("RGBA")
+                    images.append(image)
+                except Exception:
+                    continue
+
+            if not images:
+                return _blank_png()
+
+            width, height = images[0].size
+            merged = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+
+            for image in images:
+                if image.size != (width, height):
+                    image = image.resize((width, height), Image.Resampling.LANCZOS)
+                merged = Image.alpha_composite(merged, image)
+
+            output = BytesIO()
+            merged.save(output, format="PNG")
+            return base64.b64encode(output.getvalue()).decode("utf-8")
+
+
+        
             
-            show_sidebar_button.opacity = 1
-            show_sidebar_button.mouse_cursor = ft.MouseCursor.CLICK
-            show_sidebar_button.disabled = False
-            show_sidebar_button.update()
+        async def handle_add_canvas(e):
 
-        async def _remove_snapshot(e):
-            self.story.blocker.visible = True
-            self.story.blocker.update()
-            await asyncio.sleep(0)
-            idx = e.control.data
-            self.data['featured_images'].pop(idx)
-            self.update_data(**{'featured_images': self.data.get('featured_images', [])})
+            async def save_canvas(_):
+            
+                await asyncio.sleep(0)
+                id = e.control.data
+                
+                widget = self.story.get_widget_by_id(id)
+                
+                self.data['featured_panels'].append({
+                    'id': id,
+                    'title': widget.data.get('title', ''),
+                    'image': self._set_canvas_panel(id)
+                })
+                self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
 
-            self.reload_widget()
-            if self.story.blocker.visible:
-                self.story.blocker.visible = False
-                self.story.blocker.update()
+        # Called to refresh any connected canvases featured_panels that might be outdated
+        async def refresh_canvas_panels():
+            
+            # Go through panels. If they are connected to a canvas, refresh the image from the canvas
+            for idx, panel in enumerate(self.data.get('featured_panels', [])):
+                if panel.get('id'):
+                    panel['image'] = refresh_canvas_panel(panel['id'])
+                    vertical_preview.controls[idx] = build_preview_panel(idx, panel.get('image'))
+                    horizontal_preview.controls[idx] = build_preview_panel(idx, panel.get('image'))
+                    panel_minimap.controls[idx] = build_minimap_panel(idx, panel.get('image'))
 
-        async def _add_canvas_snapshot(e):
-            self.story.blocker.visible = True
-            self.story.blocker.update()
-            await asyncio.sleep(0)
-            id = e.control.data
-            title = None
-            for widget in self.story.widgets.values():
-                if widget.data.get('id') == id:
-                    title = widget.title    
-            self.data['featured_images'].append({
-                'id': id,
-                'title': title,
-                'image': self._set_canvas_snapshot(id)
-            })
-            self.update_data(**{'featured_images': self.data.get('featured_images', [])})
-            self.reload_widget()
-            if self.story.blocker.visible:
-                self.story.blocker.visible = False
-                self.story.blocker.update()
-
+            # Update data UI
+            self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
+            self.update()
         
 
         # Handles toggling the preview direction between vertical and horizontal
-        async def _toggle_preview_direction(e):
+        async def toggle_preview_direction(e):
+            # Show the appropriate wrapper and update the button icon
             if self.data.get('preview_direction', "vertical") == "vertical":
-                self.data['preview_direction'] = "horizontal"
+                self.update_data(**{'preview_direction': "horizontal"})
+                vertical_preview_wrapper.visible = False
+                horizontal_preview_wrapper.visible = True
+                toggle_preview_direction_button.icon = ft.Icons.SWAP_HORIZ
+                
             else:
-                self.data['preview_direction'] = "vertical"
-            self.update_data(**{'preview_direction': self.data.get('preview_direction', "vertical")})
+                self.update_data(**{'preview_direction': "vertical"})
+                horizontal_preview_wrapper.visible = False
+                vertical_preview_wrapper.visible = True
+                toggle_preview_direction_button.icon = ft.Icons.SWAP_VERT
+            self.update()
+            
+            
+
+        # Handles uploading new panel(s) from external files
+        async def handle_upload_panel(e):
+            files = await ft.FilePicker().pick_files(allow_multiple=True, allowed_extensions=["jpg", "jpeg", "png", "webp"])
             self.story.blocker.visible = True
             self.story.blocker.update()
-            await asyncio.sleep(0)
-            self.reload_widget()
-            self.story.blocker.visible = False
-            self.story.blocker.update()
-
-        # Handles uploading new snapshot(s) from external files
-        async def _upload_snapshot_clicked(e):
-            files = await ft.FilePicker().pick_files(allow_multiple=True, allowed_extensions=["jpg", "jpeg", "png", "webp"])
             if files:
                 for file in files:
                     file_path = file.path
@@ -205,226 +178,44 @@ class ComicPreview(Widget):
                         with open(file_path, "rb") as image_file:
                             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                             # Save to our data
-                            self.data['featured_images'].append({
+                            self.data['featured_panels'].append({
                                 'id': None,
                                 'title': file_path.split("\\")[-1],
                                 'image': encoded_string
                             })
+                            vertical_preview.controls.append(build_preview_panel(len(self.data['featured_panels']) - 1, encoded_string))
+                            horizontal_preview.controls.append(build_preview_panel(len(self.data['featured_panels']) - 1, encoded_string))
+                            panel_minimap.controls.append(build_minimap_panel(len(self.data['featured_panels']) - 1, encoded_string))
                             
-
                     except Exception as _:
                         pass
-                self.update_data(**{'featured_images': self.data.get('featured_images', [])})
-                self.story.blocker.visible = True
-                self.story.blocker.update()
-                await asyncio.sleep(0)
-                self.reload_widget()
-                self.story.blocker.visible = False
-                self.story.blocker.update()
-
-        # Handles reordering our featured_images on the left side of the page
-        async def _reorder_snapshots(e: ft.OnReorderEvent):
-            if e.old_index == e.new_index:
-                return
-            self.story.blocker.visible = True
+                self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
+                self.update()
+            self.story.blocker.visible = False
             self.story.blocker.update()
-            await asyncio.sleep(0)
-            self.data['featured_images'].insert(e.new_index, self.data['featured_images'].pop(e.old_index))
-            self.update_data(**{'featured_images': self.data.get('featured_images', [])})
-            self.reload_widget()
-            if self.story.blocker.visible:
-                self.story.blocker.visible = False
-                self.story.blocker.update()
-
-        # Handles showing/hiding all the canvases that are featured or could be featured in the preview
-        async def _toggle_featured_images(e):
-            self.data['can_add_canvases'] = not self.data.get('can_add_canvases', True)
-            self.update_data(**{'can_add_canvases': self.data.get('can_add_canvases', True)})
-            if self.data.get('can_add_canvases', True):
-                e.control.icon = ft.Icons.EDIT_OUTLINED
-                selectable_snapshots.visible = True
-            else:
-                e.control.icon = ft.Icons.EDIT_OFF_OUTLINED
-                selectable_snapshots.visible = False
-            e.control.update()
-            selectable_snapshots.update()
-
-        # Rebuild out tab to reflect any changes
-        self.build_tab()
-
-
-        preview_display = ft.Column() if self.data.get('preview_direction', "vertical") == "vertical" else ft.Row()
-        preview_display.spacing = 0
-        preview_display.scroll = ft.ScrollMode.AUTO
-        preview_display.expand = 2
-
-        preview_display.controls = []
-
-        for snapshot in self.data.get('featured_images', []):
-            preview_display.controls.append(ft.Image(snapshot.get('image', ""), ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, data=snapshot.get('id')))
-
-        self.preview_display_container = ft.Container(
-            preview_display,
-            expand=2,
-            bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK),
-        )
-
-        preview_display_wrapper = ft.Container(
-            ft.Row([
-                ft.Container(expand=1), 
-                self.preview_display_container, 
-                ft.Container(expand=1)
-            ], 
-            expand=True, spacing=0, scroll="none", vertical_alignment=ft.CrossAxisAlignment.START
-            ) if self.data.get('preview_direction', "vertical") == "vertical" else ft.Column([
-                ft.Container(expand=1), 
-                self.preview_display_container, 
-                ft.Container(expand=1)
-            ], expand=True, spacing=0, scroll="none", horizontal_alignment=ft.CrossAxisAlignment.START
-            ),
-            expand=3,
-            alignment=ft.Alignment.CENTER,
-        )
-
-        preview_display_wrapper.content = ft.GestureDetector(
-            preview_display_wrapper.content,
-            on_secondary_tap=lambda _: self.story.open_menu(self._get_menu_options()),
-            on_hover=self._get_coords,
-            hover_interval=50
-        )
-
-    
+                
         
-        # Mini map with preview of all featured_images (very small) on the left side of the page
-        snapshot_mini_map = ft.Column(
-            [
-                
-                ft.Row([
-                    ft.Text("Featured Canvases", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
-                    ft.IconButton(
-                        ft.Icons.EDIT_OUTLINED if self.data.get('can_add_canvases', True) else ft.Icons.EDIT_OFF_OUTLINED, self.data.get('color', ft.Colors.PRIMARY),
-                        tooltip="Add or remove canvases to be featured in the preview",
-                        on_click=_toggle_featured_images,
-                        mouse_cursor=ft.MouseCursor.CLICK,
-                    )
-                ], spacing=0)
-                
-                
-            ],
-            expand=1, scroll="auto", spacing=0
-        )
-
-        # Add featured canvases to the mini map that are reorderable
-        featured_images = ft.ReorderableListView(scroll="auto", on_reorder=_reorder_snapshots)
-        for idx, snapshot in enumerate(self.data.get('featured_images', [])):
-            featured_images.controls.append(
-                ft.ReorderableDragHandle(
-                    ft.Row([
-                        ft.Image(snapshot.get('image', ""), ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, width=50, height=50),
-                        ft.Text(snapshot.get('title', "Untitled"), weight=ft.FontWeight.BOLD, expand=True, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                        
-                        #ft.Container(width=1, height=50),
-                        ft.IconButton(
-                            ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, on_click=_remove_snapshot, 
-                            mouse_cursor=ft.MouseCursor.CLICK, data=idx,
-                            tooltip="Remove from preview",
-                        ),  # Only show delete button its an uploaded image
-                        ft.Container(width=40)
-                    ]),
-                    data=snapshot.get('id')
-                )
-            )
-        snapshot_mini_map.controls.append(featured_images)
-
-        selectable_snapshots = ft.Column(
-            [
-                ft.Divider(),
-                ft.Row([
-                    ft.Text("Available Canvases", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                    ft.IconButton(
-                        ft.Icons.FILE_UPLOAD_OUTLINED, self.data.get('color', ft.Colors.PRIMARY),
-                        tooltip="Upload image(s) to be featured in the preview without connecting a canvas",
-                        on_click=_upload_snapshot_clicked,
-                        mouse_cursor=ft.MouseCursor.CLICK,
-                    )
-                ], spacing=0)
-            ], 
-            scroll="none", #expand=True,
-            visible=True if self.data.get('can_add_canvases', True) else False
-        )
-
-        # For loop to add all canvases in story as options to be featured in the preview
-        for widget in self.story.widgets.values():
-            if widget.data.get('tag', "") == "canvas":
-                selectable_snapshots.controls.append(
-                    
-                    ft.Row([
-                        ft.IconButton(
-                            ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, widget.data.get('color', ft.Colors.PRIMARY), on_click=_add_canvas_snapshot, 
-                            mouse_cursor=ft.MouseCursor.CLICK, data=widget.data.get('id')
-                        ),
-                        ft.Image(self._set_canvas_snapshot(widget.data.get('id')), ft.Text("Error loading image"), fit=ft.BoxFit.CONTAIN, width=50, height=50),
-                        ft.Text(f"\t\t{widget.title}", style=ft.TextStyle(weight=ft.FontWeight.BOLD), color=widget.data.get('color', None)),
-                        
-                    ], spacing=0, tight=True)
-                )
-
-       
-
-        snapshot_mini_map.controls.append(selectable_snapshots)
-
-        self.sidebar.content = ft.Container(
-            ft.Column([
-                ft.Row([
-                    ft.Text(
-                        f"{self.title}\t", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
-                        color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
-                    ),
-                    ft.IconButton(
-                        ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ,
-                        self.data.get('color', ft.Colors.PRIMARY),
-                        tooltip="Toggle preview direction",
-                        on_click=_toggle_preview_direction,
-                        mouse_cursor=ft.MouseCursor.CLICK,
-                    ),
-                    ft.IconButton(
-                        ft.Icons.REFRESH_OUTLINED,
-                        self.data.get('color', ft.Colors.PRIMARY),
-                        tooltip="Refresh snapshots of outdated canvases",
-                        on_click=self._refresh_canvas_snapshots,
-                        mouse_cursor=ft.MouseCursor.CLICK,
-                    ),
-                    
-                    
-                    
-                    ft.Container(expand=True),
-                    ft.IconButton(
-                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=hide_sidebar,
-                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                    ),
-                ], spacing=0),
-                ft.Divider(2, 2),
-                #ft.Container(height=10),
-                snapshot_mini_map,
-            ], expand=True, scroll="none"),
-            border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
-            padding=ft.Padding.only(left=11, top=8, bottom=8),
-            shadow=ft.BoxShadow(0, 1),
-            expand=1,
-            bgcolor=ft.Colors.SURFACE_CONTAINER,
-        )
 
 
         # TODO:
+        # Adjust scaling of column/row
+        # Set background color
+        # Build images
+        # Refresh canvas panels
+        # Swap preview direction
+        # Reorder the panels
+        # Adjust spacing between images
 
         # Returns the image control from the given string
-        def build_image(image_str: str) -> ft.Image:
-            return
+        def build_preview_panel(idx: int, image_str: str) -> ft.Image:
+            return ft.Image(image_str, fit=ft.BoxFit.CONTAIN, expand=True, data=idx)
         
+        async def remove_panel(e):
+            
+            idx = e.control.data
+            self.data['featured_panels'].pop(idx)
+            self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
         
-        # Refresh the snapshots of all connected canvases
-        def refresh_snapshots():
-            pass
 
         # Sets the background color of the preview display
         async def set_preview_background_color(e):
@@ -435,48 +226,173 @@ class ComicPreview(Widget):
             new_direction = e.control.data
             self.update_data(**{'preview_direction': new_direction})
 
-        async def reorder_snapshots(e: ft.OnReorderEvent):
+        # Handles reordering of panels in the mini map and applying to the previews
+        async def reorder_panels(e: ft.OnReorderEvent):
             if e.old_index == e.new_index:
                 return
-            self.data['featured_images'].insert(e.new_index, self.data['featured_images'].pop(e.old_index))
-            self.update_data(**{'featured_images': self.data.get('featured_images', [])})
+            self.data['featured_panels'].insert(e.new_index, self.data['featured_panels'].pop(e.old_index))
+            self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
+
+            vertical_preview.controls.insert(e.new_index, vertical_preview.controls.pop(e.old_index))
+            horizontal_preview.controls.insert(e.new_index, horizontal_preview.controls.pop(e.old_index))
+            panel_minimap.controls.insert(e.new_index, panel_minimap.controls.pop(e.old_index)) 
+            self.update()
+            
+        async def adjust_scaling(e: ft.Event):
+            print("New scaling value:", e.data)
+            new_scaling = int(e.data)
+            self.update_data(**{'preview_scale': new_scaling})
+            vertical_preview.parent.expand = new_scaling
+            horizontal_preview.parent.expand = new_scaling
+            self.update()
+
+        # Returns a small image in the mini map with a delete button that appears on hover
+        def build_minimap_panel(idx: int, image_str: str) -> ft.GestureDetector:
+            async def show_delete_icon(e: ft.Event):
+                delete_button.opacity = 1
+                delete_button.update()
+            async def hide_delete_icon(e: ft.Event):
+                delete_button.opacity = 0
+                delete_button.update()
+            
+            return ft.GestureDetector(
+                ft.Stack([
+                    ft.Image(image_str, fit=ft.BoxFit.CONTAIN, margin=ft.Margin.symmetric(horizontal=10), expand=True, placeholder_src=image_str),
+                    delete_button := ft.IconButton(
+                        ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, tooltip="Remove panel from preview?",
+                        opacity=0, scale=1.5, data=idx, on_click=remove_panel, mouse_cursor="click",
+                        animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                    ),
+                ], alignment=ft.Alignment.CENTER, expand=True,),
+                on_enter=show_delete_icon,
+                on_exit=hide_delete_icon,
+                height=100, expand=True
+            )
             
             
-
-
-        vertical_preview = ft.Column([
-
-        ])
-
-        horizontal_preview = ft.Row([
-
-        ])
-
-        # Load images into both controls above here ^
-
-        preview_stack = ft.Stack([
-            ft.Container(bgcolor="black", expand=True),
-            ft.Container(vertical_preview, bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK)),
-            ft.Container(horizontal_preview, bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK)),
-        ], expand=3, alignment=ft.Alignment.CENTER)
-        
-
-
-        show_sidebar_button = ft.IconButton(
-            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
-            on_click=show_sidebar, 
-            opacity=1 if not self.data.get('show_sidebar', True) else 0,
-            disabled=self.data.get('show_sidebar', True),
-            mouse_cursor=ft.MouseCursor.CLICK if not self.data.get('show_sidebar', True) else None,
-            bgcolor=ft.Colors.SURFACE_CONTAINER,
+        vertical_preview = ft.Column(
+            [build_preview_panel(idx, panel.get('image')) for idx, panel in enumerate(self.data.get('featured_panels', []))],
+            spacing=self.data.get('preview_spacing', 0),
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=True, scroll=ft.ScrollMode.AUTO
         )
 
+        horizontal_preview = ft.Row(
+            [build_preview_panel(idx, panel.get('image')) for idx, panel in enumerate(self.data.get('featured_panels', []))],
+            spacing=self.data.get('preview_spacing', 0),
+            vertical_alignment=ft.CrossAxisAlignment.CENTER, expand=True, scroll=ft.ScrollMode.AUTO
+        )
+
+        vertical_preview_wrapper = ft.Row([
+            ft.Container(expand=1),
+            ft.Container(vertical_preview, bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK), expand=self.data.get('preview_scale', 2)),
+            ft.Container(expand=1),
+        ], expand=True, visible=self.data.get('preview_direction', "vertical") == "vertical")
+
+        horizontal_preview_wrapper = ft.Column([
+            ft.Container(expand=1),
+            ft.Container(horizontal_preview, bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK), expand=self.data.get('preview_scale', 2)),
+            ft.Container(expand=1),
+        ], expand=True, visible=self.data.get('preview_direction', "vertical") == "horizontal",)
+
+        panel_minimap = ft.ReorderableListView(
+            [build_minimap_panel(idx, panel.get('image')) for idx, panel in enumerate(self.data.get('featured_panels', []))],
+            scroll=ft.ScrollMode.AUTO, on_reorder=reorder_panels, align=ft.Alignment.CENTER, expand=True
+        )
+
+        
+        # Set the main preview content as a stack
+        preview_stack = ft.Stack([
+            ft.Container(border=ft.Border.all(2, ft.Colors.BLACK), expand=True),
+            vertical_preview_wrapper,
+            horizontal_preview_wrapper
+        ], expand=3, alignment=ft.Alignment.CENTER)
+        
+        # Set the sidebar content
+        self.sidebar.content = ft.Column([
+            ft.Row([
+                ft.Text(
+                    f"\t{self.data.get('title', 'untitled')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+                    color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
+                ),
+                ft.MenuBar(
+                    [
+                        ft.SubmenuButton(
+                            ft.Container(
+                                ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
+                                padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
+                                width=40, height=40, alignment=ft.Alignment.CENTER
+                            ),
+                            [
+                                ft.MenuItemButton(      # Folders
+                                    leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', "primary")), content="Add Canvas", 
+                                    on_click=handle_add_canvas, close_on_click=True,
+                                    tooltip="Add Canvases created in Story Board to the comic preview.",
+                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                ), 
+                                ft.MenuItemButton(      # Documents
+                                    leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, self.data.get('color', "primary")), content="Upload Image(s)", 
+                                    on_click=handle_upload_panel, close_on_click=True,
+                                    tooltip="Upload images to the comic preview from your device to the comic preview.",
+                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                ), 
+                            ],
+                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                            style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                        ),
+                    ],
+                    style=ft.MenuStyle(
+                        bgcolor="transparent", shadow_color="transparent",
+                        shape=ft.RoundedRectangleBorder(radius=4),
+                        padding=ft.Padding.all(0)
+                    ),
+                ),
+                ft.Container(expand=True),
+                ft.IconButton(
+                    ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self.hide_sidebar,
+                    mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                ),
+            ], spacing=0,),
+            ft.Divider(2, 2),
+
+            toggle_preview_direction_button := ft.Button(
+                "Swap Preview Direction",
+                ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ,
+                self.data.get('color', ft.Colors.PRIMARY),
+                tooltip="Swap the preview direction between vertical and horizontal.",
+                on_click=toggle_preview_direction,
+                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                margin=ft.Margin.only(top=10)
+            ),
+            ft.Button(
+                "Refresh Canvas Panels",
+                ft.Icons.REFRESH_OUTLINED,
+                self.data.get('color', ft.Colors.PRIMARY),
+                tooltip="Refresh panels connected to Canvases that may be outdated",
+                on_click=refresh_canvas_panels,
+                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                margin=ft.Margin.only(top=10, bottom=10)
+            ),
+
+            ft.Text("Preview Scale", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),
+
+            ft.Slider(
+                min=1, max=5, divisions=4, value=self.data.get('preview_scale', 2), label="Preview Scale: {value}x",
+                on_change=adjust_scaling, data="preview_scale", 
+                tooltip="Adjust the scale of the preview display.",
+                
+            ),
+            
+
+            ft.Divider(),
+            
+            panel_minimap,
+
+            
+        ], expand=True, scroll="none", spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+        
         self.content = ft.Row([
             preview_stack,
-            show_sidebar_button,
+            self.show_sidebar_button,
             self.sidebar,
         ], expand=True)
         
-
-    def reload_widget(self):
-        return

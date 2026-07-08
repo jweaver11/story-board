@@ -48,6 +48,7 @@ class Widget(ft.Container):
                 'visible': True,                  # Whether this widget is visible in the workspace or not
                 'color': "primary",                   # Color of this widget's tab and icon in workspace and on rail
                 'image_base64': str(),                 # Base64 string of the image for this widget, if it has one
+                'show_sidebar': True,               # Whether to show the sidebar or not
                 'notes': list(),          # Several widgets have notes
             } 
 
@@ -595,33 +596,17 @@ class Widget(ft.Container):
         self.story.mouse_y = e.global_position.y
         self.l = e.local_position.x
         self.t = e.local_position.y
-    
-    # Called at end of constructor
-    def build_tab(self):
-        ''' Creates our tab for our widget that has the title and hide icon '''
 
-        # Set our color and text if title changed
-        self.tab_icon.color = self.data.get('color', ft.Colors.PRIMARY)
-        self.title.value = self.data.get('title', '')
-
-        # Chart stuff for future
-        if self.data.get('tag', '') == "chart":
-            if self.data.get('type', "") == "bar":
-                self.tab_icon.icon = ft.Icons.INSERT_CHART_OUTLINED
-            else:
-                self.tab_icon.icon = ft.CupertinoIcons.COMPASS
 
     # Auto-called by each child widget when being loaded onto the page
     def build(self):
-        self.build_tab()  
         self.reload_widget()
 
     # Called by child classes at the end of their constructor, or when they need UI update to reflect changes
     def reload_widget(self):
         ''' Children build their own content of the widget in their own reload_widget functions '''
 
-        # Rebuild out tab to reflect any changes
-        self.build_tab()
+        # Set self.content Here
 
         self._render_widget()
     

@@ -629,8 +629,7 @@ class PlotChart(Widget):
 
         # TODO: Add spider web view. Don't rebuild at all
         
-        # Rebuild out tab to reflect any changes
-        self.build_tab()
+        
 
         # Sets our canvas coords for when we're creating a new node by right clicking
         async def _set_canvas_coords(e: ft.HoverEvent):

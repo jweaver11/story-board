@@ -705,8 +705,7 @@ class Canvas(Widget):
 
         self._load_layers()
 
-        # Rebuild out tab to reflect any changes
-        self.build_tab()
+        
 
         self.layer_stack = ft.Stack([
             ft.Container(   # Make sure we're expanded
