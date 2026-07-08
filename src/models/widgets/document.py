@@ -329,12 +329,11 @@ class Document(Widget):
                     mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                 ),
             ], spacing=0),
-            ft.Divider(2, 2),
-            ft.Container(height=10, opacity=0),
+            ft.Divider(),
             self.mini_widgets_column, 
         ], expand=True, scroll="none", spacing=0)
 
-
+        # Set our content
         self.content = ft.Column([
             ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE, alignment=ft.Alignment.CENTER_LEFT),
             ft.Row([

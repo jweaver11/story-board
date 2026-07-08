@@ -266,64 +266,68 @@ class ComicPreview(Widget):
 
         # Adjusts the spacing between panels in the preview display
         async def adjust_spacing(e: ft.Event):
-            new_spacing = int(e.data)
+            new_spacing = int(e.control.data)
             self.update_data(**{'preview_spacing': new_spacing})
+            e.control.parent.content = f"Preview Spacing: {str(new_spacing)}"
             vertical_preview.spacing = new_spacing
             horizontal_preview.spacing = new_spacing
             self.update()
             
         # Adjusts the scaling of the preview display
         async def adjust_scaling(e: ft.Event):
-            new_scaling = int(e.data)
+            new_scaling = int(e.control.data)
             self.update_data(**{'preview_scale': new_scaling})
+            e.control.parent.content = f"Preview Scaling: {str(new_scaling)}"
             vertical_preview.parent.expand = new_scaling
             horizontal_preview.parent.expand = new_scaling
             self.update()
 
         # Sets the background color of the preview display
         async def set_preview_background_color(e: ft.Event):
-            new_color = e.data
+            new_color = e.control.data
             self.update_data(**{'preview_background_color': new_color})
+            e.control.parent.leading.color = new_color
             vertical_preview.parent.bgcolor = new_color
             horizontal_preview.parent.bgcolor = new_color
             self.update()
-
         
             
-            
+        # Column that holds our images when in vertical preview mode
         vertical_preview = ft.Column(
             [build_preview_panel(idx, panel.get('image')) for idx, panel in enumerate(self.data.get('featured_panels', []))],
             spacing=self.data.get('preview_spacing', 0),
             horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=True, scroll=ft.ScrollMode.AUTO
         )
 
+        # Row that holds our images when in horizontal preview mode
         horizontal_preview = ft.Row(
             [build_preview_panel(idx, panel.get('image')) for idx, panel in enumerate(self.data.get('featured_panels', []))],
             spacing=self.data.get('preview_spacing', 0),
             vertical_alignment=ft.CrossAxisAlignment.CENTER, expand=True, scroll=ft.ScrollMode.AUTO
         )
 
+        # Wrapper for vertical preview, allows us to hide/show based on the preview_direction setting
         vertical_preview_wrapper = ft.Row([
             ft.Container(expand=1),
             ft.Container(vertical_preview, bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK), expand=self.data.get('preview_scale', 2)),
             ft.Container(expand=1),
         ], expand=True, visible=self.data.get('preview_direction', "vertical") == "vertical")
 
+        # Wrapper for the horizontal preview, allows us to hide/show based on the preview_direction setting
         horizontal_preview_wrapper = ft.Column([
             ft.Container(expand=1),
             ft.Container(horizontal_preview, bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK), expand=self.data.get('preview_scale', 2)),
             ft.Container(expand=1),
         ], expand=True, visible=self.data.get('preview_direction', "vertical") == "horizontal",)
 
+        # Minimap of the panels, allows for reordering and removing panels from the preview. Held in the sidebar
         panel_minimap = ft.ReorderableListView(
             [build_minimap_panel(idx, panel.get('image')) for idx, panel in enumerate(self.data.get('featured_panels', []))],
             scroll=ft.ScrollMode.AUTO, on_reorder=reorder_panels, align=ft.Alignment.CENTER, expand=True
         )
 
-        
         # Set the main preview content as a stack
         preview_stack = ft.Stack([
-            ft.Container(border=ft.Border.all(2, ft.Colors.BLACK), expand=True),
             vertical_preview_wrapper,
             horizontal_preview_wrapper
         ], expand=3, alignment=ft.Alignment.CENTER)
@@ -335,17 +339,15 @@ class ComicPreview(Widget):
                     f"\t{self.data.get('title', 'untitled')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
                     color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
                 ),
+                
                 ft.MenuBar(
                     [
                         ft.SubmenuButton(
-                            ft.Container(
-                                ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
-                                padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
-                                width=40, height=40, alignment=ft.Alignment.CENTER
-                            ),
+                            ft.Icon(ft.Icons.PLAYLIST_ADD_OUTLINED, "primary"),
+                                
                             [
                                 ft.MenuItemButton(      # Folders
-                                    leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', "primary")), content="Add Canvas", 
+                                    leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', "primary")), content="Add Canvases", 
                                     on_click=handle_add_canvas_panel, close_on_click=True,
                                     tooltip="Add Canvases created in Story Board to the comic preview.",
                                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
@@ -356,6 +358,64 @@ class ComicPreview(Widget):
                                     tooltip="Upload images to the comic preview from your device to the comic preview.",
                                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                 ), 
+                                toggle_preview_direction_button := ft.MenuItemButton(
+                                    "Swap Preview Direction", True,
+                                    leading=ft.Icon(
+                                        ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
+                                        self.data.get('color', ft.Colors.PRIMARY),
+                                    ),
+                                    tooltip="Swap the preview direction between vertical and horizontal.",
+                                    on_click=toggle_preview_direction,
+                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+                                ),
+                                ft.MenuItemButton(
+                                    "Refresh Canvas Panels",
+                                    leading=ft.Icon(ft.Icons.REFRESH_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                    tooltip="Refresh panels connected to Canvases that may be outdated",
+                                    on_click=handle_refresh_panels,
+                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+                                ),
+
+                                ft.SubmenuButton(
+                                    f"Preview Spacing: {self.data.get('preview_spacing', 0)}",
+                                    [
+                                        ft.MenuItemButton(
+                                            str(i), data=i,
+                                            on_click=adjust_spacing,
+                                        ) for i in range(0, 21) if i % 2 == 0
+                                    ],
+                                    tooltip="Adjust the spacing between panels in the preview display.",
+                                    leading=ft.Icon(ft.Icons.SPACE_BAR_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                                ),
+                                ft.SubmenuButton(
+                                    f"Preview Scaling: {self.data.get('preview_scale', 0)}",
+                                    [
+                                        ft.MenuItemButton(
+                                            str(i), data=i,
+                                            on_click=adjust_scaling,
+                                        ) for i in range(1, 6)
+                                    ],
+                                    tooltip="Adjust the scale of the preview display.",
+                                    leading=ft.Icon(ft.Icons.CROP_FREE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                                ),
+                                ft.SubmenuButton(
+                                    f"Change Background Color",
+                                    [
+                                        ft.MenuItemButton(
+                                            ft.Icon(ft.Icons.CIRCLE, color), data=color,
+                                            on_click=set_preview_background_color,
+                                        ) for color in colors
+                                    ] + [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_preview_background_color,)],
+                                    tooltip="Adjust the scale of the preview display.",
+                                    leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
+                                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                                ),
+                                
                             ],
                             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                             style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
@@ -373,58 +433,7 @@ class ComicPreview(Widget):
                     mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
                 ),
             ], spacing=0,),
-            ft.Divider(2, 2),
-
-            toggle_preview_direction_button := ft.Button(
-                "Swap Preview Direction",
-                ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ,
-                self.data.get('color', ft.Colors.PRIMARY),
-                tooltip="Swap the preview direction between vertical and horizontal.",
-                on_click=toggle_preview_direction,
-                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-                margin=ft.Margin.only(top=10)
-            ),
-            ft.Button(
-                "Refresh Canvas Panels",
-                ft.Icons.REFRESH_OUTLINED,
-                self.data.get('color', ft.Colors.PRIMARY),
-                tooltip="Refresh panels connected to Canvases that may be outdated",
-                on_click=handle_refresh_panels,
-                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-                margin=ft.Margin.only(top=10, bottom=10)
-            ),
-
-            # Spacing
-            ft.Row([
-                ft.Text("Preview Spacing", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),
-                ft.Slider(
-                    min=0, max=20, divisions=20, value=self.data.get('preview_spacing', 2), label="Preview Spacing: {value}",
-                    on_change=adjust_spacing, data="preview_scale", expand=True,
-                    tooltip="Adjust the spacing between panels in the preview display.", 
-                ),
-            ]),
-
-            # Scaling
-            ft.Row([
-                ft.Text("Preview Scale", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),
-                ft.Slider(
-                    min=1, max=5, divisions=4, value=self.data.get('preview_scale', 2), label="Preview Scale: {value}",
-                    on_change=adjust_scaling, data="preview_scale", expand=True,
-                    tooltip="Adjust the scale of the preview display.", 
-                ),
-            ]),
-
-            # Change background color
-            ft.Text("Background Color", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),
-            BlockPicker(
-                self.data.get('preview_background_color', ft.Colors.BLACK), 
-                [color for color in colors] + ["#00000000"],
-                on_color_change=set_preview_background_color
-            ),
-            
-
             ft.Divider(),
-            
             panel_minimap,
 
             
@@ -434,5 +443,5 @@ class ComicPreview(Widget):
             preview_stack,
             self.show_sidebar_button,
             self.sidebar,
-        ], expand=True)
+        ], expand=True, spacing=0)
         

@@ -130,7 +130,7 @@ class Widget(ft.Container):
         # Container on right side of widgets to hold mini widgets or sidebar info
         self.sidebar = ft.Container(
             border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
-            padding=ft.Padding.symmetric(horizontal=10),
+            padding=ft.Padding.all(10),
             shadow=ft.BoxShadow(0, 1), 
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             width=0, 
