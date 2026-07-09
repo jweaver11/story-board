@@ -58,7 +58,9 @@ class Settings(ft.View):
                     'route': "/",           # Route to our active story
                     'is_maximized': True,   # If the page is maximized or not
                     'width': int(),          # Last known page width
-                    'height': int()          # Last known page height
+                    'height': int(),          # Last known page height
+                    'theme_mode': "dark",       # the apps theme mode, dark or light
+                    'theme_color': "blue",   # the color scheme of the app. Defaults to blue
                 },
 
                 'story': {
@@ -66,13 +68,53 @@ class Settings(ft.View):
                     'active_rail_width': 250,  # Width of our active rail that we can resize
                 },
 
-
-                # Settings per widget
+                # Settings per widget. All have a default color upon creation
                 'widget': {
-                    'document': {},
-                    'canvas': {},
-                    'note': {},
-                    #''...
+                    'document': {
+                        'default_color': "primary"
+                    },
+                    'canvas': {
+                        'default_color': "primary"
+                    },
+                    'note': {
+                        'default_color': "primary"
+                    },
+                    'character': {
+                        'default_color': "primary"
+                    },
+                    'plotline': {
+                        'default_color': "primary"
+                    },
+                    'canvas_board': {
+                        'default_color': "primary"
+                    },
+                    'map': {
+                        'default_color': "primary"
+                    },
+                    'world': {
+                        'default_color': "primary"
+                    },
+                    'item': {
+                        'default_color': "primary"
+                    },
+                    'plot_chart': {
+                        'default_color': "primary"
+                    },
+                    'comic_preview': {
+                        'default_color': "primary",
+                        'preview_direction': "vertical",            # Default direction for comic preview, can be vertical or horizontal
+                        'preview_background_color': "#00000000",  # Background color behind images
+                        'preview_spacing': 0,                       # Spacing between images
+                        'preview_scale': 2,                         # Scale of the images in the preview, 1 = 1:1, 2 = 2:1, etc. 
+                        'filter_quality': "medium",                 # Filter quality for the images in the preview, can be low, medium, or high
+                        'use_anti_aliasing': True,                  # Whether to use anti-aliasing when rendering the images in the preview
+                    },
+                    'chart': {
+                        'default_color': "primary"
+                    },
+                    'character_relationship_map': {
+                        'default_color': "primary"
+                    }
                 },
 
                 # Paint settings for our canvas drawings to use as default that users can change
@@ -115,9 +157,7 @@ class Settings(ft.View):
 
                 # Settings the user can change in the settings view
                 # Appearance settings
-                'theme_mode': "dark",       # the apps theme mode, dark or light
-                'theme_color': "blue",   # the color scheme of the app. Defaults to blue
-                'change_name_colors_based_on_morality': True,   # If characters names change colors in char based on morality
+                
                 'workspaces_rail_order': [      # Order of the workspace rail
                     "content",
                     "canvas",
@@ -126,44 +166,7 @@ class Settings(ft.View):
                     "world_building",
                 ],
 
-                # Widget settings
-                'default_canvas_color': "primary",
-                'default_canvas_board_color': "primary",
-                'default_chapter_color': "primary",   # Default colors for new widgets
-                'default_character_color': "primary",
-                'default_character_connection_map_color': "primary", 
-                'default_map_color': "primary",
-                'default_note_color': "primary",
-                'default_planning_color': "primary",
-                'default_plotline_color': "primary",
-                'default_world_color': "primary",
-                'default_item_color': "primary",
-                'default_chart_color': "primary",
-                'default_comic_preview_color': "primary",
-
                 'default_category_color': "primary",    # Categories thrown in here
-
-                'default_canvas_pin_location': "main",      # Default pin locations for new widgets (all in main for now)
-                'default_canvas_board_pin_location': "main",
-                'default_chapter_pin_location': "main",   
-                #'default_character_pin_location': "left",
-                'default_character_pin_location': "main",
-                'default_character_connection_map_pin_location': "main",
-                'default_map_pin_location': "main",
-                #'default_note_pin_location': "right",
-                'default_note_pin_location': "main",
-                'default_planning_pin_location': "main",
-                'default_plotline_pin_location': "main",
-                #'default_world_pin_location': "right",
-                'default_item_pin_location': "main",
-                'default_comic_preview_pin_location': "main",
-                #'default_item_pin_location': "right",
-                'default_world_pin_location': "main",
-                'default_chart_pin_location': "main",
-
-                'active_character_template': "Default",             # Which template is being used for new characters for new stories - they default to this
-                'active_world_template': "Default",                 # Which template is being used for new worlds for new stories - they default to this
-                'division_labels_direction': "bottom",              # If the division labels are on top of the plotline instead of below
 
                 # Hold our default character templates
                 'character_templates': {    
@@ -260,10 +263,10 @@ class Settings(ft.View):
             self.update_data(**{
                 'page': {
                     'is_maximized': False,
-                    'width': self.page.width,
-                    'height': self.page.height,
-                    'left': self.page.window.left,
-                    'top': self.page.window.top,
+                    'width': e.page.width,
+                    'height': e.page.height,
+                    'left': e.page.window.left,
+                    'top': e.page.window.top,
                 }
             })
             
@@ -301,6 +304,7 @@ class Settings(ft.View):
 
         if e is None:
             idx = self.selected_index
+            
         else:
             idx = e.control.selected_index 
 
@@ -331,15 +335,17 @@ class Settings(ft.View):
             ''' Saves our color scheme choice and applies it to the page '''
 
             # Save our color scheme choice to our objects data
-            self.data['theme_color'] = e.control.value
-            e.control.color = e.control.value   # Changes the dropdown text color to match the selected color
+            new_color = e.control.value
+            self.update_data(**{'page': {'theme_color': new_color}})
+            self.page.run_task(self.save_file)
+            e.control.color = new_color   # Changes the dropdown text color to match the selected color
 
             # Applies this theme to our page, for both dark and light themes
-            self.page.theme = ft.Theme(color_scheme_seed=self.data.get('theme_color', "blue"))
-            self.page.dark_theme = ft.Theme(color_scheme_seed=self.data.get('theme_color', "blue"))
+            self.page.theme = ft.Theme(color_scheme_seed=new_color)
+            self.page.dark_theme = ft.Theme(color_scheme_seed=new_color)
 
             # Save the updated settings to the JSON file and update the page
-            self.page.run_task(self.save_file)
+            
             self.page.update()
 
         # Dropdown so app can change their color scheme
@@ -348,9 +354,9 @@ class Settings(ft.View):
             capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
             options=self._get_color_options(True),
             on_select=_set_theme_color,
-            value=self.data.get('theme_color', "blue"),
+            value=self.data.get('page', {}).get('theme_color', "blue"),
             text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-            color=self.data.get('theme_color', None),
+            color=self.data.get('page', {}).get('theme_color', None),
             dense=True, data="theme_color_dropdown",
         )
 
@@ -361,7 +367,7 @@ class Settings(ft.View):
 
             new_theme_mode = e.control.data   # Grabs the theme mode this button represents
 
-            if new_theme_mode == self.data['theme_mode']:
+            if new_theme_mode == self.data.get('page', {}).get('theme_mode', "dark"):
                 return   # No need to change anything if we're already on this theme
             
             else:
@@ -372,9 +378,9 @@ class Settings(ft.View):
                     e.control.border = ft.Border.all(2, ft.Colors.PRIMARY)
                     self.dark_theme_button.border = ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT)
 
-            self.data['theme_mode'] = new_theme_mode
+            self.update_data(**{'page': {'theme_mode': new_theme_mode}})
             self.page.run_task(self.save_file)
-            self.page.theme_mode = self.data['theme_mode']
+            self.page.theme_mode = new_theme_mode
             self.page.update()
 
         def _set_default_category_color(e):
@@ -395,12 +401,12 @@ class Settings(ft.View):
         # Button that changes the theme from dark or light when clicked
         self.light_theme_button = ft.Container(
             content=ft.Icon(ft.Icons.LIGHT_MODE, color=ft.Colors.YELLOW_700), height=100, width=100, border_radius=10, data="light",
-            border=ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT) if self.data['theme_mode'] == "dark" else ft.Border.all(2, ft.Colors.PRIMARY), 
+            border=ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT) if self.data.get('page', {}).get('theme_mode', "dark") == "dark" else ft.Border.all(2, ft.Colors.PRIMARY), 
             bgcolor=ft.Colors.WHITE, on_click=_toggle_theme, tooltip="Set light mode", ink=True
         )
         self.dark_theme_button = ft.Container(
             content=ft.Icon(ft.Icons.DARK_MODE, color=ft.Colors.WHITE), height=100, width=100, border_radius=10, data="dark",
-            border=ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT) if self.data['theme_mode'] == "light" else ft.Border.all(2, ft.Colors.PRIMARY), 
+            border=ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT) if self.data.get('page', {}).get('theme_mode', "dark") == "light" else ft.Border.all(2, ft.Colors.PRIMARY), 
             bgcolor=ft.Colors.GREY_900, on_click=_toggle_theme, tooltip="Set dark mode", ink=True
         )
         
@@ -449,38 +455,89 @@ class Settings(ft.View):
     def _load_widget_settings(self) -> ft.Container:
         ''' Loads our account settings view '''
 
-        def _set_default_widget_color(e):
-            ''' Sets the default color for new widgets of a certain type '''
+        # Sets the color in data for each widget upon a change
+        def set_default_widget_color(e: ft.Event, widget_tag: str):
+            color_str = e.control.data
+            self.update_data(**{'widget': {widget_tag: {'default_color': color_str}}})
+            e.control.parent.leading.color = color_str
+            e.control.parent.update()
 
-            widget_type = e.control.data   # Grabs the type of widget we're changing the default color for
-            new_color = e.control.value    # Grabs the new color selected   
+        # Gives a default color changer for each widget
+        def create_default_color_selector(widget_tag: str) -> ft.MenuBar:
+            return ft.MenuBar(
+                [
+                    ft.SubmenuButton(
+                        f"Default {widget_tag.title().replace('_', ' ')} Color",
+                        [
+                            ft.MenuItemButton(
+                                ft.Icon(ft.Icons.CIRCLE, color), True, data=color,
+                                on_click=lambda e: set_default_widget_color(e, widget_tag),
+                            ) for color in colors
+                        ],
+                        leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('widget', {}).get(widget_tag, {}).get('default_color', "#00000000")),
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                        style=ft.ButtonStyle(
+                            alignment=ft.Alignment.CENTER, mouse_cursor="click",
+                            shape=ft.RoundedRectangleBorder(radius=4), bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
+                        ),
+                    )
+                ],
+                style=ft.MenuStyle(
+                    bgcolor="transparent", shadow_color="transparent",
+                    shape=ft.RoundedRectangleBorder(radius=4),
+                    padding=ft.Padding.all(0)
+                )
+            )
+        
+        # Adjusts the spacing between panels in the preview display
+        async def adjust_comic_preview_spacing(e: ft.Event):
+            new_spacing = int(e.control.data)
+            self.update_data(**{'widget': {'comic_preview': {'preview_spacing': new_spacing}}})
+            e.control.parent.content = f"Preview Spacing: {str(new_spacing)}"
+            e.control.parent.update()
+            print(new_spacing)
+            
+        # Adjusts the scaling of the preview display
+        async def adjust_comic_preview_scaling(e: ft.Event):
+            new_scaling = int(e.control.data)
+            self.update_data(**{'widget': {'comic_preview': {'preview_scale': new_scaling}}})
+            e.control.parent.content = f"Preview Scaling: {str(new_scaling)}"
+            e.control.parent.update()
+            print(new_scaling)
+            
 
-            match widget_type:
-                case "chapter":
-                    self.data['default_chapter_color'] = new_color
-                case "canvas":
-                    self.data['default_canvas_color'] = new_color
-                case "canvas_board":
-                    self.data['default_canvas_board_color'] = new_color
-                case "note":
-                    self.data['default_note_color'] = new_color
-                case "character":
-                    self.data['default_character_color'] = new_color
-                case "plotline":
-                    self.data['default_plotline_color'] = new_color
-                case "map":
-                    self.data['default_map_color'] = new_color
-                case "planning":
-                    self.data['default_planning_color'] = new_color
-                case "character_connection_map":
-                    self.data['default_character_connection_map_color'] = new_color
-                case "world":
-                    self.data['default_world_color'] = new_color
+        # Sets the background color of the preview display
+        async def set_comic_preview_background_color(e: ft.Event):
+            new_color = e.control.data
+            self.update_data(**{'widget': {'comic_preview': {'preview_background_color': new_color}}})
+            e.control.parent.leading.color = new_color
+            e.control.parent.update()
+            print(new_color)
+            
 
-            # Save our updated settings
-            self.page.run_task(self.save_file)
-            e.control.color = new_color   # Changes the dropdown text color to match the selected color
+        # Sets the filter quality of the preview display
+        async def set_comic_preview_filter_quality(e: ft.Event):
+            new_quality = str(e.control.data)
+            self.update_data(**{'widget': {'comic_preview': {'filter_quality': new_quality}}})
+            e.control.parent.content = f"Filter Quality: {new_quality.capitalize()}"
+            e.control.parent.update()
+            print(new_quality)
+            
+        async def toggle_comic_preview_anti_aliasing(e: ft.Event):
+            new_value = not self.data.get('widget', {}).get('comic_preview', {}).get('use_anti_aliasing', True)
+            self.update_data(**{'widget': {'comic_preview': {'use_anti_aliasing': new_value}}})
+            e.control.content = f"Anti-Aliasing: {str(new_value)}"
             e.control.update()
+
+        async def toggle_comic_preview_direction(e: ft.Event):
+            if self.data.get('widget', {}).get('comic_preview', {}).get('preview_direction') == "vertical":
+                new_value = "horizontal"
+            else:
+                new_value = "vertical"
+            self.update_data(**{'widget': {'comic_preview': {'preview_direction': new_value}}})
+            e.control.content = f"Preview Direction: {str(new_value)}"
+            e.control.icon = ft.Icons.SWAP_VERT if new_value == "vertical" else ft.Icons.SWAP_HORIZ
+            e.control.update()  
 
 
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
@@ -498,267 +555,125 @@ class Settings(ft.View):
 
             ft.Divider(),
             
-            ft.Column([
-
-                ft.Container(height=10),    # Spacer
-                ft.Text("Pin location and Color of newly created widgets (won't effect existing widgets)", theme_style=ft.TextThemeStyle.BODY_LARGE, color=ft.Colors.ON_SURFACE_VARIANT),
-                ft.Container(height=2),
-                ft.Row([
-                    ft.Container(width=10),   # Spacer
-                    ft.Text("Canvases", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
-                    ft.Dropdown(
-                        label="Color", tooltip="Default color for new canvases",
-                        capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_select=_set_default_widget_color,
-                        value=self.data.get('default_canvas_color', "primary"),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        color=self.data.get('default_canvas_color', "primary"),
-                        dense=True, data="canvas",
-                    ),
-                    ft.Dropdown(
-                        label="Pin Location", tooltip="Default pin location for new canvases",
-                        capitalization= ft.TextCapitalization.SENTENCES,
-                        options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
-                        value=self.data.get('default_canvas_pin_location', "main").capitalize(),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        dense=True,
-                        on_select=lambda e: self.update_data(default_chapter_pin_location=e.control.value.lower()),
-                    ),
-                    ft.Container(width=10),   # Spacer
-                ]),
-                ft.Container(height=0),    # Spacer
-
-                ft.Row([
-                    ft.Container(width=10),   # Spacer  
-                    ft.Text("Canvas Boards", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
-                    ft.Dropdown(
-                        label="Color", tooltip="Default color for new canvas boards",
-                        capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_select=_set_default_widget_color,
-                        value=self.data.get('default_canvas_board_color', "primary"),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        color=self.data.get('default_canvas_board_color', "primary"),
-                        dense=True, data="canvas_board",
-                    ),
-                    ft.Dropdown(
-                        label="Pin Location", tooltip="Default pin location for new canvas boards",
-                        capitalization= ft.TextCapitalization.SENTENCES,
-                        options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
-                        value=self.data.get('default_canvas_board_pin_location', "main").capitalize(),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        dense=True,
-                        on_select=lambda e: self.update_data(default_canvas_pin_location=e.control.value.lower()),
-                    ),
-                    ft.Container(width=10),   # Spacer
-                ]),
-                ft.Container(height=0),    # Spacer
-
-                ft.Row([
-                    ft.Container(width=10),   # Spacer  
-                    ft.Text("Chapters", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
-                    ft.Dropdown(
-                        label="Color", tooltip="Default color for new chapters",
-                        capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_select=_set_default_widget_color,
-                        value=self.data.get('default_chapter_color', "primary"),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        color=self.data.get('default_chapter_color', "primary"),
-                        dense=True, data="chapter",
-                    ),
-                    ft.Dropdown(
-                        label="Pin Location", tooltip="Default pin location for new chapters",
-                        capitalization= ft.TextCapitalization.SENTENCES,
-                        options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
-                        value=self.data.get('default_chapter_pin_location', "main").capitalize(),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        dense=True,
-                        on_select=lambda e: self.update_data(default_chapter_pin_location=e.control.value.lower()),
-                    ),
-                    ft.Container(width=10),   # Spacer
-                ]),
-                ft.Container(height=0),    # Spacer
-
-                ft.Row([
-                    ft.Container(width=10),   # Spacer
-                    ft.Text("Characters", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
-                    ft.Dropdown(
-                        label="Color", tooltip="Default color for new characters",
-                        capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_select=_set_default_widget_color,
-                        value=self.data.get('default_character_color', "primary"),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        color=self.data.get('default_character_color', "primary"),
-                        dense=True, data="character",
-                    ),
-                    ft.Dropdown(
-                        label="Pin Location", tooltip="Default pin location for new character",
-                        capitalization= ft.TextCapitalization.SENTENCES,
-                        options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
-                        value=self.data.get('default_character_pin_location', "main").capitalize(),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        dense=True,
-                        on_select=lambda e: self.update_data(default_character_pin_location=e.control.value.lower()),
-                    ),
-                    ft.Container(width=10),   # Spacer
-                ]),
-                ft.Container(height=0),    # Spacer
-
-                ft.Row([
-                    ft.Container(width=10),   # Spacer
-                    ft.Text("Character Connection Maps", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
-                    ft.Dropdown(
-                        label="Color", tooltip="Default color for new Character Connection Map",
-                        capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_select=_set_default_widget_color,
-                        value=self.data.get('default_character_connection_map_color', "primary"),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        color=self.data.get('default_character_connection_map_color', "primary"),
-                        dense=True, data="character_connection_map",
-                    ),
-                    ft.Dropdown(
-                        label="Pin Location", tooltip="Default pin location for new Character Connection Maps",
-                        capitalization= ft.TextCapitalization.SENTENCES,
-                        options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
-                        value=self.data.get('default_character_connection_map_pin_location', "main").capitalize(),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        dense=True,
-                        on_select=lambda e: self.update_data(default_character_connection_map_pin_location=e.control.value.lower()),
-                    ),
-                    ft.Container(width=10),   # Spacer
-                ]),
-                ft.Container(height=0),    # Spacer
-
-
-                ft.Row([
-                    ft.Container(width=10),   # Spacer
-                    ft.Text("Maps", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
-                    ft.Dropdown(
-                        label="Color", tooltip="Default color for new maps",
-                        capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_select=_set_default_widget_color,
-                        value=self.data.get('default_map_color', "primary"),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        color=self.data.get('default_map_color', "primary"),
-                        dense=True, data="map",
-                    ),
-                    ft.Dropdown(
-                        label="Pin Location", tooltip="Default pin location for new maps",
-                        capitalization= ft.TextCapitalization.SENTENCES,
-                        options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
-                        value=self.data.get('default_map_pin_location', "main").capitalize(),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        dense=True,
-                        on_select=lambda e: self.update_data(default_map_pin_location=e.control.value.lower()),
-                    ),
-                    ft.Container(width=10),   # Spacer
-                ]),
-                ft.Container(height=0),    # Spacer
-
-                ft.Row([
-                    ft.Container(width=10),   # Spacer
-                    ft.Text("Notes", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
-                    ft.Dropdown(
-                        label="Color", tooltip="Default color for new notes",
-                        capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_select=_set_default_widget_color,
-                        value=self.data.get('default_note_color', "primary"),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        color=self.data.get('default_note_color', "primary"),
-                        dense=True, data="note",
-                    ),
-                    ft.Dropdown(
-                        label="Pin Location", tooltip="Default pin location for new notes",
-                        capitalization= ft.TextCapitalization.SENTENCES,
-                        options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
-                        value=self.data.get('default_note_pin_location', "main").capitalize(),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        dense=True,
-                        on_select=lambda e: self.update_data(default_note_pin_location=e.control.value.lower()), 
-                    ),
-                    ft.Container(width=10),   # Spacer
-                ]),
-                ft.Container(height=0),    # Spacer
-
-                ft.Row([
-                    ft.Container(width=10),   # Spacer
-                    ft.Text("Planning", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
-                    ft.Dropdown(
-                        label="Color", tooltip="Default color for new planning widgets",
-                        capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_select=_set_default_widget_color,
-                        value=self.data.get('default_planning_color', "primary"),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        color=self.data.get('default_planning_color', "primary"),
-                        dense=True, data="planning",
-                    ),
-                    ft.Dropdown(
-                        label="Pin Location", tooltip="Default pin location for new planning widgets",
-                        capitalization= ft.TextCapitalization.SENTENCES,
-                        options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
-                        value=self.data.get('default_planning_pin_location', "main").capitalize(),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        dense=True,
-                        on_select=lambda e: self.update_data(default_planning_pin_location=e.control.value.lower()),
-                    ),
-                    ft.Container(width=10),   # Spacer
-                ]),
-                ft.Container(height=0),    # Spacer
-
-                
-
-                ft.Row([
-                    ft.Container(width=10),   # Spacer
-                    ft.Text("Plotlines", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
-                    ft.Dropdown(
-                        label="Color", tooltip="Default color for new plotlines",
-                        capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_select=_set_default_widget_color,
-                        value=self.data.get('default_plotline_color', "primary"),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        color=self.data.get('default_plotline_color', "primary"),
-                        dense=True, data="plotline",
-                    ),
-                    ft.Dropdown(
-                        label="Pin Location", tooltip="Default pin location for new plotlines",
-                        capitalization= ft.TextCapitalization.SENTENCES,
-                        options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
-                        value=self.data.get('default_plotline_pin_location', "main").capitalize(),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        dense=True,
-                        on_select=lambda e: self.update_data(default_plotline_pin_location=e.control.value.lower()),
-                    ),
-                    ft.Container(width=10),   # Spacer
-                ]),
-                ft.Container(height=0),    # Spacer
-
-                ft.Row([
-                    ft.Container(width=10),   # Spacer
-                    ft.Text("Worlds", theme_style=ft.TextThemeStyle.LABEL_LARGE, width=100),
-                    ft.Dropdown(
-                        label="Color", tooltip="Default color for new World widgets",
-                        capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                        options=self._get_color_options(), on_select=_set_default_widget_color,
-                        value=self.data.get('default_world_color', "primary"),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                        color=self.data.get('default_world_color', "primary"),
-                        dense=True, data="world",
-                    ),
-                    ft.Dropdown(
-                        label="Pin Location", tooltip="Default pin location for new World widgets",
-                        capitalization= ft.TextCapitalization.SENTENCES,
-                        options=[ft.DropdownOption("Left"), ft.DropdownOption("Right"), ft.DropdownOption("Main"), ft.DropdownOption("Top"), ft.DropdownOption("Bottom")],
-                        value=self.data.get('default_world_pin_location', "main").capitalize(),
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), dense=True,
-                        on_select=lambda e: self.update_data(default_world_location=e.control.value.lower()),
-                    ),
-                    ft.Container(width=10),   # Spacer
-                ]),
-                
-                
-            ], scroll="auto", expand=True),
             
-        ])
 
+            ft.Text("Document", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("document")),
+            create_default_color_selector("document"),
+            ft.Divider(),
+
+            ft.Text("Canvas", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("canvas")),
+            create_default_color_selector("canvas"),
+            ft.Divider(),
+            
+            ft.Text("Note", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("note")),
+            create_default_color_selector("notes"),
+            ft.Divider(),
+
+            ft.Text("Character", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character")),
+            create_default_color_selector("character"),
+            ft.Divider(),
+
+            ft.Text("Plotline", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("plotline")),
+            create_default_color_selector("plotline"),
+            ft.Divider(),
+
+            ft.Text("Canvas Board", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("canvas_board")),
+            ft.Divider(),
+
+            ft.Text("World", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("world")),
+            ft.Divider(),
+
+            ft.Text("Item", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("item")),
+            ft.Divider(),
+
+            ft.Text("Plot Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("plot_chart")),
+            ft.Divider(),
+
+            ft.Text("Comic Preview", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("comic_preview")),
+             
+            ft.Button(
+                "Swap Preview Direction", 
+                ft.Icons.SWAP_VERT if self.data.get('widget', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
+                ft.Colors.PRIMARY,
+                tooltip="Swap the preview direction between vertical and horizontal.",
+                on_click=toggle_comic_preview_direction,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+            ),
+            
+            ft.Button(
+                f"Anti-Aliasing: {self.data.get('widget', {}).get('use_anti_aliasing', True)}",
+                ft.Icons.ANIMATION_OUTLINED, 
+                ft.Colors.PRIMARY,
+                tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
+                on_click=toggle_comic_preview_anti_aliasing,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+            ),
+            ft.SubmenuButton(
+                f"Change Background Color",
+                [
+                    ft.MenuItemButton(
+                        ft.Icon(ft.Icons.CIRCLE, color), data=color,
+                        on_click=set_comic_preview_background_color,
+                    ) for color in colors
+                ] + [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_comic_preview_background_color,)],
+                tooltip="Adjust the scale of the preview display.",
+                leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            ),
+            ft.SubmenuButton(
+                f"Preview Spacing: {self.data.get('preview_spacing', 0)}",
+                [
+                    ft.MenuItemButton(
+                        str(i), data=i,
+                        on_click=adjust_comic_preview_spacing,
+                    ) for i in range(0, 21) if i % 2 == 0
+                ],
+                tooltip="Adjust the spacing between panels in the preview display.",
+                leading=ft.Icon(ft.Icons.SPACE_BAR_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            ),
+            
+            ft.SubmenuButton(
+                f"Preview Scaling: {self.data.get('preview_scale', 0)}",
+                [
+                    ft.MenuItemButton(
+                        str(i), data=i,
+                        on_click=adjust_comic_preview_scaling,
+                    ) for i in range(1, 6)
+                ],
+                tooltip="Adjust the scale of the preview display.",
+                leading=ft.Icon(ft.Icons.CROP_FREE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            ),
+            
+            ft.SubmenuButton(
+                f"Image Filter Quality: {self.data.get('filter_quality', 'medium').capitalize()}",
+                [
+                    ft.MenuItemButton("Low", data="low", on_click=set_comic_preview_filter_quality),
+                    ft.MenuItemButton("Medium", data="medium", on_click=set_comic_preview_filter_quality),
+                    ft.MenuItemButton("High", data="high", on_click=set_comic_preview_filter_quality),
+                ],
+                tooltip="Adjust the filter quality of the preview display. This will affect performance and image quality",
+                leading=ft.Icon(ft.Icons.PHOTO_FILTER_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            ),
+                            
+                        
+            ft.Divider(),
+
+            ft.Text("Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("chart")),
+            ft.Divider(),
+
+            ft.Text("Character Relationship Map", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character_relationship_map")),
+            create_default_color_selector("character_relationship_map"),
+            ft.Divider(),
+            
+        ], scroll="auto", expand=True)
+            
         return content
     
     def _load_template_settings(self, selected_template: str = None, selected_type: str = None):

@@ -12,7 +12,7 @@ from utils.safe_string_checker import return_safe_name
 from PIL import Image
 from io import BytesIO
 import base64
-from styles.text_fields import TextField
+from styles.text_fields import TextField, NoLabelTextField
 from models.dataclasses.world_template import default_world_template_data_dict
 from styles.snack_bar import SnackBar
 
@@ -185,9 +185,9 @@ class World(Widget):
                     content=ft.Column(
                         [
                             ft.Row([
-                                ft.Text("No fields yet. Click the button above to add one, or", italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
-                                ft.TextButton(
-                                    "Delete Section",
+                                ft.Text("No fields yet. Click the button above to add one, or\t", italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
+                                ft.Button(
+                                    "Delete Section", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                                     on_click=delete_section, data=section_name,
                                     style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)
                                 )
@@ -264,7 +264,7 @@ class World(Widget):
             )
             # Add textfield we can change
             row_ctrl.controls.append(
-                TextField(
+                NoLabelTextField(
                     "", expand=True, cursor_color=self.data.get('color', None),
                     on_blur=lambda e, k=field_name: update_world_data(**{k: e.control.value}), 
                 ),
@@ -309,9 +309,9 @@ class World(Widget):
             if len(self.data['world_data'][section]) == 0:
                 body.controls.append(
                     ft.Row([
-                        ft.Text("No fields yet. Click the button above to add one, or", italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
-                        ft.TextButton(
-                            "Delete Section",
+                        ft.Text("No fields yet. Click the button above to add one, or\t", italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
+                        ft.Button(
+                            "Delete Section", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                             on_click=delete_section, data=section,
                             style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)
                         )
@@ -376,7 +376,7 @@ class World(Widget):
                         )
                         # Add textfield we can change
                         row_ctrl.controls.append(
-                            TextField(
+                            NoLabelTextField(
                                 value, expand=True, cursor_color=self.data.get('color', None),
                                 on_blur=lambda e, k=key: update_world_data(**{k: e.control.value}), 
                             ),
@@ -384,9 +384,7 @@ class World(Widget):
                         # Add delete button at the end which is small
                         row_ctrl.controls.append(
                             ft.Container(
-                                ft.Icon(
-                                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
-                                ),
+                                ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR),
                                 on_click=delete_field, 
                                 data=(section, key), ink=True, shape=ft.BoxShape.CIRCLE,
                                 tooltip=f"Delete Field: {key}", 
@@ -397,10 +395,10 @@ class World(Widget):
                 if len(values) == 0:
                     container.content.controls.append(
                         ft.Row([
-                            ft.Text("No fields yet. Click the button above to add one, or", italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
-                            ft.TextButton(
+                            ft.Text("No fields yet. Click the button above to add one, or\t", italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
+                            ft.Button(
                                 "Delete Section",
-                                on_click=delete_section, data=section,
+                                on_click=delete_section, data=section, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                                 style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)
                             )
                         ], spacing=0)
@@ -451,19 +449,19 @@ class World(Widget):
         body.controls.extend(_load_world_data_controls())
 
         new_section_button = ft.Button(
-            "New Section", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+            "New Section", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             on_click=new_section_clicked,
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
         )
 
         new_section_tf = ft.TextField(
             autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.WORDS, visible=False,
-            on_submit=create_new_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE_CONTAINER,
+            on_submit=create_new_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
         )
 
         new_field_tf = ft.TextField(
             label="New Field Name", capitalization=ft.TextCapitalization.SENTENCES, visible=False,
-            on_submit=create_new_field, on_blur=hide_new_field_tf, dense=True, bgcolor=ft.Colors.SURFACE_CONTAINER,
+            on_submit=create_new_field, on_blur=hide_new_field_tf, dense=True, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             #data=section   # Gets set when we click the new field button for a specific section
         )
 

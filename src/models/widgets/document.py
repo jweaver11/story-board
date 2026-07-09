@@ -168,8 +168,8 @@ class Document(Widget):
             # Otherwise its a comment, so hide our button and show our textfield
             new_mini_widget_button.parent.visible = False
             new_mini_widget_button.parent.update()
-            new_comment_tf_placeholder.visible = False
-            new_comment_tf_placeholder.update()
+            #new_comment_tf_placeholder.visible = False
+            #new_comment_tf_placeholder.update()
             new_comment_tf.visible = True
             new_comment_tf.value = ""
             new_comment_tf.data = mw_type
@@ -183,8 +183,8 @@ class Document(Widget):
             new_comment_tf.value = ""
             new_comment_tf.visible = False
             new_comment_tf.update()
-            new_comment_tf_placeholder.visible = True
-            new_comment_tf_placeholder.update()
+            #new_comment_tf_placeholder.visible = True
+            #new_comment_tf_placeholder.update()
 
         # Creates our new comment in data then adds it to the column
         async def create_comment(e: ft.Event):
@@ -282,10 +282,8 @@ class Document(Widget):
         self.sidebar_body.controls.append(
             ft.Column([
                 ft.Row([
-                    ft.Text(
-                        f"\t{self.data.get('title', 'untitled')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
-                        color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
-                    ),
+                    
+                    ft.Text("Comments", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                     ft.MenuBar(
                         [
                             new_mini_widget_button := ft.SubmenuButton(
@@ -296,13 +294,13 @@ class Document(Widget):
                                 ),
                                 [
                                     ft.MenuItemButton(      # Folders
-                                        leading=ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, self.data.get('color', "primary")), content="Comment", 
+                                        leading=ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, self.data.get('color', "primary")), content="Text", 
                                         data="comment", on_click=new_mini_widget_clicked, close_on_click=True,
                                         tooltip="Create a new folder to organize your story",
                                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                     ), 
                                     ft.MenuItemButton(      # Documents
-                                        leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), content="Reference Image", 
+                                        leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), content="Image", 
                                         data="reference_image", on_click=new_mini_widget_clicked, close_on_click=True,
                                         tooltip="Create a new document for text chapters or scenes in your story",
                                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
@@ -325,14 +323,10 @@ class Document(Widget):
                         on_submit=create_comment, animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
                         visible=False, autofocus=True, expand=True,
                     ),
-                    new_comment_tf_placeholder := ft.Container(expand=True, visible=True),
+                    #new_comment_tf_placeholder := ft.Container(expand=True, visible=True),
                         
-                    ft.IconButton(
-                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self.hide_sidebar,
-                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                    ),
                 ], spacing=0),
-                ft.Divider(),
+                
                 self.mini_widgets_column, 
             ], expand=True, scroll="none", spacing=0)
         )

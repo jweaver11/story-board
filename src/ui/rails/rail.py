@@ -171,8 +171,8 @@ class Rail(IsolatedColumn):
 
 
         match tag:
-            case "character_connection_map":
-                self.new_item_textfield.hint_text = "Character Connection Map Title"
+            case "character_relationship_map":
+                self.new_item_textfield.hint_text = "Character Relationship Map Title"
             
             case "plot_point": 
                 self.new_item_textfield.hint_text = "Plot Point Title"

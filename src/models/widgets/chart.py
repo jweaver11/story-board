@@ -546,32 +546,20 @@ class Chart(Widget):
         )
 
         
-        self.sidebar.content = ft.Column(
-            [
-                ft.Row([
-                    ft.Text(
-                        f"\tChart Info", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
-                        color=self.data.get('color', None), expand=True
-                    ),
-                    ft.IconButton(
-                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self.hide_sidebar,
-                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                    ),
-                ]),
-                ft.Divider(),
-                info_column
-            ], expand=True, scroll="none", spacing=0)
+        self.sidebar_body.controls.append(info_column)
 
         self.content = ft.Row([
             ft.Container(chart, expand=3, padding=ft.Padding.only(bottom=20, left=20)),
             self.show_sidebar_button,
             self.sidebar
         ])
+
         
         
     # Returns our widgets view for radar charts
     def radar_chart_view(self):
         ''' Builds out the body of our radar chart widget '''
+        
         
         async def _update_entry(e):
             idx, entry_idx = e.control.data
@@ -862,7 +850,7 @@ class Chart(Widget):
                         on_click=_delete_node_title
                     ) if idx >= 3 else None   # Minimum 3 nodes
                 )
-            )      
+            )     
 
         # Go through and add our Data Sets to the info column on the side
         data_sets = [
@@ -981,7 +969,6 @@ class Chart(Widget):
 
         info_column = ft.Column(
             data_sets + [
-                ft.Divider(),
                 
                 ft.Row([
                     ft.Text(f"\tNodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
@@ -996,7 +983,7 @@ class Chart(Widget):
                 ], spacing=0),
                 
             ] + titles + [
-                ft.Divider(),
+                #ft.Divider(),
                 ft.Container(height=10),
                 ft.Text(f"\tAppearence", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                 ft.Container(height=10),
@@ -1030,41 +1017,17 @@ class Chart(Widget):
             expand=True, scroll="auto", spacing=0
         )
 
+        self.sidebar_body.controls.append(info_column)
 
-
-        chart_info = ft.Container(
-            expand=1,
-            border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
-            padding=ft.Padding.only(left=11, top=8, bottom=8,),
-            shadow=ft.BoxShadow(0, 1),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
-            content=ft.Column(
-                [
-                    ft.Row([
-                        ft.Text(
-                            f"\tChart Info", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
-                            color=self.data.get('color', None), expand=True
-                        ),
-                        ft.IconButton(
-                            ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_sidebar, 
-                            mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                        ),
-                    ]),
-                    ft.Divider(),
-                    info_column
-                ], expand=True, scroll="none", spacing=0),
-        )
-
-        
-
-        self.body_container.content = ft.Row(
+        self.content = ft.Row(
             [
                 ft.Column([
                     ft.Container(height=1),
                     ft.Row([ft.Container(keys, expand=True)]),
                     chart,
                 ], expand=3),
-                chart_info
+                self.show_sidebar_button,
+                self.sidebar
             ], expand=True, spacing=0
         )
        

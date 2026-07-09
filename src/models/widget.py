@@ -18,6 +18,7 @@ import asyncio
 import uuid
 
 
+
 @ft.control
 class Widget(ft.Container):
     
@@ -71,6 +72,7 @@ class Widget(ft.Container):
 
         # Controls -----------------------------------------------
         self.tab: ft.Tab       # The tab associated with this widget, used for navigation and organization within the UI
+        self.build_tab()
         
         # OLD NEED DELETE
         self.mini_widgets_wrapper = ft.Column(expand=1, spacing=0)  
@@ -182,7 +184,7 @@ class Widget(ft.Container):
 
     # Adjust our sidebars size if visible
     async def _set_sidebar_size(self):
-        if self.data.get('show_sidebar', False):
+        if self.data.get('show_sidebar', False) == True:
             self.sidebar.width = self.w / 4 
             self.sidebar.update()
 
@@ -223,10 +225,15 @@ class Widget(ft.Container):
         self.sidebar.width = 0
         self.sidebar.update()
 
-    # Opens the widget settings menu for the current widget
+    # Opens the widget settings menu for the current widget and scrolls to that section
     async def open_widget_settings(self, e: ft.Event=None):
-        # TODO
+        from models.app import app
+        app.settings.selected_index = 1
         widget_type = self.data.get('tag', '')
+        await self.page.push_route("/settings")
+
+        # Scroll to this specific widget
+        await app.settings.body_container.content.scroll_to(scroll_key=widget_type, duration=1200)
 
 
     # Options when setting the image of a widget. Either upload, set a canvas, or clear image
@@ -382,10 +389,6 @@ class Widget(ft.Container):
             ''' Checks that we're unique and renames the widget if so. on_blur is auto called after this, so we handle that as well '''          
 
             name = text_field.value.strip()
-
-            #self.story.blocker.visible = True
-            #self.story.blocker.update()
-            #await asyncio.sleep(0)
                                                     
             # Update our live title, and associated data
             self.update_data(**{'title': name.capitalize()})   # Update our data with the new title and key
@@ -393,9 +396,7 @@ class Widget(ft.Container):
                     
             self.story.active_rail.reload_rail()  
             self.story.workspace.reload_workspace()   # Reload workspace to update tab title and sorting if needed 
-            #if self.story.blocker.visible:
-                #self.story.blocker.visible = False
-                #self.story.blocker.update()
+            
             e.page.pop_dialog()
                 
             
@@ -441,23 +442,16 @@ class Widget(ft.Container):
             # Update the data
             self.update_data(**{'color': color})
             await self.save_file()  # Force a file save to persist the color change
-
-            #self.story.blocker.visible = True
-            #self.story.blocker.update()
-            #await asyncio.sleep(0)
             
             # Change our icon to match, apply the update
             if hasattr(self, 'information_display'):
                 if self.information_display.visible:
                     self.information_display.reload_mini_widget()
-            #self.reload_widget()
             self.story.workspace.reload_workspace()   # Reload workspace to update tab color
             self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
             await self.story.close_menu()
 
-            #if self.story.blocker.visible:
-                #self.story.blocker.visible = False
-                #self.story.blocker.update()
+            
 
         # List for our colors when formatted
         color_controls = [] 
@@ -481,10 +475,6 @@ class Widget(ft.Container):
 
         async def _delete_confirmed(_=ft.Event):
             ''' Deletes the widget after confirmation '''
-            #self.story.blocker.visible = True
-            #self.story.blocker.update()
-            #await asyncio.sleep(0)
-
             
             if await self.delete_file():
                 self.story.widgets.pop(self.data.get('id', ''), None)   # Remove ourselves from the story's widgets
@@ -492,9 +482,6 @@ class Widget(ft.Container):
             self.story.active_rail.reload_rail()    # Reload the rail to reflect the deletion
             self.story.workspace.reload_workspace()
 
-            #if self.story.blocker.visible:
-                #self.story.blocker.visible = False
-                #self.story.blocker.update()
             e.page.pop_dialog()
 
         # Append an overlay to confirm the deletion
@@ -523,7 +510,7 @@ class Widget(ft.Container):
         self.l = e.local_position.x
         self.t = e.local_position.y
 
-    # Called when building workspace. Builds the tab for our widget
+    # Called in constructor to build our tab
     def build_tab(self):
         tag = self.data.get('tag', '')
         match tag:
@@ -566,7 +553,7 @@ class Widget(ft.Container):
         )
 
         # Set the tab itself
-        self.tab = ft.Tab(tab_gd)  
+        self.tab = ft.Tab(tab_gd) 
 
     # Called in constructor to build our sidebar controls
     def build_sidebar(self):
@@ -575,21 +562,22 @@ class Widget(ft.Container):
         self.sidebar_header = ft.Row([
             ft.Text(f"{self.data.get('title', '')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
                 color=self.data.get('color', None), weight=ft.FontWeight.BOLD,),    # Title of widget
-            ft.IconButton(      # Open the settings fo this type of widget
-                ft.Icons.SETTINGS, self.data.get('color', ft.Colors.PRIMARY),
-                on_click=self.open_widget_settings, 
-                mouse_cursor=ft.MouseCursor.CLICK,
-                tooltip=f"Open Settings for {self.data.get('tag', '').capitalize()} widgets."
-            ),
+            #ft.IconButton(      # Open the settings fo this type of widget
+                #ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY),
+                #on_click=self.open_widget_settings, 
+                #mouse_cursor=ft.MouseCursor.CLICK,
+                #tooltip=f"Open Settings for {self.data.get('tag', '').capitalize()} widgets."
+            #),
             ft.Container(expand=True),      # Spacer
             ft.IconButton(          # Close/Collapse the sidebar
                 ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self.hide_sidebar,
                 mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                tooltip="Collapse Sidebar"
             ),
-        ])
+        ], spacing=0)
 
         # Body is where we append whatever each widget wants in there sidebar
-        self.sidebar_body = ft.Column([self.sidebar_header, ft.Divider()], expand=True, scroll="none")
+        self.sidebar_body = ft.Column([self.sidebar_header, ft.Divider()], expand=True, scroll="none", spacing=0)
 
         # Container on right side of widgets to hold mini widgets or sidebar info
         self.sidebar = ft.Container(
@@ -616,9 +604,11 @@ class Widget(ft.Container):
 
     # Builds functionality for widget
     def build(self):
+        self.build_tab()
         self.build_sidebar()
         
-        self.reload_widget()    
+        self.reload_widget()    # Temp
+
         self.select_image_button = ft.GestureDetector(
             ft.IconButton(
                 ft.Container(
@@ -642,7 +632,7 @@ class Widget(ft.Container):
         ''' Children build their own content of the widget in their own reload_widget functions '''
         tag = self.data.get('tag')
         match tag:
-            case "note" | "item" | "document" | "world" | "character":
+            case "note" | "item" | "document" | "world" | "character" | "comic_preview":
                 return
 
         # Set self.content Here

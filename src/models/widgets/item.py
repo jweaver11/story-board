@@ -139,14 +139,15 @@ class Item(Widget):
             tooltip="Add a new segment to your note.", 
             on_click=_create_new_segment_clicked, 
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
         )
 
         self.new_segment_tf = ft.TextField(
             label="Add New Segment", dense=True, 
             capitalization=ft.TextCapitalization.WORDS,
-            on_blur=_hide_new_segment_tf, bgcolor=ft.Colors.SURFACE_CONTAINER,
+            on_blur=_hide_new_segment_tf, 
             on_submit=create_segment, visible=False, autofocus=True,
-            
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
         ) 
 
         description_section = ft.Column([

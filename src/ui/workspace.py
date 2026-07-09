@@ -45,28 +45,20 @@ class Workspace(ft.Container):
     def arrange_widgets(self):
         self.main_pin.clear()
         sorted_widgets = sorted(self.story.widgets.values(), key=lambda w: w.data.get('index', 0))
-        visible_widget_index = 0
-        for w in sorted_widgets:
+        for i, w in enumerate(sorted_widgets):
             if w.data.get('visible', False):
 
                 # Rebuild and add the widget to the main pin
                 widget = self.story.rebuild_widget(w)  
-                #widget = w  
+                widget.update_data(**{'index': i})
                 self.main_pin.append(widget)
 
-                # If this widget index is not 999, (meaning we were not just added to workspace), don't set that index 
-                if widget.data['index'] != 999:
-                    widget.data['index'] = visible_widget_index
-
-                visible_widget_index += 1
     
 
     # Reloads the workspace
     def reload_workspace(self, update: bool=True):
 
-        self.story.blocker.visible = True
-        self.story.blocker.update()
-        self.page.run_task(asyncio.sleep, 0)
+        self.page.run_task(self.story.block_page)
 
         self.arrange_widgets()
 
@@ -75,8 +67,7 @@ class Workspace(ft.Container):
             self.content = None
             if update:
                 self.update()
-            self.story.blocker.visible = False
-            self.story.blocker.update()
+            self.page.run_task(self.story.unblock_page)
             return
 
         # Sets our new index when switching tabs
@@ -86,19 +77,17 @@ class Workspace(ft.Container):
             # Save new selected index
             self.story.update_data(**{'workspace_selected_index': e.data})
 
-            for idx, w in enumerate(self.main_pin):
+
+            for idx, widget in enumerate(self.main_pin):
                 if idx == e.data:
-                    tabs.content.controls[0].indicator_color = w.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
+                    tabs.content.controls[0].indicator_color = widget.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
                     tabs.content.controls[0].update()  
 
                 # Make it so canvases don't redraw unneccesarily when switching tabs
-                if isinstance(w, Canvas):
-                    w.skip_first_resize = True
+                if isinstance(widget, Canvas):
+                    widget.skip_first_resize = True
 
         sel_idx = int(self.story.data.get('workspace_selected_index', 0))
-
-        for widget in self.main_pin:
-            widget.build_tab()
 
         # Tabs that hold our workspace
         tabs = ft.Tabs(
@@ -149,5 +138,4 @@ class Workspace(ft.Container):
         if update:
             self.update()
         
-        self.story.blocker.visible = False
-        self.story.blocker.update()
+        self.page.run_task(self.story.unblock_page)

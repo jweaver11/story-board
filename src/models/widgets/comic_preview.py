@@ -39,13 +39,6 @@ class ComicPreview(Widget):
                 'tag': "comic_preview",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('default_comic_preview_color', "primary"),
 
-                'preview_direction': "vertical",      # Default direction for comic preview, can be vertical or horizontal
-                'preview_background_color': "#00000000" if app.settings.data.get('theme_mode', '') == "dark" else "#ffffffff",  # Background color behind images
-                'preview_spacing': 0,               # Spacing between images
-                'preview_scale': 2,                 # Scale of the images in the preview, 1 = 1:1, 2 = 2:1, etc. 
-                'filter_quality': "medium",                # Filter quality for the images in the preview, can be low, medium, or high
-                'use_anti_aliasing': True,             # Whether to use anti-aliasing when rendering the images in the preview
-
                 # List to hold our featured_panels of the canvases. Also allows png uploads
                 'featured_panels': [              
                     #{
@@ -56,12 +49,6 @@ class ComicPreview(Widget):
                 ],                      
             },
         )
-
-    
-    
-    
-        
-
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def build(self):
@@ -373,118 +360,112 @@ class ComicPreview(Widget):
             vertical_preview_wrapper,
             horizontal_preview_wrapper
         ], expand=3, alignment=ft.Alignment.CENTER)
+
+        self.sidebar_header.controls.insert(
+            1,
+            ft.MenuBar(
+                [
+                    ft.SubmenuButton(
+                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, "primary"),
+                        [
+                            ft.MenuItemButton(
+                                "Refresh Canvas Panels",
+                                leading=ft.Icon(ft.Icons.REFRESH_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                tooltip="Refresh panels connected to Canvases that may be outdated",
+                                on_click=handle_refresh_panels,
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+                            ),
+                            toggle_preview_direction_button := ft.MenuItemButton(
+                                "Swap Preview Direction", True,
+                                leading=ft.Icon(
+                                    ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
+                                    self.data.get('color', ft.Colors.PRIMARY),
+                                ),
+                                tooltip="Swap the preview direction between vertical and horizontal.",
+                                on_click=toggle_preview_direction,
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+                            ),
+                            
+                            ft.MenuItemButton(
+                                f"Anti-Aliasing: {self.data.get('use_anti_aliasing', True)}",
+                                leading=ft.Icon(ft.Icons.ANIMATION_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
+                                on_click=toggle_anti_aliasing,
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+                            ),
+                            ft.SubmenuButton(
+                                f"Change Background Color",
+                                [
+                                    ft.MenuItemButton(
+                                        ft.Icon(ft.Icons.CIRCLE, color), data=color,
+                                        on_click=set_preview_background_color,
+                                    ) for color in colors
+                                ] + [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_preview_background_color,)],
+                                tooltip="Adjust the scale of the preview display.",
+                                leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
+                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                            ),
+                            ft.SubmenuButton(
+                                f"Preview Spacing: {self.data.get('preview_spacing', 0)}",
+                                [
+                                    ft.MenuItemButton(
+                                        str(i), data=i,
+                                        on_click=adjust_spacing,
+                                    ) for i in range(0, 21) if i % 2 == 0
+                                ],
+                                tooltip="Adjust the spacing between panels in the preview display.",
+                                leading=ft.Icon(ft.Icons.SPACE_BAR_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                            ),
+                            
+                            ft.SubmenuButton(
+                                f"Preview Scaling: {self.data.get('preview_scale', 0)}",
+                                [
+                                    ft.MenuItemButton(
+                                        str(i), data=i,
+                                        on_click=adjust_scaling,
+                                    ) for i in range(1, 6)
+                                ],
+                                tooltip="Adjust the scale of the preview display.",
+                                leading=ft.Icon(ft.Icons.CROP_FREE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                            ),
+                            
+                            ft.SubmenuButton(
+                                f"Image Filter Quality: {self.data.get('filter_quality', 'medium').capitalize()}",
+                                [
+                                    ft.MenuItemButton("Low", data="low", on_click=set_filter_quality),
+                                    ft.MenuItemButton("Medium", data="medium", on_click=set_filter_quality),
+                                    ft.MenuItemButton("High", data="high", on_click=set_filter_quality),
+                                ],
+                                tooltip="Adjust the filter quality of the preview display. This will affect performance and image quality",
+                                leading=ft.Icon(ft.Icons.PHOTO_FILTER_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                            ),
+                            
+                        ],
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                        tooltip="Adjust the settings for the comic preview widget."
+                    ),
+                ],
+                style=ft.MenuStyle(
+                    bgcolor="transparent", shadow_color="transparent",
+                    shape=ft.RoundedRectangleBorder(radius=4),
+                    padding=ft.Padding.all(0)
+                ),
+            )
+        )
         
         # Set the sidebar content
-        self.sidebar_body.controls.append(ft.Column([
-            ft.Row([
-                ft.Text(
-                    f"\t{self.data.get('title', 'untitled')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
-                    color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
-                ),
+        self.sidebar_body.controls.append(
+            ft.Column([
                 
-                ft.MenuBar(
-                    [
-                        ft.SubmenuButton(
-                            ft.Icon(ft.Icons.SETTINGS_OUTLINED, "primary"),
-                            [
-                                
-                                toggle_preview_direction_button := ft.MenuItemButton(
-                                    "Swap Preview Direction", True,
-                                    leading=ft.Icon(
-                                        ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
-                                        self.data.get('color', ft.Colors.PRIMARY),
-                                    ),
-                                    tooltip="Swap the preview direction between vertical and horizontal.",
-                                    on_click=toggle_preview_direction,
-                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-                                ),
-                                ft.MenuItemButton(
-                                    "Refresh Canvas Panels",
-                                    leading=ft.Icon(ft.Icons.REFRESH_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                                    tooltip="Refresh panels connected to Canvases that may be outdated",
-                                    on_click=handle_refresh_panels,
-                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-                                ),
-                                ft.MenuItemButton(
-                                    f"Anti-Aliasing: {self.data.get('use_anti_aliasing', True)}",
-                                    leading=ft.Icon(ft.Icons.ANIMATION_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                                    tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
-                                    on_click=toggle_anti_aliasing,
-                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-                                ),
-                                ft.SubmenuButton(
-                                    f"Change Background Color",
-                                    [
-                                        ft.MenuItemButton(
-                                            ft.Icon(ft.Icons.CIRCLE, color), data=color,
-                                            on_click=set_preview_background_color,
-                                        ) for color in colors
-                                    ] + [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_preview_background_color,)],
-                                    tooltip="Adjust the scale of the preview display.",
-                                    leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
-                                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                                ),
-                                ft.SubmenuButton(
-                                    f"Preview Spacing: {self.data.get('preview_spacing', 0)}",
-                                    [
-                                        ft.MenuItemButton(
-                                            str(i), data=i,
-                                            on_click=adjust_spacing,
-                                        ) for i in range(0, 21) if i % 2 == 0
-                                    ],
-                                    tooltip="Adjust the spacing between panels in the preview display.",
-                                    leading=ft.Icon(ft.Icons.SPACE_BAR_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                                ),
-                                
-                                ft.SubmenuButton(
-                                    f"Preview Scaling: {self.data.get('preview_scale', 0)}",
-                                    [
-                                        ft.MenuItemButton(
-                                            str(i), data=i,
-                                            on_click=adjust_scaling,
-                                        ) for i in range(1, 6)
-                                    ],
-                                    tooltip="Adjust the scale of the preview display.",
-                                    leading=ft.Icon(ft.Icons.CROP_FREE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                                ),
-                                
-                                ft.SubmenuButton(
-                                    f"Image Filter Quality: {self.data.get('filter_quality', 'medium').capitalize()}",
-                                    [
-                                        ft.MenuItemButton("Low", data="low", on_click=set_filter_quality),
-                                        ft.MenuItemButton("Medium", data="medium", on_click=set_filter_quality),
-                                        ft.MenuItemButton("High", data="high", on_click=set_filter_quality),
-                                    ],
-                                    tooltip="Adjust the filter quality of the preview display. This will affect performance and image quality",
-                                    leading=ft.Icon(ft.Icons.PHOTO_FILTER_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                                ),
-                                
-                            ],
-                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                            style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                            tooltip="Adjust the settings for the comic preview widget."
-                        ),
-                    ],
-                    style=ft.MenuStyle(
-                        bgcolor="transparent", shadow_color="transparent",
-                        shape=ft.RoundedRectangleBorder(radius=4),
-                        padding=ft.Padding.all(0)
-                    ),
-                ),
-                ft.Container(expand=True),
-                ft.IconButton(
-                    ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self.hide_sidebar,
-                    mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                ),
-            ], spacing=0,),
-            ft.Divider(),
+                
             ft.Row([
                 ft.Text(f"\tPanels", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                 ft.MenuBar(
@@ -518,9 +499,7 @@ class ComicPreview(Widget):
                 ),
             ], spacing=0),
             panel_minimap,
-
-            
-        ], expand=True, scroll="none", spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+            ], expand=True, scroll="none", spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         )
         
         # Set our content
