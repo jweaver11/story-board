@@ -34,13 +34,12 @@ class Story(ft.View):
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
         )  
 
-        self.title = title              # Gives our story a title when its created
         self.data = data                # Sets our data (if any) passed in. New stories just have none
 
         # Verifies this object has the required data fields, and creates them if not
         if data is None:
             self.data = {
-                'title': self.title,
+                'title': title,
                 'directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}_story")),
                 'tag': "story",
                 'selected_rail': "content",
@@ -67,7 +66,8 @@ class Story(ft.View):
                         'color': str(),           # Color of that folder
                         'is_expanded': True     # Whether this folder is expanded in the tree view
                     }
-                },            
+                },        
+
             }
         
 
@@ -121,7 +121,6 @@ class Story(ft.View):
     async def save_file(self):
         ''' Saves the data of our story to its JSON File, and all its folders as well '''
 
-        #print("Saved story to file: ", self.title)
         self.data['directory_path'] = os.path.join(data_paths.stories_directory_path, self.route)   # Make sure our directory path is updated
         self.data['content_directory_path'] = os.path.join(data_paths.stories_directory_path, self.route, "content")  # Make sure our content directory path is updated
         file_path = os.path.join(self.data['directory_path'], f"{self.route}.json") # Make sure our file path is updated
@@ -773,7 +772,16 @@ class Story(ft.View):
         self.close_menu_detector.update()
         self.menu.update()
 
-        
+    # Blocks the page from interacting while intense loading is being done
+    async def block_page(self, e=None):
+        self.blocker.visible = True
+        self.blocker.update()
+        await asyncio.sleep(0)
+
+    # Unblocks page interactions
+    async def unblock_page(self, e=None):
+        self.blocker.visible = False
+        self.blocker.update()
 
     # Builds our view
     def build(self) -> list[ft.Control]:
@@ -803,13 +811,12 @@ class Story(ft.View):
             ''' Saves our new width that will be loaded next time app opens the app '''
             self.workspace.is_resizing = False
 
-            app.settings.data['active_rail_width'] = self.active_rail.width
-            await app.settings.save_file()
+            app.settings.update_data(**{'story': {'active_rail_width': self.active_rail.width}})
 
         # Load our widgets
         self.load_widgets() 
 
-        self.page.title = f"{self.title}"   # Set our page title
+        self.page.title = f"Story Board (alpha) - {self.data.get('title', 'Untitled')}"   # Set our page title
 
         # Create our menubar, workspaces rail, active rail, and workspace objects
         self.menubar = create_menu_bar(self.page, self)

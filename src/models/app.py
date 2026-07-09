@@ -74,13 +74,14 @@ class App:
         page.padding = ft.Padding.only(top=0, left=0, right=0, bottom=0)    
 
         # Set the window size as maximized or not
-        if app.settings.data.get('page_is_maximized', True):
+        if app.settings.data.get('page', {}).get('is_maximized', False):
             page.window.maximized = True
         else:
-            width = app.settings.data.get('page_width')
-            height = app.settings.data.get('page_height')
-            left = app.settings.data.get('page_left')
-            top = app.settings.data.get('page_top')
+
+            width = app.settings.data.get('page', {}).get('width', 1920)
+            height = app.settings.data.get('page', {}).get('height', 1080)
+            left = app.settings.data.get('page', {}).get('left', 0)
+            top = app.settings.data.get('page', {}).get('top', 0)
             if width is not None:
                 page.window.width = width
             if height is not None:
@@ -155,9 +156,8 @@ class App:
 
         # Initialize and load all our stories data and UI elements
         for story in app.stories.values():
-            
             # Sets our active story to the page route. The route change function will load the stories data and UI
-            if story.route == app.settings.data.get('active_story', None):
+            if story.route == app.settings.data.get('page', {}).get('route', None):
                 app.settings.story = story  # Gives our settings widget the story reference it needs
                 await page.push_route(story.route)
                 return
@@ -185,10 +185,8 @@ class App:
 
         # Opens this new story as the active one on screen
         asyncio.create_task(page.push_route(story.route))
-        self.settings.data['active_story'] = story.route
+        self.settings.update_data(**{'page': {'route': story.route}})
         self.settings.story = story
-        page.run_task(self.settings.save_file)
-
         
     
 # Sets our global app object that main uses and some functions call

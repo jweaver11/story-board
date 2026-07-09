@@ -610,12 +610,15 @@ class PlotChart(Widget):
             )
         )
    
+    def build(self):
+        super().build()
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
         # TODO: Add spider web view. Don't rebuild at all
+        
         
         
 

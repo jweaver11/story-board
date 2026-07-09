@@ -53,7 +53,7 @@ class Item(Widget):
 
     def build(self):
 
-      
+        super().build()
 
         self.padding = ft.Padding.all(10)   # Set padding
 

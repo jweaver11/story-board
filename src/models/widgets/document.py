@@ -153,6 +153,8 @@ class Document(Widget):
     def build(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
+        super().build()
+
         async def new_mini_widget_clicked(e: ft.Event):
             
             # Get the type of mini widget (comment or reference image)
@@ -277,61 +279,63 @@ class Document(Widget):
         # Otherwise, build our info column
         self.mini_widgets_column = ft.Column(load_mini_widgets(), expand=1, scroll="auto")
         
-        self.sidebar.content = ft.Column([
-            ft.Row([
-                ft.Text(
-                    f"\t{self.data.get('title', 'untitled')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
-                    color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
-                ),
-                ft.MenuBar(
-                    [
-                        new_mini_widget_button := ft.SubmenuButton(
-                            ft.Container(
-                                ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
-                                padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
-                                width=40, height=40, alignment=ft.Alignment.CENTER
-                            ),
-                            [
-                                ft.MenuItemButton(      # Folders
-                                    leading=ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, self.data.get('color', "primary")), content="Comment", 
-                                    data="comment", on_click=new_mini_widget_clicked, close_on_click=True,
-                                    tooltip="Create a new folder to organize your story",
-                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                ), 
-                                ft.MenuItemButton(      # Documents
-                                    leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), content="Reference Image", 
-                                    data="reference_image", on_click=new_mini_widget_clicked, close_on_click=True,
-                                    tooltip="Create a new document for text chapters or scenes in your story",
-                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                ), 
-                            ],
-                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                            style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                        ),
-                    ],
-                    style=ft.MenuStyle(
-                        bgcolor="transparent", shadow_color="transparent",
-                        shape=ft.RoundedRectangleBorder(radius=4),
-                        padding=ft.Padding.all(0)
+        self.sidebar_body.controls.append(
+            ft.Column([
+                ft.Row([
+                    ft.Text(
+                        f"\t{self.data.get('title', 'untitled')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+                        color=self.data.get('color', None), weight=ft.FontWeight.BOLD, 
                     ),
-                ),
-                new_comment_tf := ft.TextField(
-                    label="Comment Title", dense=True, margin=ft.Margin.symmetric(horizontal=6),
-                    capitalization=ft.TextCapitalization.WORDS,
-                    on_blur=show_new_mini_widget_button, #bgcolor=ft.Colors.SURFACE_CONTAINER,
-                    on_submit=create_comment, animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-                    visible=False, autofocus=True, expand=True,
-                ),
-                new_comment_tf_placeholder := ft.Container(expand=True, visible=True),
-                    
-                ft.IconButton(
-                    ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self.hide_sidebar,
-                    mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                ),
-            ], spacing=0),
-            ft.Divider(),
-            self.mini_widgets_column, 
-        ], expand=True, scroll="none", spacing=0)
+                    ft.MenuBar(
+                        [
+                            new_mini_widget_button := ft.SubmenuButton(
+                                ft.Container(
+                                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
+                                    padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
+                                    width=40, height=40, alignment=ft.Alignment.CENTER
+                                ),
+                                [
+                                    ft.MenuItemButton(      # Folders
+                                        leading=ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, self.data.get('color', "primary")), content="Comment", 
+                                        data="comment", on_click=new_mini_widget_clicked, close_on_click=True,
+                                        tooltip="Create a new folder to organize your story",
+                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                    ), 
+                                    ft.MenuItemButton(      # Documents
+                                        leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), content="Reference Image", 
+                                        data="reference_image", on_click=new_mini_widget_clicked, close_on_click=True,
+                                        tooltip="Create a new document for text chapters or scenes in your story",
+                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                    ), 
+                                ],
+                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                            ),
+                        ],
+                        style=ft.MenuStyle(
+                            bgcolor="transparent", shadow_color="transparent",
+                            shape=ft.RoundedRectangleBorder(radius=4),
+                            padding=ft.Padding.all(0)
+                        ),
+                    ),
+                    new_comment_tf := ft.TextField(
+                        label="Comment Title", dense=True, margin=ft.Margin.symmetric(horizontal=6),
+                        capitalization=ft.TextCapitalization.WORDS,
+                        on_blur=show_new_mini_widget_button, #bgcolor=ft.Colors.SURFACE_CONTAINER,
+                        on_submit=create_comment, animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                        visible=False, autofocus=True, expand=True,
+                    ),
+                    new_comment_tf_placeholder := ft.Container(expand=True, visible=True),
+                        
+                    ft.IconButton(
+                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self.hide_sidebar,
+                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                    ),
+                ], spacing=0),
+                ft.Divider(),
+                self.mini_widgets_column, 
+            ], expand=True, scroll="none", spacing=0)
+        )
 
         # Set our content
         self.content = ft.Column([

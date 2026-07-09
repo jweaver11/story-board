@@ -38,6 +38,8 @@ class Note(Widget):
     def build(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
+        super().build()
+
         self.padding = ft.Padding.all(10)   # Set padding
 
         # Column to hold our segments textfields

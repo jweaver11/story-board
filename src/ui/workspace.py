@@ -97,6 +97,9 @@ class Workspace(ft.Container):
 
         sel_idx = int(self.story.data.get('workspace_selected_index', 0))
 
+        for widget in self.main_pin:
+            widget.build_tab()
+
         # Tabs that hold our workspace
         tabs = ft.Tabs(
             expand=True, 

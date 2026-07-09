@@ -62,9 +62,9 @@ class Character(Widget):
     def build(self): #this is the edit view currently
         ''' Reloads/Rebuilds our widget based on current data '''
 
-        self.padding = ft.Padding.all(16)   # Set padding
+        super().build()
 
-        
+        self.padding = ft.Padding.all(10)   # Set padding
 
 
         # Called when a field is changed in edit mode

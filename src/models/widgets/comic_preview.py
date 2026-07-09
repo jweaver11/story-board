@@ -67,6 +67,8 @@ class ComicPreview(Widget):
     def build(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
+        super().build()
+
         # Called to find a canvas and load a rendered image string given all its layers
         def refresh_canvas_panel(canvas_id: str) -> str:
 
@@ -220,27 +222,30 @@ class ComicPreview(Widget):
                 delete_button.opacity = 0
                 delete_button.update()
             
-            return ft.GestureDetector(
-                ft.Stack([
-                    ft.Image(
-                        image_str, fit=ft.BoxFit.CONTAIN, margin=ft.Margin.symmetric(horizontal=10), expand=True, 
-                        filter_quality=ft.FilterQuality.LOW, 
-                    ),
-                    delete_button := ft.IconButton(
-                        ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, tooltip="Remove panel from preview?",
-                        opacity=0, scale=1.2, data=idx, on_click=remove_panel, mouse_cursor="click",
-                        animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-                    ),
-                ], alignment=ft.Alignment.CENTER, expand=True,),
-                on_enter=show_delete_icon,
-                on_exit=hide_delete_icon,
-                width=100, expand=True
+            return ft.ReorderableDragHandle(
+                    ft.GestureDetector(
+                        ft.Stack([
+                            ft.Row([]), # Fill up so we can drag from anywhere
+                            ft.Image(
+                                image_str, fit=ft.BoxFit.CONTAIN, margin=ft.Margin.symmetric(horizontal=10), expand=True, 
+                                filter_quality=ft.FilterQuality.LOW, 
+                            ),
+                            delete_button := ft.IconButton(
+                                ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, tooltip="Remove panel from preview?",
+                                opacity=0, scale=1.2, data=idx, on_click=remove_panel, mouse_cursor="click",
+                                animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                            ),
+                        ], alignment=ft.Alignment.CENTER, expand=True,),
+                        on_enter=show_delete_icon,
+                        on_exit=hide_delete_icon,
+                        height=100, expand=True
+                    )
             )
         
         # Update index in minimap list
         async def update_minimap_indices():
             for i, ctrl in enumerate(panel_minimap.controls):
-                ctrl.content.controls[1].data = i 
+                ctrl.content.content.controls[2].data = i 
         
         # Removes panel from data, minimap and both previews. Updates minimap indices to match new order
         async def remove_panel(e: ft.Event):
@@ -370,7 +375,7 @@ class ComicPreview(Widget):
         ], expand=3, alignment=ft.Alignment.CENTER)
         
         # Set the sidebar content
-        self.sidebar.content = ft.Column([
+        self.sidebar_body.controls.append(ft.Column([
             ft.Row([
                 ft.Text(
                     f"\t{self.data.get('title', 'untitled')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
@@ -380,21 +385,9 @@ class ComicPreview(Widget):
                 ft.MenuBar(
                     [
                         ft.SubmenuButton(
-                            ft.Icon(ft.Icons.PLAYLIST_ADD_OUTLINED, "primary"),
-                                
+                            ft.Icon(ft.Icons.SETTINGS_OUTLINED, "primary"),
                             [
-                                ft.MenuItemButton(      # Folders
-                                    leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', "primary")), content="Add Canvases", 
-                                    on_click=handle_add_canvas_panel, close_on_click=True,
-                                    tooltip="Add Canvases created in Story Board to the comic preview.",
-                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                ), 
-                                ft.MenuItemButton(      # Documents
-                                    leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, self.data.get('color', "primary")), content="Upload Image(s)", 
-                                    on_click=handle_upload_panel, close_on_click=True,
-                                    tooltip="Upload images to the comic preview from your device to the comic preview.",
-                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                ), 
+                                
                                 toggle_preview_direction_button := ft.MenuItemButton(
                                     "Swap Preview Direction", True,
                                     leading=ft.Icon(
@@ -476,6 +469,7 @@ class ComicPreview(Widget):
                             ],
                             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                             style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                            tooltip="Adjust the settings for the comic preview widget."
                         ),
                     ],
                     style=ft.MenuStyle(
@@ -491,10 +485,43 @@ class ComicPreview(Widget):
                 ),
             ], spacing=0,),
             ft.Divider(),
+            ft.Row([
+                ft.Text(f"\tPanels", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.MenuBar(
+                    [
+                        ft.SubmenuButton(
+                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
+                                
+                            [
+                                ft.MenuItemButton(      # Folders
+                                    leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', "primary")), content="Add Canvases", 
+                                    on_click=handle_add_canvas_panel, close_on_click=True,
+                                    tooltip="Add Canvases created in Story Board to the comic preview.",
+                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                ), 
+                                ft.MenuItemButton(      # Documents
+                                    leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, self.data.get('color', "primary")), content="Upload Image(s)", 
+                                    on_click=handle_upload_panel, close_on_click=True,
+                                    tooltip="Upload images to the comic preview from your device to the comic preview.",
+                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                ),  
+                            ],
+                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                            style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                        ),
+                    ],
+                    style=ft.MenuStyle(
+                        bgcolor="transparent", shadow_color="transparent",
+                        shape=ft.RoundedRectangleBorder(radius=4),
+                        padding=ft.Padding.all(0)
+                    ),
+                ),
+            ], spacing=0),
             panel_minimap,
 
             
         ], expand=True, scroll="none", spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+        )
         
         # Set our content
         self.content = ft.Row([

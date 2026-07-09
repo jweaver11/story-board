@@ -348,6 +348,9 @@ class Map(Widget):
         ''' Redraws our map on the canvas when it is resized. Does it on startup as well '''
 
 
+    def build(self):
+        super().build()
+
     # Called when we need to rebuild out map UI
     def reload_widget(self):       
         ''' Rebuilds/reloads our map UI '''

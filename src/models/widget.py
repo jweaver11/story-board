@@ -69,104 +69,24 @@ class Widget(ft.Container):
         self.ignore_update = False     # Return and ignore updates, such as when hiding??
         self.needs_file_write: bool = False        # Whether we need to write to file or not. Set to true when data changes, and false when saved
 
-        # TAB ELEMENTS -----------------------------------------------
-        tag = self.data.get('tag', '')
-        match tag:
-            case "document": icon = ft.Icons.DESCRIPTION_OUTLINED
-            case "canvas": icon = ft.Icons.BRUSH_OUTLINED
-            case "canvas_board": icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
-            case "note": icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
-            case "character": icon = ft.Icons.PERSON_OUTLINE
-            case "character_relationship_map": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
-            case "plotline": icon = ft.Icons.TIMELINE
-            case "map": icon = ft.Icons.MAP_OUTLINED
-            case "world": icon = ft.Icons.PUBLIC_OUTLINED
-            case "item": icon = ft.Icons.STAR_OUTLINE_ROUNDED
-            case "chart": 
-                if self.data.get('chart_type', 'radar') == 'radar':
-                    icon = ft.Icons.INSERT_CHART_OUTLINED
-                else:
-                    icon = ft.Icons.INSIGHTS_OUTLINED
-            case "comic_preview": icon = ft.Icons.SLIDESHOW_OUTLINED
-            case _: icon = ft.Icons.ERROR_OUTLINE
+        # Controls -----------------------------------------------
+        self.tab: ft.Tab       # The tab associated with this widget, used for navigation and organization within the UI
+        
+        # OLD NEED DELETE
+        self.mini_widgets_wrapper = ft.Column(expand=1, spacing=0)  
+        self.master_stack = ft.Stack(expand=True)  
+        self.mini_widgets = []    
+        self.body_container = ft.Container(expand=3, clip_behavior=ft.ClipBehavior.NONE, on_size_change=self._set_size, size_change_interval=50) 
+                       
+        # Sidebar controls
+        self.sidebar_header: ft.Row       # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
+        self.sidebar_body: ft.Column      # Column that holds the header and any other content for the sidebar
+        self.sidebar: ft.Container      # Container on right side of widgets to hold mini widgets or sidebar info
+        self.show_sidebar_button: ft.IconButton     # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
+        self.select_image_button: ft.GestureDetector    # Button certain widgets use when they have an image to represent them (world, character, item, etc.)
 
+        
 
-        self.tab_icon = ft.Icon(icon, color=self.data.get('color', ft.Colors.PRIMARY))  # Icon for the tab
-        hide_widget_button = ft.IconButton(    # Hide widget button on right side of tab
-            scale=0.8,
-            on_click=self.hide_widget,
-            icon=ft.Icons.CLOSE_ROUNDED,
-            icon_color=ft.Colors.OUTLINE,
-            tooltip="Hide",
-            mouse_cursor=ft.MouseCursor.CLICK,
-        )
-
-        # Gesture Detector for opening menus that holds our tab icon, title, and hide button
-        self.tab_gd = ft.GestureDetector(
-            ft.Row([self.tab_icon, self.title, hide_widget_button]),
-            mouse_cursor=ft.MouseCursor.CLICK,
-            hover_interval=100,
-            on_hover=self.set_mouse_coords,
-            on_secondary_tap=lambda: self.story.open_menu(self.get_menu_options()),
-        )
-
-        self.tab = ft.Tab(self.tab_gd)  # The tab itself
-
-
-        # UI ELEMENTS - Body                  
-        self.mini_widgets_wrapper = ft.Column(expand=1, spacing=0)   # Container that holds our active mini widget. We can add/remove it without having to rebuild
-
-        # Container that holds our main body content. Gets built in reload_widget of child classes
-        self.body_container = ft.Container(
-            expand=3, clip_behavior=ft.ClipBehavior.NONE,
-            on_size_change=self._set_size, size_change_interval=50, 
-        ) 
-
-        # Holds our sizing canvas, body container, header, and mini widgets all under the tab
-        self.master_stack: ft.Stack = ft.Stack(expand=True)   # Master stack that holds all our elements together. Gets added to our tab content in reload_widget
-        self.mini_widgets = []                      # List of mini widgets that belong to this widget 
-
-
-        # Container on right side of widgets to hold mini widgets or sidebar info
-        self.sidebar = ft.Container(
-            border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
-            padding=ft.Padding.all(10),
-            shadow=ft.BoxShadow(0, 1), 
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            width=0, 
-            animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            on_animation_end=self._set_sidebar_size
-        )
-
-        # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
-        self.show_sidebar_button = ft.IconButton(
-            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
-            on_click=self.show_sidebar, 
-            mouse_cursor=ft.MouseCursor.CLICK,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            visible=not self.data.get('show_sidebar', True),
-            tooltip="Show Sidebar",
-            
-        )
-
-        # Button certain widgets use when they have an image to represent them (world, character, item, etc.)
-        self.select_image_button = ft.GestureDetector(
-            ft.IconButton(
-                ft.Container(
-                    ft.Image(
-                        src=self.data.get('image_base64', ""),
-                        width=150,
-                        height=150,
-                        fit=ft.BoxFit.FILL,
-                    ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
-                ) if self.data.get('image_base64', '') else ft.Icons.IMAGE_OUTLINED, 
-                self.data.get('color'), icon_size=150,
-                tooltip="Upload an Image for this widget", mouse_cursor=ft.MouseCursor.CLICK,
-                on_click=lambda: self.story.open_menu(self.set_widget_image_options()), 
-            ),
-            on_hover=self.set_mouse_coords,
-            hover_interval=100
-        )
 
     # Updates data for this widget and marks it as dirty for the next file save
     def update_data(self, **kwargs):
@@ -302,6 +222,12 @@ class Widget(ft.Container):
         # Run animation to width of 0
         self.sidebar.width = 0
         self.sidebar.update()
+
+    # Opens the widget settings menu for the current widget
+    async def open_widget_settings(self, e: ft.Event=None):
+        # TODO
+        widget_type = self.data.get('tag', '')
+
 
     # Options when setting the image of a widget. Either upload, set a canvas, or clear image
     def set_widget_image_options(self) -> list[ft.Control]:
@@ -597,14 +523,127 @@ class Widget(ft.Container):
         self.l = e.local_position.x
         self.t = e.local_position.y
 
+    # Called when building workspace. Builds the tab for our widget
+    def build_tab(self):
+        tag = self.data.get('tag', '')
+        match tag:
+            case "document": icon = ft.Icons.DESCRIPTION_OUTLINED
+            case "canvas": icon = ft.Icons.BRUSH_OUTLINED
+            case "canvas_board": icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
+            case "note": icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
+            case "character": icon = ft.Icons.PERSON_OUTLINE
+            case "character_relationship_map": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
+            case "plotline": icon = ft.Icons.TIMELINE
+            case "map": icon = ft.Icons.MAP_OUTLINED
+            case "world": icon = ft.Icons.PUBLIC_OUTLINED
+            case "item": icon = ft.Icons.STAR_OUTLINE_ROUNDED
+            case "chart": 
+                if self.data.get('chart_type', 'radar') == 'radar':
+                    icon = ft.Icons.INSERT_CHART_OUTLINED
+                else:
+                    icon = ft.Icons.INSIGHTS_OUTLINED
+            case "comic_preview": icon = ft.Icons.SLIDESHOW_OUTLINED
+            case _: icon = ft.Icons.ERROR_OUTLINE
 
-    # Auto-called by each child widget when being loaded onto the page
+
+        tab_icon = ft.Icon(icon, color=self.data.get('color', ft.Colors.PRIMARY))  # Icon for the tab
+        hide_widget_button = ft.IconButton(    # Hide widget button on right side of tab
+            scale=0.8,
+            on_click=self.hide_widget,
+            icon=ft.Icons.CLOSE_ROUNDED,
+            icon_color=ft.Colors.OUTLINE,
+            tooltip="Hide",
+            mouse_cursor=ft.MouseCursor.CLICK,
+        )
+
+        # Gesture Detector for opening menus that holds our tab icon, title, and hide button
+        tab_gd = ft.GestureDetector(
+            ft.Row([tab_icon, self.title, hide_widget_button]),
+            mouse_cursor=ft.MouseCursor.CLICK,
+            hover_interval=100,
+            on_hover=self.set_mouse_coords,
+            on_secondary_tap=lambda: self.story.open_menu(self.get_menu_options()),
+        )
+
+        # Set the tab itself
+        self.tab = ft.Tab(tab_gd)  
+
+    # Called in constructor to build our sidebar controls
+    def build_sidebar(self):
+
+        # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
+        self.sidebar_header = ft.Row([
+            ft.Text(f"{self.data.get('title', '')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+                color=self.data.get('color', None), weight=ft.FontWeight.BOLD,),    # Title of widget
+            ft.IconButton(      # Open the settings fo this type of widget
+                ft.Icons.SETTINGS, self.data.get('color', ft.Colors.PRIMARY),
+                on_click=self.open_widget_settings, 
+                mouse_cursor=ft.MouseCursor.CLICK,
+                tooltip=f"Open Settings for {self.data.get('tag', '').capitalize()} widgets."
+            ),
+            ft.Container(expand=True),      # Spacer
+            ft.IconButton(          # Close/Collapse the sidebar
+                ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self.hide_sidebar,
+                mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+            ),
+        ])
+
+        # Body is where we append whatever each widget wants in there sidebar
+        self.sidebar_body = ft.Column([self.sidebar_header, ft.Divider()], expand=True, scroll="none")
+
+        # Container on right side of widgets to hold mini widgets or sidebar info
+        self.sidebar = ft.Container(
+            border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
+            padding=ft.Padding.all(10),
+            shadow=ft.BoxShadow(0, 1), 
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            width=0, 
+            animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            on_animation_end=self._set_sidebar_size,
+            content=self.sidebar_body
+        )
+
+        # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
+        self.show_sidebar_button = ft.IconButton(
+            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
+            on_click=self.show_sidebar, 
+            mouse_cursor=ft.MouseCursor.CLICK,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            visible=not self.data.get('show_sidebar', True),
+            tooltip="Show Sidebar"
+        )
+
+
+    # Builds functionality for widget
     def build(self):
-        self.reload_widget()
+        self.build_sidebar()
+        
+        self.reload_widget()    
+        self.select_image_button = ft.GestureDetector(
+            ft.IconButton(
+                ft.Container(
+                    ft.Image(
+                        src=self.data.get('image_base64', ""),
+                        width=150,
+                        height=150,
+                        fit=ft.BoxFit.FILL,
+                    ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                ) if self.data.get('image_base64', '') else ft.Icons.IMAGE_OUTLINED, 
+                self.data.get('color'), icon_size=150,
+                tooltip="Upload an Image for this widget", mouse_cursor=ft.MouseCursor.CLICK,
+                on_click=lambda: self.story.open_menu(self.set_widget_image_options()), 
+            ),
+            on_hover=self.set_mouse_coords,
+            hover_interval=100
+        )
 
     # Called by child classes at the end of their constructor, or when they need UI update to reflect changes
     def reload_widget(self):
         ''' Children build their own content of the widget in their own reload_widget functions '''
+        tag = self.data.get('tag')
+        match tag:
+            case "note" | "item" | "document" | "world" | "character":
+                return
 
         # Set self.content Here
 

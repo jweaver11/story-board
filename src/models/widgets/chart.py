@@ -109,7 +109,7 @@ class Chart(Widget):
 
 
     # Returns our widgets view for bar charts
-    def _bar_chart_view(self):
+    def bar_chart_view(self):
         ''' Builds out the body of our bar chart widget '''
 
 
@@ -295,23 +295,14 @@ class Chart(Widget):
                 # Update our data and chart to reflect
                 case "left":
                     self.data['bar_data']['left_axis_title'] = new_title
-                    chart.left_axis.title = ft.Text(new_title, theme_style=ft.TextThemeStyle.LABEL_LARGE,  size=18)
-                    
                 case "bottom":
                     self.data['bar_data']['bottom_axis_title'] = new_title
-                    chart.bottom_axis.title = ft.Text(new_title, theme_style=ft.TextThemeStyle.LABEL_LARGE,  size=18)
-                    
                 case "top":
                     self.data['bar_data']['top_axis_title'] = new_title
-                    chart.top_axis.title = ft.Text(new_title, theme_style=ft.TextThemeStyle.LABEL_LARGE,  size=18)
-                    
                 case "right":
                     self.data['bar_data']['right_axis_title'] = new_title
-                    chart.right_axis.title = ft.Text(new_title, theme_style=ft.TextThemeStyle.LABEL_LARGE,  size=18)
-
 
             self.update_data(**{'bar_data': self.data.get('bar_data', {})})
-            chart.update()
 
         async def _set_max_value(e):
             
@@ -388,17 +379,24 @@ class Chart(Widget):
             
             # User customizable options
             max_y=self.data.get('bar_data', {}).get('max_y', 20),
+            left_axis=fch.ChartAxis(
+                ft.TextField(
+                    value=self.data.get('bar_data', {}).get('left_axis_title', ""), 
+                    data="left", on_blur=_set_axis_title, border=ft.InputBorder.NONE,
+                    text_align=ft.TextAlign.CENTER, text_style=ft.TextStyle(size=18, weight=ft.FontWeight.BOLD)
+                ), 
+                title_size=40, label_size=30,
+                show_labels=self.data.get('bar_data', {}).get('show_labels', False),
+            ),
             bottom_axis=fch.ChartAxis(
-                ft.Text(self.data.get('bar_data', {}).get('bottom_axis_title'), theme_style=ft.TextThemeStyle.LABEL_LARGE,  size=18),
+                ft.TextField(
+                    value=self.data.get('bar_data', {}).get('bottom_axis_title', ""), 
+                    data="bottom", on_blur=_set_axis_title, border=ft.InputBorder.NONE,
+                    text_align=ft.TextAlign.CENTER, text_style=ft.TextStyle(size=18, weight=ft.FontWeight.BOLD)
+                ),
                 title_size=40, label_size=30,
                 show_labels=self.data.get('bar_data', {}).get('show_labels', False),
                 labels=x_labels
-            ),
-            left_axis=fch.ChartAxis(
-                ft.Text(self.data.get('bar_data', {}).get('left_axis_title'), theme_style=ft.TextThemeStyle.LABEL_LARGE, size=18), 
-                title_size=40, label_size=30,
-                show_labels=self.data.get('bar_data', {}).get('show_labels', False),
-                
             ),
             top_axis=fch.ChartAxis(ft.Text(""), labels=fch.ChartAxisLabel(0, " ")), # Invisible label for behavior purposes
             horizontal_grid_lines=fch.ChartGridLines() if self.data.get('bar_data', {}).get('show_horizontal_grid_lines', False) else None,
@@ -436,20 +434,7 @@ class Chart(Widget):
             chart.groups.append(group)
 
         
-        # If we're not showing info, just give us a button to show info and return early
-        if not self.data.get('show_sidebar', True):
-
-            self.body_container.content = ft.Row(
-                [
-                    ft.Container(chart, expand=3, padding=ft.Padding.only(left=20, bottom=20)), 
-                    ft.IconButton(
-                        ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
-                        on_click=self._toggle_show_sidebar, 
-                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                    )
-                ], expand=True, spacing=0
-            )
-            return  # Don't load the info column if we're not showing it     
+       
         
         # Adding a new dataset with default values in each node
         async def _add_group(e):
@@ -514,18 +499,6 @@ class Chart(Widget):
                 # Appearence and information sections
                 ft.Text(f"\tAppearence", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                 ft.Container(height=10),
-
-                # Axis titles
-                ft.Row([
-                    ft.TextField(
-                        label="Left Axis Title", value=self.data.get('bar_data', {}).get('left_axis_title', ""), 
-                        expand=True, data="left", on_blur=_set_axis_title
-                    ),
-                    ft.TextField(
-                        label="Bottom Axis Title", value=self.data.get('bar_data', {}).get('bottom_axis_title', ""), 
-                        expand=True, data="bottom", on_blur=_set_axis_title
-                    ),
-                ]),
                 
                 ft.Container(height=10),
 
@@ -572,39 +545,32 @@ class Chart(Widget):
             ]
         )
 
-        chart_info = ft.Container(
-            expand=1,
-            border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
-            padding=ft.Padding.only(left=11, top=8, bottom=8,),
-            shadow=ft.BoxShadow(0, 1),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
-            content=ft.Column(
-                [
-                    ft.Row([
-                        ft.Text(
-                            f"\tChart Info", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
-                            color=self.data.get('color', None), expand=True
-                        ),
-                        ft.IconButton(
-                            ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self._toggle_show_sidebar,
-                            mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-                        ),
-                    ]),
-                    ft.Divider(),
-
-                    info_column
-                ], expand=True, scroll="none", spacing=0),
-        )
-        self.body_container.content = ft.Row(
+        
+        self.sidebar.content = ft.Column(
             [
-                ft.Container(chart, expand=3, padding=ft.Padding.only(bottom=20, left=20)),
-                chart_info
-            ], expand=True, spacing=0
-        )
+                ft.Row([
+                    ft.Text(
+                        f"\tChart Info", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+                        color=self.data.get('color', None), expand=True
+                    ),
+                    ft.IconButton(
+                        ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self.hide_sidebar,
+                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                    ),
+                ]),
+                ft.Divider(),
+                info_column
+            ], expand=True, scroll="none", spacing=0)
+
+        self.content = ft.Row([
+            ft.Container(chart, expand=3, padding=ft.Padding.only(bottom=20, left=20)),
+            self.show_sidebar_button,
+            self.sidebar
+        ])
         
         
     # Returns our widgets view for radar charts
-    def _radar_chart_view(self):
+    def radar_chart_view(self):
         ''' Builds out the body of our radar chart widget '''
         
         async def _update_entry(e):
@@ -1103,7 +1069,8 @@ class Chart(Widget):
         )
        
 
-        
+    def build(self):
+        super().build()
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
     def reload_widget(self):
@@ -1111,9 +1078,9 @@ class Chart(Widget):
 
 
         if self.data.get('type', "") == "bar":
-            self._bar_chart_view()
+            self.bar_chart_view()
         else:
-            self._radar_chart_view()
+            self.radar_chart_view()
 
-        self._render_widget()
+        #self._render_widget()
         

@@ -590,6 +590,8 @@ class CharacterRelationshipMap(Widget):
     # Called after any changes happen to the data that need to be reflected in the UI
     def build(self):
         ''' Reloads/Rebuilds our widget based on current data '''
+
+        super().build()
         
         # Set size of stack needed for ratios
         async def _set_connection_stack_size(e: ft.LayoutSizeChangeEvent):

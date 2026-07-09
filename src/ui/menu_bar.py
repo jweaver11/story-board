@@ -139,7 +139,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
             # Use something better than radio in future, but for now this works
             for story in app.stories.values():
                 stories.append(
-                    ft.Radio(expand=False, value=story.title, label=story.title, label_style=style, mouse_cursor=ft.MouseCursor.CLICK)
+                    ft.Radio(expand=False, value=story.data.get('title'), label=story.data.get('title'), label_style=style, mouse_cursor=ft.MouseCursor.CLICK)
                 )
 
             # Return our list of stories

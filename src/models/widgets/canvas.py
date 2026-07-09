@@ -678,7 +678,8 @@ class Canvas(Widget):
             )
 
     
-        
+    def build(self):
+        super().build()
 
     # Called when we need to rebuild out plotline UI
     def reload_widget(self):       

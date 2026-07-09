@@ -90,10 +90,14 @@ class World(Widget):
         output = BytesIO()
         merged.save(output, format="PNG")
         return base64.b64encode(output.getvalue()).decode("utf-8")
+    
+        
 
     # Called after any changes happen to the data that need to be reflected in the UI
     def build(self): #this is the edit view currently
         ''' Reloads/Rebuilds our widget based on current data '''
+
+        super().build()
    
         # Called when a field is changed in edit mode
         def update_world_data(**kwargs):

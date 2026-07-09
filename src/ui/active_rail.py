@@ -28,7 +28,7 @@ class ActiveRail(ft.Container):
         super().__init__(
             alignment=ft.Alignment.TOP_CENTER,
             padding=ft.Padding.only(top=10, bottom=10),
-            width=app.settings.data.get('active_rail_width', 250),
+            width=app.settings.data.get('story', {}).get('active_rail_width', 250),
             animate_size=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST

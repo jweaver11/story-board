@@ -27,7 +27,7 @@ class Settings(ft.View):
         file_path: str, 
         story: Story = None, 
         data: dict = None,
-        selected_index: int = 0,   # Which category to show when opening settings. 0 = Appearance, 1 = Widgets, 2 = Story, 3 = Templates, 4 = Resources
+        selected_index: int = 0,   # Which category to show when opening settings. 0 = Appearance, 1 = Widgets, 2 = Templates, 3 = Resources
     ):
         
         # Constructor the parent widget class
@@ -38,7 +38,7 @@ class Settings(ft.View):
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
         )
 
-        self.p = page   # Grabs our original page, as sometimes the reference gets lost. with all the UI changes that happen. p.update() always works
+        #self.page = page   # Grabs our original page, as sometimes the reference gets lost. with all the UI changes that happen. p.update() always works
         self.route = "/settings"   # Sets our route for our settings view
         self.story = story
         self.file_path = file_path
@@ -49,13 +49,31 @@ class Settings(ft.View):
         if data is None or data == {}:
             self.data.update({
                 # Settings the app uses and users do not directly change in the settings view
-                'active_story': "/",    # Route to our active story
-                'workspaces_rail_is_collapsed': False,  # If the all workspaces rail is collapsed or not
-                'active_rail_width': 250,  # Width of our active rail that we can resize
-                'page_is_maximized': True,   # If the window is maximized or not
-                'page_width': int(),     # Last known page width
-                'page_height': int(),    # Last known page height
+                
+                
                 'is_first_launch': True,    # If this is the first time the app has been launched or not
+
+                # Settings about the page
+                'page': {
+                    'route': "/",           # Route to our active story
+                    'is_maximized': True,   # If the page is maximized or not
+                    'width': int(),          # Last known page width
+                    'height': int()          # Last known page height
+                },
+
+                'story': {
+                    'workspaces_rail_is_collapsed': False,
+                    'active_rail_width': 250,  # Width of our active rail that we can resize
+                },
+
+
+                # Settings per widget
+                'widget': {
+                    'document': {},
+                    'canvas': {},
+                    'note': {},
+                    #''...
+                },
 
                 # Paint settings for our canvas drawings to use as default that users can change
                 'paint_settings': {
@@ -195,15 +213,16 @@ class Settings(ft.View):
             print(f"Error saving widget to {self.file_path}: {e}") 
             print("Data that failed to save: ", self.data)
 
-    async def _close_settings(self, e=None):
+    async def close_settings(self, e=None):
         ''' Closes the settings view and returns to the story or home view '''
-        await self.p.push_route(self.story.route if self.story is not None else "/")
+        await self.page.push_route(self.story.route if self.story is not None else "/")
 
     async def save_story(self, e=None):
         ''' Called when the page is closed. Saves any dirty changes '''
         if self.story is not None:
             for widget in self.story.widgets.values():
                 await widget.save_file()
+        await self.save_file()
         
     def create_character_template(self, template_name: str, data: dict):
         ''' Creates a new character template with the given name '''
@@ -215,11 +234,11 @@ class Settings(ft.View):
             'title': template_name,
             'template_data': data,
         }
-        self.p.run_task(self.save_file)
+        self.page.run_task(self.save_file)
         
 
     # Called when the page is resized
-    def page_resized(self, e=None):
+    def page_resized(self, e: ft.WindowEvent):
         ''' This is set inside of app.load_settings() to be called whenever the page is resized. Saves the new page size to data/if its maximized'''
         from models.app import app  
 
@@ -228,23 +247,26 @@ class Settings(ft.View):
             return
         
         # If we're minmized, save nothing and just return
-        if self.p.window.minimized:
+        if e.page.window.minimized:
             return
 
         # If we maximized the page, just save that, not the size
-        if self.p.window.maximized:
-            self.data['page_is_maximized'] = True
-            self.p.run_task(self.save_file)
+        if e.page.window.maximized:
+            self.update_data(**{'page': {'is_maximized': True}})
             return
         
         # If page not maximized or minimized, save the size
         else:
-            self.data['page_is_maximized'] = False
-            self.data['page_width'] = self.p.width
-            self.data['page_height'] = self.p.height
-            self.data['page_left'] = self.p.window.left
-            self.data['page_top'] = self.p.window.top
-            self.p.run_task(self.save_file)
+            self.update_data(**{
+                'page': {
+                    'is_maximized': False,
+                    'width': self.page.width,
+                    'height': self.page.height,
+                    'left': self.page.window.left,
+                    'top': self.page.window.top,
+                }
+            })
+            
             return
 
         
@@ -274,7 +296,7 @@ class Settings(ft.View):
     
         
     # Called when we select a new category of settings in our settings view
-    def _settings_category_changed(self, e=None, template_name: str=None, template_type: str=None):
+    def _settings_category_changed(self, e=None, template_name: str=None, template_type: str=None, update: bool=True):
         ''' Determines which category is now active and changes our body container to match '''
 
         if e is None:
@@ -288,16 +310,16 @@ class Settings(ft.View):
             case 0:
                 self.body_container.content = self._load_appearance_settings()
             case 1:
-                self.body_container.content = self._load_widgets_settings()
+                self.body_container.content = self._load_widget_settings()
             case 2:
                 self.body_container.content = self._load_template_settings(template_name, template_type)
             case 3:
                 self.body_container.content = self._load_resources_settings()
+            case _:
+                self.body_container.content = self._load_appearance_settings()
                 
-        try:
+        if update:
             self.update()
-        except Exception:
-            pass
         
     # Called when appearance settings category is selected
     def _load_appearance_settings(self) -> ft.Container:
@@ -313,12 +335,12 @@ class Settings(ft.View):
             e.control.color = e.control.value   # Changes the dropdown text color to match the selected color
 
             # Applies this theme to our page, for both dark and light themes
-            self.p.theme = ft.Theme(color_scheme_seed=self.data.get('theme_color', "blue"))
-            self.p.dark_theme = ft.Theme(color_scheme_seed=self.data.get('theme_color', "blue"))
+            self.page.theme = ft.Theme(color_scheme_seed=self.data.get('theme_color', "blue"))
+            self.page.dark_theme = ft.Theme(color_scheme_seed=self.data.get('theme_color', "blue"))
 
             # Save the updated settings to the JSON file and update the page
-            self.p.run_task(self.save_file)
-            self.p.update()
+            self.page.run_task(self.save_file)
+            self.page.update()
 
         # Dropdown so app can change their color scheme
         theme_color_dropdown = ft.Dropdown(
@@ -351,9 +373,9 @@ class Settings(ft.View):
                     self.dark_theme_button.border = ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT)
 
             self.data['theme_mode'] = new_theme_mode
-            self.p.run_task(self.save_file)
-            self.p.theme_mode = self.data['theme_mode']
-            self.p.update()
+            self.page.run_task(self.save_file)
+            self.page.theme_mode = self.data['theme_mode']
+            self.page.update()
 
         def _set_default_category_color(e):
             ''' Sets the default color for new categories '''
@@ -363,7 +385,7 @@ class Settings(ft.View):
             self.data['default_category_color'] = new_color
 
             # Save our updated settings
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
             e.control.color = new_color   # Changes the dropdown text color to match the selected color
             e.control.update()
 
@@ -387,7 +409,7 @@ class Settings(ft.View):
             ft.Row([
                 ft.Text("Appearance", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
                 ft.IconButton(
-                    ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
+                    ft.Icons.CLOSE_OUTLINED, on_click=self.close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
                     mouse_cursor="click", tooltip="Close Settings"
                 )
@@ -424,7 +446,7 @@ class Settings(ft.View):
         return content
     
     # Called when app settings category is selected
-    def _load_widgets_settings(self) -> ft.Container:
+    def _load_widget_settings(self) -> ft.Container:
         ''' Loads our account settings view '''
 
         def _set_default_widget_color(e):
@@ -456,7 +478,7 @@ class Settings(ft.View):
                     self.data['default_world_color'] = new_color
 
             # Save our updated settings
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
             e.control.color = new_color   # Changes the dropdown text color to match the selected color
             e.control.update()
 
@@ -466,7 +488,7 @@ class Settings(ft.View):
             ft.Row([
                 ft.Text("Widget Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
                 ft.IconButton(
-                    ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
+                    ft.Icons.CLOSE_OUTLINED, on_click=self.close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
                     mouse_cursor="click", tooltip="Close Settings"
                 ),
@@ -742,7 +764,7 @@ class Settings(ft.View):
     def _load_template_settings(self, selected_template: str = None, selected_type: str = None):
         ''' Loads our template settings view for editing character and world templates '''
 
-        page = self.p
+        page = self.page
 
         # Grab all our existing templates.  These are mutated in place by the nested helpers
         # so changes are visible across all closures that share these references.
@@ -756,7 +778,7 @@ class Settings(ft.View):
             ''' Pushes local template dicts back to settings data and writes to disk '''
             self.data['character_templates'] = character_templates
             self.data['world_templates']     = world_templates
-            self.p.run_task(self.save_file)
+            self.page.run_task(self.save_file)
 
         # Declared early so inner helpers that need it can reference it via closure
         edit_container = ft.Container(
@@ -1193,7 +1215,7 @@ class Settings(ft.View):
                     else:
                         templates[safe] = default_world_template_data_dict()
                     _sync_and_save()
-                    self.p.pop_dialog()
+                    self.page.pop_dialog()
                     # Auto-select the newly created template
                     self._settings_category_changed(template_name=safe, template_type=ttype)
 
@@ -1206,12 +1228,12 @@ class Settings(ft.View):
                 "Create", on_click=_do_create, disabled=True,
                 style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
             )
-            self.p.show_dialog(ft.AlertDialog(
+            self.page.show_dialog(ft.AlertDialog(
                 title=ft.Text(f"Name Your {ttype.capitalize()} Template"),
                 content=tf,
                 actions=[
                     ft.TextButton(
-                        "Cancel", on_click=lambda _: self.p.pop_dialog(),
+                        "Cancel", on_click=lambda _: self.page.pop_dialog(),
                         style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK),
                     ),
                     add_btn,
@@ -1238,13 +1260,13 @@ class Settings(ft.View):
                 raw  = tf.value.strip()
                 safe = return_safe_name(raw)
                 if not safe or safe == old_name:
-                    self.p.pop_dialog()
+                    self.page.pop_dialog()
                     return
                 if safe not in templates and safe.lower() != "default":
                     data = templates.pop(old_name)
                     templates[safe] = data
                     _sync_and_save()
-                    self.p.pop_dialog()
+                    self.page.pop_dialog()
                     self._settings_category_changed(template_name=safe, template_type=ttype)
 
             tf = TextField(
@@ -1257,12 +1279,12 @@ class Settings(ft.View):
                 "Save", on_click=_do_rename,
                 style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
             )
-            self.p.show_dialog(ft.AlertDialog(
+            self.page.show_dialog(ft.AlertDialog(
                 title=ft.Text("Rename Template"),
                 content=tf,
                 actions=[
                     ft.TextButton(
-                        "Cancel", on_click=lambda _: self.p.pop_dialog(),
+                        "Cancel", on_click=lambda _: self.page.pop_dialog(),
                         style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK),
                     ),
                     save_btn,
@@ -1374,7 +1396,7 @@ class Settings(ft.View):
             ft.Row([
                 ft.Text("Templates", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
                 ft.IconButton(
-                    ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings,
+                    ft.Icons.CLOSE_OUTLINED, on_click=self.close_settings,
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
                     mouse_cursor="click", tooltip="Close Settings",
                 ),
@@ -1404,18 +1426,18 @@ class Settings(ft.View):
         ''' Loads our resources settings view '''
 
         async def _run_tutorial(e=None):
-            await self.p.push_route("/tutorial")
+            await self.page.push_route("/tutorial")
 
         async def _discord_clicked(e=None):
             import webbrowser
             webbrowser.open("https://discord.gg/mGn6zXrJJV")
 
-        # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
+        
         content=ft.Column([
             ft.Row([
                 ft.Text("Resources", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
                 ft.IconButton(
-                    ft.Icons.CLOSE_OUTLINED, on_click=self._close_settings, 
+                    ft.Icons.CLOSE_OUTLINED, on_click=self.close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
                     mouse_cursor="click", tooltip="Close Settings"
                 ) 
@@ -1428,10 +1450,7 @@ class Settings(ft.View):
                 ),
                 ft.Text("Join our", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT, ),
                 ft.Container(
-                    ft.Text(
-                        "Discord", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500,
-                        #on_tap=_discord_clicked, 
-                    ),
+                    ft.Text("Discord", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500),
                     on_click=_discord_clicked,
                 ),
                 ft.Text("to be part of our community and see upcoming features!", theme_style=ft.TextThemeStyle.BODY_MEDIUM,),
@@ -1534,17 +1553,17 @@ class Settings(ft.View):
     
     
     # Called when someone expands the drop down holding the color scheme options
-    def reload_settings(self):
+    def build(self):
         ''' Reloads our settings view with updated data '''
 
         # Clear any current controls we have
         self.controls.clear()
         
         # Set our menubar
-        menubar = create_menu_bar(self.p, self.story)   
+        menubar = create_menu_bar(self.page, self.story)   
 
         # Set our workspaces rail
-        #self.workspaces_rail = WorkspacesRail(self.p, self.story)  
+        #self.workspaces_rail = WorkspacesRail(self.page, self.story)  
 
         # Set the rail we use for different settings categories
         nav_rail = ft.NavigationRail(
@@ -1589,7 +1608,7 @@ class Settings(ft.View):
             #content=self._load_appearance_settings()        # Default to appearance settings when settings are first opened
         )
 
-        self._settings_category_changed()
+        self._settings_category_changed(update=False)
 
         # View is like a column, so top down layout
         self.controls = [

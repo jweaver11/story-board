@@ -53,7 +53,7 @@ class WorkspacesRail(ft.Container):
         from models.app import app    # Always grabs updated reference when collapsing/expanding
 
         # Toggle our collapsed state
-        app.settings.update_data(**{'workspaces_rail_is_collapsed': not app.settings.data.get('workspaces_rail_is_collapsed', False)})
+        app.settings.update_data(**{'story': {'workspaces_rail_is_collapsed': not app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False)}})
         
         self.reload_rail(story)  # Reload the rail to apply changes
 
@@ -100,7 +100,7 @@ class WorkspacesRail(ft.Container):
                     # Label underneath the icon and the data we will use to identify the rail
                     data="content",
                     label=ft.Text(
-                        "Content" if app.settings.data.get('workspaces_rail_is_collapsed', False) == False else " ", 
+                        "Content" if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False) == False else " ", 
                         no_wrap=True, 
                         theme_style=ft.TextThemeStyle.LABEL_LARGE
                     ) ,  # If not collapsed, show label, if collapsed, hide label
@@ -120,7 +120,7 @@ class WorkspacesRail(ft.Container):
                     selected_icon=ft.Icon(ft.Icons.PEOPLE_ROUNDED, color=ft.Colors.PRIMARY),
                     padding=ft.Padding.only(top=10, bottom=10),
                     data="characters", 
-                    label=ft.Text("Characters" if app.settings.data.get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE) 
+                    label=ft.Text("Characters" if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE) 
                 ),
             ],
         )
@@ -137,7 +137,7 @@ class WorkspacesRail(ft.Container):
                     selected_icon=ft.Icon(ft.Icons.TIMELINE_OUTLINED, color=ft.Colors.PRIMARY, scale=1.2),
                     padding=ft.Padding.only(top=10, bottom=10),
                     data="plotlines", 
-                    label=ft.Text("Plotlines" if app.settings.data.get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE) 
+                    label=ft.Text("Plotlines" if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE) 
                 ),
             ],
         )
@@ -155,7 +155,7 @@ class WorkspacesRail(ft.Container):
                     selected_icon=ft.Icon(ft.Icons.PUBLIC, color=ft.Colors.PRIMARY),
                     padding=ft.Padding.only(top=10, bottom=10),
                     data="world_building", 
-                    label=ft.Text("World Building" if app.settings.data.get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE)
+                    label=ft.Text("World Building" if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE)
                 ),
             ],
         )
@@ -172,7 +172,7 @@ class WorkspacesRail(ft.Container):
                     selected_icon=ft.Icon(ft.Icons.DRAW_ROUNDED, color=ft.Colors.PRIMARY),
                     padding=ft.Padding.only(top=10, bottom=10),
                     data="canvas", 
-                    label=ft.Text("Canvas" if app.settings.data.get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE)
+                    label=ft.Text("Canvas" if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE)
                 ),
             ],
         )
@@ -206,7 +206,7 @@ class WorkspacesRail(ft.Container):
 
 
         # If we're collapsed...
-        if app.settings.data.get('workspaces_rail_is_collapsed', False):
+        if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False):
 
             self.width = 50     # Make the rail less wide
             

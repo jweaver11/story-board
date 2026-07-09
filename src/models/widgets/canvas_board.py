@@ -547,7 +547,8 @@ class CanvasBoard(Widget):
         self.story.blocker.visible = False
         self.story.blocker.update()
     
-
+    def build(self):
+        super().build()
 
     # Called after any changes happen to the data that need to be reflected in the UI
     def reload_widget(self):
