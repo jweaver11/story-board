@@ -129,8 +129,7 @@ class ComicPreview(Widget):
             for idx, panel in enumerate(self.data.get('featured_panels', [])):
                 if panel.get('id'):
                     panel['image'] = refresh_canvas_panel(panel['id'])
-                    vertical_preview.controls[idx] = build_preview_panel(idx, panel.get('image'))
-                    horizontal_preview.controls[idx] = build_preview_panel(idx, panel.get('image'))
+                    preview_panel_controls[idx] = build_preview_panel(idx, panel.get('image'))
                     panel_minimap.controls[idx] = build_minimap_panel(idx, panel.get('image'))
 
             # Update data UI
@@ -140,14 +139,14 @@ class ComicPreview(Widget):
         # Handles toggling the preview direction between vertical and horizontal
         async def toggle_preview_direction(e):
             # Show the appropriate wrapper and update the button icon
-            if self.data.get('preview_direction', "vertical") == "vertical":
-                self.update_data(**{'preview_direction': "horizontal"})
+            if app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical":
+                app.settings.update_data(**{'widget': {'comic_preview': {'preview_direction': "horizontal"}}})
                 vertical_preview_wrapper.visible = False
                 horizontal_preview_wrapper.visible = True
                 toggle_preview_direction_button.icon = ft.Icons.SWAP_HORIZ
                 
             else:
-                self.update_data(**{'preview_direction': "vertical"})
+                app.settings.update_data(**{'widget': {'comic_preview': {'preview_direction': "vertical"}}})
                 horizontal_preview_wrapper.visible = False
                 vertical_preview_wrapper.visible = True
                 toggle_preview_direction_button.icon = ft.Icons.SWAP_VERT
@@ -172,8 +171,8 @@ class ComicPreview(Widget):
                                 'title': file_path.split("\\")[-1],
                                 'image': encoded_string
                             })
-                            vertical_preview.controls.append(build_preview_panel(len(self.data['featured_panels']) - 1, encoded_string))
-                            horizontal_preview.controls.append(build_preview_panel(len(self.data['featured_panels']) - 1, encoded_string))
+                            
+                            preview_panel_controls.append(build_preview_panel(len(self.data['featured_panels']) - 1, encoded_string))
                             panel_minimap.controls.append(build_minimap_panel(len(self.data['featured_panels']) - 1, encoded_string))
                             
                     except Exception as _:
@@ -197,36 +196,66 @@ class ComicPreview(Widget):
                 "low": ft.FilterQuality.LOW,
                 "medium": ft.FilterQuality.MEDIUM,
                 "high": ft.FilterQuality.HIGH
-            }.get(self.data.get('filter_quality', "medium"), ft.FilterQuality.MEDIUM)
+            }.get(app.settings.data.get('widget', {}).get('comic_preview', {}).get('filter_quality', "medium"), ft.FilterQuality.MEDIUM)
+
+            # Better performance
+            try:
+                image_bytes = base64.b64decode(image_str)
+                img = Image.open(BytesIO(image_bytes))
+                if img.mode in ("P", "PA"):  # palette images with transparency must go via RGBA
+                    img = img.convert("RGBA")
+                img = img.convert("RGB")  # JPEG requires RGB
+                max_dim = 2160  # cap at 4K height; anything larger is not visible anyway
+                if img.width > max_dim or img.height > max_dim:
+                    img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+                output = BytesIO()
+                img.save(output, format="JPEG", quality=92, optimize=True)
+                image_str = base64.b64encode(output.getvalue()).decode("utf-8")
+            except Exception:
+                pass  # fall back to original if conversion fails
+
             return ft.Image(image_str, fit=ft.BoxFit.CONTAIN, expand=True, data=idx, filter_quality=filter_quality)
         
         # Returns a small image in the mini map with a delete button that appears on hover
         def build_minimap_panel(idx: int, image_str: str) -> ft.GestureDetector:
+            def create_thumbnail(image_str: str) -> str:
+                try:
+                    image_bytes = base64.b64decode(image_str)
+                    img = Image.open(BytesIO(image_bytes)).convert("RGBA")
+                    img.thumbnail((100 * 2, 100), Image.Resampling.BILINEAR)
+                    output = BytesIO()
+                    img.save(output, format="PNG", optimize=True)
+                    return base64.b64encode(output.getvalue()).decode("utf-8")
+                except Exception:
+                    return image_str
             async def show_delete_icon(e: ft.Event):
                 delete_button.opacity = 1
                 delete_button.update()
             async def hide_delete_icon(e: ft.Event):
                 delete_button.opacity = 0
                 delete_button.update()
+
+            # Create a much more lightweight thumbnail for the smaller minimap panels
+            thumb = create_thumbnail(image_str)
             
             return ft.ReorderableDragHandle(
-                    ft.GestureDetector(
-                        ft.Stack([
-                            ft.Row([]), # Fill up so we can drag from anywhere
-                            ft.Image(
-                                image_str, fit=ft.BoxFit.CONTAIN, margin=ft.Margin.symmetric(horizontal=10), expand=True, 
-                                filter_quality=ft.FilterQuality.LOW, 
-                            ),
-                            delete_button := ft.IconButton(
-                                ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, tooltip="Remove panel from preview?",
-                                opacity=0, scale=1.2, data=idx, on_click=remove_panel, mouse_cursor="click",
-                                animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-                            ),
-                        ], alignment=ft.Alignment.CENTER, expand=True,),
-                        on_enter=show_delete_icon,
-                        on_exit=hide_delete_icon,
-                        height=100, expand=True
-                    )
+                ft.GestureDetector(
+                    ft.Stack([
+                        ft.Row([]), # Fill up so we can drag from anywhere
+                        ft.Image(
+                            thumb, fit=ft.BoxFit.CONTAIN, margin=ft.Margin.symmetric(horizontal=10), expand=True, 
+                            filter_quality=ft.FilterQuality.LOW, 
+                        ),
+                        delete_button := ft.IconButton(
+                            ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, tooltip="Remove panel from preview?",
+                            opacity=0, scale=1.2, data=idx, on_click=remove_panel, mouse_cursor="click",
+                            animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                        ),
+                    ], alignment=ft.Alignment.CENTER, expand=True,),
+                    on_enter=show_delete_icon,
+                    on_exit=hide_delete_icon,
+                    height=100, expand=True
+                )
             )
         
         # Update index in minimap list
@@ -239,8 +268,7 @@ class ComicPreview(Widget):
             idx = e.control.data
             self.data['featured_panels'].pop(idx)
             self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
-            vertical_preview.controls.pop(idx)
-            horizontal_preview.controls.pop(idx)
+            preview_panel_controls.pop(idx)
             panel_minimap.controls.pop(idx)
             self.update()
             await update_minimap_indices()
@@ -256,8 +284,7 @@ class ComicPreview(Widget):
             self.data['featured_panels'].insert(e.new_index, self.data['featured_panels'].pop(e.old_index))
             self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
 
-            vertical_preview.controls.insert(e.new_index, vertical_preview.controls.pop(e.old_index))
-            horizontal_preview.controls.insert(e.new_index, horizontal_preview.controls.pop(e.old_index))
+            preview_panel_controls.insert(e.new_index, preview_panel_controls.pop(e.old_index))
             panel_minimap.controls.insert(e.new_index, panel_minimap.controls.pop(e.old_index)) 
             self.update()
             await update_minimap_indices()
@@ -274,7 +301,7 @@ class ComicPreview(Widget):
         # Adjusts the scaling of the preview display
         async def adjust_scaling(e: ft.Event):
             new_scaling = int(e.control.data)
-            self.update_data(**{'preview_scale': new_scaling})
+            app.settings.update_data(**{'widget': {'comic_preview': {'preview_scale': new_scaling}}})
             e.control.parent.content = f"Preview Scaling: {str(new_scaling)}"
             vertical_preview.parent.expand = new_scaling
             horizontal_preview.parent.expand = new_scaling
@@ -283,7 +310,7 @@ class ComicPreview(Widget):
         # Sets the background color of the preview display
         async def set_preview_background_color(e: ft.Event):
             new_color = e.control.data
-            self.update_data(**{'preview_background_color': new_color})
+            app.settings.update_data(**{'widget': {'comic_preview': {'preview_background_color': new_color}}})
             e.control.parent.leading.color = new_color
             vertical_preview.parent.bgcolor = new_color
             horizontal_preview.parent.bgcolor = new_color
@@ -292,7 +319,7 @@ class ComicPreview(Widget):
         # Sets the filter quality of the preview display
         async def set_filter_quality(e: ft.Event):
             new_quality = str(e.control.data)
-            self.update_data(**{'filter_quality': new_quality})
+            app.settings.update_data(**{'widget': {'comic_preview': {'filter_quality': new_quality}}})
             e.control.parent.content = f"Filter Quality: {new_quality.capitalize()}"
             fq = {
                 "low": ft.FilterQuality.LOW,
@@ -300,19 +327,17 @@ class ComicPreview(Widget):
                 "high": ft.FilterQuality.HIGH
             }.get(new_quality, ft.FilterQuality.MEDIUM)
             for idx, panel in enumerate(self.data.get('featured_panels', [])):
-                vertical_preview.controls[idx].filter_quality = fq
-                horizontal_preview.controls[idx].filter_quality = fq
-                panel_minimap.controls[idx].content.controls[0].filter_quality = fq
+                preview_panel_controls[idx].filter_quality = fq
+                panel_minimap.controls[idx].content.content.controls[1].filter_quality = fq
             self.update()
 
         async def toggle_anti_aliasing(e: ft.Event):
-            new_value = not self.data.get('use_anti_aliasing', True)
-            self.update_data(**{'use_anti_aliasing': new_value})
+            new_value = not app.settings.data.get('widget', {}).get('comic_preview', {}).get('use_anti_aliasing', True)
+            app.settings.update_data(**{'widget': {'comic_preview': {'use_anti_aliasing': new_value}}})
             e.control.content = f"Anti-Aliasing: {str(new_value)}"
             for idx, panel in enumerate(self.data.get('featured_panels', [])):
-                vertical_preview.controls[idx].use_anti_aliasing = new_value
-                horizontal_preview.controls[idx].use_anti_aliasing = new_value
-                panel_minimap.controls[idx].content.controls[0].use_anti_aliasing = new_value
+                preview_panel_controls[idx].anti_alias = new_value
+                panel_minimap.controls[idx].content.content.controls[1].anti_alias = new_value
             self.update()
         
         preview_panel_controls = [build_preview_panel(idx, panel.get('image')) for idx, panel in enumerate(self.data.get('featured_panels', []))]
@@ -338,16 +363,16 @@ class ComicPreview(Widget):
         # Wrapper for vertical preview, allows us to hide/show based on the preview_direction setting
         vertical_preview_wrapper = ft.Row([
             ft.Container(expand=1),
-            ft.Container(vertical_preview, bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK), expand=self.data.get('preview_scale', 2)),
+            ft.Container(vertical_preview, bgcolor=app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_background_color', ft.Colors.BLACK), expand=app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_scale', 2)),
             ft.Container(expand=1),
-        ], expand=True, visible=self.data.get('preview_direction', "vertical") == "vertical")
+        ], expand=True, visible=app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical")
 
         # Wrapper for the horizontal preview, allows us to hide/show based on the preview_direction setting
         horizontal_preview_wrapper = ft.Column([
             ft.Container(expand=1),
-            ft.Container(horizontal_preview, bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK), expand=self.data.get('preview_scale', 2)),
+            ft.Container(horizontal_preview, bgcolor=app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_background_color', ft.Colors.BLACK), expand=app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_scale', 2)),
             ft.Container(expand=1),
-        ], expand=True, visible=self.data.get('preview_direction', "vertical") == "horizontal",)
+        ], expand=True, visible=app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "horizontal",)
 
         # Minimap of the panels, allows for reordering and removing panels from the preview. Held in the sidebar
         panel_minimap = ft.ReorderableListView(
@@ -378,7 +403,7 @@ class ComicPreview(Widget):
                             toggle_preview_direction_button := ft.MenuItemButton(
                                 "Swap Preview Direction", True,
                                 leading=ft.Icon(
-                                    ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
+                                    ft.Icons.SWAP_VERT if app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
                                     self.data.get('color', ft.Colors.PRIMARY),
                                 ),
                                 tooltip="Swap the preview direction between vertical and horizontal.",
@@ -387,7 +412,7 @@ class ComicPreview(Widget):
                             ),
                             
                             ft.MenuItemButton(
-                                f"Anti-Aliasing: {self.data.get('use_anti_aliasing', True)}",
+                                f"Anti-Aliasing: {app.settings.data.get('widget', {}).get('comic_preview', {}).get('use_anti_aliasing', True)}",
                                 leading=ft.Icon(ft.Icons.ANIMATION_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                                 tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
                                 on_click=toggle_anti_aliasing,
@@ -402,7 +427,7 @@ class ComicPreview(Widget):
                                     ) for color in colors
                                 ] + [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_preview_background_color,)],
                                 tooltip="Adjust the scale of the preview display.",
-                                leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
+                                leading=ft.Icon(ft.Icons.SCALE_OUTLINED, app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_background_color', "#00000000")),
                                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                                 style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                             ),
@@ -421,7 +446,7 @@ class ComicPreview(Widget):
                             ),
                             
                             ft.SubmenuButton(
-                                f"Preview Scaling: {self.data.get('preview_scale', 0)}",
+                                f"Preview Scaling: {app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_scale', 0)}",
                                 [
                                     ft.MenuItemButton(
                                         str(i), data=i,
@@ -435,7 +460,7 @@ class ComicPreview(Widget):
                             ),
                             
                             ft.SubmenuButton(
-                                f"Image Filter Quality: {self.data.get('filter_quality', 'medium').capitalize()}",
+                                f"Image Filter Quality: {app.settings.data.get('widget', {}).get('comic_preview', {}).get('filter_quality', 'medium').capitalize()}",
                                 [
                                     ft.MenuItemButton("Low", data="low", on_click=set_filter_quality),
                                     ft.MenuItemButton("Medium", data="medium", on_click=set_filter_quality),
@@ -508,4 +533,3 @@ class ComicPreview(Widget):
             self.show_sidebar_button,
             self.sidebar,
         ], expand=True, spacing=0)
-        
