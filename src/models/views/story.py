@@ -152,6 +152,7 @@ class Story(ft.View):
             # Clean up name
             name = name.capitalize()    # Capitalize first letter
             name = name.rstrip()        # Remove trailing spaces
+            name = return_safe_name(name)
 
             # Create the full folder path
             folder_path = os.path.join(directory_path, name)
@@ -159,10 +160,8 @@ class Story(ft.View):
             # Make the folder in our storage if it doesn't already exist
             os.makedirs(folder_path, exist_ok=True) 
 
-            # Add this folder to our folders data so we can save stuff like colors
-            self.data['folders'].update({folder_path: {'name': name, 'color': app.settings.data.get('default_category_color', "primary"), 'is_expanded': True}})
-            self.update_data(**{'folders': self.data['folders']})
-
+            # Update data and refresh
+            self.update_data(**{'folders': {folder_path: {'name': name, 'color': app.settings.data.get('default_category_color', "primary"), 'is_expanded': True}}})
             self.active_rail.reload_rail()
 
         # Handle errors
@@ -201,15 +200,12 @@ class Story(ft.View):
             # Save AFTER all data has been cleaned up so nothing orphaned persists
             self.update_data(**{'folders': self.data['folders']})   
 
-            #self.blocker.visible = True
-            #self.blocker.update()
-            #self.page.run_task(asyncio.sleep, 0)
+            
 
             self.active_rail.reload_rail()
             self.workspace.reload_workspace()
             self.close_menu_instant()
-            #self.blocker.visible = False
-            #self.blocker.update()
+           
 
         # Handle errors
         except Exception as e:
@@ -510,10 +506,7 @@ class Story(ft.View):
         from models.widgets.plot_chart import PlotChart
         from models.app import app
 
-        #if not self.blocker.visible:
-            #self.blocker.visible = True
-            #self.blocker.update()
-            #await asyncio.sleep(0)   # Wait for blocker to update before creating the new item, which will update the UI again
+        
 
         if directory_path is None:
             directory_path = self.data.get('content_directory_path',  '')
@@ -573,11 +566,7 @@ class Story(ft.View):
         if self.data.get('selected_rail', "content") != "canvas":
             self.active_rail.reload_rail()
     
-        # Unhide the blocker
-        #if self.blocker.visible:
-            #self.blocker.visible = False
-            #self.blocker.update()
-
+       
 
     def rebuild_widget(self, widget) -> ft.Control:
         ''' Delcares the widget as a new object to refresh its page reference. '''

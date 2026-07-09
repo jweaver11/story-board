@@ -9,8 +9,7 @@ def story_is_unique(new_story_title: str) -> bool:
     
     # Compare against all existing story titles so we don't have any duplicates
     for story in app.stories.values():
-        if return_safe_name(story.title) == new_story_title:
-            print("Story title is not unique")
+        if return_safe_name(story.data.get('title', '')) == new_story_title:
             return False
         
     # Reset error text if unique
