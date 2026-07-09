@@ -204,12 +204,17 @@ class ComicPreview(Widget):
                 img = Image.open(BytesIO(image_bytes))
                 if img.mode in ("P", "PA"):  # palette images with transparency must go via RGBA
                     img = img.convert("RGBA")
-                img = img.convert("RGB")  # JPEG requires RGB
+                has_alpha = img.mode in ("RGBA", "LA")
+                if not has_alpha:
+                    img = img.convert("RGB")
                 max_dim = 2160  # cap at 4K height; anything larger is not visible anyway
                 if img.width > max_dim or img.height > max_dim:
                     img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
                 output = BytesIO()
-                img.save(output, format="JPEG", quality=92, optimize=True)
+                if has_alpha:
+                    img.save(output, format="PNG", optimize=True)
+                else:
+                    img.save(output, format="JPEG", quality=92, optimize=True)
                 image_str = base64.b64encode(output.getvalue()).decode("utf-8")
             except Exception:
                 pass  # fall back to original if conversion fails
@@ -273,10 +278,6 @@ class ComicPreview(Widget):
             self.update()
             await update_minimap_indices()
         
-
-        
-
-
         # Handles reordering of panels in the mini map and applying to the previews
         async def reorder_panels(e: ft.OnReorderEvent):
             if e.old_index == e.new_index:
