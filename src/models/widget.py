@@ -320,8 +320,10 @@ class Widget(ft.Container):
     async def show_widget(self, e=None):
         ''' Shows this widget in the workspace if it is hidden '''
 
-        # Skip if we're already visible
+        # If we're already visible, focus our tab
         if self.data.get('visible', False) == True:
+            self.story.workspace.content.selected_index = self.data.get('index', 0)
+            self.story.workspace.update()
             return
         
         #self.visible = True
@@ -627,19 +629,12 @@ class Widget(ft.Container):
             hover_interval=100
         )
 
-    # Called by child classes at the end of their constructor, or when they need UI update to reflect changes
+    # OLD - Phasing out
     def reload_widget(self):
         ''' Children build their own content of the widget in their own reload_widget functions '''
-        tag = self.data.get('tag')
-        match tag:
-            case "note" | "item" | "document" | "world" | "character" | "comic_preview":
-                return
-
-        # Set self.content Here
-
-        self._render_widget()
+        return
     
-     # Called when changes inside the widget require a reload to be reflected in the UI, like when adding mini widgets
+     # OLD - Phasing out
     def _render_widget(self):
 
         # Clear out our master stack controls so we start fresh to re-render

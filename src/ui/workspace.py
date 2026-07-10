@@ -44,7 +44,8 @@ class Workspace(ft.Container):
     # Arranges our widgets into the main pin
     def arrange_widgets(self):
         self.main_pin.clear()
-        sorted_widgets = sorted(self.story.widgets.values(), key=lambda w: w.data.get('index', 0))
+        visible_widgets = [w for w in self.story.widgets.values() if w.data.get('visible', False)]
+        sorted_widgets = sorted(visible_widgets, key=lambda w: w.data.get('index', 0))
         for i, w in enumerate(sorted_widgets):
             if w.data.get('visible', False):
 
