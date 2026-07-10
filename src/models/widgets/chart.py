@@ -635,6 +635,7 @@ class Chart(Widget):
 
             self.data.get('radar_data', {}).get('data_sets', [])[entry_idx]['title'] = new_title
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
+            self.sidebar.content.controls.pop()
             self.reload_widget()
 
         # Updates whether our dataset is expanded in the info column or not
@@ -796,6 +797,7 @@ class Chart(Widget):
                 for ds in self.data.get('radar_data', {}).get('data_sets', []):
                     del ds['entries'][e.control.data]
                 self.update_data(**{'radar_data': self.data.get('radar_data', {})})
+                self.sidebar.content.controls.pop()
                 self.reload_widget()
                 self.page.pop_dialog()
 
@@ -819,6 +821,7 @@ class Chart(Widget):
             for ds in self.data.get('radar_data', {}).get('data_sets', []):
                 ds['entries'].append(default_value)   
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
+            self.sidebar.content.controls.pop()
             self.reload_widget()
 
         # Toggles the chart either polygon or circle shaped
@@ -845,6 +848,7 @@ class Chart(Widget):
                 'expanded': False
             })
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
+            self.sidebar.content.controls.pop()
             self.reload_widget()
 
         # Delete a dataset and all its info
@@ -854,6 +858,7 @@ class Chart(Widget):
                 idx = e.control.data
                 del self.data['radar_data']['data_sets'][idx]
                 self.update_data(**{'radar_data': self.data.get('radar_data', {})})
+                self.sidebar.content.controls.pop()
                 self.reload_widget()
                 self.page.pop_dialog()
 
@@ -874,6 +879,7 @@ class Chart(Widget):
             ds = self.data['radar_data']['data_sets'][idx]
             ds['visible'] = not ds.get('visible', True)
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
+            self.sidebar.content.controls.pop()
             self.reload_widget()
 
         # Change datasets color on the chart
@@ -882,6 +888,7 @@ class Chart(Widget):
             color = str(e.control.content)
             self.data['radar_data']['data_sets'][idx]['color'] = color
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
+            self.sidebar.content.controls.pop()
             self.reload_widget()
 
         # Go through and add our titles/nodes to the chart
@@ -969,6 +976,7 @@ class Chart(Widget):
                     elif ds['entries'][i] > self.data['radar_data'].get('max_value', 20):
                         ds['entries'][i] = self.data['radar_data'].get('max_value', 20)
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
+            self.sidebar.content.controls.pop()
             self.reload_widget()
            
 
