@@ -48,7 +48,6 @@ class Settings(ft.View):
         # If we're new, give default values for our data 
         if data is None or data == {}:
             self.data.update({
-                # Settings the app uses and users do not directly change in the settings view
                 
                 
                 'is_first_launch': True,    # If this is the first time the app has been launched or not
@@ -63,45 +62,54 @@ class Settings(ft.View):
                     'theme_color': "blue",   # the color scheme of the app. Defaults to blue
                 },
 
+                # Settings about story details
                 'story': {
                     'workspaces_rail_is_collapsed': False,
-                    'active_rail_width': 250,  # Width of our active rail that we can resize
+                    'active_rail_width': 250,  
+                    'default_category_color': "primary",    # Categories thrown in here
+                    'workspaces_rail_order': [      # Order of the workspace rail 
+                        "content",
+                        "canvas",
+                        "characters",
+                        "plotlines",
+                        "world_building",
+                    ],
                 },
 
-                # Settings per widget. All have a default color upon creation
-                'widget': {
+                # Default settings for the newly created widgets. All have a color, but can have additional settings specific to each widget type.
+                'widget_defaults': {
                     'document': {
-                        'default_color': "primary"
+                        'color': "primary"
                     },
                     'canvas': {
-                        'default_color': "primary"
+                        'color': "primary"
                     },
                     'note': {
-                        'default_color': "primary"
+                        'color': "primary"
                     },
                     'character': {
-                        'default_color': "primary"
+                        'color': "primary"
                     },
                     'plotline': {
-                        'default_color': "primary"
+                        'color': "primary"
                     },
                     'canvas_board': {
-                        'default_color': "primary"
+                        'color': "primary"
                     },
                     'map': {
-                        'default_color': "primary"
+                        'color': "primary"
                     },
                     'world': {
-                        'default_color': "primary"
+                        'color': "primary"
                     },
                     'item': {
-                        'default_color': "primary"
+                        'color': "primary"
                     },
                     'plot_chart': {
-                        'default_color': "primary"
+                        'color': "primary"
                     },
                     'comic_preview': {
-                        'default_color': "primary",
+                        'color': "primary",
                         'preview_direction': "vertical",            # Default direction for comic preview, can be vertical or horizontal
                         'preview_background_color': "#00000000",  # Background color behind images
                         'preview_spacing': 0,                       # Spacing between images
@@ -110,10 +118,22 @@ class Settings(ft.View):
                         'use_anti_aliasing': True,                  # Whether to use anti-aliasing when rendering the images in the preview
                     },
                     'chart': {
-                        'default_color': "primary"
+                        'color': "primary",
+                        # Bar chart settings
+                        'show_labels': True,           
+                        'rod_shape': "rounded",          
+                        'rod_width': 30,         
+                        'stack_rods': False,      
+                        'show_horizontal_grid_lines': True,
+                        'show_vertical_grid_lines': False,
+                        # Radar chart settings
+                        'make_chart_round': True,   # If chart is round or polygon based on nodes
+                        'tick_count': 2,    # Number of lines between the center and outer edge of the chart
+                        'show_tick_labels': False,      # Whether to show the labels for each tick line or not
+                        'rotate_node_titles': True,    # Whether to keep our titles flat and not rotate them with the chart or not
                     },
                     'character_relationship_map': {
-                        'default_color': "primary"
+                        'color': "primary"
                     }
                 },
 
@@ -154,19 +174,6 @@ class Settings(ft.View):
                     'rectangle_border_radius': 0,               # Border radius for rectangle shapes
                     'saved_brushes': dict(),              # Saved brushes the user has created that we can load
                 },
-
-                # Settings the user can change in the settings view
-                # Appearance settings
-                
-                'workspaces_rail_order': [      # Order of the workspace rail
-                    "content",
-                    "canvas",
-                    "characters",
-                    "plotlines",
-                    "world_building",
-                ],
-
-                'default_category_color': "primary",    # Categories thrown in here
 
                 # Hold our default character templates
                 'character_templates': {    
@@ -388,7 +395,7 @@ class Settings(ft.View):
 
             new_color = e.control.value    # Grabs the new color selected   
 
-            self.data['default_category_color'] = new_color
+            self.update_data(**{'story': {'default_category_color': new_color}})
 
             # Save our updated settings
             self.page.run_task(self.save_file)
@@ -441,9 +448,9 @@ class Settings(ft.View):
                     label="Default Folder Color",
                     capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
                     options=self._get_color_options(), on_select=_set_default_category_color,
-                    value=self.data.get('default_category_color', "primary"),
+                    value=self.data.get('story', {}).get('default_category_color', "primary"),
                     text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                    color=self.data.get('default_category_color', "primary"),
+                    color=self.data.get('story', {}).get('default_category_color', "primary"),
                     dense=True, data="category",
                 ),
             ]),   
@@ -458,7 +465,7 @@ class Settings(ft.View):
         # Sets the color in data for each widget upon a change
         def set_default_widget_color(e: ft.Event, widget_tag: str):
             color_str = e.control.data
-            self.update_data(**{'widget': {widget_tag: {'default_color': color_str}}})
+            self.update_data(**{'widget_defaults': {widget_tag: {'default_color': color_str}}})
             e.control.parent.leading.color = color_str
             e.control.parent.update()
 
@@ -474,7 +481,7 @@ class Settings(ft.View):
                                 on_click=lambda e: set_default_widget_color(e, widget_tag),
                             ) for color in colors
                         ],
-                        leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('widget', {}).get(widget_tag, {}).get('default_color', "#00000000")),
+                        leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('widget_defaults', {}).get(widget_tag, {}).get('default_color', "#00000000")),
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                         style=ft.ButtonStyle(
                             alignment=ft.Alignment.CENTER, mouse_cursor="click",
@@ -492,7 +499,7 @@ class Settings(ft.View):
         # Adjusts the spacing between panels in the preview display
         async def adjust_comic_preview_spacing(e: ft.Event):
             new_spacing = int(e.control.data)
-            self.update_data(**{'widget': {'comic_preview': {'preview_spacing': new_spacing}}})
+            self.update_data(**{'widget_defaults': {'comic_preview': {'preview_spacing': new_spacing}}})
             e.control.parent.content = f"Preview Spacing: {str(new_spacing)}"
             e.control.parent.update()
             print(new_spacing)
@@ -500,7 +507,7 @@ class Settings(ft.View):
         # Adjusts the scaling of the preview display
         async def adjust_comic_preview_scaling(e: ft.Event):
             new_scaling = int(e.control.data)
-            self.update_data(**{'widget': {'comic_preview': {'preview_scale': new_scaling}}})
+            self.update_data(**{'widget_defaults': {'comic_preview': {'preview_scale': new_scaling}}})
             e.control.parent.content = f"Preview Scaling: {str(new_scaling)}"
             e.control.parent.update()
             print(new_scaling)
@@ -509,7 +516,7 @@ class Settings(ft.View):
         # Sets the background color of the preview display
         async def set_comic_preview_background_color(e: ft.Event):
             new_color = e.control.data
-            self.update_data(**{'widget': {'comic_preview': {'preview_background_color': new_color}}})
+            self.update_data(**{'widget_defaults': {'comic_preview': {'preview_background_color': new_color}}})
             e.control.parent.leading.color = new_color
             e.control.parent.update()
             print(new_color)
@@ -518,23 +525,23 @@ class Settings(ft.View):
         # Sets the filter quality of the preview display
         async def set_comic_preview_filter_quality(e: ft.Event):
             new_quality = str(e.control.data)
-            self.update_data(**{'widget': {'comic_preview': {'filter_quality': new_quality}}})
+            self.update_data(**{'widget_defaults': {'comic_preview': {'filter_quality': new_quality}}})
             e.control.parent.content = f"Filter Quality: {new_quality.capitalize()}"
             e.control.parent.update()
             print(new_quality)
             
         async def toggle_comic_preview_anti_aliasing(e: ft.Event):
-            new_value = not self.data.get('widget', {}).get('comic_preview', {}).get('use_anti_aliasing', True)
-            self.update_data(**{'widget': {'comic_preview': {'use_anti_aliasing': new_value}}})
+            new_value = not self.data.get('widget_defaults', {}).get('comic_preview', {}).get('use_anti_aliasing', True)
+            self.update_data(**{'widget_defaults': {'comic_preview': {'use_anti_aliasing': new_value}}})
             e.control.content = f"Anti-Aliasing: {str(new_value)}"
             e.control.update()
 
         async def toggle_comic_preview_direction(e: ft.Event):
-            if self.data.get('widget', {}).get('comic_preview', {}).get('preview_direction') == "vertical":
+            if self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction') == "vertical":
                 new_value = "horizontal"
             else:
                 new_value = "vertical"
-            self.update_data(**{'widget': {'comic_preview': {'preview_direction': new_value}}})
+            self.update_data(**{'widget_defaults': {'comic_preview': {'preview_direction': new_value}}})
             e.control.content = f"Preview Direction: {str(new_value)}"
             e.control.icon = ft.Icons.SWAP_VERT if new_value == "vertical" else ft.Icons.SWAP_HORIZ
             e.control.update()  
@@ -543,14 +550,14 @@ class Settings(ft.View):
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
         content=ft.Column([
             ft.Row([
-                ft.Text("Widget Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
+                ft.Text("Widget Default Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
                 ft.IconButton(
                     ft.Icons.CLOSE_OUTLINED, on_click=self.close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
                     mouse_cursor="click", tooltip="Close Settings"
                 ),
             ]),
-            ft.Text("Default Settings for widgets across all your stories.", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Text("Default Settings for new widgets across all your stories.", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
             ft.Container(height=10),    # Spacer
 
             ft.Divider(),
@@ -593,7 +600,7 @@ class Settings(ft.View):
              
             ft.Button(
                 "Swap Preview Direction", 
-                ft.Icons.SWAP_VERT if self.data.get('widget', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
+                ft.Icons.SWAP_VERT if self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
                 ft.Colors.PRIMARY,
                 tooltip="Swap the preview direction between vertical and horizontal.",
                 on_click=toggle_comic_preview_direction,
@@ -601,7 +608,7 @@ class Settings(ft.View):
             ),
             
             ft.Button(
-                f"Anti-Aliasing: {self.data.get('widget', {}).get('use_anti_aliasing', True)}",
+                f"Anti-Aliasing: {self.data.get('widget_defaults', {}).get('use_anti_aliasing', True)}",
                 ft.Icons.ANIMATION_OUTLINED, 
                 ft.Colors.PRIMARY,
                 tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
@@ -1477,9 +1484,6 @@ class Settings(ft.View):
         # Set our menubar
         menubar = create_menu_bar(self.page, self.story)   
 
-        # Set our workspaces rail
-        #self.workspaces_rail = WorkspacesRail(self.page, self.story)  
-
         # Set the rail we use for different settings categories
         nav_rail = ft.NavigationRail(
             selected_index=self.selected_index,
@@ -1542,4 +1546,6 @@ class Settings(ft.View):
             )
             
         ]
+
+
 

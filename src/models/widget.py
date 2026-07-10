@@ -514,8 +514,7 @@ class Widget(ft.Container):
 
     # Called in constructor to build our tab
     def build_tab(self):
-        tag = self.data.get('tag', '')
-        match tag:
+        match self.data.get('tag', ''):
             case "document": icon = ft.Icons.DESCRIPTION_OUTLINED
             case "canvas": icon = ft.Icons.BRUSH_OUTLINED
             case "canvas_board": icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
@@ -527,10 +526,10 @@ class Widget(ft.Container):
             case "world": icon = ft.Icons.PUBLIC_OUTLINED
             case "item": icon = ft.Icons.STAR_OUTLINE_ROUNDED
             case "chart": 
-                if self.data.get('chart_type', 'radar') == 'radar':
-                    icon = ft.Icons.INSERT_CHART_OUTLINED
+                if self.data.get('chart_type', '') == 'bar':
+                    icon = ft.Icons.INSERT_CHART_OUTLINED 
                 else:
-                    icon = ft.Icons.INSIGHTS_OUTLINED
+                    icon = ft.CupertinoIcons.COMPASS
             case "comic_preview": icon = ft.Icons.SLIDESHOW_OUTLINED
             case _: icon = ft.Icons.ERROR_OUTLINE
 

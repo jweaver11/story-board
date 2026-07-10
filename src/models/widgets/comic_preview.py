@@ -37,7 +37,14 @@ class ComicPreview(Widget):
             self.data.update({
                 # Widget data
                 'tag': "comic_preview",             # Tag to identify what type of object this is
-                'color': app.settings.data.get('default_comic_preview_color', "primary"),
+                'color': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('color', "primary"),
+
+                'preview_direction': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical"),            # Default direction for comic preview, can be vertical or horizontal
+                'preview_background_color': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_background_color', "#00000000"),  # Background color behind images
+                'preview_spacing': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_spacing', 0),                       # Spacing between images
+                'preview_scale': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_scale', 2),                         # Scale of the images in the preview, 1 = 1:1, 2 = 2:1, etc. 
+                'filter_quality': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('filter_quality', "medium"),                 # Filter quality for the images in the preview, can be low, medium, or high
+                'use_anti_aliasing': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('use_anti_aliasing', True),                  # Whether to use anti-aliasing when rendering the images in the preview
 
                 # List to hold our featured_panels of the canvases. Also allows png uploads
                 'featured_panels': [              
@@ -139,14 +146,14 @@ class ComicPreview(Widget):
         # Handles toggling the preview direction between vertical and horizontal
         async def toggle_preview_direction(e):
             # Show the appropriate wrapper and update the button icon
-            if app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical":
-                app.settings.update_data(**{'widget': {'comic_preview': {'preview_direction': "horizontal"}}})
+            if self.data.get('preview_direction', "vertical") == "vertical":
+                self.update_data(**{'preview_direction': "horizontal"})
                 vertical_preview_wrapper.visible = False
                 horizontal_preview_wrapper.visible = True
                 toggle_preview_direction_button.icon = ft.Icons.SWAP_HORIZ
                 
             else:
-                app.settings.update_data(**{'widget': {'comic_preview': {'preview_direction': "vertical"}}})
+                self.update_data(**{'preview_direction': "vertical"})
                 horizontal_preview_wrapper.visible = False
                 vertical_preview_wrapper.visible = True
                 toggle_preview_direction_button.icon = ft.Icons.SWAP_VERT
@@ -196,7 +203,7 @@ class ComicPreview(Widget):
                 "low": ft.FilterQuality.LOW,
                 "medium": ft.FilterQuality.MEDIUM,
                 "high": ft.FilterQuality.HIGH
-            }.get(app.settings.data.get('widget', {}).get('comic_preview', {}).get('filter_quality', "medium"), ft.FilterQuality.MEDIUM)
+            }.get(self.data.get('filter_quality', "medium"), ft.FilterQuality.MEDIUM)
 
             # Better performance
             try:
@@ -302,7 +309,7 @@ class ComicPreview(Widget):
         # Adjusts the scaling of the preview display
         async def adjust_scaling(e: ft.Event):
             new_scaling = int(e.control.data)
-            app.settings.update_data(**{'widget': {'comic_preview': {'preview_scale': new_scaling}}})
+            self.update_data(**{'preview_scale': new_scaling})
             e.control.parent.content = f"Preview Scaling: {str(new_scaling)}"
             vertical_preview.parent.expand = new_scaling
             horizontal_preview.parent.expand = new_scaling
@@ -311,7 +318,7 @@ class ComicPreview(Widget):
         # Sets the background color of the preview display
         async def set_preview_background_color(e: ft.Event):
             new_color = e.control.data
-            app.settings.update_data(**{'widget': {'comic_preview': {'preview_background_color': new_color}}})
+            self.update_data(**{'preview_background_color': new_color})
             e.control.parent.leading.color = new_color
             vertical_preview.parent.bgcolor = new_color
             horizontal_preview.parent.bgcolor = new_color
@@ -320,7 +327,7 @@ class ComicPreview(Widget):
         # Sets the filter quality of the preview display
         async def set_filter_quality(e: ft.Event):
             new_quality = str(e.control.data)
-            app.settings.update_data(**{'widget': {'comic_preview': {'filter_quality': new_quality}}})
+            self.update_data(**{'filter_quality': new_quality})
             e.control.parent.content = f"Filter Quality: {new_quality.capitalize()}"
             fq = {
                 "low": ft.FilterQuality.LOW,
@@ -333,8 +340,8 @@ class ComicPreview(Widget):
             self.update()
 
         async def toggle_anti_aliasing(e: ft.Event):
-            new_value = not app.settings.data.get('widget', {}).get('comic_preview', {}).get('use_anti_aliasing', True)
-            app.settings.update_data(**{'widget': {'comic_preview': {'use_anti_aliasing': new_value}}})
+            new_value = not self.data.get('use_anti_aliasing', True)
+            self.update_data(**{'use_anti_aliasing': new_value})
             e.control.content = f"Anti-Aliasing: {str(new_value)}"
             for idx, panel in enumerate(self.data.get('featured_panels', [])):
                 preview_panel_controls[idx].anti_alias = new_value
@@ -364,16 +371,16 @@ class ComicPreview(Widget):
         # Wrapper for vertical preview, allows us to hide/show based on the preview_direction setting
         vertical_preview_wrapper = ft.Row([
             ft.Container(expand=1),
-            ft.Container(vertical_preview, bgcolor=app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_background_color', ft.Colors.BLACK), expand=app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_scale', 2)),
+            ft.Container(vertical_preview, bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK), expand=self.data.get('preview_scale', 2)),
             ft.Container(expand=1),
-        ], expand=True, visible=app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical")
+        ], expand=True, visible=self.data.get('preview_direction', "vertical") == "vertical")
 
         # Wrapper for the horizontal preview, allows us to hide/show based on the preview_direction setting
         horizontal_preview_wrapper = ft.Column([
             ft.Container(expand=1),
-            ft.Container(horizontal_preview, bgcolor=app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_background_color', ft.Colors.BLACK), expand=app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_scale', 2)),
+            ft.Container(horizontal_preview, bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK), expand=self.data.get('preview_scale', 2)),
             ft.Container(expand=1),
-        ], expand=True, visible=app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "horizontal",)
+        ], expand=True, visible=self.data.get('preview_direction', "vertical") == "horizontal",)
 
         # Minimap of the panels, allows for reordering and removing panels from the preview. Held in the sidebar
         panel_minimap = ft.ReorderableListView(
@@ -387,6 +394,7 @@ class ComicPreview(Widget):
             horizontal_preview_wrapper
         ], expand=3, alignment=ft.Alignment.CENTER)
 
+        # Adds settings for this widget into the header on the sidebar
         self.sidebar_header.controls.insert(
             1,
             ft.MenuBar(
@@ -404,7 +412,7 @@ class ComicPreview(Widget):
                             toggle_preview_direction_button := ft.MenuItemButton(
                                 "Swap Preview Direction", True,
                                 leading=ft.Icon(
-                                    ft.Icons.SWAP_VERT if app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
+                                    ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
                                     self.data.get('color', ft.Colors.PRIMARY),
                                 ),
                                 tooltip="Swap the preview direction between vertical and horizontal.",
@@ -413,7 +421,7 @@ class ComicPreview(Widget):
                             ),
                             
                             ft.MenuItemButton(
-                                f"Anti-Aliasing: {app.settings.data.get('widget', {}).get('comic_preview', {}).get('use_anti_aliasing', True)}",
+                                f"Anti-Aliasing: {self.data.get('use_anti_aliasing', True)}",
                                 leading=ft.Icon(ft.Icons.ANIMATION_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                                 tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
                                 on_click=toggle_anti_aliasing,
@@ -428,7 +436,7 @@ class ComicPreview(Widget):
                                     ) for color in colors
                                 ] + [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_preview_background_color,)],
                                 tooltip="Adjust the scale of the preview display.",
-                                leading=ft.Icon(ft.Icons.SCALE_OUTLINED, app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_background_color', "#00000000")),
+                                leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
                                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                                 style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                             ),
@@ -447,7 +455,7 @@ class ComicPreview(Widget):
                             ),
                             
                             ft.SubmenuButton(
-                                f"Preview Scaling: {app.settings.data.get('widget', {}).get('comic_preview', {}).get('preview_scale', 0)}",
+                                f"Preview Scaling: {self.data.get('preview_scale', 0)}",
                                 [
                                     ft.MenuItemButton(
                                         str(i), data=i,
@@ -461,7 +469,7 @@ class ComicPreview(Widget):
                             ),
                             
                             ft.SubmenuButton(
-                                f"Image Filter Quality: {app.settings.data.get('widget', {}).get('comic_preview', {}).get('filter_quality', 'medium').capitalize()}",
+                                f"Image Filter Quality: {self.data.get('filter_quality', 'medium').capitalize()}",
                                 [
                                     ft.MenuItemButton("Low", data="low", on_click=set_filter_quality),
                                     ft.MenuItemButton("Medium", data="medium", on_click=set_filter_quality),
@@ -476,7 +484,7 @@ class ComicPreview(Widget):
                         ],
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                         style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                        tooltip="Adjust the settings for the comic preview widget."
+                        tooltip="Adjust the settings for the Comic Preview widget. This affects ALL Comic Preview Widgets"
                     ),
                 ],
                 style=ft.MenuStyle(

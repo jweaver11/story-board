@@ -52,12 +52,12 @@ class Chart(Widget):
                 'bar_data': {
                     'left_axis_title': "Left Axis",
                     'bottom_axis_title': "Bottom Axis",
-                    'show_labels': True,           # Whether to show labels on our axes or not
-                    'rod_shape': "rounded",          # The shape of our bars/rods. Either "rounded" or "square"
-                    'rod_width': 30,         # The width of our bars/rods. Only applies to vertical bar charts, not horizontal ones
-                    'stack_rods': False,      # If False, rods display on top of each other, not side by side
-                    'show_horizontal_grid_lines': True,
-                    'show_vertical_grid_lines': False,
+                    'show_labels': app.settings.data.get('widget_defaults', {}).get('show_labels', True),           # Whether to show labels on our axes or not
+                    'rod_shape': app.settings.data.get('widget_defaults', {}).get('rod_shape', "rounded"),          # The shape of our bars/rods. Either "rounded" or "square"
+                    'rod_width': app.settings.data.get('widget_defaults', {}).get('rod_width', 30),         # The width of our bars/rods. Only applies to vertical bar charts, not horizontal ones
+                    'stack_rods': app.settings.data.get('widget_defaults', {}).get('stack_rods', False),      # If False, rods display on top of each other, not side by side
+                    'show_horizontal_grid_lines': app.settings.data.get('widget_defaults', {}).get('show_horizontal_grid_lines', True),
+                    'show_vertical_grid_lines': app.settings.data.get('widget_defaults', {}).get('show_vertical_grid_lines', False),
                     'max_y': 20,        # The max y value of our chart, which is the value that will fill the whole chart. Should be higher than any value in our bars
                     'groups': [
                         #{
@@ -83,12 +83,12 @@ class Chart(Widget):
                         "Node 4",
                         "Node 5"
                     ],   
-                    'make_chart_round': True,   # Whether to show our radar chart as a circle or polygon
+                    'make_chart_round': app.settings.data.get('widget_defaults', {}).get('make_chart_round', True),   # Whether to show our radar chart as a circle or polygon
                     'min_value': 0,     # The minimum value for our radar chart, which will be the center point of the chart
                     'max_value': 20,    # The maximum value for our radar chart, which will be the outer edge of the chart
-                    'tick_count': 2,    # Number of tick lines between the center and outer edge of the chart
-                    'show_tick_labels': False,      # Whether to show the labels for each tick line or not
-                    'rotate_node_titles': True,    # Whether to keep our titles flat and not rotate them with the chart or not
+                    'tick_count': app.settings.data.get('widget_defaults', {}).get('tick_count', 2),    # Number of tick lines between the center and outer edge of the chart
+                    'show_tick_labels': app.settings.data.get('widget_defaults', {}).get('show_tick_labels', False),      # Whether to show the labels for each tick line or not
+                    'rotate_node_titles': app.settings.data.get('widget_defaults', {}).get('rotate_node_titles', True),    # Whether to keep our titles flat and not rotate them with the chart or not
                     'data_sets': [      # The data sets that make up the radar chart
                         {               # Starts maximized invisible so they can see other datasets at all times
                             'color': "transparent",
@@ -490,59 +490,67 @@ class Chart(Widget):
        
         info_column = ft.Column(
             expand=True, scroll="auto", spacing=0,
-            controls=groups_info + [
-                
-                
-                ft.Divider(),
+            controls=groups_info 
+        )
 
-                
-                # Appearence and information sections
-                ft.Text(f"\tAppearence", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                ft.Container(height=10),
-                
-                ft.Container(height=10),
+        self.sidebar_header.controls.insert(
+            1,
+            ft.MenuBar(
+                [
+                    ft.SubmenuButton(
+                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, "primary"),
+                        [
+                            
+                            ft.Switch(
+                                value=self.data.get('bar_data', {}).get('stack_rods', False), 
+                                label="\tStack Rods", on_change=_set_stacked_rods
+                            ),
+                            ft.Switch(
+                                value=True if self.data.get('bar_data', {}).get('rod_shape', "rounded") == "rounded" else False, 
+                                label="\tRounded Rods", on_change=_set_rod_shape
+                            ),
 
-                # Max y value   
-                ft.TextField(
-                    label="Max Y Value", value=str(self.data.get('bar_data', {}).get('max_y', 20)), 
-                    input_filter=ft.NumbersOnlyInputFilter(), data="max", on_blur=_set_max_value
-                ),
-                
-
-                # Rod options
-                ft.Row([
-                    ft.Text("Rod Width", theme_style=ft.TextThemeStyle.LABEL_LARGE),
-                    ft.Slider(
-                        value=self.data.get('bar_data', {}).get('rod_width', 30), min=10, max=100, 
-                        label="{value}", expand=True, on_change=_set_rod_width
+                            # Axis and Grid line options
+                            ft.Switch(
+                                value=self.data.get('bar_data', {}).get('show_labels', False), 
+                                label="\tShow Axis Labels", on_change=_set_show_labels
+                            ),
+                            ft.Switch(
+                                value=self.data.get('bar_data', {}).get('show_horizontal_grid_lines', False), 
+                                label="\tShow Horizontal Grid Lines", on_change=_set_grid_lines, data="horizontal"
+                            ),
+                            ft.Switch(
+                                value=self.data.get('bar_data', {}).get('show_vertical_grid_lines', False), 
+                                label="\tShow Vertical Grid Lines", on_change=_set_grid_lines, data="vertical"
+                            ),
+                            ft.TextField(
+                                label="Max Y Value", value=str(self.data.get('bar_data', {}).get('max_y', 20)), 
+                                input_filter=ft.NumbersOnlyInputFilter(), data="max", on_blur=_set_max_value,
+                                margin=ft.Margin.only(top=6, left=10, right=10), border_color=ft.Colors.OUTLINE_VARIANT,
+                                border_radius=4, dense=True
+                            ),
+                            
+                            # Rod options
+                            ft.Row([
+                                ft.Text("\t\tRod Width", theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                                ft.Slider(
+                                    value=self.data.get('bar_data', {}).get('rod_width', 30), min=10, max=100, 
+                                    label="{value}", expand=True, on_change=_set_rod_width
+                                ),
+                            ], spacing=0),
+                            
+                        ],
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                        tooltip="Adjust the settings for the Bar Chart widget. This affects ALL Bar Chart Widgets"
                     ),
-                ], spacing=0),
-                ft.Switch(
-                    value=self.data.get('bar_data', {}).get('stack_rods', False), 
-                    label="\tStack Rods", on_change=_set_stacked_rods
+                ],
+                style=ft.MenuStyle(
+                    bgcolor="transparent", shadow_color="transparent",
+                    shape=ft.RoundedRectangleBorder(radius=4),
+                    padding=ft.Padding.all(0)
                 ),
-                ft.Switch(
-                    value=True if self.data.get('bar_data', {}).get('rod_shape', "rounded") == "rounded" else False, 
-                    label="\tRounded Rods", on_change=_set_rod_shape
-                ),
-
-                # Axis and Grid line options
-                ft.Switch(
-                    value=self.data.get('bar_data', {}).get('show_labels', False), 
-                    label="\tShow Axis Labels", on_change=_set_show_labels
-                ),
-                ft.Switch(
-                    value=self.data.get('bar_data', {}).get('show_horizontal_grid_lines', False), 
-                    label="\tShow Horizontal Grid Lines", on_change=_set_grid_lines, data="horizontal"
-                ),
-                ft.Switch(
-                    value=self.data.get('bar_data', {}).get('show_vertical_grid_lines', False), 
-                    label="\tShow Vertical Grid Lines", on_change=_set_grid_lines, data="vertical"
-                ),
-
-                
-                
-            ]
+            )
         )
 
         
@@ -1040,10 +1048,12 @@ class Chart(Widget):
         ''' Reloads/Rebuilds our widget based on current data '''
 
 
-        if self.data.get('type', "") == "bar":
+        if self.data.get('chart_type', "") == "bar":
             self.bar_chart_view()
         else:
             self.radar_chart_view()
+
+        print(f"Reloaded widget: {self.data.get('title', '')} with chart type:", self.data.get('chart_type', ""))
 
         #self._render_widget()
         

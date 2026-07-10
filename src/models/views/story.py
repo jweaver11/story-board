@@ -161,7 +161,7 @@ class Story(ft.View):
             os.makedirs(folder_path, exist_ok=True) 
 
             # Update data and refresh
-            self.update_data(**{'folders': {folder_path: {'name': name, 'color': app.settings.data.get('default_category_color', "primary"), 'is_expanded': True}}})
+            self.update_data(**{'folders': {folder_path: {'name': name, 'is_expanded': True, 'color': app.settings.data.get('story', {}).get('default_category_color', "primary")}}})
             self.active_rail.reload_rail()
 
         # Handle errors

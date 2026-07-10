@@ -63,14 +63,14 @@ class WorkspacesRail(ft.Container):
         ''' Reorders our list based on the drag and drop, saves the new order in settings '''
         from models.app import app    # Always grabs updated reference when re-ordering
 
-        workspaces_rail_order = app.settings.data.get('workspaces_rail_order', ["content", "characters", "plotlines", "world_building", "canvas"])
+        workspaces_rail_order = app.settings.data.get('story', {}).get('workspaces_rail_order', ["content", "characters", "plotlines", "world_building", "canvas"])
 
         # Reorders our list based on the drag and drop
         item = workspaces_rail_order.pop(e.old_index)
         workspaces_rail_order.insert(e.new_index, item)
 
         # Save the new order to settings
-        app.settings.update_data(**{'workspaces_rail_order': workspaces_rail_order})
+        app.settings.update_data(**{'story': {'workspaces_rail_order': workspaces_rail_order}})
 
         self.reload_rail(story)  # Reload the rail to apply changes
 
@@ -192,7 +192,7 @@ class WorkspacesRail(ft.Container):
 
         # Goes through our workspace order, and adds the correct control to our list for the rail
         # We do it this way so when the app re-orders the rail, it will save their changes
-        for workspace in app.settings.data.get('workspaces_rail_order', []):     # Just a list of strings
+        for workspace in app.settings.data.get('story', {}).get('workspaces_rail_order', []):     # Just a list of strings
             if workspace == "content":
                 workspaces_rail.append(ft.ReorderableDragHandle(content_rail))   # Add our corresponding workspace selector rail to the list
             elif workspace == "characters":
