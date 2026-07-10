@@ -62,7 +62,6 @@ class Chart(Widget):
                     'groups': [
                         #{
                             #'name': "Group 1", 
-                            #'visible': True,
                             #'expanded': False,
                             #'rods': [
                                 #{'to_y': 5, 'color': "primary"},
@@ -112,185 +111,223 @@ class Chart(Widget):
     def bar_chart_view(self):
         ''' Builds out the body of our bar chart widget '''
 
+        # Updates the indices for the controls for groups and rods in the chart and sidebar
+        async def update_indices():
+            await update_group_indices()
+            await update_rod_indices()
 
-        async def _toggle_group_visibility(e):
-            idx = e.control.data
-            group = self.data.get('bar_data', {}).get('groups', [])[idx]
-            group['visible'] = not group.get('visible', True)
-            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
-            self.reload_widget()
+        # Update each label in the chart and expansion tile delete button in the sidebar
+        async def update_group_indices():
+            for group_idx, label in enumerate(self.data.get('bar_data', {}).get('groups', [])):
+                chart.bottom_axis.labels[group_idx].value = group_idx                   # Value of label on chart 
+                chart.bottom_axis.labels[group_idx].label.data = group_idx              # Data of tf for changing
+                sidebar_bar_group_column.controls[group_idx].trailing.data = group_idx  # Delete button for that group in sidebar
 
-        async def _update_group_title(e):
-            idx = e.control.data
-            new_title = e.control.value
-            self.data.get('bar_data', {}).get('groups', [])[idx]['name'] = new_title
-            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
-            chart.bottom_axis.labels[idx].label = new_title
-            chart.update()
+        # Updates the indices for each rod within each group in the sidebar and chart
+        async def update_rod_indices():
+            for group_idx, exp_tile in enumerate(sidebar_bar_group_column.controls):
+                rod_idx = 0     # Set our rod index to only incriment when we find a rod control and ignore other controls
+                for ctrl in exp_tile.controls:
+                    if isinstance(ctrl, ft.Row) and len(ctrl.controls) > 2:
+                        for item in ctrl.controls[0].items:     # Color picker popup items
+                            item.data = (group_idx, rod_idx)
+                        ctrl.controls[2].data = (group_idx, rod_idx)    # Slider
+                        ctrl.controls[4].data = (group_idx, rod_idx)    # Delete button
+                        rod_idx += 1
 
-        async def _delete_group(e):
-            idx = e.control.data
+        # Create a new group with default data in data, chart, and sidebar
+        async def create_group(e: ft.Event):
 
-            async def _delete_group_confirm(_):
-                
-                self.data.get('bar_data', {}).get('groups', []).pop(idx)
-                self.update_data(**{'bar_data': self.data.get('bar_data', {})})
-                self.reload_widget()
-                self.page.pop_dialog()
-                
-
-            group_title = self.data.get('bar_data', {}).get('groups', [])[idx].get('name', "Group")
-
-            dlg = ft.AlertDialog(
-                title=f"Are you sure you want to delete {group_title}?",
-                actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
-                    ft.TextButton("Delete", on_click=_delete_group_confirm, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
-                ]
-            )
-            self.page.show_dialog(dlg)
-
-        async def _update_expanded_state(e):
-            expanded = e.control.expanded
-            idx = e.control.data
-            self.data.get('bar_data', {}).get('groups', [])[idx]['expanded'] = expanded
-            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
-
-        async def _add_rod_clicked(e):
-            idx = e.control.data
-            group = self.data.get('bar_data', {}).get('groups', [])[idx]
+            # Give med value for rod
             median_value = int(self.data.get('bar_data', {}).get('max_y', 20) / 2)
             if median_value < self.data.get('radar_data', {}).get('min_value', 0):
                 median_value = int(self.data.get('radar_data', {}).get('min_value', 0))
-            group['rods'].append({
+
+            # Add rod to data and update
+            self.data['bar_data']['groups'].append({
+                'name': f"Group {len(self.data.get('bar_data', {}).get('groups', [])) + 1}",
+                'expanded': False,
+                'rods': [
+                    {
+                        'to_y': median_value, 
+                        'color': "primary"
+                    }
+                ]
+            })
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
+
+            # Add the new group to the sidebar, chart, and bottom chart axis labels. 
+            sidebar_bar_group_column.controls.append(create_sidebar_bar_group(len(self.data.get('bar_data', {}).get('groups', [])) - 1, self.data.get('bar_data', {}).get('groups', [])[-1], is_new=True))
+            chart.groups.append(create_chart_bar_group(len(self.data.get('bar_data', {}).get('groups', [])) - 1, self.data.get('bar_data', {}).get('groups', [])[-1]))
+            chart.bottom_axis.labels.append(create_bar_group_label(len(self.data.get('bar_data', {}).get('groups', [])) - 1, self.data.get('bar_data', {}).get('groups', [])[-1].get('name', f"Group {len(self.data.get('bar_data', {}).get('groups', []))}")))
+            self.update()
+            await update_indices()      # Update indices 
+            
+        # Deletes a group from data, chart, and sidebar
+        async def delete_group(e: ft.Event):
+            idx = e.control.data    
+            # Delete from data
+            self.data.get('bar_data', {}).get('groups', []).pop(idx)
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
+
+            # Delete from UI
+            chart.groups.pop(idx)
+            chart.bottom_axis.labels.pop(idx)   # Remove the corresponding bottom axis label from the chart
+            sidebar_bar_group_column.controls.pop(idx)
+            self.update()
+            await update_indices()   # Update indices after deleting a group
+
+        # Creates a rod for a specific group in the data, chart, and sidebar
+        async def create_rod(e: ft.Event):
+            # Grab idx and data
+            group_idx = e.control.data
+            group_data = self.data.get('bar_data', {}).get('groups', [])[group_idx]
+
+            # Median value for new rod
+            median_value = int(self.data.get('bar_data', {}).get('max_y', 20) / 2)
+            if median_value < self.data.get('radar_data', {}).get('min_value', 0):
+                median_value = int(self.data.get('radar_data', {}).get('min_value', 0))
+
+            # Add to data and update the data
+            group_data['rods'].append({
                 'to_y': median_value, 
                 'color': "primary"
             })
+            self.data['bar_data']['groups'][group_idx] = group_data
             self.update_data(**{'bar_data': self.data.get('bar_data', {})})
-            self.reload_widget()
 
-        async def _update_rod_value(e):
-            idx, rod_idx = e.control.data
+            # Grab that rod data and its new index
+            rod_data = group_data['rods'][-1]
+            new_rod_idx = len(self.data.get('bar_data', {}).get('groups', [])[group_idx]['rods']) - 1
+
+            # Add the rod to the group on the char
+            chart.groups[group_idx].rods.append(
+                fch.BarChartRod(
+                    from_y=0, to_y=rod_data.get('to_y', 0), 
+                    width=self.data.get('bar_data', {}).get('rod_width', 30),
+                    border_radius=None if self.data.get('bar_data', {}).get('rod_shape', "rounded") == "rounded" else ft.BorderRadius.only(top_left=2, top_right=2),
+                    color=rod_data.get('color', self.data.get('color', ft.Colors.PRIMARY)),
+                ) 
+            )
+            # Add it to the sidebar as well
+            sidebar_bar_group_column.controls[group_idx].controls.append(create_sidebar_rod(group_idx, new_rod_idx, rod_data))
+            self.update()
+            await update_indices()
+
+        # Updates the value of our rod on the chart in real-time as the slider is moved, without adjusting data
+        async def update_rod_value(e: ft.Event):
+            group_idx, rod_idx = e.control.data
             new_value = int(e.control.value)
 
-            # Update our data model
-            self.data['bar_data']['groups'][idx]['rods'][rod_idx]['to_y'] = new_value
-
-            # Find acutal index here in case of hidden groups
-            visible_idx = -1
-            for i, group in enumerate(self.data.get('bar_data', {}).get('groups', [])):
-                if group.get('visible', True):
-                    visible_idx += 1
-                if i == idx:
-                    break
-
             # Update the chart visually in real-time
-            chart.groups[visible_idx].rods[rod_idx].to_y = new_value
+            chart.groups[group_idx].rods[rod_idx].to_y = new_value
             chart.update()
 
-        async def _delete_rod_clicked(e):
-            idx, rod_idx = e.control.data
+        # Updates the value of our rod in our data once at the end of a slider call
+        async def update_rod_data(e: ft.Event):
+            group_idx, rod_idx = e.control.data
+            new_value = int(e.control.value)
 
-            
-            self.data['bar_data']['groups'][idx]['rods'].pop(rod_idx)
+            # Update our data 
+            self.data['bar_data']['groups'][group_idx]['rods'][rod_idx]['to_y'] = new_value
             self.update_data(**{'bar_data': self.data.get('bar_data', {})})
-            self.reload_widget()
-            self.page.pop_dialog()
 
-        async def _change_rod_color(e):
-            idx, rod_idx = e.control.data
+        # Deletes a rod from the chart, data, and sidebar
+        async def delete_rod(e: ft.Event):
+            group_idx, rod_idx = e.control.data
+
+            self.data['bar_data']['groups'][group_idx]['rods'].pop(rod_idx)
+            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
+            chart.groups[group_idx].rods.pop(rod_idx)
+            sidebar_bar_group_column.controls[group_idx].controls.pop(rod_idx+2)
+            self.update()
+            await update_indices()
+
+        # Changes color of a rod in data, chart, and sidebar
+        async def change_rod_color(e: ft.Event):
+            group_idx, rod_idx = e.control.data
             new_color = e.control.content
             e.control.parent.icon_color = new_color
             e.control.parent.update()   
 
-            self.data['bar_data']['groups'][idx]['rods'][rod_idx]['color'] = new_color
+            self.data['bar_data']['groups'][group_idx]['rods'][rod_idx]['color'] = new_color
             self.update_data(**{'bar_data': self.data.get('bar_data', {})})
-            chart.groups[idx].rods[rod_idx].color = new_color
+            chart.groups[group_idx].rods[rod_idx].color = new_color
             chart.update()
 
-           
+        def create_sidebar_rod(group_idx: int, rod_idx: int, rod: dict):
+            min_value=0
+            max_value=self.data.get('bar_data', {}).get('max_y', 20)
+            return ft.Row([
+                ft.PopupMenuButton(
+                    icon=ft.Icons.COLOR_LENS_OUTLINED, 
+                    icon_color=rod.get('color', ft.Colors.PRIMARY),
+                    menu_padding=ft.Padding.all(0),
+                    tooltip="Change Color",
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                    items=[
+                        ft.PopupMenuItem(
+                            color.capitalize(), label_text_style=ft.TextStyle(color=color, weight=ft.FontWeight.BOLD),
+                            mouse_cursor=ft.MouseCursor.CLICK,
+                            on_click=change_rod_color, data=(group_idx, rod_idx)
+                        ) for color in colors
+                    ]
+                ),
+                ft.Text(str(min_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                ft.Slider(
+                    value=rod.get('to_y', 0), 
+                    min=min_value,
+                    max=max_value, 
+                    label="{value}", 
+                    on_change=update_rod_value, on_change_end=update_rod_data,
+                    data=(group_idx, rod_idx),
+                    expand=True,
+                    divisions=max_value - min_value if max_value > min_value else None,
+                ),
+                ft.Text(str(max_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, on_click=delete_rod, data=(group_idx, rod_idx), mouse_cursor=ft.MouseCursor.CLICK)    
+            ], spacing=0)
 
-        # Class to hold our datasets in the dropdown menu in the info column
-        class BarGroup(ft.ExpansionTile):
-            def __init__(self, title: str, color: str, rods: list, visible: bool, idx: int, expanded: bool, min_value: int = 0, max_value: int = 20):
-                self.index = idx
-            
-                super().__init__(
-                    leading=ft.IconButton(
-                        ft.Icons.VISIBILITY_OUTLINED if visible else ft.Icons.VISIBILITY_OFF_OUTLINED,
-                        ft.Colors.PRIMARY,
-                        on_click=_toggle_group_visibility,
-                        mouse_cursor=ft.MouseCursor.CLICK, 
-                        data=idx,
-                    ),
-                    title=ft.TextField(
-                        title, dense=True, data=idx, expand=True,
-                        suffix_icon=ft.IconButton(
-                            ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 
-                            mouse_cursor=ft.MouseCursor.CLICK, data=idx,
-                            on_click=_delete_group
-                        ),
-                        on_blur=_update_group_title
-                    ),
-                    dense=True, tile_padding=ft.Padding.only(right=20), controls_padding=ft.Padding.only(right=30, left=30),
-                    expanded=expanded, 
-                    controls=[
-                        ft.Row([
-                            ft.Text("Rods", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),
-                            ft.TextButton(
-                                "Add New Rod", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD)), 
-                                on_click=_add_rod_clicked, 
-                                data=idx
-                            )
-                        ]),
-                    ] + [
-                        
-                        ft.Row([
-                            ft.PopupMenuButton(
-                                icon=ft.Icons.COLOR_LENS_OUTLINED, 
-                                icon_color=rod.get('color', ft.Colors.PRIMARY) if visible else ft.Colors.ON_SURFACE_VARIANT, 
-                                menu_padding=ft.Padding.all(0),
-                                tooltip="Change Color",
-                                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-                                items=[
-                                    ft.PopupMenuItem(
-                                        color.capitalize(), label_text_style=ft.TextStyle(color=color, weight=ft.FontWeight.BOLD),
-                                        mouse_cursor=ft.MouseCursor.CLICK,
-                                        on_click=_change_rod_color, data=(idx, i)
-                                    ) for color in colors
-                                ]
-                            ),
-                            ft.Text(str(min_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
-                            ft.Slider(
-                                value=rod.get('to_y', 0), 
-                                min=min_value,
-                                max=max_value, 
-                                label="{value}", on_change=_update_rod_value, 
-                                data=(idx, i),
-                                expand=True,
-                                divisions=max_value - min_value if max_value > min_value else None,
-                                disabled=True if not visible else False
-                            ),
-                            ft.Text(str(max_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
-                            ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, on_click=_delete_rod_clicked, data=(idx, i), mouse_cursor=ft.MouseCursor.CLICK)    
-                        ], spacing=0) for i, rod in enumerate(rods)
-                    ],
-                    data=idx,
-                    on_change=_update_expanded_state,
-                    
-                )
+        # Returns an expansion tile for the sidebar for the passed in bar group idx and data
+        def create_sidebar_bar_group(group_idx: int, group_data: dict, is_new: bool=False) -> ft.ExpansionTile:
+            # Set data from groups
+            title=group_data.get('name', "Group")
+            color=group_data.get('rods', [{}])[0].get('color', self.data.get('color', ft.Colors.PRIMARY)) if len(group_data.get('rods', [])) > 0 else self.data.get('color', ft.Colors.PRIMARY) 
+            rods=[rod for rod in group_data.get('rods', [])]
+
+            # Build expansion_tile functionality
+            return ft.ExpansionTile(
+                ft.Text(title, weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                trailing=ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK, data=group_idx, on_click=delete_group),
+                dense=True, tile_padding=ft.Padding.only(left=10, right=0), controls_padding=ft.Padding.only(right=20, left=20),
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, collapsed_bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+                data=group_idx, shape=ft.RoundedRectangleBorder(radius=4), collapsed_shape=ft.RoundedRectangleBorder(radius=4),
+                expanded=is_new,
+                controls=[
+                    ft.Divider(2, 2),
+                    ft.Row([
+                        ft.Text("Rods", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),
+                        ft.IconButton(
+                            ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                            self.data.get('color', ft.Colors.PRIMARY),
+                            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD)), 
+                            on_click=create_rod, 
+                            data=group_idx
+                        )
+                    ], spacing=0),
+                ] + [create_sidebar_rod(group_idx, rod_idx, rod) for rod_idx, rod in enumerate(rods)],
+            )
                 
 
         # TODO:
         # Add labels to Bar Chart Groups
         # Hide Groups. And rods????
 
-        async def _set_axis_title(e):
+        async def set_chart_axis_title(e):
             new_title = e.control.value
-            axis = e.control.data
+            axis_type = e.control.data
 
-            match axis:
+            match axis_type:
 
                 # Update our data and chart to reflect
                 case "left":
@@ -304,26 +341,30 @@ class Chart(Widget):
 
             self.update_data(**{'bar_data': self.data.get('bar_data', {})})
 
-        async def _set_max_value(e):
+        async def set_max_y_value(e: ft.Event):
             
             if e.control.value == "" or e.control.value is None:
                 return
             new_value = int(e.control.value)
-            self.data['bar_data']['max_y'] = new_value       
 
-            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
+            # Update data
+            self.update_data(**{'bar_data': {'max_y': new_value}})
+
+            # Update chart
             chart.max_y = new_value
-            chart.update()   
 
-        async def _set_show_labels(e):
-            self.data['bar_data']['show_labels'] = e.control.value
-            chart.left_axis.show_labels = e.control.value
-            chart.bottom_axis.show_labels = e.control.value
+            # Update rods in sidebar
+            self.update()   
 
-            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
+        async def set_show_labels(e: ft.Event):
+            new_show_labels_value = e.control.value
+            chart.left_axis.show_labels = new_show_labels_value
+            chart.bottom_axis.show_labels = new_show_labels_value
+
+            self.update_data(**{'bar_data': {'show_labels': new_show_labels_value}})
             chart.update()
         
-        async def _set_rod_width(e):
+        async def set_rod_width(e: ft.Event):
             
             new_width = int(e.control.value)
             self.data['bar_data']['rod_width'] = new_width
@@ -334,7 +375,7 @@ class Chart(Widget):
             self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.update()
 
-        async def _set_stacked_rods(e):
+        async def set_stacked_rods(e: ft.Event):
             self.data['bar_data']['stack_rods'] = e.control.value
             for group in chart.groups:
                 group.group_vertically = e.control.value
@@ -342,7 +383,7 @@ class Chart(Widget):
             self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.update()
 
-        async def _set_rod_shape(e):
+        async def set_rod_shape(e: ft.Event):
             new_shape = "rounded" if e.control.value else "square"
             self.data['bar_data']['rod_shape'] = new_shape
             for group in chart.groups:
@@ -352,7 +393,7 @@ class Chart(Widget):
             self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.update()
 
-        async def _set_grid_lines(e):
+        async def set_grid_lines(e: ft.Event):
             grid_line_type = e.control.data
             show_grid_lines = e.control.value
 
@@ -367,22 +408,54 @@ class Chart(Widget):
             self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.update()
 
-        x_labels = []
-        for idx, group in enumerate(self.data.get('bar_data', {}).get('groups', [])):
-            if group.get('visible', True) == False:
-                continue
-            
-            x_labels.append(fch.ChartAxisLabel(idx, label=group.get('name', "")))
+        # Returns the small label control under each bar group on the chart
+        def create_bar_group_label(idx: int, name: str) -> fch.ChartAxisLabel:
+
+            # Updates the label in data and in the sidebar
+            async def set_bar_group_label(e: ft.Event):
+                idx = e.control.data
+                new_label = e.control.value
+                self.data['bar_data']['groups'][idx]['name'] = new_label
+                self.update_data(**{'bar_data': self.data.get('bar_data', {})})
+                sidebar_bar_group_column.controls[idx].title.value = new_label
+                sidebar_bar_group_column.controls[idx].update()
+
+            return fch.ChartAxisLabel(
+                idx, 
+                label=ft.TextField(
+                    value=name, dense=True, width=120, clip_behavior=ft.ClipBehavior.NONE,
+                    data=idx, on_blur=set_bar_group_label, border=ft.InputBorder.NONE,
+                    text_align=ft.TextAlign.CENTER, text_style=ft.TextStyle(size=14, weight=ft.FontWeight.W_500)
+                )
+                
+            )
+
+
+        def create_chart_bar_group(idx: int, group_data: dict) -> fch.BarChartGroup:
+            return fch.BarChartGroup(
+                idx,
+                spacing=4, 
+                group_vertically=self.data.get('bar_data', {}).get('stack_rods', False),
+                rods=[
+                    fch.BarChartRod(
+                        from_y=0, to_y=rod.get('to_y', 0), 
+                        width=self.data.get('bar_data', {}).get('rod_width', 30),
+                        border_radius=None if self.data.get('bar_data', {}).get('rod_shape', "rounded") == "rounded" else ft.BorderRadius.only(top_left=2, top_right=2),
+                        color=rod.get('color', self.data.get('color', ft.Colors.PRIMARY)),
+                    ) for rod in group_data.get('rods', [])
+                ]
+            )
 
         # Our bar chart
         chart = fch.BarChart(
+            groups=[create_chart_bar_group(idx, group) for idx, group in enumerate(self.data.get('bar_data', {}).get('groups', []))],
             
             # User customizable options
             max_y=self.data.get('bar_data', {}).get('max_y', 20),
             left_axis=fch.ChartAxis(
                 ft.TextField(
                     value=self.data.get('bar_data', {}).get('left_axis_title', ""), 
-                    data="left", on_blur=_set_axis_title, border=ft.InputBorder.NONE,
+                    data="left", on_blur=set_chart_axis_title, border=ft.InputBorder.NONE,
                     text_align=ft.TextAlign.CENTER, text_style=ft.TextStyle(size=18, weight=ft.FontWeight.BOLD)
                 ), 
                 title_size=40, label_size=30,
@@ -391,12 +464,12 @@ class Chart(Widget):
             bottom_axis=fch.ChartAxis(
                 ft.TextField(
                     value=self.data.get('bar_data', {}).get('bottom_axis_title', ""), 
-                    data="bottom", on_blur=_set_axis_title, border=ft.InputBorder.NONE,
+                    data="bottom", on_blur=set_chart_axis_title, border=ft.InputBorder.NONE,
                     text_align=ft.TextAlign.CENTER, text_style=ft.TextStyle(size=18, weight=ft.FontWeight.BOLD)
                 ),
                 title_size=40, label_size=30,
                 show_labels=self.data.get('bar_data', {}).get('show_labels', False),
-                labels=x_labels
+                labels=[create_bar_group_label(idx, group.get('name', f"Group {idx + 1}")) for idx, group in enumerate(self.data.get('bar_data', {}).get('groups', []))]
             ),
             top_axis=fch.ChartAxis(ft.Text(""), labels=fch.ChartAxisLabel(0, " ")), # Invisible label for behavior purposes
             horizontal_grid_lines=fch.ChartGridLines() if self.data.get('bar_data', {}).get('show_horizontal_grid_lines', False) else None,
@@ -410,87 +483,19 @@ class Chart(Widget):
                 left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT),
                 bottom=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT),
             ),
-            
         )
-
-        # Load our data into the chart
-        for idx, group in enumerate(self.data.get('bar_data', {}).get('groups', [])):
-            # Skip hidden ones
-            if group.get('visible', True) == False:
-                continue
-            group = fch.BarChartGroup(
-                idx,
-                spacing=4, 
-                group_vertically=self.data.get('bar_data', {}).get('stack_rods', False),
-                rods=[
-                    fch.BarChartRod(
-                        from_y=0, to_y=rod.get('to_y', 0), 
-                        width=self.data.get('bar_data', {}).get('rod_width', 30),
-                        border_radius=None if self.data.get('bar_data', {}).get('rod_shape', "rounded") == "rounded" else ft.BorderRadius.only(top_left=2, top_right=2),
-                        color=rod.get('color', self.data.get('color', ft.Colors.PRIMARY)),
-                    ) for rod in group.get('rods', [])
-                ]
-            )
-            chart.groups.append(group)
-
         
        
         
-        # Adding a new dataset with default values in each node
-        async def _add_group(e):
-            median_value = int(self.data.get('bar_data', {}).get('max_y', 20) / 2)
-            if median_value < self.data.get('radar_data', {}).get('min_value', 0):
-                median_value = int(self.data.get('radar_data', {}).get('min_value', 0))
-            self.data['bar_data']['groups'].append({
-                'name': f"Group {len(self.data.get('bar_data', {}).get('groups', [])) + 1}",
-                'visible': True,
-                'expanded': False,
-                'rods': [
-                    {
-                        'to_y': median_value, 
-                        'color': "primary"
-                    }
-                ]
-            })
-            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
-            self.reload_widget()
         
-        def _get_groups_info() -> list[ft.Control]:
-            controls = [
-                # Data for our bar chart info sections
-                ft.Row([
-                    ft.Text(f"\tData", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                    ft.IconButton(
-                        ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                        self.data.get('color', ft.Colors.PRIMARY),
-                        mouse_cursor=ft.MouseCursor.CLICK,
-                        on_click=_add_group,
-                    ),
-                ], spacing=0),
-            ]
-
-            for idx, group in enumerate(self.data.get('bar_data', {}).get('groups', [])):
-                controls.append(
-                    BarGroup(
-                        title=group.get('name', "Group"), 
-                        color=group.get('rods', [{}])[0].get('color', self.data.get('color', ft.Colors.PRIMARY)) if len(group.get('rods', [])) > 0 else self.data.get('color', ft.Colors.PRIMARY), 
-                        rods=[rod for rod in group.get('rods', [])], 
-                        visible=group.get('visible', True),
-                        idx=idx, 
-                        expanded=group.get('expanded', False),
-                        min_value=0,
-                        max_value=self.data.get('bar_data', {}).get('max_y', 20)
-                    )
-                )
-
-            return controls
+        
 
 
-        groups_info = _get_groups_info()
+        bar_group_sidebar_controls = [create_sidebar_bar_group(idx, group) for idx, group in enumerate(self.data.get('bar_data', {}).get('groups', []))]
        
-        info_column = ft.Column(
-            expand=True, scroll="auto", spacing=0,
-            controls=groups_info 
+        sidebar_bar_group_column = ft.Column(
+            expand=True, scroll="auto", #spacing=0,
+            controls=bar_group_sidebar_controls
         )
 
         self.sidebar_header.controls.insert(
@@ -503,29 +508,29 @@ class Chart(Widget):
                             
                             ft.Switch(
                                 value=self.data.get('bar_data', {}).get('stack_rods', False), 
-                                label="\tStack Rods", on_change=_set_stacked_rods
+                                label="\tStack Rods", on_change=set_stacked_rods
                             ),
                             ft.Switch(
                                 value=True if self.data.get('bar_data', {}).get('rod_shape', "rounded") == "rounded" else False, 
-                                label="\tRounded Rods", on_change=_set_rod_shape
+                                label="\tRounded Rods", on_change=set_rod_shape
                             ),
 
                             # Axis and Grid line options
                             ft.Switch(
                                 value=self.data.get('bar_data', {}).get('show_labels', False), 
-                                label="\tShow Axis Labels", on_change=_set_show_labels
+                                label="\tShow Axis Labels", on_change=set_show_labels
                             ),
                             ft.Switch(
                                 value=self.data.get('bar_data', {}).get('show_horizontal_grid_lines', False), 
-                                label="\tShow Horizontal Grid Lines", on_change=_set_grid_lines, data="horizontal"
+                                label="\tShow Horizontal Grid Lines", on_change=set_grid_lines, data="horizontal"
                             ),
                             ft.Switch(
                                 value=self.data.get('bar_data', {}).get('show_vertical_grid_lines', False), 
-                                label="\tShow Vertical Grid Lines", on_change=_set_grid_lines, data="vertical"
+                                label="\tShow Vertical Grid Lines", on_change=set_grid_lines, data="vertical"
                             ),
                             ft.TextField(
                                 label="Max Y Value", value=str(self.data.get('bar_data', {}).get('max_y', 20)), 
-                                input_filter=ft.NumbersOnlyInputFilter(), data="max", on_blur=_set_max_value,
+                                input_filter=ft.NumbersOnlyInputFilter(), data="max", on_blur=set_max_y_value,
                                 margin=ft.Margin.only(top=6, left=10, right=10), border_color=ft.Colors.OUTLINE_VARIANT,
                                 border_radius=4, dense=True
                             ),
@@ -535,14 +540,14 @@ class Chart(Widget):
                                 ft.Text("\t\tRod Width", theme_style=ft.TextThemeStyle.LABEL_LARGE),
                                 ft.Slider(
                                     value=self.data.get('bar_data', {}).get('rod_width', 30), min=10, max=100, 
-                                    label="{value}", expand=True, on_change=_set_rod_width
+                                    label="{value}", expand=True, on_change=set_rod_width
                                 ),
                             ], spacing=0),
                             
                         ],
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                         style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                        tooltip="Adjust the settings for the Bar Chart widget. This affects ALL Bar Chart Widgets"
+                        tooltip="Adjust the settings for this bar chart."
                     ),
                 ],
                 style=ft.MenuStyle(
@@ -553,8 +558,17 @@ class Chart(Widget):
             )
         )
 
-        
-        self.sidebar_body.controls.append(info_column)
+        self.sidebar_body.controls.append(
+            ft.Row([
+                ft.Text(f"\tGroups", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.IconButton(
+                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                    self.data.get('color', ft.Colors.PRIMARY),
+                    mouse_cursor=ft.MouseCursor.CLICK,
+                    on_click=create_group,
+                ),
+            ], spacing=0))
+        self.sidebar_body.controls.append(sidebar_bar_group_column)
 
         self.content = ft.Row([
             ft.Container(chart, expand=3, padding=ft.Padding.only(bottom=20, left=20)),
@@ -975,7 +989,7 @@ class Chart(Widget):
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             chart.update()
 
-        info_column = ft.Column(
+        sidebar_bar_group_column = ft.Column(
             data_sets + [
                 
                 ft.Row([
@@ -1025,7 +1039,7 @@ class Chart(Widget):
             expand=True, scroll="auto", spacing=0
         )
 
-        self.sidebar_body.controls.append(info_column)
+        self.sidebar_body.controls.append(sidebar_bar_group_column)
 
         self.content = ft.Row(
             [
@@ -1053,7 +1067,9 @@ class Chart(Widget):
         else:
             self.radar_chart_view()
 
-        print(f"Reloaded widget: {self.data.get('title', '')} with chart type:", self.data.get('chart_type', ""))
+        try:
 
-        #self._render_widget()
+            self.update()
+        except Exception as _:
+            pass
         

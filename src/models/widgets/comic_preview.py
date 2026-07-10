@@ -484,7 +484,7 @@ class ComicPreview(Widget):
                         ],
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                         style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                        tooltip="Adjust the settings for the Comic Preview widget. This affects ALL Comic Preview Widgets"
+                        tooltip="Adjust the settings for this widget."
                     ),
                 ],
                 style=ft.MenuStyle(
