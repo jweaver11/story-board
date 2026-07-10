@@ -122,7 +122,8 @@ class Settings(ft.View):
                         # Bar chart settings
                         'show_labels': True,           
                         'rod_shape': "rounded",          
-                        'rod_width': 30,         
+                        'rod_width': 30,     
+                        'rod_spacing': 4,    
                         'stack_rods': False,      
                         'show_horizontal_grid_lines': True,
                         'show_vertical_grid_lines': False,

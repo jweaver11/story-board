@@ -13,6 +13,7 @@ from styles.text_fields import TextField
 import flet_charts as fch
 from styles.colors import colors
 import math
+from styles.snack_bar import SnackBar
     
 
 class Chart(Widget):
@@ -59,6 +60,7 @@ class Chart(Widget):
                     'show_horizontal_grid_lines': app.settings.data.get('widget_defaults', {}).get('show_horizontal_grid_lines', True),
                     'show_vertical_grid_lines': app.settings.data.get('widget_defaults', {}).get('show_vertical_grid_lines', False),
                     'max_y': 20,        # The max y value of our chart, which is the value that will fill the whole chart. Should be higher than any value in our bars
+                    'rod_spacing': app.settings.data.get('widget_defaults', {}).get('rod_spacing', 10),   # The spacing between rods in the chart
                     'groups': [
                         #{
                             #'name': "Group 1", 
@@ -157,7 +159,7 @@ class Chart(Widget):
             self.update_data(**{'bar_data': self.data.get('bar_data', {})})
 
             # Add the new group to the sidebar, chart, and bottom chart axis labels. 
-            sidebar_bar_group_column.controls.append(create_sidebar_bar_group(len(self.data.get('bar_data', {}).get('groups', [])) - 1, self.data.get('bar_data', {}).get('groups', [])[-1], is_new=True))
+            sidebar_bar_group_column.controls.append(create_sidebar_group(len(self.data.get('bar_data', {}).get('groups', [])) - 1, self.data.get('bar_data', {}).get('groups', [])[-1], is_new=True))
             chart.groups.append(create_chart_bar_group(len(self.data.get('bar_data', {}).get('groups', [])) - 1, self.data.get('bar_data', {}).get('groups', [])[-1]))
             chart.bottom_axis.labels.append(create_bar_group_label(len(self.data.get('bar_data', {}).get('groups', [])) - 1, self.data.get('bar_data', {}).get('groups', [])[-1].get('name', f"Group {len(self.data.get('bar_data', {}).get('groups', []))}")))
             self.update()
@@ -245,21 +247,27 @@ class Chart(Widget):
 
         # Changes color of a rod in data, chart, and sidebar
         async def change_rod_color(e: ft.Event):
+            # Grab indices and new color
             group_idx, rod_idx = e.control.data
             new_color = e.control.content
-            e.control.parent.icon_color = new_color
-            e.control.parent.update()   
 
+            # Update data
             self.data['bar_data']['groups'][group_idx]['rods'][rod_idx]['color'] = new_color
             self.update_data(**{'bar_data': self.data.get('bar_data', {})})
-            chart.groups[group_idx].rods[rod_idx].color = new_color
-            chart.update()
 
+            # Update charts rod color and sidebar
+            chart.groups[group_idx].rods[rod_idx].color = new_color
+            e.control.parent.icon_color = new_color
+            self.update()
+
+        # Creates the rod controls for the sidebar inside a group expansion tile
         def create_sidebar_rod(group_idx: int, rod_idx: int, rod: dict):
+            # Set min and max
             min_value=0
             max_value=self.data.get('bar_data', {}).get('max_y', 20)
+
             return ft.Row([
-                ft.PopupMenuButton(
+                ft.PopupMenuButton(     # Change rod color button
                     icon=ft.Icons.COLOR_LENS_OUTLINED, 
                     icon_color=rod.get('color', ft.Colors.PRIMARY),
                     menu_padding=ft.Padding.all(0),
@@ -273,23 +281,27 @@ class Chart(Widget):
                         ) for color in colors
                     ]
                 ),
-                ft.Text(str(min_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
-                ft.Slider(
+                ft.Text(str(min_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),  # Display min value left of slider
+                ft.Slider(      # Slider to adjust rod value
                     value=rod.get('to_y', 0), 
                     min=min_value,
                     max=max_value, 
                     label="{value}", 
-                    on_change=update_rod_value, on_change_end=update_rod_data,
+                    on_change=update_rod_value,     # Adjust UI in real time updates
+                    on_change_end=update_rod_data,  # Adjust data after drag complete
                     data=(group_idx, rod_idx),
                     expand=True,
                     divisions=max_value - min_value if max_value > min_value else None,
                 ),
-                ft.Text(str(max_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
-                ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, on_click=delete_rod, data=(group_idx, rod_idx), mouse_cursor=ft.MouseCursor.CLICK)    
+                ft.Text(str(max_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),  # Display max value right of slider
+                ft.IconButton(      # Delete rod button
+                    ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, 
+                    on_click=delete_rod, data=(group_idx, rod_idx), mouse_cursor=ft.MouseCursor.CLICK
+                )    
             ], spacing=0)
 
-        # Returns an expansion tile for the sidebar for the passed in bar group idx and data
-        def create_sidebar_bar_group(group_idx: int, group_data: dict, is_new: bool=False) -> ft.ExpansionTile:
+        # Creates an expansion tile for the sidebar for the passed in bar group idx and data
+        def create_sidebar_group(group_idx: int, group_data: dict, is_new: bool=False) -> ft.ExpansionTile:
             # Set data from groups
             title=group_data.get('name', "Group")
             color=group_data.get('rods', [{}])[0].get('color', self.data.get('color', ft.Colors.PRIMARY)) if len(group_data.get('rods', [])) > 0 else self.data.get('color', ft.Colors.PRIMARY) 
@@ -297,17 +309,20 @@ class Chart(Widget):
 
             # Build expansion_tile functionality
             return ft.ExpansionTile(
-                ft.Text(title, weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
-                trailing=ft.IconButton(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK, data=group_idx, on_click=delete_group),
+                ft.Text(title, weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),   # Group title
+                trailing=ft.IconButton(     # Delete group button
+                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 
+                    mouse_cursor=ft.MouseCursor.CLICK, data=group_idx, on_click=delete_group
+                ),
                 dense=True, tile_padding=ft.Padding.only(left=10, right=0), controls_padding=ft.Padding.only(right=20, left=20),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, collapsed_bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                 data=group_idx, shape=ft.RoundedRectangleBorder(radius=4), collapsed_shape=ft.RoundedRectangleBorder(radius=4),
                 expanded=is_new,
                 controls=[
-                    ft.Divider(2, 2),
+                    ft.Divider(2, 2),   
                     ft.Row([
-                        ft.Text("Rods", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),
-                        ft.IconButton(
+                        ft.Text("Rods", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),   # Label of Rods
+                        ft.IconButton(      # Add new rod button
                             ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                             self.data.get('color', ft.Colors.PRIMARY),
                             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD)), 
@@ -315,102 +330,108 @@ class Chart(Widget):
                             data=group_idx
                         )
                     ], spacing=0),
-                ] + [create_sidebar_rod(group_idx, rod_idx, rod) for rod_idx, rod in enumerate(rods)],
+                ] + [create_sidebar_rod(group_idx, rod_idx, rod) for rod_idx, rod in enumerate(rods)],  # Rod controls
             )
                 
-
-        # TODO:
-        # Add labels to Bar Chart Groups
-        # Hide Groups. And rods????
-
-        async def set_chart_axis_title(e):
+        # Sets new title for the chart axis based on the axis type (left, bottom, top, right)
+        async def set_chart_axis_title(e: ft.Event):
             new_title = e.control.value
-            axis_type = e.control.data
+            axis_type = e.control.data + "_axis_title"
+            self.update_data(**{'bar_data': {axis_type: new_title}})
 
-            match axis_type:
-
-                # Update our data and chart to reflect
-                case "left":
-                    self.data['bar_data']['left_axis_title'] = new_title
-                case "bottom":
-                    self.data['bar_data']['bottom_axis_title'] = new_title
-                case "top":
-                    self.data['bar_data']['top_axis_title'] = new_title
-                case "right":
-                    self.data['bar_data']['right_axis_title'] = new_title
-
-            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
-
+        # Sets the maximum value for the Y-axis of the chart
         async def set_max_y_value(e: ft.Event):
             
+            # Handle empty values
             if e.control.value == "" or e.control.value is None:
+                e.control.value = str(chart.max_y)
+                e.control.update()
                 return
-            new_value = int(e.control.value)
-
+            
             # Update data
+            new_value = int(e.control.value)
             self.update_data(**{'bar_data': {'max_y': new_value}})
 
             # Update chart
             chart.max_y = new_value
+            chart.update()
 
-            # Update rods in sidebar
-            self.update()   
-
+        # Sets whether to show labels on the chart axes
         async def set_show_labels(e: ft.Event):
+            # Update data
+            self.update_data(**{'bar_data': {'show_labels': new_show_labels_value}})
+            # Update chart
             new_show_labels_value = e.control.value
             chart.left_axis.show_labels = new_show_labels_value
             chart.bottom_axis.show_labels = new_show_labels_value
-
-            self.update_data(**{'bar_data': {'show_labels': new_show_labels_value}})
             chart.update()
         
-        async def set_rod_width(e: ft.Event):
-            
+        # Sets the width of the rods in the chart to update real time
+        async def set_rod_width_value(e: ft.Event):
+            # Update data
             new_width = int(e.control.value)
-            self.data['bar_data']['rod_width'] = new_width
+            # Update the width of each rod in the chart
             for group in chart.groups:
                 for rod in group.rods:
                     rod.width = new_width
-
-            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.update()
 
+        # Save in data after done adjusting rod width
+        async def set_rod_width_data(e: ft.Event):
+            new_width = int(e.control.value)
+            self.update_data(**{'bar_data': {'rod_width': new_width}})
+
+        async def set_rod_spacing_value(e: ft.Event):
+            # Update data
+            new_spacing = int(e.control.value)
+            self.update_data(**{'bar_data': {'rod_spacing': new_spacing}})
+            # Update the spacing of each rod in the chart
+            for group in chart.groups:
+                group.spacing = new_spacing
+            chart.update()
+
+        # Save in data after done adjusting rod spacing
+        async def set_rod_spacing_data(e: ft.Event):
+            new_spacing = int(e.control.value)
+            self.update_data(**{'bar_data': {'rod_spacing': new_spacing}})
+
+        # Sets whether the rods in the chart should be stacked
         async def set_stacked_rods(e: ft.Event):
-            self.data['bar_data']['stack_rods'] = e.control.value
+            # Update data
+            stack_rods = e.control.value
+            self.update_data(**{'bar_data': {'stack_rods': stack_rods}})
+            # Update the stacking of each group in the chart
             for group in chart.groups:
                 group.group_vertically = e.control.value
-
-            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.update()
 
+        # Set the rod shape to either rounded or square 
         async def set_rod_shape(e: ft.Event):
+            # Update data
             new_shape = "rounded" if e.control.value else "square"
-            self.data['bar_data']['rod_shape'] = new_shape
+            self.update_data(**{'bar_data': {'rod_shape': new_shape}})
+            # Update the Chart UI
             for group in chart.groups:
                 for rod in group.rods:
                     rod.border_radius = None if new_shape == "rounded" else ft.BorderRadius.only(top_left=2, top_right=2)
-
-            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
             chart.update()
 
+        # Set whether to show horiz or vert grid lines depening on the button
         async def set_grid_lines(e: ft.Event):
+            # Set value and which type of grid lines
             grid_line_type = e.control.data
             show_grid_lines = e.control.value
-
-            match grid_line_type:
-                case "horizontal":
-                    self.data['bar_data']['show_horizontal_grid_lines'] = show_grid_lines
-                    chart.horizontal_grid_lines = fch.ChartGridLines() if show_grid_lines else None
-                case "vertical":
-                    self.data['bar_data']['show_vertical_grid_lines'] = show_grid_lines
-                    chart.vertical_grid_lines = fch.ChartGridLines() if show_grid_lines else None
-
-            self.update_data(**{'bar_data': self.data.get('bar_data', {})})
+            # Update data and chart UI
+            if grid_line_type == "horizontal":
+                self.update_data(**{'bar_data': {'show_horizontal_grid_lines': show_grid_lines}})
+                chart.horizontal_grid_lines = fch.ChartGridLines() if show_grid_lines else None
+            else:
+                self.update_data(**{'bar_data': {'show_vertical_grid_lines': show_grid_lines}})
+                chart.vertical_grid_lines = fch.ChartGridLines() if show_grid_lines else None
             chart.update()
 
         # Returns the small label control under each bar group on the chart
         def create_bar_group_label(idx: int, name: str) -> fch.ChartAxisLabel:
-
             # Updates the label in data and in the sidebar
             async def set_bar_group_label(e: ft.Event):
                 idx = e.control.data
@@ -419,10 +440,10 @@ class Chart(Widget):
                 self.update_data(**{'bar_data': self.data.get('bar_data', {})})
                 sidebar_bar_group_column.controls[idx].title.value = new_label
                 sidebar_bar_group_column.controls[idx].update()
-
+            # Return the chart axis label with the text field for editing the label
             return fch.ChartAxisLabel(
-                idx, 
-                label=ft.TextField(
+                idx,        # Requires value of index
+                label=ft.TextField(     # Tf for editing the label
                     value=name, dense=True, width=120, clip_behavior=ft.ClipBehavior.NONE,
                     data=idx, on_blur=set_bar_group_label, border=ft.InputBorder.NONE,
                     text_align=ft.TextAlign.CENTER, text_style=ft.TextStyle(size=14, weight=ft.FontWeight.W_500)
@@ -430,11 +451,11 @@ class Chart(Widget):
                 
             )
 
-
+        # Creates a group control for the chart using index and data
         def create_chart_bar_group(idx: int, group_data: dict) -> fch.BarChartGroup:
             return fch.BarChartGroup(
-                idx,
-                spacing=4, 
+                idx,        # Needs for alignment
+                spacing=self.data.get('bar_data', {}).get('rod_spacing', 4), 
                 group_vertically=self.data.get('bar_data', {}).get('stack_rods', False),
                 rods=[
                     fch.BarChartRod(
@@ -484,20 +505,14 @@ class Chart(Widget):
                 bottom=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT),
             ),
         )
-        
        
-        
-        
-        
-
-
-        bar_group_sidebar_controls = [create_sidebar_bar_group(idx, group) for idx, group in enumerate(self.data.get('bar_data', {}).get('groups', []))]
-       
+        # Column for sidebar groups
         sidebar_bar_group_column = ft.Column(
+            [create_sidebar_group(idx, group) for idx, group in enumerate(self.data.get('bar_data', {}).get('groups', []))],
             expand=True, scroll="auto", #spacing=0,
-            controls=bar_group_sidebar_controls
         )
 
+        # Insert our settings into the sidebar header after our title
         self.sidebar_header.controls.insert(
             1,
             ft.MenuBar(
@@ -505,42 +520,52 @@ class Chart(Widget):
                     ft.SubmenuButton(
                         ft.Icon(ft.Icons.SETTINGS_OUTLINED, "primary"),
                         [
-                            
+                            # Toggle stacked rods
                             ft.Switch(
                                 value=self.data.get('bar_data', {}).get('stack_rods', False), 
                                 label="\tStack Rods", on_change=set_stacked_rods
                             ),
+                            # Toggle rounded rods
                             ft.Switch(
                                 value=True if self.data.get('bar_data', {}).get('rod_shape', "rounded") == "rounded" else False, 
                                 label="\tRounded Rods", on_change=set_rod_shape
                             ),
-
-                            # Axis and Grid line options
+                            # Toggle axis labels
                             ft.Switch(
                                 value=self.data.get('bar_data', {}).get('show_labels', False), 
                                 label="\tShow Axis Labels", on_change=set_show_labels
                             ),
+                            # Toggle horizontal grid lines
                             ft.Switch(
                                 value=self.data.get('bar_data', {}).get('show_horizontal_grid_lines', False), 
                                 label="\tShow Horizontal Grid Lines", on_change=set_grid_lines, data="horizontal"
                             ),
+                            # Toggle vertical grid lines
                             ft.Switch(
                                 value=self.data.get('bar_data', {}).get('show_vertical_grid_lines', False), 
                                 label="\tShow Vertical Grid Lines", on_change=set_grid_lines, data="vertical"
                             ),
+                            # Adjust max y value of the chart
                             ft.TextField(
                                 label="Max Y Value", value=str(self.data.get('bar_data', {}).get('max_y', 20)), 
                                 input_filter=ft.NumbersOnlyInputFilter(), data="max", on_blur=set_max_y_value,
                                 margin=ft.Margin.only(top=6, left=10, right=10), border_color=ft.Colors.OUTLINE_VARIANT,
                                 border_radius=4, dense=True
                             ),
-                            
-                            # Rod options
+                            # Adjust Rod width
                             ft.Row([
                                 ft.Text("\t\tRod Width", theme_style=ft.TextThemeStyle.LABEL_LARGE),
                                 ft.Slider(
                                     value=self.data.get('bar_data', {}).get('rod_width', 30), min=10, max=100, 
-                                    label="{value}", expand=True, on_change=set_rod_width
+                                    label="{value}", expand=True, on_change=set_rod_width_value, on_change_end=set_rod_width_data
+                                ),
+                            ], spacing=0),
+                            # Adjust rod spacing
+                            ft.Row([
+                                ft.Text("\t\tRod Spacing", theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                                ft.Slider(
+                                    value=self.data.get('bar_data', {}).get('rod_spacing', 30), min=0, max=20, 
+                                    label="{value}", expand=True, on_change=set_rod_spacing_value, on_change_end=set_rod_spacing_data
                                 ),
                             ], spacing=0),
                             
@@ -558,30 +583,31 @@ class Chart(Widget):
             )
         )
 
+        # Add a label and add groups button in the sidebar
         self.sidebar_body.controls.append(
             ft.Row([
                 ft.Text(f"\tGroups", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                ft.IconButton(
+                ft.IconButton(      # Create group button
                     ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                     self.data.get('color', ft.Colors.PRIMARY),
                     mouse_cursor=ft.MouseCursor.CLICK,
                     on_click=create_group,
                 ),
             ], spacing=0))
+
+        # Add the sidebar bar group
         self.sidebar_body.controls.append(sidebar_bar_group_column)
 
+        # Set our content
         self.content = ft.Row([
             ft.Container(chart, expand=3, padding=ft.Padding.only(bottom=20, left=20)),
             self.show_sidebar_button,
             self.sidebar
         ])
-
-        
         
     # Returns our widgets view for radar charts
     def radar_chart_view(self):
         ''' Builds out the body of our radar chart widget '''
-        
         
         async def _update_entry(e):
             idx, entry_idx = e.control.data
