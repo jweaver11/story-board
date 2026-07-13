@@ -36,6 +36,9 @@ class ActiveRail(ft.Container):
         #print("active rail width:", self.width)
 
         # Loads the active rail
+        #self.reload_rail()
+
+    def build(self):
         self.reload_rail()
         
     # Called when other workspaces are selected

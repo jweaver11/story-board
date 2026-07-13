@@ -51,6 +51,7 @@ class Widget(ft.Container):
                 'image_base64': str(),                 # Base64 string of the image for this widget, if it has one
                 'show_sidebar': False,               # Whether to show the sidebar. Widgets that use it set to True in their own data
                 'notes': list(),          # Several widgets have notes
+                'description': str(),
             } 
 
         # Set title and story references
@@ -71,7 +72,7 @@ class Widget(ft.Container):
 
         # Controls -----------------------------------------------
         self.tab: ft.Tab       # The tab associated with this widget, used for navigation and organization within the UI
-        self.build_tab()
+        self.build_tab()    
         
         # OLD NEED DELETE
         self.mini_widgets_wrapper = ft.Column(expand=1, spacing=0)  

@@ -10,9 +10,10 @@ from models.views.story import Story
 class WorkspacesRail(ft.Container):
     
     # Constructor for our all_workspaces_rail object. Needs a page reference passed in
-    def __init__(self, page: ft.Page, story: Story = None):
+    def __init__(self, story: Story):
 
-        self.p = page   # Page reference
+        self.story = story
+
        
         # Style our rail (container)
         super().__init__(
@@ -24,9 +25,11 @@ class WorkspacesRail(ft.Container):
         )
 
         # Build our rail on start
-        self.reload_rail(story)
+        #self.reload_rail()
 
-    
+
+    def build(self):
+        self.reload_rail(self.story)
 
     # Called whenever we select a new workspace selector rail
     def change_workspace(self, e, story: Story, force_rail: str=None):

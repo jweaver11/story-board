@@ -40,10 +40,9 @@ class World(Widget):
                 'color': app.settings.data.get('widget_defaults', {}).get('world', {}).get('color'),   
 
                 # State and view data
-                'edit_mode': True,              # Whether we are in edit mode or not
                 'image_base64': str(),            # Saves our image as img64 string
 
-                'About': str(),
+                'about': str(),
 
                 # World data
                 'world_data': app.settings.data.get('world_templates', {}).get(app.settings.data.get('active_world_template', ""), default_world_template_data_dict()) 

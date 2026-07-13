@@ -3,7 +3,6 @@
 import flet as ft
 from models.views.story import Story
 import os
-from utils.check_widget_unique import check_widget_unique
 
 
 def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) -> ft.AlertDialog:
@@ -22,7 +21,6 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
 
         # Reset error text and create_button status
         e.control.error_text = None
-        create_button.disabled = False
 
         # If there is no value (user deleted it all), set to None
         if e.control.value == "":
@@ -35,7 +33,6 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         if value is not None:
             if value == 0:
                 e.control.error = f"{key.capitalize()} cannot be 0"
-                create_button.disabled = True
                 e.control.update()  
                 create_button.update()
                 return
@@ -46,11 +43,9 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         #print("Canvas data updated: ", canvas_data)
 
         if canvas_data.get('width') is None and canvas_data.get('height') is None:
-            create_button.disabled = False
             create_button.update()
             return
         elif canvas_data.get('width') is None or canvas_data.get('height') is None:
-            create_button.disabled = True
             create_button.update()
         
 
@@ -77,54 +72,10 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         e.control.border = ft.Border.all(2, ft.Colors.PRIMARY)
         e.control.update()  
 
-        # Check that the title is unique for this drawing. 
-        if _check_title():
-            create_button.disabled = False
-        else:
-            create_button.disabled = True
-            page.run_task(title_textfield.focus)
-
-
-    def _check_title(e=None):
-
-        if title_textfield.value == "":
-            title_textfield.error = "Name your Canvas"
-            create_button.disabled = True
-            title_textfield.update()
-            create_button.update()
-            return False
-    
-        # Set submitting to false, and unique to True
-        nonlocal submitting, is_unique
-        submitting = False
-        is_unique = True
-
-        # Grab out title and tag from the textfield, and set our new key to compare
-        title = title_textfield.value
         
-        # Generate our new key to compare. Requires normalization
-        nk = directory_path + "\\" + title + "_" + "canvas"
-        new_key = os.path.normpath(nk)
+        page.run_task(title_textfield.focus)
 
-        error_text, is_unique = check_widget_unique(story, new_key)
-
-        # If we are NOT unique, show our error text
-        if not is_unique:
-            title_textfield.error = error_text
-            create_button.disabled = True
-            title_textfield.update()
-            create_button.update()
-            return False
-            
-
-        # Otherwise remove our error text
-        else:
-            title_textfield.error = None
-            create_button.disabled = False
-            title_textfield.update()
-            create_button.update()
-            return True
-            
+        
       
     async def _create_button_clicked(e=None):
         ''' Handles creating a new canvas when create is clicked '''
@@ -133,10 +84,6 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         nonlocal is_unique
 
         submitting = True
-
-        if not _check_title():
-            page.run_task(title_textfield.focus)
-            return
 
         title = title_textfield.value if title_textfield.value != "" else f"Canvas {len(story.canvases) + 1}"
 
@@ -147,10 +94,8 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
             data=canvas_data
         )
 
-        story.data['selected_rail'] = 'canvas'
-        page.run_task(story.save_dict)
-        story.workspaces_rail.reload_rail(story)
-        story.active_rail.reload_rail()
+        #page.run_task(story.save_dict)
+        #story.active_rail.reload_rail()
 
         # Build the canvas here
         page.pop_dialog()
@@ -161,7 +106,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
 
     canvas_data = {'width': None, 'height': None, 'aspect_ratio': None}       # Data we will pass set to pass in whenever a different template is selected
 
-    create_button = ft.TextButton("Create", on_click=_create_button_clicked, disabled=True, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))  # Button to create the canvas
+    create_button = ft.TextButton("Create", on_click=_create_button_clicked, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))  # Button to create the canvas
 
     width_textfield = ft.TextField(
         label="Width", data="width", width=140, dense=True, input_filter=ft.NumbersOnlyInputFilter(), 
@@ -173,8 +118,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
     )  
     title_textfield = ft.TextField(
         label="Title", data="title", width=300, autofocus=True, on_submit=_create_button_clicked,
-        on_change=_check_title, capitalization=ft.TextCapitalization.WORDS,
-        error="Name your Canvas"
+        capitalization=ft.TextCapitalization.WORDS,
     )
 
     title_textfield_container = ft.Container(title_textfield, margin=ft.Margin.only(top=6))

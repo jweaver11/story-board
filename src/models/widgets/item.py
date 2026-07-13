@@ -32,7 +32,6 @@ class Item(Widget):
                 'color': app.settings.data.get('widget_defaults', {}).get('item', {}).get('color'),
 
                 'image_base64': str(), 
-                'description': str(),
 
                 # Item data - list of segments with title and string
                 'item_data': [

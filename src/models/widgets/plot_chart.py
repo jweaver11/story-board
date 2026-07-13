@@ -32,7 +32,6 @@ class PlotChart(Widget):
                 'tag': "plot_chart",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('color'),
 
-                'description': str(),
                 'spider_web_view': False,
 
                 'nodes': [],

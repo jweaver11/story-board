@@ -46,7 +46,6 @@ class Chart(Widget):
                 'tag': "chart",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('widget_defauls', {}).get('chart', {}).get('color', "primary"),
                 'chart_type': type,             # How our chart is being displayed (bar or radar)
-                'description': str(),
 
                 'show_sidebar': True,   # Whether to show the info column on the side of our charts or not.
 

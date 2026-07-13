@@ -319,30 +319,6 @@ class CanvasBoard(Widget):
     def reload_widget(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
-        # Downscales images for preview to improve performance
-        def downscale_image(image_str: str) -> str:
-
-            try:
-                image_bytes = base64.b64decode(image_str)
-                img = Image.open(BytesIO(image_bytes))
-                if img.mode in ("P", "PA"):  # palette images with transparency must go via RGBA
-                    img = img.convert("RGBA")
-                has_alpha = img.mode in ("RGBA", "LA")
-                if not has_alpha:
-                    img = img.convert("RGB")
-                max_dim = 2160  # cap at 4K height; anything larger is not visible anyway
-                if img.width > max_dim or img.height > max_dim:
-                    img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
-                output = BytesIO()
-                if has_alpha:
-                    img.save(output, format="PNG", optimize=True)
-                else:
-                    img.save(output, format="JPEG", quality=92, optimize=True)
-                image_str = base64.b64encode(output.getvalue()).decode("utf-8")
-            except Exception:
-                pass 
-            return image_str
-
 
         description_tf = TextField(
             expand=True, value=self.data.get('description', ""), dense=True, multiline=True,

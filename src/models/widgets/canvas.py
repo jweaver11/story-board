@@ -7,13 +7,11 @@ from flet_color_pickers import ColorPicker
 import flet as ft
 from models.widget import Widget
 from models.views.story import Story
-from utils.verify_data import verify_data
 from styles.snack_bar import SnackBar
 from models.dataclasses.canvas_state import State
 import flet.canvas as cv
 import math
 from models.app import app
-from models.mini_widgets.canvas_info import CanvasInformationDisplay
 import json
 import base64
 from io import BytesIO
@@ -21,6 +19,7 @@ from PIL import Image
 import asyncio
 from styles.menu_option_style import MenuOptionStyle
 from models.dataclasses.canvas_shape import CanvasShape    
+from styles.text_field import TextField
 
 MINIMUM_SEGMENT_DISTANCE = 2
 MAX_SHAPES_BEFORE_CAPTURE = 30   # Prevent lag from too many paths on the canvas without being removed
@@ -56,27 +55,53 @@ class Canvas(Widget):
                 'color': app.settings.data.get('widget_defaults', {}).get('canvas', {}).get('color'),
                 'show_sidebar': True,   # Whether to show the info column on the side of our charts or not.
 
-                # Info display and general canvas data
-                'canvas_data': {},       
+                'capture': str(),             # Capture of what we currently look like
+                'snapshot': str(),            # Most recent completed snapshot of our canvas used by other widgets
 
-                'capture': str,             # Capture of what we currently look like
-                'snapshot': str,            # Most recent completed snapshot of our canvas used by other widgets
+                'canvas_data': {
+                    'layers_expansion_tile_expanded': True,  
 
+                    # Undo and redo list
+                    'undo_list': list(),        # Each undo/redo item {'layer_name': "", 'capture': ""} 
+                    'redo_list': list(),
+
+                    # Canvas info
+                    "width": 1920 if data.get('canvas_data', {}).get('width') is None else data.get('canvas_data', {}).get('width'),              # Resolution size used for exporting
+                    "height": 1080 if data.get('canvas_data', {}).get('height') is None else data.get('canvas_data', {}).get('height'),
+                    "aspect_ratio": None,       # Actually used for displaying the canvas, and we scale up when exporting
+
+                    # Layer info for our canvases
+                    'layers': [
+                        {
+                            'name': "Background",       
+                            'visible': True, 
+                            'capture': "",   # Base64 string of capture of the layers drawing
+                        },
+                        {
+                            'name': "Layer 1", 
+                            'visible': True, 
+                            'capture': "",   # Base64 string of capture of the layers drawing
+                        }
+                    ],     # {'name': str, 'visible': bool, 'index': int, 'capture': str
+                    'active_layer_idx': 1,   # Index of our active layer we are drawing on
+                }
                 
             },
         )
 
         # State tracking for canvas drawing info
         self.state = State()                # Used for tracking our coords and current drawing data for the active stroke/shape being applied
-        self.canvas_width = 0
-        self.canvas_height = 0
+        self.canvas_width = self.data.get('canvas_data', {}).get('width', 0)    # Ez size grabbing later
+        self.canvas_height = self.data.get('canvas_data', {}).get('height', 0)
         self.needs_redraw = False           # Used to track if we need to redraw canvas after a resize
         self.skip_first_resize = True       # Skip the first resize since it will fix itself
         self.initial_resize = True          # Initial resize to track our canvases size without rebuild
         self.manipulating_shape = False     # Whether we're currently manipulating a shape or not, so we know whether to update our active path or not when dragging
+        self.active_layer_idx: int = self.data.get('canvas_data', {}).get('active_layer_idx', 1)
+        print("Starting active layer idx: ", self.active_layer_idx)
 
         
-        self.layers = [{}]                  # List of our layers, which are each their own canvas
+        self.layer_canvases = []                  # List of our layers, which are each their own canvas
         self.layer_stack: ft.Stack          # Stack to hold our layers on top of each other
 
         self.bg_image: ft.DecorationImage   # Hold our background image
@@ -90,63 +115,14 @@ class Canvas(Widget):
         self.no_render_mini_widgets = True  
 
 
-    def _load_layers(self):
-        self.layers.clear()
-        control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
-        active_tool = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+    
         
-        
-        if active_tool == "erase" or active_tool == "line":
-            mouse_cursor = ft.MouseCursor.PRECISE
-        else:
-            mouse_cursor = ft.MouseCursor.CLICK
-        if control_mode == "draw":
-            mouse_cursor = ft.MouseCursor.PRECISE
-        
-        for idx, layer in enumerate(self.data.get('canvas_data', {}).get('Layers', [])):
-
-            name = layer.get('name', f"Layer {idx + 1}")
-            visible = layer.get('visible', True)
-            capture = layer.get('capture', None)
-
-            new_layer = ft.Container(
-                cv.Canvas(
-                    data=name,        # Save the index of this layer so we know where to save it in our data
-                    content=ft.GestureDetector(
-                        mouse_cursor=mouse_cursor,
-                        on_pan_start=self.start_new_stroke,         # Starts a new brush stroke with current paint settings
-                        on_pan_update=self.update_stroke,           # Updates the current stroke based on mouse movement
-                        on_pan_end=self.save_canvas,                # Saves the now complete stroke to our data and canvas capture
-                        on_tap_up=self.add_shape,                   # Handles adding dots and tools
-                        on_hover=self._redraw_canvas,       # Redraws canvas if it needs it from resizing, otherwise just sets coords
-                        hover_interval=20,
-                        drag_interval=10,                   
-                        expand=True,
-                    ),
-                    expand=True, 
-                    shapes=[
-                        cv.Image(       # Sets the background image of the layer to its most recent capture
-                            capture, 0, 0, 
-                            self.canvas_width if self.canvas_width != 0 else None,          # Ignore setting size before we know it
-                            self.canvas_height if self.canvas_height != 0 else None 
-                        )    
-                    ],
-                    
-                ),
-                expand=True, data=name,
-                visible=visible,    # Set visibility
-
-                # Only active layer can draw
-                ignore_interactions=True if self.data.get('canvas_data', {}).get('Active Layer', 0) != idx else False,   
-            )
             
-            self.layers.append({'name': name, 'visible': visible, 'canvas': new_layer})
 
     # Sets the size of the canvas for redrawing logic
-    async def _set_size(self, e: cv.CanvasResizeEvent):
+    async def _set_size_old(self, e: cv.CanvasResizeEvent):
         if e: 
-            self.canvas_width = int(e.width)
-            self.canvas_height = int(e.height)
+            
             self.needs_redraw = True           # Prevent resizing for now
             if self.initial_resize:
                 self.initial_resize = False
@@ -154,7 +130,7 @@ class Canvas(Widget):
 
                 # Handles switching to tab of canvas upon first launch
                 try:
-                    for layer in self.layers:
+                    for layer in self.layer_canvases:
                         container = layer.get('canvas')
                         if container and isinstance(container.content, cv.Canvas):
                             shapes = container.content.shapes
@@ -167,19 +143,7 @@ class Canvas(Widget):
                 
             return
 
-    # Called in the constructor
-    def _create_information_display(self) -> CanvasInformationDisplay:
-        ''' Creates our plotline information display mini widget '''
-
-        id = CanvasInformationDisplay(
-            title=self.title,
-            widget=self,
-            key="canvas_data",     
-            data=self.data.get('canvas_data'),      
-        )
-        id.shadow = None
-        
-        return id
+    
         
 
     
@@ -198,7 +162,7 @@ class Canvas(Widget):
             if control_mode == "draw":
                 new_mouse_cursor = ft.MouseCursor.PRECISE
             
-            for layer in self.layers:
+            for layer in self.layer_canvases:
                 # Grab container to check if actually visible. Not visible, not exporting
                 container = layer.get('canvas', None)
                 if not container.visible:   
@@ -227,9 +191,9 @@ class Canvas(Widget):
         ''' Converts the displayed shapes rotation and size onto our active layer and paints it there '''
 
       
-        active_canvas: cv.Canvas = None
-        for layer in self.layers:
-            if self.data.get('canvas_data', {}).get('Active Layer', 0) == self.layers.index(layer):
+        active_canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
+        for layer in self.layer_canvases:
+            if self.data.get('canvas_data', {}).get('active_layer_idx', 0) == self.layer_canvases.index(layer):
                 active_canvas = layer.get('canvas', None).content
                 break
 
@@ -274,10 +238,10 @@ class Canvas(Widget):
         paste_x = int(rotation_cx - rotated.width / 2)
         paste_y = int(rotation_cy - rotated.height / 2)
 
-        active_layer_idx = self.data.get('canvas_data', {}).get('Active Layer', 0)  
+        active_layer_idx = self.data.get('canvas_data', {}).get('active_layer_idx', 0)  
 
         # Decode existing layer capture
-        layer_b64 = self.data['canvas_data']['Layers'][active_layer_idx].get('capture')
+        layer_b64 = self.data['canvas_data']['layers'][active_layer_idx].get('capture')
         if layer_b64:
             layer_img = Image.open(BytesIO(base64.b64decode(layer_b64))).convert("RGBA")
         else:
@@ -348,7 +312,7 @@ class Canvas(Widget):
         self.manipulating_shape = False 
 
         # If we didn't return, we're either in erase tool or drawing mode
-        canvas: cv.Canvas = e.control.parent    # Set the canvas
+        canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
 
         # Create the point using our paint settings and point mode
         point = cv.Points(
@@ -360,10 +324,7 @@ class Canvas(Widget):
         canvas.shapes.append(point)
 
         # After dragging canvas widget, it loses page reference and can't update, so the exception handles that.
-        try:
-            canvas.update()
-        except Exception:
-            print("Failed to update canvas")
+        canvas.update()
             
         # Need to save, as this function stands alone and no others will run after it
         await self.save_canvas(e)
@@ -373,13 +334,11 @@ class Canvas(Widget):
         ''' Set our initial starting x and y coordinates for the element we're drawing. '''
 
         # Grab the canvas and paint settings
-        canvas: cv.Canvas = e.control.parent
+        canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
     
         # Update our state x and y coordinates
         self.state.x, self.state.y = e.local_position.x, e.local_position.y
-
-
 
         # Recreate our active path with correct starting positiuon
         self.active_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
@@ -415,13 +374,17 @@ class Canvas(Widget):
     async def update_stroke(self, e: ft.DragUpdateEvent):
         ''' Determines which drawing tool we're using, and updates accordingly as we drag our mouse '''
         
-        # Set constant for sampling
-       
-        
         # Sampling to improve perforamance. If the line length is too small, we skip it
         dx = e.local_position.x - self.state.x
         dy = e.local_position.y - self.state.y
         if dx * dx + dy * dy < MINIMUM_SEGMENT_DISTANCE * MINIMUM_SEGMENT_DISTANCE:
+            return
+        
+        canvas: cv.Canvas =  self.layer_canvases[self.active_layer_idx]
+        self.active_path = canvas.shapes[-1] if canvas.shapes else None
+
+        # Catch errors
+        if not self.active_path:
             return
                 
         # Check if we're in tool mode, and what tool we're using
@@ -465,8 +428,7 @@ class Canvas(Widget):
             self.active_path.update()
 
         # Non-smooth drawing
-        else:
-            canvas: cv.Canvas = e.control.parent
+        else: 
             canvas.shapes.append(cv.Line(self.state.x, self.state.y, e.local_position.x, e.local_position.y, paint=self.active_path.paint))
             canvas.update()
             
@@ -480,12 +442,11 @@ class Canvas(Widget):
         """ Saves our paths to our canvas data for storage """
 
         # Set our canvas, layer name, and update our shapes count
-        if canvas is None:
-            canvas: cv.Canvas = e.control.parent
+        canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
         layer_name = canvas.data
 
         # Grab the old capture for this layer and add it as an undo task for the canvas
-        for layer in self.data.get('canvas_data', {}).get('Layers', []):
+        for layer in self.data.get('canvas_data', {}).get('layers', []):
             if layer.get('name', None) == layer_name:
                 if layer.get('capture', None):
                     old_capture = layer.get('capture')
@@ -509,13 +470,15 @@ class Canvas(Widget):
                 return
 
             # With this:
-            for layer in self.data['canvas_data']['Layers']:
+            for layer in self.data['canvas_data']['layers']:
                 if layer.get('name') == layer_name:
                     layer['capture'] = encoded_capture
                     break
             self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})   # Update our data with the new capture  
                 
             await canvas.clear_capture()
+
+            
 
             # Check if we have too many shapes on the canvas. If we do, capture them and put it in an image
             if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:   
@@ -567,7 +530,7 @@ class Canvas(Widget):
                     
                     # If any changes had been made, clear the shapes on screen and set the most recent capture
                     if len(ctrl.content.shapes) > 1:   
-                        for layer in self.data.get('canvas_data', {}).get('Layers', []):
+                        for layer in self.data.get('canvas_data', {}).get('layers', []):
                             if layer.get('name', None) == ctrl.data:
                                 capture = layer.get('capture', None)
                                 if capture:
@@ -583,6 +546,570 @@ class Canvas(Widget):
             self.story.blocker.visible = False
             self.story.blocker.update()
             self.needs_redraw = False
+
+    class InformationDisplay(ft.Column):
+
+        # Constructor.
+        def __init__(
+            self, 
+            widget: Widget,                  
+            data: dict = None               
+        ):
+
+            # Parent constructor
+            super().__init__( data=data) 
+            self.widget = widget
+
+            # Reloads the information display of the canvas
+            self.reload_mini_widget()
+
+        
+            
+
+        async def _set_layer_content(self, e):
+
+            await self.widget.story.close_menu()
+
+            layer_name, type = e.control.data
+
+            # Grab the layer this is. Set its capture as color or image
+
+            # Set a color as the background
+            if type == "color":
+
+                async def _color_change(e):     # Set the color to the picked one
+                    color_picker.color = e.data
+
+                async def _set_color_confirmed(e=None):
+
+                    for layer in self.widget.data.get('layers', []):
+                        if layer.get('name') == layer_name:
+                            for ctrl in self.widget.layer_stack.controls:
+                                if isinstance(ctrl, ft.Container) and isinstance(ctrl.content, cv.Canvas) and ctrl.data == layer_name:
+                                    ctrl.content.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
+                                    ctrl.content.shapes.append(cv.Color(color_picker.color))   # Re-add empty images so it can capture
+                                    ctrl.content.update()
+                                    await self.widget.save_canvas(canvas=ctrl.content)  
+                                    break
+                            break
+
+                    self.page.pop_dialog()
+                    
+
+                color_picker = ColorPicker(
+                    self.widget.data.get('background', ft.Colors.PRIMARY) if self.widget.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
+                    on_color_change=_color_change
+                )
+                dlg = ft.AlertDialog(
+                    ft.Column([color_picker], tight=True, expand=False),
+                    title=f"Set {layer_name} to a Color",
+                    actions=[
+                        ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                        ft.TextButton("Set", on_click=_set_color_confirmed, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
+                    ]
+                )
+                self.page.show_dialog(dlg)
+
+            # If its not a color, its an image
+            else:
+                files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+                if files:
+
+                    file_path = files[0].path
+                    try:
+                        
+
+                        with open(file_path, "rb") as image_file:
+                            print("Opened file")
+                            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                            for layer in self.widget.data.get('layers', []):
+                                if layer.get('name') == layer_name:
+                                    print("Found layer: ", layer_name)
+                                    for ctrl in self.widget.layer_stack.controls:
+                                        if isinstance(ctrl, ft.Container) and isinstance(ctrl.content, cv.Canvas) and ctrl.data == layer_name:
+                                            print("Set image")
+                                            ctrl.content.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
+                                            ctrl.content.shapes.append(cv.Image(f"{encoded_string}", 0, 0, self.widget.canvas_width, self.widget.canvas_height))   # Re-add empty images so it can capture
+                                            ctrl.content.update()
+                                            await self.widget.save_canvas(canvas=ctrl.content)
+                                            break
+                                    break
+                        self.page.pop_dialog()
+
+                    except Exception as _:
+                        pass   
+
+        async def _set_layer_blur(self, e):
+            await self.widget.story.close_menu()
+
+            layer_name = e.control.data
+            #capture = None
+            for layer in self.widget.data.get('layers', []):
+                if layer.get('name') == layer_name:
+                    if layer.get('capture', "") == "":
+                        
+                        self.page.show_dialog(SnackBar("Layer must have existing content to set blur"))
+                        return
+                    capture = layer.get('capture', "")
+                    break
+
+            if capture is None:
+                self.page.show_dialog(SnackBar("Error finding layer capture for blur"))
+                return
+            
+            # Updates the visual canvas with new blur amount
+            async def _blur_amount_changed(e):
+                blur_amount = e.control.value
+                active_preview_image.paint.blur_image = blur_amount
+                active_preview_image.update()
+
+            # Apply that level of blur to the layer
+            async def _apply_blur(e=None):
+
+                for layer in self.widget.data.get('layers', []):
+                    if layer.get('name') == layer_name:
+                        for ctrl in self.widget.layer_stack.controls:
+                            if isinstance(ctrl, ft.Container) and isinstance(ctrl.content, cv.Canvas) and ctrl.data == layer_name:
+                                ctrl.content.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
+                                ctrl.content.shapes.append(cv.Image(capture, 0, 0, self.widget.canvas_width, self.widget.canvas_height, paint=ft.Paint(blur_image=blur_strength_slider.value)))
+                                ctrl.content.update()
+                                await self.widget.save_canvas(canvas=ctrl.content)  
+                                break
+                        break
+
+                self.page.pop_dialog()
+            
+            blur_strength_slider = ft.Slider(1, "{value}", min=0, max=50, on_change=_blur_amount_changed)
+            
+            
+            preview_canvas = ft.Container(
+                cv.Canvas(
+                    #shapes=[preview_image], 
+                    shapes=[],
+                    
+                    expand=True,
+                    width=self.widget.canvas_width / 2, height=self.widget.canvas_height / 2
+                ),
+                image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL) 
+            )
+
+            active_preview_image = None
+
+            # Add the entire canvas to the preview, but mark the active layer we will change blur of
+            for layer in self.widget.data.get('layers', []):
+                if layer.get('name') == layer_name:
+                    active_preview_image = cv.Image(layer.get('capture', ""), 0, 0, self.widget.canvas_width / 2, self.widget.canvas_height / 2, paint=ft.Paint(blur_image=1))
+                    preview_canvas.content.shapes.append(active_preview_image)
+                    continue
+                preview_canvas.content.shapes.append(cv.Image(layer.get('capture', ""), 0, 0, self.widget.canvas_width / 2, self.widget.canvas_height / 2))
+                
+            if active_preview_image is None:
+                self.page.show_dialog(SnackBar("Error finding layer capture for blur"))
+                return
+
+            dlg = ft.AlertDialog(
+                ft.Column([
+                    preview_canvas, 
+                    blur_strength_slider,
+                    ft.Text("Adjust Blur Strength", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
+                title=f"Set Blur for {layer_name}",
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                    ft.TextButton("Apply", on_click=_apply_blur, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
+                ]
+            )
+            self.page.show_dialog(dlg)     
+
+        # Called when we reorder our layers list and updates to new positions
+        async def _reorder_layers(self, e: ft.OnReorderEvent):
+            new_index = e.new_index
+            old_index = e.old_index
+            if new_index == old_index:
+                return
+            
+            layers = self.widget.data.get('layers', [])
+            if new_index < 0 or old_index < 0 or new_index >= len(layers) or old_index >= len(layers):
+                self.page.show_dialog(SnackBar(f"Invalid layer reorder indices. New index: {new_index}, -- Old Index: {old_index}"))
+                return
+            layers.insert(new_index, layers.pop(old_index))
+            self.widget.data['layers'] = layers
+            
+            #await self.save_dict()
+
+            self.widget.story.blocker.visible = True
+            self.widget.story.blocker.update()
+            await asyncio.sleep(0)
+
+            self.widget.reload_widget()
+            self.widget.story.blocker.visible = False
+            self.widget.story.blocker.update()
+
+        # Called when deleting a layer
+        async def _delete_layer_clicked(self, e):
+
+            
+            name = e.control.data 
+
+            if len(self.widget.data.get('layers', [])) <= 1:
+                self.page.show_dialog(SnackBar(f"A canvas must have at least one layer. {name} was NOT deleted"))
+                return
+
+            async def _delete_layer_confirmed(e=None):
+                for layer in self.widget.data.get('layers', []):
+                    if layer.get('name') == name:
+                        self.widget.data['layers'].remove(layer)
+                        self.widget.data['active_layer_idx'] = -1  
+                        break
+                
+                for task in self.widget.data['undo_list'][:]:   # Remove any undo tasks related to this layer
+                    if task.get('layer_name') == name:
+                        self.widget.data['undo_list'].remove(task)
+                for task in self.widget.data['redo_list'][:]:   # Remove any redo tasks related to this layer
+                    if task.get('layer_name') == name:
+                        self.widget.data['redo_list'].remove(task)
+
+                #await self.save_dict()
+
+                self.widget.story.blocker.visible = True
+                self.widget.story.blocker.update()
+                await asyncio.sleep(0)
+                self.page.pop_dialog()
+
+                self.widget.reload_widget()
+                self.widget.story.blocker.visible = False
+                self.widget.story.blocker.update()
+
+            
+
+            dlg = ft.AlertDialog(
+                title=f"Delete {name}? This action cannot be undone.",
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
+                    ft.TextButton("Delete", on_click=_delete_layer_confirmed, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                ]
+            )
+            self.page.show_dialog(dlg)
+
+        # Sets the new active layer
+        async def _toggle_selected_layer_visibility(self, e):
+
+            name = e.control.data
+
+            for idx, layer in enumerate(self.widget.data.get('layers', [])):
+                if layer.get('name') == name:
+
+                    # Can't hide active layer, show snackbar
+                    if idx == self.widget.data.get('active_layer_idx', 0) and layer.get('visible', True):
+                        
+                        self.widget.data['active_layer_idx'] = -1 
+                                
+
+                    layer['visible'] = not layer.get('visible', True)
+                    
+                    #await self.save_dict()
+
+                    # Update that canvases visibility and edit our icon to match
+                    for ctrl in self.widget.layer_stack.controls:
+                        if isinstance(ctrl, ft.Container) and ctrl.data == name:
+                            ctrl.visible = layer['visible']
+                            ctrl.update()
+                    
+                    self.reload_mini_widget()   # Just reload to reset the order in the UI
+                    return
+            
+            
+
+        # Sets a new active layer based on the layer we click on in the layers list
+        async def _set_active_layer(self, e):
+            
+
+            # Make sure we paint any open tool on the canvas before switching, or it'll be painted on the new layer instead
+            if self.widget.manipulating_shape:
+                self.widget.manipulating_shape = False  
+                await self.widget.paint_tool_on_canvas()
+
+            layer_name = e.control.data
+
+            for idx, layer in enumerate(self.widget.data.get('layers', [])):
+                if layer.get('name') == layer_name:
+
+                    # Error catch for setting an invisible layer as active
+                    if layer.get('visible', True) == False:
+                        for ctrl in self.widget.layer_stack.controls:
+                            if isinstance(ctrl, ft.Container) and ctrl.data == layer_name:
+                                ctrl.visible = True
+                                ctrl.update()
+                        
+
+                    self.widget.data['active_layer_idx'] = idx
+                    layer['visible'] = True   # Make sure layer is visible when we set it to active
+                    #await self.save_dict()
+
+                    reorderable_list = e.control.parent.parent    # Grab expansion tile
+
+                    for ctrl in reorderable_list.controls:   # Loop through layers and update bg color to show active layer
+                        if isinstance(ctrl, ft.ReorderableDragHandle):
+                            if ctrl.data == layer_name:
+                                ctrl.content.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+                                ctrl.content.leading.icon = ft.Icons.VISIBILITY
+                            else:
+                                ctrl.content.bgcolor = None
+                            ctrl.content.update()  # Update each layer control to reflect bg color change
+
+                    for ctrl in self.widget.layer_stack.controls:
+                        if isinstance(ctrl, ft.Container) and ctrl.data == layer_name:
+                            ctrl.ignore_interactions = False   # Active layer can interact
+                            ctrl.update()
+                        elif isinstance(ctrl, ft.Container):
+                            if ctrl.ignore_interactions == False:
+                                ctrl.ignore_interactions = True    # Non active layers can't interact
+                                ctrl.update()
+                    return
+            
+        # Creates a new layer
+        async def _create_new_layer_clicked(self, e):
+
+            async def _check_name_unique(e):
+                name = new_layer_tf.value
+                for layer in self.widget.data.get('layers', []):
+                    if layer.get('name') == name:
+                        new_layer_tf.error = "Layer name must be unique"
+                        new_layer_tf.update()
+                        create_button.disabled = True
+                        create_button.update()
+                        return False
+                    
+                new_layer_tf.error = None
+                new_layer_tf.update()
+                create_button.disabled = False
+                create_button.update()
+                return True
+
+            async def _create_layer_confirmed(e=None):
+                self.widget.story.blocker.visible = True
+                self.widget.story.blocker.update()
+                await asyncio.sleep(0)
+
+                name = new_layer_tf.value or f"Layer {len(self.widget.data.get('layers', []))+1}"
+                self.widget.data['layers'].append({'name': name, 'visible': True, 'capture': ""})
+                #await self.save_dict()
+                self.page.pop_dialog()
+
+                self.widget.reload_widget()
+                self.widget.story.blocker.visible = False
+                self.widget.story.blocker.update()
+
+            new_layer_tf = ft.TextField(capitalization=ft.TextCapitalization.WORDS, on_submit=_create_layer_confirmed, on_change=_check_name_unique, autofocus=True)
+            create_button = ft.TextButton("Create", on_click=_create_layer_confirmed, style=ft.ButtonStyle(mouse_cursor="click"), disabled=True)
+            dlg = ft.AlertDialog(
+                title="Layer Name",
+                content=new_layer_tf,
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                    create_button
+                ]
+            )
+            self.page.show_dialog(dlg)
+
+        async def _rename_layer_clicked(self, e):
+
+            async def _check_name_unique(e):
+                name = rename_layer_tf.value
+                if name == old_name:
+                    rename_layer_tf.error = None
+                    rename_layer_tf.update()
+                    rename_button.disabled = False
+                    rename_button.update()
+                    return True
+                for layer in self.widget.data.get('layers', []):
+                    if layer.get('name') == name:
+                        rename_layer_tf.error = "Layer name must be unique"
+                        rename_layer_tf.update()
+                        rename_button.disabled = True
+                        rename_button.update()
+                        return False
+                    
+                rename_layer_tf.error = None
+                rename_layer_tf.update()
+                rename_button.disabled = False
+                rename_button.update()
+                return True
+            
+            async def _rename_layer_confirmed(e=None):
+                self.widget.story.blocker.visible = True
+                self.widget.story.blocker.update()
+                await asyncio.sleep(0)
+
+                new_name = rename_layer_tf.value or f"Layer {len(self.widget.data.get('layers', []))+1}"
+                for layer in self.widget.data.get('layers', []):
+                    if layer.get('name') == old_name:
+                        layer['name'] = new_name
+                        break
+
+                for task in self.widget.data['undo_list']:   # Update any undo tasks related to this layer
+                    if task.get('layer_name') == old_name:
+                        task['layer_name'] = new_name
+                for task in self.widget.data['redo_list']:   # Update any redo tasks related to this layer
+                    if task.get('layer_name') == old_name:
+                        task['layer_name'] = new_name
+                #await self.save_dict()
+                self.page.pop_dialog()
+
+                self.widget.reload_widget()
+                if self.widget.story.blocker.visible:
+                    self.widget.story.blocker.visible = False
+                    self.widget.story.blocker.update()
+                
+
+            old_name = e.control.data
+
+            rename_layer_tf = ft.TextField(old_name, capitalization=ft.TextCapitalization.WORDS, on_submit=_rename_layer_confirmed, on_change=_check_name_unique, autofocus=True)
+            rename_button = ft.TextButton("Rename", on_click=_rename_layer_confirmed, style=ft.ButtonStyle(mouse_cursor="click"), disabled=True)
+
+            dlg = ft.AlertDialog(
+                title="Layer Name",
+                content=rename_layer_tf,
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                    rename_button
+                ]
+            )
+            self.page.show_dialog(dlg) 
+                
+        # Called when reloading our mini widget UI
+        def reload_mini_widget(self):
+
+            # Textfield of our canvas description
+            description_tf = TextField(
+                expand=True, label="Description", value=self.widget.data.get('description', ""), dense=True, multiline=True,
+                capitalization=ft.TextCapitalization.SENTENCES,
+                on_blur=lambda e: self.widget.update_data(**{'dsescription': e.control.value}),   # When we click out of the text field, we save our changes
+                label_style=ft.TextStyle(color=self.widget.data.get('color', None)),
+            )            
+            
+
+            export_button = ft.TextButton(
+                "Export", ft.Icons.FILE_DOWNLOAD_OUTLINED, tooltip="Export canvas as image",
+                on_click=self.widget.export_canvas_clicked, style=ft.ButtonStyle(mouse_cursor="click")
+            )
+
+            # Button for creating new layers
+            create_new_layer_button = ft.IconButton(
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, mouse_cursor="click",
+                tooltip="Add new layer",
+                on_click=self._create_new_layer_clicked
+            )
+
+            # Create our expansion tile to hold our layers
+            layer_expansion_tile = ft.ExpansionTile(
+                "layers",
+                [
+                    ft.ReorderableListView(on_reorder=self._reorder_layers, scroll="auto", reverse=True, expand=True, controls=[], show_default_drag_handles=False),   # This will hold our layers and allow us to reorder them
+                    create_new_layer_button 
+                ],
+                leading=ft.Icons.LAYERS_OUTLINED,
+                #tile_padding=ft.Padding.symmetric(horizontal=6),
+                expanded=self.widget.data.get('layers_expansion_tile_expanded', True),
+                on_change=lambda e: self.widget.update_data(**{'layers_expansion_tile_expanded': e.control.expanded})
+            )
+
+            # Add each layer to the expansion tile
+            for idx, layer in enumerate(self.widget.data.get('layers', [])):
+                name = layer.get('name', f"Layer {idx+1}")
+                visible = layer.get('visible', True)
+                layer_tile = ft.ReorderableDragHandle(
+                    ft.ListTile(
+                        ft.Text(name, expand=True), #expand=True,
+                        leading=ft.IconButton(   # Toggle visibility button
+                            ft.Icons.VISIBILITY if visible else ft.Icons.VISIBILITY_OFF, mouse_cursor="click",
+                            on_click=self._toggle_selected_layer_visibility, data=name
+                        ),  
+                        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if self.widget.data.get('active_layer_idx', 0) == idx else None,  # Lighter bg for selected layer
+                        on_click=self._set_active_layer, data=name,
+                        trailing=ft.PopupMenuButton(
+                            data=name, menu_padding=ft.Padding.all(0),
+                            style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                            items=[
+                                ft.PopupMenuItem(
+                                    "Set Color", ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.widget.data.get('color', ft.Colors.PRIMARY)),
+                                    on_click=self._set_layer_content, 
+                                    tooltip="Set this layer to a solid color. This will overwrite any drawings on the layer currently." if visible else
+                                    "Layer must be visible to set color",
+                                    data=(name, "color"),
+                                    mouse_cursor="click",
+                                    disabled=not visible 
+                                ),
+                                
+                                ft.PopupMenuItem(
+                                    "Set Image", ft.Icon(ft.Icons.IMAGE_OUTLINED, self.widget.data.get('color', ft.Colors.PRIMARY)), 
+                                    on_click=self._set_layer_content, 
+                                    tooltip="Upload an image for this layer. This will overwrite any drawings on the layer currently." if visible else
+                                    "Layer must be visible to set image", 
+                                    data=(name, "image"),
+                                    mouse_cursor="click",
+                                    disabled=not visible
+                                ),
+                                ft.PopupMenuItem(
+                                    "Set Blur", ft.Icon(ft.Icons.BLUR_ON_OUTLINED, self.widget.data.get('color', ft.Colors.PRIMARY)), 
+                                    on_click=self._set_layer_blur, 
+                                    tooltip="Set the blur only for existing content on this layer. Useful for backgrounds and effects. " \
+                                    "Will NOT effect any future content drawn on this layer" if visible else
+                                    "Layer must be visible to set image", 
+                                    data=name,
+                                    mouse_cursor="click",
+                                    disabled=not visible
+                                ),
+                                
+                                ft.PopupMenuItem(
+                                    "Rename", ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.widget.data.get('color', ft.Colors.PRIMARY)),
+                                    data=name, on_click=self._rename_layer_clicked,
+                                    mouse_cursor="click",
+                                ),
+                                
+                                ft.PopupMenuItem(
+                                    "Delete", ft.Icon(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR),  
+                                    tooltip="Delete this layer. This action cannot be undone.",
+                                    data=name, on_click=self._delete_layer_clicked,
+                                    mouse_cursor="click",
+                                )
+                            ],
+                            
+                        ),
+                    ), 
+                    data=name
+                )
+                layer_expansion_tile.controls[0].controls.append(layer_tile)
+
+            notes_label = ft.Row([
+                ft.Container(width=6),
+                ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None), selectable=True),
+                ft.IconButton(
+                    ft.Icons.NEW_LABEL_OUTLINED, self.widget.data.get('color', "primary"), tooltip="Add Note",
+                    #on_click=self._new_note_clicked,
+                    mouse_cursor="click"
+                )
+            ], spacing=0)
+            
+            self.controls = [
+                
+                description_tf,
+
+                layer_expansion_tile,
+
+                notes_label,
+                #ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
+            ]
+            
+
+            try:
+                self.update()
+            except Exception as _:
+                pass
+
+
+
+            
 
 
     # Called when we click to export a canvas
@@ -630,27 +1157,9 @@ class Canvas(Widget):
         # List to store our captures for each layer of our canvas
         captures_list = []
 
-        # Expected size the user wants the canvas to be exported at, which they set upon creation
-        target_width = self.data.get('canvas_data', {}).get('width', None)
-        target_height = self.data.get('canvas_data', {}).get('height', None)
-        pixel_ratio = None  # Scale the capture up or down based on expected exported size
-
-        # Check the current width
-        current_width = self.canvas_width
-        current_height = self.canvas_height
-
-        
-        if target_width is None or target_height is None:
-            pass
-
-        # If target size != current size, upscale or downscale the capture
-        elif target_width != current_width or target_height != current_height:
-            width_ratio = target_width / current_width
-            height_ratio = target_height / current_height
-            pixel_ratio = min(width_ratio, height_ratio)  # Use the smaller ratio to maintain aspect ratio
 
         # Go through our layers now
-        for layer in self.layers:
+        for layer in self.layer_canvases:
 
             # Grab container to check if actually visible. Not visible, not exporting
             container = layer.get('canvas', None)
@@ -658,17 +1167,17 @@ class Canvas(Widget):
                 continue
 
             # Grab canvas our canvas for that layer
-            canvas: cv.Canvas = layer.get('canvas', None).content
+            canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
 
             # Capture and add that capture to the list
             if canvas is not None:
-                await canvas.capture(pixel_ratio)       # Upscale/downscale the capture based on size
+                await canvas.capture()       # Upscale/downscale the capture based on size
                 cc = await canvas.get_capture()
                 captures_list.append(cc)         # Add the capture to the list
                 await canvas.clear_capture()     # Clear the capture to prevent bugs 
 
         # Our exportable image bytes from merging all our layers captures together with any scaling needed
-        merged_bytes = _merge_captures(captures_list, target_width, target_height)
+        merged_bytes = _merge_captures(captures_list, self.canvas_width, self.canvas_height)
 
         # Open file dialog to save that capture
         if merged_bytes:
@@ -676,6 +1185,32 @@ class Canvas(Widget):
                 src_bytes=merged_bytes, file_name=f"{self.title}.png", 
                 file_type=ft.FilePickerFileType.IMAGE, allowed_extensions=["png"]
             )
+
+    def create_new_layer(self):
+        return ft.Container(ft.Text("New Layer"))
+    
+    def create_new_layer_canvas_ctrl(self, idx: int, canvas_data: dict):
+        visible = canvas_data.get('visible', True)
+        capture = canvas_data.get('capture', None)
+        name = canvas_data.get('name', f"Layer {idx}")
+
+        return cv.Canvas(
+            data=name,        # Save the index of this layer so we know where to save it in our data
+            shapes=[
+                cv.Image(       # Sets the background image of the layer to its most recent capture
+                    capture, 0, 0, 
+                    width=self.canvas_width,          # Ignore setting size before we know it
+                    height=self.canvas_height
+                )    
+            ],
+            visible=visible,
+            width=self.canvas_width,
+            height=self.canvas_height,
+        )
+
+    
+    def create_new_layer_sidebar_ctrl(self, data: dict):
+        return ft.Container(ft.Text("New Layer Sidebar Control"))
 
     
     def build(self):
@@ -685,65 +1220,158 @@ class Canvas(Widget):
     def reload_widget(self):       
         ''' Rebuilds/reloads our Canvas '''
 
-        self._load_layers()
+        # Called when undoing a stroke on the canvas
+        async def undo_stroke(e: ft.Event=None):
 
-        
+            # If there's nothing to undo, return early
+            if len(self.data.get('canvas_data', {}).get('undo_list', [])) == 0:
+                return
+                    
+            # Grab the task we're going to carry out and its name and capture
+            #task = self.widget.state.undo_list.pop()    
+            task = self.data.get('canvas_data', {}).get('undo_list', []).pop()
+            layer_name = task.get('layer_name', None)
+            capture = task.get('capture', None)
 
-        self.layer_stack = ft.Stack([
-            ft.Container(   # Make sure we're expanded
-                expand=True, ignore_interactions=True,
-                image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL) 
-            ),      
-        ],  expand=False, alignment=ft.Alignment(0, 0))   # Stack so we can have a background that doesn't get captured, and an interactive viewer to zoom and pan without affecting our coordinates
+            # Set data back to old capture state
+            for layer in self.data.get('canvas_data', {}).get('layers', []):
+                if layer.get('name', None) == layer_name:
+                    previous_capture = layer.get('capture', None)   # Grab current capture of the layer and add it to the redo list
+                    self.data.get('canvas_data', {}).get('redo_list', []).append({'layer_name': layer_name, 'capture': previous_capture})
+                    layer['capture'] = capture     
+                    # Update data
+                    self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
+                    break
+
+            # Update the UI
+            active_canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
+            active_canvas.shapes.clear()
+            active_canvas.shapes.append(cv.Image(capture, 0, 0, self.canvas_width, self.canvas_width))
+            active_canvas.update()
+
+        # Called when redoing a stroke on the canvas after a previous undo
+        async def redo_stroke(e: ft.Event=None):
+            # Return early if nothing to redo
+            if len(self.data.get('canvas_data', {}).get('redo_list', [])) == 0:
+                return
+            
+            # Most recent task we want to redo
+            task = self.data.get('canvas_data', {}).get('redo_list', []).pop() 
+            layer_name = task.get('layer_name', None)
+            capture = task.get('capture', None)
+
+            # Set data back to old capture state
+            for layer in self.data.get('canvas_data', {}).get('layers', []):
+                if layer.get('name', None) == layer_name:
+                    previous_capture = layer.get('capture', None)   # Grab current capture of the layer and add it to undo list
+                    #self.widget.state.undo_list.append({'layer_name': layer_name, 'capture': previous_capture})
+                    self.data.get('canvas_data', {}).get('undo_list', []).append({'layer_name': layer_name, 'capture': previous_capture})
+                    layer['capture'] = capture     # Set the capture of the layer to the one from our undo task
+                    #await self.save_dict()
+                    break
+
+            # Update UI
+            active_canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
+            active_canvas.shapes.clear()
+            active_canvas.shapes.append(cv.Image(capture, 0, 0, self.canvas_width, self.canvas_width))
+            active_canvas.update()
+
+        # Downscales images for preview to improve performance
+        def downscale_image(image_str: str) -> str:
+
+            try:
+                image_bytes = base64.b64decode(image_str)
+                img = Image.open(BytesIO(image_bytes))
+                if img.mode in ("P", "PA"):  # palette images with transparency must go via RGBA
+                    img = img.convert("RGBA")
+                has_alpha = img.mode in ("RGBA", "LA")
+                if not has_alpha:
+                    img = img.convert("RGB")
+                max_dim = 2160  # cap at 4K height; anything larger is not visible anyway
+                if img.width > max_dim or img.height > max_dim:
+                    img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+                output = BytesIO()
+                if has_alpha:
+                    img.save(output, format="PNG", optimize=True)
+                else:
+                    img.save(output, format="JPEG", quality=92, optimize=True)
+                image_str = base64.b64encode(output.getvalue()).decode("utf-8")
+            except Exception:
+                pass 
+            return image_str
+
+                
+
 
         # Add our layers to the stack in order
-        for layer in self.layers:
-            self.layer_stack.controls.append(layer.get('canvas', ft.Container(ft.Text("Failed to grab layer"))))
-            #print("Added canvas")
+        for idx, canvas_data in enumerate(self.data.get('canvas_data', {}).get('layers', [])):
+            self.layer_canvases.append(self.create_new_layer_canvas_ctrl(idx, canvas_data))
+
+
+        self.layer_stack = ft.Stack(
+            [
+                ft.Container(   # Transparent Background
+                    ignore_interactions=True,
+                    image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL),
+                    #border=ft.Border.all(2, ft.Colors.RED),
+                    width=self.canvas_width,
+                    height=self.canvas_height,
+                    expand=False
+                ),      
+            ] + self.layer_canvases,  
+            alignment=ft.Alignment.CENTER, expand=False
+        ) 
+
+        
+        # Controller
+        self.layer_stack.controls.append(
+            ft.GestureDetector(
+                mouse_cursor=ft.MouseCursor.PRECISE,
+                on_pan_start=self.start_new_stroke,         # Starts a new brush stroke with current paint settings
+                on_pan_update=self.update_stroke,           # Updates the current stroke based on mouse movement
+                on_pan_end=self.save_canvas,                # Saves the now complete stroke to our data and canvas capture
+                on_tap_up=self.add_shape,                   # Handles adding dots and tools
+                width=self.canvas_width,
+                height=self.canvas_height
+            )
+        )
 
         layers_container = ft.Container(
-            clip_behavior=ft.ClipBehavior.HARD_EDGE,
-            #border=ft.Border.all(1, ft.Colors.ON_SURFACE_VARIANT),
-            aspect_ratio=self.data.get('canvas_data', {}).get('aspect_ratio'),       # If set, ignores width and height
-            content=self.layer_stack, 
+            border=ft.Border.all(2, ft.Colors.OUTLINE),
+            content=self.layer_stack, expand=False,
             opacity=0.99,    # Forces canvas onto its own opacity layer for rendering to avoid blend mode bugs
-            on_size_change=self._set_size       # Set the size of the canvases needed for recapturing
+            #on_size_change=self._set_size_old       # Set the size of the canvases needed for recapturing
         )
 
         
-        # Hold layers container to make sure our interactive viewer fills the whole page
-        layers_wrapper = ft.Container(
-            layers_container, expand=True, 
-            alignment=ft.Alignment.CENTER
-        )
+        
 
         # Holds our drawing so we can interact with it, zoom, pan, etc.
         interactive_viewer = ft.InteractiveViewer(
-            content=layers_wrapper,
-            expand=3,
-            scale_factor=500, #boundary_margin=50,
-            min_scale=0.5, max_scale=3.0,
+            content=layers_container,
+            expand=3, 
+            constrained=False,
+            scale_factor=500, boundary_margin=50,
+            min_scale=0.2, max_scale=3.0,
         )
 
-        # If we're not showing info, just give us a button to show info and return early
-        if not self.data.get('show_info', True):
-
-            self.body_container.content = ft.Row( 
-                [
-                    interactive_viewer, 
-                    ft.IconButton(
-                        ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY), 
-                        mouse_cursor=ft.MouseCursor.CLICK, on_click=self._toggle_show_info,
-                        tooltip="Show Canvas Info", bgcolor=ft.Colors.SURFACE_CONTAINER,
-                    )
-                ], expand=True, spacing=0
+        self.sidebar_header.controls.insert(
+            1, 
+            ft.IconButton(
+                ft.Icons.UNDO, self.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
+                on_click=undo_stroke, disabled=len(self.data.get('canvas_data', {}).get('undo_list', [])) == 0
             )
-            self._render_widget()
-            return  # Don't load the info column if we're not showing it   
+        )
+        self.sidebar_header.controls.insert(
+            2, 
+            ft.IconButton(
+                ft.Icons.REDO_OUTLINED, self.data.get('color', None), tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
+                on_click=redo_stroke, disabled=len(self.data.get('canvas_data', {}).get('redo_list', [])) == 0
+            )
+        )
 
+        self.sidebar_body.controls.append(self.InformationDisplay(self))
 
-        information_display = self._create_information_display()  
-
-        self.body_container.content = ft.Row([interactive_viewer, information_display], expand=True, spacing=0)
+        self.body_container.content = ft.Row([interactive_viewer, self.show_sidebar_button, self.sidebar], expand=True, spacing=0)
 
         self._render_widget()
