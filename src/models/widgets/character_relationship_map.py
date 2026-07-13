@@ -31,7 +31,7 @@ class CharacterRelationshipMap(Widget):
             self.data.update({
                 # Widget data
                 'tag': "character_relationship_map",
-                'color': app.settings.data.get('default_character_connection_map_color'),
+                'color': app.settings.data.get('widget_defaults', {}).get('character_relationship_map', {}).get('color'),
                 'description': '',
                 'spider_web_view': False, # Whether lines/edges between characters are straight or have 3 segments
                 'characters': {

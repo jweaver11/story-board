@@ -49,7 +49,7 @@ class Widget(ft.Container):
                 'visible': True,                  # Whether this widget is visible in the workspace or not
                 'color': "primary",                   # Color of this widget's tab and icon in workspace and on rail
                 'image_base64': str(),                 # Base64 string of the image for this widget, if it has one
-                'show_sidebar': True,               # Whether to show the sidebar or not
+                'show_sidebar': False,               # Whether to show the sidebar. Widgets that use it set to True in their own data
                 'notes': list(),          # Several widgets have notes
             } 
 
@@ -57,7 +57,6 @@ class Widget(ft.Container):
         self.title = ft.Text(self.data.get('title', ''), weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
         self.story: Story = story   
         
-
         # Apply our visibility
         self.visible = self.data.get('visible', True)
 

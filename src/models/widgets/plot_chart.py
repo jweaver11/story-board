@@ -30,11 +30,9 @@ class PlotChart(Widget):
             self.data.update({
                 # Widget data
                 'tag': "plot_chart",             # Tag to identify what type of object this is
-                'color': app.settings.data.get('default_note_color'),
-                'pin_location': app.settings.data.get('default_note_pin_location', "right") if data is None else data.get('pin_location', "right"),   # Default pin location for notes
+                'color': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('color'),
 
                 'description': str(),
-                'show_info': True, 
                 'spider_web_view': False,
 
                 'nodes': [],

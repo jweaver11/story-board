@@ -35,9 +35,10 @@ class Plotline(Widget):
             self.data.update({
                 # Widget Data
                 'tag': "plotline",
-                'color': app.settings.data.get('default_plotline_color'),
+                'color': app.settings.data.get('widget_defaults', {}).get('plotline', {}).get('color'),
                 'old_plotline_width': 0,        # Stores previous width and height so inital loads have the right size for the mini widgets to use
-                'old_plotline_height': 0,       
+                'old_plotline_height': 0,    
+                'show_sidebar': True,   
 
                 # State and filter management   
                 'hide_division_labels': bool(),                       # If the division labels are hidden on the plotline
@@ -48,21 +49,7 @@ class Plotline(Widget):
                 'arcs_dropdown_expanded': True,             # If the arcs section is expanded
                 'markers_dropdown_expanded': True,          # If the markers section is expanded
                 'rail_dropdown_is_expanded': True,          # If the rail dropdown is expanded  
-                'divisions_are_expanded': True,             # If the divisions section is expanded
-
-                # Filter dropdown states
-                'arcs_filter_dropdown_expanded': bool(),          # If the arcs filter dropdown is expanded
-                'plot_points_filter_dropdown_expanded': bool(),   # If the plot points filter dropdown is
-                'markers_filter_dropdown_expanded': bool(),       # If the markers filter dropdown is expanded
-                'show_all_plot_points': True,                   # If all plot points are shown regardless of individual settings
-                'show_all_arcs': True,                          # If all arcs are shown regardless of individual settings
-                'show_all_markers': True,                       # If all markers are shown regardless of individual settings
-                'hide_all_plot_points': False,                  # If all plot points are hidden regardless of individual settings
-                'hide_all_arcs': False,                         # If all arcs are hidden regardless of individual settings
-                'hide_all_markers': False,                      # If all markers are hidden regardless of individual settings
-                'plot_points_id_are_expanded': True,            # If the plot points dropdown in the information display are expanded
-                'arcs_id_are_expanded': True,                   # If the arcs IDs are expanded in the filter
-                'markers_id_are_expanded': True,                # If the markers IDs are expanded in the filter
+                'divisions_are_expanded': True,             # If the divisions section is expanded                
                 
                 # Mini Widgets Data. Keep it seperate and safe from regular Plotline data below
                 'plot_points': dict(),                        # Dict of plot points in this branch

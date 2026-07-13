@@ -37,7 +37,7 @@ class World(Widget):
             self.data.update({
                 # Widget data
                 'tag': "world",     
-                'color': app.settings.data.get('default_world_color'),   
+                'color': app.settings.data.get('widget_defaults', {}).get('world', {}).get('color'),   
 
                 # State and view data
                 'edit_mode': True,              # Whether we are in edit mode or not
@@ -119,7 +119,7 @@ class World(Widget):
             self.update_data(**{'world_data': self.data['world_data']})  # Save our updated world data dict
         
         # Called by button to create a new section. Just shows our text field to enter the section name
-        async def new_section_clicked(e: ft.Event=None):
+        async def add_section_clicked(e: ft.Event=None):
             nonlocal new_section_tf, new_section_button
             new_section_button.visible = False
             new_section_tf.visible = True
@@ -449,9 +449,9 @@ class World(Widget):
         body.controls.extend(_load_world_data_controls())
 
         new_section_button = ft.Button(
-            "New Section", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            on_click=new_section_clicked,
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
+            "Add Section", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            on_click=add_section_clicked,
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=20)),
         )
 
         new_section_tf = ft.TextField(

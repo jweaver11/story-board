@@ -45,7 +45,8 @@ class Map(Widget):
             self.data.update({
                 # Widget data
                 'tag': "map", 
-                'color': app.settings.data.get('default_map_color'),
+                'color': app.settings.data.get('widget_defaults', {}).get('map', {}).get('color'),
+                'show_sidebar': True,
                 
                 'image_base64': str(),                # Saves our icon as img64 string (Used a preview as well from other widgets)
                 'left': int(),                        # Our left position on our parent map (if we have one)

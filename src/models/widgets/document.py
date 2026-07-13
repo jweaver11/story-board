@@ -36,7 +36,8 @@ class Document(Widget):
             self.data.update({
                 # Widget data
                 'tag': "document",
-                'color': app.settings.data.get('default_canvas_color'),
+                'color': app.settings.data.get('widget_defaults', {}).get('document', {}).get('color'),
+                'show_sidebar': True,
 
                 # Holds our comments and reference images in data
                 'mini_widgets': dict(),

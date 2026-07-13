@@ -38,7 +38,7 @@ class Character(Widget):
             self.data.update({
                 # Widget data
                 'tag': "character",
-                'color': app.settings.data.get('default_character_color'),
+                'color': app.settings.data.get('widget_defaults', {}).get('character', {}).get('color'),
  
                 # State and view data
                 'image_base64': str(),    # Saves our icon as img64 string 
@@ -87,7 +87,7 @@ class Character(Widget):
             self.update_data(**{'character_data': self.data['character_data']})  # Save our updated character data dict
         
         # Called by button to create a new section. Just shows our text field to enter the section name
-        async def new_section_clicked(e: ft.Event=None):
+        async def add_section_clicked(e: ft.Event=None):
             nonlocal new_section_tf, new_section_button
             new_section_button.visible = False
             new_section_tf.visible = True
@@ -416,9 +416,9 @@ class Character(Widget):
         body.controls.extend(_load_character_data_controls())
 
         new_section_button = ft.Button(
-            "New Section", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            on_click=new_section_clicked,
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
+            "Add Section", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            on_click=add_section_clicked,
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=20)),
         )
 
         new_section_tf = ft.TextField(

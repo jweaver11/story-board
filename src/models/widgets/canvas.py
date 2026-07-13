@@ -53,8 +53,8 @@ class Canvas(Widget):
             self.data.update({
                 # Widget data
                 "tag": "canvas",
-                'color': app.settings.data.get('default_canvas_color'),
-                'show_info': True,   # Whether to show the info column on the side of our charts or not.
+                'color': app.settings.data.get('widget_defaults', {}).get('canvas', {}).get('color'),
+                'show_sidebar': True,   # Whether to show the info column on the side of our charts or not.
 
                 # Info display and general canvas data
                 'canvas_data': {},       

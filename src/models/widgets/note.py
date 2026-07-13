@@ -25,7 +25,7 @@ class Note(Widget):
         if self.is_new == True:
             self.data.update({ 
                 'tag': "note", 
-                'color': app.settings.data.get('default_note_color'),
+                'color': app.settings.data.get('widget_defaults', {}).get('note', {}).get('color'),
 
                 # Note segment data. Stored as list so we can duplicate titles
                 'segment_data': [ 

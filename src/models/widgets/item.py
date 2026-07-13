@@ -29,7 +29,7 @@ class Item(Widget):
             self.data.update({
                 # Widget data
                 'tag': "item",             # Tag to identify what type of object this is
-                'color': app.settings.data.get('default_item_color'),
+                'color': app.settings.data.get('widget_defaults', {}).get('item', {}).get('color'),
 
                 'image_base64': str(), 
                 'description': str(),

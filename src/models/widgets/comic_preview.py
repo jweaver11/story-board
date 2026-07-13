@@ -144,26 +144,25 @@ class ComicPreview(Widget):
             self.update()
         
         # Handles toggling the preview direction between vertical and horizontal
-        async def toggle_preview_direction(e):
+        async def toggle_preview_direction(e: ft.Event):
             # Show the appropriate wrapper and update the button icon
             if self.data.get('preview_direction', "vertical") == "vertical":
                 self.update_data(**{'preview_direction': "horizontal"})
                 vertical_preview_wrapper.visible = False
                 horizontal_preview_wrapper.visible = True
-                toggle_preview_direction_button.icon = ft.Icons.SWAP_HORIZ
+                toggle_preview_direction_button.leading.icon = ft.Icons.SWAP_HORIZ
                 
             else:
                 self.update_data(**{'preview_direction': "vertical"})
                 horizontal_preview_wrapper.visible = False
                 vertical_preview_wrapper.visible = True
-                toggle_preview_direction_button.icon = ft.Icons.SWAP_VERT
+                toggle_preview_direction_button.leading.icon = ft.Icons.SWAP_VERT
             self.update()
             
         # Handles uploading new panel(s) from external files
-        async def handle_upload_panel(e):
+        async def handle_upload_panel(e: ft.Event):
             files = await ft.FilePicker().pick_files(allow_multiple=True, allowed_extensions=["jpg", "jpeg", "png", "webp"])
-            self.story.blocker.visible = True
-            self.story.blocker.update()
+            await self.story.block_page()
             if files:
                 for file in files:
                     file_path = file.path
@@ -186,8 +185,7 @@ class ComicPreview(Widget):
                         pass
                 self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
                 self.update()
-            self.story.blocker.visible = False
-            self.story.blocker.update()
+            await self.story.unblock_page()
                 
         
 
@@ -195,7 +193,6 @@ class ComicPreview(Widget):
         # TODO:
         # Upload canvases
         # Refresh canvas panels
-        # Adjust image filter quality
 
         # Returns the image control from the given string
         def build_preview_panel(idx: int, image_str: str) -> ft.Image:

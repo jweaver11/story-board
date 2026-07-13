@@ -812,7 +812,7 @@ class Chart(Widget):
 
             self.update()
 
-
+        # Returns a sidebar control for datasets
         def create_data_set_sidebar_control(data_set_idx: int, data_set_data: dict, is_new: bool=False):
             min_value = self.data.get('radar_data', {}).get('min_value', 0)
             max_value = self.data.get('radar_data', {}).get('max_value', 20)
@@ -1022,9 +1022,7 @@ class Chart(Widget):
 
             self.update()
                     
-                    
-
-
+        # Increases or decreases the tick count
         async def update_tick_count(e: ft.Event):
             change_function = e.control.data
 
@@ -1034,20 +1032,20 @@ class Chart(Widget):
                 self.data['radar_data']['tick_count'] = self.data['radar_data'].get('tick_count', 2) - 1
 
             chart.tick_count = self.data['radar_data'].get('tick_count', 2)
-            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
+            self.update_data(**{'radar_data': {'tick_count': self.data['radar_data'].get('tick_count', 2)}})
             chart.update()
 
+        # Updates if we show our tick labels or not
         async def update_show_tick_labels(e):
-            self.data['radar_data']['show_tick_labels'] = not self.data['radar_data'].get('show_tick_labels', False)
+            self.update_data(**{'radar_data': {'show_tick_labels': not self.data.get('radar_data', {}).get('show_tick_labels', False)}})
             chart.ticks_text_style = ft.TextStyle(size=16, color=self.data.get('color', ft.Colors.ON_SURFACE_VARIANT) if self.data['radar_data'].get('show_tick_labels', False) else ft.Colors.TRANSPARENT, italic=True)
-            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             chart.update()
 
+        # Updates if we rotate our node titles or not
         async def toggle_rotate_node_titles(e):
-            self.data['radar_data']['rotate_node_titles'] = not self.data['radar_data'].get('rotate_node_titles', False)
+            self.update_data(**{'radar_data': {'rotate_node_titles': not self.data['radar_data'].get('rotate_node_titles', False)}})
             for title in chart.titles:
                 title.angle = None if self.data['radar_data'].get('rotate_node_titles', False) else 360
-            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
             chart.update()
 
         # Insert our settings into the sidebar header after our title
