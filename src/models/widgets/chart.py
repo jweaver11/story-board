@@ -311,7 +311,7 @@ class Chart(Widget):
                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 
                     mouse_cursor=ft.MouseCursor.CLICK, data=group_idx, on_click=delete_group
                 ),
-                dense=True, tile_padding=ft.Padding.only(left=10, right=0), controls_padding=ft.Padding.only(right=20, left=20),
+                dense=True, tile_padding=ft.Padding.only(left=10, right=0), controls_padding=ft.Padding.only(right=10, left=10),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, collapsed_bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                 data=group_idx, shape=ft.RoundedRectangleBorder(radius=4), collapsed_shape=ft.RoundedRectangleBorder(radius=4),
                 expanded=is_new,
@@ -812,7 +812,7 @@ class Chart(Widget):
             self.update()
 
         # Returns a sidebar control for datasets
-        def create_data_set_sidebar_control(data_set_idx: int, data_set_data: dict, is_new: bool=False):
+        def create_data_set_sidebar_control(data_set_idx: int, data_set_data: dict, is_new: bool=False) -> ft.ExpansionTile:
             min_value = self.data.get('radar_data', {}).get('min_value', 0)
             max_value = self.data.get('radar_data', {}).get('max_value', 20)
             title = data_set_data.get('title', f"Data Set {data_set_idx}")

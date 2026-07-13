@@ -313,6 +313,7 @@ class CanvasBoard(Widget):
     
     def build(self):
         self.padding = ft.Padding.only(left=10, top=10, bottom=10)
+        
         super().build()
 
     # Called after any changes happen to the data that need to be reflected in the UI

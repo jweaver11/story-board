@@ -16,6 +16,7 @@ from styles.menu_option_style import MenuOptionStyle
 import flet.canvas as cv
 import asyncio
 import uuid
+from styles.text_field import TextField
 
 
 
@@ -78,17 +79,17 @@ class Widget(ft.Container):
         self.mini_widgets_wrapper = ft.Column(expand=1, spacing=0)  
         self.master_stack = ft.Stack(expand=True)  
         self.mini_widgets = []    
-        self.body_container = ft.Container(expand=3, clip_behavior=ft.ClipBehavior.NONE, on_size_change=self._set_size, size_change_interval=50) 
+        self.body_container = ft.Container(expand=3) 
                        
         # Sidebar controls
         self.sidebar_header: ft.Row       # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
         self.sidebar_body: ft.Column      # Column that holds the header and any other content for the sidebar
         self.sidebar: ft.Container      # Container on right side of widgets to hold mini widgets or sidebar info
         self.show_sidebar_button: ft.IconButton     # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
+        self.description_tf: TextField      # Description of this widget textfield for sidebar use
+
+        # Other shared controls
         self.select_image_button: ft.GestureDetector    # Button certain widgets use when they have an image to represent them (world, character, item, etc.)
-
-        
-
 
     # Updates data for this widget and marks it as dirty for the next file save
     def update_data(self, **kwargs):
@@ -608,7 +609,7 @@ class Widget(ft.Container):
         self.build_tab()
         self.build_sidebar()
         
-        self.reload_widget()    # Temp
+        
 
         self.select_image_button = ft.GestureDetector(
             ft.IconButton(
@@ -627,6 +628,17 @@ class Widget(ft.Container):
             on_hover=self.set_mouse_coords,
             hover_interval=100
         )
+
+        self.description_tf = TextField(
+            value=self.data.get('description', ''), label="Description",
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            multiline=True, dense=True, expand=True, border_radius=4,
+            on_blur=lambda e: self.update_data(**{'description': e.control.value}),
+            capitalization=ft.TextCapitalization.SENTENCES,
+            label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
+        )   
+
+        self.reload_widget()    # Temp
 
     # OLD - Phasing out
     def reload_widget(self):
