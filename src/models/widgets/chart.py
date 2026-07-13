@@ -608,36 +608,57 @@ class Chart(Widget):
     def radar_chart_view(self):
         ''' Builds out the body of our radar chart widget '''
 
-        # TODO: Don't hold the placeholder dataset in chart data. Just render and alter it live
-        # Add dragging to manipulate radar chart entries real time
-        # Determine positive angles by 360/ node count, and if closer to 90 or 270, use that contoller
         
-        # Updates the entry value of a dataset
+
+        # Update indices after datasets or nodes are added or deleted
+        async def update_indices():
+            await update_data_set_indices()
+            await update_node_indices()
+
+        # Updates the indices of the datasets and nodes in the sidebar after any changes
+        async def update_data_set_indices():
+            for idx, control in enumerate(sidebar_dataset_column.controls):
+                control.trailing.data = idx
+                control.leading.data = idx
+            for idx, control in enumerate(dataset_keys.controls):
+                control.data = idx
+
+        # Updates indices of the nodes in the sidebar after one is deleted
+        async def update_node_indices():
+            for idx, control in enumerate(sidebar_nodes_column.controls):
+                control.content.suffix.data = idx
+        
+        # Updates the entry value on the chart for each drag
         async def update_entry(e: ft.Event):
             dataset_idx, entry_idx = e.control.data
             new_value = int(e.control.value)
-
-            # TODO: Create fun to save data after slider drag done. This should just update UI
-
-            # Update our data
-            self.data['radar_data']['data_sets'][idx]['entries'][entry_idx] = new_value
-            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
 
             # Update the chart visually in real-time
             chart.data_sets[dataset_idx + 1].entries[entry_idx].value = new_value
             chart.update()
 
-        # Updates the title of a dataset
-        async def update_dataset_title(e):
-            entry_idx = e.control.data
-            new_title = e.control.value
+        # Updates entry value in data at end of each drag
+        async def update_entry_data(e: ft.Event):
+            dataset_idx, entry_idx = e.control.data
+            new_value = int(e.control.value)
 
-            self.data.get('radar_data', {}).get('data_sets', [])[entry_idx]['title'] = new_title
+            # Update our data
+            self.data['radar_data']['data_sets'][dataset_idx]['entries'][entry_idx] = new_value
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
-            self.sidebar.content.controls.pop()
-            self.sidebar_header.controls.pop(1)
-            self.reload_widget()
 
+        # Updates the title of a dataset
+        async def update_dataset_title(e: ft.Event):
+            data_set_idx = e.control.data
+            new_title = e.control.value
+            print("Updated title with index", data_set_idx)
+            # Update the data
+            self.data.get('radar_data', {}).get('data_sets', [])[data_set_idx]['title'] = new_title
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
+
+            sidebar_dataset_column.controls[data_set_idx].title.value = new_title
+            sidebar_dataset_column.controls[data_set_idx].update()
+
+        # Creates a dataset control for the radar chart
         def create_data_set_chart_control(data_set_idx: int, data_set_data: dict) -> fch.RadarDataSet:
             color = data_set_data.get('color', "primary")
             entries = data_set_data.get('entries', [])
@@ -658,11 +679,7 @@ class Chart(Widget):
                     entry_radius=0,
                     entries=[   # One invisible min and max value or chart renders weird
                         fch.RadarDataSetEntry(self.data.get('radar_data', {}).get('min_value', 0)),
-                        fch.RadarDataSetEntry(self.data.get('radar_data', {}).get('max_value', 0)),
-                        fch.RadarDataSetEntry(self.data.get('radar_data', {}).get('min_value', 0)),
-                        fch.RadarDataSetEntry(self.data.get('radar_data', {}).get('min_value', 0)),
-                        fch.RadarDataSetEntry(self.data.get('radar_data', {}).get('min_value', 0)),
-                    ],
+                    ] + [fch.RadarDataSetEntry(self.data.get('radar_data', {}).get('max_value', 0)) for i, _ in enumerate(self.data.get('radar_data', {}).get('nodes', [])) if i < len(self.data.get('radar_data', {}).get('nodes', [])) - 1],
                 ),
             ],
             expand=3,
@@ -696,7 +713,7 @@ class Chart(Widget):
                     ),
                     #ft.Text(ds.get('title', "Data Set"), style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
                     ft.TextField(
-                        data_set_data.get('title', "Data Set"), dense=True, data=idx,
+                        data_set_data.get('title', "Data Set"), dense=True, data=data_set_idx,
                         border=ft.InputBorder.NONE, text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
                         on_blur=update_dataset_title,
                         width=120
@@ -713,23 +730,33 @@ class Chart(Widget):
         )
 
         # Renames a node title on the chart
-        async def update_node_title(e):
+        async def update_node_title(e: ft.Event):
+            # Update data
             self.data['radar_data']['nodes'][e.control.data] = e.control.value
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
+            # Update node on chart
             chart.titles[e.control.data].text = e.control.value
             chart.update()
 
         # Deletes a node/title and the corresponding data for it in each data set
         async def delete_node(e: ft.Event):
+            node_idx = e.control.data
             
-            del self.data['radar_data']['nodes'][e.control.data]
+            # Delete the node from data and all values tied to it
+            del self.data['radar_data']['nodes'][node_idx]
             for ds in self.data.get('radar_data', {}).get('data_sets', []):
-                del ds['entries'][e.control.data]
+                del ds['entries'][node_idx]
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
-            self.sidebar.content.controls.pop()
-            self.sidebar_header.controls.pop(1)
-            self.reload_widget()
-            self.page.pop_dialog()
+
+            # Remove that node from the chart's data sets and titles
+            for ds in chart.data_sets:
+                del ds.entries[node_idx]
+            chart.titles.pop(node_idx)
+
+            # Remove the corresponding control from the sidebar nodes column and update
+            sidebar_nodes_column.controls.pop(node_idx)
+            self.update()
+            await update_indices()
             
 
         # Toggles the chart either polygon or circle shaped
@@ -745,17 +772,20 @@ class Chart(Widget):
 
         # Adding a new dataset with default values in each node
         async def create_data_set(e: ft.Event):
+            # Set median value
             median_value = int(self.data.get('radar_data', {}).get('max_value', 20) / 2)
             if median_value < self.data.get('radar_data', {}).get('min_value', 0):
                 median_value = int(self.data.get('radar_data', {}).get('min_value', 0))
+
+            # Add to data
             self.data['radar_data']['data_sets'].append({
-                'title': f"Data Set {len(self.data['radar_data']['data_sets'])}",
+                'title': f"Data Set {len(self.data['radar_data']['data_sets']) + 1}",
                 'color': "primary",
                 'entries': [median_value for _ in self.data['radar_data']['nodes']],   # Default entries for each title/node
             })
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
 
-            # 
+            # Add dataset to our sidebar column
             sidebar_dataset_column.controls.append(
                 create_data_set_sidebar_control(
                     len(self.data['radar_data']['data_sets']) - 1, 
@@ -764,15 +794,24 @@ class Chart(Widget):
                 )
             )
 
-            #self.update()
+            # Add control to the chart data
+            chart.data_sets.append(
+                create_data_set_chart_control(
+                    len(self.data['radar_data']['data_sets']) - 1,
+                    self.data['radar_data']['data_sets'][-1]
+                )
+            )
 
+            # Add key to our keys and update
+            dataset_keys.controls.append(
+                create_data_set_key_control(
+                    len(self.data['radar_data']['data_sets']) - 1,
+                    self.data['radar_data']['data_sets'][-1]
+                )
+            )
 
-            #self.sidebar.content.controls.pop()
-            #self.sidebar_header.controls.pop(1)
-            #self.reload_widget()
+            self.update()
 
-        def create_data_set_chart_control() -> fch.RadarDataSet:
-            return
 
         def create_data_set_sidebar_control(data_set_idx: int, data_set_data: dict, is_new: bool=False):
             min_value = self.data.get('radar_data', {}).get('min_value', 0)
@@ -785,7 +824,7 @@ class Chart(Widget):
                 leading=ft.PopupMenuButton(
                     icon=ft.Icons.COLOR_LENS_OUTLINED, 
                     icon_color=color, menu_padding=ft.Padding.all(0),
-                    tooltip="Change Color",
+                    tooltip="Change Color", data=data_set_idx,
                     style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
                     items=[
                         ft.PopupMenuItem(
@@ -812,7 +851,9 @@ class Chart(Widget):
                             value=entry, 
                             min=min_value,
                             max=max_value, 
-                            label="{value}", on_change=update_entry, data=(idx, i),
+                            label="{value}", 
+                            on_change=update_entry, on_change_end=update_entry_data,
+                            data=(idx, i),
                             expand=True,
                             divisions=max_value - min_value if max_value > min_value else None,
                         ),
@@ -823,47 +864,47 @@ class Chart(Widget):
             )
 
         # Delete a dataset and all its info
-        async def delete_data_set(e):
-
-            async def delete_data_set_confirm(_):
-                idx = e.control.data
-                del self.data['radar_data']['data_sets'][idx]
-                self.update_data(**{'radar_data': self.data.get('radar_data', {})})
-                self.sidebar.content.controls.pop()
-                self.sidebar_header.controls.pop(1)
-                self.reload_widget()
-                self.page.pop_dialog()
-
-            dataset_title = self.data['radar_data']['data_sets'][e.control.data]['title']
-
-            dlg = ft.AlertDialog(
-                title=f"Are you sure you want to delete {dataset_title}?",
-                actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
-                    ft.TextButton("Delete", on_click=delete_data_set_confirm, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
-                ]
-            )
-            self.page.show_dialog(dlg)
+        async def delete_data_set(e: ft.Event):
+            # Delete from data
+            data_set_idx = e.control.data
+            del self.data['radar_data']['data_sets'][data_set_idx]
+            self.update_data(**{'radar_data': self.data.get('radar_data', {})})
+            
+            # Remove from keys, chart, and sidebar
+            dataset_keys.controls.pop(data_set_idx)
+            chart.data_sets.pop(data_set_idx + 1)   # Skip first invisible dataset
+            sidebar_dataset_column.controls.pop(data_set_idx)
+            self.update()
+            await update_indices()
 
         # Change data_sets color on the chart
-        async def update_dataset_color(e):
-            idx = e.control.data
-            color = str(e.control.content)
-            self.data['radar_data']['data_sets'][idx]['color'] = color
+        async def update_dataset_color(e: ft.Event):
+            data_set_idx = e.control.parent.data
+            new_color = str(e.control.content)
+            self.data['radar_data']['data_sets'][data_set_idx]['color'] = new_color
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
-            self.sidebar.content.controls.pop()
-            self.sidebar_header.controls.pop(1)
-            self.reload_widget()
+
+            # Update sidebar icon color for this dataset
+            sidebar_dataset_column.controls[data_set_idx].leading.icon_color = new_color
+            # Update key color for this dataset
+            container = dataset_keys.controls[data_set_idx].content.controls[0]
+            container.border = ft.Border.all(2, new_color)
+            container.bgcolor = ft.Colors.with_opacity(0.2, new_color)
+
+            # Update the chart's dataset color to reflect the change
+            chart.data_sets[data_set_idx + 1].fill_color = ft.Colors.with_opacity(0.2, new_color)  # Skip first invisible dataset
+            chart.data_sets[data_set_idx + 1].border_color = new_color
+            self.update()
 
         # Called to create a new node
-        def create_node():
-            # Add this node with default title to data
-            self.data['radar_data']['nodes'].append(    # Nodes are just strings
-                f"Node {len(self.data['radar_data']['nodes']) + 1}"
-            )
+        async def create_node(e: ft.Event):
 
-            # Calculate a median value and add it to all the data_sets as a new entry
+            # Set new title and median value
+            node_title = f"Node {len(self.data['radar_data']['nodes']) + 1}"
             median_value = int(self.data.get('radar_data', {}).get('max_value', 20) / 2)
+            
+            # Add this new node to the list of nodes and append the median value to each data set entry
+            self.data['radar_data']['nodes'].append(node_title)
             if median_value < self.data.get('radar_data', {}).get('min_value', 0):
                 median_value = int(self.data.get('radar_data', {}).get('min_value', 0))
             for ds in self.data.get('radar_data', {}).get('data_sets', []):
@@ -871,10 +912,18 @@ class Chart(Widget):
 
             # Update our data to support this new node
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
-            self.sidebar.content.controls.pop()
-            self.sidebar_header.controls.pop(1)
-            self.reload_widget()
+            sidebar_nodes_column.controls.append(create_sidebar_node(len(self.data['radar_data']['nodes']) - 1, node_title))
 
+            # Add the new entries to the charts
+            for ds in chart.data_sets:
+                ds.entries.append(fch.RadarDataSetEntry(median_value))
+
+            # Add new title to the chart and update
+            should_rotate_nodes = self.data.get('radar_data', {}).get('rotate_node_titles', False)
+            chart.titles.append(fch.RadarChartTitle(node_title, angle=None if should_rotate_nodes else 360))
+            self.update()
+            
+        # Creates the node control in the sidebar
         def create_sidebar_node(idx: int, title: str) -> ft.Container:
             return ft.Container(
                 ft.TextField(
@@ -893,7 +942,7 @@ class Chart(Widget):
                         disabled=idx < 3
                     )    
                 ),
-                border_radius=4, margin=ft.Margin.only(bottom=10)
+                border_radius=4,
             )
         
         # Create sidebar column to hold our nodes and data_sets
@@ -901,14 +950,18 @@ class Chart(Widget):
         sidebar_nodes_column = ft.Column([create_sidebar_node(idx, title) for idx, title in enumerate(self.data.get('radar_data', {}).get('nodes', []))]) 
 
         
-
-        async def update_min_max_value(e):
+        # Update the minimum and maximum values for the radar chart and ensure all dataset entries conform to the new scale
+        async def update_min_max_value(e: ft.Event):
+            # Grab our new value and either min or max depending on which control triggered the event
             new_value = int(e.control.value)
             key = e.control.data
+            # Return early if no changes
             if key == "min_value" and new_value == self.data['radar_data'].get('min_value', 0):
                 return
             if key == "max_value" and new_value == self.data['radar_data'].get('max_value', 20):
                 return
+            
+            # Validate that the new min or max value is within acceptable bounds relative to the other value
             if key == "min_value" and new_value >= self.data['radar_data'].get('max_value', 20):
                 e.control.error = "Min value must be less than max value"
                 e.control.value = str(self.data['radar_data'].get('min_value', 0))
@@ -921,23 +974,55 @@ class Chart(Widget):
                 await e.control.focus()
                 e.control.update()
                 return
-            self.data['radar_data'][key] = new_value
+            
+            # Otherwide, update our data for either min or max
+            self.update_data(**{'radar_data': {key: new_value}})
 
+            # Go through each dataset in data and ensure all entries conform to the new min and max values
             for idx, ds in enumerate(self.data.get('radar_data', {}).get('data_sets', [])):
-                if idx == 0:    # Set first one's values to the new min/max so it always fills the whole chart and shows the new scale
-                    ds['entries'][0] = self.data['radar_data'].get('min_value', 0)
-                    ds['entries'][1] = self.data['radar_data'].get('max_value', 20)
-                    #continue
                 for i in range(len(ds.get('entries', []))):
                     if ds['entries'][i] < self.data['radar_data'].get('min_value', 0):
                         ds['entries'][i] = self.data['radar_data'].get('min_value', 0)
-                    elif ds['entries'][i] > self.data['radar_data'].get('max_value', 20):
+                    if ds['entries'][i] > self.data['radar_data'].get('max_value', 20):
                         ds['entries'][i] = self.data['radar_data'].get('max_value', 20)
+
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
-            self.sidebar.content.controls.pop()
-            self.sidebar_header.controls.pop(1)
-            self.reload_widget()
-           
+
+            # Update all our sliders to make sure they are within bounds for dataset ctrls in sidebar
+            new_min = int(self.data['radar_data'].get('min_value', 0))
+            new_max = int(self.data['radar_data'].get('max_value', 20))
+            for ctrl in sidebar_dataset_column.controls:
+                
+                for c in ctrl.controls:
+                    c.controls[0].value = str(new_min)      # Min text on left
+                    c.controls[2].value = str(new_max)      # Max text on right 
+                    slider = c.controls[1]
+                    slider.min = new_min
+                    slider.max = new_max
+                    if slider.value < new_min:
+                        slider.value = new_min
+                    if slider.value > new_max:
+                        slider.value = new_max
+
+            # Update values for all entries in the datasets on our chart
+            for idx, ds in enumerate(chart.data_sets):
+                # Make sure first one updates as we want
+                if idx == 0:
+                    for i, e in enumerate(ds.entries):
+                        if i == 0:
+                            e.value = self.data['radar_data'].get('min_value', 0)
+                        else:
+                            e.value = self.data['radar_data'].get('max_value', 20)
+                    continue
+                for e in ds.entries:
+                    if e.value < self.data['radar_data'].get('min_value', 0):
+                        e.value = self.data['radar_data'].get('min_value', 0)
+                    if e.value > self.data['radar_data'].get('max_value', 20):
+                        e.value = self.data['radar_data'].get('max_value', 20)
+
+            self.update()
+                    
+                    
 
 
         async def update_tick_count(e: ft.Event):
@@ -1075,20 +1160,12 @@ class Chart(Widget):
 
     def build(self):
         super().build()
-
-    # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
-    def reload_widget(self):
-        ''' Reloads/Rebuilds our widget based on current data '''
-
-
         if self.data.get('chart_type', "") == "bar":
             self.bar_chart_view()
         else:
             self.radar_chart_view()
 
-        try:
-
-            self.update()
-        except Exception as _:
-            pass
         
+# TODO: Don't hold the placeholder dataset in chart data. Just render and alter it live
+# Add dragging to manipulate radar chart entries real time
+# Determine positive angles by 360/ node count, and if closer to 90 or 270, use that contoller
