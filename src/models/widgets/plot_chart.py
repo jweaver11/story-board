@@ -45,7 +45,7 @@ class PlotChart(Widget):
         )
 
         # State and management
-        self.new_node_position = (100, 100)     # Position we place new nodes
+        self.new_node_position = (200, 200)     # Position we place new nodes
         self.edge_canvas: cv.Canvas           # Canvas that holds our edges (cv.shapes)
         self.node_stack: ft.Stack           # Stack that holds our nodes (gesture detectors)
         self.node_sidebar_column: ft.Column
@@ -572,7 +572,7 @@ class PlotChart(Widget):
         )
 
     # Creates our node with given title if unique
-    async def create_node(self, e: ft.Event=None):
+    async def create_node(self, e: ft.Event):
 
         existing_names = {node.get('label') for node in self.data.get('nodes', [])}
         n = len(existing_names)
@@ -580,24 +580,26 @@ class PlotChart(Widget):
             n += 1
         node_label = f"Node {n}"
 
-        
-        viewer_w = self.iv.width or self.w
-        viewer_h = self.iv.height or self.h
-        cx = (viewer_w / 2 - self.iv_offset_x) / self.iv_scale
-        cy = (viewer_h / 2 - self.iv_offset_y) / self.iv_scale
+        required_offset = str(e.control.data)
+        if required_offset.lower() == "sidebar":
+            offset_amount = ((self.w - self.sidebar.width) / 2, 0)
+        else:
+            offset_amount = ((self.w / 2), (self.h / 2))
 
-        # Clamp to canvas bounds with a margin for node width/height
-        cx = max(0, min(4850, cx))
-        cy = max(0, min(2950, cy))
-
-        self.new_node_position = (cx, cy)
-
-        #self.new_node_position = (self.w / 2 * .75, self.h / 2)
+        # Reset our new positions
+        self.new_node_position = (
+            self.new_node_position[0] - offset_amount[0],
+            self.new_node_position[1] - offset_amount[1]
+        )
+        if self.new_node_position[0] < 0 or self.new_node_position[1] < 0:
+            self.new_node_position = (max(0, self.new_node_position[0]), max(0, self.new_node_position[1]))
+        elif self.new_node_position[0] > 5000 or self.new_node_position[1] > 3000:
+            self.new_node_position = (min(5000, self.new_node_position[0]), min(3000, self.new_node_position[1]))
 
         self.data['nodes'].append({
             'label': node_label, 
             'position': self.new_node_position, 'color': '#FFFFFF', 'description': ""
-            })
+        })
         self.update_data(**{'nodes': self.data['nodes']})
 
         # Add the node to the stack
@@ -617,7 +619,6 @@ class PlotChart(Widget):
 
         self.update()
 
-        #self.new_node_position = (self.w / 2 * .75, self.h / 2) # Reset new node position to default for next time
 
     # Returns a sidebar control for a node
     def create_node_sidebar_ctrl(self, idx: int, node_data: dict) -> ft.TextField:
@@ -698,20 +699,23 @@ class PlotChart(Widget):
 
     def build(self):
         super().build()
-        
-        # Hides the new node tf after we submit or cancel adding a new node
-        async def hide_new_node_tf(e: ft.Event=None):
-            if not self.sidebar.visible:
-                self.add_node_button.visible = True
-                self.add_node_button.update()
-        
+
+        # Sets our canvas coords for when we're creating a new node by right clicking
+        async def set_new_node_coords(e: ft.HoverEvent):
+            self.new_node_position = (e.local_position.x, e.local_position.y)
+            
         # Canvas to hold our edge lines between nodes
         self.edge_canvas = cv.Canvas(
             [],  
-            content=ft.Container(
-                #image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL),
+            content=ft.GestureDetector(
+                ft.Container(
+                    #image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL),
+                    width=5000, height=3000,
+                    border=ft.Border.all(2, ft.Colors.OUTLINE),
+                ),
                 width=5000, height=3000,
-                border=ft.Border.all(2, ft.Colors.OUTLINE),
+                on_hover=set_new_node_coords,
+                hover_interval=40
             ),
             width=5000, height=3000
         )
@@ -752,7 +756,7 @@ class PlotChart(Widget):
                         self.data.get('color', ft.Colors.PRIMARY),
                         mouse_cursor=ft.MouseCursor.CLICK,
                         on_click=self.create_node,
-                        data="ignore_position"
+                        data="sidebar",
                     ),
                 ], spacing=0),
 
@@ -763,7 +767,6 @@ class PlotChart(Widget):
 
                 self.edge_sidebar_column,
 
-                
             ], 
             expand=True, scroll="auto", spacing=0,
         )
@@ -839,10 +842,10 @@ class PlotChart(Widget):
         self.add_node_button = ft.Button(
             "Add Node", 
             on_click=self.create_node, 
-            data="ignore_position",
+            data="button",
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            visible=not self.sidebar.visible,
+            visible=not self.data.get('show_sidebar', False),
             bottom=10, right=0,
         )
 
