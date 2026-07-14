@@ -444,22 +444,22 @@ class Canvas(Widget):
         """ Saves our paths to our canvas data for storage """
 
         # Set our canvas, layer name, and update our shapes count
-        canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
+        canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx] if canvas is None else canvas
         if not canvas.visible:  # Protect when we shouldnt be drawing with it
             return
-        layer_name = canvas.data
+        layer_idx = int(canvas.data)
 
-        # Grab the old capture for this layer and add it as an undo task for the canvas
-        for layer in self.data.get('canvas_data', {}).get('layers', []):
-            if layer.get('name', None) == layer_name:
-                if layer.get('capture', None):
-                    old_capture = layer.get('capture')
-                    self.data['canvas_data']['undo_list'].append({'layer_name': layer_name, 'capture': old_capture})
-                    self.data['canvas_data']['redo_list'].clear()     # Clear redo list after new action
-        
-                    # Make sure undo list is not too long and hog to many resources
-                    if len(self.data['canvas_data']['undo_list']) > MAX_UNDO_LIST_TASKS:
-                        self.data['canvas_data']['undo_list'].pop(0)
+        layer_data = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]
+        layer_name = layer_data.get('name', None)
+        old_capture = layer_data.get('capture', None)
+        self.data['canvas_data']['undo_list'].append({'layer_name': layer_name, 'capture': old_capture})
+        self.data['canvas_data']['redo_list'].clear()     # Clear redo list after new action
+
+        # Make sure undo list is not too long and hog to many resources
+        if len(self.data['canvas_data']['undo_list']) > MAX_UNDO_LIST_TASKS:
+            self.data['canvas_data']['undo_list'].pop(0)
+                    
+                    
         try:
             # Captures the current state of this canvas
             await canvas.capture()  
@@ -473,17 +473,12 @@ class Canvas(Widget):
                 await canvas.clear_capture()
                 return
 
-            # With this:
-            for layer in self.data['canvas_data']['layers']:
-                if layer.get('name') == layer_name:
-                    layer['capture'] = encoded_capture
-                    break
+            layer_data['capture'] = encoded_capture
+            self.data['canvas_data']['layers'][layer_idx]= layer_data
             self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})   # Update our data with the new capture  
                 
             await canvas.clear_capture()
-
             
-
             # Check if we have too many shapes on the canvas. If we do, capture them and put it in an image
             if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:   
                 canvas.shapes.clear()
@@ -551,187 +546,152 @@ class Canvas(Widget):
             self.story.blocker.update()
             self.needs_redraw = False
 
-    class InformationDisplay(ft.Column):
 
-        # Constructor.
-        def __init__(
-            self, 
-            widget: 'Canvas',                  
-            data: dict = None               
-        ):
+    async def set_layer_content(self, e: ft.Event):
 
-            # Parent constructor
-            super().__init__(data=data) 
-            self.widget = widget
+        await self.story.close_menu()
 
-            # Reloads the information display of the canvas
+        layer_name, type = e.control.data
 
-        
-            
+        # Grab the layer this is. Set its capture as color or image
 
-        async def _set_layer_content(self, e: ft.Event):
+        # Set a color as the background
+        if type == "color":
 
-            await self.widget.story.close_menu()
+            async def _color_change(e):     # Set the color to the picked one
+                color_picker.color = e.data
 
-            layer_name, type = e.control.data
+            async def _set_color_confirmed(e=None):
 
-            # Grab the layer this is. Set its capture as color or image
-
-            # Set a color as the background
-            if type == "color":
-
-                async def _color_change(e):     # Set the color to the picked one
-                    color_picker.color = e.data
-
-                async def _set_color_confirmed(e=None):
-
-                    for layer in self.widget.data.get('layers', []):
-                        if layer.get('name') == layer_name:
-                            for ctrl in self.widget.layer_stack.controls:
-                                if isinstance(ctrl, ft.Container) and isinstance(ctrl.content, cv.Canvas) and ctrl.data == layer_name:
-                                    ctrl.content.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
-                                    ctrl.content.shapes.append(cv.Color(color_picker.color))   # Re-add empty images so it can capture
-                                    ctrl.content.update()
-                                    await self.widget.save_canvas(canvas=ctrl.content)  
-                                    break
-                            break
-
-                    self.page.pop_dialog()
-                    
-
-                color_picker = ColorPicker(
-                    self.widget.data.get('background', ft.Colors.PRIMARY) if self.widget.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
-                    on_color_change=_color_change
-                )
-                dlg = ft.AlertDialog(
-                    ft.Column([color_picker], tight=True, expand=False),
-                    title=f"Set {layer_name} to a Color",
-                    actions=[
-                        ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                        ft.TextButton("Set", on_click=_set_color_confirmed, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
-                    ]
-                )
-                self.page.show_dialog(dlg)
-
-            # If its not a color, its an image
-            else:
-                files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
-                if files:
-
-                    file_path = files[0].path
-                    try:
-                        
-
-                        with open(file_path, "rb") as image_file:
-                            print("Opened file")
-                            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                            for layer in self.widget.data.get('layers', []):
-                                if layer.get('name') == layer_name:
-                                    print("Found layer: ", layer_name)
-                                    for ctrl in self.widget.layer_stack.controls:
-                                        if isinstance(ctrl, ft.Container) and isinstance(ctrl.content, cv.Canvas) and ctrl.data == layer_name:
-                                            print("Set image")
-                                            ctrl.content.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
-                                            ctrl.content.shapes.append(cv.Image(f"{encoded_string}", 0, 0, self.widget.canvas_width, self.widget.canvas_height))   # Re-add empty images so it can capture
-                                            ctrl.content.update()
-                                            await self.widget.save_canvas(canvas=ctrl.content)
-                                            break
-                                    break
-                        self.page.pop_dialog()
-
-                    except Exception as _:
-                        pass   
-
-        async def _set_layer_blur(self, e: ft.Event):
-            await self.widget.story.close_menu()
-
-            layer_name = e.control.data
-            #capture = None
-            for layer in self.widget.data.get('layers', []):
-                if layer.get('name') == layer_name:
-                    if layer.get('capture', "") == "":
-                        
-                        self.page.show_dialog(SnackBar("Layer must have existing content to set blur"))
-                        return
-                    capture = layer.get('capture', "")
-                    break
-
-            if capture is None:
-                self.page.show_dialog(SnackBar("Error finding layer capture for blur"))
-                return
-            
-            # Updates the visual canvas with new blur amount
-            async def _blur_amount_changed(e):
-                blur_amount = e.control.value
-                active_preview_image.paint.blur_image = blur_amount
-                active_preview_image.update()
-
-            # Apply that level of blur to the layer
-            async def _apply_blur(e=None):
-
-                for layer in self.widget.data.get('layers', []):
+                for layer in self.data.get('layers', []):
                     if layer.get('name') == layer_name:
-                        for ctrl in self.widget.layer_stack.controls:
+                        for ctrl in self.layer_stack.controls:
                             if isinstance(ctrl, ft.Container) and isinstance(ctrl.content, cv.Canvas) and ctrl.data == layer_name:
                                 ctrl.content.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
-                                ctrl.content.shapes.append(cv.Image(capture, 0, 0, self.widget.canvas_width, self.widget.canvas_height, paint=ft.Paint(blur_image=blur_strength_slider.value)))
+                                ctrl.content.shapes.append(cv.Color(color_picker.color))   # Re-add empty images so it can capture
                                 ctrl.content.update()
-                                await self.widget.save_canvas(canvas=ctrl.content)  
+                                await self.save_canvas(canvas=ctrl.content)  
                                 break
                         break
 
                 self.page.pop_dialog()
-            
-            blur_strength_slider = ft.Slider(1, "{value}", min=0, max=50, on_change=_blur_amount_changed)
-            
-            
-            preview_canvas = ft.Container(
-                cv.Canvas(
-                    #shapes=[preview_image], 
-                    shapes=[],
-                    
-                    expand=True,
-                    width=self.widget.canvas_width / 2, height=self.widget.canvas_height / 2
-                ),
-                image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL) 
-            )
-
-            active_preview_image = None
-
-            # Add the entire canvas to the preview, but mark the active layer we will change blur of
-            for layer in self.widget.data.get('layers', []):
-                if layer.get('name') == layer_name:
-                    active_preview_image = cv.Image(layer.get('capture', ""), 0, 0, self.widget.canvas_width / 2, self.widget.canvas_height / 2, paint=ft.Paint(blur_image=1))
-                    preview_canvas.content.shapes.append(active_preview_image)
-                    continue
-                preview_canvas.content.shapes.append(cv.Image(layer.get('capture', ""), 0, 0, self.widget.canvas_width / 2, self.widget.canvas_height / 2))
                 
-            if active_preview_image is None:
-                self.page.show_dialog(SnackBar("Error finding layer capture for blur"))
-                return
 
+            color_picker = ColorPicker(
+                self.data.get('background', ft.Colors.PRIMARY) if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
+                on_color_change=_color_change
+            )
             dlg = ft.AlertDialog(
-                ft.Column([
-                    preview_canvas, 
-                    blur_strength_slider,
-                    ft.Text("Adjust Blur Strength", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
-                title=f"Set Blur for {layer_name}",
+                ft.Column([color_picker], tight=True, expand=False),
+                title=f"Set {layer_name} to a Color",
                 actions=[
                     ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                    ft.TextButton("Apply", on_click=_apply_blur, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
+                    ft.TextButton("Set", on_click=_set_color_confirmed, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
                 ]
             )
-            self.page.show_dialog(dlg)     
+            self.page.show_dialog(dlg)
 
-           
+        # If its not a color, its an image
+        else:
+            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            if files:
+
+                file_path = files[0].path
+                try:
+                    
+
+                    with open(file_path, "rb") as image_file:
+                        print("Opened file")
+                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                        for layer in self.data.get('layers', []):
+                            if layer.get('name') == layer_name:
+                                print("Found layer: ", layer_name)
+                                for ctrl in self.layer_stack.controls:
+                                    if isinstance(ctrl, ft.Container) and isinstance(ctrl.content, cv.Canvas) and ctrl.data == layer_name:
+                                        print("Set image")
+                                        ctrl.content.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
+                                        ctrl.content.shapes.append(cv.Image(f"{encoded_string}", 0, 0, self.canvas_width, self.canvas_height))   # Re-add empty images so it can capture
+                                        ctrl.content.update()
+                                        await self.save_canvas(canvas=ctrl.content)
+                                        break
+                                break
+                    self.page.pop_dialog()
+
+                except Exception as _:
+                    pass   
+
+    async def set_layer_blur(self, e: ft.Event):
+        await self.story.close_menu()
+
+        layer_name = e.control.parent.parent.parent.parent.data
+        layer_idx = e.control.parent.parent.parent.data
+        capture = None
+        capture = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]['capture']
+        if not capture:
+            self.page.show_dialog(SnackBar("Layer must have existing content to set blur"))
+            return
+
+        # Updates the visual canvas with new blur amount
+        async def blur_amount_changed(e: ft.Event):
+            blur_amount = e.control.value
+            active_preview_image.paint.blur_image = blur_amount
+            active_preview_image.update()
+
+        # Apply that level of blur to the layer
+        async def apply_blur(e=None):
             
+            blur_strength = blur_strength_slider.value
+
+            # Update data
+            canvas: cv.Canvas = self.layer_canvases[layer_idx]
+            canvas.shapes.clear()
+            canvas.shapes.append(cv.Image(capture, 0, 0, self.canvas_width, self.canvas_height, paint=ft.Paint(blur_image=blur_strength)))
+            canvas.update()
+            self.page.pop_dialog()
+
+            await self.save_canvas(canvas=canvas)  
+            
+        
+        blur_strength_slider = ft.Slider(1, "{value}", min=0, max=50, on_change=blur_amount_changed)
+        
+        preview_canvas = ft.Container(
+            cv.Canvas(
+                #shapes=[preview_image], 
+                shapes=[],
                 
-       
+                expand=True,
+                width=self.canvas_width / 2, height=self.canvas_height / 2
+            ),
+            image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL) 
+        )
 
+        active_preview_image = None
 
-
+        # Add the entire canvas to the preview, but mark the active layer we will change blur of
+        for layer in self.data.get('canvas_data', {}).get('layers', []):
+            if layer.get('name') == layer_name:
+                active_preview_image = cv.Image(layer.get('capture', ""), 0, 0, self.canvas_width / 2, self.canvas_height / 2, paint=ft.Paint(blur_image=1))
+                preview_canvas.content.shapes.append(active_preview_image)
+                continue
+            preview_canvas.content.shapes.append(cv.Image(layer.get('capture', ""), 0, 0, self.canvas_width / 2, self.canvas_height / 2))
             
+        if active_preview_image is None:
+            self.page.show_dialog(SnackBar("Error finding layer capture for blur"))
+            return
+
+        dlg = ft.AlertDialog(
+            ft.Column([
+                preview_canvas, 
+                blur_strength_slider,
+                ft.Text("Adjust Blur Strength", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
+            title=f"Set Blur for {layer_name}",
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                ft.TextButton("Apply", on_click=apply_blur, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
+            ]
+        )
+        self.page.show_dialog(dlg)         
 
 
     # Called when we click to export a canvas
@@ -841,10 +801,10 @@ class Canvas(Widget):
     def create_new_layer_canvas_ctrl(self, idx: int, canvas_data: dict):
         visible = canvas_data.get('visible', True)
         capture = canvas_data.get('capture', None)
-        name = canvas_data.get('name', f"Layer {idx}")
+        #name = canvas_data.get('name', f"Layer {idx}")
 
         return cv.Canvas(
-            data=name,        # Save the index of this layer so we know where to save it in our data
+            data=idx,        # Save the index of this layer so we know where to save it in our data
             shapes=[
                 cv.Image(       # Sets the background image of the layer to its most recent capture
                     capture, 0, 0, 
@@ -976,28 +936,24 @@ class Canvas(Widget):
                     ft.SubmenuButton(
                         ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                         [
-                            ft.MenuItemButton(
-                                "Set Color", leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                                #on_click=self._set_layer_content, 
-                                tooltip="Set this layer to a solid color. This will overwrite any drawings on the layer currently." if visible else
-                                "Layer must be visible to set color",
-                                data=(name, "color"), focus_on_hover=False,
-                                disabled=not visible,
+                            ft.MenuItemButton(      # Rename layer button
+                                "Rename", leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                focus_on_hover=False,
+                                on_click=rename_layer_clicked, 
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             ),
-                            
-                            ft.MenuItemButton(
+                            ft.MenuItemButton(      # Set layer as an image button
                                 "Set Image", leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)), 
-                                #on_click=self._set_layer_content, 
+                                on_click=self.set_layer_content, 
                                 tooltip="Upload an image for this layer. This will overwrite any drawings on the layer currently." if visible else
                                 "Layer must be visible to set image", 
                                 data=(name, "image"),
                                 disabled=not visible, focus_on_hover=False,
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             ),
-                            ft.MenuItemButton(
+                            ft.MenuItemButton(      # Set layer blur button
                                 "Set Blur", leading=ft.Icon(ft.Icons.BLUR_ON_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)), 
-                                #on_click=self._set_layer_blur, 
+                                on_click=self.set_layer_blur, 
                                 tooltip="Set the blur only for existing content on this layer. Useful for backgrounds and effects. " \
                                 "Will NOT effect any future content drawn on this layer" if visible else
                                 "Layer must be visible to set image", 
@@ -1005,15 +961,16 @@ class Canvas(Widget):
                                 disabled=not visible,
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             ),
-                            
-                            ft.MenuItemButton(
-                                "Rename", leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                                focus_on_hover=False,
-                                on_click=rename_layer_clicked, 
+                            ft.MenuItemButton(      # Set layer as a color button
+                                "Set Color", leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                on_click=self.set_layer_content, 
+                                tooltip="Set this layer to a solid color. This will overwrite any drawings on the layer currently." if visible else
+                                "Layer must be visible to set color",
+                                data=(name, "color"), focus_on_hover=False,
+                                disabled=not visible,
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             ),
-                            
-                            ft.MenuItemButton(
+                            ft.MenuItemButton(      # Delete layer button
                                 "Delete", leading=ft.Icon(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR),  
                                 focus_on_hover=False,
                                 tooltip="Delete this layer. This action cannot be undone.",
@@ -1100,9 +1057,6 @@ class Canvas(Widget):
     def build(self):
         super().build()
 
-    # Called when we need to rebuild out plotline UI
-    def reload_widget(self):       
-        ''' Rebuilds/reloads our Canvas '''
 
         # Called when undoing a stroke on the canvas
         async def undo_stroke(e: ft.Event=None):
@@ -1115,7 +1069,7 @@ class Canvas(Widget):
                 return
                     
             # Grab the task we're going to carry out and its name and capture
-            #task = self.widget.state.undo_list.pop()    
+            #task = self.state.undo_list.pop()    
             task = self.data.get('canvas_data', {}).get('undo_list', []).pop()
             layer_name = task.get('layer_name', None)
             capture = task.get('capture', None)
@@ -1337,8 +1291,6 @@ class Canvas(Widget):
             ], scroll=ft.ScrollMode.AUTO)
         )
 
-        self.body_container.content = ft.Row([interactive_viewer, self.show_sidebar_button, self.sidebar], expand=True, spacing=0)
-
-        self._render_widget()
+        self.content = ft.Row([interactive_viewer, self.show_sidebar_button, self.sidebar], expand=True, spacing=0)
 
         self.page.run_task(self.set_mouse_cursor)
