@@ -645,7 +645,10 @@ class CharacterRelationshipMap(Widget):
 
         # Create the stack to hold our bank, character nodes, and connections canvas
         self.connections_stack = ft.Stack([
-        
+            ft.Container(
+                    image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
+                    expand=True,
+                ),
             self.connections_canvas,
             ft.Column([self.character_bank_container])
             

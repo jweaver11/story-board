@@ -714,7 +714,6 @@ class PlotChart(Widget):
             [],  
             content=ft.GestureDetector(
                 ft.Container(
-                    #image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL),
                     width=5000, height=3000,
                     border=ft.Border.all(2, ft.Colors.OUTLINE),
                 ),
