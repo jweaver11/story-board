@@ -9,9 +9,19 @@ class SnackBar(ft.SnackBar):
 
         # Parent constructor
         super().__init__(
+            content=ft.Container(
+                ft.Text(error_text, theme_style=ft.TextThemeStyle.BODY_LARGE, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+                border_radius=4,
+                border=ft.Border.only(
+                    top=ft.BorderSide(2, ft.Colors.ERROR),
+                    left=ft.BorderSide(2, ft.Colors.ERROR),
+                    right=ft.BorderSide(2, ft.Colors.ERROR),
+                ),
+                padding=ft.Padding.symmetric(horizontal=20, vertical=14)
+            ),
+            duration=duration,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            content=ft.Text(error_text, theme_style=ft.TextThemeStyle.BODY_LARGE, color=ft.Colors.ON_SURFACE, expand=True),
-            shape=ft.RoundedRectangleBorder(ft.BorderSide(2, ft.Colors.PRIMARY), radius=8),
-            duration=duration
+            padding=ft.Padding.all(0)
         )
         

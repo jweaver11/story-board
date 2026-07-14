@@ -58,11 +58,13 @@ class Canvas(Widget):
                 'capture': str(),             # Capture of what we currently look like
                 'snapshot': str(),            # Most recent completed snapshot of our canvas used by other widgets
 
+                'reference_images': list(),     # Reference images from sketches from a canvas board or uploaded images that appear in sidebar
+
                 # Info about the canvas
                 'canvas_data': {
 
                     # Sizing
-                    "width": 1920 if data.get('canvas_data', {}).get('width') is None else data.get('canvas_data', {}).get('width'),              # Resolution size used for exporting
+                    "width": 1920 if data.get('canvas_data', {}).get('width') is None else data.get('canvas_data', {}).get('width'),
                     "height": 1080 if data.get('canvas_data', {}).get('height') is None else data.get('canvas_data', {}).get('height'),
 
                     # Undo and redo list
@@ -102,13 +104,6 @@ class Canvas(Widget):
         # The active stroke we are adding to the canvas when drawing so we know how to update it
         self.current_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
         self.active_tool: CanvasShape                    # The active shape being added if we're using a tool
-
-
-        
-
-
-
-    
     
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     async def set_mouse_cursor(self, update: bool=True):
@@ -138,6 +133,7 @@ class Canvas(Widget):
             await self.paint_tool_on_canvas()
             self.manipulating_shape = False
 
+    # Shows our sidebar and paints a tool on canvas if needed
     async def show_sidebar(self, e: ft.Event):
         if self.manipulating_shape:
             await self.paint_tool_on_canvas()
@@ -293,6 +289,7 @@ class Canvas(Widget):
         # Grab the canvas and paint settings
         canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
         if not canvas.visible:  # Protect when we shouldnt be drawing with it
+            self.page.show_dialog(SnackBar("Set an active layer to draw on."))
             return
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
     
