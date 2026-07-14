@@ -97,53 +97,18 @@ class Canvas(Widget):
         self.active_layer_idx: int = self.data.get('canvas_data', {}).get('active_layer_idx', 1)
         
         self.layer_canvases = []                  # List of our layers, which are each their own canvas
-        self.layer_stack: ft.Stack          # Stack to hold our layers on top of each other
-
-        self.bg_image: ft.DecorationImage   # Hold our background image
+        self.layer_stack: ft.Stack              # Stack to hold our layers on top of each other
         
         # The active stroke we are adding to the canvas when drawing so we know how to update it
         self.current_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
-
         self.active_tool: CanvasShape                    # The active shape being added if we're using a tool
 
-        # We render our own mini widgets (comments), so we don't need parent class to render them as well
+
         
 
-
-        # OLD - Phase out
-        self.needs_redraw = False           # Used to track if we need to redraw canvas after a resize
-        self.skip_first_resize = True       # Skip the first resize since it will fix itself
-        self.initial_resize = True          # Initial resize to track our canvases size without rebuild
-        self.no_render_mini_widgets = True  
 
 
     
-        
-            
-
-    # Sets the size of the canvas for redrawing logic
-    async def _set_size_old(self, e: cv.CanvasResizeEvent):
-        if e: 
-            
-            self.needs_redraw = True           # Prevent resizing for now
-            if self.initial_resize:
-                self.initial_resize = False
-                self.needs_redraw = False
-
-                # Handles switching to tab of canvas upon first launch
-                try:
-                    for layer in self.layer_canvases:
-                        container = layer.get('canvas')
-                        if container and isinstance(container.content, cv.Canvas):
-                            shapes = container.content.shapes
-                            if shapes and isinstance(shapes[0], cv.Image):
-                                shapes[0].width = self.canvas_width
-                                shapes[0].height = self.canvas_height
-                    self.layer_stack.update()
-                except Exception:
-                    pass
-                
-            return
     
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     async def set_mouse_cursor(self, update: bool=True):
@@ -172,9 +137,6 @@ class Canvas(Widget):
         if self.manipulating_shape:
             await self.paint_tool_on_canvas()
             self.manipulating_shape = False
-       
-
-    
 
     async def show_sidebar(self, e: ft.Event):
         if self.manipulating_shape:
@@ -186,12 +148,10 @@ class Canvas(Widget):
     async def paint_tool_on_canvas(self):
         ''' Converts the displayed shapes rotation and size onto our active layer and paints it there '''
 
-      
+        if self.active_layer_idx >= len(self.layer_canvases):
+            self.page.show_dialog(SnackBar("Error finding canvas need to paint tool on."))
+            return
         active_canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
-        for layer in self.layer_canvases:
-            if self.data.get('canvas_data', {}).get('active_layer_idx', 0) == self.layer_canvases.index(layer):
-                active_canvas = layer.get('canvas', None).content
-                break
 
         if self.active_tool is None:
             return
@@ -257,7 +217,6 @@ class Canvas(Widget):
         active_canvas.update()
         await self.save_canvas(canvas=active_canvas) 
             
-
         # Finally, remove the active tool stuff
         self.active_tool.visible = False
         self.active_tool.rotate_handle.visible = False
@@ -501,81 +460,30 @@ class Canvas(Widget):
         except Exception as e:
             print("failed to save canvas", e)
 
-    # Redraws the canvas upon size changing. Not used currently
-    async def _redraw_canvas(self, e=ft.PointerEvent):
-        if self.story.workspace.is_resizing:    # If we're resizing just ignore this call
-            self.needs_redraw = True
-            return
-        
-        # Skip unneccesary redraw on first launch since it fixes itself
-        if self.skip_first_resize:
-            self.skip_first_resize = False
-            self.needs_redraw = False
-            return
-        
-        # If we're not resizing but don't need to redraw, set our coords
-        self.story.mouse_x = e.global_position.x
-        self.story.mouse_y = e.global_position.y
-
-        
-        # If we need to redraw, do that
-        if self.needs_redraw:
-            self.story.blocker.visible = True
-            self.story.blocker.update()
-            await asyncio.sleep(0)   
-
-            for ctrl in self.layer_stack.controls:
-                if isinstance(ctrl, ft.Container) and isinstance(ctrl.content, cv.Canvas):
-                    
-                    # If any changes had been made, clear the shapes on screen and set the most recent capture
-                    if len(ctrl.content.shapes) > 1:   
-                        for layer in self.data.get('canvas_data', {}).get('layers', []):
-                            if layer.get('name', None) == ctrl.data:
-                                capture = layer.get('capture', None)
-                                if capture:
-                                    ctrl.content.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
-                                    ctrl.content.shapes.append(cv.Image(capture, 0, 0, self.canvas_width, self.canvas_height))   # Re-add most reccent capture
-                                    continue        
-
-                    # Run logic here to resize the canvas capture
-                    ctrl.content.shapes[0].width = self.canvas_width
-                    ctrl.content.shapes[0].height = self.canvas_height
-
-            self.layer_stack.update()
-            self.story.blocker.visible = False
-            self.story.blocker.update()
-            self.needs_redraw = False
-
-
+    # Sets either an image or a color as the content of a layer
     async def set_layer_content(self, e: ft.Event):
 
         await self.story.close_menu()
 
-        layer_name, type = e.control.data
-
-        # Grab the layer this is. Set its capture as color or image
+        content_type = e.control.data
+        layer_idx = e.control.parent.parent.parent.data
+        layer_name = self.data.get('canvas_data', {}).get('layers', [])[layer_idx].get('name', '')
 
         # Set a color as the background
-        if type == "color":
+        if content_type == "color":
 
             async def _color_change(e):     # Set the color to the picked one
                 color_picker.color = e.data
 
             async def _set_color_confirmed(e=None):
 
-                for layer in self.data.get('layers', []):
-                    if layer.get('name') == layer_name:
-                        for ctrl in self.layer_stack.controls:
-                            if isinstance(ctrl, ft.Container) and isinstance(ctrl.content, cv.Canvas) and ctrl.data == layer_name:
-                                ctrl.content.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
-                                ctrl.content.shapes.append(cv.Color(color_picker.color))   # Re-add empty images so it can capture
-                                ctrl.content.update()
-                                await self.save_canvas(canvas=ctrl.content)  
-                                break
-                        break
-
+                canvas: cv.Canvas = self.layer_canvases[layer_idx]
+                canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
+                canvas.shapes.append(cv.Color(color_picker.color))   # Re-add empty images so it can capture
+                canvas.update()
                 self.page.pop_dialog()
-                
+                await self.save_canvas(canvas=canvas)
+
 
             color_picker = ColorPicker(
                 self.data.get('background', ft.Colors.PRIMARY) if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
@@ -599,32 +507,25 @@ class Canvas(Widget):
                 file_path = files[0].path
                 try:
                     
-
                     with open(file_path, "rb") as image_file:
-                        print("Opened file")
                         encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                        for layer in self.data.get('layers', []):
-                            if layer.get('name') == layer_name:
-                                print("Found layer: ", layer_name)
-                                for ctrl in self.layer_stack.controls:
-                                    if isinstance(ctrl, ft.Container) and isinstance(ctrl.content, cv.Canvas) and ctrl.data == layer_name:
-                                        print("Set image")
-                                        ctrl.content.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
-                                        ctrl.content.shapes.append(cv.Image(f"{encoded_string}", 0, 0, self.canvas_width, self.canvas_height))   # Re-add empty images so it can capture
-                                        ctrl.content.update()
-                                        await self.save_canvas(canvas=ctrl.content)
-                                        break
-                                break
+                        canvas: cv.Canvas = self.layer_canvases[layer_idx]
+                        canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
+                        canvas.shapes.append(cv.Image(f"{encoded_string}", 0, 0, self.canvas_width, self.canvas_height))   # Re-add empty images so it can capture
+                        canvas.update()
+                        self.page.pop_dialog()
+                        await self.save_canvas(canvas=canvas)
+                        
+                except Exception:
                     self.page.pop_dialog()
 
-                except Exception as _:
-                    pass   
-
+    # Sets the blur of a layers
     async def set_layer_blur(self, e: ft.Event):
         await self.story.close_menu()
 
         layer_name = e.control.parent.parent.parent.parent.data
         layer_idx = e.control.parent.parent.parent.data
+        layer_name = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]['name']
         capture = None
         capture = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]['capture']
         if not capture:
@@ -642,14 +543,14 @@ class Canvas(Widget):
             
             blur_strength = blur_strength_slider.value
 
-            # Update data
+            # Apply the blur to the correct canvas
             canvas: cv.Canvas = self.layer_canvases[layer_idx]
             canvas.shapes.clear()
             canvas.shapes.append(cv.Image(capture, 0, 0, self.canvas_width, self.canvas_height, paint=ft.Paint(blur_image=blur_strength)))
             canvas.update()
             self.page.pop_dialog()
 
-            await self.save_canvas(canvas=canvas)  
+            await self.save_canvas(canvas=canvas)  # Will save new capture to the data
             
         
         blur_strength_slider = ft.Slider(1, "{value}", min=0, max=50, on_change=blur_amount_changed)
@@ -947,7 +848,7 @@ class Canvas(Widget):
                                 on_click=self.set_layer_content, 
                                 tooltip="Upload an image for this layer. This will overwrite any drawings on the layer currently." if visible else
                                 "Layer must be visible to set image", 
-                                data=(name, "image"),
+                                data="image",
                                 disabled=not visible, focus_on_hover=False,
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             ),
@@ -966,7 +867,7 @@ class Canvas(Widget):
                                 on_click=self.set_layer_content, 
                                 tooltip="Set this layer to a solid color. This will overwrite any drawings on the layer currently." if visible else
                                 "Layer must be visible to set color",
-                                data=(name, "color"), focus_on_hover=False,
+                                data="color", focus_on_hover=False,
                                 disabled=not visible,
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             ),
@@ -1215,8 +1116,7 @@ class Canvas(Widget):
         layers_container = ft.Container(
             border=ft.Border.all(2, ft.Colors.OUTLINE),
             content=self.layer_stack, expand=False,
-            opacity=0.99,    # Forces canvas onto its own opacity layer for rendering to avoid blend mode bugs
-            #on_size_change=self._set_size_old       # Set the size of the canvases needed for recapturing
+           # opacity=0.99,    # Forces canvas onto its own opacity layer for rendering to avoid blend mode bugs
         )
 
         
