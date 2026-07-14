@@ -57,6 +57,11 @@ class PlotChart(Widget):
         self.source_side: str = None      # Determines which sides of the nodes we start dragging from
         self.target_side: str = None       # Determines which sides of the nodes we end dragging on
 
+        self.add_node_button: ft.Button     # Button to add new nodes that is displayed OUTSIDE the sidebar
+
+        
+        
+
     # Class for handling all node logic
     class Node(ft.GestureDetector):
 
@@ -565,64 +570,54 @@ class PlotChart(Widget):
                 ]
             )
         )
-        
-    
-    # Shows our textfield for creating a new node
-    async def create_node_clicked(self, e: ft.Event=None):
-        self.add_node_button.visible = False
-        self.add_node_button.update()
-        self.new_node_tf.value = ""
-        self.new_node_tf.visible = True
-        self.new_node_tf.label = "New node Label"
-        self.new_node_tf.update() 
-        await self.new_node_tf.focus()
 
     # Creates our node with given title if unique
     async def create_node(self, e: ft.Event=None):
-        # Checks that node title is unique
-        async def _check_node_title(title: str) -> bool:
-            for node in self.data.get('nodes', []):
-                if node['label'] == title:
-                    self.new_node_tf.error = "Node label taken"
-                    self.new_node_tf.update()
-                    return False
-            return True
 
-        if not self.new_node_tf.value:
-            self.new_node_tf.error = "Node must have a label"
-            self.new_node_tf.update()
-            await self.new_node_tf.focus()
-            return
+        existing_names = {node.get('label') for node in self.data.get('nodes', [])}
+        n = len(existing_names)
+        while f"Node {n}" in existing_names:
+            n += 1
+        node_label = f"Node {n}"
 
-        if await _check_node_title(self.new_node_tf.value):
+        
+        viewer_w = self.iv.width or self.w
+        viewer_h = self.iv.height or self.h
+        cx = (viewer_w / 2 - self.iv_offset_x) / self.iv_scale
+        cy = (viewer_h / 2 - self.iv_offset_y) / self.iv_scale
 
-            # Check if we're creating from the info column, and just put the new node in the center
-            if e.control.data is not None:
-                self.new_node_position = (self.w / 2 * .75, self.h / 2) # Center of widget when showing info
+        # Clamp to canvas bounds with a margin for node width/height
+        cx = max(0, min(4850, cx))
+        cy = max(0, min(2950, cy))
 
-            title = self.new_node_tf.value if self.new_node_tf.value else "Node"
-            self.data['nodes'].append({'label': title, 'position': self.new_node_position, 'color': '#FFFFFF', 'description': ""})
-            self.update_data(**{'nodes': self.data['nodes']})
+        self.new_node_position = (cx, cy)
 
-            # Add the node to the stack
-            self.node_stack.controls.append(
-                self.Node(
-                    widget=self,
-                    label=title,
-                    position=self.new_node_position,
-                    color='#FFFFFF',
-                )
+        #self.new_node_position = (self.w / 2 * .75, self.h / 2)
+
+        self.data['nodes'].append({
+            'label': node_label, 
+            'position': self.new_node_position, 'color': '#FFFFFF', 'description': ""
+            })
+        self.update_data(**{'nodes': self.data['nodes']})
+
+        # Add the node to the stack
+        self.node_stack.controls.append(
+            self.Node(
+                widget=self,
+                label=node_label,
+                position=self.new_node_position,
+                color='#FFFFFF',
             )
+        )
 
-            # Add the node to the sidebar
-            self.node_sidebar_column.controls.append(
-                self.create_node_sidebar_ctrl(len(self.node_sidebar_column.controls), self.data.get('nodes')[-1])
-            )
+        # Add the node to the sidebar
+        self.node_sidebar_column.controls.append(
+            self.create_node_sidebar_ctrl(len(self.node_sidebar_column.controls), self.data.get('nodes')[-1])
+        )
 
-            self.update()
+        self.update()
 
-            self.page.pop_dialog()
-            self.new_node_position = (self.w / 2 * .75, self.h / 2) # Reset new node position to default for next time
+        #self.new_node_position = (self.w / 2 * .75, self.h / 2) # Reset new node position to default for next time
 
     # Returns a sidebar control for a node
     def create_node_sidebar_ctrl(self, idx: int, node_data: dict) -> ft.TextField:
@@ -704,16 +699,8 @@ class PlotChart(Widget):
     def build(self):
         super().build()
         
-        # Sets our canvas coords for when we're creating a new node by right clicking
-        async def set_canvas_coords(e: ft.HoverEvent):
-            self.new_node_position = (e.local_position.x, e.local_position.y)
-            self.story.mouse_x = e.global_position.x
-            self.story.mouse_y = e.global_position.y    
-
         # Hides the new node tf after we submit or cancel adding a new node
         async def hide_new_node_tf(e: ft.Event=None):
-            self.new_node_tf.visible = False
-            self.new_node_tf.update()
             if not self.sidebar.visible:
                 self.add_node_button.visible = True
                 self.add_node_button.update()
@@ -721,15 +708,10 @@ class PlotChart(Widget):
         # Canvas to hold our edge lines between nodes
         self.edge_canvas = cv.Canvas(
             [],  
-            content=ft.GestureDetector(
-                content=ft.Container(
-                    #image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL),
-                    width=5000, height=3000,
-                    border=ft.Border.all(2, ft.Colors.OUTLINE),
-                ),
+            content=ft.Container(
+                #image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL),
                 width=5000, height=3000,
-                on_hover=set_canvas_coords,
-                hover_interval=30,
+                border=ft.Border.all(2, ft.Colors.OUTLINE),
             ),
             width=5000, height=3000
         )
@@ -769,7 +751,7 @@ class PlotChart(Widget):
                         ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                         self.data.get('color', ft.Colors.PRIMARY),
                         mouse_cursor=ft.MouseCursor.CLICK,
-                        on_click=self.create_node_clicked,
+                        on_click=self.create_node,
                         data="ignore_position"
                     ),
                 ], spacing=0),
@@ -809,8 +791,38 @@ class PlotChart(Widget):
 
         self.sidebar_body.controls.append(info_column)
 
+        self.iv_offset_x = 0.0      # canvas origin's current screen position (x)
+        self.iv_offset_y = 0.0      # canvas origin's current screen position (y)
+        self._gesture_prev_scale = 1.0
+        self.iv_scale = 1.0
+        
+        async def on_interaction_start(e):
+            self._gesture_prev_scale = 1.0
+
+        async def on_viewer_update(e: ft.ScaleUpdateEvent):
+            # TODO: Save scale state variable, and focal_point_offset?
+            # Then apply poition change
+            scale_delta = e.scale / self._gesture_prev_scale
+            self._gesture_prev_scale = e.scale
+            new_scale = max(0.02, min(3.0, self.iv_scale * scale_delta))
+
+            # Zoom: adjust offset so the focal point stays visually fixed
+            fx, fy = e.local_focal_point.x, e.local_focal_point.y
+            self.iv_offset_x = fx - (fx - self.iv_offset_x) * (new_scale / self.iv_scale)
+            self.iv_offset_y = fy - (fy - self.iv_offset_y) * (new_scale / self.iv_scale)
+
+            # Pan: focal_point_delta is the screen-space translation
+            self.iv_offset_x += e.focal_point_delta.x
+            self.iv_offset_y += e.focal_point_delta.y
+
+            self.iv_scale = new_scale
+
+
+
+
+
         # Interactive viewer to hold the stack for UI manipulation
-        iv = ft.InteractiveViewer(
+        self.iv = ft.InteractiveViewer(
             content=ft.Stack([      # Hold the edge canvas and node stack
                 self.edge_canvas,
                 self.node_stack, 
@@ -819,32 +831,26 @@ class PlotChart(Widget):
             constrained=False,
             scale_factor=800, boundary_margin=200,
             min_scale=0.02, max_scale=3.0,
+            on_interaction_update=on_viewer_update,
+            on_interaction_start=on_interaction_start,
         )
+        #local_point_offset = mouse_position
 
         self.add_node_button = ft.Button(
             "Add Node", 
-            on_click=self.create_node_clicked, 
+            on_click=self.create_node, 
             data="ignore_position",
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            visible=not self.sidebar.visible
+            visible=not self.sidebar.visible,
+            bottom=10, right=0,
         )
 
-        self.new_node_tf = ft.TextField(
-            label="Add New node", dense=True, 
-            capitalization=ft.TextCapitalization.WORDS,
-            on_blur=hide_new_node_tf,
-            on_submit=self.create_node, 
-            visible=False, autofocus=True,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
-        ) 
+        
 
         viewer_stack = ft.Stack([
-            iv,
-            ft.Column([
-                self.add_node_button,
-                self.new_node_tf
-            ], tight=True, bottom=10, right=0,)
+            self.iv,
+            self.add_node_button
         ], expand=3)
 
         
