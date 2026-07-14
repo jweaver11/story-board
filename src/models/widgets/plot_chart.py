@@ -85,15 +85,20 @@ class PlotChart(Widget):
 
         # Moves the node on the stack and updates the drawing that connects the edges
         async def move_node(self, e: ft.DragUpdateEvent):
+            
+            # Update us visually
+            self.left += e.local_delta.x
+            self.top += e.local_delta.y
+            self.update()
+            if self.left < 0:
+                self.left = 0
+            if self.top < 0:
+                self.top = 0
             # Update data
             for node in self.widget.data.get('nodes', []):
                 if node['label'] == self.label:
                     node['position'] = (self.left, self.top)
                     break
-            # Update us visually
-            self.left += e.local_delta.x
-            self.top += e.local_delta.y
-            self.update()
             # Redraw any relevant edges
             for edge in self.widget.edge_canvas.shapes:
                 if isinstance(edge, self.widget.Edge) and (edge.source_node == self.label or edge.target_node == self.label):
@@ -591,8 +596,8 @@ class PlotChart(Widget):
             self.new_node_position[0] - offset_amount[0],
             self.new_node_position[1] - offset_amount[1]
         )
-        if self.new_node_position[0] < 0 or self.new_node_position[1] < 0:
-            self.new_node_position = (max(0, self.new_node_position[0]), max(0, self.new_node_position[1]))
+        if self.new_node_position[0] < 100 or self.new_node_position[1] < 100:
+            self.new_node_position = (max(100, self.new_node_position[0]), max(100, self.new_node_position[1]))
         elif self.new_node_position[0] > 5000 or self.new_node_position[1] > 3000:
             self.new_node_position = (min(5000, self.new_node_position[0]), min(3000, self.new_node_position[1]))
 
@@ -793,40 +798,15 @@ class PlotChart(Widget):
             self.edge_canvas.shapes.append(self.Edge(self, edge))
 
         self.sidebar_body.controls.append(info_column)
-
-        self.iv_offset_x = 0.0      # canvas origin's current screen position (x)
-        self.iv_offset_y = 0.0      # canvas origin's current screen position (y)
-        self._gesture_prev_scale = 1.0
-        self.iv_scale = 1.0
         
-        async def on_interaction_start(e):
-            self._gesture_prev_scale = 1.0
-
-        async def on_viewer_update(e: ft.ScaleUpdateEvent):
-            # TODO: Save scale state variable, and focal_point_offset?
-            # Then apply poition change
-            scale_delta = e.scale / self._gesture_prev_scale
-            self._gesture_prev_scale = e.scale
-            new_scale = max(0.02, min(3.0, self.iv_scale * scale_delta))
-
-            # Zoom: adjust offset so the focal point stays visually fixed
-            fx, fy = e.local_focal_point.x, e.local_focal_point.y
-            self.iv_offset_x = fx - (fx - self.iv_offset_x) * (new_scale / self.iv_scale)
-            self.iv_offset_y = fy - (fy - self.iv_offset_y) * (new_scale / self.iv_scale)
-
-            # Pan: focal_point_delta is the screen-space translation
-            self.iv_offset_x += e.focal_point_delta.x
-            self.iv_offset_y += e.focal_point_delta.y
-
-            self.iv_scale = new_scale
-
-
-
-
 
         # Interactive viewer to hold the stack for UI manipulation
         self.iv = ft.InteractiveViewer(
             content=ft.Stack([      # Hold the edge canvas and node stack
+                ft.Container(
+                    image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
+                    expand=True,
+                ),
                 self.edge_canvas,
                 self.node_stack, 
             ], width=5000, height=3000),
@@ -834,10 +814,7 @@ class PlotChart(Widget):
             constrained=False,
             scale_factor=800, boundary_margin=200,
             min_scale=0.02, max_scale=3.0,
-            on_interaction_update=on_viewer_update,
-            on_interaction_start=on_interaction_start,
         )
-        #local_point_offset = mouse_position
 
         self.add_node_button = ft.Button(
             "Add Node", 
@@ -848,13 +825,10 @@ class PlotChart(Widget):
             visible=not self.data.get('show_sidebar', False),
             bottom=10, right=0,
         )
-
-        # TODO: Widgets not saving, vscode theme, set image correct
-
         
 
         viewer_stack = ft.Stack([
-            ft.Image("flow_chart_background.png", fit=ft.BoxFit.FILL, expand=True),
+            
             self.iv,
             self.add_node_button
         ], expand=3)

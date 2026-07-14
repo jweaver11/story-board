@@ -114,7 +114,7 @@ class Widget(ft.Container):
         if self.needs_file_write:
             print("Saving widget to file: ", self.data.get('title', 'Untitled'))
 
-            file_path = f"{self.data.get('directory_path')}\\{self.data.get('id')}.json"
+            file_path = os.path.join(self.data.get('directory_path'), f"{self.data.get('id')}.json")
 
             try:
                 os.makedirs(self.data.get('directory_path'), exist_ok=True)     # Make sure directory exists still
@@ -135,7 +135,7 @@ class Widget(ft.Container):
         try:
 
             # File path to save our json data to
-            old_file_path = os.path.normpath(f"{self.data.get('directory_path')}\\{self.data.get('id')}.json")
+            old_file_path = os.path.join(self.data.get('directory_path'), f"{self.data.get('id')}.json")
 
             # Delete the file if it exists
             if os.path.exists(old_file_path):
