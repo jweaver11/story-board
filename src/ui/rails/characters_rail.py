@@ -10,7 +10,6 @@ from ui.rails.rail import Rail
 from models.views.story import Story
 from styles.rail.widget_rail_item import WidgetRailItem
 import json
-from utils.alert_dialogs.character_connection import new_character_connection_clicked
 from models.isolated_controls.column import IsolatedColumn
 from models.isolated_controls.list_view import IsolatedListView
 import asyncio

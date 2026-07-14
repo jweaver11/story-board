@@ -6,7 +6,6 @@ A Settings object is created for every story
 import flet as ft
 from models.views.story import Story
 from models.widget import Widget
-from utils.alert_dialogs.character_connection import new_character_connection_clicked
 from styles.colors import colors
 import os
 import json

@@ -8,8 +8,6 @@ import flet as ft
 import os
 from models.widget import Widget
 from models.views.story import Story
-from utils.verify_data import verify_data
-from models.mini_widgets.character_connection import CharacterConnection
 from models.app import app
 from utils.safe_string_checker import return_safe_name
 from models.dataclasses.character_template import default_character_template_data_dict

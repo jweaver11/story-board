@@ -1,18 +1,16 @@
 import flet as ft
 from models.views.story import Story
 from models.widget import Widget
-from utils.verify_data import verify_data
 from styles.menu_option_style import MenuOptionStyle
 from flet_quill import FletQuill, FletQuillEditor, FletQuillToolbar
 from models.app import app
 from models.isolated_controls.row import IsolatedRow
 from models.isolated_controls.column import IsolatedColumn
 import math
-from models.mini_widgets.reference_image import ReferenceImage
 from utils.safe_string_checker import return_safe_name
 import asyncio
 import uuid
-from styles.text_field import TextField
+from styles.text_fields import TextField
 from styles.snack_bar import SnackBar
 
 

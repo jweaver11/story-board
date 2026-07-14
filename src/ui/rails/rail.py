@@ -8,7 +8,6 @@ import json
 from models.views.story import Story
 from models.widgets.plotline import Plotline
 from styles.rail.rail_folder import RailFolder
-from utils.check_widget_unique import check_widget_unique
 from utils.new_canvas import new_canvas_alert_dlg
 import asyncio
 from models.app import app

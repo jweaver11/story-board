@@ -19,7 +19,7 @@ from PIL import Image
 import asyncio
 from styles.menu_option_style import MenuOptionStyle
 from models.dataclasses.canvas_shape import CanvasShape    
-from styles.text_field import TextField
+from styles.text_fields import TextField
 
 MINIMUM_SEGMENT_DISTANCE = 2
 MAX_SHAPES_BEFORE_CAPTURE = 30   # Prevent lag from too many paths on the canvas without being removed

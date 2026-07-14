@@ -5,7 +5,6 @@ import json
 from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
 from styles.snack_bar import SnackBar
-from utils.check_widget_unique import check_widget_unique
 from utils.new_canvas import new_canvas_alert_dlg
 from models.app import app
 from models.isolated_controls.expansion_tile import IsolatedExpansionTile

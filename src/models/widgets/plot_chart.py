@@ -849,9 +849,12 @@ class PlotChart(Widget):
             bottom=10, right=0,
         )
 
+        # TODO: Widgets not saving, vscode theme, set image correct
+
         
 
         viewer_stack = ft.Stack([
+            ft.Image("flow_chart_background.png", fit=ft.BoxFit.FILL, expand=True),
             self.iv,
             self.add_node_button
         ], expand=3)

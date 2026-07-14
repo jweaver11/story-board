@@ -14,7 +14,6 @@ Since maps could have hundreds of sub-maps, we give them each their own file to 
 import flet as ft
 from models.widget import Widget
 from models.mini_widget import MiniWidget
-from utils.verify_data import verify_data
 from styles.text_fields import TextField
 
 class MapInformationDisplay(MiniWidget):

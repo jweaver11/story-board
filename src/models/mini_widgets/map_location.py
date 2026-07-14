@@ -5,7 +5,6 @@ Class for marking any point of interest (location) on a map
 import flet as ft
 from models.mini_widget import MiniWidget
 from models.widget import Widget
-from utils.verify_data import verify_data
 import math
 from styles.text_styles import text_style
 import flet.canvas as cv 

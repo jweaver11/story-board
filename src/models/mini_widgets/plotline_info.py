@@ -3,7 +3,6 @@ from models.mini_widget import MiniWidget
 from models.widgets.plotline import Plotline
 import asyncio
 from models.dataclasses.plotline_event import Event
-from utils.verify_data import verify_data
 from styles.text_fields import TextField
 
 
