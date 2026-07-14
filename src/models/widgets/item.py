@@ -134,7 +134,7 @@ class Item(Widget):
 
         # Button to click to add a new segment
         add_segment_button = ft.Button(
-            "New Segment", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+            "Add Segment", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
             tooltip="Add a new segment to your note.", 
             on_click=_create_new_segment_clicked, 
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
@@ -154,15 +154,12 @@ class Item(Widget):
                 ft.Text(f"Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
                 
             ], spacing=0),
-            ft.TextField(
-                self.data.get('description', ""), on_blur=lambda e: self.update_data(**{"description": e.control.value}), expand=True, 
-                dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
-                border_color=ft.Colors.OUTLINE_VARIANT, margin=ft.Margin.only(right=10),
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=10,
-                content_padding=ft.Padding.all(6), min_lines=3, cursor_color=self.data.get('color', None)
-            )
+            self.description_tf
             
         ], expand=True, spacing=0, alignment=ft.MainAxisAlignment.CENTER)
+        
+        self.description_tf.label = ""
+        self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
 
         body = ft.Column([
             ft.Row([

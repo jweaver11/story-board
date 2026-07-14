@@ -10,12 +10,15 @@ class TextField(ft.TextField):
         # Default styles
         self.label_style = ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
         self.dense = True
-        self.border=ft.InputBorder.NONE
-        self.content_padding=ft.Padding.only(left=0, top=0, right=0, bottom=12)
         self.text_style=ft.TextStyle(size=14)
         self.multiline=True
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
+        self.border_radius=4
+        self.border_color=ft.Colors.TRANSPARENT
+        self.focused_border_color=ft.Colors.PRIMARY
+        #self.border_width=0
+        #self.focused_border_width=2
 
 # Meant to be used with no label
 class NoLabelTextField(TextField):
@@ -64,4 +67,5 @@ class SmallTextField(TextField):
         self.multiline=True
         self.border=ft.InputBorder.NONE
         self.text_align=ft.TextAlign.CENTER
-        self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
+        self.bgcolor=ft.Colors.TRANSPARENT
+        self.focused_bgcolor=ft.Colors.TRANSPARENT

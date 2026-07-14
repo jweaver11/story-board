@@ -446,10 +446,6 @@ class Widget(ft.Container):
             self.update_data(**{'color': color})
             await self.save_file()  # Force a file save to persist the color change
             
-            # Change our icon to match, apply the update
-            if hasattr(self, 'information_display'):
-                if self.information_display.visible:
-                    self.information_display.reload_mini_widget()
             self.story.workspace.reload_workspace()   # Reload workspace to update tab color
             self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
             await self.story.close_menu()
@@ -532,6 +528,7 @@ class Widget(ft.Container):
                 else:
                     icon = ft.CupertinoIcons.COMPASS
             case "comic_preview": icon = ft.Icons.SLIDESHOW_OUTLINED
+            case "plot_chart": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
             case _: icon = ft.Icons.ERROR_OUTLINE
 
 
@@ -629,14 +626,18 @@ class Widget(ft.Container):
             hover_interval=100
         )
 
-        self.description_tf = TextField(
+        self.description_tf = ft.TextField(
             value=self.data.get('description', ''), label="Description",
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            multiline=True, dense=True, expand=True, border_radius=4,
+            border_color=ft.Colors.TRANSPARENT,
+            
+            focused_border_color=ft.Colors.PRIMARY,
+            multiline=True, dense=True, expand=True, 
             on_blur=lambda e: self.update_data(**{'description': e.control.value}),
             capitalization=ft.TextCapitalization.SENTENCES,
             label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
         )   
+        #ft.TextField()
 
         self.reload_widget()    # Temp
 

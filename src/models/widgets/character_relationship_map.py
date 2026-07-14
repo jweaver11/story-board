@@ -625,7 +625,7 @@ class CharacterRelationshipMap(Widget):
                     continue
                 char_id = widget.data.get('id')
                 color = widget.data.get('color')
-                char_name = widget.title
+                char_name = widget.data.get('title', '')
                 image = widget.data.get('image_base64')
 
                 self.character_bank.controls.append(self.CharacterNode(char_id, self, color, char_name, image))
@@ -671,7 +671,7 @@ class CharacterRelationshipMap(Widget):
                     char_id, 
                     self, 
                     char.data.get('color'), 
-                    char.title, 
+                    char.data.get('title', ''), 
                     char.data.get('image_base64', ''), 
                     position
                 )

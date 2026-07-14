@@ -11,7 +11,7 @@ class Note(Widget):
 
     # Constructor
     def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_new: bool=False):
-
+ 
         # Initialize from our parent class 'Widget'. 
         super().__init__(
             title = title,                      # Title of the note
@@ -120,7 +120,7 @@ class Note(Widget):
 
         # Button to click to add a new segment
         add_segment_button = ft.Button(
-            "New Segment", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+            "Add Segment", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
             tooltip="Add a new segment to your note.", 
             on_click=_create_new_segment_clicked, 
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
