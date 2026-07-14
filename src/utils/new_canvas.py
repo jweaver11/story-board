@@ -114,7 +114,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
     )
     height_textfield = ft.TextField(
         label="Height", data="height", width=140, dense=True, input_filter=ft.NumbersOnlyInputFilter(), 
-        max_length=4, on_change=_size_text_field_changed
+        max_length=4, on_change=_size_text_field_changed, 
     )  
     title_textfield = ft.TextField(
         label="Title", data="title", width=300, autofocus=True, on_submit=_create_button_clicked,
