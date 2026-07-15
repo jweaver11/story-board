@@ -4,6 +4,7 @@ Initializes the app, settings, page data, and renders our UI onto the page
 '''
 
 import flet as ft
+from pathlib import Path
 from models.app import app
 from utils.route_change import route_change
 from models.views.home import create_home_view
@@ -61,4 +62,4 @@ async def main(page: ft.Page):
 
 
 # Runs the app
-ft.run(main)
+ft.run(main, assets_dir=str(Path(__file__).parent / "assets"))

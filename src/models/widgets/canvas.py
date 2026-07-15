@@ -103,7 +103,7 @@ class Canvas(Widget):
         # The active stroke we are adding to the canvas when drawing so we know how to update it
         self.current_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
         self.active_tool: CanvasShape                    # The active shape being added if we're using a tool
-    
+   
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     async def set_mouse_cursor(self, update: bool=True):
         
@@ -559,7 +559,7 @@ class Canvas(Widget):
                 expand=True,
                 width=self.page.width / 2, height=self.page.height / 2
             ),
-            image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL) 
+            image=ft.DecorationImage("canvas_transparent_bg_dark_mode.png",  repeat=ft.ImageRepeat.REPEAT),
         )
 
         active_preview_image = None
@@ -1122,11 +1122,13 @@ class Canvas(Widget):
             content=ft.Stack([
                 ft.Container(   # Transparent Background
                     ignore_interactions=True,
-                    image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL),
+                    image=ft.DecorationImage("canvas_bg.png", repeat=ft.ImageRepeat.REPEAT),
                     width=self.canvas_width,
                     height=self.canvas_height,
                     expand=False
                 ),     
+                #canvas_transparent_bg_dark_mode.png
+                #dark_mode_transparent_background.jpg
                 ft.Container(
                     border=ft.Border.all(2, ft.Colors.OUTLINE),
                     content=self.layer_stack, 
