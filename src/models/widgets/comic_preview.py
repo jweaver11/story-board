@@ -37,6 +37,7 @@ class ComicPreview(Widget):
                 # Widget data
                 'tag': "comic_preview",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('color', "primary"),
+                'show_sidebar': True,   # Start showing sidebar
 
                 'preview_direction': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical"),            # Default direction for comic preview, can be vertical or horizontal
                 'preview_background_color': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_background_color', "#00000000"),  # Background color behind images

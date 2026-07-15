@@ -125,6 +125,8 @@ class Plotline(Widget):
         if self.story.workspace.is_resizing:    # If we're resizing just ignore this call
             return
         
+        return
+        
         
 
         # Set coordinates for menu
@@ -170,6 +172,7 @@ class Plotline(Widget):
                 pass
 
     async def _exit_canvas(self, e=None):
+        return
         ''' Called when exiting our plotline canvas '''
         self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
         self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
@@ -253,7 +256,7 @@ class Plotline(Widget):
         ''' Redraws our plotline on the canvas when it is resized. Does it on startup as well '''
         #return
         print(e)
-        
+
         return
                
         # Draw our plotline on the canvas with its two end markers ------------------------------------------------
@@ -533,9 +536,6 @@ class Plotline(Widget):
     def build(self):
         super().build()
 
-    # Called when we need to rebuild out plotline UI
-    def reload_widget(self):
-
         # When clicking our canvas. If we're in center vertically and not showing sidebar, show sidebar
         async def may_show_sidebar(e: ft.PointerEvent):
             if self.mouse_centered_vertically_on_plotline_canvas(e):
@@ -543,6 +543,7 @@ class Plotline(Widget):
                     await self.show_sidebar()
 
             
+        
             
             
         # Our canvas that 
@@ -566,11 +567,12 @@ class Plotline(Widget):
             expand=True, 
             alignment=ft.Alignment(0, 0),
             clip_behavior=ft.ClipBehavior.NONE,
-            on_size_change=self.align_event_controls,
+            #on_size_change=self.align_event_controls,
             controls=[
                 ft.Container(
-                    self.plotline_canvas, #ft.Padding.only(left=16, right=16), 
+                    self.plotline_canvas, 
                     expand=True, clip_behavior=ft.ClipBehavior.NONE,
+                    
                 )      # Add our canvas which has our visual plotline
             ]
         ) 
@@ -578,39 +580,34 @@ class Plotline(Widget):
         # Sort our arcs so the bigger ones are in back and smaller on top
         sorted_arcs = dict(sorted(self.arcs.items(), key=lambda item: item[1].data.get('left', 0) + item[1].data.get('right', 0)))
 
-        # Handler for plotline resize events
+        # Add arcs first since they sit in the back
         for arc in sorted_arcs.values():
-            if self.data.get('show_all_arcs', False) or arc.data.get('is_shown_on_widget', False):
-                # Add the arc control to the plotline stack
-                self.event_stack.controls.append(arc.plotline_control)
+            self.event_stack.controls.append(arc.plotline_control)
 
-        # Add our plot points to the plotline (They position themselves)
+        # Add markers next since they are next biggest
+        for marker in self.markers.values():    
+            if self.data.get('show_all_markers', False) or marker.data.get('is_shown_on_widget', False):
+                self.event_stack.controls.append(marker.plotline_control)
+
+        # Add plot points last
         for plot_point in self.plot_points.values():    
             if self.data.get('show_all_plot_points', False) or plot_point.data.get('is_shown_on_widget', False):
                 self.event_stack.controls.append(plot_point.plotline_control)
 
-        # Add our markers to the plotline (They position themselves)
-        for marker in self.markers.values():    
-            if self.data.get('show_all_markers', False) or marker.data.get('is_shown_on_widget', False):
-                self.event_stack.controls.append(marker.plotline_control)
+        
 
         # Holds our drawing so we can interact with it, zoom, pan, etc.
         interactive_viewer = ft.InteractiveViewer(
             content=self.event_stack,
             expand=3, 
-            constrained=False,
+            #constrained=False,
             scale_factor=500, boundary_margin=200,
             min_scale=0.02, max_scale=3.0,
         )
-        self.body_container.content = ft.Stack([
+        self.content = ft.Stack([
             ft.Row([interactive_viewer, self.sidebar], spacing=0, expand=True),
             self.show_sidebar_button, 
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
-
-        print("Sidebar visible:", self.sidebar.visible)
-        print("Sidebar button visible: ", self.show_sidebar_button.visible)
-
-        self._render_widget()
 
 
 

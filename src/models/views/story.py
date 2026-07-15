@@ -9,7 +9,7 @@ import flet as ft
 import os
 import shutil
 import json
-from constants import data_paths
+import constants
 from styles.snack_bar import SnackBar
 from utils.safe_string_checker import return_safe_name
 import asyncio
@@ -40,11 +40,11 @@ class Story(ft.View):
         if data is None:
             self.data = {
                 'title': title,
-                'directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}_story")),
+                'directory_path': os.path.join(constants.stories_directory_path, return_safe_name(f"/{title}_story")),
                 'tag': "story",
                 'selected_rail': "content",
                 'workspace_selected_index': 0,   # Index of the selected widget in the main pin, used for switching between tabs in the main pin
-                'content_directory_path': os.path.join(data_paths.stories_directory_path, return_safe_name(f"/{title}_story"), "content"),
+                'content_directory_path': os.path.join(constants.stories_directory_path, return_safe_name(f"/{title}_story"), "content"),
                 
                 'created_at': str(),
                 'last_modified': str(),
@@ -121,8 +121,8 @@ class Story(ft.View):
     async def save_file(self):
         ''' Saves the data of our story to its JSON File, and all its folders as well '''
 
-        self.data['directory_path'] = os.path.join(data_paths.stories_directory_path, self.route)   # Make sure our directory path is updated
-        self.data['content_directory_path'] = os.path.join(data_paths.stories_directory_path, self.route, "content")  # Make sure our content directory path is updated
+        self.data['directory_path'] = os.path.join(constants.stories_directory_path, self.route)   # Make sure our directory path is updated
+        self.data['content_directory_path'] = os.path.join(constants.stories_directory_path, self.route, "content")  # Make sure our content directory path is updated
         file_path = os.path.join(self.data['directory_path'], f"{self.route}.json") # Make sure our file path is updated
 
         try: 

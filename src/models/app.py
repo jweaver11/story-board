@@ -28,12 +28,12 @@ class App:
         ''' Loads our settings from a JSON file into our rendered settings control. If none exist, creates default settings '''
         from models.views.settings import Settings
         from models.app import app
-        from constants import data_paths
+        import constants
 
         # Should just look for our settings file to load our data from. Settings should do all other logic
 
         # Path to our settings file
-        settings_file_path = os.path.join(data_paths.app_data_path, "settings.json")
+        settings_file_path = os.path.join(constants.app_data_path, "settings.json")
 
         # Create settings.json with empty dict if it doesn't exist
         if not os.path.exists(settings_file_path):
@@ -112,16 +112,16 @@ class App:
     async def load_previous_story(self, page: ft.Page):
         ''' Loads our saved stories from the json files in story folders within the stories directory. If none exist, do nothing '''
         
-        from constants import data_paths
+        import constants
         from models.app import app
         
         # Create the stories directory if it doesnt exist already
-        os.makedirs(data_paths.stories_directory_path, exist_ok=True)
+        os.makedirs(constants.stories_directory_path, exist_ok=True)
             
         # Iterate through all items in the stories directory
-        for story_folder in os.listdir(data_paths.stories_directory_path):
+        for story_folder in os.listdir(constants.stories_directory_path):
 
-            story_directory = os.path.join(data_paths.stories_directory_path, story_folder)
+            story_directory = os.path.join(constants.stories_directory_path, story_folder)
                 
             # Look for JSON files within this story folder (ignore subdirectories)
             try:

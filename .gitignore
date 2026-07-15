@@ -129,6 +129,8 @@ env.bak/
 venv.bak/
 .vscode
 .vscode/
+.flet
+.flet/
 
 # Spyder project settings
 .spyderproject

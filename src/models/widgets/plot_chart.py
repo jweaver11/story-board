@@ -10,6 +10,7 @@ import flet.canvas as cv
 from styles.snack_bar import SnackBar
 from styles.colors import colors
 import asyncio
+from constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT
 
 class PlotChart(Widget):
 
@@ -598,8 +599,8 @@ class PlotChart(Widget):
         )
         if self.new_node_position[0] < 100 or self.new_node_position[1] < 100:
             self.new_node_position = (max(100, self.new_node_position[0]), max(100, self.new_node_position[1]))
-        elif self.new_node_position[0] > 5000 or self.new_node_position[1] > 3000:
-            self.new_node_position = (min(5000, self.new_node_position[0]), min(3000, self.new_node_position[1]))
+        elif self.new_node_position[0] > FIXED_STACK_WIDTH or self.new_node_position[1] > FIXED_STACK_HEIGHT:
+            self.new_node_position = (min(FIXED_STACK_WIDTH, self.new_node_position[0]), min(FIXED_STACK_HEIGHT, self.new_node_position[1]))
 
         self.data['nodes'].append({
             'label': node_label, 
@@ -714,18 +715,18 @@ class PlotChart(Widget):
             [],  
             content=ft.GestureDetector(
                 ft.Container(
-                    width=5000, height=3000,
+                    width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT,
                     border=ft.Border.all(2, ft.Colors.OUTLINE),
                 ),
-                width=5000, height=3000,
+                width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT,
                 on_hover=set_new_node_coords,
                 hover_interval=40
             ),
-            width=5000, height=3000
+            width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT
         )
 
         # Stack that holdes our nodes
-        self.node_stack = ft.Stack([], width=5000, height=3000)
+        self.node_stack = ft.Stack([], width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT)
 
         
         
@@ -808,7 +809,7 @@ class PlotChart(Widget):
                 ),
                 self.edge_canvas,
                 self.node_stack, 
-            ], width=5000, height=3000),
+            ], width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT),
             expand=3, 
             constrained=False,
             scale_factor=800, boundary_margin=200,
