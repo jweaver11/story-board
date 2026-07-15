@@ -18,7 +18,7 @@ class MiniWidget(ft.GestureDetector):
     def __init__(
         self, 
         widget: Widget, 
-        data: dict = None,
+        data: dict = {},
         is_new: bool=False  
     ):
 
@@ -38,7 +38,7 @@ class MiniWidget(ft.GestureDetector):
             self.data = {
                 'id': str(uuid.uuid4()),
                 'title': data.get('title', ''),         # Title of the mini widget, should match the object title
-                'tag': "mini_widget",                   # Default mini widget tag, but should be overwritten by child classes
+                'tag': str(),                           # Default mini widget tag, but should be overwritten by child classes
                 'alignment': data.get('alignment', (0, 0)),     # Alignment of the mini widget on its parents stack
                 'position': data.get('position', (200, 200)),       # Position of the mini widget on its parents stack
                 'color': data.get('color', 'primary'),          # Color of the mini widget

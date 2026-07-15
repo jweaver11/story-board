@@ -19,7 +19,7 @@ from styles.text_fields import TextField
 
 class CanvasBoard(Widget):
     # Constructor
-    def __init__(self, name: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
+    def __init__(self, name: str, directory_path: str, story: Story, data: dict={}, is_new: bool = False):
 
         # Parent class constructor
         super().__init__(

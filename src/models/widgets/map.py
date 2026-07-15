@@ -13,8 +13,8 @@ import flet.canvas as cv
 from models.app import app
 from styles.menu_option_style import MenuOptionStyle
 import asyncio
-from models.mini_widgets.map_location import Location
-from utils.safe_string_checker import return_safe_name
+from models.mini_widgets.map_location import MapLocation
+from models.dataclasses.canvas_shape import CanvasShape 
 
 
 class Map(Widget):
@@ -25,7 +25,7 @@ class Map(Widget):
         title: str, 
         directory_path: str, 
         story: Story,                  
-        data: dict = None,
+        data: dict = {},
         is_new: bool = False
     ):
                 
@@ -35,7 +35,7 @@ class Map(Widget):
             directory_path=directory_path, 
             story=story,
             data=data,  
-            is_new = is_new
+            is_new=is_new
         ) 
 
 
@@ -46,124 +46,58 @@ class Map(Widget):
                 'tag': "map", 
                 'color': app.settings.data.get('widget_defaults', {}).get('map', {}).get('color'),
                 'show_sidebar': True,
-                
-                'image_base64': str(),                # Saves our icon as img64 string (Used a preview as well from other widgets)
-                'left': int(),                        # Our left position on our parent map (if we have one)
-                'top': int(),                         # Our top position on our parent map (if we have one)
-                              
-                'locations': dict(),        # Our locations on this map. Locations can also be maps
-                # If location is a map, it just has a tag and the maps key to reference it so we can open its information display when clicking it
 
-                # Map data for the map part of the information display
-                'map_data': dict(),
-            
-                # Used for drawing
-                'undo_list': [],    
-                'redo_list': [],
-            },  
-        )
+                # Info about the map
+                'draw_mode': True,      # Whether we're in draw mode or not
+                'show_background_image': True,      # Whether we show the background image or not
+                'lore': list(),     # List of lores
+                'history': list(),      # List of histories                                
+                              
+                # Holds our data for locations
+                'mini_widgets_data': {     
+                    #'id': {data}
+                },
+
+                # Info about the canvas in the back of the map
+                'canvas_data': {
+
+                    # Sizing
+                    "width": (data or {}).get('canvas_data', {}).get('width') or 1920,
+                    "height": (data or {}).get('canvas_data', {}).get('height') or 1080,
+
+                    # Undo and redo list
+                    'undo_list': list(),        #['capture_str1', 'capture_str2']
+                    'redo_list': list(),
+
+                    'capture': str(),   # Current capture of our layer
+                },
+            })
 
         
         # Drawing elements
         self.state = State()
-        self.paint_brush = ft.Paint(stroke_width=3)
-        self.lock_position = False  # Used to mark a position when right clicking to create a new location
+        self.canvas_width = self.data.get('canvas_data', {}).get('width', 0)    # Ez size grabbing later
+        self.canvas_height = self.data.get('canvas_data', {}).get('height', 0)
+        self.manipulating_shape = False     # Whether we're currently manipulating a shape or not, so we know whether to update our active path or not when dragging
+        self.current_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
+        self.active_tool: CanvasShape                    # The active shape being added if we're using a tool
 
-        # State utils
-        self.map_width: int = 0
-        self.map_height: int = 0
-        
+        # The canvas we draw on and the stack that holds our location controls
+        self.canvas: cv.Canvas 
+        self.location_stack: ft.Stack
 
-        # Dict of our sub maps
-        self.locations: dict = {}
-        self.information_display: ft.Container 
-
-        self.load_locations()
-        self._create_information_display()
-
-
-        self.canvas = cv.Canvas(
-            content=ft.GestureDetector(
-                mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('map_data', {}).get('drawing_mode') else None, 
-                expand=True,
-
-                # Drawing event handlers
-                #on_pan_start=self.start_drawing,
-                #on_pan_update=self.is_drawing,
-                #on_pan_end=lambda e: self.save_canvas(),
-                #on_tap_up=self.add_point,      # Handles so we can add points
-
-                # Non-drawing event handlers
-                on_secondary_tap=lambda: self.story.open_menu(self.get_map_menu_options()),
-                on_hover=self._get_coords,
-                on_tap=lambda: self.story.open_menu(self.get_map_menu_options()),
-                drag_interval=20, hover_interval=20,
-            ),
-            expand=True, resize_interval=100,
-            on_resize=self._set_size, 
-        )
-
-        self.needs_redraw = False
-        self.initial_resize = True    # 
-
-    # Called when mouse hovers over the map
-    async def _get_coords(self, e: ft.PointerEvent):
-        ''' Sets our coordinate positions for menus and passing in new items '''
-        self.story.mouse_x = e.global_position.x
-        self.story.mouse_y = e.global_position.y
-        if not self.lock_position:
-            self.l = e.local_position.x
-            self.t = e.local_position.y
-        
-
-    # Called in the constructor
-    def _create_information_display(self):
-        ''' Creates our plotline information display mini widget '''
-        
-        self.information_display = MapInformationDisplay(
-            title=self.title,
-            widget=self,
-            key="map_data",    
-            data=self.data.get('map_data'),      
-        )
-        # Add to our mini widgets so it shows up in the UI
-        self.mini_widgets.append(self.information_display)
+        # Rest of state elements
+        self.new_location_position = (0, 0)     # Where new locations go 
 
     async def create_location(self, title: str, data: dict=None):
         
-        new_location = Location(
+        new_location = MapLocation(
             title=title,
             widget=self,
             key="locations",   
             data=data,      
-            left=self.l,
-            top=self.t,
+            
         )
-       
-        self.locations[title] = new_location
-        self.mini_widgets.append(new_location)
-
-        for mw in self.mini_widgets:
-            if hasattr(mw, "map_control"):
-                mw.reload_map_control(no_update=True)
-
-        self.reload_widget()
-        for mw in self.mini_widgets:
-            if mw.visible:
-                await mw.hide_mini_widget()
-
-        await new_location.show_mini_widget() 
-        self.lock_position = False
-
-    def load_locations(self):
-        for title, data in self.data.get('locations', {}).items():
-            self.locations[title] = Location(
-                title=title,
-                widget=self,
-                key="locations",     # Not used, but its required so just whatever works
-                data=data,
-            )
-            self.mini_widgets.append(self.locations[title])
 
     # Called when clicking on our map to show our information display
     async def _show_info_display(self, e: ft.TapEvent=None):
@@ -242,15 +176,6 @@ class Map(Widget):
         )
 
         self.page.show_dialog(dlg)    
-
-    def delete_location(self, location: Location):# Remove from our dict
-        if location.title in self.locations:
-            self.locations.pop(location.title)
-            self.data['locations'].pop(location.title, None)
-            self.update_data(**{'locations': self.data['locations']})
-
-        if self.information_display.visible:
-            self.information_display.reload_mini_widget()
     
  
     def get_map_menu_options(self) -> list[ft.Control]:
@@ -326,22 +251,6 @@ class Map(Widget):
             ),
         ]
     
-    async def _set_size(self, e: cv.CanvasResizeEvent):
-        self.map_width = int(e.width) - 25
-        self.map_height = int(e.height)
-        self.needs_redraw = True
-
-        # If first launch, rebuild,
-        if self.initial_resize:
-            self.needs_redraw = False
-            self.initial_resize = False
-    
-    async def _show_info_mini_widget(self, e=None):
-        self.show_info_button.visible = False
-        self.show_info_button.update()
-        await self.information_display.show_mini_widget()
-
-
 
     # Called for any size changes to our map canvas
     async def _rebuild_map_canvas(self, e: cv.CanvasResizeEvent=None):
@@ -351,17 +260,33 @@ class Map(Widget):
     def build(self):
         super().build()
 
-    # Called when we need to rebuild out map UI
-    def reload_widget(self):       
-        ''' Rebuilds/reloads our map UI '''
+        self.canvas= cv.Canvas(
+            content=ft.GestureDetector(
+                mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('draw_mode', False) else None, 
+                expand=True,
 
-       
+                # Drawing event handlers
+                #on_pan_start=self.start_drawing,
+                #on_pan_update=self.is_drawing,
+                #on_pan_end=lambda e: self.save_canvas(),
+                #on_tap_up=self.add_point,      # Handles so we can add points
+
+                # Non-drawing event handlers
+                on_secondary_tap=lambda: self.story.open_menu(self.get_map_menu_options()),
+                on_hover=self._get_coords,
+                on_tap=lambda: self.story.open_menu(self.get_map_menu_options()),
+            ),
+            expand=True,
+            width=self.canvas_width,
+            height=self.canvas_height,
+        )  
 
         # TODO:  
         # Users can choose to create their image or use some default ones, or upload their own
         # Handle resizing
         # Our stack for map locations
-        map_stack = ft.Stack(
+
+        self.location_stack = ft.Stack(
             [     # Add our background and canvas
             ft.Container(
                 expand=True, ignore_interactions=True, #border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
@@ -380,44 +305,45 @@ class Map(Widget):
         for mw in self.mini_widgets:
             
             if hasattr(mw, 'map_control') and mw.data.get('icon', "") != "label":
-                map_stack.controls.append(mw.map_control)
+                self.location_stack.controls.append(mw.map_control)
             if hasattr(mw, 'map_label'):
-                map_stack.controls.append(mw.map_label)
+                self.location_stack.controls.append(mw.map_label)
             
         
                 
-        # Create our interactive viewer for panning and zooming
         interactive_viewer = ft.InteractiveViewer(
-            content=map_stack, 
-            expand=3,
-            scale_factor=500, #boundary_margin=50,
-            min_scale=0.5, max_scale=3.0,
-        ) 
-
-        mini_widgets_visible = False
-        for mw in self.mini_widgets:
-            if mw.visible:
-                mini_widgets_visible = True
-                break
-
-        
-
-        self.show_info_button = ft.IconButton(
-            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
-            on_click=self._show_info_mini_widget, 
-            mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-            visible=not mini_widgets_visible, 
+            content=self.location_stack,
+            expand=3, 
+            constrained=False,
+            scale_factor=800, boundary_margin=200,
+            min_scale=0.02, max_scale=3.0,
         )
 
-        
-        self.body_container.content = ft.Row(
-            [
-                interactive_viewer, 
-                self.show_info_button
-            ], expand=True, spacing=0
-        )
+        self.sidebar_body.controls.extend([
+            self.description_tf,
 
-        self._render_widget()
+            #ft.Row([    # Label Notes
+                #ft.Text(f"\tNotes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
+                #ft.IconButton(      # Create new notes button
+                    #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                    #self.data.get('color', ft.Colors.PRIMARY),
+                    #mouse_cursor=ft.MouseCursor.CLICK,
+                #)
+            #], spacing=0),
+
+            #ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
+        ])
+
+        
+        # Set up our main conent
+        self.content = ft.Stack([
+            ft.Row([interactive_viewer, self.sidebar], spacing=0, expand=True),
+            self.show_sidebar_button, 
+        ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
+
+
+
+        
                
     
 

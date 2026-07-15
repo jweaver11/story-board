@@ -21,7 +21,7 @@ from constants import PLOTLINE_CANVAS_PADDING
 class Plotline(Widget):
 
     # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict={}, is_new: bool = False):
         
         # Parent constructor
         super().__init__(

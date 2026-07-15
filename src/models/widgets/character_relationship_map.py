@@ -15,7 +15,7 @@ from styles.colors import colors
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
 class CharacterRelationshipMap(Widget):
     # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict={}, is_new: bool = False):
 
         # Parent class constructor
         super().__init__(

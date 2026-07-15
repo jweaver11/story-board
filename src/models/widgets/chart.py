@@ -23,7 +23,7 @@ class Chart(Widget):
         title: str, 
         directory_path: str, 
         story: Story, 
-        data: dict = None, 
+        data: dict = {}, 
         is_new: bool = False,
         type: str = "bar"           # Type of chart we are (either bar or radar)
     ):
@@ -1189,3 +1189,4 @@ class Chart(Widget):
 # TODO: Don't hold the placeholder dataset in chart data. Just render and alter it live
 # Add dragging to manipulate radar chart entries real time
 # Determine positive angles by 360/ node count, and if closer to 90 or 270, use that contoller
+# ADD NOTES so people can use this to flesh out power systems if wanted

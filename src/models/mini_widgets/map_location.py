@@ -12,17 +12,15 @@ from styles.icons import icons
 from styles.text_fields import TextField
 
 # Locations that appear on our map
-class Location(MiniWidget):
+class MapLocation(MiniWidget):
 
     # Constructor. Requires title, widget widget, page reference, and optional data dictionary
     def __init__(
         self, 
         title: str, 
         widget: Widget, 
-        key: str,                          
-        left: int = None,                   
-        top: int = None,                   
-        data: dict = None,
+        key: str,                                         
+        data: dict = {},
     ):
 
         # Parent constructor
@@ -34,13 +32,14 @@ class Location(MiniWidget):
         ) 
 
         # If we're new, give default values for our data 
-        if data is None:
-            self.data = { 
+        if self.is_new:
+            self.data.update({ 
                 'tag': "location",            # Tag to identify what type of object this is
                 'icon': "location_pin",      # Which icon to use for this location
                 'icon_scale': 1.0,                   # Scale of our icon on the map, default 1.0    
-                'left': left, 
-                'top': top,
+
+                'map_id': "",   # id of map we're connected too
+                
                 'color': "white",           # Color of the plot point on the map
 
                 # Information for our information display
@@ -48,7 +47,7 @@ class Location(MiniWidget):
                 'Description': "", 
                 'History': "",
                 'image_base64': "",  
-            }
+            })
 
         # Set our x alignment to position on our map. -1 is left, 0 is center, 1 is right. Default 0
         self.alignment = ft.Alignment(self.data.get('alignment', 0), 0)

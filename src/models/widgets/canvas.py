@@ -32,7 +32,7 @@ class Canvas(Widget):
         title: str, 
         directory_path: str, 
         story: Story, 
-        data: dict = None,
+        data: dict = {},
         is_new: bool = False
     ):
         
@@ -98,8 +98,7 @@ class Canvas(Widget):
         self.manipulating_shape = False     # Whether we're currently manipulating a shape or not, so we know whether to update our active path or not when dragging
         self.active_layer_idx: int = self.data.get('canvas_data', {}).get('active_layer_idx', 1)
         
-        self.layer_canvases = []                  # List of our layers, which are each their own canvas
-        self.layer_stack: ft.Stack              # Stack to hold our layers on top of each other
+        self.layer_stack: ft.Stack                # Stack to hold our list of layer canvases on top of each other
         
         # The active stroke we are adding to the canvas when drawing so we know how to update it
         self.current_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
@@ -118,10 +117,10 @@ class Canvas(Widget):
         if control_mode == "draw":
             new_mouse_cursor = ft.MouseCursor.PRECISE
 
-        if self.active_layer_idx >= len(self.layer_canvases):
-            self.active_layer_idx = len(self.layer_canvases) - 1
+        if self.active_layer_idx > len(self.data.get('canvas_data', {}).get('layers', [])) - 1:
+            self.active_layer_idx = len(self.data.get('canvas_data', {}).get('layers', [])) - 1
             return
-        if self.layer_canvases[self.active_layer_idx].visible == False:
+        if self.layer_stack.controls[self.active_layer_idx].visible == False:
             new_mouse_cursor = None
         
         self.canvas_controller.mouse_cursor = new_mouse_cursor
@@ -144,10 +143,10 @@ class Canvas(Widget):
     async def paint_tool_on_canvas(self):
         ''' Converts the displayed shapes rotation and size onto our active layer and paints it there '''
 
-        if self.active_layer_idx >= len(self.layer_canvases):
+        if self.active_layer_idx >= len(self.data.get('canvas_data', {}).get('layers', [])) - 1:
             self.page.show_dialog(SnackBar("Error finding canvas need to paint tool on."))
             return
-        active_canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
+        active_canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
 
         if self.active_tool is None:
             return
@@ -263,7 +262,7 @@ class Canvas(Widget):
         self.manipulating_shape = False 
 
         # If we didn't return, we're either in erase tool or drawing mode
-        canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
+        canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
         if not canvas.visible:
             return
 
@@ -287,7 +286,8 @@ class Canvas(Widget):
         ''' Set our initial starting x and y coordinates for the element we're drawing. '''
 
         # Grab the canvas and paint settings
-        canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
+        
+        canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
         if not canvas.visible:  # Protect when we shouldnt be drawing with it
             self.page.show_dialog(SnackBar("Set an active layer to draw on."))
             return
@@ -336,7 +336,7 @@ class Canvas(Widget):
         if dx * dx + dy * dy < MINIMUM_SEGMENT_DISTANCE * MINIMUM_SEGMENT_DISTANCE:
             return
         
-        canvas: cv.Canvas =  self.layer_canvases[self.active_layer_idx]
+        canvas: cv.Canvas =  self.layer_stack.controls[self.active_layer_idx]
         if not canvas.visible:  # Protect when we shouldnt be drawing with it
             return
         self.current_path = canvas.shapes[-1] if canvas.shapes else None
@@ -400,7 +400,7 @@ class Canvas(Widget):
         """ Saves our paths to our canvas data for storage """
 
         # Set our canvas, layer name, and update our shapes count
-        canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx] if canvas is None else canvas
+        canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx] if canvas is None else canvas
         if not canvas.visible:  # Protect when we shouldnt be drawing with it
             return
         layer_idx = int(canvas.data)
@@ -474,7 +474,7 @@ class Canvas(Widget):
 
             async def _set_color_confirmed(e=None):
 
-                canvas: cv.Canvas = self.layer_canvases[layer_idx]
+                canvas: cv.Canvas = self.layer_stack.controls[layer_idx]
                 canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
                 canvas.shapes.append(cv.Color(color_picker.color))   # Re-add empty images so it can capture
                 canvas.update()
@@ -506,7 +506,7 @@ class Canvas(Widget):
                     
                     with open(file_path, "rb") as image_file:
                         encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                        canvas: cv.Canvas = self.layer_canvases[layer_idx]
+                        canvas: cv.Canvas = self.layer_stack.controls[layer_idx]
                         canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
                         canvas.shapes.append(cv.Image(f"{encoded_string}", 0, 0, self.canvas_width, self.canvas_height))   # Re-add empty images so it can capture
                         canvas.update()
@@ -541,7 +541,7 @@ class Canvas(Widget):
             blur_strength = blur_strength_slider.value
 
             # Apply the blur to the correct canvas
-            canvas: cv.Canvas = self.layer_canvases[layer_idx]
+            canvas: cv.Canvas = self.layer_stack.controls[layer_idx]
             canvas.shapes.clear()
             canvas.shapes.append(cv.Image(capture, 0, 0, self.canvas_width, self.canvas_height, paint=ft.Paint(blur_image=blur_strength)))
             canvas.update()
@@ -556,9 +556,8 @@ class Canvas(Widget):
             cv.Canvas(
                 #shapes=[preview_image], 
                 shapes=[],
-                
                 expand=True,
-                width=self.canvas_width / 2, height=self.canvas_height / 2
+                width=self.page.width / 2, height=self.page.height / 2
             ),
             image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL) 
         )
@@ -568,10 +567,10 @@ class Canvas(Widget):
         # Add the entire canvas to the preview, but mark the active layer we will change blur of
         for layer in self.data.get('canvas_data', {}).get('layers', []):
             if layer.get('name') == layer_name:
-                active_preview_image = cv.Image(layer.get('capture', ""), 0, 0, self.canvas_width / 2, self.canvas_height / 2, paint=ft.Paint(blur_image=1))
+                active_preview_image = cv.Image(layer.get('capture', ""), 0, 0, self.page.width / 2, self.page.height / 2, paint=ft.Paint(blur_image=1))
                 preview_canvas.content.shapes.append(active_preview_image)
                 continue
-            preview_canvas.content.shapes.append(cv.Image(layer.get('capture', ""), 0, 0, self.canvas_width / 2, self.canvas_height / 2))
+            preview_canvas.content.shapes.append(cv.Image(layer.get('capture', ""), 0, 0, self.page.width / 2, self.page.height / 2))
             
         if active_preview_image is None:
             self.page.show_dialog(SnackBar("Error finding layer capture for blur"))
@@ -639,7 +638,7 @@ class Canvas(Widget):
 
 
         # Go through our layers now
-        for layer in self.layer_canvases:
+        for layer in self.layer_stack.controls:
 
             # Grab container to check if actually visible. Not visible, not exporting
             container = layer.get('canvas', None)
@@ -647,7 +646,7 @@ class Canvas(Widget):
                 continue
 
             # Grab canvas our canvas for that layer
-            canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
+            canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
 
             # Capture and add that capture to the list
             if canvas is not None:
@@ -680,26 +679,43 @@ class Canvas(Widget):
             'visible': True,
             'capture': None
         })
+
+        new_layer_idx = len(self.data.get('canvas_data', {}).get('layers', [])) - 1
         
 
         # Add new layer to the stack of canvas controls and sidebar list tiles
-        new_canvas_ctrl = self.create_new_layer_canvas_ctrl(len(self.layer_canvases), self.data.get('canvas_data', {}).get('layers', [])[-1])
-        self.layer_canvases.append(new_canvas_ctrl)
-        self.layer_stack.controls.insert(len(self.layer_stack.controls) - 1, new_canvas_ctrl)
-        self.sidebar_layers_list_view.controls.append(self.create_new_layer_sidebar_ctrl(len(self.sidebar_layers_list_view.controls), self.data.get('canvas_data', {}).get('layers', [])[-1]))
+        new_canvas_ctrl = self.create_new_layer_canvas_ctrl(
+            new_layer_idx, 
+            self.data.get('canvas_data', {}).get('layers', [])[-1]
+        )
+        self.layer_stack.controls.append(new_canvas_ctrl)
+        self.sidebar_layers_list_view.controls.append(
+            self.create_new_layer_sidebar_ctrl(
+                new_layer_idx, 
+                self.data.get('canvas_data', {}).get('layers', [])[-1]
+            )
+        )
 
         # Set the active index to the newly created layer
-        self.active_layer_idx = len(self.layer_canvases) - 1
+        self.active_layer_idx = new_layer_idx
         self.data['canvas_data']['active_layer_idx'] = self.active_layer_idx
+
+        # Clear the old active highlight and mark the new layer as selected
+        for ctrl in self.sidebar_layers_list_view.controls:
+            ctrl.content.bgcolor = None
+        self.sidebar_layers_list_view.controls[-1].content.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGH
+
         self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
         self.layer_stack.update()
         self.update()
+
+        #print("Passed in new layer idx: ", new_layer_idx)
+        print("New active_layer_idx: ", self.active_layer_idx)
         
     # Cretes a new layer canvas control for the stack
     def create_new_layer_canvas_ctrl(self, idx: int, canvas_data: dict):
         visible = canvas_data.get('visible', True)
         capture = canvas_data.get('capture', None)
-        #name = canvas_data.get('name', f"Layer {idx}")
 
         return cv.Canvas(
             data=idx,        # Save the index of this layer so we know where to save it in our data
@@ -782,16 +798,25 @@ class Canvas(Widget):
                     self.data['canvas_data']['redo_list'].remove(task)
 
             # Remove the canvas and sidebar entry for this layer
-            self.layer_canvases.pop(layer_idx)
-            self.layer_stack.controls.pop(layer_idx + 1)    # Skip background container
+            self.layer_stack.controls.pop(layer_idx)
             self.sidebar_layers_list_view.controls.pop(layer_idx)
 
-            # Clamp active_layer_idx to valid range and sync to data
-            if self.active_layer_idx >= len(self.layer_canvases):
-                self.active_layer_idx = len(self.layer_canvases) - 1
+            # Adjust active_layer_idx for the removed layer
+            if layer_idx < self.active_layer_idx:
+                # Deleted a layer below the active one — shift active index down
+                self.active_layer_idx -= 1
+            elif self.active_layer_idx >= len(self.layer_stack.controls):
+                # Deleted the active layer (was last) — clamp to new last
+                self.active_layer_idx = len(self.layer_stack.controls) - 1
+            # else: deleted a layer above active, or active is now the same positional index
             self.data['canvas_data']['active_layer_idx'] = self.active_layer_idx
 
-            self.layer_stack.update()
+            # Update sidebar highlight to reflect the (possibly changed) active layer
+            for ctrl in self.sidebar_layers_list_view.controls:
+                ctrl.content.bgcolor = None
+            self.sidebar_layers_list_view.controls[self.active_layer_idx].content.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGH
+
+            #self.layer_stack.update()
             self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
             self.update()
             await self.update_indices()
@@ -908,7 +933,7 @@ class Canvas(Widget):
         self.data['canvas_data']['active_layer_idx'] = self.active_layer_idx
         
         # If not visible, set the list tile as visible and the canvas as well
-        canvas = self.layer_canvases[self.active_layer_idx]
+        canvas = self.layer_stack.controls[self.active_layer_idx]
         if not canvas.visible:
             canvas.visible = True   # Update canvas
             self.data.get('canvas_data', {}).get('layers', [])[self.active_layer_idx]['visible'] = True # update data
@@ -926,10 +951,10 @@ class Canvas(Widget):
     async def toggle_layer_visibility(self, e: ft.Event):
         layer_idx = e.control.parent.data
 
-        new_visibility = not self.layer_canvases[layer_idx].visible
+        new_visibility = not self.layer_stack.controls[layer_idx].visible
 
         # Update canvas visibility
-        self.layer_canvases[layer_idx].visible = new_visibility
+        self.layer_stack.controls[layer_idx].visible = new_visibility
         self.data.get('canvas_data', {}).get('layers', [])[layer_idx]['visible'] = new_visibility
 
         # Update the icon in the sidebar list tile
@@ -947,10 +972,13 @@ class Canvas(Widget):
         self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
         self.update()
 
-    # Update all our controls data that use indices to mainstain state. Only sidebar needs them
+    # Update all our controls data that use indices to maintain state
     async def update_indices(self):
         for idx, control in enumerate(self.sidebar_layers_list_view.controls):
             control.content.data = idx
+        # Also update each canvas's stored index so save_canvas looks up the correct layer
+        for idx, canvas in enumerate(self.layer_stack.controls):
+            canvas.data = idx
     
     def build(self):
         super().build()
@@ -962,7 +990,7 @@ class Canvas(Widget):
             # If there's nothing to undo, return early
             if len(self.data.get('canvas_data', {}).get('undo_list', [])) == 0:
                 return
-            active_canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
+            active_canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
             if not active_canvas.visible:  # Protect when we shouldnt be drawing with it
                 return
                     
@@ -996,7 +1024,7 @@ class Canvas(Widget):
             # Return early if nothing to redo
             if len(self.data.get('canvas_data', {}).get('redo_list', [])) == 0:
                 return
-            active_canvas: cv.Canvas = self.layer_canvases[self.active_layer_idx]
+            active_canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
             if not active_canvas.visible:  # Protect when we shouldnt be drawing with it
                 return
             
@@ -1028,9 +1056,7 @@ class Canvas(Widget):
             active_layer_name = self.data.get('canvas_data', {}).get('layers', [])[self.active_layer_idx].get('name', None)
 
             self.data.get('canvas_data', {}).get('layers', []).insert(e.new_index, self.data.get('canvas_data', {}).get('layers', []).pop(e.old_index))
-            self.layer_canvases.insert(e.new_index, self.layer_canvases.pop(e.old_index))
-            # Reorder in layer_stack too (offset by 1 for the background container)
-            self.layer_stack.controls.insert(e.new_index + 1, self.layer_stack.controls.pop(e.old_index + 1))
+            self.layer_stack.controls.insert(e.new_index, self.layer_stack.controls.pop(e.old_index))
             self.sidebar_layers_list_view.controls.insert(e.new_index, self.sidebar_layers_list_view.controls.pop(e.old_index))
 
             # Find the active layer's new index and sync both self and data
@@ -1041,7 +1067,7 @@ class Canvas(Widget):
             self.data['canvas_data']['active_layer_idx'] = self.active_layer_idx
             self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
 
-            self.layer_stack.update()
+            #self.layer_stack.update()
             self.update()
             await self.update_indices()  # Update indices so sidebar controls maintain correct idx reference
             
@@ -1072,29 +1098,14 @@ class Canvas(Widget):
             except Exception:
                 pass 
             return image_str
-
-                
-        
-
-        # Add our layers to the stack in order
-        for idx, canvas_data in enumerate(self.data.get('canvas_data', {}).get('layers', [])):
-            self.layer_canvases.append(self.create_new_layer_canvas_ctrl(idx, canvas_data))
-
         
 
         self.layer_stack = ft.Stack(
-            [
-                ft.Container(   # Transparent Background
-                    ignore_interactions=True,
-                    image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL),
-                    #border=ft.Border.all(2, ft.Colors.RED),
-                    width=self.canvas_width,
-                    height=self.canvas_height,
-                    expand=False
-                ),      
-            ] + self.layer_canvases,  
+            [self.create_new_layer_canvas_ctrl(idx, canvas_data) for idx, canvas_data in enumerate(self.data.get('canvas_data', {}).get('layers', []))],  
             alignment=ft.Alignment.CENTER, expand=False
         ) 
+
+        
 
         self.canvas_controller = ft.GestureDetector(
             mouse_cursor=ft.MouseCursor.PRECISE,
@@ -1105,23 +1116,26 @@ class Canvas(Widget):
             width=self.canvas_width,
             height=self.canvas_height
         )
-
         
-        # Controller
-        self.layer_stack.controls.append(self.canvas_controller)
-
-        layers_container = ft.Container(
-            border=ft.Border.all(2, ft.Colors.OUTLINE),
-            content=self.layer_stack, expand=False,
-           # opacity=0.99,    # Forces canvas onto its own opacity layer for rendering to avoid blend mode bugs
-        )
-
-        
-        
-
         # Holds our drawing so we can interact with it, zoom, pan, etc.
         interactive_viewer = ft.InteractiveViewer(
-            content=layers_container,
+            content=ft.Stack([
+                ft.Container(   # Transparent Background
+                    ignore_interactions=True,
+                    image=ft.DecorationImage("dark_mode_transparent_background.jpg", fit=ft.BoxFit.FILL),
+                    width=self.canvas_width,
+                    height=self.canvas_height,
+                    expand=False
+                ),     
+                ft.Container(
+                    border=ft.Border.all(2, ft.Colors.OUTLINE),
+                    content=self.layer_stack, 
+                    expand=False,
+                    width=self.canvas_width + 2,    # Allow spacing for border
+                    height=self.canvas_height + 2,       # Holds our layers stack
+                ),
+                self.canvas_controller      # Controller that sits on top
+            ]),
             expand=3, 
             constrained=False,
             scale_factor=800, boundary_margin=200,
@@ -1158,44 +1172,42 @@ class Canvas(Widget):
 
              
 
-        self.sidebar_body.controls.append(
-            ft.Column([
-                self.description_tf,
+        self.sidebar_body.controls.extend([
+            self.description_tf,
 
-                ft.Text(
-                    spans=[
-                        ft.TextSpan("Width: ", ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),),
-                        ft.TextSpan(f"{str(self.data.get('canvas_data', {}).get('width', ''))} pixels\n", ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=14)),
-                        ft.TextSpan("Height: ", ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),),
-                        ft.TextSpan(f"{str(self.data.get('canvas_data', {}).get('height', ''))} pixels", ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=14))
-                    ]
-                ),
-                
-                ft.Row([    # Layer Label
-                    ft.Text(f"\tLayers", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
-                    ft.IconButton(      # Create new Layer button
-                        ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                        self.data.get('color', ft.Colors.PRIMARY),
-                        mouse_cursor=ft.MouseCursor.CLICK,
-                        on_click=self.create_new_layer,
-                    )
-                ], spacing=0),
-                
+            ft.Text(
+                spans=[
+                    ft.TextSpan("Width: ", ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),),
+                    ft.TextSpan(f"{str(self.data.get('canvas_data', {}).get('width', ''))} pixels\n", ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=14)),
+                    ft.TextSpan("Height: ", ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),),
+                    ft.TextSpan(f"{str(self.data.get('canvas_data', {}).get('height', ''))} pixels", ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=14))
+                ]
+            ),
+            
+            ft.Row([    # Layer Label
+                ft.Text(f"\tLayers", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
+                ft.IconButton(      # Create new Layer button
+                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                    self.data.get('color', ft.Colors.PRIMARY),
+                    mouse_cursor=ft.MouseCursor.CLICK,
+                    on_click=self.create_new_layer,
+                )
+            ], spacing=0),
+            
 
-                self.sidebar_layers_list_view,
+            self.sidebar_layers_list_view,
 
-                #ft.Row([    # Label Notes
-                    #ft.Text(f"\tNotes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
-                    #ft.IconButton(      # Create new notes button
-                        #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                        #self.data.get('color', ft.Colors.PRIMARY),
-                        #mouse_cursor=ft.MouseCursor.CLICK,
-                    #)
-                #], spacing=0),
+            #ft.Row([    # Label Notes
+                #ft.Text(f"\tNotes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
+                #ft.IconButton(      # Create new notes button
+                    #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                    #self.data.get('color', ft.Colors.PRIMARY),
+                    #mouse_cursor=ft.MouseCursor.CLICK,
+                #)
+            #], spacing=0),
 
-                #ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
-            ], scroll=ft.ScrollMode.AUTO, expand=True)
-        )
+            #ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
+        ])
 
         #self.content = ft.Row([interactive_viewer, self.show_sidebar_button, self.sidebar], expand=True, spacing=0)
 

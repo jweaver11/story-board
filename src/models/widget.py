@@ -48,7 +48,7 @@ class Widget(ft.Container):
                 'id': str(uuid.uuid4()),       # Unique ID for each widget
                 'title': title,                            # Title of our widget  
                 'directory_path': directory_path,          # Directory path to the file this widget's data is stored in
-                'tag': str(),                                     # Tag to identify what type of widget this is
+                'tag': str(),                              # Tag to identify what type of widget this is
                 'index': 999,                  # Index of this widget in the workspace (start at end)
                 'rail_index': 999,                 # Index of this widget in the rail for sorting (start at end)
                 'visible': True,                  # Whether this widget is visible in the workspace or not

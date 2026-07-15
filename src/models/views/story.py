@@ -529,6 +529,7 @@ class Story(ft.View):
             case "plotline":
                 widget = Plotline(title, directory_path, self, data, True)
             case "map":
+                d = {'canvas_data': data} if data is not None else None
                 widget = Map(title, directory_path, self, data, True)
             case "character_relationship_map":
                 widget = CharacterRelationshipMap(title, directory_path, self, data, True)

@@ -24,7 +24,7 @@ class MapInformationDisplay(MiniWidget):
         title: str, 
         widget: Widget,                  # The widget is always our map widget
         key: str,                       # Not used, but its required so just whatever works
-        data: dict = None               # No data is used here, so NEVER reference it. Use self.widget.data instead
+        data: dict = {}               # No data is used here, so NEVER reference it. Use self.widget.data instead
     ):
         
         # Parent constructor
@@ -35,21 +35,7 @@ class MapInformationDisplay(MiniWidget):
             key=key     
         ) 
 
-        # If we're new, give default values for our data 
-        if data is None:
-            self.data = {
-                'title': self.title,          # Title of the mini widget, should match the object title
-                'tag': "map_information_display",        
-                'left': 40,
-                'top': 40,
-                'alignment': None,
-                'show_bg_map': True,                   # Whether to show the background map image or not
-
-                # Map info
-                'Description': "",
-                'Lore': "",
-                'History': "",
-            }
+        
 
 
         # Reloads the information display of the map

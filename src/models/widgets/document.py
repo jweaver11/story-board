@@ -17,7 +17,7 @@ from styles.snack_bar import SnackBar
 # Class that holds our text document objects
 class Document(Widget):
     # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict=None, is_new: bool = False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict={}, is_new: bool = False):
 
 
         # Initialize from our parent class 'Widget'. 

@@ -10,7 +10,7 @@ from styles.text_fields import TextField, UnderlinedTextField
 class Note(Widget):
 
     # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict = None, is_new: bool=False):
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict={}, is_new: bool=False):
  
         # Initialize from our parent class 'Widget'. 
         super().__init__(
