@@ -1161,6 +1161,15 @@ class Canvas(Widget):
         self.sidebar_body.controls.append(
             ft.Column([
                 self.description_tf,
+
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Width: ", ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),),
+                        ft.TextSpan(f"{str(self.data.get('canvas_data', {}).get('width', ''))} pixels\n", ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=14)),
+                        ft.TextSpan("Height: ", ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),),
+                        ft.TextSpan(f"{str(self.data.get('canvas_data', {}).get('height', ''))} pixels", ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=14))
+                    ]
+                ),
                 
                 ft.Row([    # Layer Label
                     ft.Text(f"\tLayers", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
@@ -1175,7 +1184,7 @@ class Canvas(Widget):
 
                 self.sidebar_layers_list_view,
 
-                #ft.Row([    # Label dataset
+                #ft.Row([    # Label Notes
                     #ft.Text(f"\tNotes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
                     #ft.IconButton(      # Create new notes button
                         #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
@@ -1188,6 +1197,12 @@ class Canvas(Widget):
             ], scroll=ft.ScrollMode.AUTO, expand=True)
         )
 
-        self.content = ft.Row([interactive_viewer, self.show_sidebar_button, self.sidebar], expand=True, spacing=0)
+        #self.content = ft.Row([interactive_viewer, self.show_sidebar_button, self.sidebar], expand=True, spacing=0)
+
+        # Set up our main conent
+        self.content = ft.Stack([
+            ft.Row([interactive_viewer, self.sidebar], spacing=0, expand=True),
+            self.show_sidebar_button, 
+        ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
 
         self.page.run_task(self.set_mouse_cursor)

@@ -183,7 +183,7 @@ class Widget(ft.Container):
         self.h = e.height
         await self._set_sidebar_size()  # Adjusts our sidebar size
 
-    # Adjust our sidebars size if visible
+    # Adjust our sidebars size if visible whenever we resize
     async def _set_sidebar_size(self):
         if self.data.get('show_sidebar', False) == True:
             self.sidebar.width = self.w / 4 
@@ -201,7 +201,6 @@ class Widget(ft.Container):
         # Make button hiddent and seperate update to prevent animation from being skipped
         self.show_sidebar_button.visible = False
         self.show_sidebar_button.update()
-        await asyncio.sleep(0.02)
         
         # Set our sidebar's width
         self.sidebar.width = self.w / 4 
@@ -220,7 +219,6 @@ class Widget(ft.Container):
         # Show the button to show the sidebar again, and update it so it shows before the animation starts
         self.show_sidebar_button.visible = True
         self.show_sidebar_button.update()
-        await asyncio.sleep(0.02)
 
         # Run animation to width of 0
         self.sidebar.width = 0
@@ -569,8 +567,8 @@ class Widget(ft.Container):
             #),
             ft.Container(expand=True),      # Spacer
             ft.IconButton(          # Close/Collapse the sidebar
-                ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT, on_click=self.hide_sidebar,
-                mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
+                ft.Icons.CLOSE, self.data.get('color', ft.Colors.PRIMARY), on_click=self.hide_sidebar,
+                mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                 tooltip="Collapse Sidebar"
             ),
         ], spacing=0)
@@ -586,7 +584,6 @@ class Widget(ft.Container):
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             width=0, 
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            on_animation_end=self._set_sidebar_size,
             content=self.sidebar_body
         )
 
@@ -597,7 +594,8 @@ class Widget(ft.Container):
             mouse_cursor=ft.MouseCursor.CLICK,
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             visible=not self.data.get('show_sidebar', True),
-            tooltip="Show Sidebar"
+            tooltip="Show Sidebar",
+            #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
         )
 
 
@@ -605,8 +603,6 @@ class Widget(ft.Container):
     def build(self):
         self.build_tab()
         self.build_sidebar()
-        
-        
 
         self.select_image_button = ft.GestureDetector(
             ft.IconButton(
@@ -626,6 +622,7 @@ class Widget(ft.Container):
             hover_interval=100
         )
 
+        # Description textfield we use in the sidebar
         self.description_tf = ft.TextField(
             value=self.data.get('description', ''), label="Description",
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
@@ -637,9 +634,8 @@ class Widget(ft.Container):
             capitalization=ft.TextCapitalization.SENTENCES,
             label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
         )   
-        #ft.TextField()
 
-        self.reload_widget()    # Temp
+        self.reload_widget()    # Temp until we phase out
 
     # OLD - Phasing out
     def reload_widget(self):

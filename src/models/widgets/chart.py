@@ -596,11 +596,20 @@ class Chart(Widget):
         self.sidebar_body.controls.append(sidebar_bar_group_column)
 
         # Set our content
-        self.content = ft.Row([
-            ft.Container(chart, expand=3, padding=ft.Padding.only(bottom=20, left=20)),
-            self.show_sidebar_button,
-            self.sidebar
-        ])
+        #self.content = ft.Row([
+            #ft.Container(chart, expand=3, padding=ft.Padding.only(bottom=20, left=20)),
+            #self.show_sidebar_button,
+            #self.sidebar
+        #])
+
+        # Set up our main conent
+        self.content = ft.Stack([
+            ft.Row([
+                ft.Container(chart, expand=3, padding=ft.Padding.only(bottom=20, left=20)),
+                self.sidebar
+            ]),
+            self.show_sidebar_button, 
+        ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
         
     # Returns our widgets view for radar charts
     def radar_chart_view(self):
@@ -1142,16 +1151,31 @@ class Chart(Widget):
             )
         )
 
-        self.content = ft.Row(
-            [
-                ft.Column([
-                    dataset_keys,
-                    chart,
-                ], expand=3, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                self.show_sidebar_button,
-                self.sidebar
-            ], expand=True, spacing=0
-        )
+        #self.content = ft.Row(
+            #[
+                #ft.Column([
+                    #dataset_keys,
+                    #chart,
+                #], expand=3, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                #self.show_sidebar_button,
+                #self.sidebar
+            #], expand=True, spacing=0
+        #)
+
+        # Set up our main conent
+        self.content = ft.Stack([
+            ft.Row(
+                [
+                    ft.Column([
+                        dataset_keys,
+                        chart,
+                    ], expand=3, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                    #self.show_sidebar_button,
+                    self.sidebar
+                ], expand=True, spacing=0
+            ),
+            self.show_sidebar_button, 
+        ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
        
 
     def build(self):

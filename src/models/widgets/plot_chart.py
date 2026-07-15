@@ -833,7 +833,12 @@ class PlotChart(Widget):
         ], expand=3)
 
         
-        self.content = ft.Row([viewer_stack, self.show_sidebar_button, self.sidebar], spacing=0, expand=True)
+
+        # Set up our main conent
+        self.content = ft.Stack([
+            ft.Row([viewer_stack, self.sidebar], spacing=0, expand=True),
+            self.show_sidebar_button, 
+        ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
 
         # TODO: Add spider web view
         # Save pan events so we can load back to how we looked on launch

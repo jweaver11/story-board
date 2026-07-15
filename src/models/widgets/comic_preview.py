@@ -533,8 +533,16 @@ class ComicPreview(Widget):
         )
         
         # Set our content
-        self.content = ft.Row([
-            preview_stack,
-            self.show_sidebar_button,
-            self.sidebar,
-        ], expand=True, spacing=0)
+        #self.content = ft.Row([
+            #preview_stack,
+            #self.show_sidebar_button,
+            #self.sidebar,
+        #], expand=True, spacing=0)
+
+        self.content = ft.Stack([
+            ft.Row([
+                preview_stack,
+                self.sidebar,
+            ], expand=True, spacing=0),
+            self.show_sidebar_button, 
+        ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)

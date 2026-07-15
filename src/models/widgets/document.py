@@ -331,13 +331,24 @@ class Document(Widget):
         )
 
         # Set our content
+        #self.content = ft.Column([
+            #ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE, alignment=ft.Alignment.CENTER_LEFT),
+            #ft.Row([
+                #editor_container,
+                #self.show_sidebar_button,
+                #self.sidebar,
+            #], expand=True)
+        #], spacing=0, expand=True)
+
         self.content = ft.Column([
             ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE, alignment=ft.Alignment.CENTER_LEFT),
-            ft.Row([
-                editor_container,
-                self.show_sidebar_button,
-                self.sidebar,
-            ], expand=True)
+            ft.Stack([
+                ft.Row([
+                    editor_container,
+                    self.sidebar,
+                ], expand=True, spacing=0),
+                self.show_sidebar_button, 
+            ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
         ], spacing=0, expand=True)
 
 
