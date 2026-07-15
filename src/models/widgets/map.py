@@ -288,21 +288,25 @@ class Map(Widget):
 
         self.location_stack = ft.Stack(
             [     # Add our background and canvas
-            ft.Container(
-                expand=True, ignore_interactions=True, #border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
-                image=ft.DecorationImage(       # Background image
-                    "map_background.png", 
-                    ft.ColorFilter(ft.Colors.with_opacity(1, ft.Colors.BLACK), ft.BlendMode.SOFT_LIGHT),
-                    fit=ft.BoxFit.FILL,
-                ) if self.data.get('map_data', {}).get('show_bg_map', True) else None,
-                #color_filter=ft.ColorFilter(ft.Colors.with_opacity(1, ft.Colors.BLACK), ft.BlendMode.SOFT_LIGHT),
-            ),
+            
             self.canvas, 
          
         ], expand=True)
                 
         interactive_viewer = ft.InteractiveViewer(
-            content=self.location_stack,
+            content=ft.Stack([
+                ft.Container(           # Background container
+                    ignore_interactions=True,
+                    width=self.canvas_width, height=self.canvas_height,
+                    image=ft.DecorationImage(       # Background image
+                        "map_bg_dark.png", 
+                        #ft.ColorFilter(ft.Colors.with_opacity(1, ft.Colors.BLACK), ft.BlendMode.SOFT_LIGHT),
+                        repeat=ft.ImageRepeat.REPEAT
+                    ) if self.data.get('map_data', {}).get('show_bg_map', True) else None,
+                ),
+                self.canvas,
+                self.location_stack,
+            ], width=self.canvas_width, height=self.canvas_height),
             expand=3, 
             constrained=False,
             scale_factor=800, boundary_margin=200,
