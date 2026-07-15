@@ -300,16 +300,6 @@ class Map(Widget):
             self.canvas, 
          
         ], expand=True)
-
-        # Add our map locations to the stack
-        for mw in self.mini_widgets:
-            
-            if hasattr(mw, 'map_control') and mw.data.get('icon', "") != "label":
-                self.location_stack.controls.append(mw.map_control)
-            if hasattr(mw, 'map_label'):
-                self.location_stack.controls.append(mw.map_label)
-            
-        
                 
         interactive_viewer = ft.InteractiveViewer(
             content=self.location_stack,

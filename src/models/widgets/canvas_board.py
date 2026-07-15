@@ -461,7 +461,7 @@ class CanvasBoard(Widget):
 
             ])
     
-        self.body_container.content = body
+        self.content = body
 
         self._render_widget()
        

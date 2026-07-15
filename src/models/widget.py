@@ -78,12 +78,6 @@ class Widget(ft.Container):
         self.tab_title: ft.Text     # Text for the tab
         self.tab: ft.Tab       # The tab associated with this widget, used for navigation and organization within the UI
         self.build_tab()    
-        
-        # OLD NEED DELETE
-        self.mini_widgets_wrapper = ft.Column(expand=1, spacing=0)  
-        self.master_stack = ft.Stack(expand=True)  
-        self.mini_widgets = []    
-        self.body_container = ft.Container(expand=3) 
                        
         # Sidebar controls
         self.sidebar_header: ft.Row       # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
@@ -655,38 +649,10 @@ class Widget(ft.Container):
         ''' Children build their own content of the widget in their own reload_widget functions '''
         return
     
-     # OLD - Phasing out
+    # OLD - Phasing out
     def _render_widget(self):
 
-        # Clear out our master stack controls so we start fresh to re-render
-        self.master_stack.controls.clear()
-
-        self.mini_widgets_wrapper.visible = False   # Set false for widgets that dont use this or dont have any mini widgets
-        #if not self.no_render_mini_widgets:
-            
-        self.mini_widgets_wrapper.controls = [mw for mw in self.mini_widgets]
-        
-        # Check if any mini widgets are visible, so we show the wrapper or not
-        for mw in self.mini_widgets_wrapper.controls:
-            if mw.visible:
-                self.mini_widgets_wrapper.visible = True
-                break
-
-
-        # Add our sizing canvas and body container to the stack first
-        self.master_stack.controls = [
-            ft.Row([
-                self.body_container, 
-                self.mini_widgets_wrapper
-            ], spacing=0, expand=True)
-        ]
-
-        self.content = self.master_stack
-
-
-
         try:
-
             self.update()
         except Exception as _:
             pass
