@@ -64,8 +64,8 @@ class Canvas(Widget):
                 'canvas_data': {
 
                     # Sizing
-                    "width": 1920 if data.get('canvas_data', {}).get('width') is None else data.get('canvas_data', {}).get('width'),
-                    "height": 1080 if data.get('canvas_data', {}).get('height') is None else data.get('canvas_data', {}).get('height'),
+                    "width": (data or {}).get('canvas_data', {}).get('width') or 1920,
+                    "height": (data or {}).get('canvas_data', {}).get('height') or 1080,
 
                     # Undo and redo list
                     'undo_list': list(),        # Each undo/redo item {'layer_name': "", 'capture': ""} 
