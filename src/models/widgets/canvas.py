@@ -1147,7 +1147,7 @@ class Canvas(Widget):
         self.sidebar_layers_list_view = ft.ReorderableListView(
             [], 
             on_reorder=reorder_layers, 
-            scroll="auto", 
+            #scroll=ft.ScrollMode.ALWAYS, 
             expand=True, #show_default_drag_handles=False
         )   # This will hold our layers and allow us to reorder them
 
@@ -1185,7 +1185,7 @@ class Canvas(Widget):
                 #], spacing=0),
 
                 #ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
-            ], scroll=ft.ScrollMode.AUTO)
+            ], scroll=ft.ScrollMode.AUTO, expand=True)
         )
 
         self.content = ft.Row([interactive_viewer, self.show_sidebar_button, self.sidebar], expand=True, spacing=0)

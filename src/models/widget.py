@@ -201,7 +201,7 @@ class Widget(ft.Container):
         # Make button hiddent and seperate update to prevent animation from being skipped
         self.show_sidebar_button.visible = False
         self.show_sidebar_button.update()
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.02)
         
         # Set our sidebar's width
         self.sidebar.width = self.w / 4 
@@ -576,7 +576,7 @@ class Widget(ft.Container):
         ], spacing=0)
 
         # Body is where we append whatever each widget wants in there sidebar
-        self.sidebar_body = ft.Column([self.sidebar_header, ft.Divider()], expand=True, scroll="none", spacing=0)
+        self.sidebar_body = ft.Column([self.sidebar_header, ft.Divider()], expand=True, spacing=0)
 
         # Container on right side of widgets to hold mini widgets or sidebar info
         self.sidebar = ft.Container(
@@ -630,7 +630,7 @@ class Widget(ft.Container):
             value=self.data.get('description', ''), label="Description",
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
             border_color=ft.Colors.TRANSPARENT,
-            
+            margin=ft.Margin.only(top=4),
             focused_border_color=ft.Colors.PRIMARY,
             multiline=True, dense=True, expand=True, 
             on_blur=lambda e: self.update_data(**{'description': e.control.value}),

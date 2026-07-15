@@ -772,7 +772,7 @@ class PlotChart(Widget):
                 self.edge_sidebar_column,
 
             ], 
-            expand=True, scroll="auto", spacing=0,
+            expand=True, scroll=ft.ScrollMode.AUTO, spacing=0,
         )
             
         
