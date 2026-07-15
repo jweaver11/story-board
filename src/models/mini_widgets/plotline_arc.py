@@ -7,7 +7,7 @@ from models.app import app
 from styles.text_fields import TextField
 
 
-class Arc(MiniWidget):
+class PlotlineArc(MiniWidget):
 
     # Constructor.
     def __init__(
@@ -168,7 +168,7 @@ class Arc(MiniWidget):
 
         # Hide all other info displays while dragging
         for mw in self.widget.mini_widgets:
-            if isinstance(mw, Arc) and mw != self:
+            if isinstance(mw, PlotlineArc) and mw != self:
                 mw.plotline_control.ignore_interactions = True
                 mw.plotline_control.update()
 
@@ -258,7 +258,7 @@ class Arc(MiniWidget):
 
         # Hide all other info displays while dragging
         for mw in self.widget.mini_widgets:
-            if isinstance(mw, Arc) and mw != self:
+            if isinstance(mw, PlotlineArc) and mw != self:
                 mw.plotline_control.ignore_interactions = False
                 mw.plotline_control.update()
 

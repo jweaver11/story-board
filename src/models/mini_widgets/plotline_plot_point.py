@@ -8,7 +8,7 @@ from styles.icons import icons
 from styles.text_fields import TextField
 
 # Plotpoint mini widget object that appear on plotlines and arcs
-class PlotPoint(MiniWidget):
+class PlotlinePlotPoint(MiniWidget):
 
     # Constructor. Requires title, widget widget, page reference, and optional data dictionary
     def __init__(

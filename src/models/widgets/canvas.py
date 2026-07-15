@@ -1124,7 +1124,7 @@ class Canvas(Widget):
             content=layers_container,
             expand=3, 
             constrained=False,
-            scale_factor=500, boundary_margin=200,
+            scale_factor=800, boundary_margin=200,
             min_scale=0.02, max_scale=3.0,
         )
 

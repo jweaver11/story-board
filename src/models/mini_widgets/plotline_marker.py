@@ -10,6 +10,7 @@ from models.widget import Widget
 from models.mini_widget import MiniWidget
 import flet.canvas as cv
 import uuid
+from constants import PLOTLINE_CANVAS_PADDING
 
 # Plotpoint mini widget object that appear on plotlines and arcs
 class PlotlineMarker(MiniWidget):
@@ -17,7 +18,7 @@ class PlotlineMarker(MiniWidget):
     # Constructor. Requires title, widget widget, page reference, and optional data dictionary
     def __init__(
         self, 
-        widget: Widget, 
+        widget: Widget,  
         data: dict = None,
         is_new: bool=False       
     ):
@@ -26,9 +27,9 @@ class PlotlineMarker(MiniWidget):
 
         # If we're new, give default values for our data 
         if self.is_new:
-            self.data = {
-                'tag': "marker",            # Tag to identify what type of object this is
-            }
+            self.data.update({
+                'tag': "marker", 
+            }) 
         
     # Child classes override this
     def create_sidebar_ctrls(self) -> list:
@@ -38,87 +39,124 @@ class PlotlineMarker(MiniWidget):
     async def start_move(self, e=None):
         ''' Called when we start dragging our plot point. Sets our state to dragging and changes our mouse cursor '''
 
-        self.plotline_control.content.mouse_cursor = ft.MouseCursor.RESIZE_LEFT_RIGHT
         self.is_dragging = True
-        self.plotline_control.update()
         
 
     # Called when actively dragging our slider thumb to change our x position
     async def move_marker(self, e: ft.DragUpdateEvent):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
 
-        if e is None:
-            delta_x = 0
-        else:
-            delta_x = e.local_delta.x
-
-        if not isinstance(delta_x, (int, float)):
-            delta_x = 0
         
         # Calculate our new absolute positioning based on our delta x from dragging
-        new_left = self.plotline_control.left + delta_x
+        new_left = self.left + e.local_delta.x
 
         # Clamp sides and use timeline padding
-        if new_left < 10:        # Padding on left because canvas draws in middle (5px)
-            new_left = 10
-        elif new_left > self.widget.plotline_width - 20:  # No padding needed on right
-            new_left = self.widget.plotline_width - 20
+        if new_left < PLOTLINE_CANVAS_PADDING:        # Padding on left because canvas draws in middle (5px)
+            new_left = PLOTLINE_CANVAS_PADDING
+        elif new_left > self.widget.plotline_width - PLOTLINE_CANVAS_PADDING: 
+            new_left = self.widget.plotline_width - PLOTLINE_CANVAS_PADDING
         
         # Set our new left position within our stack
-        self.plotline_control.left = new_left
+        self.left = new_left
+        self.update()
 
-        self.data['left'] = new_left
-
-        self.plotline_control.update()
-
-    # Called when we finish dragging our plotline_marker to save our position
-    async def _drag_end(self, e=None):
+    # Called when done moving. Saves our position and new alignment to data
+    async def save_position(self, e=None):
         ''' Updates our alignment and side location, and applies the updadte to the canvas for our label '''
 
-        self.plotline_control.content.mouse_cursor = ft.MouseCursor.CLICK
         self.is_dragging = False
+        #await self.highlight()
 
-        await self.highlight()
+        alignment = (
+            (self.left / (self.widget.plotline_width - PLOTLINE_CANVAS_PADDING)) * 2.0 - 1.0,
+            0
+        )
 
-        x_alignment = (self.data.get('left', 0) / (self.widget.plotline_width - 10)) * 2.0 - 1.0
-
-        self.update_data(**{'x_alignment': x_alignment, 'left': self.data.get('left', 0)})
+        self.update_data(**{'alignment': alignment, 'position': (self.left, 0)})
 
 
         #if self.widget.information_display.visible:
             #self.widget.information_display.reload_mini_widget()
 
         
-        
+    async def show_mini_widget(self, e = None):
+        return 
      
 
     # Called from reload_mini_widget
     def build(self):
         """ Rebuilds our plotline control that holds our plot point and slider """
-        #self.margin=ft.Margin(16, 0, 16, 0)
-        self.expand=True
-        self.alignment=ft.Alignment.CENTER
-        self.clip_behavior=ft.ClipBehavior.HARD_EDGE
-        #bgcolor="red",
-        #border=ft.Border.all(2, self.data.get('color', None), ft.BorderSide(style=ft.BorderStyle.SOLID)),
-        self.left=self.data.get('left', 0)
-        self.animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN)
-        self.width=10
-        self.mouse_cursor=ft.MouseCursor.CLICK
-        self.on_enter=self.highlight
-        self.on_exit=self.highlight
-        self.on_tap_down=self.start_move
-        self.on_pan_start=self.start_move
-        self.on_pan_end=self._drag_end
-        self.on_pan_update=self.move_marker
-        #self.on_secondary_tap=lambda _: self.widget.story.open_menu(self.get_menu_options()),
-        #self.on_tap=self.show_mini_widget,
+
+        super().build()
+
+        async def highlight(e: ft.HoverEvent=None):
+            shadow = ft.BoxShadow(
+                2, 4, 
+                ft.Colors.with_opacity(0.2, self.data.get('color', ft.Colors.PRIMARY)), 
+                #blur_style=ft.BlurStyle.OUTER
+            )
+            highlight_container1.shadow = shadow
+            highlight_container2.shadow = shadow
+            self.update()
+
+        # Called when we stop hovering over our marker
+        async def stop_highlight(e: ft.Event=None):
+            if self.shown_in_sidebar:
+                return
+            highlight_container1.shadow = None
+            highlight_container2.shadow = None
+            self.update()
+
+
+        # Set our size
+        self.height = self.page.height / 2
+        #self.width = 10
 
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
-        self.content = cv.Canvas(
-            width=10, opacity=.7, resize_interval=20,    
-            content=ft.Container(ignore_interactions=True, expand=True),
-            shapes=[],    # Set shapes empty so timeline knows to set its dashed line
-        )
-            
+        self.content = ft.Column([
+            highlight_container1 := ft.Container(
+                ft.GestureDetector(
+                    ft.Text(self.data.get('title'), width=100, text_align=ft.TextAlign.CENTER),
+                    on_enter=highlight,
+                    on_exit=stop_highlight,
+                    on_tap_down=self.start_move,
+                    on_pan_start=self.start_move,
+                    on_pan_end=self.save_position,
+                    on_pan_update=self.move_marker,
+                    mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
+                    on_secondary_tap=lambda _: self.widget.story.open_menu(self.get_menu_options()),
+                    on_tap=self.show_mini_widget,
+                ),
+                width=100,
+            ),
+            highlight_container2 := ft.Container(
+                cv.Canvas(
+                    width=10, opacity=.7,
+                    expand=True,   
+                    content=ft.GestureDetector(
+                        on_enter=highlight,
+                        on_exit=stop_highlight,
+                        on_tap_down=self.start_move,
+                        on_pan_start=self.start_move,
+                        on_pan_end=self.save_position,
+                        on_pan_update=self.move_marker,
+                        expand=True,
+                        mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
+                        on_secondary_tap=lambda _: self.widget.story.open_menu(self.get_menu_options()),
+                        on_tap=self.show_mini_widget,
+                    ),
+                    shapes=[
+                        cv.Line(
+                            4, 0, 4, self.height, 
+                            paint=ft.Paint(
+                                self.data.get('color', ft.Colors.PRIMARY),
+                                stroke_dash_pattern=[10, 10],
+                                stroke_width=3
+                            ) 
+                        ),
+                    ]
+                ),
+                width=10, expand=True
+            )
+        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)            
         

@@ -9,11 +9,13 @@ import flet as ft
 from styles.menu_option_style import MenuOptionStyle
 from models.views.story import Story
 from models.widget import Widget
-from models.mini_widgets.plotline_arc import Arc
+from models.mini_widgets.plotline_arc import PlotlineArc
 from models.mini_widgets.plotline_marker import PlotlineMarker
+from models.mini_widgets.plotline_plot_point import PlotlinePlotPoint
 import flet.canvas as cv
 from models.app import app
 import asyncio 
+from constants import PLOTLINE_CANVAS_PADDING
 
 
 class Plotline(Widget):
@@ -41,10 +43,10 @@ class Plotline(Widget):
                 'show_sidebar': True,   # Whether to show the info column on the side of our charts or not. 
 
                 # Data in our info_display
-                'Time Label': "Years",                          # Label for the time axis (any str they want)
-                'Left Label': "0",                              # Start label
-                'Right Label': "10",                            # Start and end date of the branch, for plotline view
-                'Divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
+                'time_label': "Years",                          # Label for the time axis (any str they want)
+                'left_label': "0",                              # Start label
+                'right_label': "10",                            # Start and end date of the branch, for plotline view
+                'divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
                 'hide_division_labels': bool(),  
                 
                 # Holds our data for all markers, plot points, and arcs
@@ -54,12 +56,6 @@ class Plotline(Widget):
             },
         ) 
                 
-        # Declare dicts of our data types   
-        self.arcs: dict = {}       
-        self.plot_points: dict = {} 
-        self.markers: dict = {}
-        self.information_display: ft.Container = None
-        
         # State elements
         self.x_alignment: float = 0.00              # Alignment to pass into new plot points and arcs
         self.left_position: int = 0                 # Absolute left position on plotline for new markers, plotpoints, and arcs
@@ -68,14 +64,20 @@ class Plotline(Widget):
         self.show_hover_effects: bool = False   # If we should show hover effects of our plotline. Plot points and markers turn these off when hovering over them
         self.needs_redraw = False           # Used to track if we need to redraw canvas after a resize
         self.skip_first_resize = True
+        self.can_open_menu: bool = False
 
         # Our plotline canvas that draws our plotline line and markers
         self.plotline_canvas: cv.Canvas     # Canvas used to just draw our plotline line and markers
-        self.event_stack: ft.Stack          # Stack that holds our markers, plot points, and arcs
-    
+        self.arc_stack: ft.Stack
+        self.marker_stack: ft.Stack
+        self.plot_point_stack: ft.Stack   
+
+    async def _set_size(self, e: ft.LayoutSizeChangeEvent[ft.Container]):
+        await super()._set_size(e)
+        await self.redraw_plotline_canvas(e) 
 
     # Called when right clicking our controls for either plotline or an arc
-    def get_plotline_menu_options(self) -> list[ft.Control]:
+    def get_new_event_menu_options(self) -> list[ft.Control]:
 
         return [
             MenuOptionStyle(
@@ -86,30 +88,36 @@ class Plotline(Widget):
                             ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
+                        padding=ft.Padding.all(0), 
+                        shape=ft.RoundedRectangleBorder(radius=4),
+                        
                     ),
                     [
-                        ft.MenuItemButton(
-                            "Plot Point", leading=ft.Icon(ft.Icons.LOCATION_ON_OUTLINED, self.data.get('color', "primary")),
-                            #on_click=self.new_item_clicked, 
+                        ft.MenuItemButton(      # Documents
+                            "Plot Point", leading=ft.Icon(ft.Icons.LOCATION_ON_OUTLINED, self.data.get('color', "primary")), 
+                            on_click=self.create_plot_point, 
+                            close_on_click=True,
                             tooltip="Mark important, short term events as plot points in your story",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        ),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        ), 
+                        
                         ft.MenuItemButton(
                             "Arc", leading=ft.Icon(ft.Icons.SHOW_CHART_OUTLINED, self.data.get('color', "primary")),
-                            #on_click=self.new_item_clicked,
+                            on_click=self.create_arc,
+                            close_on_click=True,
                             tooltip="Create extented events in your story as arcs with set start and end points",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ),
                         ft.MenuItemButton(
                             "Marker", leading=ft.Icon(ft.Icons.FLAG_OUTLINED, self.data.get('color', "primary")),
                             on_click=self.create_marker, 
+                            close_on_click=True,
                             tooltip="Create simple markers on the plotline for events or notes to help visualize the flow of your story",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         )
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
                 no_padding=True, no_effects=True 
             ),   
@@ -117,21 +125,22 @@ class Plotline(Widget):
     
 
     # Called when hovering over our plotline on the canvas
-    async def _hover_plotline_canvas(self, e: ft.PointerEvent):
+    async def hover_plotline_canvas(self, e: ft.PointerEvent):
         ''' Sets our coordinated for opening the menu when right clicking and updates our alignment we want to pass in '''
 
-        
+        def mouse_centered_vertically(e: ft.PointerEvent) -> bool:
+            if abs(e.local_position.y - (self.plotline_height / 2)) <= 25:
+                self.can_open_menu = True
+                return True
+            else:
+                self.can_open_menu = False
+                return False
+            
 
-        if self.story.workspace.is_resizing:    # If we're resizing just ignore this call
-            return
+        #if self.story.workspace.is_resizing:    # If we're resizing just ignore this call
+            #return
+        await super().set_mouse_coords(e)
         
-        return
-        
-        
-
-        # Set coordinates for menu
-        self.story.mouse_x = e.global_position.x
-        self.story.mouse_y = e.global_position.y
 
         self.left_position = int(e.local_position.x)
 
@@ -139,19 +148,17 @@ class Plotline(Widget):
         w = max(int(self.plotline_width or 0), 1)
         x = float(e.local_position.x)
         raw = (2.0 * x / w) - 1.0
-        raw = max(-1.0, min(1.0, raw))
-        self.x_alignment = round(raw, 2)    # Save new x_alignment
-
+        self.x_alignment = max(-1.0, min(1.0, raw)) # Save new x_alignment
 
         # Check if we're over the plotline line itself and give visual feedback and allow us to right click 
-        if abs(e.local_position.y - (self.plotline_height / 2)) <= 25:
+        if mouse_centered_vertically(e):
             
 
             # Long horizontal timeline
             self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
 
             # Divisions on the timeline
-            self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
+            self.plotline_canvas.shapes[len(self.data.get('divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
             self.plotline_canvas.content.mouse_cursor = ft.MouseCursor.CLICK      # Change cursor to pointer
 
             try:
@@ -163,7 +170,7 @@ class Plotline(Widget):
         # If not, disable right clicking and remove visual feedback
         else:
             self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
-            self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
+            self.plotline_canvas.shapes[len(self.data.get('ivisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
             self.plotline_canvas.content.mouse_cursor = None
 
             try:
@@ -172,28 +179,21 @@ class Plotline(Widget):
                 pass
 
     async def _exit_canvas(self, e=None):
-        return
         ''' Called when exiting our plotline canvas '''
         self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
-        self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
+        self.plotline_canvas.shapes[len(self.data.get('divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
         self.plotline_canvas.content.mouse_cursor = None
 
-        try:
-            self.plotline_canvas.update()
-        except Exception as _:
-            pass
-
-    # Checks if we are within 25 pixels of the vertical center of the plotline
-    def mouse_centered_vertically_on_plotline_canvas(self, e: ft.PointerEvent) -> bool:
-        # TODO: Calc mouse position. If within 50 pixels of half our height, show sidebar with info display as content
-        pass
+        self.plotline_canvas.update()
+        
 
 
     # Called when right clicking our plotline on the canvas
-    async def open_menu(self, e: ft.PointerEvent):
+    async def open_menu(self, e: ft.PointerEvent=None):
         ''' Opens our menu for the options of our related plotline '''
-        if self.mouse_centered_vertically_on_plotline_canvas(e):
-            self.story.open_menu(self.get_plotline_menu_options())
+        
+        if self.can_open_menu:
+            self.story.open_menu(self.get_new_event_menu_options())
 
         
     
@@ -201,18 +201,22 @@ class Plotline(Widget):
 
     async def create_plot_point(self, e: ft.Event=None):
         ''' Creates plot point in data, control and control on event stack'''
+        await self.story.close_menu()
 
     async def create_arc(self, e: ft.Event=None):
         ''' Creates an arc in data, control and control on event stack'''
+        await self.story.close_menu()
 
     # Creates a marker in data and a control on the event stack. Has no info for sidebar
     async def create_marker(self):
+        await self.story.close_menu()
         new_marker = PlotlineMarker(widget=self, data={'title': "New Marker"}, is_new=True)
 
         # Update our data, add it to the events stack, and show it in the sidebar
         self.update_data(**{'mini_widgets_data': {new_marker.data.get('id', ''): new_marker.data}})
-        self.event_stack.controls.append(new_marker)
+        self.marker_stack.controls.append(new_marker)
         await new_marker.show_mini_widget()
+        self.marker_stack.update()
 
         
     def create_plot_point_event_stack_ctrl(self, pp_data: dict) -> ft.Control:
@@ -252,35 +256,38 @@ class Plotline(Widget):
 
 
     # Called for any size changes to our plotline canvas
-    async def redraw_plotline_canvas(self, e: ft.EventHandler[cv.CanvasResizeEvent]):
+    async def redraw_plotline_canvas(self, e: ft.LayoutSizeChangeEvent[ft.Container]):
         ''' Redraws our plotline on the canvas when it is resized. Does it on startup as well '''
-        #return
-        print(e)
+        
+        # Set our new size
+        width, height = e.width, e.height
+        
+        self.plotline_width = width
+        self.plotline_height = height
 
-        return
                
         # Draw our plotline on the canvas with its two end markers ------------------------------------------------
         self.plotline_canvas.shapes = [
             cv.Path(
                 elements=[
                     # Left vertical end marker
-                    cv.Path.MoveTo(25, self.plotline_height // 2 + 25),
-                    cv.Path.LineTo(25, self.plotline_height // 2 - 25),
+                    cv.Path.MoveTo(PLOTLINE_CANVAS_PADDING, self.plotline_height // 2 + 25),
+                    cv.Path.LineTo(PLOTLINE_CANVAS_PADDING, self.plotline_height // 2 - 25),
 
                     # Horizontal line
-                    cv.Path.MoveTo(25, self.plotline_height // 2),
-                    cv.Path.LineTo(self.plotline_width, self.plotline_height // 2),
+                    cv.Path.MoveTo(PLOTLINE_CANVAS_PADDING, self.plotline_height // 2),
+                    cv.Path.LineTo(self.plotline_width - PLOTLINE_CANVAS_PADDING, self.plotline_height // 2),
 
                     # Right vertical end marker
-                    cv.Path.MoveTo(self.plotline_width, self.plotline_height // 2 + 25),
-                    cv.Path.LineTo(self.plotline_width, self.plotline_height // 2 - 25),
+                    cv.Path.MoveTo(self.plotline_width - PLOTLINE_CANVAS_PADDING, self.plotline_height // 2 + 25),
+                    cv.Path.LineTo(self.plotline_width - PLOTLINE_CANVAS_PADDING, self.plotline_height // 2 - 25),
                 ],
                 paint=ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', "primary")},.7")
             ),
         ]
 
         # Draw our divisions on the plotline -----------------------------------------------------------------
-        num_divisions = len(self.information_display.data.get('Divisions', []))  # Total number of divisions
+        num_divisions = len(self.data.get('divisions', []))  # Total number of divisions
         div_width = (self.plotline_width) / (num_divisions + 1) if num_divisions > 0 else 0   # Width between each division
         division_width = (self.plotline_width - div_width) / num_divisions  if num_divisions > 0 else 0      # Division width starting after first division plus padding
 
@@ -302,8 +309,8 @@ class Plotline(Widget):
             if not self.data.get('hide_division_labels', False):
                 self.plotline_canvas.shapes.append(
                     cv.Text(
-                        x, self.plotline_height // 2 - 25 if app.settings.data.get('division_labels_direction', "top") == "top" else self.plotline_height // 2 + 25,
-                        str(self.information_display.data.get('Divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
+                        x, self.plotline_height // 2 - PLOTLINE_CANVAS_PADDING if app.settings.data.get('division_labels_direction', "top") == "top" else self.plotline_height // 2 + PLOTLINE_CANVAS_PADDING,
+                        str(self.data.get('divisions', ["1", "2", "3", "4", "5", "6", "7", "8", "9"])[i]), 
                         ft.TextStyle(14, weight=ft.FontWeight.BOLD),
                         alignment=ft.Alignment.CENTER
                     )
@@ -312,23 +319,22 @@ class Plotline(Widget):
         # Add our divisions path to the canvas
         self.plotline_canvas.shapes.append(divisions_path)
 
-
         # Add our plotline ends labels ---------------------------------------------------------------------------
-        left_label = str(self.information_display.data.get('Left Label', '0'))
+        left_label = str(self.data.get('left_label', '0'))
         left_label = left_label.split('.', 1)[0] if '.' in left_label else left_label
-        right_label = str(self.information_display.data.get('Right Label', '10'))
+        right_label = str(self.data.get('right_label', '10'))
         right_label = right_label.split('.', 1)[0] if '.' in right_label else right_label
-        time_label = str(self.information_display.data.get('Time Label', 'years')).capitalize()
+        time_label = str(self.data.get('time_label', 'years')).capitalize()
 
         # Set the text width, and align it in center, make sure it wraps
         self.plotline_canvas.shapes.append(cv.Text(
-            25, self.plotline_height // 2 - 60, left_label, 
+            PLOTLINE_CANVAS_PADDING, self.plotline_height // 2 - 60, left_label, 
             ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
             max_width=50,   # Prevent overflow left
             text_align=ft.TextAlign.CENTER, 
         ))
         self.plotline_canvas.shapes.append(cv.Text(
-            self.plotline_width, self.plotline_height // 2 - 60, right_label, 
+            self.plotline_width - PLOTLINE_CANVAS_PADDING, self.plotline_height // 2 - 60, right_label, 
             ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
             text_align=ft.TextAlign.CENTER, max_width=50,   # Prevent overflow right
         ))
@@ -338,13 +344,11 @@ class Plotline(Widget):
             text_align=ft.TextAlign.CENTER
         ))
 
-        
-        
-
         self.plotline_canvas.update()
 
     # Re-aligns the event controls
     async def align_event_controls(self):
+        return
         # Add our plot points labels above or below their dot on the plotline ------------------------------------------------
         line_direction = "bottom"  # Line direction either going above or below the plotline that flips evert plotline
         line_height = "small"    # Line height that cycles between small, medium, and large after each plot point
@@ -535,12 +539,13 @@ class Plotline(Widget):
                      
     def build(self):
         super().build()
+        #self.sidebar.on_animation_end = self.redraw_plotline_canvas     # Redraw our plotline everytime our sidebar needs it
 
         # When clicking our canvas. If we're in center vertically and not showing sidebar, show sidebar
         async def may_show_sidebar(e: ft.PointerEvent):
-            if self.mouse_centered_vertically_on_plotline_canvas(e):
-                if not self.data.get('show_sidebar', False):
-                    await self.show_sidebar()
+            if self.can_open_menu:
+                await self.show_sidebar()
+            print("Open menu")
 
             
         
@@ -550,58 +555,66 @@ class Plotline(Widget):
         self.plotline_canvas = cv.Canvas(
             resize_interval=500, 
             expand=True, 
-            on_resize=self.redraw_plotline_canvas,
+            #on_resize=self.redraw_plotline_canvas,
+            #margin=ft.Margin.symmetric(horizontal=PLOTLINE_CANVAS_PADDING),
             content=ft.GestureDetector(
                 expand=True, 
                 on_secondary_tap=self.open_menu,
-                on_hover=self._hover_plotline_canvas,
+                on_hover=self.hover_plotline_canvas,
                 on_exit=self._exit_canvas,
                 on_tap=may_show_sidebar,
                 hover_interval=20,
             )
         )
 
+        self.arc_stack = ft.Stack([], expand=True, alignment=ft.Alignment(0, 0))
+        self.marker_stack = ft.Stack([], expand=True, alignment=ft.Alignment(0, 0))
+        self.plot_point_stack = ft.Stack([], expand=True, alignment=ft.Alignment(0, 0))
+
         
-        # Create a stack so we can sit our plotpoints and arcs on our plotline
-        self.event_stack = ft.Stack(
-            expand=True, 
-            alignment=ft.Alignment(0, 0),
-            clip_behavior=ft.ClipBehavior.NONE,
-            #on_size_change=self.align_event_controls,
-            controls=[
-                ft.Container(
-                    self.plotline_canvas, 
-                    expand=True, clip_behavior=ft.ClipBehavior.NONE,
-                    
-                )      # Add our canvas which has our visual plotline
-            ]
-        ) 
+        
  
         # Sort our arcs so the bigger ones are in back and smaller on top
-        sorted_arcs = dict(sorted(self.arcs.items(), key=lambda item: item[1].data.get('left', 0) + item[1].data.get('right', 0)))
+        arcs_data_list = []
+        markers_data_list = []
+        plot_points_data_list = []
 
-        # Add arcs first since they sit in the back
-        for arc in sorted_arcs.values():
-            self.event_stack.controls.append(arc.plotline_control)
+        # Go through our data and organize it
+        for mw in self.data.get('mini_widgets_data', {}).values():
+            if mw.get('tag', '') == "arc":
+                arcs_data_list.append(mw)
+            elif mw.get('tag', '') == "marker":
+                markers_data_list.append(mw)
+            else:
+                plot_points_data_list.append(mw)
+
+        # Sort arcs so biggest is in the back
+        arcs_data_list.sort(key=lambda item: item[1].data.get('left', 0) + item[1].data.get('right', 0))
+
+        # Add all our controls to the right stack
+        for arc_data in arcs_data_list:
+            self.arc_stack.controls.append(PlotlineArc())
 
         # Add markers next since they are next biggest
-        for marker in self.markers.values():    
-            if self.data.get('show_all_markers', False) or marker.data.get('is_shown_on_widget', False):
-                self.event_stack.controls.append(marker.plotline_control)
+        for marker_data in markers_data_list:    
+            self.marker_stack.controls.append(PlotlineMarker(self, marker_data))
 
         # Add plot points last
-        for plot_point in self.plot_points.values():    
-            if self.data.get('show_all_plot_points', False) or plot_point.data.get('is_shown_on_widget', False):
-                self.event_stack.controls.append(plot_point.plotline_control)
+        for plot_point_data in plot_points_data_list:    
+            self.plot_point_stack.controls.append(PlotlinePlotPoint)
 
         
 
         # Holds our drawing so we can interact with it, zoom, pan, etc.
         interactive_viewer = ft.InteractiveViewer(
-            content=self.event_stack,
-            expand=3, 
-            #constrained=False,
-            scale_factor=500, boundary_margin=200,
+            content=ft.Stack([
+                ft.Container(self.plotline_canvas, expand=True, border=ft.Border.all(8, "red")),
+                self.arc_stack,
+                ft.Container(self.marker_stack, expand=True, border=ft.Border.all(4, "blue")),
+                self.plot_point_stack
+            ]),
+            expand=True, 
+            scale_factor=800, boundary_margin=200,
             min_scale=0.02, max_scale=3.0,
         )
         self.content = ft.Stack([

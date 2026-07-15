@@ -10,6 +10,7 @@ from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
 from styles.text_fields import TextField
 import uuid
+from constants import PLOTLINE_CANVAS_PADDING
 
 class MiniWidget(ft.GestureDetector):
 
@@ -21,11 +22,12 @@ class MiniWidget(ft.GestureDetector):
         is_new: bool=False  
     ):
 
-        self.widget = widget
+        self.widget = widget        
         # Parent constructor
         super().__init__(
             data=data, 
             animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            on_right_pan_end=lambda: None,  # Needs an event or gets angy
         )
 
         # If we're new, give default values for our data 
@@ -38,7 +40,7 @@ class MiniWidget(ft.GestureDetector):
                 'title': data.get('title', ''),         # Title of the mini widget, should match the object title
                 'tag': "mini_widget",                   # Default mini widget tag, but should be overwritten by child classes
                 'alignment': data.get('alignment', (0, 0)),     # Alignment of the mini widget on its parents stack
-                'position': data.get('position', (0, 0)),       # Position of the mini widget on its parents stack
+                'position': data.get('position', (200, 200)),       # Position of the mini widget on its parents stack
                 'color': data.get('color', 'primary'),          # Color of the mini widget
                 'notes': [],                            # Notes stored at bottom of info sidebar section
             }
@@ -180,15 +182,11 @@ class MiniWidget(ft.GestureDetector):
             )
 
         return color_controls
-
-    def before_update(self):
-        print(f"Successful update for mini widget {self.title}")
-        return super().before_update()
     
     # Called when hovering over stacked control to give us a highlighted shadow
     async def highlight(self, e: ft.Event=None):
         ''' Shows our slider and hides our plotline_marker. Makes sure all other sliders are hidden '''
-        self.shadow = ft.BoxShadow(2, 2, self.data.get('color', ft.Colors.PRIMARY))
+        self.shadow = ft.BoxShadow(2, 2, self.data.get('color', ft.Colors.PRIMARY), blur_style=ft.BlurStyle.OUTER)
         self.update()
 
     # Called when we stop hovering over our marker
@@ -201,9 +199,9 @@ class MiniWidget(ft.GestureDetector):
     # Shows our mini widget in the sidebar of our widgets content
     async def show_mini_widget(self, e: ft.Event=None):
         ''' Shows our mini widget '''
-
+        self.shown_in_sidebar = True
         self.widget.sidebar_header.controls[0].value = self.data.get('title', '')   # Update title to match us
-        self.widget.sidebar_body.controls = self.create_sidebar_ctrls(self)  # Build info sidebar content here
+        self.widget.sidebar_body.controls = self.create_sidebar_ctrls()  # Build info sidebar content here
         
         # Applies the update
         self.widget.sidebar_body.update()
@@ -216,7 +214,7 @@ class MiniWidget(ft.GestureDetector):
     
     # Set the content of our mini widget
     def build(self):
-        return
+        self.left = self.data.get('position', (200, 0))[0]
 
     
         
