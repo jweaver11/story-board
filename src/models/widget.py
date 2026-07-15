@@ -80,6 +80,7 @@ class Widget(ft.Container):
         self.build_tab()    
                        
         # Sidebar controls
+        self.sidebar_title: ft.Text       # Title of the sidebar for this widget that sits in the header
         self.sidebar_header: ft.Row       # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
         self.sidebar_body: ft.Column      # Column that holds the header and any other content for the sidebar
         self.sidebar: ft.Container      # Container on right side of widgets to hold mini widgets or sidebar info
@@ -558,16 +559,15 @@ class Widget(ft.Container):
     # Called in constructor to build our sidebar controls
     def build_sidebar(self):
 
+        # Title that sits in the header
+        self.sidebar_title = ft.Text(
+            f"{self.data.get('title', '')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+            color=self.data.get('color', None), weight=ft.FontWeight.BOLD)
+
         # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
         self.sidebar_header = ft.Row([
-            ft.Text(f"{self.data.get('title', '')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
-                color=self.data.get('color', None), weight=ft.FontWeight.BOLD,),    # Title of widget
-            #ft.IconButton(      # Open the settings fo this type of widget
-                #ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY),
-                #on_click=self.open_widget_settings, 
-                #mouse_cursor=ft.MouseCursor.CLICK,
-                #tooltip=f"Open Settings for {self.data.get('tag', '').capitalize()} widgets."
-            #),
+            self.sidebar_title,    # Title of widget
+            
             ft.Container(expand=True),      # Spacer
             ft.IconButton(          # Close/Collapse the sidebar
                 ft.Icons.CLOSE, self.data.get('color', ft.Colors.PRIMARY), on_click=self.hide_sidebar,
@@ -604,6 +604,14 @@ class Widget(ft.Container):
             tooltip="Show Sidebar",
             #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
         )
+
+        # OLD
+        #ft.IconButton(      # Open the settings fo this type of widget
+            #ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY),
+            #on_click=self.open_widget_settings, 
+            #mouse_cursor=ft.MouseCursor.CLICK,
+            #tooltip=f"Open Settings for {self.data.get('tag', '').capitalize()} widgets."
+        #),
 
 
     # Builds functionality for widget

@@ -83,8 +83,10 @@ class Map(Widget):
         self.active_tool: CanvasShape                    # The active shape being added if we're using a tool
 
         # The canvas we draw on and the stack that holds our location controls
+        self.bg_image: ft.Container
         self.canvas: cv.Canvas 
         self.location_stack: ft.Stack
+        self.map_controller: ft.GestureDetector
 
         # Rest of state elements
         self.new_location_position = (0, 0)     # Where new locations go 
@@ -260,23 +262,18 @@ class Map(Widget):
     def build(self):
         super().build()
 
+        self.bg_image = ft.Container(           # Background container
+            ignore_interactions=True,
+            width=self.canvas_width, height=self.canvas_height,
+            image=ft.DecorationImage(       # Background image
+                "map_bg_dark.png", 
+                #ft.ColorFilter(ft.Colors.with_opacity(1, ft.Colors.BLACK), ft.BlendMode.SOFT_LIGHT),
+                repeat=ft.ImageRepeat.REPEAT
+            ) if self.data.get('map_data', {}).get('show_bg_map', True) else None,
+        )
+
         self.canvas= cv.Canvas(
-            content=ft.GestureDetector(
-                mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('draw_mode', False) else None, 
-                expand=True,
-
-                # Drawing event handlers
-                #on_pan_start=self.start_drawing,
-                #on_pan_update=self.is_drawing,
-                #on_pan_end=lambda e: self.save_canvas(),
-                #on_tap_up=self.add_point,      # Handles so we can add points
-
-                # Non-drawing event handlers
-                on_secondary_tap=lambda: self.story.open_menu(self.get_map_menu_options()),
-                on_hover=self._get_coords,
-                on_tap=lambda: self.story.open_menu(self.get_map_menu_options()),
-            ),
-            expand=True,
+            shapes=[],
             width=self.canvas_width,
             height=self.canvas_height,
         )  
@@ -287,25 +284,32 @@ class Map(Widget):
         # Our stack for map locations
 
         self.location_stack = ft.Stack(
-            [     # Add our background and canvas
-            
-            self.canvas, 
-         
-        ], expand=True)
+            [], 
+            width=self.canvas_width, height=self.canvas_height,
+        )
+
+        self.map_controller = ft.GestureDetector(
+            mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('draw_mode', False) else None, 
+            expand=True,
+
+            # Drawing event handlers
+            #on_pan_start=self.start_drawing,
+            #on_pan_update=self.is_drawing,
+            #on_pan_end=lambda e: self.save_canvas(),
+            #on_tap_up=self.add_point,      # Handles so we can add points
+
+            # Non-drawing event handlers
+            on_secondary_tap=lambda: self.story.open_menu(self.get_map_menu_options()),
+            on_hover=self._get_coords,
+            on_tap=lambda: self.story.open_menu(self.get_map_menu_options()),
+        )
                 
         interactive_viewer = ft.InteractiveViewer(
             content=ft.Stack([
-                ft.Container(           # Background container
-                    ignore_interactions=True,
-                    width=self.canvas_width, height=self.canvas_height,
-                    image=ft.DecorationImage(       # Background image
-                        "map_bg_dark.png", 
-                        #ft.ColorFilter(ft.Colors.with_opacity(1, ft.Colors.BLACK), ft.BlendMode.SOFT_LIGHT),
-                        repeat=ft.ImageRepeat.REPEAT
-                    ) if self.data.get('map_data', {}).get('show_bg_map', True) else None,
-                ),
-                self.canvas,
-                self.location_stack,
+                self.bg_image,
+                self.canvas,        # Canvas with our map drawing
+                self.location_stack,        # Stack with our map locations
+                self.map_controller,        # Gesture detector for our map
             ], width=self.canvas_width, height=self.canvas_height),
             expand=3, 
             constrained=False,

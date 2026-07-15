@@ -20,10 +20,12 @@ import asyncio
 from styles.menu_option_style import MenuOptionStyle
 from models.dataclasses.canvas_shape import CanvasShape    
 from styles.text_fields import TextField
+import time
 
 MINIMUM_SEGMENT_DISTANCE = 2
-MAX_SHAPES_BEFORE_CAPTURE = 30   # Prevent lag from too many paths on the canvas without being removed
-MAX_UNDO_LIST_TASKS = 30         # Max number of undo tasks to store in our undo list before we start deleting old ones
+MAX_SHAPES_BEFORE_CAPTURE = 30
+MAX_UNDO_LIST_TASKS = 30
+MIN_UPDATE_INTERVAL = 0.016  # ~60fps cap on canvas updates
 
 
 class Canvas(Widget):
@@ -103,6 +105,7 @@ class Canvas(Widget):
         # The active stroke we are adding to the canvas when drawing so we know how to update it
         self.current_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
         self.active_tool: CanvasShape                    # The active shape being added if we're using a tool
+        self._last_update_time = 0.0
    
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     async def set_mouse_cursor(self, update: bool=True):
@@ -336,6 +339,17 @@ class Canvas(Widget):
         if dx * dx + dy * dy < MINIMUM_SEGMENT_DISTANCE * MINIMUM_SEGMENT_DISTANCE:
             return
         
+        now = time.monotonic()
+        if now - self._last_update_time < MIN_UPDATE_INTERVAL:
+            # Still accumulate path data, just skip the UI update
+            if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") == "draw":
+                if app.settings.data.get('canvas_settings', {}).get('use_path_smoothing', False):
+                    self.current_path.elements.append(cv.Path.LineTo(e.local_position.x, e.local_position.y))
+                self.state.x = e.local_position.x
+                self.state.y = e.local_position.y
+            return
+        self._last_update_time = now
+
         canvas: cv.Canvas =  self.layer_stack.controls[self.active_layer_idx]
         if not canvas.visible:  # Protect when we shouldnt be drawing with it
             return

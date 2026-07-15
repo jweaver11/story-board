@@ -200,11 +200,11 @@ class MiniWidget(ft.GestureDetector):
     async def show_mini_widget(self, e: ft.Event=None):
         ''' Shows our mini widget '''
         self.shown_in_sidebar = True
-        self.widget.sidebar_header.controls[0].value = self.data.get('title', '')   # Update title to match us
+        self.widget.sidebar_title.value = self.data.get('title', '')   # Update title to match us
         self.widget.sidebar_body.controls = self.create_sidebar_ctrls()  # Build info sidebar content here
         
         # Applies the update
-        self.widget.sidebar_body.update()
+        self.widget.sidebar.update()
         await self.widget.show_sidebar()
 
     # Child classes override this
