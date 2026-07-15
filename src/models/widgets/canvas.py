@@ -1205,4 +1205,6 @@ class Canvas(Widget):
             self.show_sidebar_button, 
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
 
+        
+
         self.page.run_task(self.set_mouse_cursor)

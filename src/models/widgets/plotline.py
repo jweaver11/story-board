@@ -10,6 +10,7 @@ from styles.menu_option_style import MenuOptionStyle
 from models.views.story import Story
 from models.widget import Widget
 from models.mini_widgets.plotline_arc import Arc
+from models.mini_widgets.plotline_marker import PlotlineMarker
 import flet.canvas as cv
 from models.app import app
 import asyncio 
@@ -36,28 +37,20 @@ class Plotline(Widget):
                 # Widget Data
                 'tag': "plotline",
                 'color': app.settings.data.get('widget_defaults', {}).get('plotline', {}).get('color'),
-                'old_plotline_width': 0,        # Stores previous width and height so inital loads have the right size for the mini widgets to use
-                'old_plotline_height': 0,    
-                'show_sidebar': True,   
-
-                # State and filter management   
-                'hide_division_labels': bool(),                       # If the division labels are hidden on the plotline
                 
-                # Our rail dropdown states
-                'dropdown_is_expanded': True,               # If the branch dropdown is expanded on the rail
-                'plot_points_dropdown_expanded': True,      # If the plotpoints section is expanded
-                'arcs_dropdown_expanded': True,             # If the arcs section is expanded
-                'markers_dropdown_expanded': True,          # If the markers section is expanded
-                'rail_dropdown_is_expanded': True,          # If the rail dropdown is expanded  
-                'divisions_are_expanded': True,             # If the divisions section is expanded                
-                
-                # Mini Widgets Data. Keep it seperate and safe from regular Plotline data below
-                'plot_points': dict(),                        # Dict of plot points in this branch
-                'arcs': dict(),                               # Dict of arcs in this branch
-                'markers': dict(),                            # Simple markers with a title
+                'show_sidebar': True,   # Whether to show the info column on the side of our charts or not. 
 
-                # Plotline data shown in the info display mini widget
-                'plotline_data': dict()
+                # Data in our info_display
+                'Time Label': "Years",                          # Label for the time axis (any str they want)
+                'Left Label': "0",                              # Start label
+                'Right Label': "10",                            # Start and end date of the branch, for plotline view
+                'Divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
+                'hide_division_labels': bool(),  
+                
+                # Holds our data for all markers, plot points, and arcs
+                'mini_widgets_data': {     
+                    #'id': {data}
+                }
             },
         ) 
                 
@@ -72,240 +65,18 @@ class Plotline(Widget):
         self.left_position: int = 0                 # Absolute left position on plotline for new markers, plotpoints, and arcs
         self.plotline_width: int = int()            # Width of our plotline canvas
         self.plotline_height: int = int()           # Height of our plotline canvas
-        self.can_open_menu: bool = False            # If we can open the menu when right clicking
         self.show_hover_effects: bool = False   # If we should show hover effects of our plotline. Plot points and markers turn these off when hovering over them
         self.needs_redraw = False           # Used to track if we need to redraw canvas after a resize
         self.skip_first_resize = True
 
         # Our plotline canvas that draws our plotline line and markers
-        self.plotline_canvas = cv.Canvas(
-            on_resize=self._set_size, 
-            resize_interval=500, expand=True, 
-            content=ft.GestureDetector(
-                expand=True, on_secondary_tap=self._open_menu,
-                on_hover=self._hover_plotline_canvas,
-                on_exit=self._exit_canvas,
-                on_tap=self._on_tap,
-                hover_interval=20,
-            )
-        )
-
-        # Loads our mini widgets into their dicts
-        self._load_arcs()
-        self._load_plot_points()
-        self._load_markers()
-        self._create_information_display()     
-
-        # Dropdown on the rail. We don't use it here, let the rail handle it
-        self.plotline_dropdown = None      # 'Plotline_Dropdown'
-
-
-    # Called in the constructor
-    def _create_information_display(self):
-        ''' Creates our plotline information display mini widget '''
-        from models.mini_widgets.plotline_info import PlotlineInformationDisplay
-        
-        self.information_display = PlotlineInformationDisplay(
-            title=self.title,
-            widget=self,
-            key="plotline_data",     # Not used, but its required so just whatever works
-            data=self.data.get('plotline_data'),      # Uses our dataa 
-        )
-        # Add to our mini widgets so it shows up in the UI
-        self.mini_widgets.append(self.information_display)
-
-    # Called in the constructor
-    def _load_arcs(self):
-        ''' Loads branches from data into self.branches  '''
-
-        # Looks up our branches in our data, then passes in that data to create a live object
-        for key, data in self.data['arcs'].items():
-            self.arcs[key] = Arc(
-                title=key, 
-                widget=self, 
-                key="arcs",
-                data=data
-            )
-            self.mini_widgets.append(self.arcs[key])  # Branches need to be in the widgets mini widgets list to show up in the UI
+        self.plotline_canvas: cv.Canvas     # Canvas used to just draw our plotline line and markers
+        self.event_stack: ft.Stack          # Stack that holds our markers, plot points, and arcs
     
-    # Called in the constructor
-    def _load_plot_points(self):
-        ''' Loads plotpoints from data into self.plotpoints  '''
-        from models.mini_widgets.plotline_plot_point import PlotPoint
-
-        # Looks up our plotpoints in our data, then passes in that data to create a live object
-        for key, data in self.data['plot_points'].items():
-            self.plot_points[key] = PlotPoint(
-                title=key, 
-                widget=self, 
-                key="plot_points", 
-                data=data
-            )
-            self.mini_widgets.append(self.plot_points[key])  # Plot points need to be in the widgets mini widgets list to show up in the UI
-
-    def _load_markers(self):
-        from models.mini_widgets.plotline_marker import Marker
-        ''' Loads markers from data into self.markers  '''
-        # Looks up our markers in our data, then passes in that data to create a live object
-        for key, data in self.data['markers'].items():
-            self.markers[key] = Marker(
-                title=key, 
-                widget=self, 
-                key="markers", 
-                data=data
-            )
-            self.mini_widgets.append(self.markers[key])  # Markers need to be in the widgets mini widgets list to show up in the UI
-
-
-    # Called when clicking on our canvas
-    async def _on_tap(self, e=None):
-        ''' Makes sure our information display is visible '''
-        
-        if self.can_open_menu:
-            if not self.information_display.visible:
-                await self.information_display.show_mini_widget()
-            
-    # Called when creating a new arc
-    async def create_arc(self, title: str):
-        ''' Creates a new arc inside of our plotline object, and updates the data to match '''
-        from models.mini_widgets.plotline_arc import Arc
-
-        new_arc = Arc(
-            title=title, 
-            widget=self, 
-            key="arcs", 
-            x_alignment=self.x_alignment,
-            data=None
-        )
-
-        # Add our new Arc mini widget object to our arcs dict, and to our widgets mini widgets
-        self.arcs[new_arc.title] = new_arc
-        self.mini_widgets.append(new_arc)
-
-        # Apply our changes in the UI
-        self.data['dropdown_is_expanded'] = True 
-        if self.story.data.get('selected_rail', "") == "plotlines":
-            self.story.active_rail.reload_rail()
-
-        for mw in self.mini_widgets:
-            if hasattr(mw, "plotline_control"):
-                mw.reload_plotline_control(no_update=True)
-        self.reload_widget()
-        for mw in self.mini_widgets:
-            if mw.visible:
-                await mw.hide_mini_widget()
-        await new_arc.show_mini_widget()        # Hides non-pinned mini widgets
-       
-        
-    # Called when creating a new plotpoint
-    async def create_plot_point(self, title: str):
-        ''' Creates a new plotpoint inside of our plotline object, and updates the data to match '''
-        from models.mini_widgets.plotline_plot_point import PlotPoint
-
-        new_plot_point = PlotPoint(
-            title=title, 
-            widget=self, 
-            key="plot_points", 
-            x_alignment=self.x_alignment,
-            left=self.left_position,
-            data=None
-        )
-        # Add our new Plot Point mini widget object to our plot_points dict, and to our widgets mini widgets
-        self.plot_points[new_plot_point.title] = new_plot_point
-        self.mini_widgets.append(new_plot_point)
-
-        # Apply our changes in the UI
-        self.data['dropdown_is_expanded'] = True     # Make sure our dropdown is expanded to show the new plot point
-
-        if self.story.data.get('selected_rail', "") == "plotlines":
-            self.story.active_rail.reload_rail()
-
-        for mw in self.mini_widgets:
-            if hasattr(mw, "plotline_control"):
-                mw.reload_plotline_control(no_update=True)
-                
-        self.reload_widget()
-        for mw in self.mini_widgets:
-            if mw.visible:
-                await mw.hide_mini_widget()
-
-        await new_plot_point.show_mini_widget() 
-
-    async def create_marker(self, title: str):
-        ''' Creates a new marker inside of our plotline object, and updates the data to match '''
-        from models.mini_widgets.plotline_marker import Marker
-
-        new_marker = Marker(
-            title=title, 
-            widget=self, 
-            key="markers", 
-            x_alignment=self.x_alignment,
-            left=self.left_position,
-            data=None
-        )
-        # Add our new Marker mini widget object to our markers dict, and to our widgets mini widgets
-        self.data['dropdown_is_expanded'] = True 
-        self.markers[new_marker.title] = new_marker
-        self.mini_widgets.append(new_marker)
-
-        if self.story.data.get('selected_rail', "") == "plotlines":
-            self.story.active_rail.reload_rail()
-
-        for mw in self.mini_widgets:
-            if hasattr(mw, "plotline_control"):
-                mw.reload_plotline_control(no_update=True)
-        self.reload_widget()
-        for mw in self.mini_widgets:
-            if mw.visible:
-                await mw.hide_mini_widget()
-        await new_marker.show_mini_widget()     
-
-
-    def delete_plot_point(self, plot_point):
-        ''' Deletes a plot point from our plotline '''
-        
-        # Remove from our dict
-        if plot_point.title in self.plot_points:
-            self.plot_points.pop(plot_point.title)
-            self.data['plot_points'].pop(plot_point.title, None)
-            self.update_data(**{'plot_points': self.data['plot_points']})
-
-        # Apply changes
-        if self.information_display.visible:
-            self.information_display.reload_mini_widget()
-        
-    def delete_arc(self, arc):
-        ''' Deletes an arc from our plotline '''
-        
-        # Remove from our dict
-        if arc.title in self.arcs:
-            self.arcs.pop(arc.title)
-            self.data['arcs'].pop(arc.title, None)
-            self.update_data(**{'arcs': self.data['arcs']})
-
-        if self.information_display.visible:
-            self.information_display.reload_mini_widget()
-        
-
-    def delete_marker(self, marker):
-        ''' Deletes a marker from our plotline '''
-        
-        # Remove from our dict
-        if marker.title in self.markers:
-            self.markers.pop(marker.title)
-            self.data['markers'].pop(marker.title, None)
-            self.update_data(**{'markers': self.data['markers']})
-
-        if self.information_display.visible:
-            self.information_display.reload_mini_widget()
-        
 
     # Called when right clicking our controls for either plotline or an arc
     def get_plotline_menu_options(self) -> list[ft.Control]:
 
-        
-
-        
         return [
             MenuOptionStyle(
                 content=ft.SubmenuButton(
@@ -320,19 +91,19 @@ class Plotline(Widget):
                     [
                         ft.MenuItemButton(
                             "Plot Point", leading=ft.Icon(ft.Icons.LOCATION_ON_OUTLINED, self.data.get('color', "primary")),
-                            on_click=self.new_item_clicked, data="plot_point",
+                            #on_click=self.new_item_clicked, 
                             tooltip="Mark important, short term events as plot points in your story",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ),
                         ft.MenuItemButton(
                             "Arc", leading=ft.Icon(ft.Icons.SHOW_CHART_OUTLINED, self.data.get('color', "primary")),
-                            on_click=self.new_item_clicked, data="arc",
+                            #on_click=self.new_item_clicked,
                             tooltip="Create extented events in your story as arcs with set start and end points",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         ),
                         ft.MenuItemButton(
                             "Marker", leading=ft.Icon(ft.Icons.FLAG_OUTLINED, self.data.get('color', "primary")),
-                            on_click=self.new_item_clicked, data="marker",
+                            on_click=self.create_marker, 
                             tooltip="Create simple markers on the plotline for events or notes to help visualize the flow of your story",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                         )
@@ -341,9 +112,7 @@ class Plotline(Widget):
                     style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                 ),
                 no_padding=True, no_effects=True 
-            ),
-            
-            
+            ),   
         ]
     
 
@@ -356,9 +125,7 @@ class Plotline(Widget):
         if self.story.workspace.is_resizing:    # If we're resizing just ignore this call
             return
         
-        if self.needs_redraw:
-            await self.rebuild_plotline_canvas(update=True)
-            self.needs_redraw = False
+        
 
         # Set coordinates for menu
         self.story.mouse_x = e.global_position.x
@@ -377,7 +144,6 @@ class Plotline(Widget):
         # Check if we're over the plotline line itself and give visual feedback and allow us to right click 
         if abs(e.local_position.y - (self.plotline_height / 2)) <= 25:
             
-            self.can_open_menu = True       # State we can open the menu
 
             # Long horizontal timeline
             self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},1.0")
@@ -394,7 +160,6 @@ class Plotline(Widget):
 
         # If not, disable right clicking and remove visual feedback
         else:
-            self.can_open_menu = False
             self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
             self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
             self.plotline_canvas.content.mouse_cursor = None
@@ -406,7 +171,6 @@ class Plotline(Widget):
 
     async def _exit_canvas(self, e=None):
         ''' Called when exiting our plotline canvas '''
-        self.can_open_menu = False
         self.plotline_canvas.shapes[0].paint = ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
         self.plotline_canvas.shapes[len(self.information_display.data.get('Divisions', [])) + 1].paint = ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', 'primary')},.7")
         self.plotline_canvas.content.mouse_cursor = None
@@ -416,116 +180,82 @@ class Plotline(Widget):
         except Exception as _:
             pass
 
+    # Checks if we are within 25 pixels of the vertical center of the plotline
+    def mouse_centered_vertically_on_plotline_canvas(self, e: ft.PointerEvent) -> bool:
+        # TODO: Calc mouse position. If within 50 pixels of half our height, show sidebar with info display as content
+        pass
+
 
     # Called when right clicking our plotline on the canvas
-    async def _open_menu(self, e=None):
+    async def open_menu(self, e: ft.PointerEvent):
         ''' Opens our menu for the options of our related plotline '''
-        if self.can_open_menu:
+        if self.mouse_centered_vertically_on_plotline_canvas(e):
             self.story.open_menu(self.get_plotline_menu_options())
 
-    # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
-    async def new_item_clicked(self, e, arc: Arc=None):
-        ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
-
-        await self.story.close_menu()   # Close the menu first so it doesn't mess with our dialog
-
-        # Checks that the name in the textfield does not match any of the existing mini widgets of that type, and updates visually to reflect
-        async def _check_name_unique(e):
-            name = new_item_tf.value.strip()
-            submit_button.disabled = False
-            new_item_tf.error = None
-            if not name:
-                submit_button.disabled = True
-            elif tag == "plot_point" and name in self.plot_points:
-                submit_button.disabled = True
-                new_item_tf.error = "Name must be unique"
-                await new_item_tf.focus()
-            elif tag == "arc" and name in self.arcs:
-                submit_button.disabled = True
-                new_item_tf.error = "Name must be unique"
-                await new_item_tf.focus()
-            elif tag == "marker" and name in self.markers:
-                submit_button.disabled = True
-                new_item_tf.error = "Name must be unique"
-                await new_item_tf.focus()
-
-            else:
-                submit_button.disabled = False
-                new_item_tf.error = None
-            
-            new_item_tf.update()
-            submit_button.update()
-            
-        # Create the nwew mini widget with the current text field value. Makes sure we passed checks first
-        async def _create_new_mw(e):
-
-            # Button is disabled if name is the same
-            if submit_button.disabled:
-                new_item_tf.focus()
-                return
-            
-            title = new_item_tf.value.strip()
-            if tag == "plot_point":
-                await self.create_plot_point(title)
-            elif tag == "arc":
-                await self.create_arc(title)
-            elif tag == "marker":
-                await self.create_marker(title)
-            elif tag == "event":
-                if arc is not None:
-                    await arc.create_event(title)
-
-            await self.story.close_menu()  
-            self.page.pop_dialog()   # Close the dialog
-
-                 
-
-
-        # Grab the type of mini widget we are creating
-        tag = e.control.data
-
-        # Textfield for the name of the new mw
-        new_item_tf = ft.TextField(
-            label=f"Title", expand=True, on_change=_check_name_unique, autofocus=True,
-            capitalization=ft.TextCapitalization.WORDS, on_submit=_create_new_mw
-        )
-
-        # Button for creating new mw. Can also press enter in the textfield
-        submit_button = ft.TextButton("Create", on_click=_create_new_mw, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
-
-        # Dialog we open onto the page
-        dlg = ft.AlertDialog(
-            title=ft.Text(f"New {tag.replace('_', ' ').title()} Name"),
-            content=new_item_tf,
-            actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda e: self.page.pop_dialog()),
-                submit_button
-            ],
-        )
-
-        self.page.show_dialog(dlg)        # Open the dialog. If we do this first, it gets wiped from close_menu
+        
+    
         
 
-    async def _set_size(self, e: cv.CanvasResizeEvent):
-        self.plotline_width = int(e.width) - 25
-        self.plotline_height = int(e.height)
-        self.needs_redraw = True
-        await self.rebuild_plotline_canvas(True)
+    async def create_plot_point(self, e: ft.Event=None):
+        ''' Creates plot point in data, control and control on event stack'''
 
+    async def create_arc(self, e: ft.Event=None):
+        ''' Creates an arc in data, control and control on event stack'''
 
+    # Creates a marker in data and a control on the event stack. Has no info for sidebar
+    async def create_marker(self):
+        new_marker = PlotlineMarker(widget=self, data={'title': "New Marker"}, is_new=True)
 
-    async def _show_info_mini_widget(self, e=None):
-        self.show_info_button.visible = False
-        self.show_info_button.update()
-        await self.information_display.show_mini_widget()
+        # Update our data, add it to the events stack, and show it in the sidebar
+        self.update_data(**{'mini_widgets_data': {new_marker.data.get('id', ''): new_marker.data}})
+        self.event_stack.controls.append(new_marker)
+        await new_marker.show_mini_widget()
+
+        
+    def create_plot_point_event_stack_ctrl(self, pp_data: dict) -> ft.Control:
+        ''' Creates the event stack control for a given plot point '''
+        return
+
+    # Shows either our plotline info, a plot point, or an arc in the sidebar
+    def show_mini_widget(self, mw_data: dict=None):
+        ''' Shows the mini widget with the given ID when clicking on it in the plotline '''
+        # if no data passed in, show our sidebar ctrl
+        return
+    
+    def load_mini_widget_sidebar_ctrl(self, mw_data: dict):
+        ''' Loads the sidebar control for a given mini widget '''
+        # TODO: Reload mini widget should just return the content needed for this mini widget sidebar
+        # Have parent widget also have notes label, section, button all in row for info displays
+        # THE CLASS SHOULD INSTEAD BE BASED ON PLOTLINE_CONTROL (RENAME EVENT_STACK_CONTROL), AND CLICKING IT SHOULD CALL RELOAD MINI WIDGET
+        # Infos should not be their own mini widget, and should instead be in parent widget class
+        return
+    
+    async def start_move_event_stack_control(self, e: ft.DragStartEvent):
+        ''' Called when starting to move an event stack control '''
+        return
+    
+    async def move_event_stack_control(self, e: ft.DragUpdateEvent):
+        ''' Called when moving an event stack control '''
+        return
+    
+    async def end_move_event_stack_control(self, e: ft.DragEndEvent):
+        ''' Called when ending the move of an event stack control '''
+        return
+    
+    # Deletes an event from data, stack, and sidebar if its active
+    async def delete_event(e: ft.Event):
+        # Need id
+        pass
 
 
     # Called for any size changes to our plotline canvas
-    async def rebuild_plotline_canvas(self, update: bool = False):
+    async def redraw_plotline_canvas(self, e: ft.EventHandler[cv.CanvasResizeEvent]):
         ''' Redraws our plotline on the canvas when it is resized. Does it on startup as well '''
+        #return
+        print(e)
         
-        self.update_data(**{'old_plotline_width': self.plotline_width, 'old_plotline_height': self.plotline_height})
-        
+        return
+               
         # Draw our plotline on the canvas with its two end markers ------------------------------------------------
         self.plotline_canvas.shapes = [
             cv.Path(
@@ -606,6 +336,12 @@ class Plotline(Widget):
         ))
 
         
+        
+
+        self.plotline_canvas.update()
+
+    # Re-aligns the event controls
+    async def align_event_controls(self):
         # Add our plot points labels above or below their dot on the plotline ------------------------------------------------
         line_direction = "bottom"  # Line direction either going above or below the plotline that flips evert plotline
         line_height = "small"    # Line height that cycles between small, medium, and large after each plot point
@@ -791,13 +527,8 @@ class Plotline(Widget):
                     arc.plotline_control.update()
                 except Exception as _:
                     pass
+        return
 
-        # If we forced an update
-        if update:
-            try:
-                self.plotline_canvas.update()
-            except Exception as _:
-                pass
                      
     def build(self):
         super().build()
@@ -805,12 +536,37 @@ class Plotline(Widget):
     # Called when we need to rebuild out plotline UI
     def reload_widget(self):
 
+        # When clicking our canvas. If we're in center vertically and not showing sidebar, show sidebar
+        async def may_show_sidebar(e: ft.PointerEvent):
+            if self.mouse_centered_vertically_on_plotline_canvas(e):
+                if not self.data.get('show_sidebar', False):
+                    await self.show_sidebar()
+
+            
+            
+            
+        # Our canvas that 
+        self.plotline_canvas = cv.Canvas(
+            resize_interval=500, 
+            expand=True, 
+            on_resize=self.redraw_plotline_canvas,
+            content=ft.GestureDetector(
+                expand=True, 
+                on_secondary_tap=self.open_menu,
+                on_hover=self._hover_plotline_canvas,
+                on_exit=self._exit_canvas,
+                on_tap=may_show_sidebar,
+                hover_interval=20,
+            )
+        )
+
         
         # Create a stack so we can sit our plotpoints and arcs on our plotline
-        plotline_stack = ft.Stack(
-            expand=3, 
+        self.event_stack = ft.Stack(
+            expand=True, 
             alignment=ft.Alignment(0, 0),
             clip_behavior=ft.ClipBehavior.NONE,
+            on_size_change=self.align_event_controls,
             controls=[
                 ft.Container(
                     self.plotline_canvas, #ft.Padding.only(left=16, right=16), 
@@ -824,53 +580,39 @@ class Plotline(Widget):
 
         # Handler for plotline resize events
         for arc in sorted_arcs.values():
-            if self.data.get('hide_all_arcs', False):
-                break
             if self.data.get('show_all_arcs', False) or arc.data.get('is_shown_on_widget', False):
                 # Add the arc control to the plotline stack
-                plotline_stack.controls.append(arc.plotline_control)
+                self.event_stack.controls.append(arc.plotline_control)
 
         # Add our plot points to the plotline (They position themselves)
         for plot_point in self.plot_points.values():    
-            if self.data.get('hide_all_plot_points', False):
-                break
             if self.data.get('show_all_plot_points', False) or plot_point.data.get('is_shown_on_widget', False):
-                plotline_stack.controls.append(plot_point.plotline_control)
+                self.event_stack.controls.append(plot_point.plotline_control)
 
         # Add our markers to the plotline (They position themselves)
         for marker in self.markers.values():    
-            if self.data.get('hide_all_markers', False):
-                break
             if self.data.get('show_all_markers', False) or marker.data.get('is_shown_on_widget', False):
-                plotline_stack.controls.append(marker.plotline_control)
+                self.event_stack.controls.append(marker.plotline_control)
 
-        mini_widgets_visible = False
-        for mw in self.mini_widgets:
-            if mw.visible:
-                mini_widgets_visible = True
-                break
-
-        self.show_info_button = ft.IconButton(
-            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
-            on_click=self._show_info_mini_widget, 
-            mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER,
-            visible=not mini_widgets_visible, 
+        # Holds our drawing so we can interact with it, zoom, pan, etc.
+        interactive_viewer = ft.InteractiveViewer(
+            content=self.event_stack,
+            expand=3, 
+            constrained=False,
+            scale_factor=500, boundary_margin=200,
+            min_scale=0.02, max_scale=3.0,
         )
-            
+        self.body_container.content = ft.Stack([
+            ft.Row([interactive_viewer, self.sidebar], spacing=0, expand=True),
+            self.show_sidebar_button, 
+        ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
 
-        body = ft.Row(
-            [
-                plotline_stack, 
-                self.show_info_button
-            ], expand=True, spacing=0
-        )
-
-        self.body_container.content = body
+        print("Sidebar visible:", self.sidebar.visible)
+        print("Sidebar button visible: ", self.show_sidebar_button.visible)
 
         self._render_widget()
 
 
-        self.page.run_task(self.rebuild_plotline_canvas, True)
 
 
 

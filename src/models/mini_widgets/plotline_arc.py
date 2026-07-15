@@ -67,7 +67,6 @@ class Arc(MiniWidget):
                 'color': "primary",                       # Color of the arc in the plotline
                 
                 # For rendering on plotline
-                'is_shown_on_widget': True,                 # If this arcs plotline control is shown on the plotline widget
 
                 # Absolute Left and Right positions of the arc on the plotline
                 'left': left,

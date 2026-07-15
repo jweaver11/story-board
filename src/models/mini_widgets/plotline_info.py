@@ -28,10 +28,7 @@ class PlotlineInformationDisplay(MiniWidget):
 
                 # Plotline data
                 'Summary': str(),
-                'Time Label': "Years",                          # Label for the time axis (any str they want)
-                'Left Label': "0",                              # Start label
-                'Right Label': "10",                            # Start and end date of the branch, for plotline view
-                'Divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
+                
             }
 
         # Holds our row controls for our divisions so we can add/remove without rebuilding
@@ -109,10 +106,10 @@ class PlotlineInformationDisplay(MiniWidget):
             self.update()
 
         plotline_title_text = ft.GestureDetector(
-            ft.Text(f"\t{self.widget.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
+            ft.Text(f"\t{self.widget.data.get('title')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
             color=self.widget.data.get('color', None), expand=True),
             on_double_tap=self.widget.rename_clicked,
-            on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
+            on_secondary_tap=lambda _: self.widget.story.open_menu(self.get_menu_options()),
             mouse_cursor="click", hover_interval=500, expand=True
         )
 

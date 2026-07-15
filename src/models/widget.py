@@ -34,7 +34,11 @@ class Widget(ft.Container):
     ):
 
         # Parent constructor to set data and other attributes
-        super().__init__(data=data, on_size_change=self._set_size, size_change_interval=50)
+        super().__init__(
+            data=data, 
+            on_size_change=self._set_size, 
+            size_change_interval=50
+        )
         
         self.is_new: bool = is_new 
 
@@ -56,7 +60,6 @@ class Widget(ft.Container):
             } 
 
         # Set title and story references
-        self.title = ft.Text(self.data.get('title', ''), weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True)
         self.story: Story = story   
         
         # Apply our visibility
@@ -72,6 +75,7 @@ class Widget(ft.Container):
         self.needs_file_write: bool = False        # Whether we need to write to file or not. Set to true when data changes, and false when saved
 
         # Controls -----------------------------------------------
+        self.tab_title: ft.Text     # Text for the tab
         self.tab: ft.Tab       # The tab associated with this widget, used for navigation and organization within the UI
         self.build_tab()    
         
@@ -540,9 +544,14 @@ class Widget(ft.Container):
             mouse_cursor=ft.MouseCursor.CLICK,
         )
 
+        self.tab_title = ft.Text(
+            self.data.get('title', ''), weight=ft.FontWeight.BOLD, size=16, 
+            color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True
+        )
+
         # Gesture Detector for opening menus that holds our tab icon, title, and hide button
         tab_gd = ft.GestureDetector(
-            ft.Row([tab_icon, self.title, hide_widget_button]),
+            ft.Row([tab_icon, self.tab_title, hide_widget_button]),
             mouse_cursor=ft.MouseCursor.CLICK,
             hover_interval=100,
             on_hover=self.set_mouse_coords,
@@ -573,8 +582,8 @@ class Widget(ft.Container):
             ),
         ], spacing=0)
 
-        # Body is where we append whatever each widget wants in there sidebar
-        self.sidebar_body = ft.Column([self.sidebar_header, ft.Divider()], expand=True, spacing=0)
+        # Where we build the different content in each sidebar
+        self.sidebar_body = ft.Column([], scroll=ft.ScrollMode.AUTO, expand=True, spacing=0)
 
         # Container on right side of widgets to hold mini widgets or sidebar info
         self.sidebar = ft.Container(
@@ -582,9 +591,13 @@ class Widget(ft.Container):
             padding=ft.Padding.all(10),
             shadow=ft.BoxShadow(0, 1), 
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            width=0, 
+            width=0, # Start collapsed, and when we are built it will expand if needed
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            content=self.sidebar_body
+            content=ft.Column([     # Holds our header seperated by the body
+                self.sidebar_header, 
+                ft.Divider(),
+                self.sidebar_body,
+            ], expand=True, spacing=0)
         )
 
         # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
