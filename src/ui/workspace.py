@@ -39,7 +39,18 @@ class Workspace(ft.Container):
 
     # Builds our workspace on first launch
     def build(self):
-        self.reload_workspace(update=False)   
+        self.reload_workspace(update=False)  
+
+    def add_widget_to_workspace(self, widget):
+        '''
+        # NEW TAB REF FROM FLET
+        def handle_new_tab(e: ft.Event[ft.CupertinoFilledButton]):
+            tab_count = len(tab_bar.tabs) + 1
+            tab_bar.tabs.append(ft.Tab(label=ft.Text(f"Tab {tab_count}")))
+            tab_view.controls.append(MyContainer(text=f"Tab {tab_count} content"))
+            tabs.length = len(tab_bar.tabs)
+        '''
+
 
     # Arranges our widgets into the main pin
     def arrange_widgets(self):
@@ -58,6 +69,8 @@ class Workspace(ft.Container):
 
     # Reloads the workspace
     def reload_workspace(self, update: bool=True):
+
+        
 
         self.page.run_task(self.story.block_page)
 

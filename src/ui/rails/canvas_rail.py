@@ -192,23 +192,27 @@ class CanvasRail(Rail):
         self.text_shadow_color_picker.color = e.data
     
     # Called when color picker is closed
-    async def _save_color(self, e=None):
-        app.settings.data['paint_settings']['color'] = self.color_picker.color
-        await app.settings.save_dict()
-        #self.story.active_rail.reload_rail()
+    async def _save_color(self, e: ft.Event[ft.SubmenuButton]):
         
+        app.settings.update_data(**{"paint_settings": {"color": self.color_picker.color}})
+        self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+        self.brush_selector.update()
+        e.control.trailing.color = self.color_picker.color
+        e.control.update()
         await self._update_live_shape()
 
-    async def _save_text_color(self, e=None):   
-        app.settings.data['canvas_settings']['text_shape_color'] = self.text_color_picker.color
-        await app.settings.save_dict()
-        self.story.active_rail.reload_rail()
+    async def _save_text_color(self, e: ft.Event):   
+        app.settings.update_data(**{"canvas_settings": {"text_shape_color": self.text_color_picker.color}})
+        self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+        self.brush_selector.update()
+        print(e.control)
         await self._update_live_shape()
 
     async def _save_text_shadow_color(self, e=None):
         app.settings.data['canvas_settings']['text_shadow_color'] = self.text_shadow_color_picker.color
-        await app.settings.save_dict()
-        self.story.active_rail.reload_rail()
+        app.settings.update_data(**{"canvas_settings": {"text_shadow_color": self.text_shadow_color_picker.color}})
+        self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+        self.brush_selector.update()
         await self._update_live_shape()
 
     def _set_preview_tool_icon(self) -> ft.Control:
@@ -236,12 +240,11 @@ class CanvasRail(Rail):
             case _:
                 return ft.Icon(ft.Icons.BUILD if in_tool_mode else ft.Icons.BUILD_OUTLINED, ft.Colors.PRIMARY, scale=0.8)
             
-    async def _set_active_tool(self, e):
+    async def _set_active_tool(self, e: ft.Event):
         tool_name = e.control.data
-        app.settings.data['canvas_settings']['current_control_mode'] = "tool"
-        app.settings.data['canvas_settings']['current_tool_name'] = tool_name
-        await app.settings.save_dict()
-        self.story.active_rail.reload_rail()
+        app.settings.update_data(**{"canvas_settings": {"current_control_mode": "tool", "current_tool_name": tool_name}})
+        self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+        self.brush_selector.update()
         for widget in self.story.widgets.values():
             if widget.data.get('tag') == "canvas":
                 if widget.data.get('visible', True):
@@ -358,12 +361,10 @@ class CanvasRail(Rail):
     def _set_active_brush(self, brush_settings: dict, name: str):
         ''' Sets the current brush settings to the passed in brush settings dictionary '''
 
-        app.settings.data['canvas_settings']['current_control_mode'] = "draw"
-        app.settings.data['paint_settings'].update(brush_settings)
-        app.settings.data['canvas_settings']['current_brush_name'] = name
-        self.page.run_task(app.settings.save_dict)
+        app.settings.update_data(**{"canvas_settings": {"current_control_mode": "draw", "current_brush_name": name}, "paint_settings": brush_settings})
 
-        self.story.active_rail.reload_rail()
+        self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+        self.brush_selector.update()
         for widget in self.story.widgets.values():
             if widget.data.get('tag') == "canvas":
                 if widget.data.get('visible', True):
@@ -568,70 +569,69 @@ class CanvasRail(Rail):
                     break
 
     def build(self):
-        self.reload_rail(False)
-
-    # Called on startup and when we have changes to the rail that have to be reloaded 
-    def reload_rail(self, update: bool=True):
+        
         ''' Reloads the canvas rail with updated data and UI elements. '''
 
         # Called when changing paint width
-        async def _paint_width_changed(e):
+        async def _paint_width_changed(e: ft.Event[ft.Slider]):
             new_width = int(e.control.value)
             # Change the data directly
-            app.settings.data['paint_settings']['stroke_width'] = new_width
-            self.page.run_task(app.settings.save_dict)
-            self.story.active_rail.reload_rail()
+            app.settings.update_data(**{"paint_settings": {"stroke_width": new_width}})
+
+            self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+            self.brush_selector.update()
             await self._update_live_shape()
 
         # Called when changing paint anti-aliasing
-        async def _paint_anti_alias_changed(e):
+        async def _paint_anti_alias_changed(e: ft.Event[ft.Switch]):
             new_anti_alias = e.control.value
-            app.settings.data['paint_settings']['anti_alias'] = new_anti_alias
-            self.page.run_task(app.settings.save_dict)
-            self.story.active_rail.reload_rail()
+            app.settings.update_data(**{"paint_settings": {"anti_alias": new_anti_alias}})
+            self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+            self.brush_selector.update()
             await self._update_live_shape()
 
         # Add fill or not to our style based on teh switch state
-        async def _paint_fill_changed(e):
+        async def _paint_fill_changed(e: ft.Event[ft.Switch]):
             is_fill = e.control.value
             if is_fill:
                 app.settings.data['paint_settings']['style'] = app.settings.data['paint_settings']['style'] + "_fill"
             else:
                 app.settings.data['paint_settings']['style'] = app.settings.data['paint_settings']['style'].replace("_fill", "")
-            await app.settings.save_dict()
-            self.story.active_rail.reload_rail()
+            app.settings.update_data(**{"paint_settings": {"style": app.settings.data['paint_settings']['style']}})
+            self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+            self.brush_selector.update()
             await self._update_live_shape()
 
-        async def _paint_stroke_cap_changed(e):
+        async def _paint_stroke_cap_changed(e: ft.Event[ft.SubmenuButton]):
             new_stroke_cap = e.control.content.lower()
-            app.settings.data['paint_settings']['stroke_cap'] = new_stroke_cap
-            self.page.run_task(app.settings.save_dict)
-            self.story.active_rail.reload_rail()
+            app.settings.update_data(**{"paint_settings": {"stroke_cap": new_stroke_cap}})
+            self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+            self.brush_selector.update()
             await self._update_live_shape()
 
-        async def _paint_stroke_join_changed(e):
+        async def _paint_stroke_join_changed(e: ft.Event[ft.SubmenuButton]):
             new_stroke_join = e.control.content.lower()
-            app.settings.data['paint_settings']['stroke_join'] = new_stroke_join
-            self.page.run_task(app.settings.save_dict)
-            self.story.active_rail.reload_rail() 
+            app.settings.update_data(**{"paint_settings": {"stroke_join": new_stroke_join}})
+            self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {})) 
+            self.brush_selector.update()
             await self._update_live_shape()
 
         # Called when changing paint stroke blur
-        async def _paint_stroke_blur_changed(e):
-            app.settings.data['paint_settings']['blur_image'] = int(e.control.value)
-            self.page.run_task(app.settings.save_dict)
-            self.story.active_rail.reload_rail()
+        async def _paint_stroke_blur_changed(e: ft.Event[ft.Slider]):
+            app.settings.update_data(**{"paint_settings": {"blur_image": int(e.control.value)}})
+            self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+            self.brush_selector.update()
             await self._update_live_shape()
             
 
-        async def _paint_blend_mode_changed(e):
+        async def _paint_blend_mode_changed(e: ft.Event[ft.SubmenuButton]):
             mode = e.control.data
 
             # Set the new mode and label
-            app.settings.data['paint_settings']['blend_mode'] = mode
+            app.settings.update_data(**{"paint_settings": {"blend_mode": mode}})
 
-            self.page.run_task(app.settings.save_dict)
-            self.story.active_rail.reload_rail()
+            self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+            self.brush_selector.update()
             await self._update_live_shape()
 
 
@@ -648,10 +648,11 @@ class CanvasRail(Rail):
                 # Save current brush settings as a new custom brush
                 brush_settings = app.settings.data['paint_settings'].copy()
                 app.settings.data['canvas_settings']['saved_brushes'][safe_name] = brush_settings
-                self.page.run_task(app.settings.save_dict)
+                app.settings.update_data(**{"canvas_settings": {"saved_brushes": app.settings.data['canvas_settings']['saved_brushes']}})
 
                 # Just rebuild the rail so we can select our newly saved brush
-                self.story.active_rail.reload_rail()
+                self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+                self.brush_selector.update()
                 self.page.pop_dialog()
 
             # Deletes a color
@@ -662,7 +663,7 @@ class CanvasRail(Rail):
                 # Remove it from data
                 if name in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}):
                     del app.settings.data['canvas_settings']['saved_brushes'][name]
-                    await app.settings.save_dict()
+                    app.settings.update_data(**{"canvas_settings": {"saved_brushes": app.settings.data['canvas_settings']['saved_brushes']}})
 
                 # Remove the control from the dialog
                 dlg.content.controls = [ctrl for ctrl in content.controls if ctrl.data != name]   
@@ -700,7 +701,7 @@ class CanvasRail(Rail):
                             ctrl.update()
 
             # If newly changed name already exists, show that it will be overwritten
-            def _check_name_change(e):
+            def _check_name_change(e: ft.Event[ft.TextField]):
                 nonlocal content, name
                 name = e.control.value
                 new_name = e.control.value  
@@ -786,7 +787,7 @@ class CanvasRail(Rail):
         )
 
         # Width/Size of brush
-        self.pageaint_width_slider = ft.Slider(
+        self.paint_width_slider = ft.Slider(
             min=1, max=100, tooltip="The size of your brush strokes.", expand=True,
             divisions=99, value=app.settings.data.get('paint_settings', {}).get('stroke_width', 5),
             label="Brush Size: {value}px",
@@ -859,7 +860,7 @@ class CanvasRail(Rail):
         )
 
 
-        self.pageaint_stroke_blur_slider = ft.Slider(
+        self.paint_stroke_blur_slider = ft.Slider(
             min=0, max=50,  tooltip="The blur effect of your brush strokes.", expand=True,
             divisions=50, value=app.settings.data.get('paint_settings', {}).get('blur_image', 0),
             label="Stroke Blur: {value}",  
@@ -929,14 +930,44 @@ class CanvasRail(Rail):
             pass
 
         # Switch between our drawing and tool mode
-        async def _set_control_mode(e):
-            selected_mode = e.control.data
+        async def set_draw_mode(e: ft.Event[ft.IconButton]):
+            selected_mode = "draw"
             app.settings.data['canvas_settings']['current_control_mode'] = selected_mode
-            if selected_mode == "draw":
-                if app.settings.data.get('paint_settings', {}).get('blend_mode', "") == "clear":
-                    app.settings.data['paint_settings']['blend_mode'] = "src_over"
-            await app.settings.save_dict()
-            self.story.active_rail.reload_rail()
+            if app.settings.data.get('paint_settings', {}).get('blend_mode', "") == "clear":
+                app.settings.data['paint_settings']['blend_mode'] = "src_over"
+            app.settings.update_data(**{"canvas_settings": {"current_control_mode": selected_mode}})
+            self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+            self.brush_selector.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+
+            # Update buttons
+            self.set_draw_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            self.set_draw_button.icon = ft.Icons.BRUSH_ROUNDED
+            self.set_tool_button.bgcolor = None
+            self.set_tool_button.icon = ft.Icons.BUILD_OUTLINED
+            save_custom_brush_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            self.update()
+
+            for widget in self.story.widgets.values():
+                if widget.data.get('tag') == "canvas":
+                    if widget.data.get('visible', True):
+                        await widget.set_mouse_cursor()
+
+        async def set_tool_mode(e: ft.Event[ft.IconButton]):
+            selected_mode = "tool"
+            app.settings.data['canvas_settings']['current_control_mode'] = selected_mode
+            if app.settings.data.get('paint_settings', {}).get('blend_mode', "") == "clear":
+                app.settings.data['paint_settings']['blend_mode'] = "src_over"
+            app.settings.update_data(**{"canvas_settings": {"current_control_mode": selected_mode}})
+            self.brush_selector.content = self._build_preview_brush(app.settings.data.get('paint_settings', {}))
+            self.brush_selector.style.bgcolor = None
+            # Update buttons
+            self.set_tool_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            self.set_tool_button.icon = ft.Icons.BUILD_ROUNDED
+            self.set_draw_button.bgcolor = None
+            self.set_draw_button.icon = ft.Icons.BRUSH_OUTLINED
+            save_custom_brush_button.bgcolor = None
+            self.update()
+
             for widget in self.story.widgets.values():
                 if widget.data.get('tag') == "canvas":
                     if widget.data.get('visible', True):
@@ -944,21 +975,21 @@ class CanvasRail(Rail):
 
 
         # Buttons that set either to draw or to use a tool
-        set_draw_button = ft.IconButton(
+        self.set_draw_button = ft.IconButton(
             ft.Icons.BRUSH_ROUNDED if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "draw" else ft.Icons.BRUSH_OUTLINED,
             ft.Colors.PRIMARY,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "draw" else None,
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4)),
             tooltip="Set the active control to the last used brush",
-            data="draw", on_click=_set_control_mode
+            data="draw", on_click=set_draw_mode
         )
-        set_tool_button = ft.IconButton(
+        self.set_tool_button = ft.IconButton(
             ft.Icons.BUILD_ROUNDED if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "tool" else ft.Icons.BUILD_OUTLINED,
             ft.Colors.PRIMARY,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "tool" else None,
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4)),
             tooltip="Set the active control to the last used tool",
-            data="tool", on_click=_set_control_mode
+            data="tool", on_click=set_tool_mode
         )
 
         # Set a tooltip for certain tools
@@ -997,9 +1028,9 @@ class CanvasRail(Rail):
         )
 
         # Toggles path smoothing
-        async def _path_smoothing_changed(e):
-            app.settings.data['canvas_settings']['use_path_smoothing'] = e.control.value
-            await app.settings.save_dict()
+        async def _path_smoothing_changed(e: ft.Event[ft.Switch]):
+            new_use_path_smoothing_value = e.control.value
+            app.settings.update_data(**{"canvas_settings": {"use_path_smoothing": new_use_path_smoothing_value}})
 
         use_path_smoothing_switch =  ft.Switch(
             True, "\tPath Smoothing", on_change=_path_smoothing_changed,
@@ -1032,7 +1063,7 @@ class CanvasRail(Rail):
                     app.settings.data['canvas_settings']['rectangle_border_radius'] = int(value) or 0
                 case "use_paint_for_shapes":
                     app.settings.data['canvas_settings']['use_paint_for_shapes'] = value or False
-            await app.settings.save_dict()
+            app.settings.update_data(**{"canvas_settings": app.settings.data['canvas_settings']})
             await self._update_live_shape()
 
 
@@ -1103,7 +1134,7 @@ class CanvasRail(Rail):
                 case _:
                     new_icon = ft.Icons.FORMAT_CLEAR
 
-            await app.settings.save_dict()
+            app.settings.update_data(**{"canvas_settings": {"text_shape_decoration": decoration}})
             await self._update_live_shape()
             text_decoration_selector.trailing.icon = new_icon
             text_decoration_selector.update()
@@ -1203,7 +1234,7 @@ class CanvasRail(Rail):
                 ),
 
                 ft.Row([
-                    ft.Container(set_draw_button, margin=ft.Margin.only(left=4)), 
+                    ft.Container(self.set_draw_button, margin=ft.Margin.only(left=4)), 
                     ft.Container(
                         ft.MenuBar(
                             [self.brush_selector], 
@@ -1227,7 +1258,7 @@ class CanvasRail(Rail):
                 #),
 
                 ft.Row([
-                    ft.Container(set_tool_button, margin=ft.Margin.only(left=4)),
+                    ft.Container(self.set_tool_button, margin=ft.Margin.only(left=4)),
                     ft.MenuBar(
                         [self.tool_selector], 
                         style=ft.MenuStyle(
@@ -1243,10 +1274,10 @@ class CanvasRail(Rail):
 
                 ft.Row([
                     ft.Text("\t\tWidth", theme_style=ft.TextThemeStyle.LABEL_LARGE,), 
-                    self.pageaint_width_slider
+                    self.paint_width_slider
                 ], spacing=0, tooltip="Size of your strokes"),      # Size slider
 
-                ft.Row([ft.Text("\t\tBlur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.pageaint_stroke_blur_slider], spacing=0),
+                ft.Row([ft.Text("\t\tBlur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider], spacing=0),
 
                 
 
@@ -1397,7 +1428,7 @@ class CanvasRail(Rail):
        
  
         self.controls = [
-            IsolatedColumn(
+            ft.Column(
                 spacing=0,
                 expand=True,
                 controls=[
@@ -1408,9 +1439,6 @@ class CanvasRail(Rail):
             )
         ]
         
-
-        if update:
-            self.update()
 
 # TODO: 
 # Add fonts and shadow options
