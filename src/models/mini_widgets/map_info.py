@@ -35,14 +35,8 @@ class MapInformationDisplay(MiniWidget):
             key=key     
         ) 
 
-        
-
-
-        # Reloads the information display of the map
-        self.reload_mini_widget()
 
     
-
 
     
     def _map_info_view(self) -> ft.Column:
@@ -112,86 +106,16 @@ class MapInformationDisplay(MiniWidget):
         )
 
 
-        return ft.Column([
-            #show_map_bg_switch,
-            ft.Container(description_tf, margin=ft.Margin.only(right=10)),
-            ft.Container(lore_tf, margin=ft.Margin.only(right=10)),
-            ft.Container(history_tf, margin=ft.Margin.only(right=10)),
-            #ft.Row([export_button, show_map_bg_switch]),
-            show_map_bg_switch,
-            
-            ft.Divider(2, 2),
-            
-            ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None),),
-                    
-            ] 
-            + _get_locations() + [
-                self.widget.sidebar_notes_label,
-                ft.Container(self.widget.sidebar_notes_column, margin=ft.Margin.symmetric(horizontal=20)),
-                # Notes
-            ]
-            
-            
-        , expand=True, scroll="auto", spacing=10)
     
 
-    
-    # Called when reloading our mini widget UI
-    def reload_mini_widget(self):
 
-        title_control = ft.Row([
-           
-     
-            ft.Text(
-                f"{self.widget.title}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
-                color=self.widget.data.get('color', None), weight=ft.FontWeight.BOLD, 
-            ),
-                
-            ft.IconButton(
-                ft.Icons.UNDO, self.widget.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
-                #on_click=self.undo, #disabled=True if len(self.widget.state.undo_list) == 0 else False
-            ),
-            ft.IconButton(
-                ft.Icons.REDO_OUTLINED, self.widget.data.get('color', None), tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
-                #on_click=self.redo, #disabled=True if len(self.widget.state.redo_list) == 0 else False
-            ),
-            ft.Container(expand=True),
-            ft.IconButton(
-                ft.Icons.CLOSE, ft.Colors.ON_SURFACE_VARIANT,
-                tooltip=f"Close {self.title}",
-                mouse_cursor=ft.MouseCursor.CLICK,
-                on_click=self.hide_mini_widget,
-            ),
-        ], spacing=0)
+        
 
 
-        content = ft.Column(
-            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, spacing=0,
-            controls=[
-                ft.Container(height=10), # Spacer
-            ]
-        )
+        
 
 
        
-        content.controls.append(self._map_info_view())
-
-        
-        
-        
-        
-        self.content = ft.Column([
-            title_control,
-            ft.Divider(),
-            content,
-                        
-        ], expand=True, scroll="none", alignment=ft.MainAxisAlignment.START, spacing=0)
-
-        try:
-            self.update()
-        except Exception as _:
-            pass
-
 
 
         

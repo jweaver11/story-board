@@ -15,6 +15,7 @@ from styles.menu_option_style import MenuOptionStyle
 import asyncio
 from models.mini_widgets.map_location import MapLocation
 from models.dataclasses.canvas_shape import CanvasShape 
+import uuid
 
 
 class Map(Widget):
@@ -50,8 +51,14 @@ class Map(Widget):
                 # Info about the map
                 'draw_mode': True,      # Whether we're in draw mode or not
                 'show_background_image': True,      # Whether we show the background image or not
+                'background_image': "map_bg_fantasy.jpg",    # The background image of the map
                 'lore': list(),     # List of lores
-                'history': list(),      # List of histories                                
+                'history': list(),      # List of histories  
+
+                # Holds our labels that sit on the map like locations, but don't have an icon or location
+                'labels': {
+                    #'id': {'id': 'id_str', 'value': 'Label Text', 'position': (x, y), 'color': 'white'}
+                },                              
                               
                 # Holds our data for locations
                 'mini_widgets_data': {     
@@ -62,7 +69,7 @@ class Map(Widget):
                 'canvas_data': {
 
                     # Sizing
-                    "width": (data or {}).get('canvas_data', {}).get('width') or 1080,
+                    "width": (data or {}).get('canvas_data', {}).get('width') or 1920,
                     "height": (data or {}).get('canvas_data', {}).get('height') or 1080,
 
                     # Undo and redo list
@@ -89,174 +96,239 @@ class Map(Widget):
         self.map_controller: ft.GestureDetector
 
         # Rest of state elements
-        self.new_location_position = (0, 0)     # Where new locations go 
+        self.new_location_position = (200, 200)     # Where new locations go 
+        self.locked_new_location_position = (200, 200)
 
-    async def create_location(self, title: str, data: dict=None):
-        
-        new_location = MapLocation(
-            title=title,
-            widget=self,
-            key="locations",   
-            data=data,      
+    # Class for labels on our map, which are like locations but don't have a sidebar info to show
+    class Label(ft.GestureDetector):
+        def __init__(self, widget: 'Map', data: dict):
+
+            # Initialize node properties
+            self.widget = widget
+            self.id = data.get('id', str(uuid.uuid4()))
+            self.label = data.get('label', 'Label')
+            self.position = data.get('position', (0, 0))
+            self.color = data.get('color', None)
             
-        )
+            super().__init__(
+                left=self.position[0],
+                top=self.position[1],
+                width=150, height=50, 
+                animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                on_secondary_tap=lambda: self.widget.story.open_menu(self.get_label_options()),
+                on_pan_update=self.move_location,
+                on_pan_end=self.save_position,
+                on_double_tap=self.focus_tf,
+                on_tap=self.focus_tf,
+                hover_interval=20, 
+                on_hover=self.set_mouse_cursor,
+                mouse_cursor=ft.MouseCursor.MOVE,
+            )
 
-    # Called when clicking on our map to show our information display
-    async def _show_info_display(self, e: ft.TapEvent=None):
-        ''' If we're not in drawing mode, show our information display '''
-        if not self.data.get('map_data', {}).get('drawing_mode', False):
-            await self._show_info_mini_widget()
+        # Sets our mouse cursor to text if we're hovering over the textfield, otherwise move
+        async def set_mouse_cursor(self, e: ft.PointerEvent[ft.GestureDetector]):
+            y_pos = e.local_position.y
+            if y_pos < 10 or y_pos > 40:
+                self.mouse_cursor = ft.MouseCursor.MOVE
+            else:
+                self.mouse_cursor = ft.MouseCursor.TEXT
+            self.update()
+            self.widget.set_mouse_coords(e)     # Reset the menu position
 
-    async def _open_menu(self, e: ft.PointerEvent):
+        # Moves the node on the stack and updates the drawing that connects the edges
+        async def move_location(self, e: ft.DragUpdateEvent):
+            
+            # Update us visually
+            self.left += e.local_delta.x
+            self.top += e.local_delta.y
+            if self.left < 20:
+                self.left = 0
+            if self.left > self.widget.canvas_width - 150:
+                self.left = self.widget.canvas_width - 150
+            if self.top < 20:
+                self.top = 20
+            if self.top > self.widget.canvas_height - 20: 
+                self.top = self.widget.canvas_height - 20
+            self.update()
+            
+        # Saves updated position to our data
+        async def save_position(self, e: ft.DragEndEvent):
+            # Update our data to match our new position
+            self.position = (self.left, self.top)
+            self.widget.data.get('labels', {}).get(self.label, {}).update({'position': self.position})
+            self.widget.update_data(**{'labels': self.widget.data.get('labels', {})})
+            self.widget.set_mouse_coords(e)     # Reset the menu position
+
+        def get_label_options(self) -> list[MenuOptionStyle]:
+
+            # Handles changing its, edit, color
+            # TODO: Changing color and using color
+
+            # Handles deleteing a label
+            async def handle_delete(e: ft.Event[ft.Button]):
+                await self.widget.story.close_menu()
+                self.widget.data.get('labels', {}).pop(self.label, None)
+                self.widget.update_data(**{'labels': self.widget.data.get('labels', {})})
+                self.widget.location_stack.controls.remove(self)
+                self.widget.location_stack.update()
+
+            return [
+                MenuOptionStyle(
+                    ft.MenuItemButton(
+                        f"Edit", leading=ft.Icon(ft.Icons.EDIT_OUTLINED, self.color),
+                        on_click=self.focus_tf, data="force_focus", 
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    ),
+                    no_effects=True, no_padding=True
+                ),
+                MenuOptionStyle(
+                    ft.MenuItemButton(
+                        f"Delete {self.label}", leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR),
+                        on_click=handle_delete, 
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    ),
+                    no_effects=True, no_padding=True
+                ),
+                MenuOptionStyle(
+                    ft.MenuItemButton(
+                        f"Delete {self.label}", leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR),
+                        on_click=handle_delete, data={"icon": "location_pin"},
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    ),
+                    no_effects=True, no_padding=True
+                ),
+            ]
         
-        self.lock_position = True 
-        self.story.open_menu(self.get_map_menu_options())
+        # Focuses our textfield for editing
+        async def focus_tf(self, e: ft.PointerEvent[ft.GestureDetector]):
+            if self.mouse_cursor == ft.MouseCursor.TEXT or e.control.data:
+                await self.widget.story.close_menu()
+                await self.label_tf.focus()
+                self.label_tf.update()
 
-    # Called when right cliicking a new pp, arc, or marker ON the plotline to create it at a specific location
-    async def new_location_clicked(self, e):
-        ''' Opens a dialog to input the mini widgets name, and creates it at that location '''
+        # Build our label control
+        def build(self):
+            
 
+            async def save_label(e: ft.Event[ft.TextField]):
+                await self.widget.story.close_menu()
+                self.label = e.control.value
+                self.widget.data.get('labels', {}).get(self.id, {}).update({'label': self.label})
+                self.widget.update_data(**{'labels': self.widget.data.get('labels', {})})
+                self.label_tf.parent.ignore_interactions = True
+                self.label_tf.parent.update()
+
+            self.label_tf = ft.TextField(
+                self.label, color=self.color, 
+                #weight=ft.FontWeight.BOLD, size=12, overflow=ft.TextOverflow.ELLIPSIS,
+                expand=True, #text_align=ft.TextAlign.CENTER
+                content_padding=ft.Padding.all(0),
+                on_blur=save_label
+            )
+
+            self.content = ft.Container(
+                self.label_tf,
+                expand=True, ignore_interactions=True, padding=ft.Padding.symmetric(vertical=10),
+                border=ft.Border.all(1, ft.Colors.RED)
+            )
+            
+
+    # Creates our location control in data, on the location_stack, and focuses it in the sidebar
+    async def create_location(self, e: ft.Event[ft.Button]=None):
+        await self.story.close_menu()
+        return
+    
+    # Creates our label control in data and on the location stack
+    async def create_label(self, e: ft.Event[ft.Button]=None):
         await self.story.close_menu()
 
-        # Checks that the name in the textfield does not match any of the existing mini widgets of that type, and updates visually to reflect
-        async def _check_name_unique(e):
-            name = new_item_tf.value.strip()
-            submit_button.disabled = False
-            new_item_tf.error = None
-            if not name:
-                submit_button.disabled = True
-            elif name in self.locations:
-                submit_button.disabled = True
-                new_item_tf.error = "Name must be unique"
-                await new_item_tf.focus()
+        # Create default data
+        new_id = str(uuid.uuid4())
+        new_data = {
+            'id': new_id,
+            'label': "New Label",
+            'position': self.locked_new_location_position,
+            'color': self.data.get('color', None),
+        }
 
-            else:
-                submit_button.disabled = False
-                new_item_tf.error = None
-            
-            new_item_tf.update()
-            submit_button.update()
-            
-        # Create the nwew mini widget with the current text field value. Makes sure we passed checks first
-        async def _create_new_mw(e):
+        # Add to data and update
+        self.data.get('labels', {}).update({new_id: new_data})
+        self.update_data(**{'labels': self.data.get('labels', {})})
 
-            # Button is disabled if name is the same
-            if submit_button.disabled:
-                new_item_tf.focus()
-                return
-            
-            title = new_item_tf.value.strip()
-            await self.create_location(title,)
-            
-
-            self.page.pop_dialog()   # Close the dialog
-
-            #await asyncio.sleep(0)        # Needs a buffer or wont work for some reason
-            await self.story.close_menu()       
-
-
-        # Grab the type of mini widget we are creating
-        #data = e.control.data
-
-        # Textfield for the name of the new mw
-        new_item_tf = ft.TextField(
-            label=f"Location Name", expand=True, on_change=_check_name_unique, autofocus=True,
-            capitalization=ft.TextCapitalization.WORDS, on_submit=_create_new_mw
-        )
-
-        # Button for creating new mw. Can also press enter in the textfield
-        submit_button = ft.TextButton("Create", on_click=_create_new_mw, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
-
-        # Dialog we open onto the page
-        dlg = ft.AlertDialog(
-            title=ft.Text(f"New Location Name"),
-            content=new_item_tf,
-            actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda _: self.page.pop_dialog()),
-                submit_button
-            ],
-        )
-
-        self.page.show_dialog(dlg)    
+        # Add to stack and update
+        self.location_stack.controls.append(self.Label(self, new_data))
+        self.location_stack.update()
     
- 
-    def get_map_menu_options(self) -> list[ft.Control]:
+    def create_sidebar_ctrls(self) -> list[ft.Control]:
+
+        # TODO: Lore, history
+
+        return [
+            
+            self.description_tf,
+            #lore_tf,
+            #history_tf, 
+                        
+            ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None),),
+
+            ft.Divider(),
+            self.sidebar_notes_label,
+            self.sidebar_notes_column,
+                    
+        ] 
+            
+            
         
 
-        # TODO: Add Valley, Plains, Rivers, Storm, Lake, Village, Desert, Castle, Other (Rest of options)
-            
+    # Called when clicking to show our info in the sidebar
+    async def show_info(self, e: ft.Event=None):
+        self.shown_in_sidebar = True
+        self.sidebar_title.value = self.data.get('title', '')   # Update title to match us
+        self.sidebar_body.controls = self.create_sidebar_ctrls()  # Build info sidebar content here
+        
+        # Applies the update
+        self.sidebar.update()
+        await self.show_sidebar()
 
-        # New (all dif types of locations), rename color
+    # Sets our background image
+    async def set_bg_image(self, e):
+        return
+
+    
+    def get_new_item_options(self) -> list[ft.Control]:
+        
+        
+
+        async def _create_location(e: ft.Event[ft.Button]):
+            await self.create_location(e)
+            await self.story.close_menu()
+
+        # Locks our position at wherever we clicked to open the menu
+        self.locked_new_location_position = self.new_location_position
+
         return [
+            
             MenuOptionStyle(
                 ft.MenuItemButton(
-                    "Location", leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', "primary")),
-                    on_click=self.new_location_clicked, 
-                    tooltip="Create a new location on your map",
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    "New Location", leading=ft.Icon(ft.Icons.LOCATION_PIN, self.data.get('color', "primary")),
+                    on_click=self.create_location, data={"icon": "location_pin"},
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
-                no_padding=True, no_effects=True 
+                no_effects=True, no_padding=True
             ),
             MenuOptionStyle(
-                content=ft.SubmenuButton(
-                    ft.Container(
-                        ft.Row([
-                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', "primary")), 
-                            ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
-                            ft.Icon(ft.Icons.ARROW_RIGHT),
-                        ], expand=True),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
-                    ),
-                    controls=[
-                        
-                        ft.MenuItemButton(
-                            "Label", leading=ft.Icon(ft.Icons.TEXT_FIELDS_OUTLINED, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, data={"icon": "label"},
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        ),
-                        ft.MenuItemButton(
-                            "Point of Interest", leading=ft.Icon(ft.Icons.LOCATION_PIN, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, data={"icon": "location_pin"},
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        ),
-                        ft.MenuItemButton(
-                            "Mountain", leading=ft.Icon(ft.Icons.TERRAIN, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, data={"icon": "terrain"},
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        ),
-                        ft.MenuItemButton(
-                            "Forest", leading=ft.Icon(ft.Icons.FOREST, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, data={"icon": "forest"},
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        ),
-                        ft.MenuItemButton(
-                            "Water", leading=ft.Icon(ft.Icons.WATER, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, data={"icon": "water"},
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        ),
-                        ft.MenuItemButton(
-                            "City", leading=ft.Icon(ft.Icons.LOCATION_CITY, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, data={"icon": "location_city"},
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        ),
-                        ft.MenuItemButton(
-                            "Dungeon", leading=ft.Icon(ft.Icons.STAIRS_OUTLINED, self.data.get('color', "primary")),
-                            on_click=self.new_location_clicked, data={"icon": "stairs_outlined"},
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        ),
- 
-                    ],
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                ), 
-                no_padding=True, no_effects=True
-            ),
+                ft.MenuItemButton(
+                    "New Label", leading=ft.Icon(ft.Icons.TEXT_FIELDS_OUTLINED, self.data.get('color', "primary")),
+                    on_click=self.create_label, data={"icon": "location_pin"},
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                ),
+                no_effects=True, no_padding=True
+            )
         ]
     
-
-    # Called for any size changes to our map canvas
-    async def _rebuild_map_canvas(self, e: cv.CanvasResizeEvent=None):
-        ''' Redraws our map on the canvas when it is resized. Does it on startup as well '''
+    def set_mouse_coords(self, e: ft.PointerEvent):
+        self.new_location_position = (e.local_position.x, e.local_position.y)
+        super().set_mouse_coords(e)
 
 
     def build(self):
@@ -285,7 +357,7 @@ class Map(Widget):
         # Our stack for map locations
 
         self.location_stack = ft.Stack(
-            [], 
+            [self.Label(self, data) for data in self.data.get('labels', {}).values()], 
             width=self.canvas_width, height=self.canvas_height,
         )
 
@@ -300,17 +372,17 @@ class Map(Widget):
             #on_tap_up=self.add_point,      # Handles so we can add points
 
             # Non-drawing event handlers
-            on_secondary_tap=lambda: self.story.open_menu(self.get_map_menu_options()),
-            on_hover=self._get_coords,
-            on_tap=lambda: self.story.open_menu(self.get_map_menu_options()),
+            on_secondary_tap=lambda: self.story.open_menu(self.get_new_item_options()),
+            on_hover=self.set_mouse_coords,
+            #on_tap=lambda: self.story.open_menu(self.get_new_item_options()),
         )
                 
         interactive_viewer = ft.InteractiveViewer(
             content=ft.Stack([
                 self.bg_image,
                 self.canvas,        # Canvas with our map drawing
-                self.location_stack,        # Stack with our map locations
                 self.map_controller,        # Gesture detector for our map
+                self.location_stack,        # Stack with our map locations
             ], width=self.canvas_width, height=self.canvas_height),
             expand=3, 
             constrained=False,
@@ -318,13 +390,10 @@ class Map(Widget):
             min_scale=0.02, max_scale=3.0,
         )
 
-        self.sidebar_body.controls.extend([
-            self.description_tf,
 
-            ft.Divider(),
-            self.sidebar_notes_label,
-            self.sidebar_notes_column
-        ])
+        # TODO: Add settings to select from maps, or none, or upload your own. or use a canvas
+
+        self.sidebar_body.controls = self.create_sidebar_ctrls()  # Build info sidebar content here
 
         
         # Set up our main conent

@@ -56,3 +56,18 @@ icons = {
     "villa": ft.Icons.VILLA,
 }
 
+location_icons = {
+    "location_pin": ft.Icons.LOCATION_PIN,
+    "terrain": ft.Icons.TERRAIN,
+    "forest": ft.Icons.FOREST,
+    "water": ft.Icons.WATER,
+    "location_city": ft.Icons.LOCATION_CITY,
+    "stairs_outlined": ft.Icons.STAIRS_OUTLINED,
+    'castle': ft.Icons.CASTLE,
+    'thunderstorm': ft.Icons.THUNDERSTORM,
+    'cottage': ft.Icons.COTTAGE,
+    'location_searching': ft.Icons.LOCATION_SEARCHING,
+}
+
+# TODO: Could not find (ASK AI):
+# desert, valley, plains, river, natural features, geography, regions,

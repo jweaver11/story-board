@@ -8,7 +8,7 @@ from models.widget import Widget
 import math
 from styles.text_styles import text_style
 import flet.canvas as cv 
-from styles.icons import icons
+from styles.icons import location_icons
 from styles.text_fields import TextField
 
 # Locations that appear on our map
@@ -35,18 +35,18 @@ class MapLocation(MiniWidget):
         if self.is_new:
             self.data.update({ 
                 'tag': "location",            # Tag to identify what type of object this is
-                'icon': "location_pin",      # Which icon to use for this location
-                'icon_scale': 1.0,                   # Scale of our icon on the map, default 1.0    
 
-                'map_id': "",   # id of map we're connected too
-                
-                'color': "white",           # Color of the plot point on the map
+                'icon': "location_pin",              # Which icon to use for this location
+                'image_base64': "",                    # If we have a custom image for our icon (canvas or uploaded image). Used over icon
+
+                'scale': 1.0,                       # Scale of our icon/image on the map, default 1.0    
+                'map_id': "",                       # id of map we're connected too
 
                 # Information for our information display
-                'Type': "",   # Type of location (city, town, dungeon, mountain, etc)
-                'Description': "", 
-                'History': "",
-                'image_base64': "",  
+                
+                'description': "", 
+                'history': "",
+                  
             })
 
         # Set our x alignment to position on our map. -1 is left, 0 is center, 1 is right. Default 0
@@ -60,8 +60,7 @@ class MapLocation(MiniWidget):
         self.is_dragging: bool = False              # If we are currently dragging our plot point
 
         # Build our slider for moving our plot point
-        self.reload_map_control()
-        self.reload_mini_widget()
+        #self.reload_mini_widget()
 
     
     async def move_location(self, e: ft.DragUpdateEvent):
@@ -198,75 +197,7 @@ class MapLocation(MiniWidget):
                 pass
 
 
-    # Called from reload_mini_widget
-    def reload_map_control(self, no_update: bool=False):
-        """ Rebuilds our map control that holds our plot point and slider """
-
-        
-        icon = self._set_icon()
-
-        # Our container that is our plot point on the map, and contains our gesture detector for hovering and right clicking
-        self.map_control = ft.Container(
-            #border=ft.Border.all(1, "blue"),
-            expand=True,
-            width=25,
-            height=25,
-            shape=ft.BoxShape.CIRCLE,
-            alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            left=self.data.get('left', 0), 
-            top=self.data.get('top', 0),
-            shadow=ft.BoxShadow(4, 4, ft.Colors.with_opacity(.6, self.data.get('color'))) if self.visible else None,
-            content=ft.GestureDetector(
-                mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
-                on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
-                on_pan_update=self.move_location, drag_interval=20, on_pan_end=self._drag_end,
-                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
-                on_tap=self.show_mini_widget, on_tap_down=self._drag_start,
-                content=ft.Icon(
-                    icon, self.data.get('color', None), expand=True,
-                    visible=True if self.data.get('icon', "label") != "label" else False,
-                ), 
-                expand=True,
-            ),
-        )
-
-
-        self.map_label = ft.Container(
-            expand=True,
-            width=150,
-            height=40,
-            #border=ft.Border.all(1, "red"),
-            alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            left=self.data.get('left', 0) + 12, # Offset half the width of the icon
-            top=self.data.get('top', 0),
-            offset=ft.Offset(-0.5, -1),
-            content=ft.GestureDetector(
-                mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
-                on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
-                on_pan_update=self.move_location, drag_interval=20, on_pan_end=self._drag_end,
-                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
-                on_tap=self.show_mini_widget, on_tap_down=self._drag_start, expand=True,
-                content=ft.Text(           # Label that appears above our icon on the map, shows our title and appears on hover
-                    self.title, theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER, 
-                    color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True,
-                    #overflow=ft.TextOverflow.ELLIPSIS,
-                    #left=self.data.get('left', 0),
-                    #top=self.data.get('top', 0) - 30 if self.data.get('top', 0) > 30 else self.data.get('top', 0) + 30,
-                )
-            )
-        )
-        
-
-        if no_update:
-            return
-
-        try:
-            self.map_control.update()
-            self.map_label.update()
-        except Exception:
-            pass
+    
 
 
     # Called when reloading changes to our plot point and in constructor
@@ -274,10 +205,6 @@ class MapLocation(MiniWidget):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
         # TODO: Change icon, title, color, description
-        # Allow user to pick icon
-        # Labels show an icon that doesnt exist, so get rid of that
-
-        # Cities, towns, villages, landmarks, buildings, rooms, natural features, geography, regions, POI
 
 
 
@@ -380,3 +307,67 @@ class MapLocation(MiniWidget):
             self.update()
         except Exception as _:
             pass
+
+
+    # Called from reload_mini_widget
+    def build(self):
+        """ Rebuilds our map control that holds our plot point and slider """
+
+        
+        icon = self._set_icon()
+
+        # Our container that is our plot point on the map, and contains our gesture detector for hovering and right clicking
+        self.map_control = ft.Container(
+            #border=ft.Border.all(1, "blue"),
+            expand=True,
+            width=25,
+            height=25,
+            shape=ft.BoxShape.CIRCLE,
+            alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            left=self.data.get('left', 0), 
+            top=self.data.get('top', 0),
+            shadow=ft.BoxShadow(4, 4, ft.Colors.with_opacity(.6, self.data.get('color'))) if self.visible else None,
+            content=ft.GestureDetector(
+                mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
+                on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
+                on_pan_update=self.move_location, drag_interval=20, on_pan_end=self._drag_end,
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
+                on_tap=self.show_mini_widget, on_tap_down=self._drag_start,
+                content=ft.Icon(
+                    icon, self.data.get('color', None), expand=True,
+                    visible=True if self.data.get('icon', "label") != "label" else False,
+                ), 
+                expand=True,
+            ),
+        )
+
+
+        self.map_label = ft.Container(
+            expand=True,
+            width=150,
+            height=40,
+            #border=ft.Border.all(1, "red"),
+            alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            left=self.data.get('left', 0) + 12, # Offset half the width of the icon
+            top=self.data.get('top', 0),
+            offset=ft.Offset(-0.5, -1),
+            content=ft.GestureDetector(
+                mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
+                on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
+                on_pan_update=self.move_location, drag_interval=20, on_pan_end=self._drag_end,
+                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
+                on_tap=self.show_mini_widget, on_tap_down=self._drag_start, expand=True,
+                content=ft.Text(           # Label that appears above our icon on the map, shows our title and appears on hover
+                    self.data.get('title'), theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.CENTER, 
+                    color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True,
+                    #overflow=ft.TextOverflow.ELLIPSIS,
+                    #left=self.data.get('left', 0),
+                    #top=self.data.get('top', 0) - 30 if self.data.get('top', 0) > 30 else self.data.get('top', 0) + 30,
+                )
+            )
+        )
+        
+
+        
