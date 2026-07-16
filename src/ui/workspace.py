@@ -285,9 +285,7 @@ class Workspace(ft.Container):
             return
         
 # TODO: 
-# Build grabs wrong indicator color
 # plot chart need right click to add nodes
-# Widget file and tree_file need rename to show a tf, not dialog
         
 
 

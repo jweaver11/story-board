@@ -47,6 +47,7 @@ class PlotChart(Widget):
 
         # State and management
         self.new_node_position = (200, 200)     # Position we place new nodes
+        self.locked_new_node_position = (200, 200)  # Position we place new nodes when right clicking to create a new node
         self.edge_canvas: cv.Canvas           # Canvas that holds our edges (cv.shapes)
         self.node_stack: ft.Stack           # Stack that holds our nodes (gesture detectors)
         self.node_sidebar_column: ft.Column
@@ -578,8 +579,9 @@ class PlotChart(Widget):
         )
 
     # Creates our node with given title if unique
-    async def create_node(self, e: ft.Event):
+    async def create_node(self, e: ft.Event[ft.Control]):
 
+        # Give a default unique name
         existing_names = {node.get('label') for node in self.data.get('nodes', [])}
         n = len(existing_names)
         while f"Node {n}" in existing_names:
@@ -587,18 +589,27 @@ class PlotChart(Widget):
         node_label = f"Node {n}"
 
         required_offset = str(e.control.data)
+        locked_position = str(e.control.data) == "right_click"
         if required_offset.lower() == "sidebar":
             offset_amount = ((self.w - self.sidebar.width) / 2, 0)
-        else:
+        elif required_offset.lower() == "button":
+            offset_amount = ((self.w / 2), (self.h / 2))
+        else:       # If we right clicked, our locked pos should be accurate
             offset_amount = ((self.w / 2), (self.h / 2))
 
-        # Reset our new positions
+
+        # If from sidebar or button, 
         self.new_node_position = (
             self.new_node_position[0] - offset_amount[0],
             self.new_node_position[1] - offset_amount[1]
         )
+        # Use the locked position if we right clicked
+        if locked_position:
+            self.new_node_position = self.locked_new_node_position
         if self.new_node_position[0] < 100 or self.new_node_position[1] < 100:
-            self.new_node_position = (max(100, self.new_node_position[0]), max(100, self.new_node_position[1]))
+            self.new_node_position = (
+                max(100, self.new_node_position[0]), max(100, self.new_node_position[1])
+            )
         elif self.new_node_position[0] > FIXED_STACK_WIDTH or self.new_node_position[1] > FIXED_STACK_HEIGHT:
             self.new_node_position = (min(FIXED_STACK_WIDTH, self.new_node_position[0]), min(FIXED_STACK_HEIGHT, self.new_node_position[1]))
 
@@ -703,12 +714,28 @@ class PlotChart(Widget):
             #edge.draw_edge()
         #self.edge_canvas.update()
 
+    def set_mouse_coords(self, e: ft.PointerEvent):
+        self.new_node_position = (e.local_position.x, e.local_position.y)
+        super().set_mouse_coords(e)
+
     def build(self):
         super().build()
 
-        # Sets our canvas coords for when we're creating a new node by right clicking
-        async def set_new_node_coords(e: ft.HoverEvent):
-            self.new_node_position = (e.local_position.x, e.local_position.y)
+        def get_new_node_menu_options() -> list[ft.Control]:
+            async def _create_node(e: ft.Event):
+                await self.create_node(e)
+                await self.story.close_menu()
+            self.locked_new_node_position = self.new_node_position
+            return [
+                MenuOptionStyle(
+                    on_click=_create_node,
+                    content=ft.Row([
+                        ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                        ft.Text("Create Node", weight=ft.FontWeight.BOLD, color=self.data.get('color', ft.Colors.PRIMARY)), 
+                    ]),
+                    data="right_click"
+                ),
+            ]
             
         # Canvas to hold our edge lines between nodes
         self.edge_canvas = cv.Canvas(
@@ -719,8 +746,10 @@ class PlotChart(Widget):
                     border=ft.Border.all(2, ft.Colors.OUTLINE),
                 ),
                 width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT,
-                on_hover=set_new_node_coords,
-                hover_interval=40
+                on_hover=self.set_mouse_coords,
+                on_secondary_tap=lambda: self.story.open_menu(get_new_node_menu_options()),
+                hover_interval=40,
+                data="right_click"
             ),
             width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT
         )
@@ -735,13 +764,7 @@ class PlotChart(Widget):
 
             controls = []
             for edge_data in self.data.get('edges', []):
-
-                
-
-                # Source -> Target
-                controls.append(
-                    self.create_edge_sidebar_ctrl(edge_data)
-                )
+                controls.append(self.create_edge_sidebar_ctrl(edge_data))
             return ft.Column(controls, tight=True, margin=ft.Margin.only(left=10, right=10))
         
         self.node_sidebar_column = ft.Column(

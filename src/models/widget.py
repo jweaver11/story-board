@@ -164,7 +164,7 @@ class Widget(ft.Container):
             return False
         
     # Called when mouse hovers over the tab part of the widget
-    async def set_mouse_coords(self, e: ft.PointerEvent):
+    def set_mouse_coords(self, e: ft.PointerEvent):
         ''' Updates our mouse x/y state for opening menu at mouse position '''
         self.story.mouse_x = e.global_position.x
         self.story.mouse_y = e.global_position.y
