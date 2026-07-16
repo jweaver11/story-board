@@ -401,9 +401,9 @@ class CanvasBoard(Widget):
 
                 matrix_column.controls.pop(row_idx)
                 matrix_column.update()
-                await update_indices()
+                update_indices()
 
-        async def update_indices():
+        def update_indices():
             for idx, ctrl in enumerate(matrix_column.controls):
                 row_ctrl: ft.Row = ctrl.content     # Our row control, which should have 3 controls itself
                 row_ctrl.controls[0].data = idx     # Container that holds undo, redo, and canvas

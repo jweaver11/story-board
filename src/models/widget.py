@@ -81,9 +81,11 @@ class Widget(ft.Container):
         self.sidebar_body: ft.Column      # Column that holds the header and any other content for the sidebar
         self.sidebar: ft.Container      # Container on right side of widgets to hold mini widgets or sidebar info
         self.show_sidebar_button: ft.IconButton     # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
-        self.description_tf: TextField      # Description of this widget textfield for sidebar use
+        self.sidebar_notes_label: ft.Row
+        self.sidebar_notes_column: ft.Column
 
         # Other shared controls
+        self.description_tf: TextField      # Description of this widget textfield. Mostly used in sidebar, but can be used in body
         self.select_image_button: ft.GestureDetector    # Button certain widgets use when they have an image to represent them (world, character, item, etc.)
 
     # Updates data for this widget and marks it as dirty for the next file save
@@ -550,6 +552,39 @@ class Widget(ft.Container):
     # Called in constructor to build our sidebar controls
     def build_sidebar(self):
 
+        # Create a new note in data, then add it to the column
+        async def create_new_note(e: ft.Event):
+            self.data.get('notes', []).append("")
+            self.update_data(**{'notes': self.data.get('notes', [])})
+            self.sidebar_notes_column.controls.append(
+                create_new_note_ctrl(
+                    note_idx = len(self.data.get('notes', [])) - 1,
+                    note_value = self.data.get('notes', [])[-1]
+                )
+            )
+            self.sidebar_notes_column.update()
+            
+        # Returns a textfield of the note control
+        def create_new_note_ctrl(note_idx: int, note_value: str) -> TextField:
+            return TextField(
+                note_value, data=note_idx, expand=True,
+                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_note, mouse_cursor=ft.MouseCursor.CLICK)
+            )
+
+        # Deletes the note from data and then the column and updates the indices
+        async def delete_note(e: ft.Event):
+            note_idx = e.control.parent.data
+            self.data.get('notes', []).pop(note_idx)
+            self.update_data(**{'notes': self.data.get('notes', [])})
+            self.sidebar_notes_column.controls.pop(note_idx)
+            self.sidebar_notes_column.update()
+            update_note_indices()
+
+        # Updates all our notes ctrls (textfields) data to be accurate after an index was deleted
+        def update_note_indices():
+            for idx, ctrl in enumerate(self.sidebar_notes_column.controls):
+                ctrl.data = idx
+
         # Title that sits in the header
         self.sidebar_title = ft.Text(
             f"{self.data.get('title', '')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
@@ -570,6 +605,33 @@ class Widget(ft.Container):
         # Where we build the different content in each sidebar
         self.sidebar_body = ft.Column([], scroll=ft.ScrollMode.AUTO, expand=True, spacing=0)
 
+        # The label for Notes with a new note button and textfield
+        self.sidebar_notes_label = ft.Row([
+            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+            ft.IconButton(
+                ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
+                tooltip="Add Note",
+                on_click=create_new_note,
+                mouse_cursor="click"
+            ),
+            
+        ], spacing=0)
+
+        self.sidebar_notes_column = ft.Column(
+            [create_new_note_ctrl(idx, value) for idx, value in enumerate(self.data.get('notes', []))]
+        )
+
+        # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
+        self.show_sidebar_button = ft.IconButton(
+            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
+            on_click=self.show_sidebar, 
+            mouse_cursor=ft.MouseCursor.CLICK,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            visible=not self.data.get('show_sidebar', True),
+            tooltip="Show Sidebar",
+            #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
+        )
+
         # Container on right side of widgets to hold mini widgets or sidebar info
         self.sidebar = ft.Container(
             border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
@@ -585,16 +647,7 @@ class Widget(ft.Container):
             ], expand=True, spacing=0)
         )
 
-        # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
-        self.show_sidebar_button = ft.IconButton(
-            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
-            on_click=self.show_sidebar, 
-            mouse_cursor=ft.MouseCursor.CLICK,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            visible=not self.data.get('show_sidebar', True),
-            tooltip="Show Sidebar",
-            #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
-        )
+        
 
         # OLD
         #ft.IconButton(      # Open the settings fo this type of widget

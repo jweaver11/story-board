@@ -833,7 +833,7 @@ class Canvas(Widget):
             #self.layer_stack.update()
             self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
             self.update()
-            await self.update_indices()
+            self.update_indices()
             
         # Grab name and visibility
         name = layer_data.get('name', f"Layer {idx+1}")
@@ -987,7 +987,7 @@ class Canvas(Widget):
         self.update()
 
     # Update all our controls data that use indices to maintain state
-    async def update_indices(self):
+    def update_indices(self):
         for idx, control in enumerate(self.sidebar_layers_list_view.controls):
             control.content.data = idx
         # Also update each canvas's stored index so save_canvas looks up the correct layer
@@ -1083,12 +1083,8 @@ class Canvas(Widget):
 
             #self.layer_stack.update()
             self.update()
-            await self.update_indices()  # Update indices so sidebar controls maintain correct idx reference
+            self.update_indices()  # Update indices so sidebar controls maintain correct idx reference
             
-
-        
-            
-
         # Downscales images for preview to improve performance
         def downscale_image(image_str: str) -> str:
 
@@ -1201,7 +1197,7 @@ class Canvas(Widget):
             ),
             
             ft.Row([    # Layer Label
-                ft.Text(f"\tLayers", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
+                ft.Text(f"Layers", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
                 ft.IconButton(      # Create new Layer button
                     ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                     self.data.get('color', ft.Colors.PRIMARY),
@@ -1213,16 +1209,9 @@ class Canvas(Widget):
 
             self.sidebar_layers_list_view,
 
-            #ft.Row([    # Label Notes
-                #ft.Text(f"\tNotes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
-                #ft.IconButton(      # Create new notes button
-                    #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                    #self.data.get('color', ft.Colors.PRIMARY),
-                    #mouse_cursor=ft.MouseCursor.CLICK,
-                #)
-            #], spacing=0),
-
-            #ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
+            ft.Divider(),
+            self.sidebar_notes_label,
+            self.sidebar_notes_column
         ])
 
         #self.content = ft.Row([interactive_viewer, self.show_sidebar_button, self.sidebar], expand=True, spacing=0)

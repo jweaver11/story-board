@@ -110,19 +110,19 @@ class Chart(Widget):
         ''' Builds out the body of our bar chart widget '''
 
         # Updates the indices for the controls for groups and rods in the chart and sidebar
-        async def update_indices():
-            await update_group_indices()
-            await update_rod_indices()
+        def update_indices():
+            update_group_indices()
+            update_rod_indices()
 
         # Update each label in the chart and expansion tile delete button in the sidebar
-        async def update_group_indices():
+        def update_group_indices():
             for group_idx, label in enumerate(self.data.get('bar_data', {}).get('groups', [])):
                 chart.bottom_axis.labels[group_idx].value = group_idx                   # Value of label on chart 
                 chart.bottom_axis.labels[group_idx].label.data = group_idx              # Data of tf for changing
                 sidebar_bar_group_column.controls[group_idx].trailing.data = group_idx  # Delete button for that group in sidebar
 
         # Updates the indices for each rod within each group in the sidebar and chart
-        async def update_rod_indices():
+        def update_rod_indices():
             for group_idx, exp_tile in enumerate(sidebar_bar_group_column.controls):
                 rod_idx = 0     # Set our rod index to only incriment when we find a rod control and ignore other controls
                 for ctrl in exp_tile.controls:
@@ -159,7 +159,7 @@ class Chart(Widget):
             chart.groups.append(create_chart_bar_group(len(self.data.get('bar_data', {}).get('groups', [])) - 1, self.data.get('bar_data', {}).get('groups', [])[-1]))
             chart.bottom_axis.labels.append(create_bar_group_label(len(self.data.get('bar_data', {}).get('groups', [])) - 1, self.data.get('bar_data', {}).get('groups', [])[-1].get('name', f"Group {len(self.data.get('bar_data', {}).get('groups', []))}")))
             self.update()
-            await update_indices()      # Update indices 
+            update_indices()      # Update indices 
             
         # Deletes a group from data, chart, and sidebar
         async def delete_group(e: ft.Event):
@@ -173,7 +173,7 @@ class Chart(Widget):
             chart.bottom_axis.labels.pop(idx)   # Remove the corresponding bottom axis label from the chart
             sidebar_bar_group_column.controls.pop(idx)
             self.update()
-            await update_indices()   # Update indices after deleting a group
+            update_indices()   # Update indices after deleting a group
 
         # Creates a rod for a specific group in the data, chart, and sidebar
         async def create_rod(e: ft.Event):
@@ -210,7 +210,7 @@ class Chart(Widget):
             # Add it to the sidebar as well
             sidebar_bar_group_column.controls[group_idx].controls.append(create_sidebar_rod(group_idx, new_rod_idx, rod_data))
             self.update()
-            await update_indices()
+            update_indices()
 
         # Updates the value of our rod on the chart in real-time as the slider is moved, without adjusting data
         async def update_rod_value(e: ft.Event):
@@ -239,7 +239,7 @@ class Chart(Widget):
             chart.groups[group_idx].rods.pop(rod_idx)
             sidebar_bar_group_column.controls[group_idx].controls.pop(rod_idx+2)
             self.update()
-            await update_indices()
+            update_indices()
 
         # Changes color of a rod in data, chart, and sidebar
         async def change_rod_color(e: ft.Event):
@@ -581,26 +581,24 @@ class Chart(Widget):
         )
 
         # Add a label and add groups button in the sidebar
-        self.sidebar_body.controls.append(
+        self.sidebar_body.controls.extend([
             ft.Row([
-                ft.Text(f"\tGroups", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.Text(f"Groups", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                 ft.IconButton(      # Create group button
                     ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
                     self.data.get('color', ft.Colors.PRIMARY),
                     mouse_cursor=ft.MouseCursor.CLICK,
                     on_click=create_group,
                 ),
-            ], spacing=0))
+            ], spacing=0),
+            sidebar_bar_group_column,
 
-        # Add the sidebar bar group
-        self.sidebar_body.controls.append(sidebar_bar_group_column)
+            # Notes stuff
+            ft.Divider(),
+            self.sidebar_notes_label,
+            self.sidebar_notes_column
+        ])
 
-        # Set our content
-        #self.content = ft.Row([
-            #ft.Container(chart, expand=3, padding=ft.Padding.only(bottom=20, left=20)),
-            #self.show_sidebar_button,
-            #self.sidebar
-        #])
 
         # Set up our main conent
         self.content = ft.Stack([
@@ -618,12 +616,12 @@ class Chart(Widget):
         
 
         # Update indices after datasets or nodes are added or deleted
-        async def update_indices():
-            await update_data_set_indices()
-            await update_node_indices()
+        def update_indices():
+            update_data_set_indices()
+            update_node_indices()
 
         # Updates the indices of the datasets and nodes in the sidebar after any changes
-        async def update_data_set_indices():
+        def update_data_set_indices():
             for idx, control in enumerate(sidebar_dataset_column.controls):
                 control.trailing.data = idx
                 control.leading.data = idx
@@ -631,7 +629,7 @@ class Chart(Widget):
                 control.data = idx
 
         # Updates indices of the nodes in the sidebar after one is deleted
-        async def update_node_indices():
+        def update_node_indices():
             for idx, control in enumerate(sidebar_nodes_column.controls):
                 control.content.suffix.data = idx
         
@@ -763,7 +761,7 @@ class Chart(Widget):
             # Remove the corresponding control from the sidebar nodes column and update
             sidebar_nodes_column.controls.pop(node_idx)
             self.update()
-            await update_indices()
+            update_indices()
             
 
         # Toggles the chart either polygon or circle shaped
@@ -882,7 +880,7 @@ class Chart(Widget):
             chart.data_sets.pop(data_set_idx + 1)   # Skip first invisible dataset
             sidebar_dataset_column.controls.pop(data_set_idx)
             self.update()
-            await update_indices()
+            update_indices()
 
         # Change data_sets color on the chart
         async def update_dataset_color(e: ft.Event):
@@ -1123,33 +1121,35 @@ class Chart(Widget):
             )
         )
 
-        self.sidebar_body.controls.append(
-            ft.Column(
-                [
-                    ft.Row([    # Label dataset
-                        ft.Text(f"\tData Sets", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
-                        ft.IconButton(      # Create new dataset button
-                            ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                            self.data.get('color', ft.Colors.PRIMARY),
-                            mouse_cursor=ft.MouseCursor.CLICK,
-                            on_click=create_data_set,
-                        ),
-                    ], spacing=0),
-                    sidebar_dataset_column, # Column to hold our sidebar dataset controls
-                    ft.Row([    # Label Nodes
-                        ft.Text(f"\tNodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                        ft.IconButton(      # Create new node button
-                            ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                            self.data.get('color', ft.Colors.PRIMARY),
-                            on_click=create_node,
-                            mouse_cursor=ft.MouseCursor.CLICK,
-                        ),
-                    ]),
-                    sidebar_nodes_column
-                    
-                ], expand=True, scroll=ft.ScrollMode.AUTO, spacing=0
-            )
-        )
+        self.sidebar_body.controls.extend([
+            ft.Row([    # Label dataset
+                ft.Text(f"Data Sets", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
+                ft.IconButton(      # Create new dataset button
+                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                    self.data.get('color', ft.Colors.PRIMARY),
+                    mouse_cursor=ft.MouseCursor.CLICK,
+                    on_click=create_data_set,
+                ),
+            ], spacing=0),
+            sidebar_dataset_column, # Column to hold our sidebar dataset controls
+            ft.Row([    # Label Nodes
+                ft.Text(f"Nodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.IconButton(      # Create new node button
+                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                    self.data.get('color', ft.Colors.PRIMARY),
+                    on_click=create_node,
+                    mouse_cursor=ft.MouseCursor.CLICK,
+                ),
+            ]),
+            sidebar_nodes_column,
+
+            # Notes stuff
+            ft.Divider(),
+            self.sidebar_notes_label,
+            self.sidebar_notes_column
+                
+        ])
+        
 
         #self.content = ft.Row(
             #[

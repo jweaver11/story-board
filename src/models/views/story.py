@@ -458,7 +458,7 @@ class Story(ft.View):
         from models.widget import Widget
         #from utils.import_util import import_widgets
 
-        # TODO: Go through each file. Make sure a widget with that name/key doesnt already exist in that directory
+        # TODO
         # Otherwise, figure out what type of widget it should be and add it to story
 
         dir_path = e.control.data or self.data.get('content_directory_path',  '')

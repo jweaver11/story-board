@@ -493,12 +493,9 @@ class ComicPreview(Widget):
         )
         
         # Set the sidebar content
-        self.sidebar_body.controls.append(
-            ft.Column([
-                
-                
+        self.sidebar_body.controls.extend([
             ft.Row([
-                ft.Text(f"\tPanels", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.Text(f"Panels", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                 ft.MenuBar(
                     [
                         ft.SubmenuButton(
@@ -530,8 +527,7 @@ class ComicPreview(Widget):
                 ),
             ], spacing=0),
             panel_minimap,
-            ], expand=True, scroll="none", spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-        )
+        ])
         
         # Set our content
         #self.content = ft.Row([

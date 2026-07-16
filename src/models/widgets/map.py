@@ -321,16 +321,9 @@ class Map(Widget):
         self.sidebar_body.controls.extend([
             self.description_tf,
 
-            #ft.Row([    # Label Notes
-                #ft.Text(f"\tNotes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
-                #ft.IconButton(      # Create new notes button
-                    #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                    #self.data.get('color', ft.Colors.PRIMARY),
-                    #mouse_cursor=ft.MouseCursor.CLICK,
-                #)
-            #], spacing=0),
-
-            #ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
+            ft.Divider(),
+            self.sidebar_notes_label,
+            self.sidebar_notes_column
         ])
 
         

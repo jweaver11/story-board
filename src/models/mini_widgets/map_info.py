@@ -103,15 +103,7 @@ class MapInformationDisplay(MiniWidget):
             on_blur=lambda e: self.update_data(**{'History': e.control.value}),   # When we click out of the text field, we save our changes
         )
 
-        notes_label = ft.Row([
-            ft.Container(width=6),
-            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.widget.data.get('color', None), selectable=True),
-            ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, self.widget.data.get('color', "primary"), tooltip="Add Note",
-                on_click=self._new_note_clicked,
-                mouse_cursor="click"
-            )
-        ], spacing=0)
+        
 
         export_button = ft.TextButton(
             "Export", ft.Icons.FILE_DOWNLOAD_OUTLINED, tooltip="Export canvas as image",
@@ -119,7 +111,6 @@ class MapInformationDisplay(MiniWidget):
             style=ft.ButtonStyle(mouse_cursor="click")
         )
 
-        notes_column = self._build_notes_column()
 
         return ft.Column([
             #show_map_bg_switch,
@@ -135,8 +126,8 @@ class MapInformationDisplay(MiniWidget):
                     
             ] 
             + _get_locations() + [
-                notes_label,
-                ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
+                self.widget.sidebar_notes_label,
+                ft.Container(self.widget.sidebar_notes_column, margin=ft.Margin.symmetric(horizontal=20)),
                 # Notes
             ]
             

@@ -751,30 +751,30 @@ class PlotChart(Widget):
         self.edge_sidebar_column = _load_edges()
 
         # Info container on the right to show details of our edges and nodes
-        info_column = ft.Column(
-            [
-                self.description_tf,
-                ft.Row([
-                    ft.Text(f"\tNodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                    ft.IconButton(
-                        ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                        self.data.get('color', ft.Colors.PRIMARY),
-                        mouse_cursor=ft.MouseCursor.CLICK,
-                        on_click=self.create_node,
-                        data="sidebar",
-                    ),
-                ], spacing=0),
+        self.sidebar_body.controls.extend([
+            self.description_tf,
+            ft.Row([
+                ft.Text(f"Nodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.IconButton(
+                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
+                    self.data.get('color', ft.Colors.PRIMARY),
+                    mouse_cursor=ft.MouseCursor.CLICK,
+                    on_click=self.create_node,
+                    data="sidebar",
+                ),
+            ], spacing=0),
 
-                # Nodes here
-                self.node_sidebar_column,
-                ft.Divider(),
-                ft.Text(f"\tConnections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+            # Nodes here
+            self.node_sidebar_column,
+            ft.Divider(),
+            ft.Text(f"Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
 
-                self.edge_sidebar_column,
+            self.edge_sidebar_column,
+            ft.Divider(),
+            self.sidebar_notes_label,
+            self.sidebar_notes_column
 
-            ], 
-            expand=True, scroll=ft.ScrollMode.AUTO, spacing=0,
-        )
+        ])
             
         
             
@@ -796,8 +796,6 @@ class PlotChart(Widget):
         for edge in self.data.get('edges', []):
 
             self.edge_canvas.shapes.append(self.Edge(self, edge))
-
-        self.sidebar_body.controls.append(info_column)
         
 
         # Interactive viewer to hold the stack for UI manipulation
