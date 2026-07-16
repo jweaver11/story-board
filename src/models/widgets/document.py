@@ -182,16 +182,14 @@ class Document(Widget):
             new_comment_tf.value = ""
             new_comment_tf.visible = False
             new_comment_tf.update()
-            #new_comment_tf_placeholder.visible = True
-            #new_comment_tf_placeholder.update()
 
         # Creates our new comment in data then adds it to the column
         async def create_comment(e: ft.Event):
             comment_title = e.control.value.strip()
             new_comment = self.Comment(title=comment_title, widget=self)
             self.update_data(**{'mini_widgets': {new_comment.data["id"]: new_comment.data}})
-            self.mini_widgets_column.controls.append(new_comment)
-            self.mini_widgets_column.update()
+            self.comments_column.controls.append(new_comment)
+            self.comments_column.update()
 
             
         # Opens our file picker to imoprt our image
@@ -215,8 +213,8 @@ class Document(Widget):
                         }
                     )
                     self.update_data(**{'mini_widgets': {reference_image.data["id"]: reference_image.data}})
-                    self.mini_widgets_column.controls.append(reference_image)
-                    self.mini_widgets_column.update()
+                    self.comments_column.controls.append(reference_image)
+                    self.comments_column.update()
                         
                 except Exception as e:
                     e.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
@@ -292,7 +290,7 @@ class Document(Widget):
             
         
         # Otherwise, build our info column
-        self.mini_widgets_column = ft.Column(load_mini_widgets(), expand=1, scroll="auto")
+        self.comments_column = ft.Column(load_mini_widgets(), expand=1, scroll="auto")
         
         self.sidebar_body.controls.append(
             ft.Column([
@@ -342,7 +340,17 @@ class Document(Widget):
                         
                 ], spacing=0),
                 
-                self.mini_widgets_column, 
+                self.comments_column, 
+
+                # Testing purposes
+                #ft.Text(
+                    #spans=[
+                        #ft.TextSpan("Span 1"),
+                        #ft.TextSpan("Span 2")
+                    #],
+                    #on_selection_change=lambda e: print(e),
+                    #selectable=True
+                #)
             ], expand=True, scroll="none", spacing=0)
         )
 

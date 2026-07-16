@@ -444,12 +444,6 @@ class Story(ft.View):
                     except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
                         print(f"Error loading content from {filename}: {e}")
 
-        # Reload all ccm's, since they need all characters loaded to work
-        # TODO: Just put all these into a list so when we build later, we actually create them here
-        for widget in self.widgets.values():
-            if widget.data.get('tag', "") == "character_relationship_map" and widget.data.get('visible', False):
-                widget.reload_widget()
-
     async def import_folder_clicked(self, e: ft.Event):
         dir_path = e.control.data or self.data.get('content_directory_path',  '')
 

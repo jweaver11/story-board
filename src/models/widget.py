@@ -68,10 +68,6 @@ class Widget(ft.Container):
         # State tracking for widgets
         self.w: int = 0          # Width of content space of the widget
         self.h: int = 0          # Height of content space of the widget
-        
-        # State tracking
-        self.skip_update = False                # Skips applying an update on resizes to prevent update loops
-        self.ignore_update = False     # Return and ignore updates, such as when hiding??
         self.needs_file_write: bool = False        # Whether we need to write to file or not. Set to true when data changes, and false when saved
 
         # Controls -----------------------------------------------
@@ -373,11 +369,6 @@ class Widget(ft.Container):
             #)
         ]
     
-    # Shows the info column on the side of our chart or not
-    async def _toggle_show_sidebar(self, e=None):
-        self.update_data(**{'show_sidebar': not self.data.get('show_sidebar', True)})
-        self.reload_widget()
-        await self.story.close_menu()
     
     async def rename_clicked(self, e: ft.Event):
         ''' Replaces our widget title with a text field to rename it '''
@@ -649,18 +640,3 @@ class Widget(ft.Container):
             capitalization=ft.TextCapitalization.SENTENCES,
             label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
         )   
-
-        self.reload_widget()    # Temp until we phase out
-
-    # OLD - Phasing out
-    def reload_widget(self):
-        ''' Children build their own content of the widget in their own reload_widget functions '''
-        return
-    
-    # OLD - Phasing out
-    def _render_widget(self):
-
-        try:
-            self.update()
-        except Exception as _:
-            pass
