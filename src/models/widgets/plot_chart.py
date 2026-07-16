@@ -108,13 +108,14 @@ class PlotChart(Widget):
                     edge.update()
 
         # Saves our new position when we are done dragging
-        async def save_position(self):
+        async def save_position(self, e: ft.DragEndEvent):
             # Make sure data is accurate
             for node in self.widget.data.get('nodes', []):
                 if node['label'] == self.label:
                     node['position'] = (self.left, self.top)
                     break
             self.widget.update_data(**{'nodes': self.widget.data.get('nodes', [])})
+            self.widget.set_mouse_coords(e) # Reset the menu position 
 
         # Opens a menu with our options when right clicking a node
         async def open_menu(self, e: ft.PointerEvent):
@@ -731,7 +732,7 @@ class PlotChart(Widget):
                     on_click=_create_node,
                     content=ft.Row([
                         ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                        ft.Text("Create Node", weight=ft.FontWeight.BOLD, color=self.data.get('color', ft.Colors.PRIMARY)), 
+                        ft.Text("Node", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True), 
                     ]),
                     data="right_click"
                 ),
