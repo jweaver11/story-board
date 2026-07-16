@@ -62,7 +62,7 @@ class Map(Widget):
                 'canvas_data': {
 
                     # Sizing
-                    "width": (data or {}).get('canvas_data', {}).get('width') or 1920,
+                    "width": (data or {}).get('canvas_data', {}).get('width') or 1080,
                     "height": (data or {}).get('canvas_data', {}).get('height') or 1080,
 
                     # Undo and redo list
@@ -266,9 +266,10 @@ class Map(Widget):
             ignore_interactions=True,
             width=self.canvas_width, height=self.canvas_height,
             image=ft.DecorationImage(       # Background image
-                "map_bg_dark.png", 
+                "map_bg_fantasy.jpg", 
                 #ft.ColorFilter(ft.Colors.with_opacity(1, ft.Colors.BLACK), ft.BlendMode.SOFT_LIGHT),
-                repeat=ft.ImageRepeat.REPEAT
+                #repeat=ft.ImageRepeat.REPEAT
+                fit=ft.BoxFit.FILL
             ) if self.data.get('map_data', {}).get('show_bg_map', True) else None,
         )
 

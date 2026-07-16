@@ -608,9 +608,10 @@ class Plotline(Widget):
         # Holds our drawing so we can interact with it, zoom, pan, etc.
         interactive_viewer = ft.InteractiveViewer(
             content=ft.Stack([
-                ft.Container(self.plotline_canvas, expand=True, border=ft.Border.all(8, "red")),
+                ft.Container(expand=True, border=ft.Border.all(2, ft.Colors.OUTLINE), image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT)),
+                self.plotline_canvas,
                 self.arc_stack,
-                ft.Container(self.marker_stack, expand=True, border=ft.Border.all(4, "blue")),
+                self.marker_stack,
                 self.plot_point_stack
             ]),
             expand=True, 

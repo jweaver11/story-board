@@ -233,13 +233,26 @@ class Document(Widget):
                     mini_widget_controls.append(self.ReferenceImage(widget=self, data=mw_data))
             return mini_widget_controls
         
-        
-            
+        # Async data update so we dont bog down when we dont need to
+        async def update_data_async(**kwargs):
+            # Allow updating of nested dicts without overriding the entire dict
+            def _merge_data(target: dict, updates: dict):
+                for key, value in updates.items():
+                    current_value = target.get(key)
+                    if isinstance(current_value, dict) and isinstance(value, dict):
+                        _merge_data(current_value, value)
+                    else:
+                        target[key] = value
 
-        async def _save_quill():
+            _merge_data(self.data, kwargs)  # Merge the new data into the existing data
+
+            # Mark widget as dirty for file write
+            if self.needs_file_write == False:
+                self.needs_file_write = True
+
+        async def save_quill():
             ''' Saves our quill data, but marks that it needs to be saved '''
-            self.update_data(**{'document_data': await quill_editor.save()})
-            print("Save quill called")
+            await update_data_async(**{'document_data': await quill_editor.save()})
             
         
         # Toolbar only
@@ -261,11 +274,14 @@ class Document(Widget):
 
         # Holds our flet quill
         editor_container = ft.Container(
-            expand=3, 
+            expand=True, 
             alignment=ft.Alignment.TOP_CENTER, 
-            padding=ft.Padding.all(10),
+            margin=ft.Margin.symmetric(horizontal=40, vertical=20),
+            padding=ft.Padding.all(30),
+            border_radius=4,
+            #bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             content=ft.Container(
-                ft.KeyboardListener(quill_editor, on_key_down=_save_quill, expand=True),
+                ft.Column([ft.KeyboardListener(quill_editor, on_key_down=save_quill, expand=True)]),
                 border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
                 border_radius=4,
                 padding=ft.Padding.all(20), expand=True, 
