@@ -190,7 +190,7 @@ class Story(ft.View):
 
                 widget_dir_norm = os.path.normcase(os.path.normpath(widget_dir))
                 if widget_dir_norm == full_norm or widget_dir_norm.startswith(full_norm + os.sep):
-                    self.widgets.pop(widget_id, None)            
+                    self.page.run_task(self.workspace.remove_widget_from_workspace, self.widgets.pop(widget_id, None)  )  # Remove the widget from the workspace if it was visible
 
             # Remove this folder and every sub-folder from story data
             for folder_path in list(self.data['folders'].keys()):
@@ -201,10 +201,8 @@ class Story(ft.View):
             # Save AFTER all data has been cleaned up so nothing orphaned persists
             self.update_data(**{'folders': self.data['folders']})   
 
-            
-
-            self.active_rail.reload_rail()
-            self.workspace.reload_workspace()
+            if self.data.get('selected_rail', "content") != "canvas":
+                self.active_rail.reload_rail()
             self.close_menu_instant()
            
 
@@ -481,15 +479,6 @@ class Story(ft.View):
         )
 
         self.page.show_dialog(dlg)
-
-    async def handle_new_item_clicked(self, e: ft.Event):
-        await self.close_menu()
-        self.new_item_tf.visible = True
-        self.new_item_tf.left = self.mouse_x
-        self.new_item_tf.top = self.mouse_y
-        self.new_item_tf.update()
-        await self.new_item_tf.focus()
-
         
     # Called to create a new widget based on tag (document, note, character, etc)
     async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict=None, chart_type: str="bar"):
@@ -563,8 +552,7 @@ class Story(ft.View):
         self.widgets[widget.data['id']] = widget        
 
         # Finish tasks creating widget to make sure the file has enough time to save
-        self.update_data(**{'workspace_selected_index': len(self.workspace.main_pin)})  
-        self.workspace.reload_workspace()
+        await self.workspace.add_widget_to_workspace(widget)  # Add the new widget to the workspace and select it
 
         # Apply the UI changes
         if self.data.get('selected_rail', "content") != "canvas":
@@ -819,13 +807,6 @@ class Story(ft.View):
         self.workspace = Workspace(self)  
         self.active_rail = ActiveRail(self) 
 
-        async def hide_new_item_tf(e: ft.Event):
-            self.new_item_tf.visible = False
-            self.new_item_tf.value = ''
-            self.new_item_tf.update()
-
-        self.new_item_tf = ft.TextField(bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, autofocus=True, visible=False, on_blur=hide_new_item_tf)
-
 
         # The actual resizer for the active rail (gesture detector)
         self.active_rail_resizer = ft.GestureDetector(
@@ -881,7 +862,6 @@ class Story(ft.View):
         self.page.overlay.extend([
             self.close_menu_detector,
             self.menu,
-            self.new_item_tf,
             self.blocker
         ])
 

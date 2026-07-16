@@ -68,12 +68,7 @@ class Widget(ft.Container):
         # State tracking for widgets
         self.w: int = 0          # Width of content space of the widget
         self.h: int = 0          # Height of content space of the widget
-        self.needs_file_write: bool = False        # Whether we need to write to file or not. Set to true when data changes, and false when saved
-
-        # Controls -----------------------------------------------
-        self.tab_title: ft.Text     # Text for the tab
-        self.tab: ft.Tab       # The tab associated with this widget, used for navigation and organization within the UI
-        self.build_tab()    
+        self.needs_file_write: bool = False        # Whether we need to write to file or not. Set to true when data changes, and false when saved  
                        
         # Sidebar controls
         self.sidebar_title: ft.Text       # Title of the sidebar for this widget that sits in the header
@@ -302,6 +297,24 @@ class Widget(ft.Container):
         ]
         
 
+    
+
+    # Called to show the widget in the workspace
+    async def show_widget(self, e=None):
+        ''' Shows this widget in the workspace if it is hidden '''
+
+        # If we're already visible, focus our tab
+        if self.data.get('visible', False) == True:
+            await self.story.workspace.tabs.move_to(self.data.get('index', 0), animation_duration=100)  # Select the new widget tab
+            self.story.update_data(**{'workspace_selected_index': self.data.get('index', 0)})
+            return
+        
+        # Update our data to be visible
+        self.update_data(**{'visible': True})  
+        await self.save_file()  # We lose state tracking upon being shown since we get rebuilt, so force a save to maintain data
+
+        await self.story.workspace.add_widget_to_workspace(self)  # Adds ourselves to the workspace and focus our tab
+       
     # Called to hide the widget from the workspace
     async def hide_widget(self, e=None):
         ''' Hides this widget from the workspace but keeps it in the story and rail '''
@@ -310,26 +323,7 @@ class Widget(ft.Container):
             return
         
         self.update_data(**{'visible': False})
-        self.story.workspace.reload_workspace()  
-
-    # Called to show the widget in the workspace
-    async def show_widget(self, e=None):
-        ''' Shows this widget in the workspace if it is hidden '''
-
-        # If we're already visible, focus our tab
-        if self.data.get('visible', False) == True:
-            self.story.workspace.content.selected_index = self.data.get('index', 0)
-            self.story.workspace.update()
-            return
-        
-        #self.visible = True
-        self.update_data(**{'visible': True, 'index': 999})
-        self.story.update_data(**{'workspace_selected_index': len(self.story.workspace.main_pin)}) # Select us as active pin
-
-        await self.save_file()  # We lose state tracking upon being shown since we get rebuilt, so force a save
-
-        self.story.workspace.reload_workspace()   # Reload workspace to show the widget in its pin location
-       
+        await self.story.workspace.remove_widget_from_workspace(self)
         
 
     # Called when right clicking our tab
@@ -387,8 +381,11 @@ class Widget(ft.Container):
             self.update_data(**{'title': name.capitalize()})   # Update our data with the new title and key
             await self.save_file()  # Force a file save
                     
-            self.story.active_rail.reload_rail()  
-            self.story.workspace.reload_workspace()   # Reload workspace to update tab title and sorting if needed 
+            if self.story.data.get("selected_rail", "content") != "canvas":
+                self.story.active_rail.reload_rail()   # Reload the rail to reflect the name change
+
+            if self.data.get('visible', False) == True:
+                await self.story.workspace.update_widget_tab_title(self.data.get('index'), self.data.get('title'))  # Update the title of the tab in the workspace if we're visible
             
             e.page.pop_dialog()
                 
@@ -436,8 +433,11 @@ class Widget(ft.Container):
             self.update_data(**{'color': color})
             await self.save_file()  # Force a file save to persist the color change
             
-            self.story.workspace.reload_workspace()   # Reload workspace to update tab color
-            self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
+            if self.data.get('visible', False) == True:
+                await self.story.workspace.update_widget_tab_color(self.data.get('index'), self.data.get('color'))  # Update the color of the tab in the workspace if we're visible
+
+            if self.story.data.get("selected_rail", "content") != "canvas":
+                self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
             await self.story.close_menu()
 
             
@@ -469,7 +469,9 @@ class Widget(ft.Container):
                 self.story.widgets.pop(self.data.get('id', ''), None)   # Remove ourselves from the story's widgets
                 
             self.story.active_rail.reload_rail()    # Reload the rail to reflect the deletion
-            self.story.workspace.reload_workspace()
+
+            if self.data.get('visible', False) == True:
+                await self.story.workspace.remove_widget_from_workspace(self)  # Remove ourselves from the workspace if we were visible
 
             e.page.pop_dialog()
 
@@ -486,10 +488,8 @@ class Widget(ft.Container):
 
         self.story.close_menu_instant()
 
-        if app.settings.data.get('confirm_item_delete', False):
-            e.page.show_dialog(dlg)
-        else:
-            e.page.run_task(_delete_confirmed)
+        e.page.show_dialog(dlg)
+        
 
     # Called when mouse hovers over the map
     async def _get_coords(self, e: ft.PointerEvent):
@@ -499,55 +499,8 @@ class Widget(ft.Container):
         self.l = e.local_position.x
         self.t = e.local_position.y
 
-    # Called in constructor to build our tab
-    def build_tab(self):
-        match self.data.get('tag', ''):
-            case "document": icon = ft.Icons.DESCRIPTION_OUTLINED
-            case "canvas": icon = ft.Icons.BRUSH_OUTLINED
-            case "canvas_board": icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
-            case "note": icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
-            case "character": icon = ft.Icons.PERSON_OUTLINE
-            case "character_relationship_map": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
-            case "plotline": icon = ft.Icons.TIMELINE
-            case "map": icon = ft.Icons.MAP_OUTLINED
-            case "world": icon = ft.Icons.PUBLIC_OUTLINED
-            case "item": icon = ft.Icons.STAR_OUTLINE_ROUNDED
-            case "chart": 
-                if self.data.get('chart_type', '') == 'bar':
-                    icon = ft.Icons.INSERT_CHART_OUTLINED 
-                else:
-                    icon = ft.CupertinoIcons.COMPASS
-            case "comic_preview": icon = ft.Icons.SLIDESHOW_OUTLINED
-            case "plot_chart": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
-            case _: icon = ft.Icons.ERROR_OUTLINE
-
-
-        tab_icon = ft.Icon(icon, color=self.data.get('color', ft.Colors.PRIMARY))  # Icon for the tab
-        hide_widget_button = ft.IconButton(    # Hide widget button on right side of tab
-            scale=0.8,
-            on_click=self.hide_widget,
-            icon=ft.Icons.CLOSE_ROUNDED,
-            icon_color=ft.Colors.OUTLINE,
-            tooltip="Hide",
-            mouse_cursor=ft.MouseCursor.CLICK,
-        )
-
-        self.tab_title = ft.Text(
-            self.data.get('title', ''), weight=ft.FontWeight.BOLD, size=16, 
-            color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True
-        )
-
-        # Gesture Detector for opening menus that holds our tab icon, title, and hide button
-        tab_gd = ft.GestureDetector(
-            ft.Row([tab_icon, self.tab_title, hide_widget_button]),
-            mouse_cursor=ft.MouseCursor.CLICK,
-            hover_interval=100,
-            on_hover=self.set_mouse_coords,
-            on_secondary_tap=lambda: self.story.open_menu(self.get_menu_options()),
-        )
-
-        # Set the tab itself
-        self.tab = ft.Tab(tab_gd) 
+    
+        
 
     # Called in constructor to build our sidebar controls
     def build_sidebar(self):
@@ -660,7 +613,6 @@ class Widget(ft.Container):
 
     # Builds functionality for widget
     def build(self):
-        self.build_tab()
         self.build_sidebar()
 
         self.select_image_button = ft.GestureDetector(

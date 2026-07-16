@@ -136,7 +136,7 @@ class RailFolder(ft.GestureDetector):
                     [
                         ft.MenuItemButton(      # Folders
                             leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, ft.Colors.PRIMARY), content="Folder", 
-                            data="folder", on_click=self.story.handle_new_item_clicked, close_on_click=True,
+                            data="folder", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new folder to organize your story",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ), 
