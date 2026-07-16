@@ -18,14 +18,10 @@ from styles.text_fields import TextField
 # Class for our Canvas Board rail
 class CanvasRail(Rail):
 
-    def __init__(self, page: ft.Page, story: Story):
+    def __init__(self, story: Story):
 
         # Initialize the parent Rail class first
-        super().__init__(
-            page=page,
-            story=story,
-            directory_path=story.data.get('content_directory_path', ''),
-        )
+        super().__init__(story=story)
 
         # UI elements ---------------------------------------------
         # Buttons at the top of the rail
@@ -184,9 +180,7 @@ class CanvasRail(Rail):
             scale=.8, 
             picker_area_border_radius=ft.BorderRadius.all(6)
         )   # Set our color pickers color   
-        
-        self.reload_rail()
-    
+            
     # Set the color pickers color
     async def _set_color(self, e):
         self.color_picker.color = e.data
@@ -201,7 +195,8 @@ class CanvasRail(Rail):
     async def _save_color(self, e=None):
         app.settings.data['paint_settings']['color'] = self.color_picker.color
         await app.settings.save_dict()
-        self.story.active_rail.reload_rail()
+        #self.story.active_rail.reload_rail()
+        
         await self._update_live_shape()
 
     async def _save_text_color(self, e=None):   
@@ -355,11 +350,7 @@ class CanvasRail(Rail):
                 on_click=self._set_active_tool,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
                 tooltip="Add triangles to your canvas"
-            ),
-            
-            
-
-            
+            ),    
         ]
 
         
@@ -370,13 +361,13 @@ class CanvasRail(Rail):
         app.settings.data['canvas_settings']['current_control_mode'] = "draw"
         app.settings.data['paint_settings'].update(brush_settings)
         app.settings.data['canvas_settings']['current_brush_name'] = name
-        self.p.run_task(app.settings.save_dict)
+        self.page.run_task(app.settings.save_dict)
 
         self.story.active_rail.reload_rail()
         for widget in self.story.widgets.values():
             if widget.data.get('tag') == "canvas":
                 if widget.data.get('visible', True):
-                    self.p.run_task(widget.set_mouse_cursor)
+                    self.page.run_task(widget.set_mouse_cursor)
 
     # Set the blend mode label based on current mode in settings
     def _set_blend_mode_label(self) -> str:
@@ -576,10 +567,11 @@ class CanvasRail(Rail):
                     widget.active_tool.cv_shape.update()
                     break
 
-
+    def build(self):
+        self.reload_rail(False)
 
     # Called on startup and when we have changes to the rail that have to be reloaded 
-    def reload_rail(self):
+    def reload_rail(self, update: bool=True):
         ''' Reloads the canvas rail with updated data and UI elements. '''
 
         # Called when changing paint width
@@ -587,7 +579,7 @@ class CanvasRail(Rail):
             new_width = int(e.control.value)
             # Change the data directly
             app.settings.data['paint_settings']['stroke_width'] = new_width
-            self.p.run_task(app.settings.save_dict)
+            self.page.run_task(app.settings.save_dict)
             self.story.active_rail.reload_rail()
             await self._update_live_shape()
 
@@ -595,7 +587,7 @@ class CanvasRail(Rail):
         async def _paint_anti_alias_changed(e):
             new_anti_alias = e.control.value
             app.settings.data['paint_settings']['anti_alias'] = new_anti_alias
-            self.p.run_task(app.settings.save_dict)
+            self.page.run_task(app.settings.save_dict)
             self.story.active_rail.reload_rail()
             await self._update_live_shape()
 
@@ -613,21 +605,21 @@ class CanvasRail(Rail):
         async def _paint_stroke_cap_changed(e):
             new_stroke_cap = e.control.content.lower()
             app.settings.data['paint_settings']['stroke_cap'] = new_stroke_cap
-            self.p.run_task(app.settings.save_dict)
+            self.page.run_task(app.settings.save_dict)
             self.story.active_rail.reload_rail()
             await self._update_live_shape()
 
         async def _paint_stroke_join_changed(e):
             new_stroke_join = e.control.content.lower()
             app.settings.data['paint_settings']['stroke_join'] = new_stroke_join
-            self.p.run_task(app.settings.save_dict)
+            self.page.run_task(app.settings.save_dict)
             self.story.active_rail.reload_rail() 
             await self._update_live_shape()
 
         # Called when changing paint stroke blur
         async def _paint_stroke_blur_changed(e):
             app.settings.data['paint_settings']['blur_image'] = int(e.control.value)
-            self.p.run_task(app.settings.save_dict)
+            self.page.run_task(app.settings.save_dict)
             self.story.active_rail.reload_rail()
             await self._update_live_shape()
             
@@ -638,7 +630,7 @@ class CanvasRail(Rail):
             # Set the new mode and label
             app.settings.data['paint_settings']['blend_mode'] = mode
 
-            self.p.run_task(app.settings.save_dict)
+            self.page.run_task(app.settings.save_dict)
             self.story.active_rail.reload_rail()
             await self._update_live_shape()
 
@@ -656,11 +648,11 @@ class CanvasRail(Rail):
                 # Save current brush settings as a new custom brush
                 brush_settings = app.settings.data['paint_settings'].copy()
                 app.settings.data['canvas_settings']['saved_brushes'][safe_name] = brush_settings
-                self.p.run_task(app.settings.save_dict)
+                self.page.run_task(app.settings.save_dict)
 
                 # Just rebuild the rail so we can select our newly saved brush
                 self.story.active_rail.reload_rail()
-                self.p.pop_dialog()
+                self.page.pop_dialog()
 
             # Deletes a color
             async def _delete_custom_brush(e):
@@ -754,7 +746,7 @@ class CanvasRail(Rail):
                 title=ft.Text("Name your custom brush"), 
                 content=content,
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                     save_button
                 ]
             )
@@ -775,7 +767,7 @@ class CanvasRail(Rail):
                     )
                 )
 
-            self.p.show_dialog(dlg)
+            self.page.show_dialog(dlg)
 
 
         menubar = ft.MenuBar(
@@ -794,7 +786,7 @@ class CanvasRail(Rail):
         )
 
         # Width/Size of brush
-        self.paint_width_slider = ft.Slider(
+        self.pageaint_width_slider = ft.Slider(
             min=1, max=100, tooltip="The size of your brush strokes.", expand=True,
             divisions=99, value=app.settings.data.get('paint_settings', {}).get('stroke_width', 5),
             label="Brush Size: {value}px",
@@ -867,7 +859,7 @@ class CanvasRail(Rail):
         )
 
 
-        self.paint_stroke_blur_slider = ft.Slider(
+        self.pageaint_stroke_blur_slider = ft.Slider(
             min=0, max=50,  tooltip="The blur effect of your brush strokes.", expand=True,
             divisions=50, value=app.settings.data.get('paint_settings', {}).get('blur_image', 0),
             label="Stroke Blur: {value}",  
@@ -1251,10 +1243,10 @@ class CanvasRail(Rail):
 
                 ft.Row([
                     ft.Text("\t\tWidth", theme_style=ft.TextThemeStyle.LABEL_LARGE,), 
-                    self.paint_width_slider
+                    self.pageaint_width_slider
                 ], spacing=0, tooltip="Size of your strokes"),      # Size slider
 
-                ft.Row([ft.Text("\t\tBlur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider], spacing=0),
+                ft.Row([ft.Text("\t\tBlur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.pageaint_stroke_blur_slider], spacing=0),
 
                 
 
@@ -1417,12 +1409,8 @@ class CanvasRail(Rail):
         ]
         
 
-        # Apply the update
-        try:
+        if update:
             self.update()
-        except Exception:
-            pass
-
 
 # TODO: 
 # Add fonts and shadow options

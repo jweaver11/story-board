@@ -20,7 +20,6 @@ class RailFolder(ft.GestureDetector):
         full_path: str,                                         # Full path to this directory
         title: str,                                             # Title of this folder
         story: Story,                                           # Story reference for mouse positions and other logic
-        page: ft.Page,                                          # Page reference for overlay menu
         rail: ft.Control,                                       # Reference to the rail this directory is in
         is_expanded: bool = False,                              # Whether this directory is expanded or not
         color: str = "primary",                                 # Color of the folder icon
@@ -31,7 +30,6 @@ class RailFolder(ft.GestureDetector):
         self.full_path = full_path
         self.title = title
         self.story = story
-        self.p = page
         self.father = father
         self.color = color
         self.is_expanded = is_expanded  
@@ -138,7 +136,7 @@ class RailFolder(ft.GestureDetector):
                     [
                         ft.MenuItemButton(      # Folders
                             leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, ft.Colors.PRIMARY), content="Folder", 
-                            data="folder", on_click=self.new_item_clicked, close_on_click=True,
+                            data="folder", on_click=self.story.handle_new_item_clicked, close_on_click=True,
                             tooltip="Create a new folder to organize your story",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ), 
@@ -380,7 +378,7 @@ class RailFolder(ft.GestureDetector):
 
             case "canvas":
                 await self.story.close_menu()
-                self.p.show_dialog(new_canvas_alert_dlg(self.p, self.story, self.full_path))
+                self.page.show_dialog(new_canvas_alert_dlg(self.page, self.story, self.full_path))
                 return
                         
             case "canvas_board":
@@ -404,12 +402,12 @@ class RailFolder(ft.GestureDetector):
             title=self.new_item_textfield.hint_text, 
             content=self.new_item_textfield,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                 ft.TextButton("Submit", on_click=self.new_item_textfield_submit, style=ft.ButtonStyle(mouse_cursor="click")),
             ]
         )
         await self.story.close_menu()
-        self.p.show_dialog(dlg)
+        self.page.show_dialog(dlg)
         await self.new_item_textfield.focus()
         return
         
@@ -436,7 +434,7 @@ class RailFolder(ft.GestureDetector):
             # Otherwise its not unique, re-focus our textfield
             else:
                 e.control.visible = True
-                self.p.run_task(e.control.focus)
+                self.page.run_task(e.control.focus)
         
         # If we're not submitting, just hide the textfield and reset values
         #else:
@@ -491,7 +489,7 @@ class RailFolder(ft.GestureDetector):
         tag = self.new_item_textfield.data
 
         if self.item_is_unique:
-            self.p.pop_dialog()
+            self.page.pop_dialog()
             match tag:
                 case "folder":
                     await self.story.create_folder(directory_path=self.full_path, name=title)
@@ -501,7 +499,7 @@ class RailFolder(ft.GestureDetector):
             
                 
         else:
-            self.p.run_task(self.new_item_textfield.focus)                                  
+            self.page.run_task(self.new_item_textfield.focus)                                  
             self.update()
 
     
@@ -591,7 +589,7 @@ class RailFolder(ft.GestureDetector):
                 #self.story.blocker.update()
                 #await asyncio.sleep(0)
                 self.story.active_rail.reload_rail()
-                self.p.pop_dialog()
+                self.page.pop_dialog()
                 #self.story.blocker.visible = False
                 #self.story.blocker.update()
                 
@@ -617,12 +615,12 @@ class RailFolder(ft.GestureDetector):
             title=ft.Text(f"Rename {self.title}", weight=ft.FontWeight.BOLD),
             content=text_field,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.p.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                 ft.TextButton("Submit", on_click=_submit_name, style=ft.ButtonStyle(mouse_cursor="click")),
             ],
         )
 
-        self.p.show_dialog(dlg)
+        self.page.show_dialog(dlg)
 
         # Clears our popup menu button and applies to the UI
         await self.story.close_menu()
@@ -668,7 +666,7 @@ class RailFolder(ft.GestureDetector):
         def _delete_confirmed(e=None):
             ''' Deletes the widget after confirmation '''
 
-            self.p.pop_dialog()
+            self.page.pop_dialog()
             self.story.delete_folder(self.full_path)
 
             
@@ -679,14 +677,14 @@ class RailFolder(ft.GestureDetector):
             alignment=ft.Alignment.CENTER,
             title_padding=ft.Padding.all(25),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: self.p.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
                 ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click") ),
             ]
         )
 
         await self.story.close_menu()
 
-        self.p.show_dialog(dlg)
+        self.page.show_dialog(dlg)
         
 
     # Called when a widget is dragged and dropped into this directory

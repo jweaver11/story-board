@@ -74,9 +74,6 @@ class Story(ft.View):
         # Variables to store our mouse position for opening menus
         self.mouse_x: int = 0
         self.mouse_y: int = 0
-
-        # State that we are not initialized yet, which will be changed at the end of startup method
-        self.is_initialized = False
             
         # Declare our UI elements before we create them later. They are stored as objects so we can reload them when needed
         self.menubar: ft.Container     # Menu bar at top of page
@@ -86,6 +83,7 @@ class Story(ft.View):
 
         self.menu: ft.Container         # Container that sits in the overlay and gets menu options passed into it
         self.outside_menu_detector: ft.GestureDetector      # Sets under the menu to handle closing and opening the menu
+        self.blocker: ft.Container  # Blocks the page while we do intense loads
 
         # Block the app from any interactions during rebuilds
         self.blocker = ft.Container(
@@ -143,9 +141,12 @@ class Story(ft.View):
         return self.widgets.get(id, None)
 
     # Called when a new folder/category is created.
-    async def create_folder(self, directory_path: str, name: str):
+    async def create_folder(self, name: str, directory_path: str=None):
         ''' Creates a new category inside of our story structure for content organization '''
         from models.app import app
+
+        if directory_path is None:
+            directory_path = self.data.get('content_directory_path', '')
 
         try:
 
@@ -481,6 +482,14 @@ class Story(ft.View):
 
         self.page.show_dialog(dlg)
 
+    async def handle_new_item_clicked(self, e: ft.Event):
+        await self.close_menu()
+        self.new_item_tf.visible = True
+        self.new_item_tf.left = self.mouse_x
+        self.new_item_tf.top = self.mouse_y
+        self.new_item_tf.update()
+        await self.new_item_tf.focus()
+
         
     # Called to create a new widget based on tag (document, note, character, etc)
     async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict=None, chart_type: str="bar"):
@@ -808,7 +817,14 @@ class Story(ft.View):
         self.menubar = create_menu_bar(self.page, self)
         self.workspaces_rail = WorkspacesRail(self) 
         self.workspace = Workspace(self)  
-        self.active_rail = ActiveRail(self.page, self) 
+        self.active_rail = ActiveRail(self) 
+
+        async def hide_new_item_tf(e: ft.Event):
+            self.new_item_tf.visible = False
+            self.new_item_tf.value = ''
+            self.new_item_tf.update()
+
+        self.new_item_tf = ft.TextField(bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, autofocus=True, visible=False, on_blur=hide_new_item_tf)
 
 
         # The actual resizer for the active rail (gesture detector)
@@ -862,12 +878,12 @@ class Story(ft.View):
         
 
         # Overlay is a stack, so add the detector, then the menu container
-        self.page.overlay.append(self.close_menu_detector)
-        self.page.overlay.append(self.menu)
-        self.page.overlay.append(self.blocker)   # Add our blocker to the overlay as well, so it sits on top of everything when visible
+        self.page.overlay.extend([
+            self.close_menu_detector,
+            self.menu,
+            self.new_item_tf,
+            self.blocker
+        ])
 
-        # Apply everything to the self.page
         self.page.update()
-
-        self.is_initialized = True
     

@@ -13,7 +13,6 @@ class WorkspacesRail(ft.Container):
     def __init__(self, story: Story):
 
         self.story = story
-
        
         # Style our rail (container)
         super().__init__(
@@ -23,9 +22,6 @@ class WorkspacesRail(ft.Container):
             border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
         )
-
-        # Build our rail on start
-        #self.reload_rail()
 
 
     def build(self):

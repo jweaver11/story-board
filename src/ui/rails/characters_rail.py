@@ -17,14 +17,10 @@ import asyncio
 
 
 class CharactersRail(Rail):
-    def __init__(self, page: ft.Page, story: Story):
+    def __init__(self, story: Story):
 
         # Initialize the parent Rail class first
-        super().__init__(
-            page=page,
-            story=story,
-            directory_path=story.data.get('content_directory_path', '')
-        )
+        super().__init__(story=story)
 
         # UI elements
         self.top_row_buttons = [
@@ -69,7 +65,6 @@ class CharactersRail(Rail):
             
         ]
 
-        self.reload_rail()
 
 
 
@@ -77,12 +72,12 @@ class CharactersRail(Rail):
     async def _open_templates_editor(self, e=None):    
         from models.app import app
         app.settings.selected_index = 2     # Set settings to open on the character templates tab
-        self.p.overlay.clear()              # If opened from menu, make sure its closed
-        await self.p.push_route("/settings")
+        self.page.overlay.clear()              # If opened from menu, make sure its closed
+        await self.page.push_route("/settings")
         
 
     # Called to return our list of menu options for the content rail
-    def get_menu_options(self) -> list[ft.Control]:
+    def get_new_item_menu_options(self) -> list[ft.Control]:
             
         # Builds our buttons that are our options in the menu
         return [
@@ -106,7 +101,7 @@ class CharactersRail(Rail):
                         ),
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
-                            data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
+                            data="character_relationship_map", on_click=self.new_item_clicked, close_on_click=True,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
                             tooltip="Visualize the connections between the characters in your story"
                         ),
@@ -154,7 +149,7 @@ class CharactersRail(Rail):
         
 
     # Called on startup and when we have changes to the rail that have to be reloaded 
-    def reload_rail(self):
+    def build(self):
         ''' Builds or rebuilds the character rail content '''
 
         async def _change_sort_method(e: ft.Event):
@@ -196,12 +191,6 @@ class CharactersRail(Rail):
                 widget = ctrl.content.widget
                 if widget.data.get('rail_index', 999) != idx:
                     widget.update_data(**{'rail_index': idx})
-
-        # Button to open our character connections editor
-        character_connections_button = ft.IconButton(
-            ft.Icons.CONNECT_WITHOUT_CONTACT, "primary", mouse_cursor="click",
-            tooltip="Edit Character Connections", on_click=lambda e: new_character_connection_clicked(self.story)
-        )
         
 
         menubar = ft.MenuBar(
@@ -347,7 +336,7 @@ class CharactersRail(Rail):
 
         menu_gesture_detector = ft.GestureDetector(
             content=content, expand=True, on_hover=self._set_menu_coords,
-            on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()), 
+            on_secondary_tap=lambda _: self.story.open_menu(self.get_new_item_menu_options()), 
             hover_interval=20,
         )
 
@@ -363,10 +352,3 @@ class CharactersRail(Rail):
             menu_gesture_detector,
             ft.Container(ft.Row([sort_dropdown, character_templates_button]), margin=ft.Margin.symmetric(horizontal=4)),
         ]
-        
-        
-        # Apply the update
-        try:
-            self.update()
-        except Exception:
-            pass

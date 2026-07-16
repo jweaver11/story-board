@@ -4,7 +4,6 @@ import flet as ft
 from models.views.story import Story
 from ui.rails.rail import Rail
 from styles.menu_option_style import MenuOptionStyle
-from utils.tree_view import load_directory_data
 from models.isolated_controls.column import IsolatedColumn
 from models.isolated_controls.list_view import IsolatedListView
 from styles.rail.widget_rail_item import WidgetRailItem
@@ -13,14 +12,10 @@ from styles.rail.widget_rail_item import WidgetRailItem
 class WorldBuildingRail(Rail):
 
     # Constructor
-    def __init__(self, page: ft.Page, story: Story):
+    def __init__(self, story: Story):
         
         # Initialize the parent Rail class first
-        super().__init__(
-            page=page,
-            story=story,
-            directory_path=story.data.get('content_directory_path', '')
-        )
+        super().__init__(story=story)
 
         self.top_row_buttons = [
             ft.SubmenuButton(
@@ -73,15 +68,10 @@ class WorldBuildingRail(Rail):
                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
             ),
-        ]
-
-        self.reload_rail()
-
-    
-        
+        ]        
 
     # Called to return our list of menu options for the content rail
-    def get_menu_options(self) -> list[ft.Control]:
+    def get_new_item_menu_options(self) -> list[ft.Control]:
             
         # Builds our buttons that are our options in the menu
         return [
@@ -153,7 +143,7 @@ class WorldBuildingRail(Rail):
 
 
     # Called on startup and when we have changes to the rail that have to be reloaded 
-    def reload_rail(self):
+    def build(self):
         ''' Reloads/Rebuilds our rail based on current data '''
 
         async def _change_sort_method(e: ft.Event):
@@ -381,7 +371,7 @@ class WorldBuildingRail(Rail):
 
         menu_gesture_detector = ft.GestureDetector(
             content=content, expand=True, on_hover=self._set_menu_coords,
-            on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()), 
+            on_secondary_tap=lambda _: self.story.open_menu(self.get_new_item_menu_options()), 
             hover_interval=20,
         )
 
@@ -393,11 +383,7 @@ class WorldBuildingRail(Rail):
         ]
         
         
-        # Apply the update
-        try:
-            self.update()
-        except Exception:
-            pass
+        
 
 
         

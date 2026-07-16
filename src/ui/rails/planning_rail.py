@@ -16,20 +16,15 @@ from models.isolated_controls.column import IsolatedColumn
 # Class is created in main on program startup
 class PlanningRail(Rail):
     # Constructor
-    def __init__(self, page: ft.Page, story: Story):
+    def __init__(self, story: Story):
         
         # Initialize the parent Rail class first
-        super().__init__(
-            page=page,
-            story=story,
-            directory_path=story.data.get('content_directory_path', '')
-        )
+        super().__init__(story=story)
 
-        self.reload_rail()
 
         
     # Reload the rail whenever we need
-    def reload_rail(self) -> ft.Control:
+    def build(self) -> ft.Control:
         ''' Reloads planning, useful when switching stories '''
 
         # Build the content of our rail
@@ -41,10 +36,6 @@ class PlanningRail(Rail):
         ]
         
 
-        # Apply the update
-        try:
-            self.update()
-        except Exception:
-            pass
+        
         
 

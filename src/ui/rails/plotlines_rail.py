@@ -13,17 +13,10 @@ from models.isolated_controls.list_view import IsolatedListView
 class PlotlinesRail(Rail):
 
     # Constructor
-    def __init__(self, page: ft.Page, story: Story):
+    def __init__(self, story: Story):
         
         # Parent constructor
-        super().__init__(
-            page=page,
-            story=story,
-            directory_path=story.data.get('content_directory_path', '')
-        )
-
-        # Drop down we reference when adding new items to that dropdown
-        self.active_dropdown: PlotlineDropdown = None
+        super().__init__(story=story)
 
         # UI elements
         self.top_row_buttons = [
@@ -65,14 +58,13 @@ class PlotlinesRail(Rail):
             ),
         ]
 
-        self.reload_rail()
 
     
         
  
 
     # Called to return our list of menu options when right clicking on the plotline rail
-    def get_menu_options(self) -> list[ft.Control]:
+    def get_new_item_menu_options(self) -> list[ft.Control]:
         ''' Returns our menu options for the plotlines rail. In this case just plotlines '''
 
         return [
@@ -129,7 +121,7 @@ class PlotlinesRail(Rail):
     
 
     # Reload the rail whenever we need
-    def reload_rail(self) -> ft.Control:
+    def build(self) -> ft.Control:
         ''' Reloads the plot and plotline rail, useful when switching stories '''
 
         async def _change_sort_method(e: ft.Event):
@@ -235,7 +227,7 @@ class PlotlinesRail(Rail):
 
         menu_gesture_detector = ft.GestureDetector(
             content=content, expand=True, on_hover=self._set_menu_coords,
-            on_secondary_tap=lambda _: self.story.open_menu(self.get_menu_options()), 
+            on_secondary_tap=lambda _: self.story.open_menu(self.get_new_item_menu_options()), 
             hover_interval=20,
         )
 
@@ -276,12 +268,6 @@ class PlotlinesRail(Rail):
         ]
 
       
-
-        # Apply the update
-        try:
-            self.update()
-        except Exception:
-            pass
 
 
 

@@ -16,14 +16,10 @@ import math
 class ContentRail(Rail):
 
     # Constructor
-    def __init__(self, page: ft.Page, story: Story):
+    def __init__(self, story: Story):
         
         # Initialize the parent Rail class first
-        super().__init__(
-            page=page,
-            story=story,
-            directory_path=story.data.get('content_directory_path', '')
-        )
+        super().__init__(story=story)
 
         self.top_row_buttons = [
             ft.SubmenuButton(
@@ -113,7 +109,7 @@ class ContentRail(Rail):
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                         style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         tooltip="New Charts for your story"
-                    ),
+                    ), 
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Relationship Map", 
                         data="character_relationship_map", on_click=self.new_item_clicked, close_on_click=True,
@@ -156,8 +152,6 @@ class ContentRail(Rail):
             ),
         ]
 
-        self.reload_rail()
-
     async def _highlight_rail(self, e):
         ''' Changes our rails background to a transparent color on hover '''
         e.control.content.bgcolor = ft.Colors.with_opacity(0.05, ft.Colors.ON_SURFACE_VARIANT)
@@ -170,7 +164,7 @@ class ContentRail(Rail):
 
 
     # Called to return our list of menu options for the content rail
-    def get_menu_options(self) -> list[ft.Control]:
+    def get_new_item_menu_options(self) -> list[ft.Control]:
 
         return [
             MenuOptionStyle(
@@ -301,7 +295,7 @@ class ContentRail(Rail):
         ]
 
     # Reload the rail whenever we need
-    def reload_rail(self) -> ft.Control:
+    def build(self) -> ft.Control:
         ''' Reloads the content rail '''
 
         menubar = ft.MenuBar(
@@ -334,9 +328,8 @@ class ContentRail(Rail):
 
         # Load our content directory data into the rail
         load_directory_data(
-            page=self.p,
             story=self.story,
-            directory=self.directory_path,
+            directory=self.story.data.get('content_directory_path'),
             rail=self,
             column=content,
         )
@@ -350,7 +343,7 @@ class ContentRail(Rail):
         dt = ft.DragTarget(
             group="widgets", on_will_accept=self._highlight_rail, on_leave=self._stop_highlight_rail,
             content=content,     # Our content is the content we built above
-            on_accept=lambda e: self.move_widget_file(e, self.directory_path)
+            on_accept=lambda e: self.move_widget_file(e, self.story.data.get('content_directory_path'))
         )
         
 
@@ -359,7 +352,7 @@ class ContentRail(Rail):
             content=dt,
             expand=True,
             on_hover=self._set_menu_coords,
-            on_secondary_tap=lambda: self.story.open_menu(self.get_menu_options()),  
+            on_secondary_tap=lambda: self.story.open_menu(self.get_new_item_menu_options()),  
             hover_interval=20,
         )
 
@@ -370,10 +363,6 @@ class ContentRail(Rail):
         ]
         
         
-        # Apply our update
-        try:
-            self.update()
-        except Exception as _:
-            pass
+        
         
 

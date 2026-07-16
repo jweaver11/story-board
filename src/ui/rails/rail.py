@@ -21,20 +21,14 @@ class Rail(IsolatedColumn):
     # Constructor
     def __init__(
         self, 
-        page: ft.Page,                  # Page reference
         story: Story,                   # Story reference
-        directory_path: str,            # Root path that loads this rails content
-        plotline: Plotline = None,      # plotline reference for creating plot points and arcs on plotline rail
     ):
         
         # Initialize the parent Container class first
-        super().__init__(spacing=0, expand=True, scroll="none",)
-            
+        super().__init__(spacing=0, expand=True, scroll="none")
+
         # Store our parameters
-        self.p = page
         self.story = story
-        self.directory_path = directory_path
-        self.plotline = plotline        # Plotlines rail
 
         # Text style for our textfields
         self.text_style = ft.TextStyle(
@@ -60,15 +54,11 @@ class Rail(IsolatedColumn):
         self.item_is_unique = True          # If the new folder, chapter, note, etc. title is unique within its directory
         self.are_submitting = False         # If we are currently submitting this item
 
+    # Returns a list of all the options for the current rail
+    def get_new_item_menu_options(self, e: ft.Event=None) -> list[ft.Control]:
+        return []
 
-    def get_menu_options(self) -> list[ft.Control]:
-        ''' Returns a list of menu options when right clicking child rail '''
-        return []
-    
-    def get_sub_menu_options(self) -> list[ft.Control]:
-        ''' Returns a list of additional menu options when clicking directories in the rail '''
-        return []
-    
+    # Returns a list of template options
     def get_template_options(self, widget_type: str) -> list[ft.Control]:
         ''' Returns a list of template options when right clicking empty space in the rail '''
 
@@ -110,14 +100,6 @@ class Rail(IsolatedColumn):
                 ),
             ]
 
-        # Not used, but maybe used in future for notes or something
-        else:
-            template_options = [
-                ft.MenuItemButton("Blank", data=widget_type, on_click=self.new_item_clicked),
-                ft.MenuItemButton("Research", data=widget_type, on_click=self.new_item_clicked),
-                ft.MenuItemButton("Theme", data=widget_type, on_click=self.new_item_clicked),
-                ft.MenuItemButton("Idea", data=widget_type, on_click=self.new_item_clicked),
-            ]
         return template_options
     
     # Called when a widget is dragged and dropped into this directory
@@ -138,7 +120,7 @@ class Rail(IsolatedColumn):
         #self.story.blocker.update()
         
 
-        if self.p.run_task(widget.move_file, new_directory):
+        if self.page.run_task(widget.move_file, new_directory):
             #self.story.blocker.visible = False
             #self.story.blocker.update()
             return
@@ -153,7 +135,7 @@ class Rail(IsolatedColumn):
 
 
     # Called when new category button or menu option is clicked
-    async def new_item_clicked(self, e):
+    async def new_item_clicked(self, e: ft.Event):
         ''' Handles setting our textfield for new category creation '''
 
             
@@ -183,7 +165,7 @@ class Rail(IsolatedColumn):
 
             case "canvas":
                 await self.story.close_menu()
-                self.p.show_dialog(new_canvas_alert_dlg(self.p, self.story))
+                self.page.show_dialog(new_canvas_alert_dlg(self.page, self.story))
                 return
                         
             case "canvas_board":
@@ -236,49 +218,28 @@ class Rail(IsolatedColumn):
         # If our new title unique (check from on_new_item_change), create the new item
         if self.item_is_unique:
 
-            #blocker.visible = True 
-            #self.story.blocker.update()
-            self.p.pop_dialog()   # Close the textfield dialog
-            await asyncio.sleep(0)   # Wait for the dialog to close before creating the new
-
+            
             match tag:
                 # New categories
                 case "folder":
                     # Create our new category
-                    await self.story.create_folder(directory_path=self.directory_path, name=title)
-
-                # Mini widgets
-                case "plot_point":
-                    if self.plotline is not None:
-                        print("Creating plot point:", title)
-                        await self.plotline.create_plot_point(title)
-                case "arc":
-                    if self.plotline is not None:
-                        print("Creating arc:", title)
-                        await self.plotline.create_arc(title)
-                case "marker":
-                    if self.plotline is not None:
-                        print("Creating marker:", title)
-                        await self.plotline.create_marker(title)
+                    await self.story.create_folder(name=title)
 
                 # All other cases are widgets
                 case _:
                     # Create the widget and reload all our rails
                     await self.story.create_widget(title, tag, chart_type=chart_type if tag == "chart" else None)
 
-            #if self.story.blocker.visible:
-                #self.story.blocker.visible = False
-                #self.story.blocker.update()
+            self.page.pop_dialog()   # Close the textfield dialog
 
-
-
+         
     # Called when new character button or menu option is clicked
-    def new_canvas_clicked(self, e):
+    def new_canvas_clicked(self, e: ft.Event=None):
         ''' Handles setting our textfield for new character creation '''
 
         # Close the menu (if ones is open), which will update the page as well
         self.story.close_menu_instant()   
-        self.p.show_dialog(new_canvas_alert_dlg(self.p, self.story))
+        self.page.show_dialog(new_canvas_alert_dlg(self.page, self.story))
 
     # Called every time the mouse moves over our rail
     async def _set_menu_coords(self, e: ft.PointerEvent):
@@ -286,27 +247,8 @@ class Rail(IsolatedColumn):
         self.story.mouse_x = e.global_position.x 
         self.story.mouse_y = e.global_position.y
 
+
+    #def build(self):
+        #self.set_rail(False)
+
     
-
-    # Called when changes occure that require rail to be reloaded. Should be overwritten by children
-    def reload_rail(self):
-        ''' Sets our rail (extended ft.Container) content and applies the page update '''
-
-        # Set your content for the rail
-        self.content = ft.Column(
-            spacing=0,
-            expand=True,
-            controls=[
-                ft.Text("Base Rail - No specific content"),
-                # Add more controls here as needed
-            ]
-        )
-
-        # Apply the update to UI
-        try:        # Handle first launch
-            self.update()
-        except Exception:
-            pass
-
-        # Return yourself as the control
-        #return self

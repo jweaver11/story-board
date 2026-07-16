@@ -19,9 +19,8 @@ from ui.rails.planning_rail import PlanningRail
 class ActiveRail(ft.Container):
     
     # Constructor
-    def __init__(self, page: ft.Page, story: Story):
+    def __init__(self, story: Story):
     
-        self.p = page  # Store the page reference
         self.story = story  # Store the story reference
   
         # Consistent styling for all our rails
@@ -33,49 +32,26 @@ class ActiveRail(ft.Container):
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
         )
-        #print("active rail width:", self.width)
-
-        # Loads the active rail
-        #self.reload_rail()
-
-    def build(self):
-        self.reload_rail()
         
-    # Called when other workspaces are selected
-    def reload_rail(self, rail: str = None):
+    # Reload our rail on startup
+    def build(self):
+        self.reload_rail(update=False)
+        
+    # Called when a new workspace is selected
+    def reload_rail(self, update: bool=True):
         ''' Reloads the active rail based on the selected workspace in workspaces_rail '''
 
-        # Allows us to force a rail without saving it to data. Useful for maps
-        if rail is not None:
-            selected_rail = rail
-
-        # Otherwise we'll just get it from the story data
-        else:
-            selected_rail = self.story.data.get('selected_rail', "content")
-
+        # Grab our selected rail and re-set our content to a new one of those
+        selected_rail = self.story.data.get('selected_rail', "content")
         match selected_rail:
-            case "content":
-                self.content = ContentRail(self.p, self.story)
-            case "characters":
-                self.content = CharactersRail(self.p, self.story)
+            case "content": self.content = ContentRail(self.story)
+            case "characters": self.content = CharactersRail(self.story)
+            case "plotlines": self.content = PlotlinesRail(self.story)
+            case "world_building": self.content = WorldBuildingRail(self.story)
+            case "canvas": self.content = CanvasRail(self.story)
+            case "planning": self.content = PlanningRail(self.story)
+            case _: self.content = ContentRail(self.story)
                 
-            case "plotlines":
-                self.content = PlotlinesRail(self.p, self.story)
-                
-            case "world_building":
-                self.content = WorldBuildingRail(self.p, self.story)
-                
-            case "canvas":
-                self.content = CanvasRail(self.p, self.story)
-                
-            case "planning":
-                self.content = PlanningRail(self.p, self.story)
-                
-            case _:
-                self.content = ContentRail(self.p, self.story)
-                
-
-        try:
+        # Update except on build where it updates automatically
+        if update: 
             self.update()
-        except Exception:
-            pass

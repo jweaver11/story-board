@@ -14,7 +14,6 @@ import math
 
 
 def load_directory_data(
-    page: ft.Page,                                        # Page reference for overlays if needed    
     story: Story,                                         # Story reference for any story related data
     directory: str,                                       # The directory to load data from
     rail: ft.Control,                                     # The rail this tree view is in
@@ -64,7 +63,7 @@ def load_directory_data(
             new_folder = RailFolder(
                 full_path=full_path,
                 title=capital_dir_path,
-                story=story, page=page,
+                story=story,
                 color=color, rail=rail,
                 is_expanded=is_expanded,
                 father=folder,
@@ -72,7 +71,6 @@ def load_directory_data(
 
             # Since its a folder, load all its content recursively
             load_directory_data(
-                page=page,                                                
                 story=story,                                            
                 directory=full_path,                                      
                 folder=new_folder,                     
