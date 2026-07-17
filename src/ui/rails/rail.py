@@ -16,7 +16,7 @@ from models.isolated_controls.list_view import IsolatedListView
 
 
 @ft.control
-class Rail(IsolatedColumn):
+class Rail(ft.Column):
 
     # Constructor
     def __init__(
