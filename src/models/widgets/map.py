@@ -16,6 +16,7 @@ import asyncio
 from models.mini_widgets.map_location import MapLocation
 from models.dataclasses.canvas_shape import CanvasShape 
 import uuid
+from styles.colors import colors
 
 
 class Map(Widget):
@@ -69,8 +70,8 @@ class Map(Widget):
                 'canvas_data': {
 
                     # Sizing
-                    "width": (data or {}).get('canvas_data', {}).get('width') or 1920,
-                    "height": (data or {}).get('canvas_data', {}).get('height') or 1080,
+                    "width": (data or {}).get('canvas_data', {}).get('width') or 2000,
+                    "height": (data or {}).get('canvas_data', {}).get('height') or 1000,
 
                     # Undo and redo list
                     'undo_list': list(),        #['capture_str1', 'capture_str2']
@@ -111,29 +112,19 @@ class Map(Widget):
             self.color = data.get('color', None)
             
             super().__init__(
-                left=self.position[0],
+                left=self.position[0],  # Give us our position
                 top=self.position[1],
-                width=150, height=50, 
+                width=150, 
                 animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
                 on_secondary_tap=lambda: self.widget.story.open_menu(self.get_label_options()),
                 on_pan_update=self.move_location,
                 on_pan_end=self.save_position,
                 on_double_tap=self.focus_tf,
-                on_tap=self.focus_tf,
+                on_tap_up=self.focus_tf,
                 hover_interval=20, 
-                on_hover=self.set_mouse_cursor,
+                on_hover=self.widget.set_mouse_coords,
                 mouse_cursor=ft.MouseCursor.MOVE,
             )
-
-        # Sets our mouse cursor to text if we're hovering over the textfield, otherwise move
-        async def set_mouse_cursor(self, e: ft.PointerEvent[ft.GestureDetector]):
-            y_pos = e.local_position.y
-            if y_pos < 10 or y_pos > 40:
-                self.mouse_cursor = ft.MouseCursor.MOVE
-            else:
-                self.mouse_cursor = ft.MouseCursor.TEXT
-            self.update()
-            self.widget.set_mouse_coords(e)     # Reset the menu position
 
         # Moves the node on the stack and updates the drawing that connects the edges
         async def move_location(self, e: ft.DragUpdateEvent):
@@ -141,6 +132,7 @@ class Map(Widget):
             # Update us visually
             self.left += e.local_delta.x
             self.top += e.local_delta.y
+            # Clamp near edges
             if self.left < 20:
                 self.left = 0
             if self.left > self.widget.canvas_width - 150:
@@ -159,10 +151,16 @@ class Map(Widget):
             self.widget.update_data(**{'labels': self.widget.data.get('labels', {})})
             self.widget.set_mouse_coords(e)     # Reset the menu position
 
+        # Returns our options for our label
         def get_label_options(self) -> list[MenuOptionStyle]:
 
-            # Handles changing its, edit, color
-            # TODO: Changing color and using color
+            # Changes our label text color in data, on our tf, and updates
+            async def change_label_color(e: ft.Event[ft.MenuItemButton]):
+                await self.widget.story.close_menu()
+                self.color = e.control.data
+                self.widget.update_data(**{'labels': {self.id: {'color': self.color}}})
+                self.label_tf.color = self.color
+                self.update()
 
             # Handles deleteing a label
             async def handle_delete(e: ft.Event[ft.Button]):
@@ -173,7 +171,7 @@ class Map(Widget):
                 self.widget.location_stack.update()
 
             return [
-                MenuOptionStyle(
+                MenuOptionStyle(        # Edit label text
                     ft.MenuItemButton(
                         f"Edit", leading=ft.Icon(ft.Icons.EDIT_OUTLINED, self.color),
                         on_click=self.focus_tf, data="force_focus", 
@@ -181,15 +179,27 @@ class Map(Widget):
                     ),
                     no_effects=True, no_padding=True
                 ),
-                MenuOptionStyle(
-                    ft.MenuItemButton(
-                        f"Delete {self.label}", leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR),
-                        on_click=handle_delete, 
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                MenuOptionStyle(            # Change label color
+                    ft.SubmenuButton(
+                        ft.Row([
+                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.color), 
+                            ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Icon(ft.Icons.ARROW_RIGHT),
+                        ], expand=True),
+                        [
+                            ft.MenuItemButton(
+                                content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
+                                on_click=change_label_color, close_on_click=True, data=color,
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
+                            ) for color in colors
+                        ],
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        tooltip="Change this widget's color"
                     ),
-                    no_effects=True, no_padding=True
+                    no_padding=True, no_effects=True
                 ),
-                MenuOptionStyle(
+                MenuOptionStyle(        # Delete label
                     ft.MenuItemButton(
                         f"Delete {self.label}", leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR),
                         on_click=handle_delete, data={"icon": "location_pin"},
@@ -201,15 +211,14 @@ class Map(Widget):
         
         # Focuses our textfield for editing
         async def focus_tf(self, e: ft.PointerEvent[ft.GestureDetector]):
-            if self.mouse_cursor == ft.MouseCursor.TEXT or e.control.data:
-                await self.widget.story.close_menu()
-                await self.label_tf.focus()
-                self.label_tf.update()
+            await self.widget.story.close_menu()
+            await self.label_tf.focus()
+            self.label_tf.update()
 
         # Build our label control
         def build(self):
             
-
+            # Saves the labels value
             async def save_label(e: ft.Event[ft.TextField]):
                 await self.widget.story.close_menu()
                 self.label = e.control.value
@@ -218,19 +227,20 @@ class Map(Widget):
                 self.label_tf.parent.ignore_interactions = True
                 self.label_tf.parent.update()
 
+            # Text field for editing our label
             self.label_tf = ft.TextField(
                 self.label, color=self.color, 
-                #weight=ft.FontWeight.BOLD, size=12, overflow=ft.TextOverflow.ELLIPSIS,
-                expand=True, #text_align=ft.TextAlign.CENTER
+                text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),
+                expand=True, text_align=ft.TextAlign.CENTER,
                 content_padding=ft.Padding.all(0),
-                on_blur=save_label
+                on_blur=save_label, dense=True, border_radius=4,
+                border_color=ft.Colors.TRANSPARENT,
+                focused_border_color=ft.Colors.PRIMARY,
+                multiline=True,
             )
 
-            self.content = ft.Container(
-                self.label_tf,
-                expand=True, ignore_interactions=True, padding=ft.Padding.symmetric(vertical=10),
-                border=ft.Border.all(1, ft.Colors.RED)
-            )
+            # Set our labels content
+            self.content = ft.Container(self.label_tf, ignore_interactions=True)    # Let Gesture Detector handle all interactions
             
 
     # Creates our location control in data, on the location_stack, and focuses it in the sidebar
@@ -248,7 +258,7 @@ class Map(Widget):
             'id': new_id,
             'label': "New Label",
             'position': self.locked_new_location_position,
-            'color': self.data.get('color', None),
+            'color': "on_surface",
         }
 
         # Add to data and update
@@ -386,8 +396,8 @@ class Map(Widget):
             ], width=self.canvas_width, height=self.canvas_height),
             expand=3, 
             constrained=False,
-            scale_factor=800, boundary_margin=200,
-            min_scale=0.02, max_scale=3.0,
+            scale_factor=800, boundary_margin=500,
+            min_scale=0.01, max_scale=3.0,
         )
 
 

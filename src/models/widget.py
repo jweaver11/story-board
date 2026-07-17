@@ -351,7 +351,7 @@ class Widget(ft.Container):
                     ], expand=True),
                     self.get_color_options(), 
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     tooltip="Change this widget's color"
                 ),
                 no_padding=True, no_effects=True
@@ -440,8 +440,6 @@ class Widget(ft.Container):
                 self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
             await self.story.close_menu()
 
-            
-
         # List for our colors when formatted
         color_controls = [] 
 
@@ -451,7 +449,7 @@ class Widget(ft.Container):
                 ft.MenuItemButton(
                     content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
                     on_click=_change_icon_color, close_on_click=True, data=color,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
                 )
             )
 

@@ -277,7 +277,7 @@ class Document(Widget):
             margin=ft.Margin.symmetric(horizontal=40, vertical=20),
             padding=ft.Padding.all(30),
             border_radius=4,
-            #bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
             content=ft.Container(
                 ft.Column([ft.KeyboardListener(quill_editor, on_key_down=save_quill, expand=True)]),
                 border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
