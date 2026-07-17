@@ -28,7 +28,7 @@ class PlotlineMarker(MiniWidget):
         # If we're new, give default values for our data 
         if self.is_new:
             self.data.update({
-                'tag': "marker", 
+                'tag': "marker",    # Since nothing shown in sidebar, just give it a tag of marker
             }) 
         
     # Child classes override this
@@ -36,9 +36,9 @@ class PlotlineMarker(MiniWidget):
         ''' Creates the controls for the sidebar for this mini widget '''
         return []
 
+    # Update state
     async def start_move(self, e=None):
         ''' Called when we start dragging our plot point. Sets our state to dragging and changes our mouse cursor '''
-
         self.is_dragging = True
         
 

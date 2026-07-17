@@ -49,9 +49,10 @@ class Map(Widget):
                 'show_sidebar': True,
 
                 # Info about the map
-                'draw_mode': True,      # Whether we're in draw mode or not
+                'draw_mode': False,      # Whether we're in draw mode or not
                 'show_background_image': True,      # Whether we show the background image or not
                 'background_image': "map_bg_fantasy.jpg",    # The background image of the map
+
                 'lore': list(),     # List of lores
                 'history': list(),      # List of histories  
 
@@ -83,8 +84,8 @@ class Map(Widget):
         
         # Drawing elements
         self.state = State()
-        self.canvas_width = self.data.get('canvas_data', {}).get('width', 0)    # Ez size grabbing later
-        self.canvas_height = self.data.get('canvas_data', {}).get('height', 0)
+        self.map_width = self.data.get('canvas_data', {}).get('width', 0)    # Ez size grabbing later
+        self.map_height = self.data.get('canvas_data', {}).get('height', 0)
         self.manipulating_shape = False     # Whether we're currently manipulating a shape or not, so we know whether to update our active path or not when dragging
         self.current_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
         self.active_tool: CanvasShape                    # The active shape being added if we're using a tool
@@ -93,11 +94,13 @@ class Map(Widget):
         self.bg_image: ft.Container
         self.canvas: cv.Canvas 
         self.location_stack: ft.Stack
+        self.label_stack: ft.Stack
         self.map_controller: ft.GestureDetector
 
         # Rest of state elements
         self.new_location_position = (200, 200)     # Where new locations go 
         self.locked_new_location_position = (200, 200)
+        self.showing_info: bool = False
 
     # Class for labels on our map, which are like locations but don't have a sidebar info to show
     class Label(ft.GestureDetector):
@@ -109,6 +112,9 @@ class Map(Widget):
             self.label = data.get('label', 'Label')
             self.position = data.get('position', (0, 0))
             self.color = data.get('color', None)
+
+            # State
+            self.is_dragging = False
             
             super().__init__(
                 left=self.position[0],  # Give us our position
@@ -116,17 +122,37 @@ class Map(Widget):
                 width=150, 
                 animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
                 on_secondary_tap=lambda: self.widget.story.open_menu(self.get_label_options()),
-                on_pan_update=self.move_location,
+                on_pan_start=self.start_drag,
+                on_pan_update=self.move_label,
                 on_pan_end=self.save_position,
                 on_double_tap=self.focus_tf,
                 on_tap_up=self.focus_tf,
+                on_enter=self.highlight,
+                on_exit=self.stop_highlight,
                 hover_interval=20, 
                 on_hover=self.widget.set_mouse_coords,
                 mouse_cursor=ft.MouseCursor.MOVE,
             )
 
+        # Highlight the label
+        async def highlight(self, e=None):
+            self.label_tf.parent.shadow = ft.BoxShadow(0, 1, ft.Colors.with_opacity(0.1, self.color))
+            self.update()
+        
+        # Stop highlighting the label
+        async def stop_highlight(self, e=None):
+            if self.is_dragging:
+                return
+            self.label_tf.parent.shadow = None
+            self.update()
+
+        # Update state and close any open menus
+        async def start_drag(self, e=None):
+            self.is_dragging = True
+            await self.widget.story.close_menu()
+
         # Moves the node on the stack and updates the drawing that connects the edges
-        async def move_location(self, e: ft.DragUpdateEvent):
+        async def move_label(self, e: ft.DragUpdateEvent):
             
             # Update us visually
             self.left += e.local_delta.x
@@ -134,21 +160,23 @@ class Map(Widget):
             # Clamp near edges
             if self.left < 20:
                 self.left = 0
-            if self.left > self.widget.canvas_width - 150:
-                self.left = self.widget.canvas_width - 150
+            elif self.left > self.widget.map_width - 150:
+                self.left = self.widget.map_width - 150
             if self.top < 20:
                 self.top = 20
-            if self.top > self.widget.canvas_height - 20: 
-                self.top = self.widget.canvas_height - 20
+            elif self.top > self.widget.map_height - 40: 
+                self.top = self.widget.map_height - 40
             self.update()
             
         # Saves updated position to our data
         async def save_position(self, e: ft.DragEndEvent):
             # Update our data to match our new position
+            self.is_dragging = False
             self.position = (self.left, self.top)
-            self.widget.data.get('labels', {}).get(self.label, {}).update({'position': self.position})
+            self.widget.data.get('labels', {}).get(self.id, {}).update({'position': self.position})
             self.widget.update_data(**{'labels': self.widget.data.get('labels', {})})
             self.widget.set_mouse_coords(e)     # Reset the menu position
+            await self.stop_highlight()
 
         # Returns our options for our label
         def get_label_options(self) -> list[MenuOptionStyle]:
@@ -172,7 +200,7 @@ class Map(Widget):
             return [
                 MenuOptionStyle(        # Edit label text
                     ft.MenuItemButton(
-                        f"Edit", leading=ft.Icon(ft.Icons.EDIT_OUTLINED, self.color),
+                        ft.Text("Edit Label", weight=ft.FontWeight.BOLD, expand=True), leading=ft.Icon(ft.Icons.EDIT_OUTLINED, self.color),
                         on_click=self.focus_tf, data="force_focus", 
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     ),
@@ -200,7 +228,7 @@ class Map(Widget):
                 ),
                 MenuOptionStyle(        # Delete label
                     ft.MenuItemButton(
-                        f"Delete {self.label}", leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR),
+                        ft.Text(f"Delete {self.label}", weight=ft.FontWeight.BOLD, expand=True), leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR),
                         on_click=handle_delete, data={"icon": "location_pin"},
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     ),
@@ -226,6 +254,8 @@ class Map(Widget):
                 self.label_tf.parent.ignore_interactions = True
                 self.label_tf.parent.update()
 
+            
+
             # Text field for editing our label
             self.label_tf = ft.TextField(
                 self.label, color=self.color, 
@@ -239,15 +269,31 @@ class Map(Widget):
             )
 
             # Set our labels content
-            self.content = ft.Container(self.label_tf, ignore_interactions=True)    # Let Gesture Detector handle all interactions
+            self.content = ft.Container(self.label_tf, ignore_interactions=True, border_radius=4)    # Let Gesture Detector handle all interactions
             
+    # Calls parent hide sidebar and updates our state
+    async def hide_sidebar(self, e: ft.Event=None):
+        await super().hide_sidebar(e)
+        self.showing_info = False
 
     # Creates our location control in data, on the location_stack, and focuses it in the sidebar
     async def create_location(self, e: ft.Event[ft.Button]=None):
-        await self.story.close_menu()
+        await self.story.close_menu()   # Close menu
+        # Create the new location and add it to data
         new_location = MapLocation(
-
+            widget=self,
+            
+            is_new=True,
+            data={
+                'position': self.locked_new_location_position, 
+                'title': "New Location",
+            },
         )
+        self.update_data(**{'mini_widgets_data': {new_location.data.get('id'): new_location.data}})
+
+        self.location_stack.controls.append(new_location)   # Add to stack
+        self.location_stack.update()   # Update stack
+        await new_location.show_mini_widget()   # Show in sidebar
     
     # Creates our label control in data and on the location stack
     async def create_label(self, e: ft.Event[ft.Button]=None):
@@ -267,8 +313,8 @@ class Map(Widget):
         self.update_data(**{'labels': self.data.get('labels', {})})
 
         # Add to stack and update
-        self.location_stack.controls.append(self.Label(self, new_data))
-        self.location_stack.update()
+        self.label_stack.controls.append(self.Label(self, new_data))
+        self.label_stack.update()
     
     def create_sidebar_ctrls(self) -> list[ft.Control]:
 
@@ -298,12 +344,15 @@ class Map(Widget):
     # Called when clicking to show our info in the sidebar
     async def show_info(self, e: ft.Event=None):
         await self.story.close_menu()
+        if self.showing_info:   # Already showing info, so no need to re-call it
+            return
         self.sidebar_title.value = self.data.get('title', '')   # Update title to match us
         self.sidebar_body.controls = self.create_sidebar_ctrls()  # Build info sidebar content here
         
         # Applies the update
         if not await self.show_sidebar():
             self.sidebar.update()
+        self.showing_info = True
 
 
     # Sets our background image
@@ -354,7 +403,7 @@ class Map(Widget):
 
         self.bg_image = ft.Container(           # Background container
             ignore_interactions=True,
-            width=self.canvas_width, height=self.canvas_height,
+            width=self.map_width, height=self.map_height,
             image=ft.DecorationImage(       # Background image
                 "map_bg_fantasy.jpg", 
                 #ft.ColorFilter(ft.Colors.with_opacity(1, ft.Colors.BLACK), ft.BlendMode.SOFT_LIGHT),
@@ -365,29 +414,39 @@ class Map(Widget):
 
         self.canvas= cv.Canvas(
             shapes=[],
-            width=self.canvas_width,
-            height=self.canvas_height,
+            width=self.map_width,
+            height=self.map_height,
         )  
 
         # TODO:  
         # Users can choose to create their image or use some default ones, or upload their own
-        # Handle resizing
-        # Our stack for map locations
+        
 
-        self.location_stack = ft.Stack(
-            [self.Label(self, data) for data in self.data.get('labels', {}).values()], 
-            width=self.canvas_width, height=self.canvas_height,
+        # Declare our label stack
+        self.label_stack = ft.Stack(
+            
+            [self.Label(self, data) for data in self.data.get('labels', {}).values()],
+            width=self.map_width, height=self.map_height,
         )
+
+        # Declare our location stack
+        self.location_stack = ft.Stack(
+            [MapLocation(self, data) for data in self.data.get('mini_widgets_data', {}).values()], 
+            width=self.map_width, height=self.map_height,
+        )
+
+
 
         self.map_controller = ft.GestureDetector(
             mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('draw_mode', False) else None, 
             expand=True,
 
             # Drawing event handlers
-            #on_pan_start=self.start_drawing,
+            #on_tap_up=self.add_point,          # Handles so we can add points
+            #on_pan_start=self.start_drawing,   
             #on_pan_update=self.is_drawing,
             #on_pan_end=lambda e: self.save_canvas(),
-            #on_tap_up=self.add_point,      # Handles so we can add points
+            
 
             # Non-drawing event handlers
             on_secondary_tap=lambda: self.story.open_menu(self.get_new_item_options()),
@@ -401,7 +460,8 @@ class Map(Widget):
                 self.canvas,        # Canvas with our map drawing
                 self.map_controller,        # Gesture detector for our map
                 self.location_stack,        # Stack with our map locations
-            ], width=self.canvas_width, height=self.canvas_height),
+                self.label_stack,           # Stack with our map labels
+            ], width=self.map_width, height=self.map_height),
             expand=3, 
             constrained=False,
             scale_factor=800, boundary_margin=500,
@@ -410,9 +470,15 @@ class Map(Widget):
 
 
         
+        # Start with map info build and have our button make sure to create our info if needed
+        self.sidebar_body.controls = self.create_sidebar_ctrls()  
+        self.show_sidebar_button.on_click = self.show_info
 
-        self.sidebar_body.controls = self.create_sidebar_ctrls()  # Build info sidebar content here
 
+        if self.data.get('show_sidebar', True):
+            self.showing_info = True
+
+        
         
         # Set up our main conent
         self.content = ft.Stack([

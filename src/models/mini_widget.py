@@ -47,7 +47,7 @@ class MiniWidget(ft.GestureDetector):
 
         # State trackers
         self.is_dragging: bool = False              # If we are currently dragging our mini widget
-        self.shown_in_sidebar: bool = False     # If we are currently shown on the sidebar and should stay highlighted
+        self.shown_in_sidebar: bool = False         # If we are currently shown on the sidebar and should stay highlighted
         
     # Called every time the mouse moves over our rail
     async def set_mouse_coords(self, e: ft.PointerEvent):
@@ -75,11 +75,13 @@ class MiniWidget(ft.GestureDetector):
         _merge_data(self.data, kwargs)  
         self.widget.update_data(**{'mini_widgets_data': {self.data.get('id', ''): self.data}})
 
-    # Called every time the mouse moves over our rail
-    async def set_mouse_coords(self, e: ft.PointerEvent):
-        ''' Stores our mouse positioning so we know where to open menus '''
-        self.widget.story.mouse_x = e.global_position.x 
-        self.widget.story.mouse_y = e.global_position.y
+    # Saves updated position to our data
+    async def save_position(self, e: ft.DragEndEvent):
+        # Update our data to match our new position
+        self.is_dragging = False
+        self.position = (self.left, self.top)
+        self.update_data(**{'position': self.position})
+        self.widget.set_mouse_coords(e)     # Reset the menu position
 
     def _set_icon(self) -> ft.Icon:
         ''' Returns the icon for this mini widget based on its tag and data '''
@@ -95,7 +97,6 @@ class MiniWidget(ft.GestureDetector):
                 icon = ft.Icons.FOREST
             case "water":
                 icon = ft.Icons.WATER
-
             case _:
                 icon = ft.Icons.LOCATION_PIN
 
@@ -204,8 +205,16 @@ class MiniWidget(ft.GestureDetector):
         self.widget.sidebar_body.controls = self.create_sidebar_ctrls()  # Build info sidebar content here
         
         # Applies the update
-        self.widget.sidebar.update()
-        await self.widget.show_sidebar()
+        if not await self.widget.show_sidebar():
+            self.widget.sidebar.update()
+        if hasattr(self.widget, 'showing_info'):
+            self.widget.showing_info = False
+
+    # Hides our mini widget in the sidebar of our widgets content
+    async def hide_mini_widget(self, e: ft.Event=None):
+        ''' Hides our mini widget '''
+        self.shown_in_sidebar = False
+        await self.widget.hide_sidebar()
 
     # Child classes override this
     def create_sidebar_ctrls(self) -> list:
@@ -214,7 +223,7 @@ class MiniWidget(ft.GestureDetector):
     
     # Set the content of our mini widget
     def build(self):
-        self.left = self.data.get('position', (200, 0))[0]
+        return
 
     
         

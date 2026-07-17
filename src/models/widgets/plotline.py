@@ -615,7 +615,7 @@ class Plotline(Widget):
                 self.plot_point_stack
             ]),
             expand=True, 
-            scale_factor=800, boundary_margin=200,
+            scale_factor=800, boundary_margin=500,
             min_scale=0.02, max_scale=3.0,
         )
         self.content = ft.Stack([
