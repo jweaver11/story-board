@@ -139,7 +139,7 @@ class Plotline(Widget):
 
         #if self.story.workspace.is_resizing:    # If we're resizing just ignore this call
             #return
-        await super().set_mouse_coords(e)
+        super().set_mouse_coords(e)
         
 
         self.left_position = int(e.local_position.x)

@@ -339,16 +339,7 @@ class Canvas(Widget):
         if dx * dx + dy * dy < MINIMUM_SEGMENT_DISTANCE * MINIMUM_SEGMENT_DISTANCE:
             return
         
-        now = time.monotonic()
-        if now - self._last_update_time < MIN_UPDATE_INTERVAL:
-            # Still accumulate path data, just skip the UI update
-            if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") == "draw":
-                if app.settings.data.get('canvas_settings', {}).get('use_path_smoothing', False):
-                    self.current_path.elements.append(cv.Path.LineTo(e.local_position.x, e.local_position.y))
-                self.state.x = e.local_position.x
-                self.state.y = e.local_position.y
-            return
-        self._last_update_time = now
+        
 
         canvas: cv.Canvas =  self.layer_stack.controls[self.active_layer_idx]
         if not canvas.visible:  # Protect when we shouldnt be drawing with it
@@ -743,6 +734,7 @@ class Canvas(Widget):
             visible=visible,
             width=self.canvas_width,
             height=self.canvas_height,
+            opacity=0.99    # Forces dif render layer
         )
 
     # Creates a new sidebar ctrl for each layer as a reorderable drag handle
@@ -1124,7 +1116,8 @@ class Canvas(Widget):
             on_pan_end=self.save_canvas,                # Saves the now complete stroke to our data and canvas capture
             on_tap_up=self.add_shape,                   # Handles adding dots and tools
             width=self.canvas_width,
-            height=self.canvas_height
+            height=self.canvas_height,
+            drag_interval=10
         )
         
         # Holds our drawing so we can interact with it, zoom, pan, etc.

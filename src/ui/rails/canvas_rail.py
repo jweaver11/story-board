@@ -208,6 +208,7 @@ class CanvasRail(Rail):
 
         set_tool_mode_button: ft.IconButton          # Button for setting tool mode on the current brush. Only does anything if in draw mode
         tool_selector: ft.SubmenuButton         # Button on the rail for selecting a tool. Clicking shows our tool options
+        path_smoothing_strength_slider : ft.Slider              # Slider for changing the strength of the smooth stroke effect
 
         width_slider: ft.Slider                 # Slider for changing the paint width
         blur_slider: ft.Slider                  # Slider for changing the paint blur
@@ -215,9 +216,8 @@ class CanvasRail(Rail):
         fill_switch: ft.Switch                    # Switch for changing the paint style to fill or not
         anti_alias_switch: ft.Switch                    # Switch for enabling anti-aliasing or not on the current paint
 
-        use_path_smoothing_switch: ft.Switch        # If we should use path smoothing switch
-        use_smart_stroke_switch: ft.Switch          # If we should use smart stroke switch
-        smart_stroke_strength_slider : ft.Slider              # Switch for enabling path smoothing or not
+        stroke_smoothing_switch: ft.Switch        # If we should use path smoothing switch
+        
         
         stroke_dashed_pattern_switch: ft.Switch            # Switch for enabling dashed strokes or not
         # Something stroke dashed editor here
@@ -530,7 +530,7 @@ class CanvasRail(Rail):
             # Our save button that just changes text from save to overwrite
             save_button = ft.TextButton("Save", on_click=_save_and_close, style=ft.ButtonStyle(mouse_cursor="click")) 
 
-            content = ft.Column([new_custom_brush_name_text_field], scroll="auto") 
+            content = ft.Column([new_custom_brush_name_text_field], scroll="auto", height=self.page.height / 2) 
 
             dlg = ft.AlertDialog(
                 title=ft.Text("Name your custom brush"), 
@@ -637,27 +637,15 @@ class CanvasRail(Rail):
             self.update()
 
         # Updates whether we'll use path smoothing or not
-        def update_paint_path_smoothing(e: ft.Event[ft.Switch]):
+        def update_paint_stoke_smoothing(e: ft.Event[ft.Switch]):
             nonlocal canvas_settings
-            canvas_settings.update({"use_path_smoothing": e.control.value})
+            canvas_settings.update({"use_stroke_smoothing": e.control.value})
             app.settings.update_data(**{"canvas_settings": canvas_settings})
 
-        # Updates whether we'll use path smoothing or not
-        def update_paint_smart_stroke(e: ft.Event[ft.Switch]):
+        # Updates the strength of the smooth stroke effect
+        def update_paint_path_smoothing_strength(e: ft.Event[ft.Slider]):
             nonlocal canvas_settings
-            canvas_settings.update({"use_smart_stroke": e.control.value})
-            app.settings.update_data(**{"canvas_settings": canvas_settings})
-            if e.control.value == True:
-                smart_stroke_strength_slider.visible = True
-            else:
-                smart_stroke_strength_slider.visible = False
-            update_brush_preview()
-            self.update()
-
-        # Updates the strength of the smart stroke effect
-        def update_paint_smart_stroke_strength(e: ft.Event[ft.Slider]):
-            nonlocal canvas_settings
-            canvas_settings.update({"smart_stroke_strength": e.control.value})
+            canvas_settings.update({"path_smoothing_strength": e.control.value})
             app.settings.update_data(**{"canvas_settings": canvas_settings})
 
         # Returns the correct icon for the current stroke cap setting based on current paint settings
@@ -876,6 +864,15 @@ class CanvasRail(Rail):
             on_change_end=update_paint_blur
         )
 
+        # Strength path smoothing effect
+        path_smoothing_strength_slider = ft.Slider(
+            min=1, max=10,  expand=True,
+            divisions=10, value=canvas_settings.get('path_smoothing_strength', 1),
+            label="Strength: {value}",
+            on_change_end=update_paint_path_smoothing_strength,
+            tooltip="The strength of the stroke smoothing effect. Higher values will make strokes appear smoother and more natural",
+        )
+
         # Whether to fill strokes and shapes or not
         fill_switch = ft.Switch(
             True, "Fill Paint", on_change=update_paint_fill,
@@ -884,7 +881,6 @@ class CanvasRail(Rail):
             tooltip="Whether to fill strokes and shapes, or leave them hollow (Transparent)",
             #label_position=ft.LabelPosition.LEFT
         )
-
 
         # If we use anti aliasing or not
         anti_alias_switch = ft.Switch(
@@ -895,29 +891,14 @@ class CanvasRail(Rail):
         )
 
         # Toggles path smoothing
-        use_path_smoothing_switch =  ft.Switch(
-            True, "Path Smoothing", on_change=update_paint_path_smoothing,
+        stroke_smoothing_switch =  ft.Switch(
+            True, "Stroke Smoothing", on_change=update_paint_stoke_smoothing,
             label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
-            value=canvas_settings.get('use_path_smoothing', True),
-            tooltip="Whether to apply path smoothing to brush strokes. Makes the brushes paint color appear smoother, especially at lower opacity values.",
+            value=canvas_settings.get('use_stroke_smoothing', True),
+            tooltip="Makes the brushes paint color appear consistant for an entire stroke, especially at lower opacity values.",
         )
 
-        # If we use smart stroke or not
-        use_smart_stroke_switch =  ft.Switch(
-            True, "Smart Stroke", on_change=update_paint_smart_stroke,
-            label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
-            value=canvas_settings.get('use_smart_stroke', True),
-            tooltip="Whether to apply smart stroke smoothness to brush strokes. Makes the curves of strokes appear smoother",
-        )
-
-        # Strength of the smart stroke effect
-        smart_stroke_strength_slider = ft.Slider(
-            min=0, max=100,  tooltip="The strength of the smart stroke effect.", expand=True,
-            divisions=100, value=canvas_settings.get('smart_stroke_strength', 1),
-            label="Strength: {value}",
-            visible=canvas_settings.get('use_smart_stroke', True),
-            on_change_end=update_paint_smart_stroke_strength
-        )
+        
 
         # Selector for the shape of the ends of strokes
         stroke_cap_selector = ft.SubmenuButton(
@@ -1160,14 +1141,13 @@ class CanvasRail(Rail):
                 # Slider about the blur of the current brush strokes
                 ft.Row([ft.Text("Blur", theme_style=ft.TextThemeStyle.LABEL_LARGE), blur_slider], spacing=0),
 
+                # Slider for the strenght of smooth stroke
+                ft.Row([ft.Text("Path Smoothing", theme_style=ft.TextThemeStyle.LABEL_LARGE), path_smoothing_strength_slider], spacing=0),
+
                 # Fill and anti alias switches
                 fill_switch,    
-                anti_alias_switch,     
-
-                # Path smoothing and smart stroke switches, and smart stroke strength slider
-                use_path_smoothing_switch,      
-                use_smart_stroke_switch,      
-                smart_stroke_strength_slider,
+                anti_alias_switch,    
+                stroke_smoothing_switch,                       
                 
                 # Stroke cap, join, and blend mode selectors
                 ft.MenuBar(
