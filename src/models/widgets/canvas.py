@@ -1143,8 +1143,8 @@ class Canvas(Widget):
                     border=ft.Border.all(2, ft.Colors.OUTLINE),
                     content=self.layer_stack, 
                     expand=False,
-                    width=self.canvas_width + 2,    # Allow spacing for border
-                    height=self.canvas_height + 2,       # Holds our layers stack
+                    width=self.canvas_width,    # Allow spacing for border
+                    height=self.canvas_height,       # Holds our layers stack
                 ),
                 self.canvas_controller      # Controller that sits on top
             ]),

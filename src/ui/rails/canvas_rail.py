@@ -54,14 +54,14 @@ class CanvasRail(Rail):
         #brush_selector.content = build_preview_brush(app.settings.data.get('paint_settings', {}))
         #brush_selector.update()
         print(e.control)
-        await self.update_tool_preview()
+        #await self.update_tool_preview()
 
     async def _save_text_shadow_color(self, e=None):
         app.settings.data['canvas_settings']['text_shadow_color'] = self.text_shadow_color_picker.color
         app.settings.update_data(**{"canvas_settings": {"text_shadow_color": self.text_shadow_color_picker.color}})
         #brush_selector.content = build_preview_brush(app.settings.data.get('paint_settings', {}))
         #brush_selector.update()
-        await self.update_tool_preview()
+        #await self.update_tool_preview()
 
     
             
@@ -182,99 +182,14 @@ class CanvasRail(Rail):
         ]
 
         
-    # Called when selecting one of our brushes
-    def _set_active_brush(self, brush_settings: dict, name: str):
-        ''' Sets the current brush settings to the passed in brush settings dictionary '''
+    
 
-        app.settings.update_data(**{"canvas_settings": {"current_control_mode": "draw", "current_brush_name": name}, "paint_settings": brush_settings})
-
-        #brush_selector.content = build_preview_brush(app.settings.data.get('paint_settings', {}))
-        #brush_selector.update()
-        for widget in self.story.widgets.values():
-            if widget.data.get('tag') == "canvas":
-                if widget.data.get('visible', True):
-                    self.page.run_task(widget.set_mouse_cursor)
-
-    # Set the blend mode label based on current mode in settings
-    def _set_blend_mode_label(self) -> str:
-        ''' Returns the label for the current blend mode. '''
-
-        mode = app.settings.data.get('paint_settings', {}).get('blend_mode', 'src_over')
-        if mode is None:
-            return "None"
-        match mode:
-            case "src_over": return "None"
-            case "color": return "Color"
-            case "color_burn": return "Color Burn"
-            case "color_dodge": return "Color Dodge"
-            case "darken": return "Darken"
-            case "difference": return "Difference"
-            case "dst": return "Destination"
-            case "dst_a_top": return "Destination Atop Source"
-            case "dst_in": return "Destination In"
-            case "dst_out": return "Destination Out"
-            case "dst_over": return "Destination Over"
-            case "exclusion": return "Exclusion"
-            case "hard_light": return "Hard Light"
-            case "hue": return "Hue"
-            case "lighten": return "Lighten"
-            case "luminosity": return "Luminosity"
-            case "modulate": return "Modulate"
-            case "multiply": return "Multiply"
-            case "overlay": return "Overlay"
-            case "plus": return "Plus"
-            case "saturation": return "Saturation"
-            case "screen": return "Screen"
-            case "soft_light": return "Soft Light"
-            case "src": return "Source"
-            case "src_a_top": return "Source Atop Destination"
-            case "src_in": return "Source In"
-            case "src_out": return "Source Out"
-            case "xor": return "XOR"
-            case _: return mode.replace("_", " ").title()
+    
         
 
     
     
-    # Updates any live text tools if we changed a setting that would affect it
-    async def update_tool_preview(self):
-        decoration = app.settings.data.get('canvas_settings', {}).get('text_shape_decoration', "none")
-        match decoration:
-            case "Underline": text_decoration = ft.TextDecoration.UNDERLINE
-            case "Overline": text_decoration = ft.TextDecoration.OVERLINE
-            case "Line Through": text_decoration = ft.TextDecoration.LINE_THROUGH
-            case _: text_decoration = None
-        for widget in self.story.widgets.values():
-            if widget.data.get('tag') == "canvas" and widget.data.get('visible', False):
-                if widget.manipulating_shape:
-                   
-                    # Fix any paint changes
-                    widget.active_tool.paint.color = app.settings.data.get('paint_settings', {}).get('color', ft.Colors.BLACK) if app.settings.data.get('use_paint_for_shapes', True) else ft.Colors.BLACK
-                    widget.active_tool.paint.stroke_width=app.settings.data.get('paint_settings', {}).get('stroke_width', 3) if app.settings.data.get('use_paint_for_shapes', True) else 3
-                    widget.active_tool.paint.style=app.settings.data.get('paint_settings', {}).get('style', ft.PaintingStyle.STROKE)
-                    widget.active_tool.paint.stroke_cap=app.settings.data.get('paint_settings', {}).get('stroke_cap', "round") if app.settings.data.get('use_paint_for_shapes', True) else "round"
-                    widget.active_tool.paint.stroke_join=app.settings.data.get('paint_settings', {}).get('stroke_join', "round") if app.settings.data.get('use_paint_for_shapes', True) else "round"
-                    widget.active_tool.paint.blur_image=app.settings.data.get('paint_settings', {}).get('blur_image', 0) if app.settings.data.get('use_paint_for_shapes', True) else 0
-                    widget.active_tool.paint.anti_alias=app.settings.data.get('paint_settings', {}).get('anti_alias', True) if app.settings.data.get('use_paint_for_shapes', True) else True
-                
-                    if widget.active_tool.shape_type == "text":
-                        widget.active_tool.cv_shape.style = ft.TextStyle(
-                            size=app.settings.data.get('canvas_settings', {}).get('text_shape_size', 20),
-                            weight=ft.FontWeight.BOLD if app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False) else ft.FontWeight.NORMAL,
-                            color=app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE),
-                            italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
-                            decoration=text_decoration,
-                            #shadow
-                            letter_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0),
-                            word_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0),
-                        )
-                    elif widget.active_tool.shape_type == "rectangle":
-                        widget.active_tool.cv_shape.border_radius = ft.BorderRadius.all(
-                            app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0)
-                        )
-
-                    widget.active_tool.cv_shape.update()
-                    break
+    
 
     # Build the canvas rail
     def build(self):
@@ -297,11 +212,12 @@ class CanvasRail(Rail):
         width_slider: ft.Slider                 # Slider for changing the paint width
         blur_slider: ft.Slider                  # Slider for changing the paint blur
 
-        fill_paint_switch: ft.Switch                    # Switch for changing the paint style to fill or not
+        fill_switch: ft.Switch                    # Switch for changing the paint style to fill or not
         anti_alias_switch: ft.Switch                    # Switch for enabling anti-aliasing or not on the current paint
 
-        stroke_smoothing_switch: ft.Switch                # Switch for enabling path smoothing or not
-        stroke_smoothing_strength_slider: ft.Slider                # Slider for changing the path smoothing amount
+        use_path_smoothing_switch: ft.Switch        # If we should use path smoothing switch
+        use_smart_stroke_switch: ft.Switch          # If we should use smart stroke switch
+        smart_stroke_strength_slider : ft.Slider              # Switch for enabling path smoothing or not
         
         stroke_dashed_pattern_switch: ft.Switch            # Switch for enabling dashed strokes or not
         # Something stroke dashed editor here
@@ -311,69 +227,223 @@ class CanvasRail(Rail):
         blend_mode_selector: ft.SubmenuButton            # Button for selecting the blend mode of the current paint
 
 
-        # Called when changing paint width
-        async def _paint_width_changed(e: ft.Event[ft.Slider]):
-            new_width = int(e.control.value)
-            # Change the data directly
-            app.settings.update_data(**{"paint_settings": {"stroke_width": new_width}})
+        # Updates any live text tools if we changed a setting that would affect it
+        def update_tool_preview():
+            nonlocal canvas_settings, paint_settings
+            decoration = canvas_settings.get('text_shape_decoration', "none")
+            match decoration:
+                case "Underline": text_decoration = ft.TextDecoration.UNDERLINE
+                case "Overline": text_decoration = ft.TextDecoration.OVERLINE
+                case "Line Through": text_decoration = ft.TextDecoration.LINE_THROUGH
+                case _: text_decoration = None
 
-            
+            # Check any visible canvases
+            for widget in self.story.workspace.tab_view.controls:
+                if widget.data.get('tag') == "canvas":
 
-        # Called when changing paint anti-aliasing
-        async def _paint_anti_alias_changed(e: ft.Event[ft.Switch]):
-            new_anti_alias = e.control.value
-            app.settings.update_data(**{"paint_settings": {"anti_alias": new_anti_alias}})
-            
+                    # If they're manipulating a shape, adjust the paint settings to match
+                    if widget.manipulating_shape:
 
-        # Add fill or not to our style based on teh switch state
-        async def _paint_fill_changed(e: ft.Event[ft.Switch]):
-            is_fill = e.control.value
-            if is_fill:
-                app.settings.data['paint_settings']['style'] = app.settings.data['paint_settings']['style'] + "_fill"
+                        # TODO: Write update function in the canvas that re-grabs the correct paint settings from the app data and applies it to the shape
+                        # Then just call that here, or before the manipulating_shape check
+                    
+                        # Fix any paint changes
+                        widget.active_tool.paint.color = app.settings.data.get('update_paint_blend_mode', {}).get('color', ft.Colors.BLACK) if canvas_settings.get('use_paint_for_shapes', True) else ft.Colors.BLACK
+                        widget.active_tool.paint.stroke_width=app.settings.data.get('update_paint_blend_mode', {}).get('stroke_width', 3) if canvas_settings.get('use_paint_for_shapes', True) else 3
+                        widget.active_tool.paint.style=app.settings.data.get('update_paint_blend_mode', {}).get('style', ft.PaintingStyle.STROKE)
+                        widget.active_tool.paint.stroke_cap=app.settings.data.get('update_paint_blend_mode', {}).get('stroke_cap', "round") if canvas_settings.get('use_paint_for_shapes', True) else "round"
+                        widget.active_tool.paint.stroke_join=app.settings.data.get('update_paint_blend_mode', {}).get('stroke_join', "round") if canvas_settings.get('use_paint_for_shapes', True) else "round"
+                        widget.active_tool.paint.blur_image=app.settings.data.get('update_paint_blend_mode', {}).get('blur_image', 0) if canvas_settings.get('use_paint_for_shapes', True) else 0
+                        widget.active_tool.paint.anti_alias=app.settings.data.get('update_paint_blend_mode', {}).get('anti_alias', True) if canvas_settings.get('use_paint_for_shapes', True) else True
+                    
+                        if widget.active_tool.shape_type == "text":
+                            widget.active_tool.cv_shape.style = ft.TextStyle(
+                                size=app.settings.data.get('canvas_settings', {}).get('text_shape_size', 20),
+                                weight=ft.FontWeight.BOLD if app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False) else ft.FontWeight.NORMAL,
+                                color=app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE),
+                                italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
+                                decoration=text_decoration,
+                                #shadow
+                                letter_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0),
+                                word_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0),
+                            )
+                        elif widget.active_tool.shape_type == "rectangle":
+                            widget.active_tool.cv_shape.border_radius = ft.BorderRadius.all(
+                                app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0)
+                            )
+
+                        widget.active_tool.cv_shape.update()
+                        break
+
+        # Set the color pickers color upon change
+        def set_color(e: ft.Event[ColorPicker]):
+            color_picker.color = e.data
+
+        # Saves our color to data and updates the brush selector
+        def save_color(e=None):
+            paint_settings.update({"color": color_picker.color})
+            app.settings.update_data(**{"paint_settings": paint_settings})
+            update_brush_preview()
+            #update_tool_icon()
+            color_selector.trailing.color = color_picker.color
+            #tool_selector.trailing.color = color_picker.color
+            self.update()
+
+        # Sets current control mode to drawing
+        def set_draw_mode(e=None):
+            nonlocal canvas_settings, paint_settings, brush_selector, set_draw_mode_button, save_custom_brush_button
+            canvas_settings['current_control_mode'] = "draw"
+            if app.settings.data.get('paint_settings', {}).get('blend_mode', "") == "clear":
+                paint_settings['blend_mode'] = "src_over"
+            app.settings.update_data(**{'paint_settings': paint_settings, 'canvas_settings': canvas_settings})
+            # Update UI
+            update_brush_preview()
+            brush_selector.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            color_selector.trailing.color = paint_settings.get('color', "#000000")
+            set_draw_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            set_draw_mode_button.icon = ft.Icons.BRUSH_ROUNDED
+            set_tool_mode_button.bgcolor = None
+            set_tool_mode_button.icon = ft.Icons.BUILD_OUTLINED
+            tool_selector.style.bgcolor = None
+            save_custom_brush_button.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            save_custom_brush_button.disabled = False
+            self.update()
+
+        # Updates the brush preview canvas with the current brush settings upon changes
+        def update_brush_preview():
+            brush_selector.content = build_preview_brush(paint_settings)
+
+        # Build a small preview of current or passed in brush settings to show in the brush selector
+        def build_preview_brush(brush_settings: dict=None) -> ft.Control:
+            nonlocal paint_settings
+
+            # Set current settings or passed in settings
+            if brush_settings is None:
+                brush_settings = paint_settings.copy()
             else:
-                app.settings.data['paint_settings']['style'] = app.settings.data['paint_settings']['style'].replace("_fill", "")
+                brush_settings = brush_settings.copy()
+
+            # Create our preview canvas. Paint like w=100, and h=30. Extra height is justp adding
+            preview_canvas = cv.Canvas(width=105, height=35)
+
+            # Set max values of paint so that it fits normally on our small preview
+            if brush_settings.get('stroke_width', 3) > 6:
+                brush_settings['stroke_width'] = 6
+            if brush_settings.get('blur_image', 0) > 6:
+                brush_settings['blur_image'] = 6
+            brush_settings['blend_mode'] = None     # Turn off blend mode
+
+            # Paint the stroke with safe paint settings
+            preview_canvas.shapes = [
+                cv.Path([
+                    cv.Path.MoveTo(5, 25),
+                    cv.Path.CubicTo(5, 25, 10, 16, 50, 15),
+                    cv.Path.CubicTo(50, 15, 90, 14, 100, 5)
+                ], brush_settings)
+            ]
+            return preview_canvas   # Return the canvas
+        
+        # Sets current brush settings using passed in brush settings
+        def set_active_brush(brush_settings: dict, name: str):
+            nonlocal canvas_settings, paint_settings
+            canvas_settings.update({"current_control_mode": {'current_control_mode': "draw", 'current_brush_name': name}})
+            paint_settings.update(**brush_settings)
+            app.settings.update_data(**{"canvas_settings": canvas_settings, "paint_settings": brush_settings})
+            update_brush_preview()
+            set_draw_mode()
+            self.update()
+
+
+        # builds a list of our built in and custom brush options for our brush selector when its open
+        def get_brush_options() -> list[ft.Control]:
+            ''' Gets our brush options for the popup menu. '''
             
+            # Default brush settings to creating non-custom brushes
+            default_brush_settings = {
+                'color': "#FFFFFF",   
+                'stroke_width': 3,
+                'style': "stroke",
+                'stroke_cap': "round",
+                'stroke_join': "round",
+                'stroke_miter_limit': 10, 
+                'stroke_dash_pattern': None,
+                'anti_alias': True,
+                'blur_image': 0,
+                'blend_mode': "src_over",
+            }
+            # Settings for default shadow brush
+            shadow_brush_settings = {
+                'color': "#40000000",   
+                'stroke_width': 20,
+                'style': "stroke",
+                'stroke_cap': "round",
+                'stroke_join': "round",
+                'stroke_miter_limit': 10, 
+                'stroke_dash_pattern': None,
+                'anti_alias': True,
+                'blur_image': 10,
+            }
 
-        async def _paint_stroke_cap_changed(e: ft.Event[ft.SubmenuButton]):
-            new_stroke_cap = e.control.content.lower()
-            app.settings.update_data(**{"paint_settings": {"stroke_cap": new_stroke_cap}})
-            
+            # Start by building our default brush options
+            options = [
+                ft.Text("Default Brushes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4)),   # Placeholder for shapes section
+                ft.MenuItemButton(
+                    data=default_brush_settings,
+                    content=ft.Container(
+                        ft.Row([ft.Text("Default", expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(default_brush_settings)], spacing=20),
+                        clip_behavior=ft.ClipBehavior.HARD_EDGE
+                    ),
+                    on_click=lambda _: set_active_brush(default_brush_settings, name="Default"),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+                ),    
+                ft.MenuItemButton(
+                    data=default_brush_settings,
+                    content=ft.Container(
+                        ft.Row([ft.Text("Shadow", expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(shadow_brush_settings)], spacing=20),
+                        clip_behavior=ft.ClipBehavior.HARD_EDGE
+                    ),
+                    on_click=lambda _: set_active_brush(shadow_brush_settings, name="Shadow"),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+                ),        
+                    
 
-        async def _paint_stroke_join_changed(e: ft.Event[ft.SubmenuButton]):
-            new_stroke_join = e.control.content.lower()
-            app.settings.update_data(**{"paint_settings": {"stroke_join": new_stroke_join}})
-            
+                ft.Divider(),   # Placeholder for shapes section
+                ft.Text("Saved Brushes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4)),   # Placeholder for shapes section
+            ]
 
-        # Called when changing paint stroke blur
-        async def _paint_stroke_blur_changed(e: ft.Event[ft.Slider]):
-            app.settings.update_data(**{"paint_settings": {"blur_image": int(e.control.value)}})
-            
-            
+            # Go through our saved brushes and add options to select them
+            for name, brush_settings in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}).items():
+                options.append(
+                    ft.MenuItemButton(
+                        data=brush_settings,
+                        content=ft.Container(
+                            ft.Row([ft.Text(name.capitalize(), expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(brush_settings)], spacing=20),
+                            clip_behavior=ft.ClipBehavior.HARD_EDGE
+                        ),
+                        on_click=lambda _, bs=brush_settings, n=name: set_active_brush(bs, n),
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+                    )
+                )
 
-        async def _paint_blend_mode_changed(e: ft.Event[ft.SubmenuButton]):
-            mode = e.control.data
-
-            # Set the new mode and label
-            app.settings.update_data(**{"paint_settings": {"blend_mode": mode}})
-
-            
-
-
+            return options
+        
         # Called to save our active brush settings as a custom brush we can load later (Excludes color and opacity)
-        def _save_custom_brush_clicked(e=None):
+        def save_custom_brush_clicked(e=None):
             ''' Shows our existing brush options and allows us to override or save as a new brush '''
 
             # Saves the current name and closes the dialog
             async def _save_and_close(e=None): 
 
-                nonlocal name
+                nonlocal name, paint_settings
                 safe_name = return_safe_name(name)
 
                 # Save current brush settings as a new custom brush
-                brush_settings = app.settings.data['paint_settings'].copy()
-                app.settings.data['canvas_settings']['saved_brushes'][safe_name] = brush_settings
+                app.settings.data['canvas_settings']['saved_brushes'][safe_name] = paint_settings.copy()
                 app.settings.update_data(**{"canvas_settings": {"saved_brushes": app.settings.data['canvas_settings']['saved_brushes']}})
 
+                self.page.pop_dialog()
+                brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+                self.update()
 
             # Deletes a color
             async def _delete_custom_brush(e):
@@ -388,6 +458,9 @@ class CanvasRail(Rail):
                 # Remove the control from the dialog
                 dlg.content.controls = [ctrl for ctrl in content.controls if ctrl.data != name]   
                 content.update()
+
+                brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+                self.update()
 
                 # If we were going to override it but instead deleted it, apply that UI change
                 if name == new_custom_brush_name_text_field.value:
@@ -446,10 +519,10 @@ class CanvasRail(Rail):
                 e.control.update()
 
             # Textfield for naming custom color
-            new_custom_brush_name_text_field = TextField(
+            new_custom_brush_name_text_field = ft.TextField(
                 label="Brush Name", autofocus=True, on_submit=_save_and_close, dense=True,
-                capitalization=ft.TextCapitalization.SENTENCES, expand=True,
-                on_change=_check_name_change,
+                capitalization=ft.TextCapitalization.SENTENCES, #expand=True,
+                on_change=_check_name_change, 
             )
 
             name: str = None
@@ -457,11 +530,7 @@ class CanvasRail(Rail):
             # Our save button that just changes text from save to overwrite
             save_button = ft.TextButton("Save", on_click=_save_and_close, style=ft.ButtonStyle(mouse_cursor="click")) 
 
-            content = ft.Column(
-                tight=True,
-                scroll="auto",
-                controls=[new_custom_brush_name_text_field], 
-            ) 
+            content = ft.Column([new_custom_brush_name_text_field], scroll="auto") 
 
             dlg = ft.AlertDialog(
                 title=ft.Text("Name your custom brush"), 
@@ -490,165 +559,8 @@ class CanvasRail(Rail):
 
             self.page.show_dialog(dlg)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-        # Set the color pickers color upon change
-        def set_color(e: ft.Event[ColorPicker]):
-            color_picker.color = e.data
-
-        # Saves our color to data and updates the brush selector
-        def save_color(e=None):
-            paint_settings.update({"color": color_picker.color})
-            app.settings.update_data(**{"paint_settings": paint_settings})
-            update_brush_preview()
-            #update_tool_icon()
-            color_selector.trailing.color = color_picker.color
-            #tool_selector.trailing.color = color_picker.color
-            self.update()
-
-        # Sets current control mode to drawing
-        def set_draw_mode(e=None):
-            nonlocal canvas_settings, paint_settings, brush_selector, set_draw_mode_button, save_custom_brush_button
-            canvas_settings['current_control_mode'] = "draw"
-            if app.settings.data.get('paint_settings', {}).get('blend_mode', "") == "clear":
-                paint_settings['blend_mode'] = "src_over"
-            app.settings.update_data(**{'paint_settings': paint_settings, 'canvas_settings': canvas_settings})
-
-            # Update the preview and background color
-            update_brush_preview()
-            brush_selector.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-
-            # Update buttons
-            set_draw_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-            set_draw_mode_button.icon = ft.Icons.BRUSH_ROUNDED
-            set_tool_mode_button.bgcolor = None
-            set_tool_mode_button.icon = ft.Icons.BUILD_OUTLINED
-            save_custom_brush_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-            save_custom_brush_button.disabled = False
-            self.update()
-
-        # Updates the brush preview canvas with the current brush settings upon changes
-        def update_brush_preview():
-            brush_selector.content = build_preview_brush(paint_settings)
-
-        # Build a small preview of current or passed in brush settings to show in the brush selector
-        def build_preview_brush(brush_settings: dict=None) -> ft.Control:
-            nonlocal paint_settings
-
-            # Set current settings or passed in settings
-            if brush_settings is None:
-                brush_settings = paint_settings.copy()
-            else:
-                brush_settings = brush_settings.copy()
-
-            # Create our preview canvas. Paint like w=100, and h=30. Extra height is justp adding
-            preview_canvas = cv.Canvas(width=105, height=35)
-
-            # Set max values of paint so that it fits normally on our small preview
-            if brush_settings.get('stroke_width', 3) > 6:
-                brush_settings['stroke_width'] = 6
-            if brush_settings.get('blur_image', 0) > 6:
-                brush_settings['blur_image'] = 6
-            brush_settings['blend_mode'] = None     # Turn off blend mode
-
-            # Paint the stroke with safe paint settings
-            preview_canvas.shapes = [
-                cv.Path([
-                    cv.Path.MoveTo(5, 25),
-                    cv.Path.CubicTo(5, 25, 10, 16, 50, 15),
-                    cv.Path.CubicTo(50, 15, 90, 14, 100, 5)
-                ], brush_settings)
-            ]
-
-            return preview_canvas   # Return the canvas
-
-        # builds a list of our built in and custom brush options for our brush selector when its open
-        def get_brush_options() -> list[ft.Control]:
-            ''' Gets our brush options for the popup menu. '''
-            
-            # Default brush settings to creating non-custom brushes
-            default_brush_settings = {
-                'color': "#FFFFFF",   
-                'stroke_width': 3,
-                'style': "stroke",
-                'stroke_cap': "round",
-                'stroke_join': "round",
-                'stroke_miter_limit': 10, 
-                'stroke_dash_pattern': None,
-                'anti_alias': True,
-                'blur_image': 0,
-                'blend_mode': "src_over",
-            }
-            # Settings for default shadow brush
-            shadow_brush_settings = {
-                'color': "#40000000",   
-                'stroke_width': 20,
-                'style': "stroke",
-                'stroke_cap': "round",
-                'stroke_join': "round",
-                'stroke_miter_limit': 10, 
-                'stroke_dash_pattern': None,
-                'anti_alias': True,
-                'blur_image': 10,
-            }
-
-            # Start by building our default brush options
-            options = [
-                ft.Text("Default Brushes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4)),   # Placeholder for shapes section
-                ft.MenuItemButton(
-                    data=default_brush_settings,
-                    content=ft.Container(
-                        ft.Row([ft.Text("Default", expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(default_brush_settings)], spacing=20),
-                        clip_behavior=ft.ClipBehavior.HARD_EDGE
-                    ),
-                    on_click=lambda _: self._set_active_brush(default_brush_settings, name="Default"),
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-                ),    
-                ft.MenuItemButton(
-                    data=default_brush_settings,
-                    content=ft.Container(
-                        ft.Row([ft.Text("Shadow", expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(shadow_brush_settings)], spacing=20),
-                        clip_behavior=ft.ClipBehavior.HARD_EDGE
-                    ),
-                    on_click=lambda _: self._set_active_brush(shadow_brush_settings, name="Shadow"),
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-                ),        
-                    
-
-                ft.Divider(),   # Placeholder for shapes section
-                ft.Text("Saved Brushes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4)),   # Placeholder for shapes section
-            ]
-
-            # Go through our saved brushes and add options to select them
-            for name, brush_settings in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}).items():
-                options.append(
-                    ft.MenuItemButton(
-                        data=brush_settings,
-                        content=ft.Container(
-                            ft.Row([ft.Text(name.capitalize(), expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(brush_settings)], spacing=20),
-                            clip_behavior=ft.ClipBehavior.HARD_EDGE
-                        ),
-                        on_click=lambda _, bs=brush_settings, n=name: self._set_active_brush(bs, n),
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-                    )
-                )
-
-            return options
-
         def update_tool_icon():
             nonlocal canvas_settings
-
             in_tool_mode = canvas_settings.get('current_control_mode', "") == "tool"
             match app.settings.data.get('canvas_settings', {}).get('current_tool_name', ""):
                 case "erase": 
@@ -677,18 +589,164 @@ class CanvasRail(Rail):
             nonlocal canvas_settings, paint_settings, brush_selector, set_tool_mode_button, save_custom_brush_button
             canvas_settings['current_control_mode'] = "tool"
             app.settings.update_data(**{'canvas_settings': canvas_settings})
-
-            # Update the preview and background color
-            brush_selector.style.bgcolor = None
-
             # Update buttons
+            brush_selector.style.bgcolor = None
             set_draw_mode_button.bgcolor = None
             set_draw_mode_button.icon = ft.Icons.BRUSH_OUTLINED
             set_tool_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
             set_tool_mode_button.icon = ft.Icons.BUILD_ROUNDED
-            save_custom_brush_button.bgcolor = None
+            tool_selector.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            save_custom_brush_button.style.bgcolor = None
             save_custom_brush_button.disabled = True
             self.update() 
+
+        # Called when changing paint width
+        def update_paint_width(e: ft.Event[ft.Slider]):
+            nonlocal paint_settings
+            paint_settings.update({"stroke_width": int(e.control.value)})
+            app.settings.update_data(**{"paint_settings": paint_settings})
+            update_brush_preview()
+            self.update()
+
+        # Called when changing paint width
+        def update_paint_blur(e: ft.Event[ft.Slider]):
+            nonlocal paint_settings
+            paint_settings.update({"blur_image": int(e.control.value)})
+            app.settings.update_data(**{"paint_settings": paint_settings})
+            update_brush_preview()
+            self.update()
+
+        # Add fill or not to our style based on teh switch state
+        def update_paint_fill(e: ft.Event[ft.Switch]):
+            nonlocal paint_settings
+            is_fill = e.control.value
+            if is_fill:
+                paint_settings.update({"style": paint_settings['style'] + "_fill"})
+            else:
+                paint_settings.update({"style": paint_settings['style'].replace("_fill", "")})
+            app.settings.update_data(**{"paint_settings": paint_settings})
+            update_brush_preview()
+            self.update()
+
+        # Called when changing paint anti-aliasing
+        def update_paint_anti_alias(e: ft.Event[ft.Switch]):
+            nonlocal paint_settings
+            paint_settings.update({"anti_alias": e.control.value})
+            app.settings.update_data(**{"paint_settings": paint_settings})
+            update_brush_preview()
+            self.update()
+
+        # Updates whether we'll use path smoothing or not
+        def update_paint_path_smoothing(e: ft.Event[ft.Switch]):
+            nonlocal canvas_settings
+            canvas_settings.update({"use_path_smoothing": e.control.value})
+            app.settings.update_data(**{"canvas_settings": canvas_settings})
+
+        # Updates whether we'll use path smoothing or not
+        def update_paint_smart_stroke(e: ft.Event[ft.Switch]):
+            nonlocal canvas_settings
+            canvas_settings.update({"use_smart_stroke": e.control.value})
+            app.settings.update_data(**{"canvas_settings": canvas_settings})
+            if e.control.value == True:
+                smart_stroke_strength_slider.visible = True
+            else:
+                smart_stroke_strength_slider.visible = False
+            update_brush_preview()
+            self.update()
+
+        # Updates the strength of the smart stroke effect
+        def update_paint_smart_stroke_strength(e: ft.Event[ft.Slider]):
+            nonlocal canvas_settings
+            canvas_settings.update({"smart_stroke_strength": e.control.value})
+            app.settings.update_data(**{"canvas_settings": canvas_settings})
+
+        # Returns the correct icon for the current stroke cap setting based on current paint settings
+        def get_stroke_cap_icon() -> ft.Icon:
+            nonlocal paint_settings
+            stroke_cap = paint_settings.get('stroke_cap', 'butt')
+            if stroke_cap == 'round': return ft.Icons.CIRCLE_OUTLINED
+            elif stroke_cap == 'square':return ft.Icons.SQUARE_OUTLINED
+            else: return ft.Icons.CROP_SQUARE_OUTLINED
+
+        # Updates the stroke cap of the current paint
+        def update_paint_stroke_cap(e: ft.Event[ft.MenuItemButton]):
+            nonlocal paint_settings
+            new_stroke_cap = e.control.content.lower()
+            paint_settings['stroke_cap'] = new_stroke_cap
+            app.settings.update_data(**{"paint_settings": {"stroke_cap": new_stroke_cap}})
+            stroke_cap_selector.trailing.icon = get_stroke_cap_icon()
+            update_brush_preview()
+            self.update()
+
+        # Returns the correct icon for the current stroke join setting based on current paint settings
+        def get_stroke_join_icon() -> ft.Icon:
+            nonlocal paint_settings
+            stroke_join = paint_settings.get('stroke_join', 'miter')
+            if stroke_join == 'round': return ft.Icons.CIRCLE_OUTLINED
+            elif stroke_join == 'bevel': return ft.Icons.SQUARE_OUTLINED
+            else: return ft.Icons.CROP_SQUARE_OUTLINED
+
+        # Updates the stroke join of the current paint
+        async def update_paint_stroke_join(e: ft.Event[ft.SubmenuButton]):
+            nonlocal paint_settings
+            new_stroke_join = e.control.content.lower()
+            paint_settings['stroke_join'] = new_stroke_join
+            app.settings.update_data(**{"paint_settings": {"stroke_join": new_stroke_join}})
+            stroke_join_selector.trailing.icon = get_stroke_join_icon()
+            update_brush_preview()
+            self.update()
+
+        # Set the blend mode label based on current mode in settings
+        def set_blend_mode_label() -> str:
+            nonlocal paint_settings
+            mode = paint_settings.get('blend_mode', 'src_over')
+            if mode is None:
+                return f"Blend Mode: None"
+            return f"Blend Mode: {mode.replace("_", " ").title()}"
+            
+        # Get the options for blend modes
+        def get_blend_mode_options() -> list[ft.Control]:
+            ''' Gets our blend mode options for the popup menu. '''
+
+            return [
+                ft.MenuItemButton("None",  on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data=None, tooltip="No blend mode"),
+                ft.MenuItemButton("Color", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="color", tooltip="Take the hue and saturation of the source image, and the luminosity of the destination image"),
+                ft.MenuItemButton("Color Burn", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="color_burn", tooltip="Divide the inverse of the destination by the source, and inverse the result"),
+                ft.MenuItemButton("Color Dodge", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="color_dodge", tooltip="Divide the destination by the inverse of the source"),
+                ft.MenuItemButton("Darken", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="darken", tooltip="Composite the source and destination image by choosing the lowest value from each color channel"),
+                ft.MenuItemButton("Difference", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="difference", tooltip="Subtract the smaller value from the bigger value for each channel"),
+                ft.MenuItemButton("Destination", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst", tooltip="Drop the source image, only paint the destination image"),
+                ft.MenuItemButton("Destination Atop Source", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst_a_top", tooltip="Composite the destination image over the source image, but only where it overlaps the source"),
+                ft.MenuItemButton("Destination In", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst_in", tooltip="Show the destination image, but only where the two images overlap. The source image is not rendered, it is treated merely as a mask. The color channels of the source are ignored, only the opacity has an effect"),
+                ft.MenuItemButton("Destination Out", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst_out", tooltip="Show the destination image, but only where the two images do not overlap. The source image is not rendered, it is treated merely as a mask. The color channels of the source are ignored, only the opacity has an effect"),
+                ft.MenuItemButton("Destination Over", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst_over", tooltip="Composite the source image under the destination image"),
+                ft.MenuItemButton("Exclusion", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="exclusion", tooltip="Subtract double the product of the two images from the sum of the two images."),
+                ft.MenuItemButton("Hard Light", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="hard_light", tooltip="Multiply the components of the source and destination images after adjusting them to favor the source"),
+                ft.MenuItemButton("Hue", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="hue", tooltip="Take the hue of the source image, and the saturation and luminosity of the destination image"),
+                ft.MenuItemButton("Lighten", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="lighten", tooltip="Composite the source and destination image by choosing the highest value from each color channel"),
+                ft.MenuItemButton("Luminosity", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="luminosity", tooltip="Take the luminosity of the source image, and the hue and saturation of the destination image"),
+                ft.MenuItemButton("Modulate", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="modulate", tooltip="Multiply the color components of the source and destination images"),
+                ft.MenuItemButton("Multiply", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="multiply", tooltip="Multiply the components of the source and destination images, including the alpha channel"),
+                ft.MenuItemButton("Overlay", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="overlay", tooltip="Multiply the components of the source and destination images after adjusting them to favor the destination"),
+                ft.MenuItemButton("Plus", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="plus", tooltip="Sum the components of the source and destination images"),
+                ft.MenuItemButton("Saturation", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="saturation", tooltip="Take the saturation of the source image, and the hue and luminosity of the destination image"),
+                ft.MenuItemButton("Screen", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="screen", tooltip="Multiply the inverse of the components of the source and destination images, and inverse the result"),
+                ft.MenuItemButton("Soft Light", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="soft_light", tooltip="Somewhere between Overlay and Color blend modes"),
+                ft.MenuItemButton("Source", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="src", tooltip="Drop the destination image, only paint the source image"),
+                ft.MenuItemButton("Soure Atop Destination", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="src_a_top", tooltip="Composite the source image over the destination image, but only where it overlaps the destination"),
+                ft.MenuItemButton("Source In", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="src_in", tooltip="Show the source image, but only where the two images overlap. The destination image is not rendered, it is treated merely as a mask. The color channels of the destination are ignored, only the opacity has an effect"),
+                ft.MenuItemButton("Source Out", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="src_out", tooltip="Show the source image, but only where the two images do not overlap. The destination image is not rendered, it is treated merely as a mask. The color channels of the destination are ignored, only the opacity has an effect"),
+                ft.MenuItemButton("XOR", on_click=update_paint_blend_mode, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="xor", tooltip="Apply a bitwise xor operator to the source and destination images. This leaves transparency where they would overlap"),
+            ]
+        
+        # Updates the blend mode of the current paint settings
+        def update_paint_blend_mode(e: ft.Event[ft.MenuItemButton]):
+            nonlocal paint_settings
+            mode = e.control.data
+            paint_settings.update({"blend_mode": mode})
+            app.settings.update_data(**{"paint_settings": paint_settings})
+            blend_mode_selector.content = set_blend_mode_label()
+            self.update()
 
         # Grab our data for easier manipulation
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
@@ -766,7 +824,7 @@ class CanvasRail(Rail):
         save_custom_brush_button = ft.IconButton(      
             ft.Icons.SAVE_ROUNDED, ft.Colors.PRIMARY,
             tooltip="Save current brush settings as a custom brush", 
-            on_click=_save_custom_brush_clicked, mouse_cursor=ft.MouseCursor.CLICK,
+            on_click=save_custom_brush_clicked, mouse_cursor=ft.MouseCursor.CLICK,
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 shape=ft.RoundedRectangleBorder(radius=4), padding=ft.Padding.all(0)),
         )  
@@ -802,191 +860,119 @@ class CanvasRail(Rail):
         )
 
 
-
-
-    
         # Width/Size of brush
-        self.paint_width_slider = ft.Slider(
+        width_slider = ft.Slider(
             min=1, max=100, tooltip="The size of your brush strokes.", expand=True,
-            divisions=99, value=app.settings.data.get('paint_settings', {}).get('stroke_width', 5),
+            divisions=99, value=paint_settings.get('stroke_width', 5),
             label="Brush Size: {value}px",
-            on_change_end=_paint_width_changed
+            on_change_end=update_paint_width
+        )
+
+        # Blur strength of the brush strokes
+        blur_slider = ft.Slider(
+            min=0, max=50,  tooltip="The blur effect of your brush strokes.", expand=True,
+            divisions=50, value=paint_settings.get('blur_image', 0),
+            label="Stroke Blur: {value}",  
+            on_change_end=update_paint_blur
+        )
+
+        # Whether to fill strokes and shapes or not
+        fill_switch = ft.Switch(
+            True, "Fill Paint", on_change=update_paint_fill,
+            label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
+            value=paint_settings.get('style', 'stroke').endswith('_fill'),
+            tooltip="Whether to fill strokes and shapes, or leave them hollow (Transparent)",
+            #label_position=ft.LabelPosition.LEFT
         )
 
 
         # If we use anti aliasing or not
-        paint_anti_alias_toggle = ft.Switch(
-            True, "Anti-Aliasing", on_change=_paint_anti_alias_changed,
+        anti_alias_switch = ft.Switch(
+            True, "Anti-Aliasing", on_change=update_paint_anti_alias,
             label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
-            value=app.settings.data.get('paint_settings', {}).get('anti_alias', True),
+            value=paint_settings.get('anti_alias', True),
             tooltip="Whether to use anti-aliasing for smoother brush strokes. Disabling may result in jagged edges",
-            #label_position=ft.LabelPosition.LEFT
         )
 
-        # Stroke cap shape
-        if app.settings.data.get('paint_settings', {}).get('stroke_cap', 'butt') == 'round':
-            paint_stroke_cap_icon = ft.Icons.CIRCLE_OUTLINED
-        elif app.settings.data.get('paint_settings', {}).get('stroke_cap', 'butt') == 'square':
-            paint_stroke_cap_icon = ft.Icons.SQUARE_OUTLINED
-        else:
-            paint_stroke_cap_icon = ft.Icons.CROP_SQUARE_OUTLINED
-        paint_stroke_cap_selector = ft.SubmenuButton(
-            ft.Row([
-                
-                ft.Text("Stroke Cap Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE), 
-                ft.Icon(paint_stroke_cap_icon),
-                
-            ], spacing=6),     # Stroke cap shape selector
+        # Toggles path smoothing
+        use_path_smoothing_switch =  ft.Switch(
+            True, "Path Smoothing", on_change=update_paint_path_smoothing,
+            label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
+            value=canvas_settings.get('use_path_smoothing', True),
+            tooltip="Whether to apply path smoothing to brush strokes. Makes the brushes paint color appear smoother, especially at lower opacity values.",
+        )
+
+        # If we use smart stroke or not
+        use_smart_stroke_switch =  ft.Switch(
+            True, "Smart Stroke", on_change=update_paint_smart_stroke,
+            label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
+            value=canvas_settings.get('use_smart_stroke', True),
+            tooltip="Whether to apply smart stroke smoothness to brush strokes. Makes the curves of strokes appear smoother",
+        )
+
+        # Strength of the smart stroke effect
+        smart_stroke_strength_slider = ft.Slider(
+            min=0, max=100,  tooltip="The strength of the smart stroke effect.", expand=True,
+            divisions=100, value=canvas_settings.get('smart_stroke_strength', 1),
+            label="Strength: {value}",
+            visible=canvas_settings.get('use_smart_stroke', True),
+            on_change_end=update_paint_smart_stroke_strength
+        )
+
+        # Selector for the shape of the ends of strokes
+        stroke_cap_selector = ft.SubmenuButton(
+            "Stroke Cap Shape",
+            trailing=ft.Icon(get_stroke_cap_icon(), ft.Colors.PRIMARY),
             tooltip="The shape that your brush strokes will have at the end of each line segment.",
-            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
             style=ft.ButtonStyle(
                 padding=ft.Padding.only(left=4, right=4), alignment=ft.Alignment.CENTER, mouse_cursor="click", #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 shape=ft.RoundedRectangleBorder(radius=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
             ),
             controls=[
-                ft.MenuItemButton("Butt", on_click=_paint_stroke_cap_changed, leading=ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
-                ft.MenuItemButton("Round", on_click=_paint_stroke_cap_changed, leading=ft.Icon(ft.Icons.CIRCLE_OUTLINED), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
-                ft.MenuItemButton("Square", on_click=_paint_stroke_cap_changed, leading=ft.Icon(ft.Icons.SQUARE_OUTLINED), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
+                ft.MenuItemButton("Butt", on_click=update_paint_stroke_cap, leading=ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED, ft.Colors.PRIMARY), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
+                ft.MenuItemButton("Round", on_click=update_paint_stroke_cap, leading=ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.PRIMARY), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
+                ft.MenuItemButton("Square", on_click=update_paint_stroke_cap, leading=ft.Icon(ft.Icons.SQUARE_OUTLINED, ft.Colors.PRIMARY), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
             ]
         )
 
-        if app.settings.data.get('paint_settings', {}).get('stroke_join', 'miter') == 'round':
-            stroke_join_icon = ft.Icons.CIRCLE_OUTLINED
-        elif app.settings.data.get('paint_settings', {}).get('stroke_join', 'miter') == 'bevel':
-            stroke_join_icon = ft.Icons.SQUARE_OUTLINED
-        else:
-            stroke_join_icon = ft.Icons.CROP_SQUARE_OUTLINED
-        paint_stroke_join_selector = ft.SubmenuButton(
-            ft.Row([
-                
-                ft.Text("Stroke Join Shape", theme_style=ft.TextThemeStyle.LABEL_LARGE), 
-                ft.Icon(stroke_join_icon),
-                
-            ], spacing=6),   
+        # Selector for the shape of sharp turns and joins in strokes
+        stroke_join_selector = ft.SubmenuButton(
+            "Stroke Join Shape",
+            trailing=ft.Icon(get_stroke_join_icon(), ft.Colors.PRIMARY),  
             tooltip="The shape that your brush strokes will have at the join of two line segments, or sharp corners.",
-            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
             style=ft.ButtonStyle(
                 padding=ft.Padding.only(left=4, right=4), alignment=ft.Alignment.CENTER, mouse_cursor="click",
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 shape=ft.RoundedRectangleBorder(radius=4)
             ),
             controls=[
-                ft.MenuItemButton("Miter", leading=ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED), on_click=_paint_stroke_join_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
-                ft.MenuItemButton("Round", leading=ft.Icon(ft.Icons.CIRCLE_OUTLINED), on_click=_paint_stroke_join_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
-                ft.MenuItemButton("Bevel", leading=ft.Icon(ft.Icons.SQUARE_OUTLINED), on_click=_paint_stroke_join_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
+                ft.MenuItemButton("Miter", leading=ft.Icon(ft.Icons.CROP_SQUARE_OUTLINED, ft.Colors.PRIMARY), on_click=update_paint_stroke_join, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
+                ft.MenuItemButton("Round", leading=ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.PRIMARY), on_click=update_paint_stroke_join, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
+                ft.MenuItemButton("Bevel", leading=ft.Icon(ft.Icons.SQUARE_OUTLINED, ft.Colors.PRIMARY), on_click=update_paint_stroke_join, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
             ]
         )
 
-
-        self.paint_stroke_blur_slider = ft.Slider(
-            min=0, max=50,  tooltip="The blur effect of your brush strokes.", expand=True,
-            divisions=50, value=app.settings.data.get('paint_settings', {}).get('blur_image', 0),
-            label="Stroke Blur: {value}",  
-            on_change_end=_paint_stroke_blur_changed  
-        )
-
-        
-
-        
-        paint_blend_mode_selector = ft.SubmenuButton(
-            f"Blend Mode: {self._set_blend_mode_label()}", 
+        # Selector for the blend mode of the brush strokes
+        blend_mode_selector = ft.SubmenuButton(
+            set_blend_mode_label(), 
+            controls=get_blend_mode_options(),
             tooltip="The Current blend effects applied to your brush strokes. \nSome blend modes don't render correctly until AFTER a stroke is completed.",
-            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
             style=ft.ButtonStyle(
                 padding=ft.Padding.only(left=4, right=4), alignment=ft.Alignment.CENTER,
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click", 
             ),
-            controls=[
-                ft.MenuItemButton("None",  on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data=None, tooltip="No blend mode"),
-                ft.MenuItemButton("Color", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="color", tooltip="Take the hue and saturation of the source image, and the luminosity of the destination image"),
-                ft.MenuItemButton("Color Burn", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="color_burn", tooltip="Divide the inverse of the destination by the source, and inverse the result"),
-                ft.MenuItemButton("Color Dodge", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="color_dodge", tooltip="Divide the destination by the inverse of the source"),
-                ft.MenuItemButton("Darken", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="darken", tooltip="Composite the source and destination image by choosing the lowest value from each color channel"),
-                ft.MenuItemButton("Difference", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="difference", tooltip="Subtract the smaller value from the bigger value for each channel"),
-                ft.MenuItemButton("Destination", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst", tooltip="Drop the source image, only paint the destination image"),
-                ft.MenuItemButton("Destination Atop Source", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst_a_top", tooltip="Composite the destination image over the source image, but only where it overlaps the source"),
-                ft.MenuItemButton("Destination In", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst_in", tooltip="Show the destination image, but only where the two images overlap. The source image is not rendered, it is treated merely as a mask. The color channels of the source are ignored, only the opacity has an effect"),
-                ft.MenuItemButton("Destination Out", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst_out", tooltip="Show the destination image, but only where the two images do not overlap. The source image is not rendered, it is treated merely as a mask. The color channels of the source are ignored, only the opacity has an effect"),
-                ft.MenuItemButton("Destination Over", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="dst_over", tooltip="Composite the source image under the destination image"),
-                ft.MenuItemButton("Exclusion", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="exclusion", tooltip="Subtract double the product of the two images from the sum of the two images."),
-                ft.MenuItemButton("Hard Light", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="hard_light", tooltip="Multiply the components of the source and destination images after adjusting them to favor the source"),
-                ft.MenuItemButton("Hue", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="hue", tooltip="Take the hue of the source image, and the saturation and luminosity of the destination image"),
-                ft.MenuItemButton("Lighten", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="lighten", tooltip="Composite the source and destination image by choosing the highest value from each color channel"),
-                ft.MenuItemButton("Luminosity", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="luminosity", tooltip="Take the luminosity of the source image, and the hue and saturation of the destination image"),
-                ft.MenuItemButton("Modulate", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="modulate", tooltip="Multiply the color components of the source and destination images"),
-                ft.MenuItemButton("Multiply", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="multiply", tooltip="Multiply the components of the source and destination images, including the alpha channel"),
-                ft.MenuItemButton("Overlay", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="overlay", tooltip="Multiply the components of the source and destination images after adjusting them to favor the destination"),
-                ft.MenuItemButton("Plus", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="plus", tooltip="Sum the components of the source and destination images"),
-                ft.MenuItemButton("Saturation", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="saturation", tooltip="Take the saturation of the source image, and the hue and luminosity of the destination image"),
-                ft.MenuItemButton("Screen", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="screen", tooltip="Multiply the inverse of the components of the source and destination images, and inverse the result"),
-                ft.MenuItemButton("Soft Light", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="soft_light", tooltip="Somewhere between Overlay and Color blend modes"),
-                ft.MenuItemButton("Source", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="src", tooltip="Drop the destination image, only paint the source image"),
-                ft.MenuItemButton("Soure Atop Destination", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="src_a_top", tooltip="Composite the source image over the destination image, but only where it overlaps the destination"),
-                ft.MenuItemButton("Source In", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="src_in", tooltip="Show the source image, but only where the two images overlap. The destination image is not rendered, it is treated merely as a mask. The color channels of the destination are ignored, only the opacity has an effect"),
-                ft.MenuItemButton("Source Out", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="src_out", tooltip="Show the source image, but only where the two images do not overlap. The destination image is not rendered, it is treated merely as a mask. The color channels of the destination are ignored, only the opacity has an effect"),
-                ft.MenuItemButton("XOR", on_click=_paint_blend_mode_changed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK), data="xor", tooltip="Apply a bitwise xor operator to the source and destination images. This leaves transparency where they would overlap"),
-            ]
         )
         
 
         
 
-        if app.settings.data.get('canvas_settings', {}).get('active_tool', 'brush') == "brush":
-            pass
-        else:
-            pass
 
         
-        
-        # Set a tooltip for certain tools
-        tool_note_visible = False
-        match app.settings.data.get('canvas_settings', {}).get('current_tool_name', 'draw'):
-            case "erase":
-                tool_tooltip = "Eraser Tool: Erases overtop of existing content ONLY on the active layer, \n" \
-                "Even though it appears to erase all layers beneath the active layer"
-                if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "tool":
-                    tool_note_visible = True
-
-            case "line":
-                tool_tooltip = "Line Tool: Draws straight lines from starting point where mouse is pressed down until mouse is released"
-                if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "tool":
-                    tool_note_visible = True
-
-            case _:
-
-                tool_tooltip = None
-                tool_note_visible = False
-
-        # Set a note for certain tools
-        tool_note = ft.Icon(
-            ft.Icons.INFO_OUTLINE, ft.Colors.PRIMARY,
-            scale=0.8,
-            visible=tool_note_visible,
-            tooltip=tool_tooltip
-        )
-
-        fill_switch = ft.Switch(
-            True, "Fill Paint", on_change=_paint_fill_changed,
-            label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
-            value=app.settings.data.get('paint_settings', {}).get('style', 'stroke').endswith('_fill'),
-            tooltip="Whether to fill strokes and shapes, or leave them hollow (Transparent)",
-            #label_position=ft.LabelPosition.LEFT
-        )
-
-        # Toggles path smoothing
-        async def _path_smoothing_changed(e: ft.Event[ft.Switch]):
-            new_use_path_smoothing_value = e.control.value
-            app.settings.update_data(**{"canvas_settings": {"use_path_smoothing": new_use_path_smoothing_value}})
-
-        use_path_smoothing_switch =  ft.Switch(
-            True, "Path Smoothing", on_change=_path_smoothing_changed,
-            label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
-            value=app.settings.data.get('canvas_settings', {}).get('use_path_smoothing', True),
-            tooltip="Whether to apply path smoothing to brush strokes. Makes the brushes paint color appear smoother, especially at lower opacity values.",
-            #label_position=ft.LabelPosition.LEFT
-        )
 
         
 
@@ -1012,7 +998,7 @@ class CanvasRail(Rail):
                 case "use_paint_for_shapes":
                     app.settings.data['canvas_settings']['use_paint_for_shapes'] = value or False
             app.settings.update_data(**{"canvas_settings": app.settings.data['canvas_settings']})
-            await self.update_tool_preview()
+            #await self.update_tool_preview()
 
 
         text_color_selector = ft.SubmenuButton(
@@ -1083,7 +1069,7 @@ class CanvasRail(Rail):
                     new_icon = ft.Icons.FORMAT_CLEAR
 
             app.settings.update_data(**{"canvas_settings": {"text_shape_decoration": decoration}})
-            await self.update_tool_preview()
+            #await self.update_tool_preview()
             text_decoration_selector.trailing.icon = new_icon
             text_decoration_selector.update()
 
@@ -1162,131 +1148,102 @@ class CanvasRail(Rail):
                     save_custom_brush_button
                 ], spacing=4, wrap=True),  
                 
-
+                # Row to set the tool mode , select a tool, and show a note about the current tool
                 ft.Row([
                     set_tool_mode_button, 
                     ft.MenuBar([tool_selector], style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0))),
-                    tool_note
                 ], spacing=4, wrap=True),
                     
-   
-                
+                # Slider about the width of the current brush strokes
+                ft.Row([ft.Text("Size", theme_style=ft.TextThemeStyle.LABEL_LARGE), width_slider], spacing=0, tooltip="Size of your strokes"),      # Size slider
 
-                ft.Row([
-                    ft.Text("Width", theme_style=ft.TextThemeStyle.LABEL_LARGE,), 
-                    self.paint_width_slider
-                ], spacing=0, tooltip="Size of your strokes"),      # Size slider
+                # Slider about the blur of the current brush strokes
+                ft.Row([ft.Text("Blur", theme_style=ft.TextThemeStyle.LABEL_LARGE), blur_slider], spacing=0),
 
-                ft.Row([ft.Text("Blur", theme_style=ft.TextThemeStyle.LABEL_LARGE), self.paint_stroke_blur_slider], spacing=0),
+                # Fill and anti alias switches
+                fill_switch,    
+                anti_alias_switch,     
 
+                # Path smoothing and smart stroke switches, and smart stroke strength slider
+                use_path_smoothing_switch,      
+                use_smart_stroke_switch,      
+                smart_stroke_strength_slider,
                 
-
-                
-                
-                fill_switch,
-
-                use_path_smoothing_switch,
-                
-                paint_anti_alias_toggle,
-                
-
+                # Stroke cap, join, and blend mode selectors
                 ft.MenuBar(
-                    [paint_stroke_cap_selector],
+                    [stroke_cap_selector],
                     style=ft.MenuStyle(
                         bgcolor="transparent", shadow_color="transparent",
-                        shape=ft.RoundedRectangleBorder(radius=10),
+                        shape=ft.RoundedRectangleBorder(radius=4),
+                    ),
+                ),
+                ft.MenuBar(
+                    [stroke_join_selector],
+                    style=ft.MenuStyle(
+                        bgcolor="transparent", shadow_color="transparent",
+                        shape=ft.RoundedRectangleBorder(radius=4),
+                    ),
+                ),
+                ft.MenuBar(
+                    [blend_mode_selector],
+                    style=ft.MenuStyle(
+                        bgcolor="transparent", shadow_color="transparent",
+                        shape=ft.RoundedRectangleBorder(radius=4),
                     ),
                 ),
 
-                
-                ft.MenuBar(
-                    [paint_stroke_join_selector],
-                    style=ft.MenuStyle(
-                        bgcolor="transparent", shadow_color="transparent",
-                        shape=ft.RoundedRectangleBorder(radius=10),
-                    ),
-                ),
-
-
-                ft.MenuBar(
-                    [paint_blend_mode_selector],
-                    style=ft.MenuStyle(
-                        bgcolor="transparent", shadow_color="transparent",
-                        shape=ft.RoundedRectangleBorder(radius=10),
-                    ),
-                ),
-
-                # Effects section with anti-aliasing toggle, stroke blur slider, and blend mode selector
+                # Divider between text and tool settings
                 ft.Divider(),
-                #ft.Row([ft.Text("Text & Tool Settings", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Text("Text & Tool Settings", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.W_500, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
-                ft.Container(height=2),   # Spacer
-
-               
-                
             
-                ft.Container(
-                    ft.Row([
-                        TextField(
-                            label="Text Size", on_blur=_change_shape_options, data="size", dense=True,
-                            tooltip="The size of text added with the text tool", expand=True,
-                            input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
-                            value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_size', 16))
-                        ),
-                        TextField(
-                            label="Letter Spacing", on_blur=_change_shape_options, data="letter_spacing", dense=True, expand=True,
-                            input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
-                            value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0))
-                        ),
-                    ]),
-                    margin=ft.Margin.only(left=4, right=4, bottom=4),
-                ),
-                ft.Container(
-                    ft.Row([
-                        TextField(
-                            label="Word Spacing", on_blur=_change_shape_options, data="word_spacing", dense=True, expand=True,
-                            input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
-                            value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0))
-                        ),
-                        TextField(
-                            label="Rectangle Border Radius", on_blur=_change_shape_options, data="border_radius", dense=True,
-                            input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
-                            value=str(app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0)),
-                            expand=True,
-                        ),
-                    ]),
-                    margin=ft.Margin.only(left=4, right=4, bottom=4),
+                # Text Size
+                TextField(
+                    label="Text Size", on_blur=_change_shape_options, data="size", dense=True,
+                    tooltip="The size of text added with the text tool", expand=True,
+                    input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
+                    value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_size', 16))
                 ),
 
-                ft.Container(
-                    ft.MenuBar(
-                        [text_color_selector],
-                        style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)),
-                        #expand=True,
-                    ),
-                    margin=ft.Margin.only(left=4)
+                # Letter spacing
+                TextField(
+                    label="Letter Spacing", on_blur=_change_shape_options, data="letter_spacing", dense=True, expand=True,
+                    input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
+                    value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0))
                 ),
-                ft.Container(
-                    ft.MenuBar(
-                        [text_decoration_selector], 
-                        style=ft.MenuStyle(
-                            bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)
-                        ),
-                        #expand=True,
-                    ),
-                    margin=ft.Margin.only(left=4, right=4),
-                ),
-                    
-                #ft.Container(
-                    #ft.MenuBar(
-                        #[text_shadow_color_selector],
-                        #style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)),
-                        #expand=True,
-                    #),
-                    #margin=ft.Margin.only(left=4)
-                #),
-
                 
+                # Word spacing
+                TextField(
+                    label="Word Spacing", on_blur=_change_shape_options, data="word_spacing", dense=True, expand=True,
+                    input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
+                    value=str(app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0))
+                ),
+                
+                # Border radius on rectangles
+                TextField(
+                    label="Rectangle Border Radius", on_blur=_change_shape_options, data="border_radius", dense=True,
+                    input_filter=ft.NumbersOnlyInputFilter(), #width=100, #expand=True, 
+                    value=str(app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0)),
+                    expand=True,
+                ),
+
+                # Color selector for text shapes
+                ft.MenuBar(
+                    [text_color_selector],
+                    style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)),
+                ),
+                ft.MenuBar(
+                    [text_decoration_selector], 
+                    style=ft.MenuStyle(
+                        bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)
+                    ),
+                    
+                ),
+                
+                #ft.MenuBar(
+                    #[text_shadow_color_selector],
+                    #style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)),
+                    #expand=True,
+                #),
 
                 ft.Switch(
                     True, "Text Bold", on_change=_change_shape_options, data="bold",
