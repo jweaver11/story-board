@@ -55,9 +55,11 @@ class MiniWidget(ft.GestureDetector):
         self.widget.story.mouse_x = e.global_position.x 
         self.widget.story.mouse_y = e.global_position.y
             
-    # Called when deleting our mini widget
-    def delete_mini_widget(self):
-        ''' Deletes our data from all live widget/mini widget objects that we nest in, and saves the widgets file '''
+    # Called by delete buttons to delete ourselves from data. Children deal with the UI
+    async def handle_delete(self, e=None):
+        await self.widget.story.close_menu()
+        self.widget.data['mini_widgets_data'].pop(self.data.get('id', ''))
+        self.widget.update_data(**{'mini_widgets_data': self.widget.data.get('mini_widgets_data', {})})
 
     # Updates our data then makes sure the widget data for us matches
     def update_data(self, **kwargs):
@@ -83,25 +85,6 @@ class MiniWidget(ft.GestureDetector):
         self.update_data(**{'position': self.position})
         self.widget.set_mouse_coords(e)     # Reset the menu position
 
-    def _set_icon(self) -> ft.Icon:
-        ''' Returns the icon for this mini widget based on its tag and data '''
-
-        match self.data.get('icon', 'location_pin'):
-            case "location_city":
-                icon = ft.Icons.LOCATION_CITY
-            case "stairs_outlined":
-                icon = ft.Icons.STAIRS_OUTLINED
-            case "terrain":
-                icon = ft.Icons.TERRAIN
-            case "forest":
-                icon = ft.Icons.FOREST
-            case "water":
-                icon = ft.Icons.WATER
-            case _:
-                icon = ft.Icons.LOCATION_PIN
-
-        return icon
-
 
     async def _new_note_clicked(self, e=None):
         ''' Called when the new field button is clicked '''
@@ -111,78 +94,15 @@ class MiniWidget(ft.GestureDetector):
     def _build_notes_column(self) -> ft.Column:
         ''' Builds our column of custom fields for this mini widget '''
         
-    
-    
-
 
     def get_menu_options(self) -> list[ft.Control]:
 
         # Color, rename, delete
-        return [
-            MenuOptionStyle(
-                on_click=self.handle_rename,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
-                    ft.Text(
-                        "Rename", 
-                        weight=ft.FontWeight.BOLD, 
-                    ), 
-                ]),
-            ),
-            MenuOptionStyle(
-                ft.SubmenuButton(
-                    ft.Row([
-                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
-                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
-                        ft.Icon(ft.Icons.ARROW_RIGHT),
-                    ], expand=True),
-                    #self._get_color_options(), 
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                    tooltip="Change this widget's color"
-                ),
-                no_padding=True, no_effects=True
-            ),
-            MenuOptionStyle(
-                #on_click=self._delete_clicked,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
-                    ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
-                ]),
-            )
-        ]
+        return []
         
 
-    def handle_rename(self, e: ft.Event=None):
-        ''' Replaces our widget title with a text field to rename it '''
-
         
-    # Called when color button is clicked
-    def _get_color_options(self) -> list[ft.Control]:
-        ''' Returns a list of all available colors for icon changing '''
-
-        # Called when a color option is clicked on popup menu to change icon color
-        async def _change_icon_color(e: ft.Event):
-            ''' Passes in our kwargs to the widget, and applies the updates '''
-
-            self.update_data(**{'color': e.control.data})
-            
-
-        # List for our colors when formatted
-        color_controls = [] 
-
-        # Create our controls for our color options
-        for color in colors:
-            color_controls.append(
-                ft.MenuItemButton(
-                    content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                    on_click=_change_icon_color, close_on_click=True,
-                    data=color,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
-                )
-            )
-
-        return color_controls
+    
     
     # Called when hovering over stacked control to give us a highlighted shadow
     async def highlight(self, e: ft.Event=None):

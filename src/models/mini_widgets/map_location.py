@@ -11,6 +11,8 @@ import flet.canvas as cv
 from styles.icons import location_icons
 from styles.text_fields import TextField
 import time
+from styles.menu_option_style import MenuOptionStyle
+from styles.colors import colors
 
 # Locations that appear on our map
 class MapLocation(MiniWidget):
@@ -87,6 +89,79 @@ class MapLocation(MiniWidget):
         self.icon.parent.shadow = None
         self.update()
 
+    # Overrite parent method of renaming if called from sidebar
+    async def handle_rename(self, e=None):
+        await self.widget.story.close_menu()
+        await self.map_label_tf.focus()
+
+    # Handles deleting our location from the map and data
+    async def handle_delete(self, e=None):
+        await super().handle_delete()
+        self.widget.location_stack.controls.remove(self)
+        self.widget.location_stack.update()
+        if self.shown_in_sidebar:
+            await self.widget.hide_sidebar()
+
+    # Called when color button is clicked
+    def get_color_options(self) -> list[ft.Control]:
+        ''' Returns a list of all available colors for icon changing '''
+
+        # Changes our color in data and the UI to reflect
+        async def change_color(e: ft.Event[ft.MenuItemButton]):
+            await self.widget.story.close_menu()
+            self.update_data(**{'color': e.control.data})
+            self.icon.color = e.control.data
+            self.map_label_tf.color = e.control.data
+            self.update()
+
+        return [
+            ft.MenuItemButton(
+                content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
+                on_click=change_color, close_on_click=True,
+                data=color,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
+            ) for color in colors
+        ]
+        
+    # Gets our menu options for the location
+    def get_menu_options(self) -> list[ft.Control]:
+        
+        return [
+            MenuOptionStyle(
+                on_click=self.handle_rename,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
+                    ft.Text(
+                        f"Rename {self.data.get('title', '')}", 
+                        weight=ft.FontWeight.BOLD, 
+                        overflow=ft.TextOverflow.ELLIPSIS, expand=True
+                    ), 
+                ]),
+            ),
+            MenuOptionStyle(
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
+                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    self.get_color_options(), 
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="Change this widget's color"
+                ),
+                no_padding=True, no_effects=True
+            ),
+            MenuOptionStyle(
+                on_click=self.handle_delete,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
+                    ft.Text(f"Delete {self.data.get('title')}", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
+                ]),
+            )
+        ]
+
+    
 
     # Called when reloading changes to our plot point and in constructor
     def create_sidebar_ctrls(self) -> list[ft.Control]:
@@ -149,10 +224,6 @@ class MapLocation(MiniWidget):
     def build(self):
         """ Rebuilds our map control that holds our plot point and slider """
 
-        # Focuses label when click or double click over text field
-        async def focus_label_tf(e=None):
-            await self.map_label_tf.focus()
-
         # Updates state and close any open menus
         async def start_drag(e=None):
             self.is_dragging = True
@@ -197,9 +268,10 @@ class MapLocation(MiniWidget):
                 on_pan_start=start_drag,
                 on_pan_update=self.move_location, 
                 on_pan_end=self.save_position,
-                on_double_tap=focus_label_tf,
-                on_tap=focus_label_tf,
+                on_double_tap=self.handle_rename,
+                on_tap=self.handle_rename,
                 on_enter=self.highlight, on_exit=self.stop_highlight,
+                on_secondary_tap=lambda: self.widget.story.open_menu(self.get_menu_options()),
                 mouse_cursor=ft.MouseCursor.TEXT,
             ),
             ft.Row([        # Constrain icon size to not fit our whole width
@@ -212,7 +284,7 @@ class MapLocation(MiniWidget):
                     on_pan_end=self.save_position,
                     drag_interval=20, 
                     expand=False,
-                    #on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
+                    on_secondary_tap=lambda: self.widget.story.open_menu(self.get_menu_options()),
                     on_tap=self.show_mini_widget,
                 )
             ], tight=True, expand=False),   # End row constrainment

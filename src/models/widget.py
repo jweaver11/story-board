@@ -336,11 +336,7 @@ class Widget(ft.Container):
                 on_click=self.rename_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
-                    ft.Text(
-                        "Rename", 
-                        weight=ft.FontWeight.BOLD, 
-                        
-                    ), 
+                    ft.Text("Rename", weight=ft.FontWeight.BOLD, ), 
                 ]),
             ),
             MenuOptionStyle(

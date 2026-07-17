@@ -777,7 +777,7 @@ class Story(ft.View):
         from models.isolated_controls.row import IsolatedRow
 
         # Called when resizing the active rail by dragging the resizer
-        async def move_active_rail_divider(e: ft.DragUpdateEvent):
+        def move_active_rail_divider(e: ft.DragUpdateEvent):
             ''' Responsible for altering the width of the active rail '''
             self.workspace.is_resizing = True
 
@@ -790,10 +790,9 @@ class Story(ft.View):
 
 
         # Called when app stops dragging the resizer to resize the active rail
-        async def save_active_rail_width(e: ft.DragEndEvent):
+        def save_active_rail_width(e=None):
             ''' Saves our new width that will be loaded next time app opens the app '''
             self.workspace.is_resizing = False
-
             app.settings.update_data(**{'story': {'active_rail_width': self.active_rail.width}})
 
         # Load our widgets
@@ -819,7 +818,7 @@ class Story(ft.View):
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging
             on_pan_end=save_active_rail_width,  # Save the resize when app is done dragging
-            #drag_interval=30,
+            drag_interval=20,
         )
 
         
