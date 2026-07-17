@@ -163,6 +163,7 @@ class Character(Widget):
             )
             
             body.update()
+            await asyncio.sleep(0.02)
             await body.scroll_to(offset=-1, duration=200)  # Scroll to bottom
             
         # Deletes an entire section from our data dict

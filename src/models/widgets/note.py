@@ -5,6 +5,7 @@ from models.views.story import Story
 from models.widget import Widget
 from models.app import app
 from styles.text_fields import TextField, UnderlinedTextField
+import asyncio
     
 
 class Note(Widget):
@@ -59,6 +60,8 @@ class Note(Widget):
             self.new_segment_tf.update()
             add_segment_button.visible = True
             add_segment_button.update()
+            await asyncio.sleep(0.02)
+            await segments_column.scroll_to(offset=-1, duration=200)
 
         # Deletes a segment from data and our column
         async def delete_segment(e: ft.Event):

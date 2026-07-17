@@ -277,11 +277,12 @@ class Document(Widget):
             margin=ft.Margin.symmetric(horizontal=40, vertical=20),
             padding=ft.Padding.all(30),
             border_radius=4,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+            
             content=ft.Container(
                 ft.Column([ft.KeyboardListener(quill_editor, on_key_down=save_quill, expand=True)]),
                 border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
                 border_radius=4,
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 padding=ft.Padding.all(20), expand=True, 
             ),
             aspect_ratio=8.5/11.0,  # paper-like ratio
@@ -364,7 +365,7 @@ class Document(Widget):
         #], spacing=0, expand=True)
 
         self.content = ft.Column([
-            ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE, alignment=ft.Alignment.CENTER_LEFT),
+            ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT),
             ft.Stack([
                 ft.Row([
                     editor_container,

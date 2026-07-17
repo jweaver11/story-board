@@ -17,19 +17,12 @@ class MapLocation(MiniWidget):
     # Constructor. Requires title, widget widget, page reference, and optional data dictionary
     def __init__(
         self, 
-        title: str, 
         widget: Widget, 
-        key: str,                                         
         data: dict = {},
     ):
 
         # Parent constructor
-        super().__init__(
-            title=title,        
-            widget=widget,        
-            key=key,  
-            data=data,    
-        ) 
+        super().__init__(widget=widget, data=data) 
 
         # If we're new, give default values for our data 
         if self.is_new:
@@ -204,7 +197,7 @@ class MapLocation(MiniWidget):
     def reload_mini_widget(self):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
-        # TODO: Change icon, title, color, description
+        # TODO: Change icon, title, color, description. Show preview if connected to other map
 
 
 

@@ -5,8 +5,8 @@ from models.views.story import Story
 from models.widget import Widget
 from styles.menu_option_style import MenuOptionStyle
 from models.app import app
-from utils.safe_string_checker import return_safe_name
 from styles.text_fields import TextField
+import asyncio
     
 
 class Item(Widget):
@@ -58,7 +58,7 @@ class Item(Widget):
         # Column to hold our segments textfields
         segments_column = ft.Column(
             expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, 
-            controls=[], scroll="auto", alignment=ft.MainAxisAlignment.START
+            controls=[], scroll="auto", alignment=ft.MainAxisAlignment.START,
         )
 
         
@@ -72,6 +72,8 @@ class Item(Widget):
             self.new_segment_tf.update()
             add_segment_button.visible = True
             add_segment_button.update()
+            await asyncio.sleep(0.02)
+            await segments_column.scroll_to(offset=-1, duration=200)
 
         # Deletes a segment from data and our column
         async def delete_segment(e: ft.Event):
@@ -82,6 +84,7 @@ class Item(Widget):
                 segments_column.controls.pop(index)
                 segments_column.update()
 
+                # Updates the indices
                 for i, ctrl in enumerate(segments_column.controls):
                     ctrl.data = i
                     ctrl.suffix_icon.data = i

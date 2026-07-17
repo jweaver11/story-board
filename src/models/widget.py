@@ -182,10 +182,10 @@ class Widget(ft.Container):
             self.sidebar.update()
 
     # Animates to show our mini widgets container
-    async def show_sidebar(self, e: ft.Event=None):
+    async def show_sidebar(self, e: ft.Event=None) -> bool:
         # If we're already showing, return early
         if self.data.get('show_sidebar', True):
-            return
+            return False
         
         # Update data
         self.update_data(**{'show_sidebar': True})
@@ -197,6 +197,7 @@ class Widget(ft.Container):
         # Set our sidebar's width
         self.sidebar.width = self.w / 4 
         self.sidebar.update()   
+        return True
         
         
     # Animates to hide our mini widgets container
@@ -514,11 +515,20 @@ class Widget(ft.Container):
                 )
             )
             self.sidebar_notes_column.update()
+            await asyncio.sleep(0.02)
+            await self.sidebar_body.scroll_to(offset=-1, duration=200)
+
+        # Saves the value of the note
+        def save_note_content(e: ft.Event[ft.TextField]):
+            note_idx = e.control.data
+            if len(self.data.get('notes', [])) > note_idx:
+                self.data.get('notes', [])[note_idx] = e.control.value
+                self.update_data(**{'notes': self.data.get('notes', [])})
             
         # Returns a textfield of the note control
         def create_new_note_ctrl(note_idx: int, note_value: str) -> TextField:
             return TextField(
-                note_value, data=note_idx, expand=True,
+                note_value, data=note_idx, expand=True, on_blur=save_note_content, capitalization=ft.TextCapitalization.SENTENCES, multiline=True, dense=True,
                 suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_note, mouse_cursor=ft.MouseCursor.CLICK)
             )
 
@@ -587,7 +597,7 @@ class Widget(ft.Container):
         self.sidebar = ft.Container(
             border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             padding=ft.Padding.all(10),
-            shadow=ft.BoxShadow(0, 1), 
+            shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE_CONTAINER_LOWEST), 
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             width=0, # Start collapsed, and when we are built it will expand if needed
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),

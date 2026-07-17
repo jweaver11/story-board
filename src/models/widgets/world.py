@@ -15,6 +15,7 @@ import base64
 from styles.text_fields import TextField, NoLabelTextField
 from models.dataclasses.world_template import default_world_template_data_dict
 from styles.snack_bar import SnackBar
+import asyncio
 
 
 
@@ -197,6 +198,7 @@ class World(Widget):
             )
             
             body.update()
+            await asyncio.sleep(0.02)
             await body.scroll_to(offset=-1, duration=200)  # Scroll to bottom
             
         # Deletes an entire section from our data dict

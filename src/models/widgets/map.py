@@ -6,7 +6,6 @@ Maps are widgets that have their own drawing canvas, background image, informati
 
 import flet as ft
 from models.widget import Widget
-from models.mini_widgets.map_info import MapInformationDisplay
 from models.views.story import Story
 from models.dataclasses.canvas_state import State
 import flet.canvas as cv
@@ -246,7 +245,9 @@ class Map(Widget):
     # Creates our location control in data, on the location_stack, and focuses it in the sidebar
     async def create_location(self, e: ft.Event[ft.Button]=None):
         await self.story.close_menu()
-        return
+        new_location = MapLocation(
+
+        )
     
     # Creates our label control in data and on the location stack
     async def create_label(self, e: ft.Event[ft.Button]=None):
@@ -271,15 +272,19 @@ class Map(Widget):
     
     def create_sidebar_ctrls(self) -> list[ft.Control]:
 
-        # TODO: Lore, history
+        # TODO: Lore, history.
+
+        # Settings - show/change map bg
+        # TODO: Add settings to select from maps, or none, or upload your own. or use a canvas
 
         return [
             
             self.description_tf,
-            #lore_tf,
-            #history_tf, 
+            ft.Text("Lores", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+
+            ft.Text("Histories", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),            
                         
-            ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None),),
+            ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
 
             ft.Divider(),
             self.sidebar_notes_label,
@@ -292,13 +297,14 @@ class Map(Widget):
 
     # Called when clicking to show our info in the sidebar
     async def show_info(self, e: ft.Event=None):
-        self.shown_in_sidebar = True
+        await self.story.close_menu()
         self.sidebar_title.value = self.data.get('title', '')   # Update title to match us
         self.sidebar_body.controls = self.create_sidebar_ctrls()  # Build info sidebar content here
         
         # Applies the update
-        self.sidebar.update()
-        await self.show_sidebar()
+        if not await self.show_sidebar():
+            self.sidebar.update()
+
 
     # Sets our background image
     async def set_bg_image(self, e):
@@ -306,12 +312,6 @@ class Map(Widget):
 
     
     def get_new_item_options(self) -> list[ft.Control]:
-        
-        
-
-        async def _create_location(e: ft.Event[ft.Button]):
-            await self.create_location(e)
-            await self.story.close_menu()
 
         # Locks our position at wherever we clicked to open the menu
         self.locked_new_location_position = self.new_location_position
@@ -321,7 +321,7 @@ class Map(Widget):
             MenuOptionStyle(
                 ft.MenuItemButton(
                     "New Location", leading=ft.Icon(ft.Icons.LOCATION_PIN, self.data.get('color', "primary")),
-                    on_click=self.create_location, data={"icon": "location_pin"},
+                    on_click=self.create_location, 
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
                 no_effects=True, no_padding=True
@@ -329,7 +329,15 @@ class Map(Widget):
             MenuOptionStyle(
                 ft.MenuItemButton(
                     "New Label", leading=ft.Icon(ft.Icons.TEXT_FIELDS_OUTLINED, self.data.get('color', "primary")),
-                    on_click=self.create_label, data={"icon": "location_pin"},
+                    on_click=self.create_label, 
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                ),
+                no_effects=True, no_padding=True
+            ),
+            MenuOptionStyle(
+                ft.MenuItemButton(
+                    "Show Info", leading=ft.Icon(ft.Icons.INFO_OUTLINE, self.data.get('color', "primary")),
+                    on_click=self.show_info, 
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
                 no_effects=True, no_padding=True
@@ -401,7 +409,7 @@ class Map(Widget):
         )
 
 
-        # TODO: Add settings to select from maps, or none, or upload your own. or use a canvas
+        
 
         self.sidebar_body.controls = self.create_sidebar_ctrls()  # Build info sidebar content here
 
