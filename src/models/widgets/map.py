@@ -388,6 +388,7 @@ class Map(Widget):
                     "Show Info", leading=ft.Icon(ft.Icons.INFO_OUTLINE, self.data.get('color', "primary")),
                     on_click=self.show_info, 
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="Show this map's info in the sidebar",
                 ),
                 no_effects=True, no_padding=True
             )

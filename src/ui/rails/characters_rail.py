@@ -22,48 +22,7 @@ class CharactersRail(Rail):
         # Initialize the parent Rail class first
         super().__init__(story=story)
 
-        # UI elements
-        self.top_row_buttons = [
-            
-            ft.SubmenuButton(
-                ft.Container(
-                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
-                    shape=ft.BoxShape.CIRCLE,
-                    alignment=ft.Alignment.CENTER
-                ),
-                [
-                    ft.SubmenuButton(
-                        ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
-                        self.get_template_options("character"), 
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        tooltip="Create a new character for your story. Choose from templates or create a default character."
-                    ),
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
-                        data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
-                        tooltip="Visualize the connections between the characters in your story"
-                    ),  
-                ],
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
-                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-            ),
-            ft.SubmenuButton(
-                ft.Container(
-                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.OUTLINE),
-                    shape=ft.BoxShape.CIRCLE,
-                    alignment=ft.Alignment.CENTER
-                ),
-                [     
-                    
-                ],
-                disabled=True,
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
-                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-            ),
-            
-        ]
+        
 
 
 
@@ -131,20 +90,6 @@ class CharactersRail(Rail):
                 ),
                 no_padding=True, no_effects=True, 
             ),
-            #MenuOptionStyle(
-                #ft.Row([
-                    #ft.Icon(ft.Icons.CONNECT_WITHOUT_CONTACT, ft.Colors.PRIMARY),
-                    #ft.Text(f"Edit Character\nTemplates", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                #]),
-                #on_click=self._open_templates_editor
-            #),      
-            #MenuOptionStyle(
-                #ft.Row([
-                    #ft.Icon(ft.Icons.MANAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY, tooltip="Edit Character Connections"),
-                    #ft.Text("Edit Character\nConnections", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
-                #]),
-                #on_click=lambda e: new_character_connection_clicked(self.story),
-            #)
         ]
         
 
@@ -191,10 +136,51 @@ class CharactersRail(Rail):
                 widget = ctrl.content.widget
                 if widget.data.get('rail_index', 999) != idx:
                     widget.update_data(**{'rail_index': idx})
+
+        # UI elements
+        top_row_buttons = [
+            ft.SubmenuButton(
+                ft.Container(
+                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
+                    shape=ft.BoxShape.CIRCLE,
+                    alignment=ft.Alignment.CENTER
+                ),
+                [
+                    ft.SubmenuButton(
+                        ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
+                        self.get_template_options("character"), 
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        tooltip="Create a new character for your story. Choose from templates or create a default character."
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
+                        data="character_connection_map", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                        tooltip="Visualize the connections between the characters in your story"
+                    ),  
+                ],
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            ),
+            ft.SubmenuButton(
+                ft.Container(
+                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.OUTLINE),
+                    shape=ft.BoxShape.CIRCLE,
+                    alignment=ft.Alignment.CENTER
+                ),
+                [     
+                    
+                ],
+                disabled=True,
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            ),
+        ]
         
 
         menubar = ft.MenuBar(
-            self.top_row_buttons,
+            top_row_buttons,
             #expand=True,
             style=ft.MenuStyle(
                 bgcolor="transparent", shadow_color="transparent",

@@ -18,49 +18,7 @@ class PlotlinesRail(Rail):
         # Parent constructor
         super().__init__(story=story)
 
-        # UI elements
-        self.top_row_buttons = [
-            ft.SubmenuButton(
-                ft.Container(
-                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
-                    shape=ft.BoxShape.CIRCLE,
-                    alignment=ft.Alignment.CENTER
-                ),
-                [
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
-                        data="plotline", on_click=self.new_item_clicked, close_on_click=True, 
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
-                        tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
-                    ),
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED, ft.Colors.PRIMARY), content="Plot Chart", 
-                        data="plot_chart", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="New Items and Equipment for your story", 
-                    ),  
-                ],
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
-                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-            ),
-            ft.SubmenuButton(
-                ft.Container(
-                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.OUTLINE),
-                    shape=ft.BoxShape.CIRCLE,
-                    alignment=ft.Alignment.CENTER
-                ),
-                [     
-                    
-                ],
-                disabled=True,
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
-                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-            ),
-        ]
-
-
-    
-        
+         
  
 
     # Called to return our list of menu options when right clicking on the plotline rail
@@ -168,8 +126,47 @@ class PlotlinesRail(Rail):
                     widget.data['rail_index'] = idx 
                     await widget.save_dict()
 
+        top_row_buttons = [
+            ft.SubmenuButton(
+                ft.Container(
+                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
+                    shape=ft.BoxShape.CIRCLE,
+                    alignment=ft.Alignment.CENTER
+                ),
+                [
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
+                        data="plotline", on_click=self.new_item_clicked, close_on_click=True, 
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                        tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED, ft.Colors.PRIMARY), content="Plot Chart", 
+                        data="plot_chart", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        tooltip="New Items and Equipment for your story", 
+                    ),  
+                ],
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            ),
+            ft.SubmenuButton(
+                ft.Container(
+                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.OUTLINE),
+                    shape=ft.BoxShape.CIRCLE,
+                    alignment=ft.Alignment.CENTER
+                ),
+                [     
+                    
+                ],
+                disabled=True,
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            ),
+        ]
+
         menubar = ft.MenuBar(
-            self.top_row_buttons,
+            top_row_buttons,
             style=ft.MenuStyle(
                 bgcolor="transparent", shadow_color="transparent",
                 shape=ft.RoundedRectangleBorder(radius=10),

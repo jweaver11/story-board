@@ -24,68 +24,6 @@ class CanvasRail(Rail):
         super().__init__(story=story)
 
         # UI elements ---------------------------------------------
-        # Buttons at the top of the rail
-        self.top_row_buttons = [
-            ft.SubmenuButton(
-                ft.Container(
-                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
-                    padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
-                    width=40, height=40, alignment=ft.Alignment.CENTER
-                ),
-                [
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
-                        data="canvas", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new Canvas for sketching drawing, or visual note taking",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), #disabled=True
-                    ),
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
-                        data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                    ),
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
-                        data="map", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                    ),
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, ft.Colors.PRIMARY), content="Comic Preview", 
-                        data="comic_preview", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
-                        tooltip="Preview the canvases in your story as a comic strip",
-                    ),
-                ],
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
-                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-            ),
-            ft.SubmenuButton(
-                ft.Container(
-                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.OUTLINE),
-                    padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
-                    width=40, height=40, alignment=ft.Alignment.CENTER
-                ),
-                #[     
-                    #ft.MenuItemButton(
-                        #leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
-                        #data="canvas", on_click=self.new_item_clicked, close_on_click=True,
-                        #tooltip="Create a new Canvas for sketching drawing, or visual note taking",
-                        #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True
-                    #),
-                    #ft.MenuItemButton(
-                        #leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
-                        #data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
-                        #tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
-                        #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                    #),
-                #],
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
-                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                disabled=True
-            ),
-        ]
 
         # Color picker for changing brush color
         color_only = app.settings.data.get('paint_settings', {}).get('color', "#000000").split(",", 1)[0]     # Set color without opacity for the color picker
@@ -770,9 +708,71 @@ class CanvasRail(Rail):
 
             self.page.show_dialog(dlg)
 
+        top_row_buttons = [
+            ft.SubmenuButton(
+                ft.Container(
+                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
+                    padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
+                    width=40, height=40, alignment=ft.Alignment.CENTER
+                ),
+                [
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
+                        data="canvas", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Canvas for sketching drawing, or visual note taking",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), #disabled=True
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
+                        data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
+                        data="map", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, ft.Colors.PRIMARY), content="Comic Preview", 
+                        data="comic_preview", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                        tooltip="Preview the canvases in your story as a comic strip",
+                    ),
+                ],
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            ),
+            ft.SubmenuButton(
+                ft.Container(
+                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.OUTLINE),
+                    padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
+                    width=40, height=40, alignment=ft.Alignment.CENTER
+                ),
+                #[     
+                    #ft.MenuItemButton(
+                        #leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
+                        #data="canvas", on_click=self.new_item_clicked, close_on_click=True,
+                        #tooltip="Create a new Canvas for sketching drawing, or visual note taking",
+                        #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), disabled=True
+                    #),
+                    #ft.MenuItemButton(
+                        #leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
+                        #data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
+                        #tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
+                        #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    #),
+                #],
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                disabled=True
+            ),
+        ]
+
 
         menubar = ft.MenuBar(
-            self.top_row_buttons,
+            top_row_buttons,
             #expand=True,
             style=ft.MenuStyle(
                 bgcolor="transparent", shadow_color="transparent",
