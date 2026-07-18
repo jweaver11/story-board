@@ -216,7 +216,7 @@ class CanvasRail(Rail):
         fill_switch: ft.Switch                    # Switch for changing the paint style to fill or not
         anti_alias_switch: ft.Switch                    # Switch for enabling anti-aliasing or not on the current paint
 
-        stroke_smoothing_switch: ft.Switch        # If we should use path smoothing switch
+        brush_smoothing_switch: ft.Switch        # If we should use path smoothing switch
         
         
         stroke_dashed_pattern_switch: ft.Switch            # Switch for enabling dashed strokes or not
@@ -637,9 +637,9 @@ class CanvasRail(Rail):
             self.update()
 
         # Updates whether we'll use path smoothing or not
-        def update_paint_stoke_smoothing(e: ft.Event[ft.Switch]):
+        def update_paint_brush_smoothing(e: ft.Event[ft.Switch]):
             nonlocal canvas_settings
-            canvas_settings.update({"use_stroke_smoothing": e.control.value})
+            canvas_settings.update({"use_brush_smoothing": e.control.value})
             app.settings.update_data(**{"canvas_settings": canvas_settings})
 
         # Updates the strength of the smooth stroke effect
@@ -891,10 +891,10 @@ class CanvasRail(Rail):
         )
 
         # Toggles path smoothing
-        stroke_smoothing_switch =  ft.Switch(
-            True, "Stroke Smoothing", on_change=update_paint_stoke_smoothing,
+        brush_smoothing_switch =  ft.Switch(
+            True, "Brush Smoothing", on_change=update_paint_brush_smoothing,
             label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
-            value=canvas_settings.get('use_stroke_smoothing', True),
+            value=canvas_settings.get('use_brush_smoothing', True),
             tooltip="Makes the brushes paint color appear consistant for an entire stroke, especially at lower opacity values.",
         )
 
@@ -1142,12 +1142,12 @@ class CanvasRail(Rail):
                 ft.Row([ft.Text("Blur", theme_style=ft.TextThemeStyle.LABEL_LARGE), blur_slider], spacing=0),
 
                 # Slider for the strenght of smooth stroke
-                ft.Row([ft.Text("Path Smoothing", theme_style=ft.TextThemeStyle.LABEL_LARGE), path_smoothing_strength_slider], spacing=0),
+                #ft.Row([ft.Text("Path Smoothing", theme_style=ft.TextThemeStyle.LABEL_LARGE), path_smoothing_strength_slider], spacing=0), # TODO
 
                 # Fill and anti alias switches
                 fill_switch,    
                 anti_alias_switch,    
-                stroke_smoothing_switch,                       
+                brush_smoothing_switch,                         
                 
                 # Stroke cap, join, and blend mode selectors
                 ft.MenuBar(
@@ -1164,13 +1164,15 @@ class CanvasRail(Rail):
                         shape=ft.RoundedRectangleBorder(radius=4),
                     ),
                 ),
-                ft.MenuBar(
-                    [blend_mode_selector],
-                    style=ft.MenuStyle(
-                        bgcolor="transparent", shadow_color="transparent",
-                        shape=ft.RoundedRectangleBorder(radius=4),
-                    ),
-                ),
+
+                # Causes glitches in UI between renders
+                #ft.MenuBar(
+                    #[blend_mode_selector],
+                    #style=ft.MenuStyle(
+                        #bgcolor="transparent", shadow_color="transparent",
+                        #shape=ft.RoundedRectangleBorder(radius=4),
+                    #),
+                #),
 
                 # Divider between text and tool settings
                 ft.Divider(),

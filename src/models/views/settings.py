@@ -161,7 +161,7 @@ class Settings(ft.View):
                     'current_brush_name': "stroke",      # Name of the currently selected brush, either default or custom. Just used for display purposes
                     'current_tool_name': "erase",        # Current tool or shape being used
                     'path_smoothing_strength': 1,        # If stroke smoothing is enabled, how strong the smoothing is. 1 = low, 10 = high 0=off
-                    'use_stroke_smoothing': True,              # Uses cv.Path for constistant shapes if true, otherwise use cv.line
+                    'use_brush_smoothing': True,              # Uses cv.Path for constistant shapes if true, otherwise use cv.line
                     'use_paint_for_shapes': True,           # If True, shapes are black/white and use default paint settings rather than live brush settings
                     'text_shape_size': 24,                # Font size for text shapes
                     'text_shape_font': "Arial",              # Font family for text shapes
