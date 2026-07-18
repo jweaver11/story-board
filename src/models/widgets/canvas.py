@@ -1140,7 +1140,7 @@ class Canvas(Widget):
                 #canvas_transparent_bg_dark_mode.png
                 #dark_mode_transparent_background.jpg
                 ft.Container(
-                    border=ft.Border.all(2, ft.Colors.OUTLINE),
+                    #border=ft.Border.all(2, ft.Colors.OUTLINE),    # Causes slight pixel shift upon capture
                     content=self.layer_stack, 
                     expand=False,
                     width=self.canvas_width,    # Allow spacing for border
