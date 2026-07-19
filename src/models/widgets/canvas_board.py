@@ -326,6 +326,7 @@ class CanvasBoard(Widget):
                             on_pan_end=self.save_canvas,
                             on_tap_up=self.add_shape,      # Handles so we can add points
                             data=row_idx,
+                            drag_interval=10,
                         ),
                         #width=300, height=300,
                         shapes=[cv.Image(capture, 0, 0, 300, 300)],

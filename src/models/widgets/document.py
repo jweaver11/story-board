@@ -283,7 +283,7 @@ class Document(Widget):
                 border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
                 border_radius=4,
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-                padding=ft.Padding.all(20), expand=True, 
+                padding=ft.Padding.all(80), expand=True, 
             ),
             aspect_ratio=8.5/11.0,  # paper-like ratio
         )

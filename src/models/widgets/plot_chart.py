@@ -402,7 +402,7 @@ class PlotChart(Widget):
                         on_pan_update=self.move_node,
                         on_pan_end=self.save_position,
                         mouse_cursor=ft.MouseCursor.MOVE,
-                        #drag_interval=50,
+                        drag_interval=20,
                     ),
                     ft.Divider(ft.Colors.SURFACE_CONTAINER_LOW, 2),
                     self.description_ctrl,
@@ -415,7 +415,8 @@ class PlotChart(Widget):
                             on_pan_start=start_new_edge,   # Show line to follow mouse
                             on_pan_update=_update_line,   # Update line to follow mouse
                             on_pan_end=_create_new_edge,  
-                            on_exit=_stop_highlight_node,  
+                            on_exit=_stop_highlight_node, 
+                            drag_interval=20, 
                         ),
                         ft.GestureDetector(
                             ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.color, scale=1.25), shape=ft.BoxShape.CIRCLE), 
@@ -426,6 +427,7 @@ class PlotChart(Widget):
                             on_pan_update=_update_line,   
                             on_pan_end=_create_new_edge,  
                             on_exit=_stop_highlight_node,  
+                            drag_interval=20,
                         ),
                         
                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),

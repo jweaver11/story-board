@@ -69,8 +69,8 @@ class Settings(ft.View):
                     'workspaces_rail_order': [      # Order of the workspace rail 
                         "content",
                         "canvas",
+                        "plot",
                         "characters",
-                        "plotlines",
                         "world_building",
                     ],
                 },

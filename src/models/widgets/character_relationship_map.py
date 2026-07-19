@@ -199,6 +199,7 @@ class CharacterRelationshipMap(Widget):
                     on_pan_start=self._start_drag,
                     on_pan_end=self._drag_end,
                     on_pan_update=self.move_char_node,
+                    drag_interval=20,
                     #on_exit=_stop_highlight_node,  
                 )
             
@@ -609,7 +610,8 @@ class CharacterRelationshipMap(Widget):
         self.character_bank_container = ft.Container(
             ft.GestureDetector(
                 self.character_bank,
-                on_enter=self.highlight_character_bank, on_exit=self.stop_highlight_character_bank
+                on_enter=self.highlight_character_bank, 
+                on_exit=self.stop_highlight_character_bank
             ),
             border=ft.Border.only(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
             width=140,

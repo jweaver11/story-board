@@ -62,7 +62,7 @@ class WorkspacesRail(ft.Container):
         ''' Reorders our list based on the drag and drop, saves the new order in settings '''
         from models.app import app    # Always grabs updated reference when re-ordering
 
-        workspaces_rail_order = app.settings.data.get('story', {}).get('workspaces_rail_order', ["content", "canvas", "characters", "plotlines", "world_building", ])
+        workspaces_rail_order = app.settings.data.get('story', {}).get('workspaces_rail_order', ["content", "canvas", "characters", "plot", "world_building", ])
 
         # Reorders our list based on the drag and drop
         item = workspaces_rail_order.pop(e.old_index)
@@ -124,19 +124,19 @@ class WorkspacesRail(ft.Container):
             ],
         )
         # Plot and plotline workspace rail
-        plotlines_rail = ft.NavigationRail(
+        plot_rail = ft.NavigationRail(
             height=70,  
             bgcolor=ft.Colors.TRANSPARENT,
             selected_index=None,
             on_change=lambda e: self.change_workspace(e, story),  
-            tooltip="The rail for viewing your plotlines (timelines), with support for ordering them. Help keep track of regression/multi timeline stories.", 
+            tooltip="The rail for viewing your Plotlines and Plot Charts. Organize your stories plot arcs here.", 
             destinations=[
                 ft.NavigationRailDestination(
                     icon=ft.Icon(ft.Icons.TIMELINE_ROUNDED, scale=1.2), 
                     selected_icon=ft.Icon(ft.Icons.TIMELINE_OUTLINED, color=ft.Colors.PRIMARY, scale=1.2),
                     padding=ft.Padding.only(top=10, bottom=10),
-                    data="plotlines", 
-                    label=ft.Text("Plotlines" if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE) 
+                    data="plot", 
+                    label=ft.Text("Plot" if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False) == False else " ", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE) 
                 ),
             ],
         )
@@ -182,8 +182,8 @@ class WorkspacesRail(ft.Container):
             content_rail.selected_index = 0    # Selects first destination in destination list (cuz there is only one)
         elif selected_rail == "characters":
             characters_rail.selected_index = 0
-        elif selected_rail == "plotlines":
-            plotlines_rail.selected_index = 0
+        elif selected_rail == "plot":
+            plot_rail.selected_index = 0
         elif selected_rail == "world_building":
             world_building_rail.selected_index = 0
         elif selected_rail == "canvas":
@@ -191,13 +191,13 @@ class WorkspacesRail(ft.Container):
 
         # Goes through our workspace order, and adds the correct control to our list for the rail
         # We do it this way so when the app re-orders the rail, it will save their changes
-        for workspace in app.settings.data.get('story', {}).get('workspaces_rail_order', ["content", "canvas", "characters", "plotlines", "world_building"]):     # Just a list of strings
+        for workspace in app.settings.data.get('story', {}).get('workspaces_rail_order', ["content", "canvas", "characters", "plot", "world_building"]):     # Just a list of strings
             if workspace == "content":
                 workspaces_rail.append(ft.ReorderableDragHandle(content_rail))   # Add our corresponding workspace selector rail to the list
             elif workspace == "characters":
                 workspaces_rail.append(ft.ReorderableDragHandle(characters_rail)) 
-            elif workspace == "plotlines":
-                workspaces_rail.append(ft.ReorderableDragHandle(plotlines_rail))
+            elif workspace == "plot":
+                workspaces_rail.append(ft.ReorderableDragHandle(plot_rail))
             elif workspace == "world_building":
                 workspaces_rail.append(ft.ReorderableDragHandle(world_building_rail))
             elif workspace == "canvas":
