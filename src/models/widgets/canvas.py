@@ -69,10 +69,6 @@ class Canvas(Widget):
                     "width": (data or {}).get('canvas_data', {}).get('width') or 1920,
                     "height": (data or {}).get('canvas_data', {}).get('height') or 1080,
 
-                    # Undo and redo list
-                    'undo_list': list(),        # Each undo/redo item {'layer_name': "", 'capture': ""} 
-                    'redo_list': list(),
-
                     'active_layer_idx': 1,   # Index of our active layer we are drawing on
 
                     # Layer info for our canvases
@@ -80,11 +76,13 @@ class Canvas(Widget):
                         {       # First/Bottom most layer
                             'name': "Background",       # Name of that layer. We keep unique so our undo/redo system can correctly identify it
                             'visible': True,            # Whether this layer is currently visible or not
+                            'dirty': False,              # Whether this layer has been modified since last save and needs to be re-captured
                             'capture': "",              # The current displayed capture for this layer
                         },
                         {        # Second layer
                             'name': "Layer 1", 
                             'visible': True, 
+                            'dirty': False,
                             'capture': "",   
                         }
                     ],    
@@ -106,6 +104,20 @@ class Canvas(Widget):
         self.current_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
         self.active_tool: CanvasShape                    # The active shape being added if we're using a tool
         self._last_update_time = 0.0
+
+        # Undo redo buttons
+        self.undo_button: ft.IconButton
+        self.redo_button: ft.IconButton
+
+
+    # If we have changes that havnt been saved to data, we save them before writing
+    async def save_file(self):
+        for i, layer in enumerate(self.data.get('canvas_data', {}).get('layers', [])):
+            if layer.get('dirty', False) == True:
+                canvas: cv.Canvas = self.layer_stack.controls[i]
+                await self.save_canvas(canvas)
+                self.needs_file_write = True    # Mark our widget as dirty if we saved anything
+        await super().save_file()            
    
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     async def set_mouse_cursor(self, update: bool=True):
@@ -165,7 +177,7 @@ class Canvas(Widget):
             active_canvas.shapes.append(text_shape)
             
             active_canvas.update()
-            await self.save_canvas(canvas=active_canvas)
+            await self.save_canvas(active_canvas)
             self.active_tool.visible = False
             self.active_tool.rotate_handle.visible = False
             self.active_tool.rotate_handle.update()
@@ -213,7 +225,7 @@ class Canvas(Widget):
         active_canvas.shapes.clear()   
         active_canvas.shapes.append(cv.Image(encoded, 0, 0))
         active_canvas.update()
-        await self.save_canvas(canvas=active_canvas) 
+        await self.save_canvas(active_canvas) 
             
         # Finally, remove the active tool stuff
         self.active_tool.visible = False
@@ -282,14 +294,13 @@ class Canvas(Widget):
         canvas.update()
             
         # Need to save, as this function stands alone and no others will run after it
-        await self.save_canvas(e)
+        await self.save_canvas(canvas)
         
     # Called when we start drawing on the canvas
-    async def start_new_stroke(self, e: ft.DragStartEvent):
+    async def start_stroke(self, e: ft.DragStartEvent):
         ''' Set our initial starting x and y coordinates for the element we're drawing. '''
 
         # Grab the canvas and paint settings
-        
         canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
         if not canvas.visible:  # Protect when we shouldnt be drawing with it
             self.page.show_dialog(SnackBar("Set an active layer to draw on."))
@@ -307,9 +318,9 @@ class Canvas(Widget):
             self.current_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
             
             # Check if we're in tool mode, and what tool we're using
-            if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") != "draw":
+            if canvas_settings.get('current_control_mode', "") != "draw":
 
-                tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+                tool_name = canvas_settings.get('current_tool_name', "")
                 match tool_name:
 
                     # Erase tool - make sure our paint settings don't break the drawing
@@ -336,7 +347,7 @@ class Canvas(Widget):
             # If we're not using smoothing, we just add a line element to the canvas directly, not a path
             canvas.shapes.append(cv.Line(self.state.x, self.state.y, e.local_position.x, e.local_position.y, paint=ft.Paint(**paint_settings)))
             canvas.update()
-            return
+            
             
             
         
@@ -346,16 +357,17 @@ class Canvas(Widget):
         ''' Determines which drawing tool we're using, and updates accordingly as we drag our mouse '''
         
         # Sampling to improve perforamance. If the line length is too small, we skip it
-        dx = e.local_position.x - self.state.x
-        dy = e.local_position.y - self.state.y
-        if dx * dx + dy * dy < MINIMUM_SEGMENT_DISTANCE * MINIMUM_SEGMENT_DISTANCE:
-            return
-        
-        
+        #dx = e.local_position.x - self.state.x
+        #dy = e.local_position.y - self.state.y
+        #if dx * dx + dy * dy < MINIMUM_SEGMENT_DISTANCE * MINIMUM_SEGMENT_DISTANCE:
+            #return
 
+        # Grab canvas and catch errors
         canvas: cv.Canvas =  self.layer_stack.controls[self.active_layer_idx]
-        if not canvas.visible:  # Protect when we shouldnt be drawing with it
+        if not canvas.visible:  
             return
+        
+        # Grab the current path
         self.current_path = canvas.shapes[-1] if canvas.shapes else None
 
         # Catch errors
@@ -371,24 +383,23 @@ class Canvas(Widget):
             tool_name = canvas_settings.get('current_tool_name', "")
             match tool_name:
 
-                # Skip erase tool as it will free stroke
+                # Make erase tool use a path
                 case "erase":
-                    pass
+                    path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
+                    self.current_path.elements.append(path_element)
+                    self.current_path.update()
+                    # Update our state x and y positions
+                    self.state.x = e.local_position.x
+                    self.state.y =  e.local_position.y
+                    return
+
 
                 # For line tool - Update our straight line element to the current mouse position
                 case "line":
-                    # Set the element and its data
+                    # Set the element and update its position
                     line_element = self.current_path.elements[-1]
-                    line_dict = line_element.__dict__
-
-                    # Update the elements position
                     line_element.x = e.local_position.x
                     line_element.y = e.local_position.y
-
-                    # Update the dict to match
-                    line_dict['x'] = line_element.x
-                    line_dict['y'] = line_element.y
-
                     self.current_path.update()
                     return
 
@@ -416,58 +427,184 @@ class Canvas(Widget):
         
 
     # Called when we release the mouse to stop drawing a line
-    async def save_canvas(self, e: ft.DragEndEvent=None, canvas: cv.Canvas=None):
+    async def end_stroke(self, e: ft.DragEndEvent=None, canvas: cv.Canvas=None):
         """ Saves our paths to our canvas data for storage """
 
         # Set our canvas, layer name, and update our shapes count
         canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx] if canvas is None else canvas
         if not canvas.visible:  # Protect when we shouldnt be drawing with it
             return
+        
+        # Grab our layer and mark it as dirty
         layer_idx = int(canvas.data)
-
         layer_data = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]
-        layer_name = layer_data.get('name', None)
-        old_capture = layer_data.get('capture', None)
-        self.data['canvas_data']['undo_list'].append({'layer_name': layer_name, 'capture': old_capture})
-        self.data['canvas_data']['redo_list'].clear()     # Clear redo list after new action
+        layer_data['dirty'] = True
+        self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})   # Update our data with the new capture for this layer
 
-        # Make sure undo list is not too long and hog to many resources
-        if len(self.data['canvas_data']['undo_list']) > MAX_UNDO_LIST_TASKS:
-            self.data['canvas_data']['undo_list'].pop(0)
-                    
-                    
-        # Captures the current state of this canvas
-        await canvas.capture()  
+        # Grab paint and canvas settings
+        paint_settings = app.settings.data.get('paint_settings', {}).copy()
+        canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
 
-        # Get the capture and encode it so we can store it where we need to
-        capture = await canvas.get_capture()
-        encoded_capture = base64.b64encode(capture).decode('utf-8')      # Requires encoding to save json
-
-        
-        # Update our data with the new capture for this layer
-        layer_data['capture'] = encoded_capture
-        self.data['canvas_data']['layers'][layer_idx]= layer_data
-        self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})   # Update our data with the new capture  
-            
-        await canvas.clear_capture()
-        
-        # Check if we have too many shapes on the canvas. If we do, capture them and put it in an image
-        if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:   
+        # If we have too many shapes on the canvas, save its capture to the layer data
+        if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:
+            updated_capture = await self.save_canvas(canvas)
             canvas.shapes.clear()
-            canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))  
+            canvas.shapes.append(cv.Image(updated_capture, 0, 0, self.canvas_width, self.canvas_height)) 
             canvas.update()
-
-        # Always re-render end of erase strokes, or they will appear broken. TEMPORARY FIX
-        elif app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") == "tool" and app.settings.data.get('canvas_settings', {}).get('current_tool_name', "") == "erase":   
+            
+        # Always re-render end of erase strokes, or they will appear broken.
+        elif canvas_settings.get('current_control_mode', "") == "tool" and canvas_settings.get('current_tool_name', "") == "erase":   
+            updated_capture = await self.save_canvas(canvas)
             canvas.shapes.clear()
-            canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))
+            canvas.shapes.append(cv.Image(updated_capture, 0, 0, self.canvas_width, self.canvas_height))
             canvas.update()
 
         # Always re-render end of non-none blend mode strokes, or they will appear broken. TEMPORARY FIX
-        #elif app.settings.data.get('paint_settings', {}).get('blend_mode', "") is not None: 
-            #canvas.shapes.clear()
-            #canvas.shapes.append(cv.Image(encoded_capture, 0, 0, self.canvas_width, self.canvas_height))
-            #canvas.update()
+        elif paint_settings.get('blend_mode', "") is not None: 
+            updated_capture = await self.save_canvas(canvas)
+            canvas.shapes.clear()
+            canvas.shapes.append(cv.Image(updated_capture, 0, 0, self.canvas_width, self.canvas_height))
+            canvas.update()
+
+        self.add_undo_task({
+            'task_type': 'path_stroke',
+            'layer_name': layer_data.get('name', ''),
+            'data': self.current_path
+        })
+
+        
+
+    # Saves the current capture of a canvas to data
+    async def save_canvas(self, canvas: cv.Canvas) -> bytes:
+
+        # Protect bad calls
+        if canvas.visible == False:  
+            return
+                
+        # Grab our capture for the canvas
+        await canvas.capture()
+        capture = await canvas.get_capture()
+        encoded_capture = base64.b64encode(capture).decode('utf-8') 
+        await canvas.clear_capture()
+
+        # Grab the layer data using the index
+        layer_idx = int(canvas.data)
+        layer_data = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]
+
+        # Update its capture and mark it as not dirty anymore
+        layer_data['capture'] = encoded_capture      
+        layer_data['dirty'] = False    
+        self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})   # Update our data with the new capture
+
+        return capture  # Return capture if other functions want to use it
+    
+    # Accepts the formatted undo task data, adds it to state and handles UI updates for the undo/redo buttons
+    def add_undo_task(self, task_data: dict):
+        # Add most recent path to undo list, clear redo list, and check undo list not too long
+        self.state.undo_list.append(task_data)
+        self.state.redo_list.clear()    
+        if len(self.state.undo_list) > MAX_UNDO_LIST_TASKS: 
+            self.state.undo_list.pop(0)
+        
+        # Handle buttons
+        self.undo_button.disabled = False
+        self.undo_button.icon_color = self.data.get('color', None)
+        self.redo_button.disabled = True
+        if len(self.state.redo_list) == 0:
+            self.redo_button.icon_color = ft.Colors.OUTLINE_VARIANT
+            self.undo_button.update()
+            self.redo_button.update()
+
+    def add_redo_task(self, task_data: dict):
+        # Add most recent path to redo list, clear undo list, and check redo list not too long
+        self.state.redo_list.append(task_data)
+        self.state.undo_list.clear()    
+        if len(self.state.redo_list) > MAX_UNDO_LIST_TASKS: 
+            self.state.redo_list.pop(0)
+        
+        # Handle buttons
+        self.redo_button.disabled = False
+        self.redo_button.icon_color = self.data.get('color', None)
+        self.redo_button.update()
+        if len(self.state.undo_list) == 0:
+            self.undo_button.disabled = True
+            self.undo_button.icon_color = ft.Colors.OUTLINE_VARIANT
+            self.undo_button.update()
+        
+
+    # Called when undoing a stroke on the canvas
+    def undo_task(self, e=None):
+
+        # If there's nothing to undo, return early
+        if len(self.state.undo_list) == 0:
+            return
+        active_canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
+        if not active_canvas.visible:  # Should be impossible
+            return
+                
+        # Grab the task we're going to carry out and its name and capture
+        task = self.state.undo_list.pop()    
+        task_type = task.get('task_type', None)
+        layer_name = task.get('layer_name', None)
+        data = task.get('data', None)
+
+        layer_canvas = None
+        for idx, layer in enumerate(self.data.get('canvas_data', {}).get('layers', [])):
+            if layer.get('name', None) == layer_name:
+                layer_canvas = self.layer_stack.controls[idx]
+                break
+        if layer_canvas is None:
+            self.page.show_dialog(SnackBar(f"Error finding layer {layer_name} to undo task."))
+            return
+
+        match str(task_type):
+            case "path_stroke":
+                pass
+            case "line_strokes":
+                pass
+            case "set_layer_visibility":
+                pass
+            case _:
+                print("Unknown task type for undo: ", task_type)
+
+        self.add_redo_task(task)    # Add the task we just undid to the redo list
+        
+
+    # Called when redoing a stroke on the canvas after a previous undo
+    def redo_task(self, e=None):
+        # Return early if nothing to redo
+        if len(self.state.redo_list) == 0:
+            return
+        active_canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
+        if not active_canvas.visible:  # Should be impossible
+            return
+        
+        # Grab the task we're going to carry out and its name and capture
+        task = self.state.redo_list.pop()    
+        task_type = task.get('task_type', None)
+        layer_name = task.get('layer_name', None)
+        data = task.get('data', None)
+
+        layer_canvas = None
+        for idx, layer in enumerate(self.data.get('canvas_data', {}).get('layers', [])):
+            if layer.get('name', None) == layer_name:
+                layer_canvas = self.layer_stack.controls[idx]
+                break
+        if layer_canvas is None:
+            self.page.show_dialog(SnackBar(f"Error finding layer {layer_name} to undo task."))
+            return
+
+        match task_type:
+            case "path_stroke":
+                pass
+            case "line_strokes":
+                pass
+            case "set_layer_visibility":
+                pass
+            case _:
+                print("Unknown task type for undo: ", task_type)
+
+        self.add_undo_task(task)    # Add the task we just undid to the redo list
 
     # Sets either an image or a color as the content of a layer
     async def set_layer_content(self, e: ft.Event):
@@ -961,10 +1098,17 @@ class Canvas(Widget):
         await self.set_mouse_cursor(False)
         self.update()
 
-    async def toggle_layer_visibility(self, e: ft.Event):
-        layer_idx = e.control.parent.data
+    async def toggle_layer_visibility(self, e: ft.Event=None):
+        layer_idx = e.control.parent.data if e is not None else layer_idx
 
-        new_visibility = not self.layer_stack.controls[layer_idx].visible
+        old_visibility = self.layer_stack.controls[layer_idx].visible
+        new_visibility = not old_visibility
+
+        # If we are hiding a dirty layer, save it before we make it invisible
+        if new_visibility == False:
+            if self.data.get('canvas_data', {}).get('layers', [])[layer_idx].get('dirty', False) == True:
+                canvas: cv.Canvas = self.layer_stack.controls[layer_idx]
+                await self.save_canvas(canvas=canvas)
 
         # Update canvas visibility
         self.layer_stack.controls[layer_idx].visible = new_visibility
@@ -997,71 +1141,6 @@ class Canvas(Widget):
         super().build()
 
 
-        # Called when undoing a stroke on the canvas
-        async def undo_stroke(e: ft.Event=None):
-
-            # If there's nothing to undo, return early
-            if len(self.data.get('canvas_data', {}).get('undo_list', [])) == 0:
-                return
-            active_canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
-            if not active_canvas.visible:  # Protect when we shouldnt be drawing with it
-                return
-                    
-            # Grab the task we're going to carry out and its name and capture
-            #task = self.state.undo_list.pop()    
-            task = self.data.get('canvas_data', {}).get('undo_list', []).pop()
-            layer_name = task.get('layer_name', None)
-            capture = task.get('capture', None)
-
-            # Set data back to old capture state
-            for layer in self.data.get('canvas_data', {}).get('layers', []):
-                if layer.get('name', None) == layer_name:
-                    previous_capture = layer.get('capture', None)   # Grab current capture of the layer and add it to the redo list
-                    self.data.get('canvas_data', {}).get('redo_list', []).append({'layer_name': layer_name, 'capture': previous_capture})
-                    layer['capture'] = capture     
-                    # Update data
-                    self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
-                    if redo_button.disabled:
-                        redo_button.disabled = False
-                        redo_button.update()
-                    break
-
-            # Update the UI
-            
-            active_canvas.shapes.clear()
-            active_canvas.shapes.append(cv.Image(capture, 0, 0, self.canvas_width, self.canvas_width))
-            active_canvas.update()
-
-        # Called when redoing a stroke on the canvas after a previous undo
-        async def redo_stroke(e: ft.Event=None):
-            # Return early if nothing to redo
-            if len(self.data.get('canvas_data', {}).get('redo_list', [])) == 0:
-                return
-            active_canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
-            if not active_canvas.visible:  # Protect when we shouldnt be drawing with it
-                return
-            
-            # Most recent task we want to redo
-            task = self.data.get('canvas_data', {}).get('redo_list', []).pop() 
-            layer_name = task.get('layer_name', None)
-            capture = task.get('capture', None)
-
-            # Set data back to old capture state
-            for layer in self.data.get('canvas_data', {}).get('layers', []):
-                if layer.get('name', None) == layer_name:
-                    previous_capture = layer.get('capture', None)   # Grab current capture of the layer and add it to undo list
-                    self.data.get('canvas_data', {}).get('undo_list', []).append({'layer_name': layer_name, 'capture': previous_capture})
-                    layer['capture'] = capture     # Set the capture of the layer to the one from our undo task
-                    self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
-                    if undo_button.disabled:
-                        undo_button.disabled = False
-                        undo_button.update()
-                    break
-
-            # Update UI
-            active_canvas.shapes.clear()
-            active_canvas.shapes.append(cv.Image(capture, 0, 0, self.canvas_width, self.canvas_width))
-            active_canvas.update()
 
         # Reorder layers
         async def reorder_layers(e: ft.OnReorderEvent):
@@ -1115,16 +1194,16 @@ class Canvas(Widget):
         ) 
 
         
-
+        # Controls drawing for our canvases
         self.canvas_controller = ft.GestureDetector(
             mouse_cursor=ft.MouseCursor.PRECISE,
-            on_pan_start=self.start_new_stroke,         # Starts a new brush stroke with current paint settings
+            on_pan_start=self.start_stroke,         # Starts a new brush stroke with current paint settings
             on_pan_update=self.update_stroke,           # Updates the current stroke based on mouse movement
-            on_pan_end=self.save_canvas,                # Saves the now complete stroke to our data and canvas capture
+            on_pan_end=self.end_stroke,                # Saves the now complete stroke to our data and canvas capture
             on_tap_up=self.add_shape,                   # Handles adding dots and tools
             width=self.canvas_width,
             height=self.canvas_height,
-            drag_interval=10
+            drag_interval=5
         )
         
         # Holds our drawing so we can interact with it, zoom, pan, etc.
@@ -1153,21 +1232,16 @@ class Canvas(Widget):
             scale_factor=800, boundary_margin=500,
             min_scale=0.02, max_scale=3.0,
         )
-
-        self.sidebar_header.controls.insert(
-            1, 
-            undo_button := ft.IconButton(
-                ft.Icons.UNDO, self.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
-                on_click=undo_stroke, disabled=len(self.data.get('canvas_data', {}).get('undo_list', [])) == 0
-            )
+        self.undo_button = ft.IconButton(
+            ft.Icons.UNDO, ft.Colors.OUTLINE_VARIANT, tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
+            on_click=self.undo_task, disabled=True
         )
-        self.sidebar_header.controls.insert(
-            2, 
-            redo_button := ft.IconButton(
-                ft.Icons.REDO_OUTLINED, self.data.get('color', None), tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
-                on_click=redo_stroke, disabled=len(self.data.get('canvas_data', {}).get('redo_list', [])) == 0
-            )
+        self.redo_button = ft.IconButton(
+            ft.Icons.REDO_OUTLINED, ft.Colors.OUTLINE_VARIANT, tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
+            on_click=self.redo_task, disabled=True
         )
+        self.sidebar_header.controls.insert(1, self.undo_button)
+        self.sidebar_header.controls.insert(2, self.redo_button)
 
         
         self.sidebar_layers_list_view = ft.ReorderableListView(
@@ -1225,3 +1299,7 @@ class Canvas(Widget):
         
 
         self.page.run_task(self.set_mouse_cursor)
+
+
+# TODO: 
+# Closing app, or hiding widget makes sure to save all canvases that are dirty

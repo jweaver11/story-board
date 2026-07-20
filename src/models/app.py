@@ -94,7 +94,20 @@ class App:
 
         # Set our logic when page window is resized
         page.on_resize = app.settings.page_resized
-        page.on_close = app.settings.save_story
+
+        # Intercept the close event BEFORE the window tears down so canvas.capture() still works.
+        # prevent_close stops the OS from closing the window immediately; we close manually after saving.
+        page.window.prevent_close = True
+
+        # Intercept the close event BEFORE the window tears down so canvas.capture() still works.
+        async def _on_window_event(e: ft.WindowEvent):
+            if e.type == ft.WindowEventType.CLOSE:
+                await app.settings.save_story()
+                page.window.prevent_close = False
+                await page.window.close()
+                page.update()
+
+        page.window.on_event = _on_window_event
 
         # Import and set page fonts here
         #page.fonts = {

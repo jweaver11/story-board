@@ -324,6 +324,8 @@ class Widget(ft.Container):
             return
         
         self.update_data(**{'visible': False})
+        if self.data.get('tag', '') == "canvas":    # Canvas saves dirty strokes first
+            await self.save_file()  
         await self.story.workspace.remove_widget_from_workspace(self)
         
 
