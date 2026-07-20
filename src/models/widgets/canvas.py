@@ -708,7 +708,7 @@ class Canvas(Widget):
                 expand=True,
                 width=self.page.width / 2, height=self.page.height / 2
             ),
-            image=ft.DecorationImage("canvas_transparent_bg_dark_mode.png",  repeat=ft.ImageRepeat.REPEAT),
+            image=ft.DecorationImage("canvas_bg.png", alignment=ft.Alignment.TOP_LEFT, repeat=ft.ImageRepeat.REPEAT),
         )
 
         active_preview_image = None
@@ -940,10 +940,10 @@ class Canvas(Widget):
             layer_name = self.data.get('canvas_data', {}).get('layers', [])[layer_idx].get('name')
             self.data.get('canvas_data', {}).get('layers', []).pop(layer_idx)
 
-            for task in self.data.get('canvas_data', {}).get('undo_list', [])[:]:   # Update any undo tasks related to this layer
+            for task in self.state.undo_list[:]:   # Update any undo tasks related to this layer
                 if task.get('layer_name') == layer_name:
                     self.data['canvas_data']['undo_list'].remove(task)
-            for task in self.data.get('canvas_data', {}).get('redo_list', [])[:]:   # Update any redo tasks related to this layer
+            for task in self.state.redo_list[:]:   # Update any redo tasks related to this layer
                 if task.get('layer_name') == layer_name:
                     self.data['canvas_data']['redo_list'].remove(task)
 
@@ -1211,7 +1211,7 @@ class Canvas(Widget):
             content=ft.Stack([
                 ft.Container(   # Transparent Background
                     ignore_interactions=True,
-                    image=ft.DecorationImage("canvas_bg.png", repeat=ft.ImageRepeat.REPEAT),
+                    image=ft.DecorationImage("canvas_bg.png", alignment=ft.Alignment.TOP_LEFT, repeat=ft.ImageRepeat.REPEAT),
                     width=self.canvas_width,
                     height=self.canvas_height,
                     expand=False

@@ -62,7 +62,7 @@ class Workspace(ft.Container):
 
         # Force the update
         self.update()
-        await asyncio.sleep(1/60)  # Wait a frame to ensure selecting the tab is kept in a seperate frame
+        await asyncio.sleep(0.05)  # Wait a frame to ensure selecting the tab is kept in a seperate frame
 
         # Update the new widgets data to reflect its new position, and story data to match
         new_widget.update_data(**{'index': new_selected_index})  

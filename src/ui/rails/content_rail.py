@@ -132,7 +132,7 @@ class ContentRail(Rail):
                             tooltip="New Charts for your story"
                         ), 
                         ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Connection Map", 
+                            leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Relationship Map", 
                             data="character_relationship_map", on_click=self.new_item_clicked, close_on_click=True,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             tooltip="Visualize the connections between the characters in your story"

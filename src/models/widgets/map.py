@@ -16,6 +16,7 @@ from models.mini_widgets.map_location import MapLocation
 from models.dataclasses.canvas_shape import CanvasShape 
 import uuid
 from styles.colors import colors
+from styles.text_fields import TextField
 
 
 class Map(Widget):
@@ -53,8 +54,8 @@ class Map(Widget):
                 'show_background_image': True,      # Whether we show the background image or not
                 'background_image': "map_bg_fantasy.jpg",    # The background image of the map
 
-                'lore': list(),     # List of lores
-                'history': list(),      # List of histories  
+                'lore': list(),     # List of lores [{'label': "Lore Label", 'content': "Lore Content"}]
+                'history': list(),      # List of histories  [{'label': "History Label", 'content': "History Content"}]
 
                 # Holds our labels that sit on the map like locations, but don't have an icon or location
                 'labels': {
@@ -317,20 +318,142 @@ class Map(Widget):
         self.label_stack.update()
     
     def create_sidebar_ctrls(self) -> list[ft.Control]:
+        
+        # Handles showing text field for new lore and hiding the new lore button
+        async def create_lore_clicked(e=None):
+            new_lore_button.visible = False
+            new_lore_tf.visible = True
+            new_lore_button.update()
+            new_lore_tf.update()
+            await new_lore_tf.focus()
 
-        # TODO: Lore, history.
+        # Handles showing text field for new history and hiding the new history button
+        async def create_history_clicked(e: ft.Event[ft.Button]):
+            new_history_button.visible = False
+            new_history_tf.visible = True
+            new_history_button.update()
+            new_history_tf.update()
+            await new_history_tf.focus()
+        
+        # Creates a new lore entry in our data and adds it to the lore column
+        def create_lore(e: ft.Event[ft.TextField]):
+            self.data.get('lore', []).append({'label': e.control.value, 'content': ""})
+            self.update_data(**{'lore': self.data.get('lore', [])})
+            lore_column.controls.append(create_new_lore_ctrl(len(lore_column.controls), {'label': e.control.value, 'content': ""}))
+            lore_column.update()
 
-        # Settings - show/change map bg
-        # TODO: Add settings to select from maps, or none, or upload your own. or use a canvas
+        # Creates a new history entry in our data and adds it to the history column
+        def create_history(e: ft.Event[ft.TextField]):
+            self.data.get('history', []).append({'label': e.control.value, 'content': ""})
+            self.update_data(**{'history': self.data.get('history', [])})
+            history_column.controls.append(create_new_history_ctrl(len(history_column.controls), {'label': e.control.value, 'content': ""}))
+            history_column.update()
 
+        # Handles blurring our new lore and history text fields, hiding them, and showing the buttons again
+        def blur_textfields(e: ft.Event[ft.TextField]):
+            new_lore_button.visible = True
+            new_history_button.visible = True
+            new_lore_tf.value = ""
+            new_lore_tf.visible = False
+            new_history_tf.value = ""
+            new_history_tf.visible = False
+            self.sidebar_body.update()
+            pass
+        
+        # Save value of a lore when text field loses focus
+        def save_lore_value(e: ft.Event[ft.TextField]):
+            new_value = e.control.value
+            idx = e.control.data
+            self.data.get('lore', [])[idx].update({'content': new_value})
+            self.update_data(**{'lore': self.data.get('lore', [])})
+
+        # Save value of either lore or history text field when it loses focus
+        def save_history_value(e: ft.Event[ft.TextField]):
+            new_value = e.control.value
+            idx = e.control.data
+            self.data.get('history', [])[idx].update({'content': new_value})
+            self.update_data(**{'history': self.data.get('history', [])})
+
+        # Delete the lore or history text field and remove it from our data and column
+        def delete_lore_content(e: ft.Event[ft.IconButton]):
+            idx = e.control.parent.data
+            self.data.get('lore', []).pop(idx)
+            self.update_data(**{'lore': self.data.get('lore', [])})
+            lore_column.controls.pop(idx)
+            lore_column.update()
+            update_indices()
+
+        # Delete the lore or history text field and remove it from our data and column
+        def delete_history_content(e: ft.Event[ft.IconButton]):
+            idx = e.control.parent.data
+            self.data.get('history', []).pop(idx)
+            self.update_data(**{'history': self.data.get('history', [])})
+            history_column.controls.pop(idx)
+            history_column.update()
+            update_indices()
+
+        # Creates a new lore text field control for our lore column
+        def create_new_lore_ctrl(idx: int, data: dict) -> ft.TextField:
+            return TextField(
+                data.get('content'), label=data.get('label'), data=idx, expand=True, on_blur=save_lore_value, capitalization=ft.TextCapitalization.SENTENCES, multiline=True, dense=True,
+                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_lore_content, mouse_cursor=ft.MouseCursor.CLICK)
+            )
+        
+        # Creates a new history text field control for our history column
+        def create_new_history_ctrl(idx: int, data: dict) -> ft.TextField:
+            return TextField(
+                data.get('content'), label=data.get('label'), data=idx, expand=True, on_blur=save_history_value, capitalization=ft.TextCapitalization.SENTENCES, multiline=True, dense=True,
+                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_history_content, mouse_cursor=ft.MouseCursor.CLICK)
+            )
+        
+        # Update the indices of our lore and history controls so we can save them properly after a delete
+        def update_indices():
+            for idx, ctrl in enumerate(lore_column.controls):
+                ctrl.data = idx
+            for idx, ctrl in enumerate(history_column.controls):
+                ctrl.data = idx
+
+
+        # TODO: Settings - show/change map bg, select from canvas, upload, etc, enable drawing
+        
         return [
             
             self.description_tf,
-            ft.Text("Lores", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+            ft.Row([
+                ft.Text("Lores", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                new_lore_button := ft.IconButton(
+                    ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
+                    tooltip="Add Note",
+                    on_click=create_lore_clicked,
+                    mouse_cursor="click"
+                ),
+                new_lore_tf := ft.TextField(
+                    label="New Lore", expand=True, on_blur=blur_textfields, capitalization=ft.TextCapitalization.WORDS, autofocus=True,
+                    on_submit=create_lore, visible=False, dense=True, margin=ft.Margin.only(left=10)
+    
+                )
+            ], spacing=0),
+            lore_column := ft.Column([create_new_lore_ctrl(idx, data) for idx, data in enumerate(self.data.get('lore', []))]),
 
-            ft.Text("Histories", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),            
-                        
+           # ft.Divider(),
+            ft.Row([
+                ft.Text("Histories", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                new_history_button := ft.IconButton(
+                    ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
+                    tooltip="Add Note",
+                    on_click=create_history_clicked,
+                    mouse_cursor="click"
+                ),
+                new_history_tf := ft.TextField(
+                    label="New History", expand=True, on_blur=blur_textfields, capitalization=ft.TextCapitalization.WORDS, autofocus=True,
+                    on_submit=create_history, visible=False, dense=True, margin=ft.Margin.only(left=10)
+                )
+            ], spacing=0),
+            history_column := ft.Column([create_new_history_ctrl(idx, data) for idx, data in enumerate(self.data.get('history', []))]),
+
+            #ft.Divider(),         
             ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+
 
             ft.Divider(),
             self.sidebar_notes_label,
@@ -394,11 +517,12 @@ class Map(Widget):
             )
         ]
     
+    # Also sets our mouse coordinates for the menu to open at the right place
     def set_mouse_coords(self, e: ft.PointerEvent):
         self.new_location_position = (e.local_position.x, e.local_position.y)
         super().set_mouse_coords(e)
 
-
+    # Build the map
     def build(self):
         super().build()
 

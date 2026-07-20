@@ -11,8 +11,6 @@ from styles.rail.rail_folder import RailFolder
 from utils.new_canvas import new_canvas_alert_dlg
 import asyncio
 from models.app import app
-from models.isolated_controls.column import IsolatedColumn
-from models.isolated_controls.list_view import IsolatedListView
 
 
 @ft.control
