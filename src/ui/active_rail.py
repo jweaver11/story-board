@@ -46,7 +46,7 @@ class ActiveRail(ft.Container):
         match selected_rail:
             case "content": self.content = ContentRail(self.story)
             case "characters": self.content = CharactersRail(self.story)
-            case "plotlines": self.content = PlotlinesRail(self.story)
+            case "plot": self.content = PlotlinesRail(self.story)
             case "world_building": self.content = WorldBuildingRail(self.story)
             case "canvas": self.content = CanvasRail(self.story)
             case "planning": self.content = PlanningRail(self.story)

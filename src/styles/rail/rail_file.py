@@ -4,6 +4,7 @@ from styles.menu_option_style import MenuOptionStyle
 from styles.rail.rail_folder import RailFolder
 from models.app import app
 from styles.colors import colors
+from styles.text_fields import TextField
 import os
 import asyncio
 import math
@@ -68,9 +69,16 @@ class RailFile(ft.GestureDetector):
     def get_menu_options(self) -> list[ft.Control]:
         ''' Pops open a column of the menu options for this tree view item'''
 
+        async def handle_rename(e=None):
+            await self.widget.story.close_menu()
+            self.edit_title_tf.visible = True
+            self.title_text.visible = False
+            self.update()
+            await self.edit_title_tf.focus()
+
         return [
             MenuOptionStyle(
-                on_click=self.widget.rename_clicked,
+                on_click=handle_rename,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.widget.data.get('color', 'primary'),),
                     ft.Text(
@@ -133,6 +141,23 @@ class RailFile(ft.GestureDetector):
             #mouse_cursor=ft.MouseCursor.CLICK,
             #visual_density=ft.VisualDensity.COMPACT
         #)
+        def hide_edit_title_tf(e=None):
+            self.edit_title_tf.visible = False
+            self.title_text.visible = True
+            self.update()
+
+        self.edit_title_tf = ft.TextField(
+            value=self.widget.data.get('title', 'untitled'),
+            visible=False, expand=True,
+            on_blur=hide_edit_title_tf,
+            on_submit=self.widget.submit_rename,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            border_radius=4, dense=True, capitalization=ft.TextCapitalization.SENTENCES,
+            border_color=ft.Colors.TRANSPARENT,
+            focused_border_color=ft.Colors.PRIMARY,
+        )
+
+        self.title_text = ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS)
 
         self.content = ft.Draggable( 
             group="widgets",
@@ -142,13 +167,13 @@ class RailFile(ft.GestureDetector):
             content=ft.Container(
                 ft.Row([
                     leading_control, 
-                    ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                    self.title_text,
+                    self.edit_title_tf,
                     #self.options_button
                 ], spacing=6),
                 border_radius=4,
-                #border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if self.father is not None else None,
                 on_click=self.widget.show_widget,
-                padding=ft.Padding.only(right=6, top=2, bottom=2),
+                padding=ft.Padding.only(top=2, bottom=2),
                 
             ),
     )

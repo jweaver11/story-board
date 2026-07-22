@@ -28,7 +28,7 @@ class WorkspacesRail(ft.Container):
         self.reload_rail(self.story)
 
     # Called whenever we select a new workspace selector rail
-    def change_workspace(self, e, story: Story, force_rail: str=None):
+    def change_workspace(self, e: ft.Event[ft.NavigationRail], story: Story, force_rail: str=None):
         ''' Changes our selected workspace for the active rail '''
 
         if story is None:       # Protect settings being open but no story loaded

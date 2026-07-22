@@ -61,16 +61,23 @@ class WidgetRailItem(ft.GestureDetector):
             on_exit = self._stop_highlight,
             on_secondary_tap = lambda _: self.widget.story.open_menu(self.get_menu_options()),
             on_tap = self.widget.show_widget,
-            #mouse_cursor = ft.MouseCursor.CLICK,
+            mouse_cursor = ft.MouseCursor.CLICK,
         )
     
     # Called when this item is right clicked
     def get_menu_options(self) -> list[ft.Control]:
         ''' Pops open a column of the menu options for this tree view item'''
 
+        async def handle_rename(e=None):
+            await self.widget.story.close_menu()
+            self.edit_title_tf.visible = True
+            self.title_text.visible = False
+            self.update()
+            await self.edit_title_tf.focus()
+
         return [
             MenuOptionStyle(
-                on_click=self.widget.rename_clicked,
+                on_click=handle_rename,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.widget.data.get('color', 'primary'),),
                     ft.Text(
@@ -105,13 +112,13 @@ class WidgetRailItem(ft.GestureDetector):
 
     # Called when hovering mouse over a tree view item
     async def _highlight(self, e=None):
-        self.content.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
+        self.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
         #self.content.trailing.visible = True    
         self.update()
 
     # Called when stopping hover over a tree view item
     async def _stop_highlight(self, e=None):
-        self.content.content.bgcolor = ft.Colors.TRANSPARENT
+        self.content.bgcolor = ft.Colors.TRANSPARENT
         #self.content.trailing.visible = False
         self.update()
 
@@ -128,14 +135,32 @@ class WidgetRailItem(ft.GestureDetector):
             padding=ft.Padding.only(left=6)
         )
 
+        def hide_edit_title_tf(e=None):
+            self.edit_title_tf.visible = False
+            self.title_text.visible = True
+            self.update()
+
+        self.title_text = ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS)
+
+        self.edit_title_tf = ft.TextField(
+            value=self.widget.data.get('title', 'untitled'),
+            visible=False, expand=True,
+            on_blur=hide_edit_title_tf,
+            on_submit=self.widget.submit_rename,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            border_radius=4, dense=True, capitalization=ft.TextCapitalization.SENTENCES,
+            border_color=ft.Colors.TRANSPARENT,
+            focused_border_color=ft.Colors.PRIMARY,
+        )
+
         self.content = ft.Container(
             ft.Row([
                 leading_control, 
-                ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                self.title_text,
+                self.edit_title_tf
                 #self.options_button
             ], spacing=6),
             border_radius=4,
-            #border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if self.father is not None else None,
-            padding=ft.Padding.only(right=6, top=2, bottom=2),
+            padding=ft.Padding.only(top=2, bottom=2),
         )
         

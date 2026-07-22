@@ -364,6 +364,23 @@ class Widget(ft.Container):
             #)
         ]
     
+    # Called when submitting our textfield.
+    async def submit_rename(self, e: ft.Event[ft.TextField]):
+        ''' Checks that we're unique and renames the widget if so. on_blur is auto called after this, so we handle that as well '''          
+
+        name = e.control.value.strip()
+                                                
+        # Update our live title, and associated data
+        self.update_data(**{'title': name.capitalize()})   # Update our data with the new title and key
+        await self.save_file()  # Force a file save
+                
+        if self.story.data.get("selected_rail", "content") != "canvas":
+            self.story.active_rail.reload_rail()   # Reload the rail to reflect the name change
+
+        if self.data.get('visible', False) == True:
+            await self.story.workspace.update_widget_tab_title(self.data.get('index'), self.data.get('title'))  # Update the title of the tab in the workspace if we're visible
+        
+        e.page.pop_dialog()
     
     async def rename_clicked(self, e: ft.Event):
         ''' Replaces our widget title with a text field to rename it '''
@@ -590,7 +607,7 @@ class Widget(ft.Container):
             ),
             new_note_tf := ft.TextField(
                 on_submit=save_new_note, visible=False, expand=True,
-                on_blur=handle_new_note_blur,
+                on_blur=handle_new_note_blur, margin=ft.Margin.only(left=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                 border_radius=4, dense=True, capitalization=ft.TextCapitalization.SENTENCES,
                 border_color=ft.Colors.TRANSPARENT,
