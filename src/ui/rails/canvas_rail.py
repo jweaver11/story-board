@@ -65,129 +65,6 @@ class CanvasRail(Rail):
 
     
             
-    async def _set_active_tool(self, e: ft.Event):
-        tool_name = e.control.data
-        app.settings.update_data(**{"canvas_settings": {"current_control_mode": "tool", "current_tool_name": tool_name}})
-        #brush_selector.content = build_preview_brush(app.settings.data.get('paint_settings', {}))
-        #brush_selector.update()
-        for widget in self.story.widgets.values():
-            if widget.data.get('tag') == "canvas":
-                if widget.data.get('visible', True):
-                    await widget.set_mouse_cursor()
-
-
-    def get_tool_options(self) -> list[ft.Control]:
-        ''' Gets our tool options for the popup menu. '''
-
-        return [
-            ft.Text("Tools", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
-            ft.MenuItemButton(
-                ft.Row([
-                    ft.Text("Erase", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                    ft.Icon(ft.Icons.AUTO_FIX_NORMAL, ft.Colors.PRIMARY)
-                ]),
-                data="erase",
-                on_click=self._set_active_tool,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-                tooltip="Erase parts of your Canvas using your current brush width"
-            ),
-            ft.MenuItemButton(
-                ft.Row([
-                    ft.Text("Line", overflow=ft.TextOverflow.ELLIPSIS, expand=True), 
-                    ft.Icon(ft.Icons.REMOVE, ft.Colors.PRIMARY)
-                ]),
-                data="line",
-                on_click=self._set_active_tool,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-                tooltip="Draw straight lines. Click and drag to draw a line between your starting point and the current position of your mouse."
-            ),
-            ft.MenuItemButton(
-                ft.Row([
-                    ft.Text("Text", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                    ft.Icon(ft.Icons.TEXT_FIELDS, ft.Colors.PRIMARY)
-                ]),
-                data="text",
-                on_click=self._set_active_tool,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-                tooltip="Add text only to your canvas. Useful for labels"
-            ),
-            
-
-            # Shapes we can use
-            ft.Divider(), 
-            ft.Text("Shapes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
-            
-            #ft.MenuItemButton(
-                #ft.Row([
-                    #ft.Text("Dialogue Box", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                    #ft.Icon(ft.CupertinoIcons.BUBBLE_LEFT_FILL, ft.Colors.PRIMARY)
-                    # ft.CupertinoIcons.CHAT_BUBBLE
-                #]),
-                #data="dialogue_box",
-                #on_click=self._set_active_tool,
-                #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-                #tooltip="Add dialogue boxes to your canvas"
-            #),
-
-            ft.MenuItemButton(
-                ft.Row([
-                    ft.Text("Circle", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                    ft.Icon(ft.Icons.CIRCLE, ft.Colors.PRIMARY)
-                ]),
-                data="circle",
-                on_click=self._set_active_tool,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-                tooltip="Add perfect circles to your canvas"
-            ),
-            ft.MenuItemButton(
-                ft.Row([
-                    ft.Text("Oval", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                    ft.Icon(ft.Icons.CIRCLE, ft.Colors.PRIMARY, scale=ft.Scale(scale_x=0.8))
-                ]),
-                data="oval",
-                on_click=self._set_active_tool,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-                tooltip="Add ovals and ellipses to your canvas"
-            ),
-            ft.MenuItemButton(
-                ft.Row([
-                    ft.Text("Arc", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                    ft.Icon(ft.CupertinoIcons.CIRCLE_RIGHTHALF_FILL, ft.Colors.PRIMARY, rotate=math.pi/2)   
-                ]),
-                data="arc",
-                on_click=self._set_active_tool,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-                tooltip="Add arcs and partial circles to your canvas"
-            ),
-            ft.MenuItemButton(
-                ft.Row([
-                    ft.Text("Rectangle", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                    ft.Icon(ft.Icons.RECTANGLE, ft.Colors.PRIMARY)
-                ]),
-                data="rectangle",
-                on_click=self._set_active_tool,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-                tooltip="Add rectangles and squares to your canvas"
-            ),
-            ft.MenuItemButton(
-                ft.Row([
-                    ft.Text("Triangle", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                    ft.Icon(ft.CupertinoIcons.ARROWTRIANGLE_UP_FILL, ft.Colors.PRIMARY)
-                ]),
-                data="triangle",
-                on_click=self._set_active_tool,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
-                tooltip="Add triangles to your canvas"
-            ),    
-        ]
-
-        
-    
-
-    
-        
-
-    
     
     
 
@@ -226,6 +103,13 @@ class CanvasRail(Rail):
         stroke_join_selector: ft.SubmenuButton           # Button for selecting the stroke join of the current paint
         blend_mode_selector: ft.SubmenuButton            # Button for selecting the blend mode of the current paint
 
+        # Updates the mouse cursor or all visible canvases based on updated tool mode
+        def set_canvas_mouse_cursor():
+            for widget in self.story.widgets.values():
+                if widget.data.get('tag') == "canvas":
+                    if widget.data.get('visible', True):
+                        widget.canvas_controller.mouse_cursor = widget.set_mouse_cursor()
+                        widget.update()
 
         # Updates any live text tools if we changed a setting that would affect it
         def update_tool_preview():
@@ -284,9 +168,8 @@ class CanvasRail(Rail):
             paint_settings.update({"color": color_picker.color})
             app.settings.update_data(**{"paint_settings": paint_settings})
             update_brush_preview()
-            #update_tool_icon()
+            update_tool_icon()
             color_selector.trailing.color = color_picker.color
-            #tool_selector.trailing.color = color_picker.color
             self.update()
 
         # Sets current control mode to drawing
@@ -298,12 +181,14 @@ class CanvasRail(Rail):
             app.settings.update_data(**{'paint_settings': paint_settings, 'canvas_settings': canvas_settings})
             # Update UI
             update_brush_preview()
+            set_canvas_mouse_cursor()
             brush_selector.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
             color_selector.trailing.color = paint_settings.get('color', "#000000")
             set_draw_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
             set_draw_mode_button.icon = ft.Icons.BRUSH_ROUNDED
             set_tool_mode_button.bgcolor = None
             set_tool_mode_button.icon = ft.Icons.BUILD_OUTLINED
+            tool_selector.content = update_tool_icon()
             tool_selector.style.bgcolor = None
             save_custom_brush_button.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
             save_custom_brush_button.disabled = False
@@ -589,6 +474,7 @@ class CanvasRail(Rail):
             nonlocal canvas_settings, paint_settings, brush_selector, set_tool_mode_button, save_custom_brush_button
             canvas_settings['current_control_mode'] = "tool"
             app.settings.update_data(**{'canvas_settings': canvas_settings})
+            set_canvas_mouse_cursor()
             # Update buttons
             brush_selector.style.bgcolor = None
             set_draw_mode_button.bgcolor = None
@@ -596,9 +482,128 @@ class CanvasRail(Rail):
             set_tool_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
             set_tool_mode_button.icon = ft.Icons.BUILD_ROUNDED
             tool_selector.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            tool_selector.content = update_tool_icon()
             save_custom_brush_button.style.bgcolor = None
             save_custom_brush_button.disabled = True
             self.update() 
+
+        def get_tool_options() -> list[ft.Control]:
+                ''' Gets our tool options for the popup menu. '''
+        
+                return [
+                    ft.Text("Tools", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
+                    ft.MenuItemButton(
+                        ft.Row([
+                            ft.Text("Erase", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                            ft.Icon(ft.Icons.AUTO_FIX_NORMAL, ft.Colors.PRIMARY)
+                        ]),
+                        data="erase",
+                        on_click=set_active_tool,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                        tooltip="Erase parts of your Canvas using your current brush width"
+                    ),
+                    ft.MenuItemButton(
+                        ft.Row([
+                            ft.Text("Line", overflow=ft.TextOverflow.ELLIPSIS, expand=True), 
+                            ft.Icon(ft.Icons.REMOVE, ft.Colors.PRIMARY)
+                        ]),
+                        data="line",
+                        on_click=set_active_tool,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                        tooltip="Draw straight lines. Click and drag to draw a line between your starting point and the current position of your mouse."
+                    ),
+                    ft.MenuItemButton(
+                        ft.Row([
+                            ft.Text("Text", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                            ft.Icon(ft.Icons.TEXT_FIELDS, ft.Colors.PRIMARY)
+                        ]),
+                        data="text",
+                        on_click=set_active_tool,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                        tooltip="Add text only to your canvas. Useful for labels"
+                    ),
+                    
+        
+                    # Shapes we can use
+                    ft.Divider(), 
+                    ft.Text("Shapes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
+                    
+                    #ft.MenuItemButton(
+                        #ft.Row([
+                            #ft.Text("Dialogue Box", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                            #ft.Icon(ft.CupertinoIcons.BUBBLE_LEFT_FILL, ft.Colors.PRIMARY)
+                            # ft.CupertinoIcons.CHAT_BUBBLE
+                        #]),
+                        #data="dialogue_box",
+                        #on_click=set_active_tool,
+                        #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                        #tooltip="Add dialogue boxes to your canvas"
+                    #),
+        
+                    ft.MenuItemButton(
+                        ft.Row([
+                            ft.Text("Circle", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                            ft.Icon(ft.Icons.CIRCLE, ft.Colors.PRIMARY)
+                        ]),
+                        data="circle",
+                        on_click=set_active_tool,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                        tooltip="Add perfect circles to your canvas"
+                    ),
+                    ft.MenuItemButton(
+                        ft.Row([
+                            ft.Text("Oval", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                            ft.Icon(ft.Icons.CIRCLE, ft.Colors.PRIMARY, scale=ft.Scale(scale_x=0.8))
+                        ]),
+                        data="oval",
+                        on_click=set_active_tool,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                        tooltip="Add ovals and ellipses to your canvas"
+                    ),
+                    ft.MenuItemButton(
+                        ft.Row([
+                            ft.Text("Arc", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                            ft.Icon(ft.CupertinoIcons.CIRCLE_RIGHTHALF_FILL, ft.Colors.PRIMARY, rotate=math.pi/2)   
+                        ]),
+                        data="arc",
+                        on_click=set_active_tool,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                        tooltip="Add arcs and partial circles to your canvas"
+                    ),
+                    ft.MenuItemButton(
+                        ft.Row([
+                            ft.Text("Rectangle", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                            ft.Icon(ft.Icons.RECTANGLE, ft.Colors.PRIMARY)
+                        ]),
+                        data="rectangle",
+                        on_click=set_active_tool,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                        tooltip="Add rectangles and squares to your canvas"
+                    ),
+                    ft.MenuItemButton(
+                        ft.Row([
+                            ft.Text("Triangle", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                            ft.Icon(ft.CupertinoIcons.ARROWTRIANGLE_UP_FILL, ft.Colors.PRIMARY)
+                        ]),
+                        data="triangle",
+                        on_click=set_active_tool,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                        tooltip="Add triangles to your canvas"
+                    ),    
+                ]
+
+        # Sets the active tool and updates the tool selector icon and brush preview
+        async def set_active_tool(e: ft.Event[ft.MenuItemButton]):
+            nonlocal canvas_settings, paint_settings
+            tool_name = e.control.data
+            
+            canvas_settings.update({"current_tool_name": tool_name})
+            app.settings.update_data(**{"canvas_settings": canvas_settings})
+            set_tool_mode()
+            brush_selector.content = build_preview_brush(paint_settings)
+            tool_selector.content = update_tool_icon()
+            
+            self.update()
 
         # Called when changing paint width
         def update_paint_width(e: ft.Event[ft.Slider]):
@@ -830,7 +835,7 @@ class CanvasRail(Rail):
         # Selector to choose a tool to use on the canvas
         tool_selector = ft.SubmenuButton(
             update_tool_icon(),
-            self.get_tool_options(),
+            get_tool_options(),
             
             trailing=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.ON_SURFACE_VARIANT, scale=0.8),
             style=ft.ButtonStyle(
@@ -878,7 +883,7 @@ class CanvasRail(Rail):
             True, "Fill Paint", on_change=update_paint_fill,
             label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
             value=paint_settings.get('style', 'stroke').endswith('_fill'),
-            tooltip="Whether to fill strokes and shapes, or leave them hollow (Transparent)",
+            tooltip="Whether to fill strokes and shapes, or leave them hollow (Transparent). Forces brush smoothing",
             #label_position=ft.LabelPosition.LEFT
         )
 

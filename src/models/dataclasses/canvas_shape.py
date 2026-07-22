@@ -374,6 +374,7 @@ class CanvasShape(ft.Container):
                 self.rotate_handle.top = self.top - 50
                 self.rotate_handle.update()
                 self.update()
+                print("Move called")
 
     
     def build(self):
@@ -382,7 +383,7 @@ class CanvasShape(ft.Container):
             case "rectangle":
                 self.cv_shape = cv.Rect(
                     10, 10, 180, 180, paint=self.paint, 
-                     border_radius=ft.BorderRadius.all(app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0))
+                    border_radius=ft.BorderRadius.all(app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0))
                 )
             case "triangle":
                 self.cv_shape = cv.Path(
