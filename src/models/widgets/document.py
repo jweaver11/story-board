@@ -79,10 +79,8 @@ class Document(Widget):
 
         # Deletes this comment from parents data and controls
         def delete_comment(self, e: ft.Event):
-            self.widget.data['mini_widgets'].pop(self.data["id"], None)
-            self.widget.update_data(mini_widgets=self.widget.data['mini_widgets'])
-            self.widget.mini_widgets_column.controls.remove(self)
-            self.widget.mini_widgets_column.update()
+            pass
+            
 
         # Build the comment
         def build(self):
@@ -118,10 +116,8 @@ class Document(Widget):
             
         # Deletes this comment from parents data and controls
         def delete_image(self, e: ft.Event):
-            self.widget.data['mini_widgets'].pop(self.data["id"], None)
-            self.widget.update_data(mini_widgets=self.widget.data['mini_widgets'])
-            self.widget.mini_widgets_column.controls.remove(self)
-            self.widget.mini_widgets_column.update()
+            pass
+            
 
         # Build the image
         def build(self):
@@ -376,3 +372,4 @@ class Document(Widget):
         ], spacing=0, expand=True)
 
 
+# TODO: Deleting comment and ref image not done

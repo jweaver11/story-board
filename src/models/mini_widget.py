@@ -105,24 +105,36 @@ class MiniWidget(ft.GestureDetector):
     
     
     # Called when hovering over stacked control to give us a highlighted shadow
-    async def highlight(self, e: ft.Event=None):
+    async def highlight(self, e=None):
         ''' Shows our slider and hides our plotline_marker. Makes sure all other sliders are hidden '''
         self.shadow = ft.BoxShadow(2, 2, self.data.get('color', ft.Colors.PRIMARY), blur_style=ft.BlurStyle.OUTER)
         self.update()
 
     # Called when we stop hovering over our marker
-    async def stop_highlight(self, e: ft.Event=None):
+    async def stop_highlight(self, e=None):
         if self.shown_in_sidebar:
             return
         self.shadow = None
-        self.update()    
+        self.update()  
+
+    
 
     # Shows our mini widget in the sidebar of our widgets content
-    async def show_mini_widget(self, e: ft.Event=None):
+    async def show_mini_widget(self, e=None):
         ''' Shows our mini widget '''
         self.shown_in_sidebar = True
+
+        # Update header stuff
         self.widget.sidebar_title.value = self.data.get('title', '')   # Update title to match us
-        self.widget.sidebar_body.controls = self.create_sidebar_ctrls()  # Build info sidebar content here
+
+        # If we have a settings ctrl, add it to the sidebar header, otherwise remove it
+        if hasattr(self, 'create_sidebar_header_setting_ctrl'):
+            self.widget.sidebar_header.controls[1] = self.create_sidebar_header_setting_ctrl()
+        else:
+            self.widget.sidebar_header.controls.pop(1)
+
+        # Build our sidebar body content
+        self.widget.sidebar_body.controls = self.create_sidebar_ctrls() 
         
         # Applies the update
         if not await self.widget.show_sidebar():
@@ -143,7 +155,17 @@ class MiniWidget(ft.GestureDetector):
     
     # Set the content of our mini widget
     def build(self):
-        return
+        self.description_tf = ft.TextField(
+            value=self.data.get('description', ''), label="Description",
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            border_color=ft.Colors.TRANSPARENT,
+            margin=ft.Margin.only(top=4),
+            focused_border_color=ft.Colors.PRIMARY,
+            multiline=True, dense=True, expand=True, 
+            on_blur=lambda e: self.update_data(**{'description': e.control.value}),
+            capitalization=ft.TextCapitalization.SENTENCES,
+            label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
+        )   
 
     
         

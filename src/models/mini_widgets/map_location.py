@@ -11,6 +11,7 @@ import flet.canvas as cv
 from styles.icons import location_icons
 from styles.text_fields import TextField
 import time
+import asyncio
 from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
 
@@ -36,7 +37,7 @@ class MapLocation(MiniWidget):
                 'icon': "location_pin",                 # Which icon to use for this location
                 'image_base64': "",                     # If we have a custom image for this location. Shown in sidebar and when hovering over the location on the map
 
-                'icon_size': 30,                       # Scale of our icon/image on the map, default 1.0    
+                'icon_size': 30,                       # Size of our icon/image on the map, default 30  
                 'map_id': "",                       # id of map we're connected too (if we're connected to one)
 
                 # Information for our information display
@@ -50,6 +51,8 @@ class MapLocation(MiniWidget):
         self.map_label: ft.Text     # Label above our icon/image on the map
         self.snapshot: ft.Image     # Snapshot that appears on the stack 
         self.hover_timer: float = 0.0    # Timer for how long we've been hovering over our location, used to show our snapshot after a delay
+        self._hover_task: asyncio.Task = None
+        self.image_preview: ft.Image
         
        
     # Moves our location on the map
@@ -76,18 +79,36 @@ class MapLocation(MiniWidget):
     async def highlight(self, e=None):
         ''' Shows our slider and hides our map_marker. Makes sure all other sliders are hidden '''
 
-        self.map_label_tf.parent.shadow= ft.BoxShadow(0, 1, ft.Colors.with_opacity(0.2, self.data.get('color'))) 
-        self.icon.parent.shadow = ft.BoxShadow(0, 1, ft.Colors.with_opacity(0.2, self.data.get('color')))
+        self.map_label_tf.parent.shadow= ft.BoxShadow(4, 8, ft.Colors.with_opacity(0.25, self.data.get('color'))) 
+        self.icon.parent.shadow = ft.BoxShadow(4, 8, ft.Colors.with_opacity(0.25, self.data.get('color')))
         self.update()
+        if self._hover_task:
+            self._hover_task.cancel()
+        self._hover_task = asyncio.create_task(self.show_image_preview())
 
     # Hides are shadow unless our info display is visible, then stay highlighted
-    async def stop_highlight(self, e=None):
+    def stop_highlight(self, e=None):
         # If we're dragging, keep highlighted
         if self.is_dragging:
             return
         self.map_label_tf.parent.shadow = None
         self.icon.parent.shadow = None
         self.update()
+        self.hover_timer = 0.0    # Reset our hover timer so we don't show our snapshot after we stop hovering
+        if self._hover_task:
+            self._hover_task.cancel()
+            self._hover_task = None
+            if self.image_preview in self.widget.location_stack.controls:
+                self.widget.location_stack.controls.remove(self.image_preview)
+                self.widget.location_stack.update()
+
+    # Shows our image on the stack after 1 second of hovering
+    async def show_image_preview(self):
+        ''' Waits 2 seconds; if stop_highlight hasn't cancelled this task, prints a statement '''
+        await asyncio.sleep(1)
+        if self.data.get('image_base64', ""):
+            self.widget.location_stack.controls.append(self.image_preview)
+            self.widget.location_stack.update()
 
     # Overrite parent method of renaming if called from sidebar
     async def handle_rename(self, e=None):
@@ -132,11 +153,25 @@ class MapLocation(MiniWidget):
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
                     ft.Text(
-                        f"Rename {self.data.get('title', '')}", 
+                        f"Rename", 
                         weight=ft.FontWeight.BOLD, 
                         overflow=ft.TextOverflow.ELLIPSIS, expand=True
                     ), 
                 ]),
+            ),
+            MenuOptionStyle(
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
+                        ft.Text("Icon", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    self.get_color_options(), 
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="Change this locations icon on the map"
+                ),
+                no_padding=True, no_effects=True
             ),
             MenuOptionStyle(
                 ft.SubmenuButton(
@@ -148,7 +183,7 @@ class MapLocation(MiniWidget):
                     self.get_color_options(), 
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                     style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    tooltip="Change this widget's color"
+                    tooltip="Change this locations color"
                 ),
                 no_padding=True, no_effects=True
             ),
@@ -161,13 +196,17 @@ class MapLocation(MiniWidget):
             )
         ]
 
-    
+    # Return a menubar
+    def create_sidebar_header_setting_ctrl(self) -> ft.MenuBar:
+        return ft.Container(width=20, height=20, bgcolor="green")  
 
     # Called when reloading changes to our plot point and in constructor
     def create_sidebar_ctrls(self) -> list[ft.Control]:
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
-        # TODO: Change icon, title, color, description. Show preview if connected to other map
+        # TODO: Change icon, title, color, lore
+        #  Show preview if connected to other map
+        # Upload image button
         
         
         if self.data.get('image_base64', ""):
@@ -184,34 +223,26 @@ class MapLocation(MiniWidget):
 
         #upload_image_button = ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_location_image, mouse_cursor="click")
 
-        type_tf = TextField(
-            value=self.data.get('Type', ''), multiline=False, expand=True,
-            on_blur=lambda e: self.update_data(**{'Type': e.control.value}),
-            label="Type", capitalization=ft.TextCapitalization.WORDS, dense=True,
-            hint_text="Village, Mountains, Dungeon, etc"
-        )
+        
 
-        description_tf = TextField(
-            value=self.data.get('Description', ''), multiline=True, expand=True, 
-            on_blur=lambda e: self.update_data(**{'Description': e.control.value}), 
-            label="Description", capitalization=ft.TextCapitalization.SENTENCES, dense=True
-        )
+        
 
         history_tf = TextField(
-            value=self.data.get('History', ''), multiline=True, expand=True,
-            on_blur=lambda e: self.update_data(**{'History': e.control.value}),
-            label="History", capitalization=ft.TextCapitalization.SENTENCES, dense=True
+            value=self.data.get('history', ''), 
+            on_blur=lambda e: self.update_data(**{'history': e.control.value}),
+            label="History", capitalization=ft.TextCapitalization.SENTENCES, 
+            margin=ft.Margin.only(top=10),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            border_color=ft.Colors.TRANSPARENT, focused_border_color=ft.Colors.PRIMARY,
+            multiline=True, dense=True, expand=True, 
+            label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
         )
 
-        
-        
-
         return [
-            ft.Container(height=1),
 
             #ft.Row([upload_image_button, type_tf], spacing=0),
 
-            description_tf,
+            self.description_tf,
             history_tf,
             
             #self.notes_label,
@@ -223,6 +254,8 @@ class MapLocation(MiniWidget):
     # Called from reload_mini_widget
     def build(self):
         """ Rebuilds our map control that holds our plot point and slider """
+
+        super().build()  # Call parent build to set up our data and content
 
         # Updates state and close any open menus
         async def start_drag(e=None):
@@ -289,6 +322,14 @@ class MapLocation(MiniWidget):
                 )
             ], tight=True, expand=False),   # End row constrainment
         ], tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=False, spacing=0)
+
+
+        self.image_preview = ft.Image(
+            self.data.get('image_base64', ""),
+            height=100, width=100,
+            left=self.left, top=self.top,
+            offset=ft.Offset(1.5, -0.5)
+        )
         
         
         

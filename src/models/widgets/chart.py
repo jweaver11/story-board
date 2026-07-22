@@ -355,9 +355,8 @@ class Chart(Widget):
         # Sets whether to show labels on the chart axes
         async def set_show_labels(e: ft.Event):
             # Update data
-            self.update_data(**{'bar_data': {'show_labels': new_show_labels_value}})
-            # Update chart
             new_show_labels_value = e.control.value
+            self.update_data(**{'bar_data': {'show_labels': new_show_labels_value}})
             chart.left_axis.show_labels = new_show_labels_value
             chart.bottom_axis.show_labels = new_show_labels_value
             chart.update()
@@ -515,7 +514,7 @@ class Chart(Widget):
             ft.MenuBar(
                 [
                     ft.SubmenuButton(
-                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, "primary"),
+                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                         [
                             # Toggle stacked rods
                             ft.Switch(
@@ -1059,7 +1058,7 @@ class Chart(Widget):
             ft.MenuBar(
                 [
                     ft.SubmenuButton(
-                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, "primary"),
+                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                         [
                             ft.Switch(
                                 True, "\tMake Chart Round", value=self.data.get('radar_data', {}).get('make_chart_round', False),

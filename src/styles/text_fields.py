@@ -13,7 +13,7 @@ class TextField(ft.TextField):
         self.text_style=ft.TextStyle(size=14)
         self.multiline=True
         self.capitalization=ft.TextCapitalization.SENTENCES
-        self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
+        self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
         self.border_radius=4
         self.border_color=ft.Colors.TRANSPARENT
         self.focused_border_color=ft.Colors.PRIMARY

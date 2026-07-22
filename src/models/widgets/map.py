@@ -132,16 +132,16 @@ class Map(Widget):
                 on_exit=self.stop_highlight,
                 hover_interval=20, 
                 on_hover=self.widget.set_mouse_coords,
-                mouse_cursor=ft.MouseCursor.MOVE,
+                mouse_cursor=ft.MouseCursor.CLICK,
             )
 
         # Highlight the label
-        async def highlight(self, e=None):
-            self.label_tf.parent.shadow = ft.BoxShadow(0, 1, ft.Colors.with_opacity(0.1, self.color))
+        def highlight(self, e=None):
+            self.label_tf.parent.shadow = ft.BoxShadow(4, 8, ft.Colors.with_opacity(0.25, self.color))
             self.update()
         
         # Stop highlighting the label
-        async def stop_highlight(self, e=None):
+        def stop_highlight(self, e=None):
             if self.is_dragging:
                 return
             self.label_tf.parent.shadow = None
@@ -396,14 +396,19 @@ class Map(Widget):
         def create_new_lore_ctrl(idx: int, data: dict) -> ft.TextField:
             return TextField(
                 data.get('content'), label=data.get('label'), data=idx, expand=True, on_blur=save_lore_value, capitalization=ft.TextCapitalization.SENTENCES, multiline=True, dense=True,
-                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_lore_content, mouse_cursor=ft.MouseCursor.CLICK)
+                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_lore_content, mouse_cursor=ft.MouseCursor.CLICK),
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
+                border_color=ft.Colors.TRANSPARENT, focused_border_color=ft.Colors.PRIMARY,
             )
         
         # Creates a new history text field control for our history column
         def create_new_history_ctrl(idx: int, data: dict) -> ft.TextField:
             return TextField(
                 data.get('content'), label=data.get('label'), data=idx, expand=True, on_blur=save_history_value, capitalization=ft.TextCapitalization.SENTENCES, multiline=True, dense=True,
-                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_history_content, mouse_cursor=ft.MouseCursor.CLICK)
+                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_history_content, mouse_cursor=ft.MouseCursor.CLICK),
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, 
+                border_color=ft.Colors.TRANSPARENT, focused_border_color=ft.Colors.PRIMARY,
+                label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
             )
         
         # Update the indices of our lore and history controls so we can save them properly after a delete
@@ -412,9 +417,7 @@ class Map(Widget):
                 ctrl.data = idx
             for idx, ctrl in enumerate(history_column.controls):
                 ctrl.data = idx
-
-
-        # TODO: Settings - show/change map bg, select from canvas, upload, etc, enable drawing
+        
         
         return [
             
@@ -459,19 +462,26 @@ class Map(Widget):
             self.sidebar_notes_label,
             self.sidebar_notes_column,
                     
-        ] 
+        ]  
             
             
         
 
     # Called when clicking to show our info in the sidebar
     async def show_info(self, e: ft.Event=None):
+
+        # Close menu
         await self.story.close_menu()
         if self.showing_info:   # Already showing info, so no need to re-call it
             return
-        self.sidebar_title.value = self.data.get('title', '')   # Update title to match us
-        self.sidebar_body.controls = self.create_sidebar_ctrls()  # Build info sidebar content here
         
+        # Rebuild header stuff
+        self.sidebar_title.value = self.data.get('title', '')   # Update title to match us
+        self.sidebar_header.controls[1] = self.create_sidebar_header_setting_ctrl()  # Build our settings button
+
+        # Build the body
+        self.sidebar_body.controls = self.create_sidebar_ctrls()  
+
         # Applies the update
         if not await self.show_sidebar():
             self.sidebar.update()
@@ -522,6 +532,50 @@ class Map(Widget):
         self.new_location_position = (e.local_position.x, e.local_position.y)
         super().set_mouse_coords(e)
 
+    def create_sidebar_header_setting_ctrl(self) -> ft.MenuBar:
+    
+        # TODO: Settings - show/change map bg, select from canvas, upload, etc, enable drawing
+        # Change select build in image to submenubutton
+        return ft.MenuBar(
+            [
+                ft.SubmenuButton(
+                    ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                    [
+                        ft.Text("Set Map Backgroound", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4)),
+                        ft.MenuItemButton(      # 
+                            leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Choose Built-in Image", 
+                            close_on_click=True,
+                            tooltip="Choose a built-in image to use as the background for this map",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        ), 
+                        ft.MenuItemButton(      # Folders
+                            leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Select Canvas", 
+                            close_on_click=True,
+                            tooltip="Select a canvas to use as the background for this map",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        ), 
+                        ft.MenuItemButton(      # Folders
+                            leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Upload Image", 
+                            close_on_click=True,
+                            tooltip="Upload an image to use as the background for this map",
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        ), 
+                        
+                        
+                    ],
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                    tooltip="Adjust the settings for this map"
+                ),
+            ],
+            style=ft.MenuStyle(
+                bgcolor="transparent", shadow_color="transparent",
+                shape=ft.RoundedRectangleBorder(radius=4),
+                padding=ft.Padding.all(0)
+            )
+            
+        )
+
     # Build the map
     def build(self):
         super().build()
@@ -543,8 +597,7 @@ class Map(Widget):
             height=self.map_height,
         )  
 
-        # TODO:  
-        # Users can choose to create their image or use some default ones, or upload their own
+        
         
 
         # Declare our label stack
@@ -594,10 +647,12 @@ class Map(Widget):
         )
 
 
-        
-        # Start with map info build and have our button make sure to create our info if needed
+        # Add our settings button to the sidebar header, and build our body
+        self.sidebar_header.controls.insert(1, self.create_sidebar_header_setting_ctrl()) 
         self.sidebar_body.controls = self.create_sidebar_ctrls()  
-        self.show_sidebar_button.on_click = self.show_info
+        self.show_sidebar_button.on_click = self.show_info  # Set our show_sidebar_button to have extra logic
+        
+        
 
 
         if self.data.get('show_sidebar', True):

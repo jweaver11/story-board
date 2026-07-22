@@ -552,7 +552,6 @@ class Widget(ft.Container):
         # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
         self.sidebar_header = ft.Row([
             self.sidebar_title,    # Title of widget
-            
             ft.Container(expand=True),      # Spacer
             ft.IconButton(          # Close/Collapse the sidebar
                 ft.Icons.CLOSE, self.data.get('color', ft.Colors.PRIMARY), on_click=self.hide_sidebar,
