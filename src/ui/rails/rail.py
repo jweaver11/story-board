@@ -39,7 +39,7 @@ class Rail(ft.Column):
         self.new_item_textfield = ft.TextField(     
             hint_text="", data="",                 # Hint text and data tag for logic                      
             autofocus=True, dense=True,                 
-            capitalization=ft.TextCapitalization.SENTENCES,     # Capitalize sentences for names
+            capitalization=ft.TextCapitalization.WORDS,     # Capitalize sentences for names
             visible=False,                                      # Hidden by default
             text_style=self.text_style,                         # Text style for consistency
             on_blur=self.on_new_item_blur,                      # Called when clicking off the textfield and after submitting

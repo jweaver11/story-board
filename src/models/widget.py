@@ -55,7 +55,7 @@ class Widget(ft.Container):
                 'color': "primary",                   # Color of this widget's tab and icon in workspace and on rail
                 'image_base64': str(),                 # Base64 string of the image for this widget, if it has one
                 'show_sidebar': False,               # Whether to show the sidebar. Widgets that use it set to True in their own data
-                'notes': list(),          # Several widgets have notes
+                'notes': list(),                # Several widgets have notes{'label': str(), 'value': str()}
                 'description': str(),
             } 
 
@@ -502,14 +502,23 @@ class Widget(ft.Container):
     # Called in constructor to build our sidebar controls
     def build_sidebar(self):
 
+        # Handles hiding our new note button and focusing our new note textfield
+        async def handle_new_note_clicked(e=None):
+            new_note_button.visible = False
+            new_note_tf.visible = True
+            new_note_tf.value = ""
+            new_note_button.update()
+            new_note_tf.update()
+            await new_note_tf.focus()
+
         # Create a new note in data, then add it to the column
-        async def create_new_note(e: ft.Event):
-            self.data.get('notes', []).append("")
+        async def save_new_note(e: ft.Event[ft.TextField]):
+            self.data.get('notes', []).append({'label': e.control.value, 'value': ''})
             self.update_data(**{'notes': self.data.get('notes', [])})
             self.sidebar_notes_column.controls.append(
                 create_new_note_ctrl(
                     note_idx = len(self.data.get('notes', [])) - 1,
-                    note_value = self.data.get('notes', [])[-1]
+                    note_data = self.data.get('notes', [])[-1]
                 )
             )
             self.sidebar_notes_column.update()
@@ -520,24 +529,31 @@ class Widget(ft.Container):
         def save_note_content(e: ft.Event[ft.TextField]):
             note_idx = e.control.data
             if len(self.data.get('notes', [])) > note_idx:
-                self.data.get('notes', [])[note_idx] = e.control.value
+                self.data.get('notes', [])[note_idx]['value'] = e.control.value
                 self.update_data(**{'notes': self.data.get('notes', [])})
             
         # Returns a textfield of the note control
-        def create_new_note_ctrl(note_idx: int, note_value: str) -> TextField:
+        def create_new_note_ctrl(note_idx: int, note_data: dict) -> TextField:
             return TextField(
-                note_value, data=note_idx, expand=True, on_blur=save_note_content, capitalization=ft.TextCapitalization.SENTENCES, multiline=True, dense=True,
+                note_data.get('value', ''), label=note_data.get('label', ''), data=note_idx, expand=True, on_blur=save_note_content, 
+                capitalization=ft.TextCapitalization.SENTENCES, multiline=True, dense=True,
                 suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_note, mouse_cursor=ft.MouseCursor.CLICK)
             )
 
         # Deletes the note from data and then the column and updates the indices
-        async def delete_note(e: ft.Event):
+        def delete_note(e: ft.Event):
             note_idx = e.control.parent.data
             self.data.get('notes', []).pop(note_idx)
             self.update_data(**{'notes': self.data.get('notes', [])})
             self.sidebar_notes_column.controls.pop(note_idx)
             self.sidebar_notes_column.update()
             update_note_indices()
+
+        def handle_new_note_blur(e=None):
+            new_note_button.visible = True
+            new_note_tf.visible = False
+            new_note_button.update()
+            new_note_tf.update()
 
         # Updates all our notes ctrls (textfields) data to be accurate after an index was deleted
         def update_note_indices():
@@ -566,12 +582,21 @@ class Widget(ft.Container):
         # The label for Notes with a new note button and textfield
         self.sidebar_notes_label = ft.Row([
             ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
-            ft.IconButton(
+            new_note_button := ft.IconButton(
                 ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
                 tooltip="Add Note",
-                on_click=create_new_note,
+                on_click=handle_new_note_clicked,
                 mouse_cursor="click"
             ),
+            new_note_tf := ft.TextField(
+                on_submit=save_new_note, visible=False, expand=True,
+                on_blur=handle_new_note_blur,
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+                border_radius=4, dense=True, capitalization=ft.TextCapitalization.SENTENCES,
+                border_color=ft.Colors.TRANSPARENT,
+                focused_border_color=ft.Colors.PRIMARY,
+                label="New Note Label", label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
+            )
             
         ], spacing=0)
 

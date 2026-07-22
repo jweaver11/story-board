@@ -177,7 +177,7 @@ class Map(Widget):
             self.widget.data.get('labels', {}).get(self.id, {}).update({'position': self.position})
             self.widget.update_data(**{'labels': self.widget.data.get('labels', {})})
             self.widget.set_mouse_coords(e)     # Reset the menu position
-            await self.stop_highlight()
+            self.stop_highlight()
 
         # Returns our options for our label
         def get_label_options(self) -> list[MenuOptionStyle]:

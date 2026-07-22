@@ -147,8 +147,9 @@ class Workspace(ft.Container):
         if self.tabs.selected_index >= len(self.tab_bar.tabs):
             self.tabs.selected_index = len(self.tab_bar.tabs) - 1
             self.story.update_data(**{'workspace_selected_index': self.tabs.selected_index})
-            self.tab_bar.indicator_color = self.tab_view.controls[self.tabs.selected_index].data.get('color', ft.Colors.ON_SURFACE_VARIANT)
-            self.tab_bar.update()
+            if len(self.tab_bar.tabs) > 0:
+                self.tab_bar.indicator_color = self.tab_view.controls[self.tabs.selected_index].data.get('color', ft.Colors.ON_SURFACE_VARIANT)
+                self.tab_bar.update()
 
         # Add the placeholder if we need it
         if len(self.tab_bar.tabs) < 1:
