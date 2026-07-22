@@ -156,7 +156,6 @@ class CanvasShape(ft.Container):
 
     # Either drag or resize us based on where the user is manipulating
     async def _manipulate(self, e: ft.DragUpdateEvent):
-
         match self.manipulate_action:
             
             # Resizing from the left edge
@@ -374,8 +373,6 @@ class CanvasShape(ft.Container):
                 self.rotate_handle.top = self.top - 50
                 self.rotate_handle.update()
                 self.update()
-                print("Move called")
-
     
     def build(self):
 

@@ -54,14 +54,14 @@ class CanvasRail(Rail):
         #brush_selector.content = build_preview_brush(app.settings.data.get('paint_settings', {}))
         #brush_selector.update()
         print(e.control)
-        #await self.update_tool_preview()
+        #await self.update_canvas_tool_preview()
 
     async def _save_text_shadow_color(self, e=None):
         app.settings.data['canvas_settings']['text_shadow_color'] = self.text_shadow_color_picker.color
         app.settings.update_data(**{"canvas_settings": {"text_shadow_color": self.text_shadow_color_picker.color}})
         #brush_selector.content = build_preview_brush(app.settings.data.get('paint_settings', {}))
         #brush_selector.update()
-        #await self.update_tool_preview()
+        #await self.update_canvas_tool_preview()
 
     
             
@@ -111,53 +111,14 @@ class CanvasRail(Rail):
                         widget.canvas_controller.mouse_cursor = widget.set_mouse_cursor()
                         widget.update()
 
-        # Updates any live text tools if we changed a setting that would affect it
-        def update_tool_preview():
-            nonlocal canvas_settings, paint_settings
-            decoration = canvas_settings.get('text_shape_decoration', "none")
-            match decoration:
-                case "Underline": text_decoration = ft.TextDecoration.UNDERLINE
-                case "Overline": text_decoration = ft.TextDecoration.OVERLINE
-                case "Line Through": text_decoration = ft.TextDecoration.LINE_THROUGH
-                case _: text_decoration = None
-
-            # Check any visible canvases
-            for widget in self.story.workspace.tab_view.controls:
+        # Checks all our widgets. If any of them are manipulating a tool, we paint it on the canvas if switching from tool to draw mode
+        def update_canvas_tool_preview():
+            for widget in self.story.widgets.values():
                 if widget.data.get('tag') == "canvas":
-
-                    # If they're manipulating a shape, adjust the paint settings to match
-                    if widget.manipulating_shape:
-
-                        # TODO: Write update function in the canvas that re-grabs the correct paint settings from the app data and applies it to the shape
-                        # Then just call that here, or before the manipulating_shape check
-                    
-                        # Fix any paint changes
-                        widget.active_tool.paint.color = app.settings.data.get('update_paint_blend_mode', {}).get('color', ft.Colors.BLACK) if canvas_settings.get('use_paint_for_shapes', True) else ft.Colors.BLACK
-                        widget.active_tool.paint.stroke_width=app.settings.data.get('update_paint_blend_mode', {}).get('stroke_width', 3) if canvas_settings.get('use_paint_for_shapes', True) else 3
-                        widget.active_tool.paint.style=app.settings.data.get('update_paint_blend_mode', {}).get('style', ft.PaintingStyle.STROKE)
-                        widget.active_tool.paint.stroke_cap=app.settings.data.get('update_paint_blend_mode', {}).get('stroke_cap', "round") if canvas_settings.get('use_paint_for_shapes', True) else "round"
-                        widget.active_tool.paint.stroke_join=app.settings.data.get('update_paint_blend_mode', {}).get('stroke_join', "round") if canvas_settings.get('use_paint_for_shapes', True) else "round"
-                        widget.active_tool.paint.blur_image=app.settings.data.get('update_paint_blend_mode', {}).get('blur_image', 0) if canvas_settings.get('use_paint_for_shapes', True) else 0
-                        widget.active_tool.paint.anti_alias=app.settings.data.get('update_paint_blend_mode', {}).get('anti_alias', True) if canvas_settings.get('use_paint_for_shapes', True) else True
-                    
-                        if widget.active_tool.shape_type == "text":
-                            widget.active_tool.cv_shape.style = ft.TextStyle(
-                                size=app.settings.data.get('canvas_settings', {}).get('text_shape_size', 20),
-                                weight=ft.FontWeight.BOLD if app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False) else ft.FontWeight.NORMAL,
-                                color=app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE),
-                                italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
-                                decoration=text_decoration,
-                                #shadow
-                                letter_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0),
-                                word_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0),
-                            )
-                        elif widget.active_tool.shape_type == "rectangle":
-                            widget.active_tool.cv_shape.border_radius = ft.BorderRadius.all(
-                                app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0)
-                            )
-
-                        widget.active_tool.cv_shape.update()
-                        break
+                    if widget.data.get('visible', True):
+                        if widget.manipulating_tool == True:
+                            widget.update_canvas_tool_preview()
+                            break
 
         # Set the color pickers color upon change
         def set_color(e: ft.Event[ColorPicker]):
@@ -984,7 +945,7 @@ class CanvasRail(Rail):
                 case "use_paint_for_shapes":
                     app.settings.data['canvas_settings']['use_paint_for_shapes'] = value or False
             app.settings.update_data(**{"canvas_settings": app.settings.data['canvas_settings']})
-            #await self.update_tool_preview()
+            #await self.update_canvas_tool_preview()
 
 
         text_color_selector = ft.SubmenuButton(
@@ -1055,7 +1016,7 @@ class CanvasRail(Rail):
                     new_icon = ft.Icons.FORMAT_CLEAR
 
             app.settings.update_data(**{"canvas_settings": {"text_shape_decoration": decoration}})
-            #await self.update_tool_preview()
+            #await self.update_canvas_tool_preview()
             text_decoration_selector.trailing.icon = new_icon
             text_decoration_selector.update()
 

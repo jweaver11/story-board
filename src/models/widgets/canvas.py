@@ -103,7 +103,7 @@ class Canvas(Widget):
         
         # Tool and shape stuff
         self.current_tool: CanvasShape                      # The active shape being added if we're using a tool
-        self.tool_rotate_handle: ft.GestureDetector         # Handle for rotating the current tool 
+        #self.tool_rotate_handle: ft.GestureDetector         # Handle for rotating the current tool 
         
         # Sidebar controls. Undo/redo buttons
         self.undo_button: ft.IconButton
@@ -138,33 +138,30 @@ class Canvas(Widget):
         if self.layer_stack.controls[self.active_layer_idx].visible == False:
             new_mouse_cursor = None
             print("Mouse cursor set to: 4", new_mouse_cursor)
-        
-        return new_mouse_cursor
-        
+
         # Paints a shape we're modifying if the rail tool changes
         if self.state.manipulating_shape:
             self.page.run_task(self.paint_tool_on_canvas)
-            self.state.manipulating_shape = False
         
+        return new_mouse_cursor
 
     # Shows our sidebar and paints a tool on canvas if needed
     async def show_sidebar(self, e: ft.Event):
         if self.state.manipulating_shape:
             await self.paint_tool_on_canvas()
-            self.state.manipulating_shape = False
+            
         await super().show_sidebar(e)
            
     # If we have an active tool/shape that we are manipulating, paint it on the canvas
     async def paint_tool_on_canvas(self):
         ''' Converts the displayed shapes rotation and size onto our active layer and paints it there '''
 
-        if self.active_layer_idx >= len(self.data.get('canvas_data', {}).get('layers', [])) - 1:
-            self.page.show_dialog(SnackBar("Error finding canvas need to paint tool on."))
+        canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
+        if not canvas.visible or self.current_tool is None:  # Catch errors
+            self.page.show_dialog(SnackBar("Error finding visible canvas or tool."))
             return
-        active_canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
 
-        if self.current_tool is None:
-            return
+        self.manipulating_shape = False   # Update state
         
         # Text can be rotated, so we can just grab it and put it in the right spot
         if self.current_tool.shape_type == "text":
@@ -174,40 +171,35 @@ class Canvas(Widget):
             text_shape.x += self.current_tool.left + 2
             text_shape.y += self.current_tool.top + 2
             
-            active_canvas.shapes.append(text_shape)
-            
-            active_canvas.update()
-            await self.save_canvas(active_canvas)
+            canvas.shapes.append(text_shape)
+            await self.end_stroke(canvas=canvas)
             self.current_tool.visible = False
             self.current_tool.rotate_handle.visible = False
-            self.current_tool.rotate_handle.update()
-            self.current_tool.update()
+           
+            self.update()
             return
-        
+
+        # Capture the current tool
         await self.current_tool.canvas.capture()
         shape_capture = await self.current_tool.canvas.get_capture()
-        await self.current_tool.canvas.clear_capture()
 
+        # Grab the image and rotate
         shape_img = Image.open(BytesIO(shape_capture)).convert("RGBA")
-
         angle = self.current_tool.rotate.angle
 
         # Flet rotate.angle is radians; PIL rotate() takes degrees counterclockwise
         angle_degrees = -math.degrees(angle)
         rotated = shape_img.rotate(angle_degrees, expand=True, resample=Image.Resampling.BICUBIC)
-
         # Set rotation (with border padding)
         rotation_cx = self.current_tool.left + (self.current_tool.canvas.width + 4) / 2
         rotation_cy = self.current_tool.top + (self.current_tool.canvas.height + 4) / 2
 
-
+        # Calculate the position to paste the rotated image onto the canvas
         paste_x = int(rotation_cx - rotated.width / 2)
         paste_y = int(rotation_cy - rotated.height / 2)
 
-        active_layer_idx = self.data.get('canvas_data', {}).get('active_layer_idx', 0)  
-
-        # Decode existing layer capture
-        layer_b64 = self.data['canvas_data']['layers'][active_layer_idx].get('capture')
+        # Grab the existing capture
+        layer_b64 = self.data['canvas_data']['layers'][self.active_layer_idx].get('capture')
         if layer_b64:
             layer_img = Image.open(BytesIO(base64.b64decode(layer_b64))).convert("RGBA")
         else:
@@ -222,16 +214,55 @@ class Canvas(Widget):
         layer_img.save(output, format="PNG")
         encoded = base64.b64encode(output.getvalue()).decode('utf-8')
 
-        active_canvas.shapes.clear()   
-        active_canvas.shapes.append(cv.Image(encoded, 0, 0))
-        active_canvas.update()
-        await self.save_canvas(active_canvas) 
+        canvas.shapes.clear()   
+        canvas.shapes.append(cv.Image(encoded, 0, 0))
+        await self.end_stroke(canvas=canvas)
             
         # Finally, remove the active tool stuff
         self.current_tool.visible = False
         self.current_tool.rotate_handle.visible = False
-        self.current_tool.rotate_handle.update()
-        self.current_tool.update()
+        self.update()
+
+    # Updates any live text tools if we changed a setting that would affect it
+    def update_tool_preview(self):
+        canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
+        paint_settings = app.settings.data.get('paint_settings', {}).copy()
+
+        decoration = canvas_settings.get('text_shape_decoration', "none")
+        match decoration:
+            case "Underline": text_decoration = ft.TextDecoration.UNDERLINE
+            case "Overline": text_decoration = ft.TextDecoration.OVERLINE
+            case "Line Through": text_decoration = ft.TextDecoration.LINE_THROUGH
+            case _: text_decoration = None
+
+        if self.manipulating_shape:
+        
+            # Fix any paint changess
+            self.current_tool.paint.color = app.settings.data.get('paint_settings', {}).get('color', ft.Colors.BLACK) if canvas_settings.get('use_paint_for_shapes', True) else ft.Colors.BLACK
+            self.current_tool.paint.stroke_width=app.settings.data.get('paint_settings', {}).get('stroke_width', 3) if canvas_settings.get('use_paint_for_shapes', True) else 3
+            self.current_tool.paint.style=app.settings.data.get('paint_settings', {}).get('style', ft.PaintingStyle.STROKE)
+            self.current_tool.paint.stroke_cap=app.settings.data.get('paint_settings', {}).get('stroke_cap', "round") if canvas_settings.get('use_paint_for_shapes', True) else "round"
+            self.current_tool.paint.stroke_join=app.settings.data.get('paint_settings', {}).get('stroke_join', "round") if canvas_settings.get('use_paint_for_shapes', True) else "round"
+            self.current_tool.paint.blur_image=app.settings.data.get('paint_settings', {}).get('blur_image', 0) if canvas_settings.get('use_paint_for_shapes', True) else 0
+            self.current_tool.paint.anti_alias=app.settings.data.get('paint_settings', {}).get('anti_alias', True) if canvas_settings.get('use_paint_for_shapes', True) else True
+        
+            if self.current_tool.shape_type == "text":
+                self.current_tool.cv_shape.style = ft.TextStyle(
+                    size=app.settings.data.get('canvas_settings', {}).get('text_shape_size', 20),
+                    weight=ft.FontWeight.BOLD if app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False) else ft.FontWeight.NORMAL,
+                    color=app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE),
+                    italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
+                    decoration=text_decoration,
+                    #shadow
+                    letter_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0),
+                    word_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0),
+                )
+            elif self.current_tool.shape_type == "rectangle":
+                self.current_tool.cv_shape.border_radius = ft.BorderRadius.all(
+                    app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0)
+                )
+
+            self.current_tool.cv_shape.update()
 
 
     # Called when we click the canvas and don't initiate a drag. Adds either a point if in draw mode, or active tool/shape if in tool mode
@@ -262,10 +293,10 @@ class Canvas(Widget):
 
                     self.state.manipulating_shape = True
                     self.current_tool = CanvasShape(tool_name, left=e.local_position.x, top=e.local_position.y)
-                    self.layer_stack.controls.append(self.current_tool)
-                    self.layer_stack.update()
-                    self.layer_stack.controls.append(self.current_tool.rotate_handle)
-                    self.layer_stack.update()
+                    self.canvas_controller.parent.controls.append(self.current_tool)
+                    self.canvas_controller.parent.update()
+                    self.canvas_controller.parent.controls.append(self.current_tool.rotate_handle)
+                    self.canvas_controller.parent.update()
             return
             
         else:
@@ -283,7 +314,7 @@ class Canvas(Widget):
             await self.end_stroke(canvas)
         
     # Called when we start drawing on the canvas
-    async def start_stroke(self, e: ft.DragStartEvent):
+    def start_stroke(self, e: ft.DragStartEvent):
         ''' Set our initial starting x and y coordinates for the element we're drawing. '''
 
         # Grab the canvas and paint settings
@@ -334,11 +365,9 @@ class Canvas(Widget):
             else: 
                 canvas.shapes.append(cv.Line(self.state.x, self.state.y, e.local_position.x, e.local_position.y, paint=ft.Paint(**paint_settings)))
             canvas.update()
-                  
-        
         
     # Called when actively drawing on the canvas
-    async def update_stroke(self, e: ft.DragUpdateEvent):
+    def update_stroke(self, e: ft.DragUpdateEvent):
         ''' Determines which drawing tool we're using, and updates accordingly as we drag our mouse '''
         
         # Sampling to improve perforamance. If the line length is too small, we skip it
@@ -452,7 +481,7 @@ class Canvas(Widget):
         self.add_undo_task({
             'task_type': 'path_stroke',
             'layer_name': layer_data.get('name', ''),
-            'data': self.current_path
+            #'data': self.current_path
         })
 
         
@@ -521,8 +550,8 @@ class Canvas(Widget):
         # If there's nothing to undo, return early
         if len(self.state.undo_list) == 0:
             return
-        active_canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
-        if not active_canvas.visible:  # Should be impossible
+        canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
+        if not canvas.visible:  # Should be impossible
             return
                 
         # Grab the task we're going to carry out and its name and capture
@@ -558,8 +587,8 @@ class Canvas(Widget):
         # Return early if nothing to redo
         if len(self.state.redo_list) == 0:
             return
-        active_canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
-        if not active_canvas.visible:  # Should be impossible
+        canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
+        if not canvas.visible:  # Should be impossible
             return
         
         # Grab the task we're going to carry out and its name and capture
@@ -840,9 +869,6 @@ class Canvas(Widget):
         self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
         self.layer_stack.update()
         self.update()
-
-        #print("Passed in new layer idx: ", new_layer_idx)
-        print("New active_layer_idx: ", self.active_layer_idx)
         
     # Cretes a new layer canvas control for the stack
     def create_new_layer_canvas_ctrl(self, idx: int, canvas_data: dict):
@@ -1056,6 +1082,9 @@ class Canvas(Widget):
     # Sets the new active layer based on data
     async def set_new_active_layer(self, e: ft.Event):
 
+        if self.manipulating_shape:
+            await self.paint_tool_on_canvas()
+
         # Deselcted old list tile:
         for ctrl in self.sidebar_layers_list_view.controls:
             ctrl.content.bgcolor = None
@@ -1081,6 +1110,7 @@ class Canvas(Widget):
         self.canvas_controller.mouse_cursor = self.set_mouse_cursor()
         self.update()
 
+
     async def toggle_layer_visibility(self, e: ft.Event=None):
         layer_idx = e.control.parent.data if e is not None else layer_idx
 
@@ -1091,6 +1121,8 @@ class Canvas(Widget):
         if new_visibility == False:
             if self.data.get('canvas_data', {}).get('layers', [])[layer_idx].get('dirty', False) == True:
                 canvas: cv.Canvas = self.layer_stack.controls[layer_idx]
+                if self.manipulating_shape:
+                    await self.paint_tool_on_canvas()
                 await self.save_canvas(canvas=canvas)
 
         # Update canvas visibility
@@ -1202,13 +1234,7 @@ class Canvas(Widget):
                 ),     
                 #canvas_transparent_bg_dark_mode.png
                 #dark_mode_transparent_background.jpg
-                ft.Container(
-                    #border=ft.Border.all(2, ft.Colors.OUTLINE),    # Causes slight pixel shift upon capture
-                    content=self.layer_stack, 
-                    expand=False,
-                    width=self.canvas_width,    # Allow spacing for border
-                    height=self.canvas_height,       # Holds our layers stack
-                ),
+                self.layer_stack, 
                 self.canvas_controller      # Controller that sits on top
             ]),
             expand=3, 
