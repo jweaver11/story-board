@@ -262,7 +262,63 @@ class Widget(ft.Container):
                     pass
 
         # Sets a canvas as our image
-        async def set_canvas_as_image(e: ft.Event):
+        async def set_canvas_as_image(e=None):
+
+            # Set the canvas id when selecting a canvas from the radio group
+            def select_canvas(e: ft.Event[ft.RadioGroup]):
+                nonlocal canvas_id
+                canvas_id = e.data
+                
+            # Sets the canvas image from the returned canvas snapshot
+            def set_canvas_image(e=None):
+                if canvas_id is None:
+                    self.page.pop_dialog()
+                    return
+                widget = self.story.get_widget_by_id(canvas_id)
+                if widget is None:
+                    self.page.show_dialog(SnackBar("Canvas not found. Please try again."))
+                    self.page.pop_dialog()
+                    return
+
+                snapshot_str = widget.get_snapshot_string(quality="low")
+                if snapshot_str is None:
+                    self.page.show_dialog(SnackBar("Failed to get canvas snapshot. Please try again."))
+                    self.page.pop_dialog()
+                    return
+
+                self.update_data(**{'image_base64': snapshot_str})
+                self.select_image_button.content.icon = ft.Container(
+                    ft.Image(
+                        src=self.data.get('image_base64', ""),
+                        width=150,
+                        height=150,
+                        fit=ft.BoxFit.FILL,
+                    ), #shape=ft.BoxShape.CIRCLE, 
+                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                )
+                self.select_image_button.update()
+                
+                self.page.pop_dialog()
+
+            canvas_id: str = None
+
+            dlg = ft.AlertDialog(
+                title=ft.Text("Set a Canvas as Image", weight=ft.FontWeight.BOLD),
+                content=ft.RadioGroup(
+                    ft.Column([
+                        ft.Radio(
+                            label=widget.data.get('title', 'Untitled'),
+                            value=id, mouse_cursor=ft.MouseCursor.CLICK,
+                        ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"],
+                    ),
+                    on_change=select_canvas
+                ),
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                    ft.TextButton("Select", on_click=set_canvas_image, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),]
+            )
+            self.page.show_dialog(dlg)
+
             await self.story.close_menu()   # Close menu
 
         # Resets our image to nothing and our button to the placeholder
@@ -285,7 +341,7 @@ class Widget(ft.Container):
             on_click=set_canvas_as_image,
                 content=ft.Row([
                     ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', 'primary'),),
-                    ft.Text("Set Canvas (WIP)", weight=ft.FontWeight.BOLD), 
+                    ft.Text("Set Canvas", weight=ft.FontWeight.BOLD), 
                 ], tooltip="Set a canvas as the image for this widget"),
             ),
             MenuOptionStyle(
@@ -662,6 +718,7 @@ class Widget(ft.Container):
     def build(self):
         self.build_sidebar()
 
+        # Our image button 
         self.select_image_button = ft.GestureDetector(
             ft.IconButton(
                 ft.Container(
@@ -670,7 +727,8 @@ class Widget(ft.Container):
                         width=150,
                         height=150,
                         fit=ft.BoxFit.FILL,
-                    ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                    ), #shape=ft.BoxShape.CIRCLE, 
+                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS
                 ) if self.data.get('image_base64', '') else ft.Icons.IMAGE_OUTLINED, 
                 self.data.get('color'), icon_size=150,
                 tooltip="Upload an Image for this widget", mouse_cursor=ft.MouseCursor.CLICK,

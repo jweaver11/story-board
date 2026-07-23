@@ -753,38 +753,35 @@ class Canvas(Widget):
                 ft.TextButton("Apply", on_click=apply_blur, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
             ]
         )
-        self.page.show_dialog(dlg)         
+        self.page.show_dialog(dlg)    
 
+    # Returns our current snapshot in bytes of our canvas layers combined
+    def get_snapshot_bytes(self, quality: str="max") -> bytes:
 
-    # Called when we click to export a canvas
-    async def export_canvas_clicked(self, e=None):
-        """ Exports canvas to correct file type based on selection with optional upscaling """
+        # Determine target dimensions from quality setting
+        match quality:
+            case "low":     scale = 0.25
+            case "medium":  scale = 0.5
+            case _:         scale = 1.0
+        width = max(1, int(self.canvas_width * scale))
+        height = max(1, int(self.canvas_height * scale))
 
         # Merge all our layer/canvas captures together into one image at the right size
-        def _merge_captures(captures_list: list, target_width: int=None, target_height: int=None):
+        def _merge_captures(captures_list: list):
 
             images = []     # Start with an images list
 
-            if target_width is None or target_height is None:
-                images = [Image.open(BytesIO(capture)).convert("RGBA") for capture in captures_list]
-                width, height = images[0].size      # Set the width and height we use based on actual size
+            for capture in captures_list:
+                image = Image.open(BytesIO(capture)).convert("RGBA")        # Create the image for each capture
 
-            else:
-                width, height = target_width, target_height     # Set width and height to target size
+                # Resize each layer to the target dimensions before compositing
+                if image.size != (width, height):
+                    image = image.resize((width, height), Image.Resampling.LANCZOS)
 
-                # Go through our captures list
-                for capture in captures_list:
-                    image = Image.open(BytesIO(capture)).convert("RGBA")        # Create the image for each capture
-
-                    # Resize if necessary
-                    if target_width and target_height:
-                        if image.size != (target_width, target_height):
-                            image = image.resize((target_width, target_height), Image.Resampling.LANCZOS)
-
-                    images.append(image)        # Add to list
+                images.append(image)
 
             if not images:      # Catch errors
-                return
+                return None
             
             merged = Image.new("RGBA", (width, height), (0, 0, 0, 0))
             
@@ -795,38 +792,32 @@ class Canvas(Widget):
             # Gives us the output we want
             output = BytesIO()
             merged.save(output, format="PNG")
-            file_output = output.getvalue()
-            return file_output
+            return output.getvalue()
 
-        # List to store our captures for each layer of our canvas
-        captures_list = []
+        # List to store our captures for each layer of our canvas (skip empty captures)
+        captures_list = [base64.b64decode(layer.get('capture', '')) for layer in self.data.get('canvas_data', {}).get('layers', []) if layer.get('capture')]
+
+        # Our exportable image bytes from merging all our layers captures together
+        return _merge_captures(captures_list)
+
+    # Returns a base64 string of our merged canvas captures
+    def get_snapshot_string(self, quality: str="max") -> str | None:
+        merged_bytes = self.get_snapshot_bytes(quality)
+        if merged_bytes is None:
+            return None
+        return base64.b64encode(merged_bytes).decode('utf-8')
 
 
-        # Go through our layers now
-        for layer in self.layer_stack.controls:
+    # Called when we click to export a canvas
+    async def export_canvas_clicked(self, e=None):
+        """ Exports canvas to correct file type based on selection with optional upscaling """
 
-            # Grab container to check if actually visible. Not visible, not exporting
-            container = layer.get('canvas', None)
-            if not container.visible:   
-                continue
-
-            # Grab canvas our canvas for that layer
-            canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
-
-            # Capture and add that capture to the list
-            if canvas is not None:
-                await canvas.capture()       # Upscale/downscale the capture based on size
-                cc = await canvas.get_capture()
-                captures_list.append(cc)         # Add the capture to the list
-                await canvas.clear_capture()     # Clear the capture to prevent bugs 
-
-        # Our exportable image bytes from merging all our layers captures together with any scaling needed
-        merged_bytes = _merge_captures(captures_list, self.canvas_width, self.canvas_height)
+        merged_bytes = self.get_snapshot_bytes(quality="max")   # Get the merged bytes of all our layers
 
         # Open file dialog to save that capture
         if merged_bytes:
             await ft.FilePicker().save_file(
-                src_bytes=merged_bytes, file_name=f"{self.title}.png", 
+                src_bytes=merged_bytes, file_name=f"{self.data.get('title', 'Canvas')}.png", 
                 file_type=ft.FilePickerFileType.IMAGE, allowed_extensions=["png"]
             )
 
