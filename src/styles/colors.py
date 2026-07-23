@@ -6,6 +6,18 @@ colors_dict = {
     'dark_blue': '#00008B',
 }
 
+theme_colors = {
+    "default": "#A0CAFD",
+    "red": "red",
+    "orange": "orange",
+    "yellow": "yellow",
+    "green": "green",
+    "cyan": "cyan",
+    "blue": "blue",
+    "purple": "purple",
+    "pink": "pink",
+    "brown": "brown",
+}
 
 colors = [
     "primary",

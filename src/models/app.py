@@ -66,9 +66,9 @@ class App:
         page.title = "StoryBoard (alpha)"
 
         # Sets our themes and which one we use. Default to dark mode with blue
-        page.theme = ft.Theme(color_scheme_seed=app.settings.data.get('theme_color', "blue"))    
-        page.dark_theme = ft.Theme(color_scheme_seed=app.settings.data.get('theme_color', "blue"))   
-        page.theme_mode = app.settings.data.get('theme_mode', 'dark')      
+        page.theme = ft.Theme(color_scheme_seed=app.settings.data.get('page', {}).get('theme_color', "blue"))  
+        page.dark_theme = ft.Theme(color_scheme_seed=app.settings.data.get('page', {}).get('theme_color', "blue")) 
+        page.theme_mode = app.settings.data.get('page', {}).get('theme_mode', "dark")  # Default to dark mode
     
         # Sets the title of our app, padding, and maximizes the window
         page.padding = ft.Padding.only(top=0, left=0, right=0, bottom=0)    

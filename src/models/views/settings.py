@@ -6,7 +6,7 @@ A Settings object is created for every story
 import flet as ft
 from models.views.story import Story
 from models.widget import Widget
-from styles.colors import colors
+from styles.colors import colors, theme_colors
 import os
 import json
 from styles.colors import dark_gradient
@@ -26,7 +26,7 @@ class Settings(ft.View):
         file_path: str, 
         story: Story = None, 
         data: dict = None,
-        selected_index: int = 0,   # Which category to show when opening settings. 0 = Appearance, 1 = Widgets, 2 = Templates, 3 = Resources
+        selected_index: int = 0,   # Which folder to show when opening settings. 0 = Appearance, 1 = Widgets, 2 = Templates, 3 = Resources
     ):
         
         # Constructor the parent widget class
@@ -58,14 +58,14 @@ class Settings(ft.View):
                     'width': int(),          # Last known page width
                     'height': int(),          # Last known page height
                     'theme_mode': "dark",       # the apps theme mode, dark or light
-                    'theme_color': "blue",   # the color scheme of the app. Defaults to blue
+                    'theme_color': "#A0CAFD",   # the color scheme of the app. Defaults to blue
                 },
 
                 # Settings about story details
                 'story': {
                     'workspaces_rail_is_collapsed': False,
                     'active_rail_width': 250,  
-                    'default_category_color': "primary",    # Categories thrown in here
+                    'default_folder_color': "primary",    # Categories thrown in here
                     'workspaces_rail_order': [      # Order of the workspace rail 
                         "content",
                         "canvas",
@@ -279,34 +279,13 @@ class Settings(ft.View):
             return
 
         
-    def _get_color_options(e=None, is_theme_dropdown: bool=False):
-        ''' Adds our choices to the color scheme dropdown control'''
-        # Create a list to hold our dropdown options
-        options = []
-        
-
-        # Runs through our colors above and adds them to the dropdown
-        for color in colors:
-            if is_theme_dropdown:
-                if color in ["white", "grey", "black", "primary"]:
-                    continue   # Skip these colors for theme dropdown, as they are not supported
-            
-            options.append(
-                ft.DropdownOption(
-                    key=color.capitalize(),
-                    content=ft.Text(
-                        value=color.capitalize(),
-                        color=color,
-                    ),
-                )
-            )
-        return options
+    
 
     
         
-    # Called when we select a new category of settings in our settings view
-    def _settings_category_changed(self, e=None, template_name: str=None, template_type: str=None, update: bool=True):
-        ''' Determines which category is now active and changes our body container to match '''
+    # Called when we select a new folder of settings in our settings view
+    def _settings_category_changed(self, e: ft.Event[ft.NavigationRail]=None, template_name: str=None, template_type: str=None, update: bool=True):
+        ''' Determines which folder is now active and changes our body container to match '''
 
         if e is None:
             idx = self.selected_index
@@ -331,36 +310,45 @@ class Settings(ft.View):
         if update:
             self.update()
         
-    # Called when appearance settings category is selected
+    # Called when appearance settings folder is selected
     def _load_appearance_settings(self) -> ft.Container:
         ''' Contains toggle for theme mode, and color scheme dropdown '''
         
         
         # Called when a dropdown option is selected. Saves our choice, and applies it to the page
-        def _set_theme_color(e):
+        async def _set_theme_color(e: ft.Event[ft.Dropdown]):
             ''' Saves our color scheme choice and applies it to the page '''
 
             # Save our color scheme choice to our objects data
-            new_color = e.control.value
+            new_color_key = e.control.value.lower()
+            new_color = theme_colors.get(new_color_key, "#A0CAFD")  # Default to blue if not found
             self.update_data(**{'page': {'theme_color': new_color}})
-            self.page.run_task(self.save_file)
+            
             e.control.color = new_color   # Changes the dropdown text color to match the selected color
 
             # Applies this theme to our page, for both dark and light themes
-            self.page.theme = ft.Theme(color_scheme_seed=new_color)
-            self.page.dark_theme = ft.Theme(color_scheme_seed=new_color)
+            self.page.theme.color_scheme_seed = new_color
+            self.page.dark_theme.color_scheme_seed = new_color
 
             # Save the updated settings to the JSON file and update the page
-            
             self.page.update()
 
         # Dropdown so app can change their color scheme
         theme_color_dropdown = ft.Dropdown(
             label="Theme Color", tooltip="Select the primary color scheme for the app",
             capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-            options=self._get_color_options(True),
+            options=[
+                ft.DropdownOption(
+                    key=key.capitalize(),
+                    content=ft.Text(
+                        value=key.capitalize(),
+                        color=color_value,
+                        weight=ft.FontWeight.BOLD,
+                    ),
+                ) for key, color_value in theme_colors.items()
+            ],
             on_select=_set_theme_color,
-            value=self.data.get('page', {}).get('theme_color', "blue"),
+            value=str(self.data.get('page', {}).get('theme_color', "blue")),
             text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
             color=self.data.get('page', {}).get('theme_color', None),
             dense=True, data="theme_color_dropdown",
@@ -385,19 +373,17 @@ class Settings(ft.View):
                     self.dark_theme_button.border = ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT)
 
             self.update_data(**{'page': {'theme_mode': new_theme_mode}})
-            self.page.run_task(self.save_file)
             self.page.theme_mode = new_theme_mode
             self.page.update()
 
-        def _set_default_category_color(e):
+        def _set_default_folder_color(e: ft.Event[ft.Dropdown]):
             ''' Sets the default color for new categories '''
 
             new_color = e.control.value    # Grabs the new color selected   
 
-            self.update_data(**{'story': {'default_category_color': new_color}})
+            self.update_data(**{'story': {'default_folder_color': new_color}})
 
             # Save our updated settings
-            self.page.run_task(self.save_file)
             e.control.color = new_color   # Changes the dropdown text color to match the selected color
             e.control.update()
 
@@ -443,14 +429,24 @@ class Settings(ft.View):
                 theme_color_dropdown,      # Change theme primary color dropdown   
 
                 ft.Dropdown(
-                    tooltip="Default color for new categories",
+                    tooltip="Default color for new Folders",
                     label="Default Folder Color",
                     capitalization= ft.TextCapitalization.SENTENCES,    # Capitalize our options
-                    options=self._get_color_options(), on_select=_set_default_category_color,
-                    value=self.data.get('story', {}).get('default_category_color', "primary"),
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            content=ft.Text(
+                                value=color.capitalize(),
+                                color=color,
+                                weight=ft.FontWeight.BOLD,
+                            ),
+                        ) for color in colors
+                    ],
+                    on_select=_set_default_folder_color,
+                    value=self.data.get('story', {}).get('default_folder_color', "primary"),
                     text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                    color=self.data.get('story', {}).get('default_category_color', "primary"),
-                    dense=True, data="category",
+                    color=self.data.get('story', {}).get('default_folder_color', "primary"),
+                    dense=True, data="folder",
                 ),
             ]),   
         ])

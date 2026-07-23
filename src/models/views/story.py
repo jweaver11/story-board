@@ -61,8 +61,8 @@ class Story(ft.View):
                 
                 # Dict of all our categories INSIDE of basic story structure (content, characters, plotlines)
                 'folders': {
-                    'path': {                   # Path to the category folder (used as the key, since all will be unique)
-                        'name': str(),            # Name of category just in case
+                    'path': {                   # Path to the folder (used as the key, since all will be unique)
+                        'name': str(),            # Name of folder just in case
                         'color': str(),           # Color of that folder
                         'is_expanded': True     # Whether this folder is expanded in the tree view
                     }
@@ -140,9 +140,9 @@ class Story(ft.View):
     def get_widget_by_id(self, id: str) -> ft.Control:
         return self.widgets.get(id, None)
 
-    # Called when a new folder/category is created.
+    # Called when a new folder is created.
     async def create_folder(self, name: str, directory_path: str=None):
-        ''' Creates a new category inside of our story structure for content organization '''
+        ''' Creates a new folderinside of our story structure for content organization '''
         from models.app import app
 
         if directory_path is None:
@@ -162,16 +162,16 @@ class Story(ft.View):
             os.makedirs(folder_path, exist_ok=True) 
 
             # Update data and refresh
-            self.update_data(**{'folders': {folder_path: {'name': name, 'is_expanded': True, 'color': app.settings.data.get('story', {}).get('default_category_color', "primary")}}})
+            self.update_data(**{'folders': {folder_path: {'name': name, 'is_expanded': True, 'color': app.settings.data.get('story', {}).get('default_folder_color', "primary")}}})
             self.active_rail.reload_rail()
 
         # Handle errors
         except Exception as e:
             print(f"Error creating folder: {e}")
         
-    # Called when deleting a folder/category from our story
+    # Called when deleting a folder/folder from our story
     def delete_folder(self, full_path: str):
-        ''' Deletes a category from our story structure '''
+        ''' Deletes a folder from our story structure '''
 
         try:
             # Normalize once for path-boundary prefix matching
@@ -229,7 +229,7 @@ class Story(ft.View):
             print(f"Error changing folder data: {e}")
 
     def rename_folder(self, old_path: str, new_path: str):
-        ''' Renames the folder/category in our story structure '''
+        ''' Renames the folder in our story structure '''
 
         # Does the actual renaming
         os.rename(old_path, new_path)

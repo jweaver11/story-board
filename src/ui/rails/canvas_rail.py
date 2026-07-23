@@ -1125,13 +1125,13 @@ class CanvasRail(Rail):
                 ),
 
                 # Causes glitches in UI between renders
-                #ft.MenuBar(
-                    #[blend_mode_selector],
-                    #style=ft.MenuStyle(
-                        #bgcolor="transparent", shadow_color="transparent",
-                        #shape=ft.RoundedRectangleBorder(radius=4),
-                    #),
-                #),
+                ft.MenuBar(
+                    [blend_mode_selector],
+                    style=ft.MenuStyle(
+                        bgcolor="transparent", shadow_color="transparent",
+                        shape=ft.RoundedRectangleBorder(radius=4),
+                    ),
+                ),
 
 
                 ft.Divider(),
