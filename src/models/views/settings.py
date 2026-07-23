@@ -559,122 +559,123 @@ class Settings(ft.View):
             
             
 
-            ft.Text("Document", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("document")),
-            create_default_color_selector("document"),
-            ft.Divider(),
+            ft.Column([
+                ft.Text("Document", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("document")),
+                create_default_color_selector("document"),
+                ft.Divider(),
 
-            ft.Text("Canvas", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("canvas")),
-            create_default_color_selector("canvas"),
-            ft.Divider(),
-            
-            ft.Text("Note", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("note")),
-            create_default_color_selector("notes"),
-            ft.Divider(),
+                ft.Text("Canvas", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("canvas")),
+                create_default_color_selector("canvas"),
+                ft.Divider(),
+                
+                ft.Text("Note", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("note")),
+                create_default_color_selector("notes"),
+                ft.Divider(),
 
-            ft.Text("Character", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character")),
-            create_default_color_selector("character"),
-            ft.Divider(),
+                ft.Text("Character", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character")),
+                create_default_color_selector("character"),
+                ft.Divider(),
 
-            ft.Text("Plotline", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("plotline")),
-            create_default_color_selector("plotline"),
-            ft.Divider(),
+                ft.Text("Plotline", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("plotline")),
+                create_default_color_selector("plotline"),
+                ft.Divider(),
 
-            ft.Text("Canvas Board", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("canvas_board")),
-            ft.Divider(),
+                ft.Text("Canvas Board", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("canvas_board")),
+                ft.Divider(),
 
-            ft.Text("World", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("world")),
-            ft.Divider(),
+                ft.Text("World", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("world")),
+                ft.Divider(),
 
-            ft.Text("Item", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("item")),
-            ft.Divider(),
+                ft.Text("Item", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("item")),
+                ft.Divider(),
 
-            ft.Text("Plot Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("plot_chart")),
-            ft.Divider(),
+                ft.Text("Plot Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("plot_chart")),
+                ft.Divider(),
 
-            ft.Text("Comic Preview", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("comic_preview")),
-             
-            ft.Button(
-                "Swap Preview Direction", 
-                ft.Icons.SWAP_VERT if self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
-                ft.Colors.PRIMARY,
-                tooltip="Swap the preview direction between vertical and horizontal.",
-                on_click=toggle_comic_preview_direction,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-            ),
-            
-            ft.Button(
-                f"Anti-Aliasing: {self.data.get('widget_defaults', {}).get('use_anti_aliasing', True)}",
-                ft.Icons.ANIMATION_OUTLINED, 
-                ft.Colors.PRIMARY,
-                tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
-                on_click=toggle_comic_preview_anti_aliasing,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-            ),
-            ft.SubmenuButton(
-                f"Change Background Color",
-                [
-                    ft.MenuItemButton(
-                        ft.Icon(ft.Icons.CIRCLE, color), data=color,
-                        on_click=set_comic_preview_background_color,
-                    ) for color in colors
-                ] + [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_comic_preview_background_color,)],
-                tooltip="Adjust the scale of the preview display.",
-                leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-            ),
-            ft.SubmenuButton(
-                f"Preview Spacing: {self.data.get('preview_spacing', 0)}",
-                [
-                    ft.MenuItemButton(
-                        str(i), data=i,
-                        on_click=adjust_comic_preview_spacing,
-                    ) for i in range(0, 21) if i % 2 == 0
-                ],
-                tooltip="Adjust the spacing between panels in the preview display.",
-                leading=ft.Icon(ft.Icons.SPACE_BAR_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-            ),
-            
-            ft.SubmenuButton(
-                f"Preview Scaling: {self.data.get('preview_scale', 0)}",
-                [
-                    ft.MenuItemButton(
-                        str(i), data=i,
-                        on_click=adjust_comic_preview_scaling,
-                    ) for i in range(1, 6)
-                ],
-                tooltip="Adjust the scale of the preview display.",
-                leading=ft.Icon(ft.Icons.CROP_FREE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-            ),
-            
-            ft.SubmenuButton(
-                f"Image Filter Quality: {self.data.get('filter_quality', 'medium').capitalize()}",
-                [
-                    ft.MenuItemButton("Low", data="low", on_click=set_comic_preview_filter_quality),
-                    ft.MenuItemButton("Medium", data="medium", on_click=set_comic_preview_filter_quality),
-                    ft.MenuItemButton("High", data="high", on_click=set_comic_preview_filter_quality),
-                ],
-                tooltip="Adjust the filter quality of the preview display. This will affect performance and image quality",
-                leading=ft.Icon(ft.Icons.PHOTO_FILTER_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-            ),
+                ft.Text("Comic Preview", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("comic_preview")),
+                
+                ft.Button(
+                    "Swap Preview Direction", 
+                    ft.Icons.SWAP_VERT if self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
+                    ft.Colors.PRIMARY,
+                    tooltip="Swap the preview direction between vertical and horizontal.",
+                    on_click=toggle_comic_preview_direction,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+                ),
+                
+                ft.Button(
+                    f"Anti-Aliasing: {self.data.get('widget_defaults', {}).get('use_anti_aliasing', True)}",
+                    ft.Icons.ANIMATION_OUTLINED, 
+                    ft.Colors.PRIMARY,
+                    tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
+                    on_click=toggle_comic_preview_anti_aliasing,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+                ),
+                ft.SubmenuButton(
+                    f"Change Background Color",
+                    [
+                        ft.MenuItemButton(
+                            ft.Icon(ft.Icons.CIRCLE, color), data=color,
+                            on_click=set_comic_preview_background_color,
+                        ) for color in colors
+                    ] + [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_comic_preview_background_color,)],
+                    tooltip="Adjust the scale of the preview display.",
+                    leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                ),
+                ft.SubmenuButton(
+                    f"Preview Spacing: {self.data.get('preview_spacing', 0)}",
+                    [
+                        ft.MenuItemButton(
+                            str(i), data=i,
+                            on_click=adjust_comic_preview_spacing,
+                        ) for i in range(0, 21) if i % 2 == 0
+                    ],
+                    tooltip="Adjust the spacing between panels in the preview display.",
+                    leading=ft.Icon(ft.Icons.SPACE_BAR_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                ),
+                
+                ft.SubmenuButton(
+                    f"Preview Scaling: {self.data.get('preview_scale', 0)}",
+                    [
+                        ft.MenuItemButton(
+                            str(i), data=i,
+                            on_click=adjust_comic_preview_scaling,
+                        ) for i in range(1, 6)
+                    ],
+                    tooltip="Adjust the scale of the preview display.",
+                    leading=ft.Icon(ft.Icons.CROP_FREE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                ),
+                
+                ft.SubmenuButton(
+                    f"Image Filter Quality: {self.data.get('filter_quality', 'medium').capitalize()}",
+                    [
+                        ft.MenuItemButton("Low", data="low", on_click=set_comic_preview_filter_quality),
+                        ft.MenuItemButton("Medium", data="medium", on_click=set_comic_preview_filter_quality),
+                        ft.MenuItemButton("High", data="high", on_click=set_comic_preview_filter_quality),
+                    ],
+                    tooltip="Adjust the filter quality of the preview display. This will affect performance and image quality",
+                    leading=ft.Icon(ft.Icons.PHOTO_FILTER_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                ),
+                                
                             
-                        
-            ft.Divider(),
+                ft.Divider(),
 
-            ft.Text("Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("chart")),
-            ft.Divider(),
+                ft.Text("Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("chart")),
+                ft.Divider(),
 
-            ft.Text("Character Relationship Map", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character_relationship_map")),
-            create_default_color_selector("character_relationship_map"),
-            ft.Divider(),
+                ft.Text("Character Relationship Map", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character_relationship_map")),
+                create_default_color_selector("character_relationship_map"),
+            ], expand=True, scroll=ft.ScrollMode.AUTO),
             
-        ], scroll="auto", expand=True)
+        ], expand=True)
             
         return content
     
@@ -710,7 +711,7 @@ class Settings(ft.View):
 
             def __init__(self, section_ctrl, field_name: str):
                 super().__init__(key=field_name)
-                self.section_ctrl = section_ctrl
+                self.section_ctrl: SectionCtrl = section_ctrl
                 self.field_name   = field_name
                 self.padding      = ft.Padding.symmetric(vertical=2, horizontal=2)
                 self._render()
@@ -892,11 +893,11 @@ class Settings(ft.View):
                                         weight=ft.FontWeight.BOLD,
                                         expand=True,
                                     ),
-                                    ft.TextButton(
+                                    ft.Button(
                                         "Add Field", on_click=self._new_field_clicked,
                                         style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
                                     ),
-                                    ft.TextButton(
+                                    ft.Button(
                                         "Delete Section",
                                         on_click=self._on_delete_clicked,
                                         style=ft.ButtonStyle(
@@ -1062,7 +1063,7 @@ class Settings(ft.View):
                             value=self.name,
                             expand=True,
                         ),
-                        ft.TextButton(
+                        ft.Button(
                             "Add Section", on_click=self._new_section_clicked,
                             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
                         ),
@@ -1136,7 +1137,7 @@ class Settings(ft.View):
                     # Auto-select the newly created template
                     self._settings_category_changed(template_name=safe, template_type=ttype)
 
-            tf = TextField(
+            tf = ft.TextField(
                 dense=True, expand=True,
                 capitalization=ft.TextCapitalization.WORDS,
                 on_change=_check, on_submit=_do_create, autofocus=True,
@@ -1246,8 +1247,8 @@ class Settings(ft.View):
                                 overflow=ft.TextOverflow.ELLIPSIS,
                             ),
                         ),
-                        shape=ft.RoundedRectangleBorder(radius=6),
-                        bgcolor=ft.Colors.TRANSPARENT,
+                        shape=ft.RoundedRectangleBorder(radius=4),
+                        bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                         dense=True,
                         content_padding=ft.Padding.only(left=10),
                         min_vertical_padding=0,
@@ -1384,85 +1385,87 @@ class Settings(ft.View):
             ft.Text("Widget Descriptions", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD),
             #ft.Container(height=10),
 
-            ft.Container(
-                ft.Column([
-                    ft.Text(
-                        spans=[
-                            ft.TextSpan("Document: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                            ft.TextSpan("The main widget for creating all novel-based stories. Similar to Microsoft Word or Google Docs, use the document widget as a fully built text editor. Add your own comments, notes, and references to the side of any document!", style=ft.TextStyle(size=16))
-                        ],
-                    ),
-                    ft.Text(
-                        spans=[
-                            ft.TextSpan("Canvas: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                            ft.TextSpan("The main widget for creating all comic-based stories. This widget allows illustrators to watch their ideas come to life on the Canvas. Create your own drawing masterpiece or upload exported files from another drawing app!", style=ft.TextStyle(size=16))
-                        ],
-                    ),
-                    ft.Text(
-                        spans=[
-                            ft.TextSpan("Note: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                            ft.TextSpan("A widget for all your ideas, themes, research, etc. Don't let the magic fade, save it here!", style=ft.TextStyle(size=16))
-                        ],
-                    ),
-                    ft.Text(
-                        spans=[
-                            ft.TextSpan("Character: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                            ft.TextSpan("A widget for all the characters in your story. Flesh out your characters physical look, personality, origin, arcs, etc!", style=ft.TextStyle(size=16))
-                        ],
-                    ),
-                    ft.Text(
-                        spans=[
-                            ft.TextSpan("Plotline: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                            ft.TextSpan("A widget for visualizing the progression of your story. Create multiple plotlines for arcs, sub arcs, plot points, or regression & multi-timeline stories. Connect events on your plotline to a map and watch your world change over time!", style=ft.TextStyle(size=16))
-                        ],
-                    ),
-                    ft.Text(
-                        spans=[
-                            ft.TextSpan("Canvas Board: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                            ft.TextSpan("A widget for planning out comic-based chapters for your story. Describe and sketch out your ideas for all you panels ahead of time. Connect them to an existing canvas in your story to see how progress is coming along!", style=ft.TextStyle(size=16))
-                        ],
-                    ),
-                    ft.Text(
-                        spans=[
-                            ft.TextSpan("World: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                            ft.TextSpan("A widget to describe your world(s) for your story. Plan out the lore, history, governments, factions, power systems, etc. You can create templates for your worlds, and connect them to existing maps!", style=ft.TextStyle(size=16))
-                        ],
-                    ),
-                    ft.Text(
-                        spans=[
-                            ft.TextSpan("Map: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                            ft.TextSpan("A widget to visualize locations in your story. Create a map for worlds, countries, cities, dungeons, etc. Connect locations on your map to other maps for a connected feel to your story!", style=ft.TextStyle(size=16))
-                        ],
-                    ),
-                    ft.Text(
-                        spans=[
-                            ft.TextSpan("Item: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                            ft.TextSpan("A widget for all items, weapons, armor, and MacGuffins in your story!", style=ft.TextStyle(size=16))
-                        ],
-                    ),
-                    ft.Text(
-                        spans=[
-                            ft.TextSpan("Comic Preview: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                            ft.TextSpan("A widget for comic-based stories for visualizing all your canvases (and external drawings you want to see), in a nice, scrollable vertical or horizontal format. See how your chapter comes together visually before you present it to the world!", style=ft.TextStyle(size=16))
-                        ],
-                    ),
-                    ft.Text(
-                        spans=[
-                            ft.TextSpan("Chart: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                            ft.TextSpan("A widget for visualizing power systems and other ideas in a chart format. Supports manipulation of bar and radar charts, with implicit animations!", style=ft.TextStyle(size=16))
-                        ],
-                    ),
-                    ft.Text(
-                        spans=[
-                            ft.TextSpan("Charcter Connection Map: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                            ft.TextSpan("A widget to visualize how your characters connect to each other within a story. See family trees, friends, enemies, guilds, etc.", style=ft.TextStyle(size=16))
-                        ],
-                    ),
-                    
-                ], spacing=24, scroll=ft.ScrollMode.AUTO, expand=True, alignment=ft.MainAxisAlignment.START,),
-                margin=ft.Margin.only(left=20, top=10)
-            ),
-        
+            ft.Column([
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Document: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("The main widget for creating all novel-based stories. Similar to Microsoft Word or Google Docs, use the document widget as a fully built text editor. Add your own comments, notes, and references to the side of any document!", style=ft.TextStyle(size=16))
+                    ],
+                ),
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Canvas: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("The main widget for creating all comic-based stories. This widget allows illustrators to watch their ideas come to life on the Canvas. Create your own drawing masterpiece or upload exported files from another drawing app!", style=ft.TextStyle(size=16))
+                    ],
+                ),
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Note: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("A widget for all your ideas, themes, research, etc. Don't let the magic fade, save it here!", style=ft.TextStyle(size=16))
+                    ],
+                ),
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Character: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("A widget for all the characters in your story. Flesh out your characters physical look, personality, origin, arcs, etc!", style=ft.TextStyle(size=16))
+                    ],
+                ),
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Plotline: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("A widget for visualizing the progression of your story. Create multiple plotlines for arcs, sub arcs, plot points, or regression & multi-timeline stories. Connect events on your plotline to a map and watch your world change over time!", style=ft.TextStyle(size=16))
+                    ],
+                ),
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Canvas Board: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("A widget for planning out comic-based chapters for your story. Describe and sketch out your ideas for all you panels ahead of time. Connect them to an existing canvas in your story to see how progress is coming along!", style=ft.TextStyle(size=16))
+                    ],
+                ),
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("World: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("A widget to describe your world(s) for your story. Plan out the lore, history, governments, factions, power systems, etc. You can create templates for your worlds, and connect them to existing maps!", style=ft.TextStyle(size=16))
+                    ],
+                ),
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Map: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("A widget to visualize locations in your story. Create a map for worlds, countries, cities, dungeons, etc. Connect locations on your map to other maps for a connected feel to your story!", style=ft.TextStyle(size=16))
+                    ],
+                ),
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Item: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("A widget for all items, weapons, armor, and MacGuffins in your story!", style=ft.TextStyle(size=16))
+                    ],
+                ),
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Plot Chart: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("A widget for fleshing out plotlines in your story in a node to connection based format.", style=ft.TextStyle(size=16))
+                    ],
+                ),
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Comic Preview: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("A widget for comic-based stories for visualizing all your canvases (and external drawings you want to see), in a nice, scrollable vertical or horizontal format. See how your chapter comes together visually before you present it to the world!", style=ft.TextStyle(size=16))
+                    ],
+                ),
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Chart: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("A widget for visualizing power systems and other ideas in a chart format. Supports manipulation of bar and radar charts, with implicit animations!", style=ft.TextStyle(size=16))
+                    ],
+                ),
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Character Relationship Map: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("A widget to visualize how your characters connect to each other within a story. See family trees, friends, enemies, guilds, etc.", style=ft.TextStyle(size=16))
+                    ],
+                ),
+                
+            ], spacing=24, scroll=ft.ScrollMode.AUTO, expand=True, alignment=ft.MainAxisAlignment.START, margin=ft.Margin.only(left=20, top=10)),
 
         ], alignment=ft.MainAxisAlignment.START, expand=True)
 
