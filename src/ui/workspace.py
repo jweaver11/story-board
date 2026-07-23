@@ -146,10 +146,7 @@ class Workspace(ft.Container):
         # Check selected index is still in range. If not, adjust it
         if self.tabs.selected_index >= len(self.tab_bar.tabs):
             self.tabs.selected_index = len(self.tab_bar.tabs) - 1
-            self.story.update_data(**{'workspace_selected_index': self.tabs.selected_index})
-            if len(self.tab_bar.tabs) > 0:
-                self.tab_bar.indicator_color = self.tab_view.controls[self.tabs.selected_index].data.get('color', ft.Colors.ON_SURFACE_VARIANT)
-                self.tab_bar.update()
+            self.story.update_data(**{'workspace_selected_index': self.tabs.selected_index})                
 
         # Add the placeholder if we need it
         if len(self.tab_bar.tabs) < 1:
@@ -157,8 +154,12 @@ class Workspace(ft.Container):
             self.tab_view.controls.append(self.create_placeholder_tab_view())
             self.tabs.length = len(self.tab_bar.tabs)
             self.tabs.selected_index = 0
+            self.tab_bar.indicator_color = ft.Colors.PRIMARY
             self.update()
             return
+
+        # Make sure indicator color is updated
+        self.tab_bar.indicator_color = self.tab_view.controls[self.tabs.selected_index].data.get('color', ft.Colors.ON_SURFACE_VARIANT)
 
         # Update the workspace and the tab_indices to reflect shiften positions
         self.update()

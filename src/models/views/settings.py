@@ -224,6 +224,7 @@ class Settings(ft.View):
 
     async def close_settings(self, e=None):
         ''' Closes the settings view and returns to the story or home view '''
+        await self.save_file()
         await self.page.push_route(self.story.route if self.story is not None else "/")
 
     async def save_story(self, e=None):
@@ -458,26 +459,27 @@ class Settings(ft.View):
         ''' Loads our account settings view '''
 
         # Sets the color in data for each widget upon a change
-        def set_default_widget_color(e: ft.Event, widget_tag: str):
+        def set_default_widget_color(e: ft.Event[ft.MenuItemButton], widget_tag: str):
             color_str = e.control.data
-            self.update_data(**{'widget_defaults': {widget_tag: {'default_color': color_str}}})
-            e.control.parent.leading.color = color_str
+            self.update_data(**{'widget_defaults': {widget_tag: {'color': color_str}}})
+            e.control.parent.trailing.color = color_str
             e.control.parent.update()
+            
 
         # Gives a default color changer for each widget
         def create_default_color_selector(widget_tag: str) -> ft.MenuBar:
             return ft.MenuBar(
                 [
                     ft.SubmenuButton(
-                        f"Default {widget_tag.title().replace('_', ' ')} Color",
+                        f"Default {widget_tag.title().replace('_', ' ')} Color:",
                         [
                             ft.MenuItemButton(
-                                ft.Icon(ft.Icons.CIRCLE, color), True, data=color,
+                                color.capitalize(), True, data=color, style=ft.ButtonStyle(color, mouse_cursor="click"),
                                 on_click=lambda e: set_default_widget_color(e, widget_tag),
                             ) for color in colors
                         ],
-                        leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('widget_defaults', {}).get(widget_tag, {}).get('default_color', "#00000000")),
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                        trailing=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('widget_defaults', {}).get(widget_tag, {}).get('color', "#FFFFFF")),
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                         style=ft.ButtonStyle(
                             alignment=ft.Alignment.CENTER, mouse_cursor="click",
                             shape=ft.RoundedRectangleBorder(radius=4), bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
@@ -569,7 +571,7 @@ class Settings(ft.View):
                 ft.Divider(),
                 
                 ft.Text("Note", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("note")),
-                create_default_color_selector("notes"),
+                create_default_color_selector("note"),
                 ft.Divider(),
 
                 ft.Text("Character", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character")),
