@@ -445,7 +445,7 @@ class CanvasShape(ft.Container):
                 on_pan_update=self._manipulate,     # Handles resizing and dragging
                 on_hover=self._set_manipulation_action,
                 expand=True, mouse_cursor=ft.MouseCursor.MOVE,
-                drag_interval=25, hover_interval=50,
+                drag_interval=20, hover_interval=50,
             ),
             width=200, height=200,
             animate_rotation=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),

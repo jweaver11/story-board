@@ -139,8 +139,6 @@ class Settings(ft.View):
 
                 # Paint settings for our canvas drawings to use as default that users can change
                 'paint_settings': {
-
-                    # Stroke styles
                     'color': "#FFFFFF,1.0",     # Hex color folowed by opacity
                     'stroke_width': 3,          # Size of the strokees
                     'style': "stroke",          # style of the strokes. Either stroke or fill
@@ -148,32 +146,32 @@ class Settings(ft.View):
                     'stroke_join': "round",     # How corners between strokes are drawn
                     'stroke_miter_limit': 10, 
                     'stroke_dash_pattern': None,         # If we should use dashed lines, and the pattern for them
-
-                    # Effects
-                    'anti_alias': True,
-                    'blur_image': 0,
-                    'blend_mode': None,
+                    'anti_alias': True,     # Use anti aliasing for smoother strokes or not
+                    'blur_image': 0,        # How much blur to apply to the stroke
+                    'blend_mode': None,     # Any blend mode to apply to the stroke, or None for normal
                 },               
 
                 # Other canvas and drawing settings outside of the brushes paint
                 'canvas_settings':{
+                    # Brush vs tool mode settings
                     'current_control_mode': "draw",      # Either drawing (use brush settings), or tools (use built in tools)
                     'current_brush_name': "stroke",      # Name of the currently selected brush, either default or custom. Just used for display purposes
                     'current_tool_name': "erase",        # Current tool or shape being used
+                    'saved_brushes': dict(),             # Saved brushes the user has created that we can load
+                    'use_brush_smoothing': True,         # Uses cv.Path for constistant shapes if true, otherwise use cv.line
                     'path_smoothing_strength': 1,        # If stroke smoothing is enabled, how strong the smoothing is. 1 = low, 10 = high 0=off
-                    'use_brush_smoothing': True,              # Uses cv.Path for constistant shapes if true, otherwise use cv.line
+                    # Text and shape settings
                     'use_paint_for_shapes': True,           # If True, shapes are black/white and use default paint settings rather than live brush settings
                     'text_shape_size': 24,                # Font size for text shapes
                     'text_shape_font': "Arial",              # Font family for text shapes
                     'text_shape_color': "#FFFFFF",          # Font color for text shapes
-                    'text_shadow_color': "#00000000",
+                    'text_shape_shadow_color': "#00000000",
                     'text_shape_bold': False,                   # If text shapes are bold or not
                     'text_shape_italic': False,                 # If text shapes are italic or not  
                     'text_shape_decoration': "None",              # If text shapes are underlined or not
                     'text_shape_letter_spacing': 0,                    # Letter spacing for text shapes
                     'text_shape_word_spacing': 0,                      # Word spacing for text shapes
                     'rectangle_border_radius': 0,               # Border radius for rectangle shapes
-                    'saved_brushes': dict(),              # Saved brushes the user has created that we can load
                 },
 
                 # Hold our default character templates

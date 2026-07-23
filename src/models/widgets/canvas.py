@@ -102,7 +102,7 @@ class Canvas(Widget):
         self.canvas_controller: ft.GestureDetector  # Controller that sits over our layer stack and handles mouse events for drawing and tool usage
         
         # Tool and shape stuff
-        self.current_tool: CanvasShape                      # The active shape being added if we're using a tool
+        self.current_tool: CanvasShape = None                     # The active shape being added if we're using a tool
         #self.tool_rotate_handle: ft.GestureDetector         # Handle for rotating the current tool 
         
         # Sidebar controls. Undo/redo buttons
@@ -235,31 +235,31 @@ class Canvas(Widget):
             case "Line Through": text_decoration = ft.TextDecoration.LINE_THROUGH
             case _: text_decoration = None
 
-        if self.manipulating_shape:
+        if self.state.manipulating_shape:
         
             # Fix any paint changess
-            self.current_tool.paint.color = app.settings.data.get('paint_settings', {}).get('color', ft.Colors.BLACK) if canvas_settings.get('use_paint_for_shapes', True) else ft.Colors.BLACK
-            self.current_tool.paint.stroke_width=app.settings.data.get('paint_settings', {}).get('stroke_width', 3) if canvas_settings.get('use_paint_for_shapes', True) else 3
-            self.current_tool.paint.style=app.settings.data.get('paint_settings', {}).get('style', ft.PaintingStyle.STROKE)
-            self.current_tool.paint.stroke_cap=app.settings.data.get('paint_settings', {}).get('stroke_cap', "round") if canvas_settings.get('use_paint_for_shapes', True) else "round"
-            self.current_tool.paint.stroke_join=app.settings.data.get('paint_settings', {}).get('stroke_join', "round") if canvas_settings.get('use_paint_for_shapes', True) else "round"
-            self.current_tool.paint.blur_image=app.settings.data.get('paint_settings', {}).get('blur_image', 0) if canvas_settings.get('use_paint_for_shapes', True) else 0
-            self.current_tool.paint.anti_alias=app.settings.data.get('paint_settings', {}).get('anti_alias', True) if canvas_settings.get('use_paint_for_shapes', True) else True
+            self.current_tool.paint.color = paint_settings.get('color', ft.Colors.BLACK) if canvas_settings.get('use_paint_for_shapes', True) else ft.Colors.BLACK
+            self.current_tool.paint.stroke_width=paint_settings.get('stroke_width', 3) if canvas_settings.get('use_paint_for_shapes', True) else 3
+            self.current_tool.paint.style=paint_settings.get('style', ft.PaintingStyle.STROKE)
+            self.current_tool.paint.stroke_cap=paint_settings.get('stroke_cap', "round") if canvas_settings.get('use_paint_for_shapes', True) else "round"
+            self.current_tool.paint.stroke_join=paint_settings.get('stroke_join', "round") if canvas_settings.get('use_paint_for_shapes', True) else "round"
+            self.current_tool.paint.blur_image=paint_settings.get('blur_image', 0) if canvas_settings.get('use_paint_for_shapes', True) else 0
+            self.current_tool.paint.anti_alias=paint_settings.get('anti_alias', True) if canvas_settings.get('use_paint_for_shapes', True) else True
         
             if self.current_tool.shape_type == "text":
                 self.current_tool.cv_shape.style = ft.TextStyle(
-                    size=app.settings.data.get('canvas_settings', {}).get('text_shape_size', 20),
-                    weight=ft.FontWeight.BOLD if app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False) else ft.FontWeight.NORMAL,
-                    color=app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE),
-                    italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
+                    size=canvas_settings.get('text_shape_size', 20),
+                    weight=ft.FontWeight.BOLD if canvas_settings.get('text_shape_bold', False) else ft.FontWeight.NORMAL,
+                    color=canvas_settings.get('text_shape_color', ft.Colors.ON_SURFACE),
+                    italic=canvas_settings.get('text_shape_italic', False),
                     decoration=text_decoration,
-                    #shadow
-                    letter_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0),
-                    word_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0),
+                    shadow=ft.BoxShadow(color=canvas_settings.get('text_shadow_color', ft.Colors.TRANSPARENT), blur_radius=5),
+                    letter_spacing=canvas_settings.get('text_shape_letter_spacing', 0),
+                    word_spacing=canvas_settings.get('text_shape_word_spacing', 0),
                 )
             elif self.current_tool.shape_type == "rectangle":
                 self.current_tool.cv_shape.border_radius = ft.BorderRadius.all(
-                    app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0)
+                    canvas_settings.get('rectangle_border_radius', 0)
                 )
 
             self.current_tool.cv_shape.update()
@@ -1082,7 +1082,7 @@ class Canvas(Widget):
     # Sets the new active layer based on data
     async def set_new_active_layer(self, e: ft.Event):
 
-        if self.manipulating_shape:
+        if self.state.manipulating_shape:
             await self.paint_tool_on_canvas()
 
         # Deselcted old list tile:
@@ -1110,7 +1110,7 @@ class Canvas(Widget):
         self.canvas_controller.mouse_cursor = self.set_mouse_cursor()
         self.update()
 
-
+    # Toggles the visibility of a layer and updates the sidebar icon and background accordingly
     async def toggle_layer_visibility(self, e: ft.Event=None):
         layer_idx = e.control.parent.data if e is not None else layer_idx
 
@@ -1121,7 +1121,7 @@ class Canvas(Widget):
         if new_visibility == False:
             if self.data.get('canvas_data', {}).get('layers', [])[layer_idx].get('dirty', False) == True:
                 canvas: cv.Canvas = self.layer_stack.controls[layer_idx]
-                if self.manipulating_shape:
+                if self.state.manipulating_shape:
                     await self.paint_tool_on_canvas()
                 await self.save_canvas(canvas=canvas)
 
