@@ -328,8 +328,10 @@ class CharacterRelationshipMap(Widget):
                 # Add to our widgets data
                 self.widget.data['characters'][self.char_id] = (self.dragging_content.left, self.dragging_content.top)
                 self.widget.update_data(**{'characters': self.widget.data['characters']})
-                
-                
+
+                # Remove the tip if this is the first character added to the map
+                if self.widget.tip_ctrl in self.widget.connections_stack.controls:
+                    self.widget.connections_stack.controls.remove(self.widget.tip_ctrl)
 
                 # Remove our feedback from the overly, and ourself from the character bank, and add ourselves to the stack with the correct position
                 self.widget.connections_stack.controls.remove(self.dragging_content)
@@ -348,6 +350,8 @@ class CharacterRelationshipMap(Widget):
                 self.widget.connections_stack.update()
                 self.content = self.build_content() # Rebuild our content AFTER we are re-mounted to the page, or get sync issues
                 self.update()
+
+                
 
 
             # Otherwise we're dragging from the stack already
@@ -394,6 +398,10 @@ class CharacterRelationshipMap(Widget):
                     # Remove from our widgets data
                     self.widget.data['characters'].pop(self.char_id, None)
                     self.widget.update_data(**{'characters': self.widget.data['characters']})
+
+                    if len(self.widget.data.get('characters', {}).keys()) == 0:
+                        self.widget.connections_stack.controls.append(self.widget.tip_ctrl)
+                        self.widget.connections_stack.update()
                     return
                 
                 # Update our positional data
@@ -585,7 +593,6 @@ class CharacterRelationshipMap(Widget):
     async def stop_highlight_character_bank(self, e=None):
         self.character_bank_container.shadow = None
         self.character_bank_container.update()
-    
 
     # Called after any changes happen to the data that need to be reflected in the UI
     def build(self):
@@ -597,6 +604,12 @@ class CharacterRelationshipMap(Widget):
         async def _set_connection_stack_size(e: ft.LayoutSizeChangeEvent):
             self.cs_width = e.width
             self.cs_height = e.height
+
+        # Tip control for pointing at the character bank to drag characters if we're empty
+        self.tip_ctrl = ft.Row([
+            ft.Icon(ft.Icons.ARROW_BACK_OUTLINED, size=50, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Text("Drag characters from the bank to add them to the map", weight=ft.FontWeight.W_500, color=ft.Colors.ON_SURFACE_VARIANT, size=24),
+        ], left=150)
             
 
         self.character_bank = ft.Column(
@@ -648,13 +661,13 @@ class CharacterRelationshipMap(Widget):
         # Create the stack to hold our bank, character nodes, and connections canvas
         self.connections_stack = ft.Stack([
             ft.Container(
-                    image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
-                    expand=True,
-                ),
+                image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
+                expand=True,
+            ),
             self.connections_canvas,
             ft.Column([self.character_bank_container])
             
-        ], expand=True, alignment=ft.Alignment.TOP_LEFT, on_size_change=_set_connection_stack_size) 
+        ], expand=True, alignment=ft.Alignment.CENTER_LEFT, on_size_change=_set_connection_stack_size) 
 
         # Have a new 'edge' drawn for each connection
         for connection in self.data['connections']:
@@ -666,7 +679,7 @@ class CharacterRelationshipMap(Widget):
         
 
         # Add all our characters that are already on the map to the stack at the right positions
-        for char_id, position in self.data['characters'].items():
+        for char_id, position in self.data.get('characters').items():
             
             char = self.story.get_widget_by_id(char_id)
             if char is None:
@@ -682,6 +695,10 @@ class CharacterRelationshipMap(Widget):
                 )
                 
             )
+
+        # If no characters are on the map, add a tip to drag from the bank
+        if len(self.data.get('characters', {}).keys()) == 0:
+            self.connections_stack.controls.append(self.tip_ctrl)
 
 
         self.content = self.connections_stack
