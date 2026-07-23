@@ -328,12 +328,12 @@ class Map(Widget):
             await new_lore_tf.focus()
 
         # Handles showing text field for new history and hiding the new history button
-        async def create_history_clicked(e: ft.Event[ft.Button]):
-            new_history_button.visible = False
-            new_history_tf.visible = True
-            new_history_button.update()
-            new_history_tf.update()
-            await new_history_tf.focus()
+        #async def create_history_clicked(e: ft.Event[ft.Button]):
+            #new_history_button.visible = False
+            #new_history_tf.visible = True
+            #new_history_button.update()
+            #new_history_tf.update()
+            #await new_history_tf.focus()
         
         # Creates a new lore entry in our data and adds it to the lore column
         def create_lore(e: ft.Event[ft.TextField]):
@@ -346,17 +346,17 @@ class Map(Widget):
         def create_history(e: ft.Event[ft.TextField]):
             self.data.get('history', []).append({'label': e.control.value, 'content': ""})
             self.update_data(**{'history': self.data.get('history', [])})
-            history_column.controls.append(create_new_history_ctrl(len(history_column.controls), {'label': e.control.value, 'content': ""}))
-            history_column.update()
+            #history_column.controls.append(create_new_history_ctrl(len(history_column.controls), {'label': e.control.value, 'content': ""}))
+            #history_column.update()
 
         # Handles blurring our new lore and history text fields, hiding them, and showing the buttons again
         def blur_textfields(e: ft.Event[ft.TextField]):
             new_lore_button.visible = True
-            new_history_button.visible = True
+            #new_history_button.visible = True
             new_lore_tf.value = ""
             new_lore_tf.visible = False
-            new_history_tf.value = ""
-            new_history_tf.visible = False
+            #new_history_tf.value = ""
+            #new_history_tf.visible = False
             self.sidebar_body.update()
             pass
         
@@ -388,8 +388,8 @@ class Map(Widget):
             idx = e.control.parent.data
             self.data.get('history', []).pop(idx)
             self.update_data(**{'history': self.data.get('history', [])})
-            history_column.controls.pop(idx)
-            history_column.update()
+            #history_column.controls.pop(idx)
+            #history_column.update()
             update_indices()
 
         # Creates a new lore text field control for our lore column
@@ -415,13 +415,13 @@ class Map(Widget):
         def update_indices():
             for idx, ctrl in enumerate(lore_column.controls):
                 ctrl.data = idx
-            for idx, ctrl in enumerate(history_column.controls):
-                ctrl.data = idx
+            #for idx, ctrl in enumerate(history_column.controls):
+                #ctrl.data = idx
         
         
         return [
             
-            self.description_tf,
+            
             ft.Row([
                 ft.Text("Lores", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                 new_lore_button := ft.IconButton(
@@ -432,30 +432,30 @@ class Map(Widget):
                 ),
                 new_lore_tf := ft.TextField(
                     label="New Lore", expand=True, on_blur=blur_textfields, capitalization=ft.TextCapitalization.WORDS, autofocus=True,
-                    on_submit=create_lore, visible=False, dense=True, margin=ft.Margin.only(left=10)
+                    on_submit=create_lore, visible=False, dense=True, margin=ft.Margin.only(left=10), bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
     
                 )
             ], spacing=0),
             lore_column := ft.Column([create_new_lore_ctrl(idx, data) for idx, data in enumerate(self.data.get('lore', []))]),
 
            # ft.Divider(),
-            ft.Row([
-                ft.Text("Histories", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                new_history_button := ft.IconButton(
-                    ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
-                    tooltip="Add Note",
-                    on_click=create_history_clicked,
-                    mouse_cursor="click"
-                ),
-                new_history_tf := ft.TextField(
-                    label="New History", expand=True, on_blur=blur_textfields, capitalization=ft.TextCapitalization.WORDS, autofocus=True,
-                    on_submit=create_history, visible=False, dense=True, margin=ft.Margin.only(left=10)
-                )
-            ], spacing=0),
-            history_column := ft.Column([create_new_history_ctrl(idx, data) for idx, data in enumerate(self.data.get('history', []))]),
+            #ft.Row([
+                #ft.Text("Histories", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                #new_history_button := ft.IconButton(
+                    #ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
+                    #tooltip="Add Note",
+                    #on_click=create_history_clicked,
+                    #mouse_cursor="click"
+                #),
+                #new_history_tf := ft.TextField(
+                    #label="New History", expand=True, on_blur=blur_textfields, capitalization=ft.TextCapitalization.WORDS, autofocus=True,
+                    #on_submit=create_history, visible=False, dense=True, margin=ft.Margin.only(left=10), bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
+                #)
+            #], spacing=0),
+            #history_column := ft.Column([create_new_history_ctrl(idx, data) for idx, data in enumerate(self.data.get('history', []))]),
 
             #ft.Divider(),         
-            ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+            #ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
 
 
             ft.Divider(),
@@ -468,7 +468,7 @@ class Map(Widget):
         
 
     # Called when clicking to show our info in the sidebar
-    async def show_info(self, e: ft.Event=None):
+    async def show_info(self, e=None):
 
         # Close menu
         await self.story.close_menu()
@@ -650,7 +650,7 @@ class Map(Widget):
         # Add our settings button to the sidebar header, and build our body
         self.sidebar_header.controls.insert(1, self.create_sidebar_header_setting_ctrl()) 
         self.sidebar_body.controls = self.create_sidebar_ctrls()  
-        self.show_sidebar_button.on_click = self.show_info  # Set our show_sidebar_button to have extra logic
+        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
         
         
 

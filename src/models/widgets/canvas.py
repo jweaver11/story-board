@@ -1269,8 +1269,6 @@ class Canvas(Widget):
              
 
         self.sidebar_body.controls.extend([
-            self.description_tf,
-
             ft.Text(
                 spans=[
                     ft.TextSpan("Width: ", ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),),
@@ -1297,6 +1295,7 @@ class Canvas(Widget):
             self.sidebar_notes_label,
             self.sidebar_notes_column
         ])
+        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
 
         #self.content = ft.Row([interactive_viewer, self.show_sidebar_button, self.sidebar], expand=True, spacing=0)
 

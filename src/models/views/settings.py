@@ -471,7 +471,7 @@ class Settings(ft.View):
             return ft.MenuBar(
                 [
                     ft.SubmenuButton(
-                        f"Default {widget_tag.title().replace('_', ' ')} Color",
+                        f"Default Color",
                         [
                             ft.MenuItemButton(
                                 color.capitalize(), True, data=color, style=ft.ButtonStyle(color, mouse_cursor="click"),

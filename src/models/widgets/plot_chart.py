@@ -778,7 +778,6 @@ class PlotChart(Widget):
 
         # Info container on the right to show details of our edges and nodes
         self.sidebar_body.controls.extend([
-            self.description_tf,
             ft.Row([
                 ft.Text(f"Nodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
                 ft.IconButton(
@@ -801,6 +800,7 @@ class PlotChart(Widget):
             self.sidebar_notes_column
 
         ])
+        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
             
         
             

@@ -597,6 +597,7 @@ class Chart(Widget):
             self.sidebar_notes_label,
             self.sidebar_notes_column
         ])
+        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
 
 
         # Set up our main conent
@@ -1148,6 +1149,7 @@ class Chart(Widget):
             self.sidebar_notes_column
                 
         ])
+        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
         
 
         #self.content = ft.Row(

@@ -528,6 +528,7 @@ class ComicPreview(Widget):
             ], spacing=0),
             panel_minimap,
         ])
+        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
         
         # Set our content
         #self.content = ft.Row([
