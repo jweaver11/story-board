@@ -471,7 +471,7 @@ class Settings(ft.View):
             return ft.MenuBar(
                 [
                     ft.SubmenuButton(
-                        f"Default {widget_tag.title().replace('_', ' ')} Color:",
+                        f"Default {widget_tag.title().replace('_', ' ')} Color",
                         [
                             ft.MenuItemButton(
                                 color.capitalize(), True, data=color, style=ft.ButtonStyle(color, mouse_cursor="click"),
@@ -583,18 +583,23 @@ class Settings(ft.View):
                 ft.Divider(),
 
                 ft.Text("Canvas Board", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("canvas_board")),
+                create_default_color_selector("canvas_board"),
                 ft.Divider(),
 
                 ft.Text("World", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("world")),
+                create_default_color_selector("world"),
                 ft.Divider(),
 
                 ft.Text("Item", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("item")),
+                create_default_color_selector("item"),
                 ft.Divider(),
 
                 ft.Text("Plot Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("plot_chart")),
+                create_default_color_selector("plot_chart"),
                 ft.Divider(),
 
                 ft.Text("Comic Preview", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("comic_preview")),
+                create_default_color_selector("comic_preview"),
                 
                 ft.Button(
                     "Swap Preview Direction", 
@@ -665,16 +670,16 @@ class Settings(ft.View):
                     leading=ft.Icon(ft.Icons.PHOTO_FILTER_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                     style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                ),
-                                
-                            
+                ),      
                 ft.Divider(),
 
                 ft.Text("Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("chart")),
+                create_default_color_selector("chart"),
                 ft.Divider(),
 
                 ft.Text("Character Relationship Map", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character_relationship_map")),
                 create_default_color_selector("character_relationship_map"),
+
             ], expand=True, scroll=ft.ScrollMode.AUTO),
             
         ], expand=True)
