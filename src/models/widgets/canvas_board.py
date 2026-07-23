@@ -35,52 +35,38 @@ class CanvasBoard(Widget):
             self.data.update({
                 'tag': "canvas_board",
                 'color': app.settings.data.get('widget_defaults', {}).get('canvas_board', {}).get('color'),
-                'show_sidebar': False,      # Flag false since we won't use it
 
-                'summary': str(), # Description of this canvas board. Some could be for chapters (multiple canvas) or just one board
-
-                # Labels on the top part of our grid. Users can add onto these as needed
-                # Preview -> Ties to a specific Canvas and shows a preview of that Canvas in real time
-
-                # Our main data matrix for this canvas board
-                'matrix': [
-                    [                   # First row
-                        {               # First Cell
-                            'sketch_capture': "",                       # Capture of the sketch
-                            'undo_list': list(),                        # Capture list of undo actions
-                            'redo_list': list()                         # Capture list of redo actions
-                        },             
-                        "",              # Second Cell - Concept description text
-                    ],      
-                    [               # Second row      
-                        {           # First Cell
-                            'sketch_capture': "",
-                            'undo_list': list(),
-                            'redo_list': list()
-                        },          # Second cell
-                        "",         # Third cell
-                    ]
-                ]
+                # Our row data 
+                'rows': [
+                    {
+                        'canvas_id': "",    # ID of the canvas we're attached to, if we're attached to one
+                        'preview_capture': "",    # Base64 string of the preview capture
+                        'sketch_capture': "",    # Base64 string of the sketch capture
+                        'description': "",    # Description of the sketch
+                        'height': 300,      # Height of the canvas
+                        'width': 300,       # Width of the canvas
+                    }
+                ],
             },
         )
 
 
 
         self.state: State = State()     # State model from tracking our drawing state
-        self.active_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
+        self.active_path: cv.Path
         
 
-    # Called when making changes to the data in a matrix cell
+    # Called when making changes to the data in a rows cell
     def update_description_cell(self, e: ft.Event):
-        ''' Updates a specific cell in our matrix data '''
+        ''' Updates a specific cell in our rows data '''
         # Grab index positions
         row_idx = e.control.data
         cell_idx = 1       # Descriptions are always second
         value = e.control.value
 
         # Update data
-        self.data['matrix'][row_idx][cell_idx] = value
-        self.update_data(**{'matrix': self.data.get('matrix')})
+        self.data['rows'][row_idx][cell_idx] = value
+        self.update_data(**{'rows': self.data.get('rows')})
 
 
     # Called when we click the canvas and don't initiate a drag
@@ -179,13 +165,13 @@ class CanvasBoard(Widget):
         canvas: cv.Canvas = e.control.parent
 
         # Grab old capture and add it to the undo list
-        old_capture = self.data['matrix'][row_idx][cell_idx].get('capture', "")
+        old_capture = self.data['rows'][row_idx][cell_idx].get('capture', "")
         if old_capture:
-            self.data['matrix'][row_idx][cell_idx]['undo_list'].append(old_capture)   
-            self.data['matrix'][row_idx][cell_idx]['redo_list'].clear()
+            self.data['rows'][row_idx][cell_idx]['undo_list'].append(old_capture)   
+            self.data['rows'][row_idx][cell_idx]['redo_list'].clear()
 
-        if len(self.data['matrix'][row_idx][cell_idx]['undo_list']) > 30:   # Limit our undo/redo list to 30 items to save memory
-            self.data['matrix'][row_idx][cell_idx]['undo_list'].pop(0)
+        if len(self.data['rows'][row_idx][cell_idx]['undo_list']) > 30:   # Limit our undo/redo list to 30 items to save memory
+            self.data['rows'][row_idx][cell_idx]['undo_list'].pop(0)
         
         try:
             await canvas.capture()
@@ -201,8 +187,8 @@ class CanvasBoard(Widget):
             if encoded_capture:
 
                 # Save the capture
-                self.data['matrix'][row_idx][cell_idx]['sketch_capture'] = encoded_capture
-                self.update_data(**{'matrix': self.data['matrix']}) 
+                self.data['rows'][row_idx][cell_idx]['sketch_capture'] = encoded_capture
+                self.update_data(**{'rows': self.data['rows']}) 
 
             # Must clear the capture or weird UI bugs
             await canvas.clear_capture()
@@ -227,185 +213,151 @@ class CanvasBoard(Widget):
         except Exception as e:
             print("failed to save canvas", e)
 
-    # Called when undoing a stroke on the canvas
-    async def undo(self, e: ft.Event):
 
-        row_idx = e.control.parent.parent.parent.data
-        cell_idx = 0
 
-        # If there's nothing to undo, return early
-        if len(self.data['matrix'][row_idx][cell_idx]['undo_list']) == 0:
-            return
-
-        canvas: cv.Canvas = e.control.parent.parent.parent.controls[-1].content  
-                
-        # Grab capture we are reverting our canvas too, as well as the one to add to our redo list
-        undo_capture = self.data['matrix'][row_idx][cell_idx]['undo_list'].pop()
-        redo_capture = self.data['matrix'][row_idx][cell_idx].get('capture', "")
-        
-        self.data['matrix'][row_idx][cell_idx]['redo_list'].append(redo_capture)   # Add current capture to redo list before we change it
-        self.data['matrix'][row_idx][cell_idx]['capture'] = undo_capture
-
-        canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
-        canvas.shapes.append(cv.Image(undo_capture, 0, 0, 300, 300))   # Re-add most reccent capture
-        canvas.update()
-
-        self.update_data(**{'matrix': self.data['matrix']})  # Update our data so it saves the undo/redo lists  
-
-    # Called when redoing a stroke on the canvas after a previous undo
-    async def redo(self, e: ft.Event):
-        row_idx = e.control.parent.parent.parent.data
-        cell_idx = 0
-
-        # If there's nothing to redo, return early
-        if len(self.data['matrix'][row_idx][cell_idx]['redo_list']) == 0:
-            return
-        
-        canvas: cv.Canvas = e.control.parent.parent.parent.controls[-1].content  
-
-        previous_capture = self.data['matrix'][row_idx][cell_idx].get('capture', "")  # What the capture currently is before re-doing
-        new_capture = self.data['matrix'][row_idx][cell_idx]['redo_list'].pop()   # Grab capture we are redoing to our canvas
-
-        
-        self.data['matrix'][row_idx][cell_idx]['undo_list'].append(previous_capture)   # Add current capture to undo list before we change it
-        self.data['matrix'][row_idx][cell_idx]['capture'] = new_capture
-
-        canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
-        canvas.shapes.append(cv.Image(new_capture, 0, 0, 300, 300))   # Re-add most reccent capture
-        canvas.update()
-        
-
-    
     
     def build(self):
         
         
         super().build()
 
-        # Called when we click to add a new row at the bottom of our matrix
+        # Called when we click to add a new row at the bottom of our rows
         async def create_row(e: ft.Event=None):
-            ''' Adds an empty new row to our matrix data and reloads the widget '''
+            ''' Adds an empty new row to our rows data and reloads the widget '''
 
             # Create a new row with default values of each cell
-            new_row = [
-                {
-                    'sketch_capture': "",    
-                    'undo_list': list(),
-                    'redo_list': list()
-                },
-                ""
-            ]
+            new_row_dict = {
+                'canvas_id': "",    # ID of the canvas we're attached to, if we're attached to one
+                'sketch_capture': "",    # Base64 string of the sketch capture
+                'description': "",    # Description of the sketch
+                'height': 300,      # Height of the canvas
+                'width': 300,       # Width of the canvas
+            }
             
-            # Add the new row to our matrix data
-            self.data['matrix'].append(new_row)
-            self.update_data(**{'matrix': self.data['matrix']})  # Update our data so it saves the new row
+            # Add the new row to our rows data
+            self.data['rows'].append(new_row_dict)
+            self.update_data(**{'rows': self.data['rows']})  # Update our data so it saves the new row
 
-            matrix_column.controls.append(
-                create_matrix_row_ctrl(
-                    len(self.data.get('matrix', [])) - 1,
-                    self.data.get('matrix', [])[-1]
+            rows_column.controls.append(
+                create_row_ctrl(
+                    len(self.data.get('rows', [])) - 1,
+                    self.data.get('rows', [])[-1]
                 )
             )
-            matrix_column.update()
-            await matrix_column.scroll_to(-1, duration=600)
+            rows_column.update()
+            await rows_column.scroll_to(-1, duration=600)
         
 
-        # Creates a matrix row ctrl for the body of our widget
-        def create_matrix_row_ctrl(row_idx: int, row_data: dict) -> ft.Container: 
-            row_ctrl = ft.Row([],  vertical_alignment=ft.CrossAxisAlignment.CENTER, margin=ft.Margin.only(right=10))
-            for cell_idx, cell in enumerate(row_data):
-                # Load sketches
-                if cell_idx == 0:
-                    
-                    capture = cell.get('sketch_capture', "")
-                    sketch_canvas = cv.Canvas(
-                        content=ft.GestureDetector(
-                            mouse_cursor=ft.MouseCursor.PRECISE,
-                            on_pan_start=self.start_new_stroke,
-                            on_pan_update=self.update_stroke,
-                            on_pan_end=self.save_canvas,
-                            on_tap_up=self.add_shape,      # Handles so we can add points
-                            data=row_idx,
-                            drag_interval=10,
+        # Creates a rows row ctrl for the body of our widget
+        def create_row_ctrl(row_idx: int, row_data: dict) -> ft.Container: 
+            sketch_canvas = cv.Canvas(      # Canvas for drawing on
+                content=ft.GestureDetector(
+                    mouse_cursor=ft.MouseCursor.PRECISE,
+                    on_pan_start=self.start_new_stroke,
+                    on_pan_update=self.update_stroke,
+                    on_pan_end=self.save_canvas,
+                    on_tap_up=self.add_shape,      # Handles so we can add points
+                    data=row_idx,
+                    drag_interval=10,
+                ),
+                width=row_data.get('width', 300), height=row_data.get('height', 300),
+                shapes=[cv.Image(row_data.get('sketch_capture', ''), 0, 0, 300, 300)],
+            )
+            row_ctrl = ft.Row(
+                vertical_alignment=ft.CrossAxisAlignment.CENTER, 
+                margin=ft.Margin.only(right=10),
+                controls=[
+                    ft.Container(
+                        ft.Image(   # Loads the str of the canvas we're connected to (if one) or loads the uploaded image
+                            self.story.get_widget_by_id(
+                                row_data.get('canvas_id')
+                            ).get_snapshot_string(quality="low") if row_data.get('canvas_id') else row_data.get('preview_capture', ""),
+                            ft.Text("Error"),
+                            width=row_data.get('width', 300), height=row_data.get('height', 300), fit=ft.BoxFit.FILL,
                         ),
-                        #width=300, height=300,
-                        shapes=[cv.Image(capture, 0, 0, 300, 300)],
-                    )
-                    row_ctrl.controls.append(
-                        ft.Container(
-                            ft.Column([
-                                # Undo/Redo Buttons
-                                ft.Row([
-                                    ft.IconButton(
-                                        ft.Icons.UNDO, self.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
-                                        data=row_idx, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-                                        on_click=self.undo,
-                                    ),
-                                    ft.IconButton(
-                                        ft.Icons.REDO_OUTLINED, self.data.get('color', None), tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
-                                        data=row_idx, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-                                        on_click=self.redo,
-                                    ),
-                                ], alignment=ft.MainAxisAlignment.CENTER), 
-                                
-                                # Contianer holding the sketch
-                                ft.Container(
-                                    sketch_canvas, 
-                                    width=300, height=300,
-                                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, border_radius=ft.BorderRadius.all(4),
-                                    #opacity=0.99,
-                                ),
-                                
-                            ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True), 
-                            data=row_idx
-                        )
-                    )
+                        width=300, height=300, alignment=ft.Alignment.CENTER
+                    ),
 
-                # Build textfield for all other types of columns
-                else:     
-                    row_ctrl.controls.append(
+                    ft.VerticalDivider(),
+                    
+                    ft.Container(
+                        ft.Column([
+                            # Undo/Redo Buttons
+                            ft.Row([
+                                ft.IconButton(
+                                    ft.Icons.UNDO, self.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
+                                    data=row_idx, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                                    #on_click=self.undo,
+                                ),
+                                ft.IconButton(
+                                    ft.Icons.REDO_OUTLINED, self.data.get('color', None), tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
+                                    data=row_idx, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                                    #on_click=self.redo,
+                                ),
+                            ], alignment=ft.MainAxisAlignment.CENTER), 
+                            
+                            # Contianer holding the sketch
+                            ft.Container(
+                                sketch_canvas, 
+                                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                                border_radius=ft.BorderRadius.all(4),
+                                opacity=0.99,
+                            ),
+                            
+                        ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True), 
+                        data=row_idx,
+                        width=300, height=300, alignment=ft.Alignment.CENTER
+                    ),
+                    ft.Column([
+                        ft.Row([ft.TextField("Width", dense=True, expand=True), ft.TextField("Height", dense=True, expand=True)]),
                         ft.TextField(
-                            str(cell), 
+                            str(row_data.get('description', "")), 
                             dense=True, multiline=True,  
                             capitalization=ft.TextCapitalization.SENTENCES, smart_dashes_type=True,
                             data=row_idx,
                             on_blur=self.update_description_cell, #expand=True,
-                            expand=True,
+                            expand=True, label="Description", 
+                            label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=self.data.get('color', "primary")),
                             border_color=ft.Colors.OUTLINE_VARIANT
                         )
+                    ], expand=True),
+                    ft.IconButton(
+                        ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, 
+                        on_click=delete_row, data=row_idx, tooltip="Delete Row",
+                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
                     )
-                        
-
-            row_ctrl.controls.append(
-                ft.IconButton(
-                    ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, 
-                    on_click=delete_row, data=row_idx, tooltip="Delete Row",
-                    mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
-                )
+                ]
             )
+            
+            # TODO: 
+            # Load all rows
+            # Make uploaded images lower quality to save performance
+            # Load sketches
+                        
             return ft.Container(
                 row_ctrl, 
-                border=ft.Border.only(bottom=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if row_idx < len(self.data['matrix']) - 1 else None,
-                padding=ft.Padding.only(bottom=10) if row_idx < len(self.data['matrix']) - 1 else None,
+                #border=ft.Border.only(bottom=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if row_idx < len(self.data['rows']) - 1 else None,
+                #padding=ft.Padding.only(bottom=10) if row_idx < len(self.data['rows']) - 1 else None,
+                height=300,
             )
         
         async def delete_row(e: ft.Event):
-            ''' Deletes a specific row from our matrix data and reloads the widget '''
+            ''' Deletes a specific row from our rows data and reloads the widget '''
 
             row_idx = e.control.data
 
-            if 0 <= row_idx < len(self.data['matrix']):
+            if 0 <= row_idx < len(self.data['rows']):
                 
 
-                del self.data['matrix'][row_idx]
-                self.update_data(**{'matrix': self.data['matrix']})  # Update our data so it saves the deleted row
+                del self.data['rows'][row_idx]
+                self.update_data(**{'rows': self.data['rows']})  # Update our data so it saves the deleted row
 
-                matrix_column.controls.pop(row_idx)
-                matrix_column.update()
+                rows_column.controls.pop(row_idx)
+                rows_column.update()
                 update_indices()
 
         def update_indices():
-            for idx, ctrl in enumerate(matrix_column.controls):
+            for idx, ctrl in enumerate(rows_column.controls):
                 row_ctrl: ft.Row = ctrl.content     # Our row control, which should have 3 controls itself
                 row_ctrl.controls[0].data = idx     # Container that holds undo, redo, and canvas
                 row_ctrl.controls[1].data = idx     # Description tf
@@ -414,8 +366,8 @@ class CanvasBoard(Widget):
         self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_LOWEST
         self.padding = ft.Padding.only(left=10, top=10)
         
-        # Labels for our matrix data (columns)
-        matrix_labels = ft.Row(
+        # Labels for our rows data (columns)
+        rows_labels = ft.Row(
             [
                 ft.Text(
                     "Sketch", style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")),
@@ -429,14 +381,14 @@ class CanvasBoard(Widget):
             spacing=0, scroll="none"
         )
         
-        # Column that holds our matrix data
-        matrix_column = ft.Column(
+        # Column that holds our rows data
+        rows_column = ft.Column(
             [], 
             spacing=0, scroll="auto", tight=True, expand=True
         )
         # Go through our data and add a new row
-        for row_idx, row_data in enumerate(self.data['matrix']):
-            matrix_column.controls.append(create_matrix_row_ctrl(row_idx, row_data))
+        for row_idx, row_data in enumerate(self.data['rows']):
+            rows_column.controls.append(create_row_ctrl(row_idx, row_data))
             
 
         # Body of the tab, which is the content of flet container
@@ -444,10 +396,10 @@ class CanvasBoard(Widget):
             expand=True, scroll="none", spacing=0,
             controls=[                 
                 
-                matrix_labels,
+                rows_labels,
                 ft.Divider(),
                         
-                matrix_column,
+                rows_column,
                 
                 ft.Row([ 
                     self.description_tf,
