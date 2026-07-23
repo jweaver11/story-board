@@ -115,7 +115,11 @@ class Canvas(Widget):
         for i, layer in enumerate(self.data.get('canvas_data', {}).get('layers', [])):
             if layer.get('dirty', False) == True:
                 canvas: cv.Canvas = self.layer_stack.controls[i]
-                await self.save_canvas(canvas)
+                try:
+                    await self.save_canvas(canvas)
+                except RuntimeError as e:
+                    print(e)
+                    return
                 self.needs_file_write = True    # Mark our widget as dirty if we saved anything
         await super().save_file()            
    

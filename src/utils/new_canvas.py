@@ -11,48 +11,89 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
     if directory_path is None:
         directory_path = story.data.get('content_directory_path', "")
 
-    def _size_text_field_changed(e):
-        ''' Handles when the text field is changed '''
-        # Set our nonlocal variables
-        nonlocal canvas_data, create_button
-        
-        # Grab out data (key) and pass in the value to our data dict
-        key = e.control.data
+    def show_error(message: str):
+        nonlocal error_text, create_button
+        create_button.disabled = True
+        error_text.value = message
+        error_text.visible = True
+        create_button.update()
+        error_text.update()
+        pass
 
-        # Reset error text and create_button status
-        e.control.error_text = None
+    def check_width(e=None) -> bool:
+        nonlocal canvas_data, create_button, width_textfield, error_text
+        new_width = width_textfield.value
 
         # If there is no value (user deleted it all), set to None
-        if e.control.value == "":
-            value = None
-        # Otherwise, set the value
+        if new_width == "":
+            new_width = None
         else:
-            value = int(e.control.value)
+            new_width = int(new_width)
 
-        # Check if value is 0. If it is, set error text and disable create button
-        if value is not None:
-            if value == 0:
-                e.control.error = f"{key.capitalize()} cannot be 0"
-                e.control.update()  
-                create_button.update()
-                return
-    
-        # Set our data
-        canvas_data[key] = value
+        # Check width not empty
+        if new_width is None:
+            show_error("Width must be set")
+            return False
 
-        #print("Canvas data updated: ", canvas_data)
+        # Check width not 0
+        if new_width < 400:
+            show_error("Width must be greater than 400")
+            return False
+                
+        # Update data
+        canvas_data.update({'width': new_width})
 
-        if canvas_data.get('width') is None and canvas_data.get('height') is None:
-            create_button.update()
-            return
-        elif canvas_data.get('width') is None or canvas_data.get('height') is None:
-            create_button.update()
+        # Reset errors
+        error_text.value = ""
+        error_text.visible = False
+        create_button.disabled = False
+        create_button.update()
+        error_text.update()
+
+        print("Canvas data updated: ", canvas_data)
+
+        return True
         
 
-    def _new_template_selected(e):
+    def check_height(e=None) -> bool:
+        ''' Handles when the text field is changed '''
+        # Set our nonlocal variables
+        nonlocal canvas_data, create_button, height_textfield, error_text
+        new_height = height_textfield.value
+
+        # If there is no value (user deleted it all), set to None
+        if new_height == "":
+            new_height = None
+        else:
+            new_height = int(new_height)
+
+        # Check height not empty
+        if new_height is None:
+            show_error("Height must be set")
+            return False
+        # Check height not 0
+        if new_height < 400:
+            show_error("Height must be greater than 400")
+            return False
+
+        # Update data
+        canvas_data.update({'height': new_height})
+
+        # Reset errors
+        error_text.value = ""
+        error_text.visible = False
+        create_button.disabled = False
+        create_button.update()
+        error_text.update()
+
+        print("Canvas data updated: ", canvas_data)
+        return True
+
+    # When we select one of our template boxes. Updates data and UI to reflect
+    def _new_template_selected(e: ft.Event[ft.Container]):
 
         # Set our data for when creating the canvas
-        nonlocal canvas_data
+        nonlocal canvas_data, width_textfield, height_textfield
         data = e.control.data
 
         width_textfield.value = str(data.get('width', "")) if data.get('width') is not None else ""
@@ -60,6 +101,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
 
         # Update our data we will pass into creating the canvas based on selected template
         canvas_data.update(data)
+        print("Canvas data updated: ", canvas_data)
         
 
         # Reset the rest of the templates borders
@@ -71,21 +113,24 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         # Update our selected template border
         e.control.border = ft.Border.all(2, ft.Colors.PRIMARY)
         e.control.update()  
+        width_textfield.update()
+        height_textfield.update()
+
 
         
-        page.run_task(title_textfield.focus)
-
-        
-      
-    async def _create_button_clicked(e=None):
+    # Does final size checks then creates the canvas and closes the dialog
+    async def create_canvas(e=None):
         ''' Handles creating a new canvas when create is clicked '''
         nonlocal canvas_data
-        nonlocal submitting
-        nonlocal is_unique
 
-        submitting = True
+        # Check sizing is valid
+        if check_width() is False:
+            return
+        if check_height() is False:
+            return
+        
 
-        title = title_textfield.value if title_textfield.value != "" else f"Canvas {len(story.canvases) + 1}"
+        title = title_textfield.value if title_textfield.value != "" else f"New canvas"
 
         await story.create_widget(
             title=title,
@@ -94,134 +139,83 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
             data=canvas_data
         )
 
-        #page.run_task(story.save_dict)
-        #story.active_rail.reload_rail()
-
         # Build the canvas here
         page.pop_dialog()
 
-    # Track if our name is unique for checks, and if we're submitting or not
-    is_unique = True
-    submitting = False
 
-    canvas_data = {'width': None, 'height': None, 'aspect_ratio': None}       # Data we will pass set to pass in whenever a different template is selected
+    canvas_data = {'width': None, 'height': None}       # Data we will pass set to pass in whenever a different template is selected
 
-    create_button = ft.TextButton("Create", on_click=_create_button_clicked, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))  # Button to create the canvas
+    create_button = ft.TextButton("Create", on_click=create_canvas, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))  # Button to create the canvas
 
     width_textfield = ft.TextField(
-        label="Width", data="width", width=140, dense=True, input_filter=ft.NumbersOnlyInputFilter(), 
-        max_length=4, on_change=_size_text_field_changed
+        value=str(1920), label="Width", data="width", width=140, dense=True, input_filter=ft.NumbersOnlyInputFilter(), 
+        max_length=4, on_change=check_width
     )
     height_textfield = ft.TextField(
-        label="Height", data="height", width=140, dense=True, input_filter=ft.NumbersOnlyInputFilter(), 
-        max_length=4, on_change=_size_text_field_changed, 
+        value=str(1080),label="Height", data="height", width=140, dense=True, input_filter=ft.NumbersOnlyInputFilter(), 
+        max_length=4, on_change=check_height
     )  
     title_textfield = ft.TextField(
-        label="Title", data="title", width=300, autofocus=True, on_submit=_create_button_clicked,
-        capitalization=ft.TextCapitalization.WORDS,
+        label="Title", data="title", autofocus=True, on_submit=create_canvas,
+        capitalization=ft.TextCapitalization.WORDS, margin=ft.Margin.only(top=6)
     )
-
-    title_textfield_container = ft.Container(title_textfield, margin=ft.Margin.only(top=6))
+    error_text = ft.Text("", visible=False, color=ft.Colors.ERROR, size=14, italic=True, weight=ft.FontWeight.W_500)
 
     template_controls = [
         ft.Container(
-            content=ft.Text("Blank", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(5), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=120, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=120,
-            data={'width': None, 'height': None, 'aspect_ratio': None}
-        ),
-        ft.Container(
-            content=ft.Text("4k (3840x2160)", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(5), border_radius=4,
+            content=ft.Text("4k\n3840 x 2160\n16:9", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(5), border_radius=4,
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
             height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=160,
             data={'width': 3840, 'height': 2160, 'aspect_ratio': None}
         ),
         ft.Container(
-            content=ft.Text("2k (2560x1440)",text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(5), border_radius=4,
+            content=ft.Text("2k\n2560 x 1440\n16:9",text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(5), border_radius=4,
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
             height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=160,
             data={'width': 2560, 'height': 1440, 'aspect_ratio': None}
         ),
         ft.Container(
-            content=ft.Text("HD (1920x1080)", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(5), border_radius=4,
+            content=ft.Text("HD\n1920 x 1080\n16:9", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(5), border_radius=4,
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
             height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=160,
             data={'width': 1920, 'height': 1080, 'aspect_ratio': None}
         ),
         ft.Container(
-            content=ft.Text("Banner (1500x500)", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(5), border_radius=4,
+            content=ft.Text("Banner\n1500 x 500\n3:1", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(5), border_radius=4,
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
             height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=270,
             data={'width': 1500, 'height': 500, 'aspect_ratio': None}
         ),
         ft.Container(
-            content=ft.Text("4k (2160x3840)", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
+            content=ft.Text("4k\n2160 x 3840\n9:16", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected, 
             height=160, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
             data={'width': 2160, 'height': 3840, 'aspect_ratio': None}
         ),
         ft.Container(
-            content=ft.Text("2k (1440x2560)", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
+            content=ft.Text("2k\n1440 x 2560\n9:16", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
             height=160, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
             data={'width': 1440, 'height': 2560, 'aspect_ratio': None}
         ),
         ft.Container(
-            content=ft.Text("HD (1080x1920)", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
+            content=ft.Text("HD\n1080 x 1920\n9:16", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected, 
             height=160, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
             data={'width': 1080, 'height': 1920, 'aspect_ratio': None}
         ),
         ft.Container(
-            content=ft.Text("Banner (500x1500)", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
+            content=ft.Text("Vertical Banner\n500 x 1500\n1:3", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
             height=270, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
             data={'width': 500, 'height': 1500, 'aspect_ratio': None}
         ),
         ft.Container(
-            content=ft.Text("16:9", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
+            content=ft.Text("Logo\n(400x400)\n1:3", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, height=90, width=160,
-            data={'width': None, 'height': None, 'aspect_ratio': '16:9'}
+            height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
+            data={'width': 400, 'height': 400, 'aspect_ratio': None}
         ),
-        
-        ft.Container(
-            content=ft.Text("2:1", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, height=90, width=160,
-            data={'width': None, 'height': None, 'aspect_ratio': '2:1'}
-        ),
-        ft.Container(
-            content=ft.Text("4:3", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, height=120, width=160,
-            data={'width': None, 'height': None, 'aspect_ratio': '4:3'}
-        ),
-        ft.Container(
-            content=ft.Text("9:16", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, height=160, width=90,
-            data={'width': None, 'height': None, 'aspect_ratio': '9:16'}
-        ),
-        
-        ft.Container(
-            content=ft.Text("1:2", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90, height=160,
-            data={'width': None, 'height': None, 'aspect_ratio': '1:2'}
-        ),
-        ft.Container(
-            content=ft.Text("3:4", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90, height=120,
-            data={'width': None, 'height': None, 'aspect_ratio': '3:4'}
-        ),
-        ft.Container(
-            content=ft.Text("1:1", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90, height=90,
-            data={'width': None, 'height': None, 'aspect_ratio': '1:1'}
-        )
     ]
     
 
@@ -235,51 +229,42 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         content=ft.Column(
             scroll=ft.ScrollMode.AUTO,
             controls=[
-                title_textfield_container,
+                title_textfield,
                 ft.Divider(),
-                ft.Row([
-                    template_controls[0],
-                    ft.Column(
-                        alignment=ft.MainAxisAlignment.CENTER, 
-                        controls=[
-                            ft.Text("Custom Size:", weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.RIGHT, width=88),
-                            width_textfield,
-                            height_textfield,
-                    ])
-                ]),
+                
+                    
+                ft.Column(
+                    alignment=ft.MainAxisAlignment.CENTER, 
+                    controls=[
+                        ft.Text("Custom Size:", weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.RIGHT, width=88),
+                        width_textfield,
+                        height_textfield,
+                        error_text
+                    ], tight=True),
+                
                 ft.Divider(),
                 ft.Text("Common Resolutions", weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.TITLE_MEDIUM, text_align=ft.TextAlign.RIGHT),
                 
                 ft.Row([
                     ft.Column(
-                        alignment=ft.MainAxisAlignment.CENTER,
+                        alignment=ft.MainAxisAlignment.CENTER, tight=True,
                         controls=[
                         ft.Row([
+                            template_controls[0],
                             template_controls[1],
                             template_controls[2],
-                            template_controls[3],
                         ]),
-                        template_controls[4],
+                        template_controls[3],
                     
                     ]),
+                    template_controls[4],
                     template_controls[5],
                     template_controls[6],
                     template_controls[7],
                     template_controls[8],
                 ]),  
 
-                ft.Text("Common Aspect Ratios", weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.TITLE_MEDIUM, text_align=ft.TextAlign.RIGHT),
-                ft.Row([
-                    ft.Column([
-                        template_controls[9],
-                        template_controls[10],
-                    ]),
-                    template_controls[11],
-                    template_controls[12],
-                    template_controls[13],
-                    template_controls[14],
-                    template_controls[15],
-                ])
+               
             ])
         
     )
