@@ -75,7 +75,7 @@ class Widget(ft.Container):
         self.sidebar_header: ft.Row       # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
         self.sidebar_body: ft.Column      # Column that holds the header and any other content for the sidebar
         self.sidebar: ft.Container      # Container on right side of widgets to hold mini widgets or sidebar info
-        self.show_sidebar_button: ft.IconButton     # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
+        self.toggle_sidebar_visibility_button: ft.Container     # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
         self.sidebar_notes_label: ft.Row
         self.sidebar_notes_column: ft.Column
 
@@ -191,8 +191,11 @@ class Widget(ft.Container):
         self.update_data(**{'show_sidebar': True})
  
         # Make button hiddent and seperate update to prevent animation from being skipped
-        self.show_sidebar_button.visible = False
-        self.show_sidebar_button.update()
+        #self.toggle_sidebar_visibility_button.visible = False
+        
+        self.toggle_sidebar_visibility_button.content.icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED
+        self.toggle_sidebar_visibility_button.on_click = self.hide_sidebar
+        self.toggle_sidebar_visibility_button.update()
         
         # Set our sidebar's width
         self.sidebar.width = self.w / 4 
@@ -210,8 +213,11 @@ class Widget(ft.Container):
         self.update_data(**{'show_sidebar': False})
         
         # Show the button to show the sidebar again, and update it so it shows before the animation starts
-        self.show_sidebar_button.visible = True
-        self.show_sidebar_button.update()
+        #self.toggle_sidebar_visibility_button.visible = True
+
+        self.toggle_sidebar_visibility_button.content.icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED
+        self.toggle_sidebar_visibility_button.on_click = self.show_sidebar
+        self.toggle_sidebar_visibility_button.update()
 
         # Run animation to width of 0
         self.sidebar.width = 0
@@ -587,16 +593,8 @@ class Widget(ft.Container):
             color=self.data.get('color', None), 
             on_submit=self.submit_rename, on_blur=set_title_value)
 
-        # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
-        return [
-            self.sidebar_title,    # Title of widget
-            #ft.Container(expand=True),      # Spacer
-            ft.IconButton(          # Close/Collapse the sidebar
-                ft.Icons.CLOSE, self.data.get('color', ft.Colors.PRIMARY), on_click=self.hide_sidebar,
-                mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-                tooltip="Collapse Sidebar"
-            )
-        ]
+        # Return the title
+        return [self.sidebar_title]
 
     # Called in constructor to build our sidebar controls
     def build_sidebar(self):
@@ -693,30 +691,31 @@ class Widget(ft.Container):
             [create_new_note_ctrl(idx, value) for idx, value in enumerate(self.data.get('notes', []))]
         )
 
-        # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
-        self.show_sidebar_button = ft.IconButton(
-            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED, self.data.get('color', ft.Colors.PRIMARY),
-            on_click=self.show_sidebar, 
-            mouse_cursor=ft.MouseCursor.CLICK,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            visible=not self.data.get('show_sidebar', True),
-            tooltip="Show Sidebar",
-            #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
+        # Button (container) for showing and hiding the sidebar
+        self.toggle_sidebar_visibility_button = ft.Container(
+            ft.Icon(
+                ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED if not self.data.get('show_sidebar', True) else ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED,
+                self.data.get('color', ft.Colors.PRIMARY),
+            ),
+            on_click=self.show_sidebar if not self.data.get('show_sidebar', True) else self.hide_sidebar,
+            ink=True, border_radius=4, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE_CONTAINER_LOWEST),
+            padding=ft.Padding.symmetric(horizontal=0, vertical=4),
+            #border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
         )
 
         # Container on right side of widgets to hold mini widgets or sidebar info
         self.sidebar = ft.Container(
-            border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
+            #border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             padding=ft.Padding.all(10),
             shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE_CONTAINER_LOWEST), 
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            width=0, # Start collapsed, and when we are built it will expand if needed
+            width=0, # Start collapsed, and when built we will get bigger if showing
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.Column([     # Holds our header seperated by the body
                 self.sidebar_header, 
                 ft.Divider(),
                 self.sidebar_body,
-                #ft.Divider(2, 2),
                 self.sidebar_footer
             ], expand=True, spacing=0)
         )

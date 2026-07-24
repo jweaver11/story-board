@@ -350,25 +350,16 @@ class Document(Widget):
         ])
         
 
-        # Set our content
-        #self.content = ft.Column([
-            #ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE, alignment=ft.Alignment.CENTER_LEFT),
-            #ft.Row([
-                #editor_container,
-                #self.show_sidebar_button,
-                #self.sidebar,
-            #], expand=True)
-        #], spacing=0, expand=True)
-
         self.content = ft.Column([
             ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT),
-            ft.Stack([
-                ft.Row([
-                    editor_container,
-                    self.sidebar,
-                ], expand=True, spacing=0),
-                self.show_sidebar_button, 
-            ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
+            
+            
+                ft.Row(
+                    [editor_container, self.toggle_sidebar_visibility_button, self.sidebar], 
+                    spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER
+                )
+            
         ], spacing=0, expand=True)
 
 

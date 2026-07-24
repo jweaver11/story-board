@@ -144,18 +144,10 @@ class MiniWidget(ft.GestureDetector):
             color=self.data.get('color', None), 
             on_blur=set_title_value,
             #on_submit=self.submit_rename
-            )
+        )
 
         # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
-        return [
-            self.sidebar_title,    # Title of widget
-            #ft.Container(expand=True),      # Spacer
-            ft.IconButton(          # Close/Collapse the sidebar
-                ft.Icons.CLOSE, self.data.get('color', ft.Colors.PRIMARY), on_click=self.widget.hide_sidebar,
-                mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-                tooltip="Collapse Sidebar"
-            )
-        ]
+        return [self.sidebar_title]
 
 
     # Child classes override this

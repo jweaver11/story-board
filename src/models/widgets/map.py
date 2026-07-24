@@ -460,7 +460,9 @@ class Map(Widget):
         ]  
             
             
-        
+    async def hide_sidebar(self, e=None):
+        await super().hide_sidebar(e)
+        self.showing_info = False
 
     # Called when clicking to show our info in the sidebar
     async def show_info(self, e=None):
@@ -468,6 +470,7 @@ class Map(Widget):
         # Close menu
         await self.story.close_menu()
         if self.showing_info:   # Already showing info, so no need to re-call it
+            print("Showing info, close early")
             return
         
         # Re-build header, body, and footer
@@ -527,51 +530,51 @@ class Map(Widget):
 
     # Creates our header controls for the sidebar, including our settings button
     def create_sidebar_header_ctrls(self) -> list[ft.Control]:
-        ctrls = super().create_sidebar_header_ctrls()
-        ctrls.insert(1, self.create_sidebar_header_setting_ctrl())
-        return ctrls
+        ctrls: list = super().create_sidebar_header_ctrls()
 
-    # Creates our settings button for the sidebar header
-    def create_sidebar_header_setting_ctrl(self) -> ft.MenuBar:
-    
         # TODO: Settings - show/change map bg, select from canvas, upload, etc, enable drawing
         # Change select build in image to submenubutton
-        return ft.MenuBar(
-            [
-                ft.SubmenuButton(
-                    ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                    [
-                        ft.Text("Set Map Background", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4)),
-                        ft.MenuItemButton(      # 
-                            leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Choose Built-in Image", 
-                            close_on_click=True,
-                            tooltip="Choose a built-in image to use as the background for this map",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        ), 
-                        ft.MenuItemButton(      # Folders
-                            leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Select Canvas", 
-                            close_on_click=True,
-                            tooltip="Select a canvas to use as the background for this map",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        ), 
-                        ft.MenuItemButton(      # Folders
-                            leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Upload Image", 
-                            close_on_click=True,
-                            tooltip="Upload an image to use as the background for this map",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        ),  
-                    ],
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                    tooltip="Adjust the settings for this map"
-                ),
-            ],
-            style=ft.MenuStyle(
-                bgcolor="transparent", shadow_color="transparent",
-                shape=ft.RoundedRectangleBorder(radius=4),
-                padding=ft.Padding.all(0)
+        
+        ctrls.append(
+            ft.MenuBar(
+                [
+                    ft.SubmenuButton(
+                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                        [
+                            ft.Text("Set Map Background", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4)),
+                            ft.MenuItemButton(      # 
+                                leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Choose Built-in Image", 
+                                close_on_click=True,
+                                tooltip="Choose a built-in image to use as the background for this map",
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            ), 
+                            ft.MenuItemButton(      # Folders
+                                leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Select Canvas", 
+                                close_on_click=True,
+                                tooltip="Select a canvas to use as the background for this map",
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            ), 
+                            ft.MenuItemButton(      # Folders
+                                leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Upload Image", 
+                                close_on_click=True,
+                                tooltip="Upload an image to use as the background for this map",
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            ),  
+                        ],
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                        tooltip="Adjust the settings for this map"
+                    ),
+                ],
+                style=ft.MenuStyle(
+                    bgcolor="transparent", shadow_color="transparent",
+                    shape=ft.RoundedRectangleBorder(radius=4),
+                    padding=ft.Padding.all(0)
+                )
             )
         )
+        return ctrls
+
 
     # Build the map
     def build(self):
@@ -647,11 +650,17 @@ class Map(Widget):
         # Add our settings button to the sidebar header, and build our body
         
         self.sidebar_body.controls = self.create_sidebar_body_ctrls()  
+        if self.data.get('show_sidebar', True) == False:
+            self.showing_info = False
         
         # Set up our main conent
         self.content = ft.Stack([
-            ft.Row([interactive_viewer, self.sidebar], spacing=0, expand=True),
-            self.show_sidebar_button, 
+            interactive_viewer,
+            ft.Row(
+                [self.toggle_sidebar_visibility_button, self.sidebar], 
+                spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
+                vertical_alignment=ft.CrossAxisAlignment.CENTER
+            )
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
 
 

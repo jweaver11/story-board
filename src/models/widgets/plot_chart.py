@@ -860,8 +860,12 @@ class PlotChart(Widget):
 
         # Set up our main conent
         self.content = ft.Stack([
-            ft.Row([viewer_stack, self.sidebar], spacing=0, expand=True),
-            self.show_sidebar_button, 
+            viewer_stack,
+            ft.Row(
+                [self.toggle_sidebar_visibility_button, self.sidebar], 
+                spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
+                vertical_alignment=ft.CrossAxisAlignment.CENTER
+            )
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
 
         # TODO: Add spider web view

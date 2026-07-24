@@ -196,62 +196,61 @@ class MapLocation(MiniWidget):
             )
         ]
 
-    
-
-    # Return a menubar
-    def create_sidebar_header_setting_ctrl(self) -> ft.MenuBar:
-        # TODO: Change icon, title, color, lore
-        # Upload image button
-        return ft.MenuBar(
-            [
-                ft.SubmenuButton(
-                    ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                    [
-                        ft.Text("Set Map Backgroound", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4)),
-                        ft.MenuItemButton(      # 
-                            leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Choose Built-in Image", 
-                            close_on_click=True,
-                            tooltip="Choose a built-in image to use as the background for this map",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        ), 
-                        ft.MenuItemButton(      # Folders
-                            leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Select Canvas", 
-                            close_on_click=True,
-                            tooltip="Select a canvas to use as the background for this map",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        ), 
-                        ft.MenuItemButton(      # Folders
-                            leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Upload Image", 
-                            close_on_click=True,
-                            tooltip="Upload an image to use as the background for this map",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        ),  
-                    ],
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                    tooltip="Adjust the settings for this map"
-                ),
-            ],
-            style=ft.MenuStyle(
-                bgcolor="transparent", shadow_color="transparent",
-                shape=ft.RoundedRectangleBorder(radius=4),
-                padding=ft.Padding.all(0)
-            )
-        ) 
-
     # Return a list of header controls
     def create_sidebar_header_ctrls(self) -> list[ft.Control]:
-        ctrls = super().create_sidebar_header_ctrls()
-        ctrls.insert(1, self.create_sidebar_header_setting_ctrl())
+        ctrls: list = super().create_sidebar_header_ctrls()
+
+        # TODO: Change icon, title, color, lore
+        # Show preview if connected to other map
+        # Upload image button
+        # TODO: Change icon, title, color, lore
+        # Upload image button
+
+        ctrls.append(
+            ft.MenuBar(
+                [
+                    ft.SubmenuButton(
+                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                        [
+                            ft.Text("Set Map Backgroound", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4)),
+                            ft.MenuItemButton(      # 
+                                leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Choose Built-in Image", 
+                                close_on_click=True,
+                                tooltip="Choose a built-in image to use as the background for this map",
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            ), 
+                            ft.MenuItemButton(      # Folders
+                                leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Select Canvas", 
+                                close_on_click=True,
+                                tooltip="Select a canvas to use as the background for this map",
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            ), 
+                            ft.MenuItemButton(      # Folders
+                                leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Upload Image", 
+                                close_on_click=True,
+                                tooltip="Upload an image to use as the background for this map",
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            ),  
+                        ],
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                        tooltip="Adjust the settings for this map"
+                    ),
+                ],
+                style=ft.MenuStyle(
+                    bgcolor="transparent", shadow_color="transparent",
+                    shape=ft.RoundedRectangleBorder(radius=4),
+                    padding=ft.Padding.all(0)
+                )
+            ) 
+        )
         return ctrls
 
     # Called when reloading changes to our plot point and in constructor
     def create_sidebar_body_ctrls(self) -> list[ft.Control]:
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
-        # TODO: Change icon, title, color, lore
-        # Show preview if connected to other map
-        # Upload image button
+        
         
         
         if self.data.get('image_base64', ""):
