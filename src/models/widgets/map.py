@@ -272,10 +272,6 @@ class Map(Widget):
             # Set our labels content
             self.content = ft.Container(self.label_tf, ignore_interactions=True, border_radius=4)    # Let Gesture Detector handle all interactions
             
-    # Calls parent hide sidebar and updates our state
-    async def hide_sidebar(self, e: ft.Event=None):
-        await super().hide_sidebar(e)
-        self.showing_info = False
 
     # Creates our location control in data, on the location_stack, and focuses it in the sidebar
     async def create_location(self, e: ft.Event[ft.Button]=None):
