@@ -246,7 +246,7 @@ class CanvasBoard(Widget):
 
             # Update the width of this row sketch in data and in UI
             def update_width(e: ft.Event[ft.TextField]):
-                new_width = int(e.control.value)
+                new_width = int(e.control.value) if e.control.value else 0
                 row_idx = e.control.parent.parent.parent.parent.data
                 # If new width is not withing size range
                 if new_width < 200 or new_width > 300:

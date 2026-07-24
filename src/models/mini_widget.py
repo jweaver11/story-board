@@ -135,13 +135,19 @@ class MiniWidget(ft.GestureDetector):
 
         # Build our sidebar body content
         self.widget.sidebar_body.controls = self.create_sidebar_ctrls() 
+
+        # Check state 
+        if hasattr(self.widget, 'showing_info'):
+            if self.widget.showing_info == True:    # If widget is showing info, remove its description control at the bottom
+                self.widget.sidebar.content.controls.pop(-1)
+            self.widget.showing_info = False
+        
         
         # Applies the update
         if not await self.widget.show_sidebar():
             self.widget.sidebar.update()
-        if hasattr(self.widget, 'showing_info'):
-            self.widget.showing_info = False
 
+        
     # Hides our mini widget in the sidebar of our widgets content
     async def hide_mini_widget(self, e: ft.Event=None):
         ''' Hides our mini widget '''

@@ -481,6 +481,7 @@ class Map(Widget):
 
         # Build the body
         self.sidebar_body.controls = self.create_sidebar_ctrls()  
+        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
 
         # Applies the update
         if not await self.show_sidebar():
