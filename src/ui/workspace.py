@@ -39,41 +39,40 @@ class Workspace(ft.Container):
     # Adds a new widget to the workspace
     async def add_widget_to_workspace(self, widget: Widget):
 
-        # If we have a placeholder tab, remove it since we're adding a real widget
+        # Remove placeholder if workspace was empty
         if self.placeholder_visible:
-            # Remove the placeholder tab and view
             self.tab_bar.tabs.pop(0)
             self.tab_view.controls.pop(0)
             self.placeholder_visible = False
 
-        # Rebuild the widget to ensure it has updated page references
+        # Rebuild widget to update page reference, set our new selected index to the end
         new_widget: Widget = self.story.rebuild_widget(widget)
+        new_selected_index = len(self.tab_bar.tabs)
 
-        # Add a new tab for the widget and add the widget to the tab view
+        # Add the tab header + a cheap placeholder — NOT the heavy widget yet
         self.tab_bar.tabs.append(self.create_widget_tab_ctrl(new_widget))
-        self.tab_view.controls.append(new_widget)
+        self.tab_view.controls.append(ft.Container(ft.ProgressRing(), expand=True, alignment=ft.Alignment.CENTER))  # Lightweight stand-in
 
-        # Grab the last tab to be our new selected index
-        new_selected_index = len(self.tab_bar.tabs) - 1     
-
-        # Adjust the tabs properties
+        # Upade length and new selected index
         self.tabs.length = len(self.tab_bar.tabs)
         self.tabs.selected_index = new_selected_index
 
-        # Force the update
-        self.update()
-        await asyncio.sleep(0.05)  # Wait a frame to ensure selecting the tab is kept in a seperate frame
-
-        # Update the new widgets data to reflect its new position, and story data to match
-        new_widget.update_data(**{'index': new_selected_index})  
-        self.story.update_data(**{'workspace_selected_index': new_selected_index}) 
-
-        # Focus the new tab and update the indicator color
+        # Update data and indicator color for the new tab
+        new_widget.update_data(**{'index': new_selected_index})
+        self.story.update_data(**{'workspace_selected_index': new_selected_index})
         self.tab_bar.indicator_color = new_widget.data.get('color', ft.Colors.PRIMARY)
-        await self.tabs.move_to(new_selected_index, animation_duration=100)  # Select the new widget tab
-        self.tab_bar.update()
 
-        # TODO: Add length check here
+        # Flutter only has to render a blank Container first
+        self.update()
+        self.tab_bar.update()
+        await asyncio.sleep(0.05)  # One frame for the lightweight update to land
+
+        # Flutter engine is free now, so move_to will always work
+        await self.tabs.move_to(new_selected_index, animation_duration=100)
+
+        # Now swap the placeholder for the real widget - this is the costly update
+        self.tab_view.controls[-1] = new_widget
+        self.tab_view.update()
 
     # Creates a new tab control for the given widget
     def create_widget_tab_ctrl(self, widget: Widget) -> ft.Tab:
