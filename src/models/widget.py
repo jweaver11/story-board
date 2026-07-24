@@ -331,18 +331,18 @@ class Widget(ft.Container):
         # Build the options
         return [
             MenuOptionStyle(
+                on_click=set_canvas_as_image,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', 'primary'),),
+                    ft.Text("Set Canvas", weight=ft.FontWeight.BOLD), 
+                ], tooltip="Set a canvas as the image for this widget"),
+            ),
+            MenuOptionStyle(
                 on_click=upload_image,
                 content=ft.Row([
                     ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, self.data.get('color', 'primary'),),
                     ft.Text("Upload Image", weight=ft.FontWeight.BOLD), 
                 ]),
-            ),
-            MenuOptionStyle(
-            on_click=set_canvas_as_image,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', 'primary'),),
-                    ft.Text("Set Canvas", weight=ft.FontWeight.BOLD), 
-                ], tooltip="Set a canvas as the image for this widget"),
             ),
             MenuOptionStyle(
                 on_click=clear_image,

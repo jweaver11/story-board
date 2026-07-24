@@ -254,6 +254,9 @@ class ComicPreview(Widget):
                         ft.Image(
                             thumb, fit=ft.BoxFit.CONTAIN, margin=ft.Margin.symmetric(horizontal=10), expand=True, 
                             filter_quality=ft.FilterQuality.LOW, 
+                            placeholder_src=thumb,
+                            fade_in_animation=ft.Animation(50),
+                            placeholder_fade_out_animation=ft.Animation(50)
                         ),
                         delete_button := ft.IconButton(
                             ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, tooltip="Remove panel from preview?",
