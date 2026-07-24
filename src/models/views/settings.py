@@ -234,7 +234,7 @@ class Settings(ft.View):
             for widget in self.story.widgets.values():
                 await widget.save_file()
         await self.save_file()
-        await asyncio.sleep(0.1)
+        #await asyncio.sleep(0.1)
         
     def create_character_template(self, template_name: str, data: dict):
         ''' Creates a new character template with the given name '''
@@ -706,7 +706,7 @@ class Settings(ft.View):
             ''' Pushes local template dicts back to settings data and writes to disk '''
             self.data['character_templates'] = character_templates
             self.data['world_templates']     = world_templates
-            self.page.run_task(self.save_file)
+            self.update_data(**{'character_templates': character_templates, 'world_templates': world_templates})
 
         # Declared early so inner helpers that need it can reference it via closure
         edit_container = ft.Container(

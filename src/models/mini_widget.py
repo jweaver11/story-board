@@ -11,6 +11,7 @@ from styles.colors import colors
 from styles.text_fields import TextField
 import uuid
 import asyncio
+from styles.text_fields import SidebarTitleTextField
 
 class MiniWidget(ft.GestureDetector):
 
@@ -44,6 +45,8 @@ class MiniWidget(ft.GestureDetector):
                 'color': data.get('color', 'primary'),          # Color of the mini widget
                 'info': list(),                          # Info stored about this MW. Child classes expand this
             }
+
+        self.sidebar_title: SidebarTitleTextField    # Title of our miniwidget in the sidebar
 
         # State trackers
         self.is_dragging: bool = False              # If we are currently dragging our mini widget
@@ -129,15 +132,24 @@ class MiniWidget(ft.GestureDetector):
 
     def create_sidebar_header_ctrls(self) -> list:
         ''' Creates the controls for the header of the sidebar for this mini widget '''
+
+        # Re-sets the title value if it was changed in sidebar and not submitted
+        def set_title_value():
+            self.sidebar_title.value = self.data.get('title', '')
+            self.sidebar_title.update()
+
         # Title that sits in the header
-        self.sidebar_title = ft.Text(
-            f"{self.data.get('title', '')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
-            color=self.data.get('color', None), weight=ft.FontWeight.BOLD)
+        self.sidebar_title = SidebarTitleTextField(
+            value=self.data.get('title', ''),
+            color=self.data.get('color', None), 
+            on_blur=set_title_value,
+            #on_submit=self.submit_rename
+            )
 
         # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
         return [
             self.sidebar_title,    # Title of widget
-            ft.Container(expand=True),      # Spacer
+            #ft.Container(expand=True),      # Spacer
             ft.IconButton(          # Close/Collapse the sidebar
                 ft.Icons.CLOSE, self.data.get('color', ft.Colors.PRIMARY), on_click=self.widget.hide_sidebar,
                 mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,

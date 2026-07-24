@@ -536,13 +536,12 @@ class Map(Widget):
     
         # TODO: Settings - show/change map bg, select from canvas, upload, etc, enable drawing
         # Change select build in image to submenubutton
-
         return ft.MenuBar(
             [
                 ft.SubmenuButton(
                     ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                     [
-                        ft.Text("Set Map Backgroound", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4)),
+                        ft.Text("Set Map Background", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4)),
                         ft.MenuItemButton(      # 
                             leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Choose Built-in Image", 
                             close_on_click=True,
@@ -572,7 +571,6 @@ class Map(Widget):
                 shape=ft.RoundedRectangleBorder(radius=4),
                 padding=ft.Padding.all(0)
             )
-            
         )
 
     # Build the map

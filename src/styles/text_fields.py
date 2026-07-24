@@ -17,8 +17,23 @@ class TextField(ft.TextField):
         self.border_radius=4
         self.border_color=ft.Colors.TRANSPARENT
         self.focused_border_color=ft.Colors.PRIMARY
-        #self.border_width=0
-        #self.focused_border_width=2
+
+# Styling for title in the sidebar
+class SidebarTitleTextField(ft.TextField):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+        # Default styles
+        self.dense = True
+        self.text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=24)
+        self.content_padding=ft.Padding.all(4)
+        self.capitalization=ft.TextCapitalization.WORDS
+        self.bgcolor=ft.Colors.TRANSPARENT
+        self.border_color=ft.Colors.TRANSPARENT
+        self.focused_border_color=ft.Colors.TRANSPARENT
+        self.expand=True
+        
+        
 
 # Meant to be used with no label
 class NoLabelTextField(TextField):

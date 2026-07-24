@@ -16,7 +16,7 @@ from styles.menu_option_style import MenuOptionStyle
 import flet.canvas as cv
 import asyncio
 import uuid
-from styles.text_fields import TextField
+from styles.text_fields import TextField, SidebarTitleTextField
 
 
 
@@ -388,7 +388,11 @@ class Widget(ft.Container):
     # Called when right clicking our tab
     def get_menu_options(self) -> list[ft.Control]:
 
-        # Color, rename
+        async def close_tab(e=None):
+            await self.story.close_menu()
+            await self.hide_widget()
+
+        # Color, rename, close_tab
         return [
             MenuOptionStyle(
                 on_click=self.rename_clicked,
@@ -411,13 +415,13 @@ class Widget(ft.Container):
                 ),
                 no_padding=True, no_effects=True
             ),
-            #MenuOptionStyle(
-                #on_click=self.delete_clicked,
-                #content=ft.Row([
-                    #ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
-                    #ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
-                #]),
-            #)
+            MenuOptionStyle(
+                on_click=close_tab,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.CLOSE_ROUNDED, self.data.get('color', 'primary'),),
+                    ft.Text("Close Tab", weight=ft.FontWeight.BOLD, ), 
+                ]),
+            ),
         ]
     
     # Called when submitting our textfield.
@@ -572,15 +576,21 @@ class Widget(ft.Container):
     # Returns freshly created instances of sidebar header controls. Only widgets with mini widgets use this
     def create_sidebar_header_ctrls(self) -> list[ft.Control]:
 
+        # Re-sets the title value if it was changed in sidebar and not submitted
+        def set_title_value():
+            self.sidebar_title.value = self.data.get('title', '')
+            self.sidebar_title.update()
+
         # Title that sits in the header
-        self.sidebar_title = ft.Text(
-            f"{self.data.get('title', '')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
-            color=self.data.get('color', None), weight=ft.FontWeight.BOLD)
+        self.sidebar_title = SidebarTitleTextField(
+            value=self.data.get('title', ''),
+            color=self.data.get('color', None), 
+            on_submit=self.submit_rename, on_blur=set_title_value)
 
         # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
         return [
             self.sidebar_title,    # Title of widget
-            ft.Container(expand=True),      # Spacer
+            #ft.Container(expand=True),      # Spacer
             ft.IconButton(          # Close/Collapse the sidebar
                 ft.Icons.CLOSE, self.data.get('color', ft.Colors.PRIMARY), on_click=self.hide_sidebar,
                 mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,

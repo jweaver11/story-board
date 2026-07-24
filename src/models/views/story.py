@@ -267,7 +267,7 @@ class Story(ft.View):
         from models.app import app
         for widget in self.widgets.values():
             await widget.save_file()
-        await app.settings.save_file()
+        #await app.settings.save_file()
 
     # Wrapper function to call save widgets to file every 5 minutes
     async def _periodic_save_widget(self):
