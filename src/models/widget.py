@@ -569,8 +569,24 @@ class Widget(ft.Container):
         self.l = e.local_position.x
         self.t = e.local_position.y
 
-    
-        
+    # Returns freshly created instances of sidebar header controls. Only widgets with mini widgets use this
+    def create_sidebar_header_ctrls(self) -> list[ft.Control]:
+
+        # Title that sits in the header
+        self.sidebar_title = ft.Text(
+            f"{self.data.get('title', '')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+            color=self.data.get('color', None), weight=ft.FontWeight.BOLD)
+
+        # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
+        return [
+            self.sidebar_title,    # Title of widget
+            ft.Container(expand=True),      # Spacer
+            ft.IconButton(          # Close/Collapse the sidebar
+                ft.Icons.CLOSE, self.data.get('color', ft.Colors.PRIMARY), on_click=self.hide_sidebar,
+                mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                tooltip="Collapse Sidebar"
+            )
+        ]
 
     # Called in constructor to build our sidebar controls
     def build_sidebar(self):
@@ -595,7 +611,7 @@ class Widget(ft.Container):
                 )
             )
             self.sidebar_notes_column.update()
-            await asyncio.sleep(0.02)
+            await asyncio.sleep(0.05)
             await self.sidebar_body.scroll_to(offset=-1, duration=200)
 
         # Saves the value of the note
@@ -633,24 +649,14 @@ class Widget(ft.Container):
             for idx, ctrl in enumerate(self.sidebar_notes_column.controls):
                 ctrl.data = idx
 
-        # Title that sits in the header
-        self.sidebar_title = ft.Text(
-            f"{self.data.get('title', '')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
-            color=self.data.get('color', None), weight=ft.FontWeight.BOLD)
-
         # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
-        self.sidebar_header = ft.Row([
-            self.sidebar_title,    # Title of widget
-            ft.Container(expand=True),      # Spacer
-            ft.IconButton(          # Close/Collapse the sidebar
-                ft.Icons.CLOSE, self.data.get('color', ft.Colors.PRIMARY), on_click=self.hide_sidebar,
-                mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-                tooltip="Collapse Sidebar"
-            ),
-        ], spacing=0)
+        self.sidebar_header = ft.Row(self.create_sidebar_header_ctrls(), spacing=0,)
 
         # Where we build the different content in each sidebar
-        self.sidebar_body = ft.Column([], scroll=ft.ScrollMode.AUTO, expand=True, spacing=0)
+        self.sidebar_body = ft.Column([], scroll=ft.ScrollMode.AUTO, expand=True, spacing=0,)
+
+        # Footer in the sidebar to hold the description textfield and any other controls that need to be at the bottom of the sidebar
+        self.sidebar_footer = ft.Row([self.description_tf])
 
         # The label for Notes with a new note button and textfield
         self.sidebar_notes_label = ft.Row([
@@ -700,6 +706,8 @@ class Widget(ft.Container):
                 self.sidebar_header, 
                 ft.Divider(),
                 self.sidebar_body,
+                #ft.Divider(2, 2),
+                self.sidebar_footer
             ], expand=True, spacing=0)
         )
 
@@ -716,6 +724,19 @@ class Widget(ft.Container):
 
     # Builds functionality for widget
     def build(self):
+
+        # Description textfield we use in the sidebar
+        self.description_tf = ft.TextField(
+            value=self.data.get('description', ''), label="Description",
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            border_color=ft.Colors.TRANSPARENT,
+            margin=ft.Margin.only(top=4),
+            focused_border_color=ft.Colors.PRIMARY,
+            multiline=True, dense=True, expand=True, 
+            on_blur=lambda e: self.update_data(**{'description': e.control.value}),
+            capitalization=ft.TextCapitalization.SENTENCES,
+            label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
+        )   
         self.build_sidebar()
 
         # Our image button 
@@ -738,15 +759,4 @@ class Widget(ft.Container):
             hover_interval=100
         )
 
-        # Description textfield we use in the sidebar
-        self.description_tf = ft.TextField(
-            value=self.data.get('description', ''), label="Description",
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            border_color=ft.Colors.TRANSPARENT,
-            margin=ft.Margin.only(top=4),
-            focused_border_color=ft.Colors.PRIMARY,
-            multiline=True, dense=True, expand=True, 
-            on_blur=lambda e: self.update_data(**{'description': e.control.value}),
-            capitalization=ft.TextCapitalization.SENTENCES,
-            label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
-        )   
+        

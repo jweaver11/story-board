@@ -10,7 +10,7 @@ from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
 from styles.text_fields import TextField
 import uuid
-from constants import PLOTLINE_CANVAS_PADDING
+import asyncio
 
 class MiniWidget(ft.GestureDetector):
 
@@ -42,12 +42,12 @@ class MiniWidget(ft.GestureDetector):
                 'alignment': data.get('alignment', (0, 0)),     # Alignment of the mini widget on its parents stack
                 'position': data.get('position', (200, 200)),       # Position of the mini widget on its parents stack
                 'color': data.get('color', 'primary'),          # Color of the mini widget
-                'notes': [],                            # Notes stored at bottom of info sidebar section
+                'info': list(),                          # Info stored about this MW. Child classes expand this
             }
 
         # State trackers
         self.is_dragging: bool = False              # If we are currently dragging our mini widget
-        self.shown_in_sidebar: bool = False         # If we are currently shown on the sidebar and should stay highlighted
+        #self.shown_in_sidebar: bool = False         # If we are currently shown on the sidebar and should stay highlighted
         
     # Called every time the mouse moves over our rail
     async def set_mouse_coords(self, e: ft.PointerEvent):
@@ -85,14 +85,6 @@ class MiniWidget(ft.GestureDetector):
         self.update_data(**{'position': self.position})
         self.widget.set_mouse_coords(e)     # Reset the menu position
 
-
-    async def _new_note_clicked(self, e=None):
-        ''' Called when the new field button is clicked '''
-
-
-
-    def _build_notes_column(self) -> ft.Column:
-        ''' Builds our column of custom fields for this mini widget '''
         
 
     def get_menu_options(self) -> list[ft.Control]:
@@ -112,8 +104,6 @@ class MiniWidget(ft.GestureDetector):
 
     # Called when we stop hovering over our marker
     async def stop_highlight(self, e=None):
-        if self.shown_in_sidebar:
-            return
         self.shadow = None
         self.update()  
 
@@ -122,45 +112,131 @@ class MiniWidget(ft.GestureDetector):
     # Shows our mini widget in the sidebar of our widgets content
     async def show_mini_widget(self, e=None):
         ''' Shows our mini widget '''
-        self.shown_in_sidebar = True
 
-        # Update header stuff
-        self.widget.sidebar_title.value = self.data.get('title', '')   # Update title to match us
+        # Build our sidebar header, body, and footer
+        self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()
+        self.widget.sidebar_body.controls = self.create_sidebar_body_ctrls() 
+        self.widget.sidebar_footer.controls = [self.description_tf]
 
-        # If we have a settings ctrl, add it to the sidebar header, otherwise remove it
-        if hasattr(self, 'create_sidebar_header_setting_ctrl'):
-            self.widget.sidebar_header.controls[1] = self.create_sidebar_header_setting_ctrl()
-        else:
-            self.widget.sidebar_header.controls.pop(1)
-
-        # Build our sidebar body content
-        self.widget.sidebar_body.controls = self.create_sidebar_ctrls() 
-
-        # Check state 
+        # Update the state of the widget
         if hasattr(self.widget, 'showing_info'):
-            if self.widget.showing_info == True:    # If widget is showing info, remove its description control at the bottom
-                self.widget.sidebar.content.controls.pop(-1)
             self.widget.showing_info = False
-        
-        
+         
         # Applies the update
         if not await self.widget.show_sidebar():
             self.widget.sidebar.update()
 
-        
-    # Hides our mini widget in the sidebar of our widgets content
-    async def hide_mini_widget(self, e: ft.Event=None):
-        ''' Hides our mini widget '''
-        self.shown_in_sidebar = False
-        await self.widget.hide_sidebar()
+
+    def create_sidebar_header_ctrls(self) -> list:
+        ''' Creates the controls for the header of the sidebar for this mini widget '''
+        # Title that sits in the header
+        self.sidebar_title = ft.Text(
+            f"{self.data.get('title', '')}", theme_style=ft.TextThemeStyle.TITLE_LARGE, 
+            color=self.data.get('color', None), weight=ft.FontWeight.BOLD)
+
+        # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
+        return [
+            self.sidebar_title,    # Title of widget
+            ft.Container(expand=True),      # Spacer
+            ft.IconButton(          # Close/Collapse the sidebar
+                ft.Icons.CLOSE, self.data.get('color', ft.Colors.PRIMARY), on_click=self.widget.hide_sidebar,
+                mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                tooltip="Collapse Sidebar"
+            )
+        ]
+
 
     # Child classes override this
-    def create_sidebar_ctrls(self) -> list:
+    def create_sidebar_body_ctrls(self) -> list:
         ''' Creates the controls for the sidebar for this mini widget '''
-        return [] 
+        
     
     # Set the content of our mini widget
     def build(self):
+
+        # Handles hiding our new info button and focusing our new info textfield
+        async def handle_new_info_clicked(e=None):
+            new_info_button.visible = False
+            new_info_tf.visible = True
+            new_info_tf.value = ""
+            new_info_button.update()
+            new_info_tf.update()
+            await new_info_tf.focus()
+
+        # Create a new info in data, then add it to the column
+        async def save_new_info(e: ft.Event[ft.TextField]):
+            self.data.get('info', []).append({'label': e.control.value, 'value': ''})
+            self.update_data(**{'info': self.data.get('info', [])})
+            self.sidebar_info_column.controls.append(
+                create_new_info_ctrl(
+                    info_idx = len(self.data.get('info', [])) - 1,
+                    info_data = self.data.get('info', [])[-1]
+                )
+            )
+            self.sidebar_info_column.update()
+            await asyncio.sleep(0.05)
+            await self.widget.sidebar_body.scroll_to(offset=-1, duration=200)
+
+        # Saves the value of the info
+        def save_info_content(e: ft.Event[ft.TextField]):
+            info_idx = e.control.data
+            if len(self.data.get('info', [])) > info_idx:
+                self.data.get('info', [])[info_idx]['value'] = e.control.value
+                self.update_data(**{'info': self.data.get('info', [])})
+            
+        # Returns a textfield of the info control
+        def create_new_info_ctrl(info_idx: int, info_data: dict) -> TextField:
+            return TextField(
+                info_data.get('value', ''), label=info_data.get('label', ''), data=info_idx, expand=True, on_blur=save_info_content, 
+                capitalization=ft.TextCapitalization.SENTENCES, multiline=True, dense=True,
+                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_info, mouse_cursor=ft.MouseCursor.CLICK)
+            )
+
+        # Deletes the info from data and then the column and updates the indices
+        def delete_info(e: ft.Event):
+            info_idx = e.control.parent.data
+            self.data.get('info', []).pop(info_idx)
+            self.update_data(**{'info': self.data.get('info', [])})
+            self.sidebar_info_column.controls.pop(info_idx)
+            self.sidebar_info_column.update()
+            update_info_indices()
+
+        def handle_new_info_blur(e=None):
+            new_info_button.visible = True
+            new_info_tf.visible = False
+            new_info_button.update()
+            new_info_tf.update()
+
+        # Updates all our info ctrls (textfields) data to be accurate after an index was deleted
+        def update_info_indices():
+            for idx, ctrl in enumerate(self.sidebar_info_column.controls):
+                ctrl.data = idx
+
+        # The label for info with a new info button and textfield
+        self.sidebar_info_label = ft.Row([
+            ft.Text("Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+            new_info_button := ft.IconButton(
+                ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
+                tooltip="Add Info",
+                on_click=handle_new_info_clicked,
+                mouse_cursor="click"
+            ),
+            new_info_tf := ft.TextField(
+                on_submit=save_new_info, visible=False, expand=True,
+                on_blur=handle_new_info_blur, margin=ft.Margin.only(left=4),
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+                border_radius=4, dense=True, capitalization=ft.TextCapitalization.SENTENCES,
+                border_color=ft.Colors.TRANSPARENT,
+                focused_border_color=ft.Colors.PRIMARY,
+                label="New Item Label", label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
+            )
+            
+        ], spacing=0)
+
+        self.sidebar_info_column = ft.Column(
+            [create_new_info_ctrl(idx, value) for idx, value in enumerate(self.data.get('info', []))]
+        )
+
         self.description_tf = ft.TextField(
             value=self.data.get('description', ''), label="Description",
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
@@ -172,7 +248,3 @@ class MiniWidget(ft.GestureDetector):
             capitalization=ft.TextCapitalization.SENTENCES,
             label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
         )   
-
-    
-        
-# TODO: Have notes label, button, input_tf all standardized

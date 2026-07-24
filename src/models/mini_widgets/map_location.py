@@ -41,10 +41,10 @@ class MapLocation(MiniWidget):
                 'map_id': "",                       # id of map we're connected too (if we're connected to one)
 
                 # Information for our information display
-                
-                'description': "", 
-                'history': "",
-                  
+                'info': [
+                    {'label': 'Type', 'value': ""},
+                    {'label': 'Lore', 'value': ""},
+                ]
             })
 
         # UI elements
@@ -196,16 +196,24 @@ class MapLocation(MiniWidget):
             )
         ]
 
+    
+
     # Return a menubar
     def create_sidebar_header_setting_ctrl(self) -> ft.MenuBar:
         return ft.Container(width=20, height=20, bgcolor="green")  
 
+    # Return a list of header controls
+    def create_sidebar_header_ctrls(self) -> list[ft.Control]:
+        ctrls = super().create_sidebar_header_ctrls()
+        ctrls.insert(1, self.create_sidebar_header_setting_ctrl())
+        return ctrls
+
     # Called when reloading changes to our plot point and in constructor
-    def create_sidebar_ctrls(self) -> list[ft.Control]:
+    def create_sidebar_body_ctrls(self) -> list[ft.Control]:
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
         # TODO: Change icon, title, color, lore
-        #  Show preview if connected to other map
+        # Show preview if connected to other map
         # Upload image button
         
         
@@ -222,31 +230,14 @@ class MapLocation(MiniWidget):
             img = ft.Icon(ft.Icons.LOCATION_PIN, size=100, color=self.data.get('color', "primary"), expand=False)
 
         #upload_image_button = ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_location_image, mouse_cursor="click")
-
         
-
-        
-
-        history_tf = TextField(
-            value=self.data.get('history', ''), 
-            on_blur=lambda e: self.update_data(**{'history': e.control.value}),
-            label="History", capitalization=ft.TextCapitalization.SENTENCES, 
-            margin=ft.Margin.only(top=10),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            border_color=ft.Colors.TRANSPARENT, focused_border_color=ft.Colors.PRIMARY,
-            multiline=True, dense=True, expand=True, 
-            label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
-        )
-
         return [
 
-            #ft.Row([upload_image_button, type_tf], spacing=0),
+            # Add Image
+        
+            self.sidebar_info_label,
+            self.sidebar_info_column,
 
-            self.description_tf,
-            history_tf,
-            
-            #self.notes_label,
-            #self.notes_column,
         ]
 
     

@@ -800,7 +800,6 @@ class PlotChart(Widget):
             self.sidebar_notes_column
 
         ])
-        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
             
         
             

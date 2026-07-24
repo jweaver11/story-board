@@ -531,14 +531,6 @@ class ComicPreview(Widget):
             ], spacing=0),
             panel_minimap,
         ])
-        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
-        
-        # Set our content
-        #self.content = ft.Row([
-            #preview_stack,
-            #self.show_sidebar_button,
-            #self.sidebar,
-        #], expand=True, spacing=0)
 
         self.content = ft.Stack([
             ft.Row([

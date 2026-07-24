@@ -1290,20 +1290,9 @@ class Canvas(Widget):
             self.sidebar_notes_label,
             self.sidebar_notes_column
         ])
-        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
-
-        #self.content = ft.Row([interactive_viewer, self.show_sidebar_button, self.sidebar], expand=True, spacing=0)
 
         # Set up our main conent
         self.content = ft.Stack([
             ft.Row([interactive_viewer, self.sidebar], spacing=0, expand=True),
             self.show_sidebar_button, 
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
-
-        
-
-        
-
-
-# TODO: 
-# Closing app, or hiding widget makes sure to save all canvases that are dirty

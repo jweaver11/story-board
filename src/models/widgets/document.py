@@ -348,8 +348,6 @@ class Document(Widget):
                 #selectable=True
             #)
         ])
-
-        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
         
 
         # Set our content

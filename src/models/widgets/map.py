@@ -101,7 +101,7 @@ class Map(Widget):
         # Rest of state elements
         self.new_location_position = (200, 200)     # Where new locations go 
         self.locked_new_location_position = (200, 200)
-        self.showing_info: bool = False
+        self.showing_info: bool = True
 
     # Class for labels on our map, which are like locations but don't have a sidebar info to show
     class Label(ft.GestureDetector):
@@ -313,7 +313,7 @@ class Map(Widget):
         self.label_stack.controls.append(self.Label(self, new_data))
         self.label_stack.update()
     
-    def create_sidebar_ctrls(self) -> list[ft.Control]:
+    def create_sidebar_body_ctrls(self) -> list[ft.Control]:
         
         # Handles showing text field for new lore and hiding the new lore button
         async def create_lore_clicked(e=None):
@@ -416,48 +416,47 @@ class Map(Widget):
         
         
         return [
+                ft.Row([
+                    ft.Text("Lores", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                    new_lore_button := ft.IconButton(
+                        ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
+                        tooltip="Add Note",
+                        on_click=create_lore_clicked,
+                        mouse_cursor="click"
+                    ),
+                    new_lore_tf := ft.TextField(
+                        label="New Lore", expand=True, on_blur=blur_textfields, capitalization=ft.TextCapitalization.WORDS, autofocus=True,
+                        on_submit=create_lore, visible=False, dense=True, margin=ft.Margin.only(left=10), bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
+        
+                    )
+                ], spacing=0),
+                lore_column := ft.Column([create_new_lore_ctrl(idx, data) for idx, data in enumerate(self.data.get('lore', []))]),
+
+            # ft.Divider(),
+                #ft.Row([
+                    #ft.Text("Histories", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                    #new_history_button := ft.IconButton(
+                        #ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
+                        #tooltip="Add Note",
+                        #on_click=create_history_clicked,
+                        #mouse_cursor="click"
+                    #),
+                    #new_history_tf := ft.TextField(
+                        #label="New History", expand=True, on_blur=blur_textfields, capitalization=ft.TextCapitalization.WORDS, autofocus=True,
+                        #on_submit=create_history, visible=False, dense=True, margin=ft.Margin.only(left=10), bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
+                    #)
+                #], spacing=0),
+                #history_column := ft.Column([create_new_history_ctrl(idx, data) for idx, data in enumerate(self.data.get('history', []))]),
+
+                #ft.Divider(),         
+                #ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+
+
+                ft.Divider(),
+                self.sidebar_notes_label,
+                self.sidebar_notes_column,
+
             
-            
-            ft.Row([
-                ft.Text("Lores", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                new_lore_button := ft.IconButton(
-                    ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
-                    tooltip="Add Note",
-                    on_click=create_lore_clicked,
-                    mouse_cursor="click"
-                ),
-                new_lore_tf := ft.TextField(
-                    label="New Lore", expand=True, on_blur=blur_textfields, capitalization=ft.TextCapitalization.WORDS, autofocus=True,
-                    on_submit=create_lore, visible=False, dense=True, margin=ft.Margin.only(left=10), bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
-    
-                )
-            ], spacing=0),
-            lore_column := ft.Column([create_new_lore_ctrl(idx, data) for idx, data in enumerate(self.data.get('lore', []))]),
-
-           # ft.Divider(),
-            #ft.Row([
-                #ft.Text("Histories", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-                #new_history_button := ft.IconButton(
-                    #ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
-                    #tooltip="Add Note",
-                    #on_click=create_history_clicked,
-                    #mouse_cursor="click"
-                #),
-                #new_history_tf := ft.TextField(
-                    #label="New History", expand=True, on_blur=blur_textfields, capitalization=ft.TextCapitalization.WORDS, autofocus=True,
-                    #on_submit=create_history, visible=False, dense=True, margin=ft.Margin.only(left=10), bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
-                #)
-            #], spacing=0),
-            #history_column := ft.Column([create_new_history_ctrl(idx, data) for idx, data in enumerate(self.data.get('history', []))]),
-
-            #ft.Divider(),         
-            #ft.Text("Locations", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
-
-
-            ft.Divider(),
-            self.sidebar_notes_label,
-            self.sidebar_notes_column,
-                    
         ]  
             
             
@@ -471,16 +470,13 @@ class Map(Widget):
         if self.showing_info:   # Already showing info, so no need to re-call it
             return
         
-        # Rebuild header stuff
-        self.sidebar_title.value = self.data.get('title', '')   # Update title to match us
-        self.sidebar_header.controls[1] = self.create_sidebar_header_setting_ctrl()  # Build our settings button
-
-        # Build the body
-        self.sidebar_body.controls = self.create_sidebar_ctrls()  
-        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
+        # Re-build header, body, and footer
+        self.sidebar_header.controls = self.create_sidebar_header_ctrls()
+        self.sidebar_body.controls = self.create_sidebar_body_ctrls()  
+        self.sidebar_footer.controls = [self.description_tf]
 
         # Applies the update
-        if not await self.show_sidebar():
+        if not await self.show_sidebar():   # If already showing, just update the sidebar
             self.sidebar.update()
         self.showing_info = True
 
@@ -529,10 +525,18 @@ class Map(Widget):
         self.new_location_position = (e.local_position.x, e.local_position.y)
         super().set_mouse_coords(e)
 
+    # Creates our header controls for the sidebar, including our settings button
+    def create_sidebar_header_ctrls(self) -> list[ft.Control]:
+        ctrls = super().create_sidebar_header_ctrls()
+        ctrls.insert(1, self.create_sidebar_header_setting_ctrl())
+        return ctrls
+
+    # Creates our settings button for the sidebar header
     def create_sidebar_header_setting_ctrl(self) -> ft.MenuBar:
     
         # TODO: Settings - show/change map bg, select from canvas, upload, etc, enable drawing
         # Change select build in image to submenubutton
+
         return ft.MenuBar(
             [
                 ft.SubmenuButton(
@@ -556,9 +560,7 @@ class Map(Widget):
                             close_on_click=True,
                             tooltip="Upload an image to use as the background for this map",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        ), 
-                        
-                        
+                        ),  
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                     style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
@@ -645,17 +647,8 @@ class Map(Widget):
 
 
         # Add our settings button to the sidebar header, and build our body
-        self.sidebar_header.controls.insert(1, self.create_sidebar_header_setting_ctrl()) 
-        self.sidebar_body.controls = self.create_sidebar_ctrls()  
-        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
         
-        
-
-
-        if self.data.get('show_sidebar', True):
-            self.showing_info = True
-
-        
+        self.sidebar_body.controls = self.create_sidebar_body_ctrls()  
         
         # Set up our main conent
         self.content = ft.Stack([

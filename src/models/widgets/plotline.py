@@ -603,7 +603,6 @@ class Plotline(Widget):
         for plot_point_data in plot_points_data_list:    
             self.plot_point_stack.controls.append(PlotlinePlotPoint)
 
-        self.sidebar.content.controls.append(ft.Row([self.description_tf]))
         
 
         # Holds our drawing so we can interact with it, zoom, pan, etc.

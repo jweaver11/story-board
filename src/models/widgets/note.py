@@ -85,11 +85,11 @@ class Note(Widget):
 
         # Gives us a new textfield for each note segment
         def new_segment_textfield(idx: int, key: str='', value: str='') -> TextField:
-            return TextField(
+            tf = TextField(
                 value, expand=True, capitalization=ft.TextCapitalization.SENTENCES, 
                 multiline=True, label=key, dense=True, 
                 on_blur=save_segment, 
-                data=idx,
+                data=idx, 
                 suffix_icon=ft.IconButton(
                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
                     tooltip=f"Delete segment {key}",
@@ -97,6 +97,8 @@ class Note(Widget):
                     mouse_cursor="click", data=idx
                 ),
             )
+            tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            return tf
 
         # Go through the note data and load the segments
         for idx, segment in enumerate(self.data.get('segment_data', [])):
