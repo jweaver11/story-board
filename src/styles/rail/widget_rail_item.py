@@ -81,8 +81,8 @@ class WidgetRailItem(ft.GestureDetector):
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.widget.data.get('color', 'primary'),),
                     ft.Text(
-                        "Rename", 
-                        weight=ft.FontWeight.BOLD, 
+                        f"Rename {self.widget.data.get('title')}", 
+                        weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS, expand=True
                         
                     ), 
                 ]),
@@ -105,7 +105,7 @@ class WidgetRailItem(ft.GestureDetector):
                 on_click=self.widget.delete_clicked,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
-                    ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
+                    ft.Text(f"Delete {self.widget.data.get('title')}", weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS, expand=True),
                 ]),
             )
         ]

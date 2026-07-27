@@ -216,7 +216,7 @@ class CharacterRelationshipMap(Widget):
                         margin=ft.Margin.only(bottom=2)
                     ) if self.in_character_bank else build_connector(),  
                     ft.Divider(ft.Colors.SURFACE_CONTAINER_LOW, 2, 6, trailing_indent=6),
-                    ft.Image(self.image, 100, 100, expand=True) if self.image else ft.Icon(ft.Icons.PERSON_OUTLINE_OUTLINED, self.color, size=100),
+                    ft.Container(ft.Image(self.image, 100, 100, expand=True), expand=True, width=100, height=100) if self.image else ft.Icon(ft.Icons.PERSON_OUTLINE_OUTLINED, self.color, size=100),
                                       
                 ], expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0, ),
                 border_radius=8,
@@ -461,7 +461,7 @@ class CharacterRelationshipMap(Widget):
 
         def _get_menu_options(self):
 
-            # TODO: Better styling, add color and icon change options, and delete connection
+            
             async def _new_icon_clicked(e: ft.Event):
                 icon_str = e.control.data
                 self.icon = icon_str
@@ -548,11 +548,7 @@ class CharacterRelationshipMap(Widget):
                     on_click=_delete_connection,
                     content=ft.Row([
                         ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR,),
-                        ft.Text(
-                            "Delete", 
-                            weight=ft.FontWeight.BOLD, 
-                            
-                        ), 
+                        ft.Text("Delete", weight=ft.FontWeight.BOLD), 
                     ]),
                 ),
             ]

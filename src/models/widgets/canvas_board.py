@@ -431,7 +431,7 @@ class CanvasBoard(Widget):
                                             ft.MenuItemButton(
                                                 ft.Text("Set Canvas", weight=ft.FontWeight.BOLD),
                                                 close_on_click=True,
-                                                leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', 'primary'),),
+                                                leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
                                                 on_click=set_canvas_as_image,
                                                 style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
                                                 
@@ -439,14 +439,14 @@ class CanvasBoard(Widget):
                                             ft.MenuItemButton(
                                                 ft.Text("Upload Image", weight=ft.FontWeight.BOLD),
                                                 close_on_click=True,
-                                                leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, self.data.get('color', 'primary'),),
+                                                leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY),
                                                 on_click=upload_image,
                                                 style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
                                             ),
                                             ft.MenuItemButton(
                                                 ft.Text("Clear Source", weight=ft.FontWeight.BOLD),
                                                 close_on_click=True,
-                                                leading=ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, self.data.get('color', 'primary'),),
+                                                leading=ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.PRIMARY),
                                                 on_click=clear_image,
                                                 style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
                                             ),
@@ -487,12 +487,12 @@ class CanvasBoard(Widget):
                             # Undo/Redo Buttons
                             ft.Row([
                                 ft.IconButton(
-                                    ft.Icons.UNDO, self.data.get('color', None), tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
+                                    ft.Icons.UNDO, ft.Colors.PRIMARY, tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
                                     data=row_idx, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                                     #on_click=self.undo,
                                 ),
                                 ft.IconButton(
-                                    ft.Icons.REDO_OUTLINED, self.data.get('color', None), tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
+                                    ft.Icons.REDO_OUTLINED, ft.Colors.PRIMARY, tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
                                     data=row_idx, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                                     #on_click=self.redo,
                                 ),
@@ -527,19 +527,19 @@ class CanvasBoard(Widget):
                             ft.TextField(
                                 str(row_data.get('width')), label="Width", dense=True, width=100, 
                                 input_filter=ft.NumbersOnlyInputFilter(), on_blur=update_width,
-                                label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=self.data.get('color', "primary")),
+                                label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
                                 border_color=ft.Colors.OUTLINE_VARIANT
                             ), 
                             ft.TextField(
                                 str(row_data.get('height')), label="Height", dense=True, width=100, 
                                 input_filter=ft.NumbersOnlyInputFilter(), on_blur=update_height,
-                                label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=self.data.get('color', "primary")),
+                                label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
                                 border_color=ft.Colors.OUTLINE_VARIANT
                             )
                         ], alignment=ft.MainAxisAlignment.CENTER, margin=ft.Margin.only(top=10)),
                         ft.Row([
                             size_error_text := ft.Text("", color=ft.Colors.ERROR, size=14, italic=True, weight=ft.FontWeight.W_500),
-                            ft.IconButton(ft.Icons.CHECK_OUTLINED, self.data.get('color', None), mouse_cursor=ft.MouseCursor.CLICK, on_click=hide_error_text, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST),
+                            ft.IconButton(ft.Icons.CHECK_OUTLINED, ft.Colors.PRIMARY, mouse_cursor=ft.MouseCursor.CLICK, on_click=hide_error_text, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST),
                         ], alignment=ft.MainAxisAlignment.CENTER, visible=False),
                         
                         ft.TextField(
@@ -550,7 +550,7 @@ class CanvasBoard(Widget):
                             on_blur=update_description,
                             expand=True, 
                             label="Description", 
-                            label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=self.data.get('color', "primary")),
+                            label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
                             border_color=ft.Colors.OUTLINE_VARIANT
                         )
                         
@@ -597,17 +597,17 @@ class CanvasBoard(Widget):
         rows_labels = ft.Row(
             [
                 ft.Text(
-                    "Preview", style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")),
+                    "Preview", style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                     text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS, width=300,
                     tooltip="Preview of the canvas or image this sketch is attached to. Use for tracking progress or reference."
                 ),
                 ft.Text(
-                    "Sketch", style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")),
+                    "Sketch", style=ft.TextStyle(weight=ft.FontWeight.BOLD, ),
                     text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS, width=300,
                     tooltip="Sketch for this panel in the story."
                 ),
                 ft.Text(
-                    "Details", style=ft.TextStyle(weight=ft.FontWeight.BOLD, color=self.data.get('color', "primary")),
+                    "Details", style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                     text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS, expand=True,
                     tooltip="Details about this sketch, such as what it is, what it represents, or any other notes.\nSize of the sketch can be adjusted here, between 200 and 300 pixels.\nNotice: previews with different aspect ratios may look warped from the preview"
                 ),

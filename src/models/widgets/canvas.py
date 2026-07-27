@@ -524,7 +524,7 @@ class Canvas(Widget):
         
         # Handle buttons
         self.undo_button.disabled = False
-        self.undo_button.icon_color = self.data.get('color', None)
+        self.undo_button.icon_color = ft.Colors.PRIMARY
         self.redo_button.disabled = True
         if len(self.state.redo_list) == 0:
             self.redo_button.icon_color = ft.Colors.OUTLINE_VARIANT
@@ -540,7 +540,7 @@ class Canvas(Widget):
         
         # Handle buttons
         self.redo_button.disabled = False
-        self.redo_button.icon_color = self.data.get('color', None)
+        self.redo_button.icon_color = ft.Colors.PRIMARY
         self.redo_button.update()
         if len(self.state.undo_list) == 0:
             self.undo_button.disabled = True
@@ -998,7 +998,7 @@ class Canvas(Widget):
                 ]),
                 leading=ft.IconButton(   # Toggle visibility button
                     ft.Icons.VISIBILITY if visible else ft.Icons.VISIBILITY_OFF, 
-                    self.data.get('color', ft.Colors.PRIMARY),
+                    ft.Colors.PRIMARY,
                     mouse_cursor="click",
                     on_click=self.toggle_layer_visibility
                 ),  
@@ -1011,16 +1011,16 @@ class Canvas(Widget):
                 trailing=ft.MenuBar(
                     [
                     ft.SubmenuButton(
-                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
                         [
                             ft.MenuItemButton(      # Rename layer button
-                                "Rename", leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                "Rename", leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY),
                                 focus_on_hover=False,
                                 on_click=rename_layer_clicked, 
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             ),
                             ft.MenuItemButton(      # Set layer as an image button
-                                "Set Image", leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)), 
+                                "Set Image", leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY), 
                                 on_click=self.set_layer_content, 
                                 tooltip="Upload an image for this layer. This will overwrite any drawings on the layer currently." if visible else
                                 "Layer must be visible to set image", 
@@ -1029,7 +1029,7 @@ class Canvas(Widget):
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             ),
                             ft.MenuItemButton(      # Set layer blur button
-                                "Set Blur", leading=ft.Icon(ft.Icons.BLUR_ON_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)), 
+                                "Set Blur", leading=ft.Icon(ft.Icons.BLUR_ON_OUTLINED, ft.Colors.PRIMARY), 
                                 on_click=self.set_layer_blur, 
                                 tooltip="Set the blur only for existing content on this layer. Useful for backgrounds and effects. " \
                                 "Will NOT effect any future content drawn on this layer" if visible else
@@ -1039,7 +1039,7 @@ class Canvas(Widget):
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             ),
                             ft.MenuItemButton(      # Set layer as a color button
-                                "Set Color", leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                "Set Color", leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY),
                                 on_click=self.set_layer_content, 
                                 tooltip="Set this layer to a solid color. This will overwrite any drawings on the layer currently." if visible else
                                 "Layer must be visible to set color",
@@ -1059,7 +1059,6 @@ class Canvas(Widget):
                         
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                         style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                        tooltip="Adjust the settings for this bar chart."
                     ),
                 ],
                 style=ft.MenuStyle(
@@ -1274,10 +1273,10 @@ class Canvas(Widget):
             ),
             
             ft.Row([    # Layer Label
-                ft.Text(f"Layers", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
+                ft.Text(f"Layers", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=ft.Colors.PRIMARY), 
                 ft.IconButton(      # Create new Layer button
                     ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                    self.data.get('color', ft.Colors.PRIMARY),
+                    ft.Colors.PRIMARY,
                     mouse_cursor=ft.MouseCursor.CLICK,
                     on_click=self.create_new_layer,
                 )

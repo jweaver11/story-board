@@ -78,6 +78,7 @@ class Workspace(ft.Container):
     # Creates a new tab control for the given widget
     def create_widget_tab_ctrl(self, widget: Widget) -> ft.Tab:
 
+        # When renaming, show our textfield and hide our title
         async def handle_rename(e=None):
             await self.story.close_menu()
             edit_title_tf.value = widget.data.get('title', '')
@@ -86,6 +87,7 @@ class Workspace(ft.Container):
             tab_gd.update()
             await edit_title_tf.focus()
 
+        # When done renaming or canceling, hide our textfield and show our title. Make sure title is updated
         def blur_edit_title_tf(e=None):
             edit_title_tf.visible = False
             tab_title.visible = True
@@ -122,6 +124,7 @@ class Workspace(ft.Container):
             color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True
         )
 
+        # Textfield for renaming. starts hidden
         edit_title_tf = ft.TextField(
             value=widget.data.get('title', 'untitled'),
             visible=False,

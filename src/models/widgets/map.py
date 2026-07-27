@@ -445,9 +445,9 @@ class Map(Widget):
         
         return [
                 ft.Row([
-                    ft.Text("Lores", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                    ft.Text("Lores", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
                     new_lore_button := ft.IconButton(
-                        ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
+                        ft.Icons.NEW_LABEL_OUTLINED, ft.Colors.PRIMARY, 
                         tooltip="Add Note",
                         on_click=create_lore_clicked,
                         mouse_cursor="click"
@@ -527,7 +527,7 @@ class Map(Widget):
             
             MenuOptionStyle(
                 ft.MenuItemButton(
-                    "New Location", leading=ft.Icon(ft.Icons.LOCATION_PIN, self.data.get('color', "primary")),
+                    "New Location", leading=ft.Icon(ft.Icons.LOCATION_PIN, ft.Colors.PRIMARY),
                     on_click=self.create_location, 
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
@@ -535,7 +535,7 @@ class Map(Widget):
             ),
             MenuOptionStyle(
                 ft.MenuItemButton(
-                    "New Label", leading=ft.Icon(ft.Icons.TEXT_FIELDS_OUTLINED, self.data.get('color', "primary")),
+                    "New Label", leading=ft.Icon(ft.Icons.TEXT_FIELDS_OUTLINED, ft.Colors.PRIMARY),
                     on_click=self.create_label, 
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
@@ -543,7 +543,7 @@ class Map(Widget):
             ),
             MenuOptionStyle(
                 ft.MenuItemButton(
-                    "Show Info", leading=ft.Icon(ft.Icons.INFO_OUTLINE, self.data.get('color', "primary")),
+                    "Show Info", leading=ft.Icon(ft.Icons.INFO_OUTLINE, ft.Colors.PRIMARY),
                     on_click=self.show_info, 
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     tooltip="Show this map's info in the sidebar",
@@ -562,7 +562,7 @@ class Map(Widget):
         new_draw_mode = not self.data.get('draw_mode', False)
         self.update_data(**{'draw_mode': new_draw_mode})
         e.control.content = ("Disable" if new_draw_mode else "Enable") + " Drawing"
-        e.control.leading = ft.Icon(ft.Icons.EDIT_OUTLINED if new_draw_mode else ft.Icons.EDIT_OFF_OUTLINED, self.data.get('color', ft.Colors.PRIMARY))
+        e.control.leading = ft.Icon(ft.Icons.EDIT_OUTLINED if new_draw_mode else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY)
         self.map_controller.mouse_cursor = ft.MouseCursor.PRECISE if new_draw_mode else None
         self.map_controller.on_tap = lambda: self.story.open_menu(self.get_new_item_options()) if not new_draw_mode else None
         e.control.update()
@@ -671,25 +671,25 @@ class Map(Widget):
             ft.MenuBar(
                 [
                     ft.SubmenuButton(
-                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
                         [
                             ft.MenuItemButton(
                                 ("Disable" if self.data.get('draw_mode') else "Enable") + " Drawing", 
                                 close_on_click=True, on_click=self.toggle_draw_mode,
-                                leading=ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('draw_mode', False) else ft.Icons.EDIT_OFF_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                leading=ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('draw_mode', False) else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY),
                             ),
                             ft.SubmenuButton(
                                 "Set Background Image",
                                 [
                                     ft.MenuItemButton(      
-                                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', 'primary'),), content="Select Canvas", 
+                                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Select Canvas", 
                                         close_on_click=True,
                                         on_click=set_canvas_bg_image,
                                         tooltip="Select a canvas to use as the background for this map",
                                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                     ), 
                                     ft.MenuItemButton(      # Folders
-                                        leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, self.data.get('color', 'primary'),), content="Upload Image", 
+                                        leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY), content="Upload Image", 
                                         close_on_click=True,
                                         tooltip="Upload an image to use as the background for this map",
                                         on_click=handle_set_bg_image,
@@ -713,7 +713,7 @@ class Map(Widget):
                                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                     ),
                                 ],
-                                leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY),
                                 menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                             ),
                             

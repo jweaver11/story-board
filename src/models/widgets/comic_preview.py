@@ -404,7 +404,7 @@ class ComicPreview(Widget):
                         [
                             ft.MenuItemButton(
                                 "Refresh Canvas Panels",
-                                leading=ft.Icon(ft.Icons.REFRESH_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                leading=ft.Icon(ft.Icons.REFRESH_OUTLINED, ft.Colors.PRIMARY),
                                 tooltip="Refresh panels connected to Canvases that may be outdated",
                                 on_click=handle_refresh_panels,
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
@@ -413,7 +413,7 @@ class ComicPreview(Widget):
                                 "Swap Preview Direction", True,
                                 leading=ft.Icon(
                                     ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
-                                    self.data.get('color', ft.Colors.PRIMARY),
+                                    ft.Colors.PRIMARY,
                                 ),
                                 tooltip="Swap the preview direction between vertical and horizontal.",
                                 on_click=toggle_preview_direction,
@@ -422,7 +422,7 @@ class ComicPreview(Widget):
                             
                             ft.MenuItemButton(
                                 f"Anti-Aliasing: {self.data.get('use_anti_aliasing', True)}",
-                                leading=ft.Icon(ft.Icons.ANIMATION_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                leading=ft.Icon(ft.Icons.ANIMATION_OUTLINED, ft.Colors.PRIMARY),
                                 tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
                                 on_click=toggle_anti_aliasing,
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
@@ -449,7 +449,7 @@ class ComicPreview(Widget):
                                     ) for i in range(0, 21) if i % 2 == 0
                                 ],
                                 tooltip="Adjust the spacing between panels in the preview display.",
-                                leading=ft.Icon(ft.Icons.SPACE_BAR_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                leading=ft.Icon(ft.Icons.SPACE_BAR_OUTLINED, ft.Colors.PRIMARY),
                                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                                 style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                             ),
@@ -463,7 +463,7 @@ class ComicPreview(Widget):
                                     ) for i in range(1, 6)
                                 ],
                                 tooltip="Adjust the scale of the preview display.",
-                                leading=ft.Icon(ft.Icons.CROP_FREE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                leading=ft.Icon(ft.Icons.CROP_FREE_OUTLINED, ft.Colors.PRIMARY),
                                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                                 style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                             ),
@@ -476,7 +476,7 @@ class ComicPreview(Widget):
                                     ft.MenuItemButton("High", data="high", on_click=set_filter_quality),
                                 ],
                                 tooltip="Adjust the filter quality of the preview display. This will affect performance and image quality",
-                                leading=ft.Icon(ft.Icons.PHOTO_FILTER_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                leading=ft.Icon(ft.Icons.PHOTO_FILTER_OUTLINED, ft.Colors.PRIMARY),
                                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                                 style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                             ),
@@ -498,7 +498,7 @@ class ComicPreview(Widget):
         # Set the sidebar content
         self.sidebar_body.controls.extend([
             ft.Row([
-                ft.Text(f"Panels", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.Text(f"Panels", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
                 ft.MenuBar(
                     [
                         ft.SubmenuButton(
@@ -506,13 +506,13 @@ class ComicPreview(Widget):
                                 
                             [
                                 ft.MenuItemButton(      # Folders
-                                    leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', "primary")), content="Add Canvases", 
+                                    leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Add Canvases", 
                                     on_click=handle_add_canvas_panel, close_on_click=True,
                                     tooltip="Add Canvases created in Story Board to the comic preview.",
                                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                 ), 
                                 ft.MenuItemButton(      # Documents
-                                    leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, self.data.get('color', "primary")), content="Upload Image(s)", 
+                                    leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Upload Image(s)", 
                                     on_click=handle_upload_panel, close_on_click=True,
                                     tooltip="Upload images to the comic preview from your device to the comic preview.",
                                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),

@@ -733,7 +733,7 @@ class PlotChart(Widget):
                 MenuOptionStyle(
                     on_click=_create_node,
                     content=ft.Row([
-                        ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                        ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY),
                         ft.Text("Node", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True), 
                     ]),
                     data="right_click"
@@ -779,10 +779,10 @@ class PlotChart(Widget):
         # Info container on the right to show details of our edges and nodes
         self.sidebar_body.controls.extend([
             ft.Row([
-                ft.Text(f"Nodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.Text(f"Nodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
                 ft.IconButton(
                     ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                    self.data.get('color', ft.Colors.PRIMARY),
+                    ft.Colors.PRIMARY,
                     mouse_cursor=ft.MouseCursor.CLICK,
                     on_click=self.create_node,
                     data="sidebar",
@@ -792,7 +792,7 @@ class PlotChart(Widget):
             # Nodes here
             self.node_sidebar_column,
             ft.Divider(),
-            ft.Text(f"Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+            ft.Text(f"Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
 
             self.edge_sidebar_column,
             ft.Divider(),

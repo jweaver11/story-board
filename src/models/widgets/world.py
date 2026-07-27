@@ -164,10 +164,10 @@ class World(Widget):
             # Add new label for the section name
             body.controls.append(
                 ft.Row([
-                    ft.Text(f"\t\t{section_name}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
+                    ft.Text(f"\t\t{section_name}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18)),
                     ft.IconButton(
                         tooltip="Add New Field", icon=ft.Icons.NEW_LABEL_OUTLINED, mouse_cursor="click",
-                        on_click=new_field_clicked, icon_color=self.data.get('color', None),
+                        on_click=new_field_clicked, icon_color=ft.Colors.PRIMARY,
                         data=section_name
                     ),
                 ], spacing=0, data=section_name))
@@ -266,7 +266,7 @@ class World(Widget):
             # Add textfield we can change
             row_ctrl.controls.append(
                 NoLabelTextField(
-                    "", expand=True, cursor_color=self.data.get('color', None),
+                    "", expand=True, cursor_color=ft.Colors.PRIMARY,
                     on_blur=lambda e, k=field_name: update_world_data(**{k: e.control.value}), 
                 ),
             )
@@ -348,10 +348,10 @@ class World(Widget):
 
                 # Set a label and container to hold our text spans for each section
                 label = ft.Row([
-                    ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
+                    ft.Text(f"\t\t{section}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18)),
                     ft.IconButton(
                         tooltip="Add New Field", icon=ft.Icons.NEW_LABEL_OUTLINED, mouse_cursor="click",
-                        on_click=new_field_clicked, icon_color=self.data.get('color', None),
+                        on_click=new_field_clicked, icon_color=ft.Colors.PRIMARY,
                         data=section
                     ),
                 ], spacing=0, data=section)
@@ -378,7 +378,7 @@ class World(Widget):
                         # Add textfield we can change
                         row_ctrl.controls.append(
                             NoLabelTextField(
-                                value, expand=True, cursor_color=self.data.get('color', None),
+                                value, expand=True, cursor_color=ft.Colors.PRIMARY,
                                 on_blur=lambda e, k=key: update_world_data(**{k: e.control.value}), 
                             ),
                         )
@@ -419,15 +419,14 @@ class World(Widget):
 
         about_section = ft.Column([
             ft.Row([
-                ft.Text(f"About", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18), color=self.data.get('color', None)),
-                
+                ft.Text(f"About", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18)),
             ], spacing=0),
             ft.TextField(
                 self.data.get('about', ""), on_blur=lambda e: self.update_data(**{"about": e.control.value}), expand=True, 
                 dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
                 border_color=ft.Colors.OUTLINE_VARIANT, margin=ft.Margin.only(right=10),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=10,
-                content_padding=ft.Padding.all(6), min_lines=3, cursor_color=self.data.get('color', None)
+                content_padding=ft.Padding.all(6), min_lines=3, cursor_color=ft.Colors.PRIMARY
             )
             
         ], expand=True, spacing=0, alignment=ft.MainAxisAlignment.CENTER)

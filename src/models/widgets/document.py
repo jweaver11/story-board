@@ -292,7 +292,7 @@ class Document(Widget):
         self.sidebar_body.controls.extend([
             ft.Row([
                 
-                ft.Text("Comments", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.Text("Comments", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
                 ft.MenuBar(
                     [
                         new_mini_widget_button := ft.SubmenuButton(
@@ -303,13 +303,13 @@ class Document(Widget):
                             ),
                             [
                                 ft.MenuItemButton(      # Folders
-                                    leading=ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, self.data.get('color', "primary")), content="Text", 
+                                    leading=ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, ft.Colors.PRIMARY), content="Text", 
                                     data="comment", on_click=new_mini_widget_clicked, close_on_click=True,
                                     tooltip="Create a new folder to organize your story",
                                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                 ), 
                                 ft.MenuItemButton(      # Documents
-                                    leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', "primary")), content="Image", 
+                                    leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY), content="Image", 
                                     data="reference_image", on_click=new_mini_widget_clicked, close_on_click=True,
                                     tooltip="Create a new document for text chapters or scenes in your story",
                                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),

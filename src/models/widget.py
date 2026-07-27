@@ -30,7 +30,7 @@ class Widget(ft.Container):
         directory_path: str,    # Path to our directory that will contain our json file
         story: Story,           # Reference to our story object that owns this widget
         data: dict = None,       # Our data passed in if loaded (or none if new object)
-        is_new: bool = False   # Whether to verify/create data fields or not. Set to false when rebuilding
+        is_new: bool = False   # Whether we need to create default data or use what was passed in
     ):
 
         # Parent constructor to set data and other attributes
@@ -339,21 +339,21 @@ class Widget(ft.Container):
             MenuOptionStyle(
                 on_click=set_canvas_as_image,
                 content=ft.Row([
-                    ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', 'primary'),),
+                    ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
                     ft.Text("Set Canvas", weight=ft.FontWeight.BOLD), 
                 ], tooltip="Set a canvas as the image for this widget"),
             ),
             MenuOptionStyle(
                 on_click=upload_image,
                 content=ft.Row([
-                    ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, self.data.get('color', 'primary'),),
+                    ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY),
                     ft.Text("Upload Image", weight=ft.FontWeight.BOLD), 
                 ]),
             ),
             MenuOptionStyle(
                 on_click=clear_image,
                 content=ft.Row([
-                    ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, self.data.get('color', 'primary'),),
+                    ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.PRIMARY),
                     ft.Text("Clear Image", weight=ft.FontWeight.BOLD), 
                 ]),
             ),
@@ -400,18 +400,12 @@ class Widget(ft.Container):
 
         # Color, rename, close_tab
         return [
-            #MenuOptionStyle(
-                #on_click=self.rename_clicked,
-                #content=ft.Row([
-                    #ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
-                    #ft.Text("Rename", weight=ft.FontWeight.BOLD, ), 
-                #]),
-            #),
+            
             MenuOptionStyle(
                 ft.SubmenuButton(
                     ft.Row([
                         ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
-                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
                         ft.Icon(ft.Icons.ARROW_RIGHT),
                     ], expand=True),
                     self.get_color_options(), 
@@ -463,9 +457,7 @@ class Widget(ft.Container):
             
             if self.data.get('visible', False) == True:
                 await self.story.workspace.update_widget_tab_color(self.data.get('index'), self.data.get('color'))  # Update the color of the tab in the workspace if we're visible
-                #if self.data.get('show_sidebar', False) == True:
-                    #self.sidebar_header.controls = self.create_sidebar_header_ctrls()  # Update the sidebar header to reflect the color change
-                    #self.sidebar_header.update()
+                
             if self.story.data.get("selected_rail", "content") != "canvas":
                 self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
             await self.story.close_menu()
@@ -544,7 +536,6 @@ class Widget(ft.Container):
         # Title that sits in the header
         self.sidebar_title = SidebarTitleTextField(
             value=self.data.get('title', ''),
-            #color=self.data.get('color', None), 
             on_submit=self.submit_rename, on_blur=set_title_value)
 
         # Return the title
@@ -622,9 +613,9 @@ class Widget(ft.Container):
 
         # The label for Notes with a new note button and textfield
         self.sidebar_notes_label = ft.Row([
-            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True),
             new_note_button := ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
+                ft.Icons.NEW_LABEL_OUTLINED, ft.Colors.PRIMARY, 
                 tooltip="Add Note",
                 on_click=handle_new_note_clicked,
                 mouse_cursor="click"
@@ -649,7 +640,7 @@ class Widget(ft.Container):
         self.toggle_sidebar_visibility_button = ft.Container(
             ft.Icon(
                 ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED if not self.data.get('show_sidebar', True) else ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED,
-                self.data.get('color', ft.Colors.PRIMARY),
+                ft.Colors.PRIMARY
             ),
             on_click=self.show_sidebar if not self.data.get('show_sidebar', True) else self.hide_sidebar,
             ink=True, border_radius=4, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
@@ -714,7 +705,7 @@ class Widget(ft.Container):
                     ), #shape=ft.BoxShape.CIRCLE, 
                     clip_behavior=ft.ClipBehavior.ANTI_ALIAS
                 ) if self.data.get('image_base64', '') else ft.Icons.IMAGE_OUTLINED, 
-                self.data.get('color'), icon_size=150,
+                ft.Colors.PRIMARY, icon_size=150,
                 tooltip="Upload an Image for this widget", mouse_cursor=ft.MouseCursor.CLICK,
                 on_click=lambda: self.story.open_menu(self.set_widget_image_options()), 
             ),

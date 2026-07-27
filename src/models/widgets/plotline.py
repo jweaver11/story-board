@@ -84,7 +84,7 @@ class Plotline(Widget):
                 content=ft.SubmenuButton(
                     ft.Container(
                         ft.Row([
-                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', "primary")), 
+                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), 
                             ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
@@ -94,7 +94,7 @@ class Plotline(Widget):
                     ),
                     [
                         ft.MenuItemButton(      # Documents
-                            "Plot Point", leading=ft.Icon(ft.Icons.LOCATION_ON_OUTLINED, self.data.get('color', "primary")), 
+                            "Plot Point", leading=ft.Icon(ft.Icons.LOCATION_ON_OUTLINED, ft.Colors.PRIMARY), 
                             on_click=self.create_plot_point, 
                             close_on_click=True,
                             tooltip="Mark important, short term events as plot points in your story",
@@ -102,14 +102,14 @@ class Plotline(Widget):
                         ), 
                         
                         ft.MenuItemButton(
-                            "Arc", leading=ft.Icon(ft.Icons.SHOW_CHART_OUTLINED, self.data.get('color', "primary")),
+                            "Arc", leading=ft.Icon(ft.Icons.SHOW_CHART_OUTLINED, ft.Colors.PRIMARY),
                             on_click=self.create_arc,
                             close_on_click=True,
                             tooltip="Create extented events in your story as arcs with set start and end points",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ),
                         ft.MenuItemButton(
-                            "Marker", leading=ft.Icon(ft.Icons.FLAG_OUTLINED, self.data.get('color', "primary")),
+                            "Marker", leading=ft.Icon(ft.Icons.FLAG_OUTLINED, ft.Colors.PRIMARY),
                             on_click=self.create_marker, 
                             close_on_click=True,
                             tooltip="Create simple markers on the plotline for events or notes to help visualize the flow of your story",

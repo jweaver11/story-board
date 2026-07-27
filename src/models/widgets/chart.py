@@ -254,6 +254,7 @@ class Chart(Widget):
             # Update charts rod color and sidebar
             chart.groups[group_idx].rods[rod_idx].color = new_color
             e.control.parent.icon_color = new_color
+            e.control.parent.parent.controls[2].active_color = new_color
             self.update()
 
         # Creates the rod controls for the sidebar inside a group expansion tile
@@ -282,6 +283,8 @@ class Chart(Widget):
                     value=rod.get('to_y', 0), 
                     min=min_value,
                     max=max_value, 
+                    active_color=rod.get('color', self.data.get('color', ft.Colors.PRIMARY)),
+                    #inactive_color=ft.Colors.ON_SURFACE_VARIANT,
                     label="{value}", 
                     on_change=update_rod_value,     # Adjust UI in real time updates
                     on_change_end=update_rod_data,  # Adjust data after drag complete
@@ -300,7 +303,6 @@ class Chart(Widget):
         def create_sidebar_group(group_idx: int, group_data: dict, is_new: bool=False) -> ft.ExpansionTile:
             # Set data from groups
             title=group_data.get('name', "Group")
-            color=group_data.get('rods', [{}])[0].get('color', self.data.get('color', ft.Colors.PRIMARY)) if len(group_data.get('rods', [])) > 0 else self.data.get('color', ft.Colors.PRIMARY) 
             rods=[rod for rod in group_data.get('rods', [])]
 
             # Build expansion_tile functionality
@@ -320,7 +322,7 @@ class Chart(Widget):
                         ft.Text("Rods", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, weight=ft.FontWeight.BOLD, size=14),   # Label of Rods
                         ft.IconButton(      # Add new rod button
                             ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                            self.data.get('color', ft.Colors.PRIMARY),
+                            ft.Colors.PRIMARY,
                             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD)), 
                             on_click=create_rod, 
                             data=group_idx
@@ -514,7 +516,7 @@ class Chart(Widget):
             ft.MenuBar(
                 [
                     ft.SubmenuButton(
-                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
                         [
                             # Toggle stacked rods
                             ft.Switch(
@@ -582,10 +584,10 @@ class Chart(Widget):
         # Add a label and add groups button in the sidebar
         self.sidebar_body.controls.extend([
             ft.Row([
-                ft.Text(f"Groups", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.Text(f"Groups", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
                 ft.IconButton(      # Create group button
                     ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                    self.data.get('color', ft.Colors.PRIMARY),
+                    ft.Colors.PRIMARY,
                     mouse_cursor=ft.MouseCursor.CLICK,
                     on_click=create_group,
                 ),
@@ -695,7 +697,7 @@ class Chart(Widget):
             ticks_text_style=ft.TextStyle(
                 size=16, color=ft.Colors.TRANSPARENT, italic=True
             ) if not self.data.get('radar_data', {}).get('show_tick_labels', False) else 
-                ft.TextStyle(size=16, color=self.data.get('color', ft.Colors.ON_SURFACE_VARIANT), italic=True),
+                ft.TextStyle(size=16, color=ft.Colors.PRIMARY, italic=True),
             title_text_style=ft.TextStyle(size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
             animation=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             title_position_percentage_offset=0.1,
@@ -1043,7 +1045,7 @@ class Chart(Widget):
         # Updates if we show our tick labels or not
         async def update_show_tick_labels(e):
             self.update_data(**{'radar_data': {'show_tick_labels': not self.data.get('radar_data', {}).get('show_tick_labels', False)}})
-            chart.ticks_text_style = ft.TextStyle(size=16, color=self.data.get('color', ft.Colors.ON_SURFACE_VARIANT) if self.data['radar_data'].get('show_tick_labels', False) else ft.Colors.TRANSPARENT, italic=True)
+            chart.ticks_text_style = ft.TextStyle(size=16, color=ft.Colors.PRIMARY if self.data['radar_data'].get('show_tick_labels', False) else ft.Colors.TRANSPARENT, italic=True)
             chart.update()
 
         # Updates if we rotate our node titles or not
@@ -1059,7 +1061,7 @@ class Chart(Widget):
             ft.MenuBar(
                 [
                     ft.SubmenuButton(
-                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
                         [
                             ft.Switch(
                                 True, "\tMake Chart Round", value=self.data.get('radar_data', {}).get('make_chart_round', False),
@@ -1075,7 +1077,7 @@ class Chart(Widget):
                             ),
                             ft.Row([
                                 ft.Text(
-                                    "\tInterval Count", style=ft.TextStyle(weight=ft.FontWeight.BOLD), #color=self.data.get('color', None),
+                                    "\tInterval Count", style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                                     tooltip="Increase or Decrease the number of lines between the center and outer edge of the chart"
                                 ),
                                 ft.IconButton(
@@ -1083,7 +1085,7 @@ class Chart(Widget):
                                     mouse_cursor=ft.MouseCursor.CLICK, on_click=update_tick_count, data="subtract"
                                 ),
                                 ft.IconButton(
-                                    ft.Icons.ADD_OUTLINED, self.data.get('color', ft.Colors.PRIMARY), 
+                                    ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY, 
                                     mouse_cursor=ft.MouseCursor.CLICK, on_click=update_tick_count, data="add"
                                 ),
                             ], spacing=0),
@@ -1123,20 +1125,20 @@ class Chart(Widget):
 
         self.sidebar_body.controls.extend([
             ft.Row([    # Label dataset
-                ft.Text(f"Data Sets", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
+                ft.Text(f"Data Sets", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)), 
                 ft.IconButton(      # Create new dataset button
                     ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                    self.data.get('color', ft.Colors.PRIMARY),
+                    ft.Colors.PRIMARY,
                     mouse_cursor=ft.MouseCursor.CLICK,
                     on_click=create_data_set,
                 ),
             ], spacing=0),
             sidebar_dataset_column, # Column to hold our sidebar dataset controls
             ft.Row([    # Label Nodes
-                ft.Text(f"Nodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)),
+                ft.Text(f"Nodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
                 ft.IconButton(      # Create new node button
                     ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                    self.data.get('color', ft.Colors.PRIMARY),
+                    ft.Colors.PRIMARY,
                     on_click=create_node,
                     mouse_cursor=ft.MouseCursor.CLICK,
                 ),
