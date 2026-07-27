@@ -117,10 +117,14 @@ class MiniWidget(ft.GestureDetector):
     async def show_mini_widget(self, e=None):
         ''' Shows our mini widget '''
 
+        if self.widget.visible_mw_id == self.data.get('id', ''):
+            return      # Already showing, don't need to do anything
+
         # Build our sidebar header, body, and footer
         self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()
         self.widget.sidebar_body.controls = self.create_sidebar_body_ctrls() 
         self.widget.sidebar_footer.controls = [self.description_tf]
+        self.widget.visible_mw_id = self.data.get('id', '')     # Update ID
 
         # Update the state of the widget
         if hasattr(self.widget, 'showing_info'):
@@ -142,9 +146,9 @@ class MiniWidget(ft.GestureDetector):
         # Title that sits in the header
         self.sidebar_title = SidebarTitleTextField(
             value=self.data.get('title', ''),
-            color=self.data.get('color', None), 
+            #color=self.data.get('color', None), 
             on_blur=set_title_value,
-            #on_submit=self.submit_rename
+            on_submit=self.save_rename
         )
 
         # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
@@ -154,6 +158,15 @@ class MiniWidget(ft.GestureDetector):
     # Child classes override this
     def create_sidebar_body_ctrls(self) -> list:
         ''' Creates the controls for the sidebar for this mini widget '''
+
+    # Updates our title in sidebar if we're shown in sidebar after a rname
+    async def save_rename(self, e: ft.Event[ft.TextField]):
+        await self.widget.story.close_menu()
+        new_title = e.control.value
+        self.update_data(**{'title': new_title})
+        if self.widget.visible_mw_id == self.data.get('id'):
+            self.sidebar_title.value = new_title
+            self.sidebar_title.update()
         
     
     # Set the content of our mini widget

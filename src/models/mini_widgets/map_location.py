@@ -136,6 +136,9 @@ class MapLocation(MiniWidget):
             self.update_data(**{'color': e.control.data})
             self.icon.color = e.control.data
             self.update()
+            if self.widget.visible_mw_id == self.data.get('id', ''):
+                self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()    # Rebuild our header if we're shown in sidebar
+                self.widget.sidebar_header.update()
 
         return [
             ft.MenuItemButton(
@@ -227,7 +230,7 @@ class MapLocation(MiniWidget):
                 ft.SubmenuButton(
                     ft.Row([
                         ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, self.data.get('color', "primary")), 
-                        ft.Text("Label Outline Width", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Text("Label Outline Size", weight=ft.FontWeight.BOLD, expand=True),
                         ft.Icon(ft.Icons.ARROW_RIGHT),
                     ], expand=True),
                     [ft.MenuItemButton(str(i), on_click=change_outline_thickness, close_on_click=True) for i in range(4)], 
@@ -290,27 +293,32 @@ class MapLocation(MiniWidget):
                     ft.SubmenuButton(
                         ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                         [
-                            ft.Text("Set Map Backgroound", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4)),
-                            ft.MenuItemButton(      # 
-                                leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Choose Built-in Image", 
+                            ft.MenuItemButton(
+                                "Rename", leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)), 
                                 close_on_click=True,
-                                tooltip="Choose a built-in image to use as the background for this map",
+                                on_click=self.handle_rename,
+                                tooltip="Rename this location",
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            ), 
-                            ft.MenuItemButton(      # Folders
-                                leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Select Canvas", 
+                            ),
+                            ft.SubmenuButton(
+                                ft.Row([
+                                    ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
+                                    ft.Text("Label Color", weight=ft.FontWeight.BOLD, expand=True),
+                                    ft.Icon(ft.Icons.ARROW_RIGHT),
+                                ], expand=True),
+                                #self.get_label_color_options(),
+                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                                style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            ),
+                            ft.MenuItemButton(
+                                "Delete", leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR), 
                                 close_on_click=True,
-                                tooltip="Select a canvas to use as the background for this map",
+                                on_click=self.handle_delete,
+                                tooltip="Delete this location",
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            ), 
-                            ft.MenuItemButton(      # Folders
-                                leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Upload Image", 
-                                close_on_click=True,
-                                tooltip="Upload an image to use as the background for this map",
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            ),  
+                            ),
                         ],
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                         style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                         tooltip="Adjust the settings for this map"
                     ),
@@ -354,6 +362,10 @@ class MapLocation(MiniWidget):
 
         ]
 
+    async def save_rename(self, e: ft.Event[ft.TextField]):
+        await super().save_rename(e)
+        self.map_label_tf.value = e.control.value
+        self.map_label_tf.update()
     
 
     # Called from reload_mini_widget
@@ -367,13 +379,6 @@ class MapLocation(MiniWidget):
             self.is_dragging = True
             await self.widget.story.close_menu()
             
-        # Saves the labels value
-        async def save_rename(e: ft.Event[ft.TextField]):
-            await self.widget.story.close_menu()
-            new_title = e.control.value
-            self.widget.data.get('mini_widgets_data', {}).get(self.data.get('id'), {}).update({'title': new_title})
-            self.widget.update_data(**{'mini_widgets_data': self.widget.data.get('mini_widgets_data', {})})
-            self.map_label_tf.parent.update()
         
         # Set our position on the map
         self.left = self.data.get('position', (200, 0))[0]
@@ -390,7 +395,7 @@ class MapLocation(MiniWidget):
             ),
             expand=True, text_align=ft.TextAlign.CENTER,
             content_padding=ft.Padding.all(0),
-            on_blur=save_rename, dense=True, border_radius=10,
+            on_blur=self.save_rename, dense=True, border_radius=10,
             border_color=ft.Colors.TRANSPARENT,
             focused_border_color=ft.Colors.PRIMARY,
             multiline=True,

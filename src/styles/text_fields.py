@@ -26,7 +26,7 @@ class SidebarTitleTextField(ft.TextField):
         # Default styles
         self.dense = True
         self.text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=24)
-        self.content_padding=ft.Padding.all(4)
+        self.content_padding=ft.Padding.only(top=2, bottom=2)
         self.capitalization=ft.TextCapitalization.WORDS
         self.bgcolor=ft.Colors.TRANSPARENT
         self.border_color=ft.Colors.TRANSPARENT

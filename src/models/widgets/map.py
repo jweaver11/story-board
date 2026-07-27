@@ -53,7 +53,6 @@ class Map(Widget):
 
                 # Info about the map
                 'draw_mode': False,      # Whether we're in draw mode or not
-                'show_background_image': True,      # Whether we show the background image or not
                 'background_image': "map_bg_fantasy.jpg",    # The background image of the map
 
                 'lore': list(),     # List of lores [{'label': "Lore Label", 'content': "Lore Content"}]
@@ -244,7 +243,7 @@ class Map(Widget):
                     ft.SubmenuButton(
                         ft.Row([
                             ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, self.color), 
-                            ft.Text("Label Outline Width", weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Text("Label Outline Size", weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
                         [ft.MenuItemButton(str(i), on_click=change_outline_thickness, close_on_click=True) for i in range(4)], 
@@ -506,6 +505,7 @@ class Map(Widget):
         self.sidebar_header.controls = self.create_sidebar_header_ctrls()
         self.sidebar_body.controls = self.create_sidebar_body_ctrls()  
         self.sidebar_footer.controls = [self.description_tf]
+        self.visible_mw_id = ""     # Reset our state for tracking visible mw
 
         # Applies the update
         if not await self.show_sidebar():   # If already showing, just update the sidebar
@@ -557,11 +557,15 @@ class Map(Widget):
         self.new_location_position = (e.local_position.x, e.local_position.y)
         super().set_mouse_coords(e)
 
-    def toggle_draw_mode(self, e=None):
+    
+    def toggle_draw_mode(self, e: ft.Event[ft.MenuItemButton]):
         new_draw_mode = not self.data.get('draw_mode', False)
         self.update_data(**{'draw_mode': new_draw_mode})
+        e.control.content = ("Disable" if new_draw_mode else "Enable") + " Drawing"
+        e.control.leading = ft.Icon(ft.Icons.EDIT_OUTLINED if new_draw_mode else ft.Icons.EDIT_OFF_OUTLINED, self.data.get('color', ft.Colors.PRIMARY))
         self.map_controller.mouse_cursor = ft.MouseCursor.PRECISE if new_draw_mode else None
         self.map_controller.on_tap = lambda: self.story.open_menu(self.get_new_item_options()) if not new_draw_mode else None
+        e.control.update()
         self.map_controller.update()
 
     # Creates our header controls for the sidebar, including our settings button
@@ -621,6 +625,7 @@ class Map(Widget):
             )
             self.page.show_dialog(dlg)
 
+        # Uploads an image and sets it as the background image for our map
         async def handle_set_bg_image(e: ft.Event[ft.MenuItemButton]):
             await self.story.close_menu()   # Close menu
             
@@ -646,6 +651,7 @@ class Map(Widget):
                 except Exception:
                     pass
 
+        # Set our built in options, or none, to set no background image
         def handle_set_built_in_image(e: ft.Event[ft.MenuItemButton]):
 
             self.update_data(**{'background_image': e.control.data})
@@ -659,7 +665,7 @@ class Map(Widget):
 
 
         ctrls: list = super().create_sidebar_header_ctrls()
-        # TODO: 
+        
 
         ctrls.append(
             ft.MenuBar(
@@ -668,9 +674,9 @@ class Map(Widget):
                         ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                         [
                             ft.MenuItemButton(
-                                "Disable" if self.data.get('draw_mode') else "Enable" + " Drawing", 
+                                ("Disable" if self.data.get('draw_mode') else "Enable") + " Drawing", 
                                 close_on_click=True, on_click=self.toggle_draw_mode,
-                                leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                leading=ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('draw_mode', False) else ft.Icons.EDIT_OFF_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                             ),
                             ft.SubmenuButton(
                                 "Set Background Image",
@@ -690,16 +696,20 @@ class Map(Widget):
                                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                     ),  
                                     ft.MenuItemButton(      # 1
-                                        "Fantasy", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                                        "Fantasy Background", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
                                         close_on_click=True,
                                         data="map_bg_fantasy.jpg", on_click=handle_set_built_in_image,
-                                        tooltip="Choose a built-in image to use as the background for this map",
                                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                     ), 
                                     ft.MenuItemButton(      # 2
-                                        "Sci-Fi", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                                        "Sci-Fi Background", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
                                         close_on_click=True,
-                                        tooltip="Choose a built-in image to use as the background for this map",
+                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                    ),
+                                    ft.MenuItemButton(      # 2
+                                        "None", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                                        close_on_click=True,
+                                        data="", on_click=handle_set_built_in_image,
                                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                     ),
                                 ],
@@ -708,7 +718,7 @@ class Map(Widget):
                             ),
                             
                         ],
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                         style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                         tooltip="Adjust the settings for this map"
                     ),
@@ -733,10 +743,8 @@ class Map(Widget):
             width=self.map_width, height=self.map_height,
             image=ft.DecorationImage(       # Background image
                 self.data.get('background_image', "map_bg_fantasy.jpg"),
-                #ft.ColorFilter(ft.Colors.with_opacity(1, ft.Colors.BLACK), ft.BlendMode.SOFT_LIGHT),
-                #repeat=ft.ImageRepeat.REPEAT
                 fit=ft.BoxFit.FILL
-            ) if self.data.get('map_data', {}).get('show_bg_map', True) else None,
+            ) 
         )
 
         self.canvas= cv.Canvas(

@@ -16,6 +16,7 @@ from models.isolated_controls.row import IsolatedRow
 from models.isolated_controls.column import IsolatedColumn
 from models.isolated_controls.tab_bar_view import IsolatedTabBarView
 import asyncio
+from styles.menu_option_style import MenuOptionStyle
 
 
 # Our workspace object that is stored in our story object
@@ -76,6 +77,21 @@ class Workspace(ft.Container):
 
     # Creates a new tab control for the given widget
     def create_widget_tab_ctrl(self, widget: Widget) -> ft.Tab:
+
+        async def handle_rename(e=None):
+            await self.story.close_menu()
+            edit_title_tf.value = widget.data.get('title', '')
+            edit_title_tf.visible = True
+            tab_title.visible = False
+            tab_gd.update()
+            await edit_title_tf.focus()
+
+        def blur_edit_title_tf(e=None):
+            edit_title_tf.visible = False
+            tab_title.visible = True
+            tab_title.value = widget.data.get('title', '')
+            tab_gd.update()
+
         # Set our icon based on what type of widget we have
         match widget.data.get('tag', ''):
             case "document": icon = ft.Icons.DESCRIPTION_OUTLINED
@@ -106,6 +122,17 @@ class Workspace(ft.Container):
             color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True
         )
 
+        edit_title_tf = ft.TextField(
+            value=widget.data.get('title', 'untitled'),
+            visible=False,
+            on_blur=blur_edit_title_tf,
+            on_submit=widget.submit_rename,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            border_radius=4, dense=True, capitalization=ft.TextCapitalization.SENTENCES,
+            border_color=ft.Colors.TRANSPARENT,
+            focused_border_color=ft.Colors.PRIMARY,
+        )
+
         # Button to remove the widget from the workspace
         hide_widget_button = ft.IconButton(    # Hide widget button on right side of tab
             scale=0.8,
@@ -116,13 +143,26 @@ class Workspace(ft.Container):
             mouse_cursor=ft.MouseCursor.CLICK,
         )
 
+        menu_options = [
+            MenuOptionStyle(
+                on_click=handle_rename,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, widget.data.get('color', 'primary'),),
+                    ft.Text(
+                        "Rename", 
+                        weight=ft.FontWeight.BOLD, 
+                    ), 
+                ]),
+            ),
+        ] + widget.get_menu_options()  
+
         # Gesture Detector for opening menus that holds our tab icon, title, and hide button
         tab_gd = ft.GestureDetector(
-            ft.Row([tab_icon, tab_title, hide_widget_button]),
+            ft.Row([tab_icon, tab_title, edit_title_tf, hide_widget_button]),
             mouse_cursor=ft.MouseCursor.CLICK,
             hover_interval=100,
             on_hover=widget.set_mouse_coords,
-            on_secondary_tap=lambda: self.story.open_menu(widget.get_menu_options()),
+            on_secondary_tap=lambda: self.story.open_menu(menu_options),
         )
 
         # Set the tab itself

@@ -72,7 +72,7 @@ class Widget(ft.Container):
         self.visible_mw_id: str = ""                # ID of the miniwidget we are currently showing in the sidebar
                        
         # Sidebar controls
-        self.sidebar_title: ft.Text       # Title of the sidebar for this widget that sits in the header
+        self.sidebar_title: SidebarTitleTextField       # Title of the sidebar for this widget that sits in the header
         self.sidebar_header: ft.Row       # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
         self.sidebar_body: ft.Column      # Column that holds the header and any other content for the sidebar
         self.sidebar: ft.Container      # Container on right side of widgets to hold mini widgets or sidebar info
@@ -213,9 +213,8 @@ class Widget(ft.Container):
         # Update data
         self.update_data(**{'show_sidebar': False})
         
-        # Show the button to show the sidebar again, and update it so it shows before the animation starts
-        #self.toggle_sidebar_visibility_button.visible = True
-
+        
+        self.visible_mw_id = ""     # Reset our state for tracking visible mw
         self.toggle_sidebar_visibility_button.content.icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED
         self.toggle_sidebar_visibility_button.on_click = self.show_sidebar
         self.toggle_sidebar_visibility_button.update()
@@ -401,13 +400,13 @@ class Widget(ft.Container):
 
         # Color, rename, close_tab
         return [
-            MenuOptionStyle(
-                on_click=self.rename_clicked,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
-                    ft.Text("Rename", weight=ft.FontWeight.BOLD, ), 
-                ]),
-            ),
+            #MenuOptionStyle(
+                #on_click=self.rename_clicked,
+                #content=ft.Row([
+                    #ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
+                    #ft.Text("Rename", weight=ft.FontWeight.BOLD, ), 
+                #]),
+            #),
             MenuOptionStyle(
                 ft.SubmenuButton(
                     ft.Row([
@@ -438,7 +437,7 @@ class Widget(ft.Container):
         name = e.control.value.strip()
                                                 
         # Update our live title, and associated data
-        self.update_data(**{'title': name.capitalize()})   # Update our data with the new title and key
+        self.update_data(**{'title': name})   # Update our data with the new title and key
         await self.save_file()  # Force a file save
                 
         if self.story.data.get("selected_rail", "content") != "canvas":
@@ -448,60 +447,6 @@ class Widget(ft.Container):
             await self.story.workspace.update_widget_tab_title(self.data.get('index'), self.data.get('title'))  # Update the title of the tab in the workspace if we're visible
         
         e.page.pop_dialog()
-    
-    async def rename_clicked(self, e: ft.Event):
-        ''' Replaces our widget title with a text field to rename it '''
-
-        await self.story.close_menu()   # Close the menu so it doesn't interfere with the dialog
-
-        # Called when submitting our textfield.
-        async def _submit_name(e: ft.Event):
-            ''' Checks that we're unique and renames the widget if so. on_blur is auto called after this, so we handle that as well '''          
-
-            name = text_field.value.strip()
-                                                    
-            # Update our live title, and associated data
-            self.update_data(**{'title': name.capitalize()})   # Update our data with the new title and key
-            await self.save_file()  # Force a file save
-                    
-            if self.story.data.get("selected_rail", "content") != "canvas":
-                self.story.active_rail.reload_rail()   # Reload the rail to reflect the name change
-
-            if self.data.get('visible', False) == True:
-                await self.story.workspace.update_widget_tab_title(self.data.get('index'), self.data.get('title'))  # Update the title of the tab in the workspace if we're visible
-            
-            e.page.pop_dialog()
-                
-            
-        # Our text field that our functions use for renaming and referencing
-        text_field = ft.TextField(
-            value=self.data.get('title', ''), 
-            dense=True, capitalization=ft.TextCapitalization.WORDS,
-            focus_color=self.data.get('color', ft.Colors.PRIMARY),
-            border_color=self.data.get('color', ft.Colors.PRIMARY),
-            autofocus=True, 
-            data=self.data.get('tag', ''),
-            text_style=ft.TextStyle(
-                color=ft.Colors.ON_SURFACE,
-                weight=ft.FontWeight.BOLD,
-                overflow=ft.TextOverflow.ELLIPSIS,
-            ),
-            on_submit=_submit_name,
-            on_blur=lambda: e.page.pop_dialog(),
-        )
-
-        rename_button = ft.TextButton("Rename", on_click=_submit_name, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click"))
-
-        dlg = ft.AlertDialog(
-            title=ft.Text(f"Rename {self.data.get('title', '')}", weight=ft.FontWeight.BOLD),
-            content=text_field,
-            actions=[
-                ft.TextButton("Cancel", style=ft.ButtonStyle(ft.Colors.ERROR, mouse_cursor="click"), on_click=lambda: e.page.pop_dialog()),
-                rename_button   
-            ]
-        )
-
-        e.page.show_dialog(dlg)
         
     
     def get_color_options(self) -> list[ft.Control]:
@@ -518,7 +463,9 @@ class Widget(ft.Container):
             
             if self.data.get('visible', False) == True:
                 await self.story.workspace.update_widget_tab_color(self.data.get('index'), self.data.get('color'))  # Update the color of the tab in the workspace if we're visible
-
+                #if self.data.get('show_sidebar', False) == True:
+                    #self.sidebar_header.controls = self.create_sidebar_header_ctrls()  # Update the sidebar header to reflect the color change
+                    #self.sidebar_header.update()
             if self.story.data.get("selected_rail", "content") != "canvas":
                 self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
             await self.story.close_menu()
@@ -597,7 +544,7 @@ class Widget(ft.Container):
         # Title that sits in the header
         self.sidebar_title = SidebarTitleTextField(
             value=self.data.get('title', ''),
-            color=self.data.get('color', None), 
+            #color=self.data.get('color', None), 
             on_submit=self.submit_rename, on_blur=set_title_value)
 
         # Return the title
