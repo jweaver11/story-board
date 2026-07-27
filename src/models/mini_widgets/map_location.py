@@ -203,8 +203,7 @@ class MapLocation(MiniWidget):
         # TODO: Change icon, title, color, lore
         # Show preview if connected to other map
         # Upload image button
-        # TODO: Change icon, title, color, lore
-        # Upload image button
+        
 
         ctrls.append(
             ft.MenuBar(

@@ -7,6 +7,7 @@ import flet as ft
 import os
 import json
 import asyncio
+from utils.route_change import route_change
 
 
 class App:
@@ -107,7 +108,10 @@ class App:
                 await page.window.close()
                 page.update()
 
+        # Set size and route change events
         page.window.on_event = _on_window_event
+        page.on_route_change = route_change 
+        
 
         # Import and set page fonts here
         #page.fonts = {

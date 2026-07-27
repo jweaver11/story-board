@@ -6,7 +6,7 @@ Initializes the app, settings, page data, and renders our UI onto the page
 import flet as ft
 from pathlib import Path
 from models.app import app
-from utils.route_change import route_change
+
 from models.views.home import create_home_view
 from models.views.loading import create_loading_view
 from models.views.welcome import create_welcome_view, animate_welcome_text
@@ -20,7 +20,6 @@ async def main(page: ft.Page):
      
     # Load settings and previous story (if one exists)
     app.load_settings(page) 
-    page.on_route_change = route_change 
  
     # Either welcome to storyboard view, or our loading view
     if app.settings.data.get("is_first_launch", True):

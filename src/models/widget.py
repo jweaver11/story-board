@@ -579,6 +579,12 @@ class Widget(ft.Container):
         self.l = e.local_position.x
         self.t = e.local_position.y
 
+    # Calls undo or redo task on the widget, if it has those functions
+    async def undo_task(self):
+        return
+    async def redo_task(self):
+        return
+
     # Returns freshly created instances of sidebar header controls. Only widgets with mini widgets use this
     def create_sidebar_header_ctrls(self) -> list[ft.Control]:
 

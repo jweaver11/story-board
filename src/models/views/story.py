@@ -795,10 +795,40 @@ class Story(ft.View):
             self.workspace.is_resizing = False
             app.settings.update_data(**{'story': {'active_rail_width': self.active_rail.width}})
 
+        # Handles keyboard events for the story
+        async def handle_keyboard_event(e: ft.KeyboardEvent):
+            ''' Handles keyboard events for the story '''
+            # Calls undo on our active widget
+            async def undo():
+                widget = self.workspace.tab_view.controls[self.workspace.tabs.selected_index]
+                await widget.undo_task()
+                
+            # Calls redo on our active widget
+            async def redo():
+                widget = self.workspace.tab_view.controls[self.workspace.tabs.selected_index]
+                await widget.redo_task()
+                
+            # Find out what keyboard shortcut was pressed and call the appropriate function
+            match e.key:
+                case 'Z':
+                    if e.ctrl == True:
+                        if e.shift == True:
+                            await redo()
+                        else:
+                            await undo()
+                case 'Y':
+                    if e.ctrl == True:
+                        await redo()
+           
+
+        # Set our specific event to detect keyboard events for the story
+        self.page.on_keyboard_event = handle_keyboard_event 
+        self.page.title = f"Story Board (alpha) - {self.data.get('title', 'Untitled')}"   # Set our page title
+
         # Load our widgets
         self.load_widgets() 
 
-        self.page.title = f"Story Board (alpha) - {self.data.get('title', 'Untitled')}"   # Set our page title
+        
 
         # Create our menubar, workspaces rail, active rail, and workspace objects
         self.menubar = create_menu_bar(self.page, self)
