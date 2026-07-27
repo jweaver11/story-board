@@ -1106,7 +1106,7 @@ class CanvasRail(Rail):
                 # Fill and anti alias switches
                 fill_switch,    
                 anti_alias_switch,    
-                brush_smoothing_switch,                         
+                #brush_smoothing_switch,                         
                 
                 # Stroke cap, join, and blend mode selectors
                 ft.MenuBar(
