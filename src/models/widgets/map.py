@@ -60,7 +60,7 @@ class Map(Widget):
 
                 # Holds our labels that sit on the map like locations, but don't have an icon or location
                 'labels': {
-                    #'id': {'id': 'id_str', 'value': 'Label Text', 'position': (x, y), 'color': 'white'}
+                    #'id': {'id': 'id_str', 'value': 'Label Text', 'position': (x, y), 'color': 'white', outline_thickness: 1}
                 },                              
                               
                 # Holds our data for locations
@@ -114,6 +114,7 @@ class Map(Widget):
             self.label = data.get('label', 'Label')
             self.position = data.get('position', (0, 0))
             self.color = data.get('color', None)
+            self.outline_thickness = data.get('outline_thickness', 0)
 
             # State
             self.is_dragging = False
@@ -199,11 +200,20 @@ class Map(Widget):
                 self.widget.location_stack.controls.remove(self)
                 self.widget.location_stack.update()
 
+            # Handles changing the outline thickness of our label text
+            def change_outline_thickness(e: ft.Event[ft.Slider]):
+                # Update data
+                self.outline_thickness = e.control.value
+                self.widget.update_data(**{'labels': {self.id: {'outline_thickness': self.outline_thickness}}})
+                # Update our text field style
+                self.label_tf.text_style.shadow = TextShadow(thickness=self.outline_thickness)
+                self.update()
+
             return [
                 MenuOptionStyle(        # Edit label text
                     ft.MenuItemButton(
                         ft.Text("Edit Label", weight=ft.FontWeight.BOLD, expand=True), leading=ft.Icon(ft.Icons.EDIT_OUTLINED, self.color),
-                        on_click=self.focus_tf, data="force_focus", 
+                        on_click=self.focus_tf,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     ),
                     no_effects=True, no_padding=True
@@ -224,13 +234,23 @@ class Map(Widget):
                         ],
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                         style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="Change this widget's color"
+                        tooltip="Change label color"
                     ),
                     no_padding=True, no_effects=True
                 ),
+                MenuOptionStyle(        # Text outline thickness
+                    ft.Column([
+                        ft.Text("Outline Thickness", weight=ft.FontWeight.BOLD),
+                        ft.Slider(
+                            min=0, max=3, divisions=3, value=self.outline_thickness,
+                            label="{value}", on_change=change_outline_thickness,
+                            #expand=True
+                        ),
+                    ], spacing=0, tight=True),
+                ),
                 MenuOptionStyle(        # Delete label
                     ft.MenuItemButton(
-                        ft.Text(f"Delete {self.label}", weight=ft.FontWeight.BOLD, expand=True), leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR),
+                        ft.Text(f"Delete label", weight=ft.FontWeight.BOLD, expand=True), leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR),
                         on_click=handle_delete, data={"icon": "location_pin"},
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     ),
@@ -239,7 +259,7 @@ class Map(Widget):
             ]
         
         # Focuses our textfield for editing
-        async def focus_tf(self, e: ft.PointerEvent[ft.GestureDetector]):
+        async def focus_tf(self, e=None):
             await self.widget.story.close_menu()
             await self.label_tf.focus()
             self.label_tf.update()
@@ -262,7 +282,7 @@ class Map(Widget):
                 text_style=ft.TextStyle(
                     weight=ft.FontWeight.BOLD, 
                     overflow=ft.TextOverflow.ELLIPSIS, 
-                    shadow=TextShadow()
+                    shadow=TextShadow(thickness=self.outline_thickness)
                 ),
                 expand=True, text_align=ft.TextAlign.CENTER,
                 content_padding=ft.Padding.all(0),
@@ -305,7 +325,8 @@ class Map(Widget):
             'id': new_id,
             'label': "New Label",
             'position': self.locked_new_location_position,
-            'color': "on_surface",
+            'color': "#FFFFFF",
+            'outline_thickness': 1,
         }
 
         # Add to data and update

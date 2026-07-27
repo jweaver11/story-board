@@ -17,6 +17,13 @@ class WorldBuildingRail(Rail):
         # Initialize the parent Rail class first
         super().__init__(story=story)
 
+    # Open our settings to the templates tab
+    async def _open_templates_editor(self, e=None):    
+        from models.app import app
+        app.settings.selected_index = 2     # Set settings to open on the character templates tab
+        self.page.overlay.clear()              # If opened from menu, make sure its closed
+        await self.page.push_route("/settings")
+
           
 
     # Called to return our list of menu options for the content rail
@@ -32,38 +39,39 @@ class WorldBuildingRail(Rail):
                             ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=4),
                     ),
                     [
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
                             data="map", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ),
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
+                            data="item", on_click=self.new_item_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                            tooltip="New Items and Equipment for your story"
+                        ),  
                         ft.SubmenuButton(
                             ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                             self.get_template_options("world"), 
                             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             tooltip="Create a new world for your story. Choose from templates or create a default world."
                         ),
                         ft.SubmenuButton(
                             ft.Row([ft.Icon(ft.Icons.INSERT_CHART_OUTLINED, ft.Colors.PRIMARY), ft.Text("Chart", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                             self.get_template_options("chart"), 
                             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             tooltip="New Charts for your story"
                         ), 
-                        ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
-                            data="item", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
-                            tooltip="New Items and Equipment for your story"
-                        ),  
+                        
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
                 no_padding=True, no_effects=True
             ),
@@ -77,13 +85,13 @@ class WorldBuildingRail(Rail):
                             ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=4),
                     ),
                     [
                         
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
                 no_padding=True, no_effects=True, 
             ),
@@ -149,30 +157,31 @@ class WorldBuildingRail(Rail):
                         leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
                         data="map", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
+                        data="item", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        tooltip="New Items and Equipment for your story"
+                    ),  
                     ft.SubmenuButton(
                         ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                         self.get_template_options("world"), 
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         tooltip="Create a new world for your story. Choose from templates or create a default world."
                     ),
                     ft.SubmenuButton(
                         ft.Row([ft.Icon(ft.Icons.INSERT_CHART_OUTLINED, ft.Colors.PRIMARY), ft.Text("Chart", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                         self.get_template_options("chart"), 
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         tooltip="New Charts for your story"
                     ),
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
-                        data="item", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        tooltip="New Items and Equipment for your story"
-                    ),  
+                    
                 ],
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
             ),
             ft.SubmenuButton(
@@ -185,7 +194,7 @@ class WorldBuildingRail(Rail):
                     
                 ],
                 disabled=True,
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
             ),
         ]      
@@ -195,7 +204,7 @@ class WorldBuildingRail(Rail):
             top_row_buttons,
             style=ft.MenuStyle(
                 bgcolor="transparent", shadow_color="transparent",
-                shape=ft.RoundedRectangleBorder(radius=10),
+                shape=ft.RoundedRectangleBorder(radius=4),
             ),
         )
 
@@ -212,15 +221,15 @@ class WorldBuildingRail(Rail):
             self.story.data.get('world_building_rail_sort_method', "Index"),
             [
                 ft.DropdownOption(
-                    "Default", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10)),
+                    "Default", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4)),
                     tooltip="Sort world building widgets by the order they were loaded. On Windows, usually alphabetical. On Mac, usually by creation date."
                 ),
                 ft.DropdownOption(
-                    "Index", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10)),
+                    "Index", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4)),
                     tooltip="Sort world building widgets by a reorderable index so you can drag them up and down on the rail."
                 ), 
                 ft.DropdownOption(
-                    "Color", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10)),
+                    "Color", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4)),
                     tooltip="Sort world building widgets by their color."
                 )
             ],
@@ -234,7 +243,7 @@ class WorldBuildingRail(Rail):
                 tooltip=f"Sort Direction: {self.story.data.get('world_building_rail_sort_direction', 'Ascending')}", 
                 on_click=_change_sort_direction, mouse_cursor="click", 
             ),
-            menu_style=ft.MenuStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+            menu_style=ft.MenuStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
         )
            
         # List for our world_buildings and world_building connection maps
@@ -376,11 +385,18 @@ class WorldBuildingRail(Rail):
             hover_interval=20,
         )
 
+        world_templates_button = ft.IconButton(
+            #ft.Icons.MANAGE_SEARCH_OUTLINED, 
+            ft.Icons.EDIT_NOTE_OUTLINED,
+            "primary", mouse_cursor="click",  
+            tooltip="Edit World Templates", on_click=self._open_templates_editor
+        )
+
         self.controls = [
             header,
             ft.Divider(thickness=2, leading_indent=8),
             menu_gesture_detector,
-            ft.Container(ft.Row([sort_dropdown]), margin=ft.Margin.symmetric(horizontal=4)),
+            ft.Row([sort_dropdown, world_templates_button], margin=ft.Margin.only(left=8), spacing=0)
         ]
         
         

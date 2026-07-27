@@ -40,6 +40,7 @@ class MapLocation(MiniWidget):
 
                 'icon_size': 30,                       # Size of our icon/image on the map, default 30  
                 'map_id': "",                       # id of map we're connected too (if we're connected to one)
+                'text_outline_thickness': 1,              # Thickness of the outline around our text label on the map
 
                 # Information for our information display
                 'info': [
@@ -80,7 +81,7 @@ class MapLocation(MiniWidget):
     async def highlight(self, e=None):
         ''' Shows our slider and hides our map_marker. Makes sure all other sliders are hidden '''
 
-        self.map_label_tf.parent.shadow= ft.BoxShadow(4, 8, ft.Colors.with_opacity(0.25, self.data.get('color'))) 
+        self.map_label_tf.parent.shadow = ft.BoxShadow(4, 8, ft.Colors.with_opacity(0.25, self.data.get('color'))) 
         self.icon.parent.shadow = ft.BoxShadow(4, 8, ft.Colors.with_opacity(0.25, self.data.get('color')))
         self.update()
         if self._hover_task:
@@ -147,6 +148,15 @@ class MapLocation(MiniWidget):
         
     # Gets our menu options for the location
     def get_menu_options(self) -> list[ft.Control]:
+
+        # Handles changing the outline thickness of our label text
+        def change_outline_thickness(e: ft.Event[ft.Slider]):
+            # Update data
+            
+            self.update_data(**{'text_outline_thickness': e.control.value})
+            # Update our text field style
+            self.map_label_tf.text_style.shadow = TextShadow(thickness=e.control.value)
+            self.map_label_tf.update()
         
         return [
             MenuOptionStyle(
@@ -187,6 +197,16 @@ class MapLocation(MiniWidget):
                     tooltip="Change this locations color"
                 ),
                 no_padding=True, no_effects=True
+            ),
+            MenuOptionStyle(        # Text outline thickness
+                ft.Column([
+                    ft.Text("Outline Thickness", weight=ft.FontWeight.BOLD),
+                    ft.Slider(
+                        min=0, max=3, divisions=3, value=self.data.get('text_outline_thickness', 1),
+                        label="{value}", on_change=change_outline_thickness,
+                        #expand=True
+                    ),
+                ], spacing=0, tight=True),
             ),
             MenuOptionStyle(
                 on_click=self.handle_delete,
@@ -305,7 +325,11 @@ class MapLocation(MiniWidget):
         # Create our label above our icon in our content
         self.map_label_tf = ft.TextField(
             self.data.get('title'), color=self.data.get('color', None), 
-            text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS, shadow=TextShadow(),),
+            text_style=ft.TextStyle(
+                weight=ft.FontWeight.BOLD, 
+                overflow=ft.TextOverflow.ELLIPSIS, 
+                shadow=TextShadow(thickness=self.data.get('text_outline_thickness', 1)),
+            ),
             expand=True, text_align=ft.TextAlign.CENTER,
             content_padding=ft.Padding.all(0),
             on_blur=save_rename, dense=True, border_radius=10,

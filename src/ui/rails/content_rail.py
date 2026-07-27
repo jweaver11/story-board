@@ -73,13 +73,7 @@ class ContentRail(Rail):
                             tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ), 
-                        ft.SubmenuButton(
-                            ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
-                            self.get_template_options("character"), 
-                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            tooltip="Create a new character for your story. Choose from templates or create a default character."
-                        ),
+                        
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
                             data="plotline", on_click=self.new_item_clicked, close_on_click=True,
@@ -98,13 +92,7 @@ class ContentRail(Rail):
                             tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ),
-                        ft.SubmenuButton(
-                            ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
-                            self.get_template_options("world"), 
-                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            tooltip="Create a new world for your story. Choose from templates or create a default world."
-                        ),
+                        
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
                             data="item", on_click=self.new_item_clicked, close_on_click=True,
@@ -124,6 +112,27 @@ class ContentRail(Rail):
                             tooltip="Preview the canvases in your story as a comic strip",
                         ), 
                         
+                        
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Relationship Map", 
+                            data="character_relationship_map", on_click=self.new_item_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            tooltip="Visualize the connections between the characters in your story"
+                        ),
+                        ft.SubmenuButton(
+                            ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
+                            self.get_template_options("character"), 
+                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            tooltip="Create a new character for your story. Choose from templates or create a default character."
+                        ),
+                        ft.SubmenuButton(
+                            ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
+                            self.get_template_options("world"), 
+                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            tooltip="Create a new world for your story. Choose from templates or create a default world."
+                        ),
                         ft.SubmenuButton(
                             ft.Row([ft.Icon(ft.Icons.INSERT_CHART_OUTLINED, ft.Colors.PRIMARY), ft.Text("Chart", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                             self.get_template_options("chart"), 
@@ -131,12 +140,6 @@ class ContentRail(Rail):
                             style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             tooltip="New Charts for your story"
                         ), 
-                        ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Relationship Map", 
-                            data="character_relationship_map", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            tooltip="Visualize the connections between the characters in your story"
-                        ),
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                     style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
@@ -201,13 +204,7 @@ class ContentRail(Rail):
                         tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     ), 
-                    ft.SubmenuButton(
-                        ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
-                        self.get_template_options("character"), 
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="Create a new character for your story. Choose from templates or create a default character."
-                    ),
+                    
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
                         data="plotline", on_click=self.new_item_clicked, close_on_click=True, 
@@ -226,13 +223,7 @@ class ContentRail(Rail):
                         tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     ),
-                    ft.SubmenuButton(
-                        ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
-                        self.get_template_options("world"), 
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="Create a new world for your story. Choose from templates or create a default world."
-                    ),
+                    
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
                         data="item", on_click=self.new_item_clicked, close_on_click=True,
@@ -251,6 +242,27 @@ class ContentRail(Rail):
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                         tooltip="Preview the canvases in your story as a comic strip",
                     ),
+                    
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Relationship Map", 
+                        data="character_relationship_map", on_click=self.new_item_clicked, close_on_click=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        tooltip="Visualize the connections between the characters in your story"
+                    ),  
+                    ft.SubmenuButton(
+                        ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
+                        self.get_template_options("character"), 
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        tooltip="Create a new character for your story. Choose from templates or create a default character."
+                    ),
+                    ft.SubmenuButton(
+                        ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
+                        self.get_template_options("world"), 
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        tooltip="Create a new world for your story. Choose from templates or create a default world."
+                    ),
                     ft.SubmenuButton(
                         ft.Row([ft.Icon(ft.Icons.INSERT_CHART_OUTLINED, ft.Colors.PRIMARY), ft.Text("Chart", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                         self.get_template_options("chart"), 
@@ -258,12 +270,6 @@ class ContentRail(Rail):
                         style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         tooltip="New Charts for your story"
                     ), 
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Relationship Map", 
-                        data="character_relationship_map", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="Visualize the connections between the characters in your story"
-                    ),  
                 ],
                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),

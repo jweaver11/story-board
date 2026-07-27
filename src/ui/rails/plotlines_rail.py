@@ -34,24 +34,24 @@ class PlotlinesRail(Rail):
                             ft.Text("New", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=4),
                     ),
                     [
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
                             data="plotline", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
                         ),
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED, ft.Colors.PRIMARY), content="Plot Chart", 
                             data="plot_chart", on_click=self.new_item_clicked, close_on_click=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             tooltip="New Items and Equipment for your story", 
                         ),  
                         ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
                 no_padding=True, no_effects=True
             ),
@@ -65,13 +65,13 @@ class PlotlinesRail(Rail):
                             ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=10),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=4),
                     ),
                     [
                         
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
                 no_padding=True, no_effects=True, 
             ),
@@ -137,7 +137,7 @@ class PlotlinesRail(Rail):
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
                         data="plotline", on_click=self.new_item_clicked, close_on_click=True, 
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                         tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
                     ),
                     ft.MenuItemButton(
@@ -147,7 +147,7 @@ class PlotlinesRail(Rail):
                         tooltip="New Items and Equipment for your story", 
                     ),  
                 ],
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
             ),
             ft.SubmenuButton(
@@ -160,7 +160,7 @@ class PlotlinesRail(Rail):
                     
                 ],
                 disabled=True,
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
             ),
         ]
@@ -169,7 +169,7 @@ class PlotlinesRail(Rail):
             top_row_buttons,
             style=ft.MenuStyle(
                 bgcolor="transparent", shadow_color="transparent",
-                shape=ft.RoundedRectangleBorder(radius=10),
+                shape=ft.RoundedRectangleBorder(radius=4),
             ), 
         )
 
@@ -232,15 +232,15 @@ class PlotlinesRail(Rail):
             self.story.data.get('plotline_rail_sort_method', "Index"),
             [
                 ft.DropdownOption(
-                    "Default", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10)),
+                    "Default", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4)),
                     tooltip="Sort world building widgets by the order they were loaded. On Windows, usually alphabetical. On Mac, usually by creation date."
                 ),
                 ft.DropdownOption(
-                    "Index", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10)),
+                    "Index", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4)),
                     tooltip="Sort world building widgets by a reorderable index so you can drag them up and down on the rail."
                 ), 
                 ft.DropdownOption(
-                    "Color", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=10)),
+                    "Color", style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4)),
                     tooltip="Sort world building widgets by their color."
                 )
             ],
@@ -254,14 +254,14 @@ class PlotlinesRail(Rail):
                 tooltip=f"Sort Direction: {self.story.data.get('plotline_rail_sort_direction', 'Ascending')}", 
                 on_click=_change_sort_direction, mouse_cursor="click", 
             ),
-            menu_style=ft.MenuStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
+            menu_style=ft.MenuStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
         )
 
         self.controls = [
             header,
             ft.Divider(thickness=2, leading_indent=8),
             menu_gesture_detector,
-            ft.Container(ft.Row([sort_dropdown]), margin=ft.Margin.symmetric(horizontal=4)),
+            ft.Row([sort_dropdown], margin=ft.Margin.only(left=8))
         ]
 
       
