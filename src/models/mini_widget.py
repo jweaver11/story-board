@@ -44,6 +44,7 @@ class MiniWidget(ft.GestureDetector):
                 'position': data.get('position', (200, 200)),       # Position of the mini widget on its parents stack
                 'color': data.get('color', '#FFFFFF'),          # Color of the mini widget
                 'info': list(),                          # Info stored about this MW. Child classes expand this
+                
             }
 
         self.sidebar_title: SidebarTitleTextField    # Title of our miniwidget in the sidebar
@@ -146,7 +147,6 @@ class MiniWidget(ft.GestureDetector):
         # Title that sits in the header
         self.sidebar_title = SidebarTitleTextField(
             value=self.data.get('title', ''),
-            #color=self.data.get('color', None), 
             on_blur=set_title_value,
             on_submit=self.save_rename
         )
@@ -232,9 +232,9 @@ class MiniWidget(ft.GestureDetector):
 
         # The label for info with a new info button and textfield
         self.sidebar_info_label = ft.Row([
-            ft.Text("Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), selectable=True),
+            ft.Text("Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True),
             new_info_button := ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"), 
+                ft.Icons.NEW_LABEL_OUTLINED, ft.Colors.PRIMARY, 
                 tooltip="Add Info",
                 on_click=handle_new_info_clicked,
                 mouse_cursor="click"

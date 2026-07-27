@@ -15,6 +15,7 @@ import asyncio
 from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
 from styles.text_styles import TextShadow
+from styles.snack_bar import SnackBar
 
 # Locations that appear on our map
 class MapLocation(MiniWidget):
@@ -39,7 +40,7 @@ class MapLocation(MiniWidget):
                 'image_base64': "",                     # If we have a custom image for this location. Shown in sidebar and when hovering over the location on the map
 
                 'label_color': "#FFFFFF",                # Color of the label text on the map, default white
-                'icon_size': 30,                       # Size of our icon/image on the map, default 30  
+                'icon_size': "Small",                       # Size of our icon on the map. small=30, medium=65, large=100  
                 'map_id': "",                       # id of map we're connected too (if we're connected to one)
                 'text_outline_thickness': 1,              # Thickness of the outline around our text label on the map
 
@@ -56,6 +57,7 @@ class MapLocation(MiniWidget):
         self.hover_timer: float = 0.0    # Timer for how long we've been hovering over our location, used to show our snapshot after a delay
         self._hover_task: asyncio.Task = None
         self.image_preview: ft.Image
+        self.set_image_preview_button: ft.GestureDetector
         
        
     # Moves our location on the map
@@ -98,6 +100,7 @@ class MapLocation(MiniWidget):
         self.icon.parent.shadow = None
         self.update()
         self.hover_timer = 0.0    # Reset our hover timer so we don't show our snapshot after we stop hovering
+
         if self._hover_task:
             self._hover_task.cancel()
             self._hover_task = None
@@ -110,6 +113,9 @@ class MapLocation(MiniWidget):
         ''' Waits 2 seconds; if stop_highlight hasn't cancelled this task, prints a statement '''
         await asyncio.sleep(1)
         if self.data.get('image_base64', ""):
+            self.image_preview.left = self.left
+            self.image_preview.top = self.top
+            self.image_preview.src = self.data.get('image_base64', "")
             self.widget.location_stack.controls.append(self.image_preview)
             self.widget.location_stack.update()
 
@@ -120,11 +126,14 @@ class MapLocation(MiniWidget):
 
     # Handles deleting our location from the map and data
     async def handle_delete(self, e=None):
-        await super().handle_delete()
+        if self._hover_task:    # If preview is showing, remove it
+            self.stop_highlight()
+        await super().handle_delete()   # Delete from data
+        # Remove from stack and sidebar if we're showing
         self.widget.location_stack.controls.remove(self)
         self.widget.location_stack.update()
-        #if self.shown_in_sidebar:
-            #await self.widget.hide_sidebar()
+        if self.widget.visible_mw_id == self.data.get('id', ''):
+            await self.widget.show_info()
 
     # Called when color button is clicked
     def get_color_options(self) -> list[ft.Control]:
@@ -197,6 +206,20 @@ class MapLocation(MiniWidget):
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
                 ) for icon_str, icon in location_icons.items()
             ]
+
+        async def set_icon_size(e: ft.Event[ft.MenuItemButton]):
+            ''' Sets the size of our icon on the map '''
+            await self.widget.story.close_menu()
+            self.update_data(**{'icon_size': e.control.data})
+            if e.control.data == "Small":
+                self.icon.size = 30
+            elif e.control.data == "Medium":
+                self.icon.size = 65
+            elif e.control.data == "Large":
+                self.icon.size = 100
+            else:
+                self.icon.size = 150
+            self.update()
         
         return [
             
@@ -205,7 +228,7 @@ class MapLocation(MiniWidget):
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
                     ft.Text(
-                        f"Rename", 
+                        f"Rename {self.data.get('title')}", 
                         weight=ft.FontWeight.BOLD, 
                         overflow=ft.TextOverflow.ELLIPSIS, expand=True
                     ), 
@@ -233,7 +256,11 @@ class MapLocation(MiniWidget):
                         ft.Text("Label Outline Size", weight=ft.FontWeight.BOLD, expand=True),
                         ft.Icon(ft.Icons.ARROW_RIGHT),
                     ], expand=True),
-                    [ft.MenuItemButton(str(i), on_click=change_outline_thickness, close_on_click=True) for i in range(4)], 
+                    [
+                        ft.MenuItemButton(
+                            str(i), on_click=change_outline_thickness, close_on_click=True, 
+                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4))
+                        ) for i in range(4)], 
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                     style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
@@ -267,7 +294,20 @@ class MapLocation(MiniWidget):
                 ),
                 no_padding=True, no_effects=True
             ),
-           
+            ft.SubmenuButton(
+                f"Icon Size: {self.data.get('icon_size', "Small")}",
+                [
+                    ft.MenuItemButton(
+                        size, data=size, close_on_click=True,
+                        on_click=set_icon_size, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
+                    ) for size in ("Small", "Medium", "Large", "Beefy")
+                ],
+                tooltip="Adjust the spacing between panels in the preview display.",
+                leading=ft.Icon(ft.Icons.PHOTO_SIZE_SELECT_SMALL_OUTLINED, self.data.get('color', "primary")),
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            ),
+
             MenuOptionStyle(
                 on_click=self.handle_delete,
                 content=ft.Row([
@@ -281,20 +321,18 @@ class MapLocation(MiniWidget):
     def create_sidebar_header_ctrls(self) -> list[ft.Control]:
         ctrls: list = super().create_sidebar_header_ctrls()
 
-        # TODO: icon, icon_color, label color, delete
-        # lore
-        # Show preview if connected to other map
-        # Upload image button
+        # TODO: Header options for location to match right clicking options
+        # Figure out map_id if needed and how to impliment
         
 
         ctrls.append(
             ft.MenuBar(
                 [
                     ft.SubmenuButton(
-                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
                         [
                             ft.MenuItemButton(
-                                "Rename", leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)), 
+                                "Rename", leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY), 
                                 close_on_click=True,
                                 on_click=self.handle_rename,
                                 tooltip="Rename this location",
@@ -302,7 +340,7 @@ class MapLocation(MiniWidget):
                             ),
                             ft.SubmenuButton(
                                 ft.Row([
-                                    ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
+                                    ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY), 
                                     ft.Text("Label Color", weight=ft.FontWeight.BOLD, expand=True),
                                     ft.Icon(ft.Icons.ARROW_RIGHT),
                                 ], expand=True),
@@ -332,30 +370,163 @@ class MapLocation(MiniWidget):
         )
         return ctrls
 
+    # Options when setting the image of a widget. Either upload, set a canvas, or clear image
+    def set_mw_image_options(self) -> list[ft.Control]:
+
+        # Called when clicking our upload image button 
+        async def upload_image(e: ft.Event):
+            await self.widget.story.close_menu()   # Close menu
+
+            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            if files:
+
+                file_path = files[0].path
+                try:
+                    import base64
+
+                    with open(file_path, "rb") as image_file:
+                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                        # Save to our data
+                        self.update_data(**{'image_base64': f"{encoded_string}"})
+
+                    # Update the image in our widget
+                    self.set_image_preview_button.content.icon = ft.Container(
+                        ft.Image(
+                            src=self.data.get('image_base64', ""),
+                            width=150,
+                            height=150,
+                            fit=ft.BoxFit.FILL,
+                        ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                    )
+                    self.set_image_preview_button.update()
+
+                except Exception:
+                    pass
+
+        # Sets a canvas as our image
+        async def set_canvas_as_image(e=None):
+
+            # Set the canvas id when selecting a canvas from the radio group
+            def select_canvas(e: ft.Event[ft.RadioGroup]):
+                nonlocal canvas_id
+                canvas_id = e.data
+                
+            # Sets the canvas image from the returned canvas snapshot
+            def set_canvas_image(e=None):
+                if canvas_id is None:
+                    self.page.pop_dialog()
+                    return
+                widget = self.widget.story.get_widget_by_id(canvas_id)
+                if widget is None:
+                    self.page.show_dialog(SnackBar("Canvas not found. Please try again."))
+                    self.page.pop_dialog()
+                    return
+
+                snapshot_str = widget.get_snapshot_string(quality="low")
+                if snapshot_str is None:
+                    self.page.show_dialog(SnackBar("Failed to get canvas snapshot. Please try again."))
+                    self.page.pop_dialog()
+                    return
+
+                self.update_data(**{'image_base64': snapshot_str})
+                self.set_image_preview_button.content.icon = ft.Container(
+                    ft.Image(
+                        src=self.data.get('image_base64', ""),
+                        width=150,
+                        height=150,
+                        fit=ft.BoxFit.FILL,
+                    ), #shape=ft.BoxShape.CIRCLE, 
+                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                )
+                self.set_image_preview_button.update()
+                
+                self.page.pop_dialog()
+
+            canvas_id: str = None
+
+            dlg = ft.AlertDialog(
+                title=ft.Text("Set a Canvas as Image", weight=ft.FontWeight.BOLD),
+                content=ft.RadioGroup(
+                    ft.Column([
+                        ft.Radio(
+                            label=widget.data.get('title', 'Untitled'),
+                            value=id, mouse_cursor=ft.MouseCursor.CLICK,
+                        ) for id, widget in self.widget.story.widgets.items() if widget.data.get('tag', '') == "canvas"],
+                    ),
+                    on_change=select_canvas
+                ),
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                    ft.TextButton("Select", on_click=set_canvas_image, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),]
+            )
+            self.page.show_dialog(dlg)
+
+            await self.widget.story.close_menu()   # Close menu
+
+        # Resets our image to nothing and our button to the placeholder
+        async def clear_image(e: ft.Event):
+            await self.widget.story.close_menu()   # Close menu
+            self.update_data(**{'image_base64': ""})
+            self.set_image_preview_button.content.icon = ft.Icons.IMAGE_OUTLINED
+            self.set_image_preview_button.update()
+
+        # Build the options
+        return [
+            MenuOptionStyle(
+                on_click=set_canvas_as_image,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
+                    ft.Text("Set Canvas", weight=ft.FontWeight.BOLD), 
+                ], tooltip="Set a canvas as the image for this widget"),
+            ),
+            MenuOptionStyle(
+                on_click=upload_image,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY),
+                    ft.Text("Upload Image", weight=ft.FontWeight.BOLD), 
+                ]),
+            ),
+            MenuOptionStyle(
+                on_click=clear_image,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.PRIMARY),
+                    ft.Text("Clear Image", weight=ft.FontWeight.BOLD), 
+                ]),
+            ),
+        ]
+
     # Called when reloading changes to our plot point and in constructor
     def create_sidebar_body_ctrls(self) -> list[ft.Control]:
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
-        
-        
-        
-        if self.data.get('image_base64', ""):
-            img = ft.Container(
-                ft.Image(
-                    src=self.data.get('image_base64', ""),
-                    width=100,
-                    height=100,
-                    fit=ft.BoxFit.FILL,
-                ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
-            )
-        else:
-            img = ft.Icon(ft.Icons.LOCATION_PIN, size=100, color=self.data.get('color', "primary"), expand=False)
 
-        #upload_image_button = ft.IconButton(img, tooltip="Upload Image", on_click=self._upload_location_image, mouse_cursor="click")
+
         
+        # TODO
+        # Our image button 
+        self.set_image_preview_button = ft.GestureDetector(
+            ft.IconButton(
+                ft.Container(
+                    ft.Image(
+                        src=self.data.get('image_base64', ""),
+                        width=150,
+                        height=150,
+                        #fit=ft.BoxFit.FILL,
+                    ), #shape=ft.BoxShape.CIRCLE, 
+                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                ) if self.data.get('image_base64', '') else ft.Icons.IMAGE_OUTLINED, 
+                ft.Colors.PRIMARY, icon_size=150,
+                tooltip="Upload an Image for this widget", mouse_cursor=ft.MouseCursor.CLICK,
+                on_click=lambda: self.widget.story.open_menu(self.set_mw_image_options()), 
+            ),
+            on_hover=self.set_mouse_coords,
+            hover_interval=100
+        )
+                
         return [
 
             # Add Image
+            ft.Row([self.set_image_preview_button], alignment=ft.MainAxisAlignment.CENTER),
         
             self.sidebar_info_label,
             self.sidebar_info_column,
@@ -395,15 +566,17 @@ class MapLocation(MiniWidget):
             ),
             expand=True, text_align=ft.TextAlign.CENTER,
             content_padding=ft.Padding.all(0),
-            on_blur=self.save_rename, dense=True, border_radius=10,
+            on_blur=self.save_rename, dense=True, border_radius=4,
             border_color=ft.Colors.TRANSPARENT,
             focused_border_color=ft.Colors.PRIMARY,
             multiline=True,
         )
 
         # Create our icon with the right color and size
+        icon_size_map = {"Small": 30, "Medium": 65, "Large": 100, "Beefy": 150}
         self.icon = ft.Icon(
-            location_icons.get(self.data.get('icon'), ft.Icons.LOCATION_PIN), self.data.get('color', None), expand=False, size=self.data.get('icon_size', 30),
+            location_icons.get(self.data.get('icon'), ft.Icons.LOCATION_PIN), self.data.get('color', None), expand=False, 
+            size=icon_size_map.get(self.data.get('icon_size', 30), 30),
             animate_size=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         )
         
@@ -411,7 +584,7 @@ class MapLocation(MiniWidget):
         # Set our content in a column with label on top
         self.content = ft.Column([
             ft.GestureDetector(     # Allows us to drag from our tf and still use it by focusing it
-                ft.Container(self.map_label_tf, ignore_interactions=True, border_radius=10),
+                ft.Container(self.map_label_tf, ignore_interactions=True, border_radius=4),
                 on_pan_start=start_drag,
                 on_pan_update=self.move_location, 
                 on_pan_end=self.save_position,
@@ -440,12 +613,7 @@ class MapLocation(MiniWidget):
 
         self.image_preview = ft.Image(
             self.data.get('image_base64', ""),
-            height=100, width=100,
+            height=150, width=150,
             left=self.left, top=self.top,
-            offset=ft.Offset(1.5, -0.5)
+            offset=ft.Offset(1, -0.5)
         )
-        
-        
-        
-
-        

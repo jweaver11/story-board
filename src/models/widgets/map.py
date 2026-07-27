@@ -246,7 +246,12 @@ class Map(Widget):
                             ft.Text("Label Outline Size", weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
-                        [ft.MenuItemButton(str(i), on_click=change_outline_thickness, close_on_click=True) for i in range(4)], 
+                        [
+                            ft.MenuItemButton(
+                                str(i), on_click=change_outline_thickness, close_on_click=True, 
+                                style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4))
+                            ) for i in range(4)
+                        ], 
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                         style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     ),
@@ -677,6 +682,7 @@ class Map(Widget):
                                 ("Disable" if self.data.get('draw_mode') else "Enable") + " Drawing", 
                                 close_on_click=True, on_click=self.toggle_draw_mode,
                                 leading=ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('draw_mode', False) else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY),
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             ),
                             ft.SubmenuButton(
                                 "Set Background Image",
@@ -714,10 +720,12 @@ class Map(Widget):
                                     ),
                                 ],
                                 leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY),
+                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                 menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                             ),
                             
                         ],
+                        
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                         style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                         tooltip="Adjust the settings for this map"
