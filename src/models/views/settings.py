@@ -161,17 +161,20 @@ class Settings(ft.View):
                     'saved_brushes': dict(),             # Saved brushes the user has created that we can load
                     'use_brush_smoothing': True,         # Uses cv.Path for constistant shapes if true, otherwise use cv.line
                     'path_smoothing_strength': 1,        # If stroke smoothing is enabled, how strong the smoothing is. 1 = low, 10 = high 0=off
-                    # Text and shape settings
-                    'use_paint_for_shapes': True,           # If True, shapes are black/white and use default paint settings rather than live brush settings
+                    # Text settings
                     'text_shape_size': 24,                # Font size for text shapes
                     'text_shape_font': "Arial",              # Font family for text shapes
                     'text_shape_color': "#FFFFFF",          # Font color for text shapes
-                    'text_shape_shadow_color': "#00000000",
                     'text_shape_bold': False,                   # If text shapes are bold or not
                     'text_shape_italic': False,                 # If text shapes are italic or not  
                     'text_shape_decoration': "None",              # If text shapes are underlined or not
                     'text_shape_letter_spacing': 0,                    # Letter spacing for text shapes
                     'text_shape_word_spacing': 0,                      # Word spacing for text shapes
+                    'text_shape_outline_color': "#00000000",         # Color of the shadow for text shapes
+                    'text_shape_outline_thickness': 0,                       # Thickness of the text shapes outline (0=off)
+                    'text_shape_outline_blur_radius': 0,                    # Blur radius of the text shapes outline (0=off)
+                    # Other shape settings
+                    'use_paint_for_shapes': True,           # If True, shapes are black/white and use default paint settings rather than live brush settings
                     'rectangle_border_radius': 0,               # Border radius for rectangle shapes
                 },
 

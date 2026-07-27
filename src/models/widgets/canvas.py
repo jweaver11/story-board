@@ -1234,15 +1234,15 @@ class Canvas(Widget):
             ]),
             expand=3, 
             constrained=False,
-            scale_factor=800, boundary_margin=500,
+            scale_factor=800, boundary_margin=1500,
             min_scale=0.02, max_scale=3.0,
         )
         self.undo_button = ft.IconButton(
-            ft.Icons.UNDO, ft.Colors.OUTLINE_VARIANT, tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
+            ft.Icons.UNDO, ft.Colors.OUTLINE_VARIANT, tooltip="Undo last task (ctrl+z)", mouse_cursor=ft.MouseCursor.CLICK, 
             on_click=self.undo_task, disabled=True
         )
         self.redo_button = ft.IconButton(
-            ft.Icons.REDO_OUTLINED, ft.Colors.OUTLINE_VARIANT, tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
+            ft.Icons.REDO_OUTLINED, ft.Colors.OUTLINE_VARIANT, tooltip="Redo last task (ctrl+y or ctrl+shift+z)", mouse_cursor=ft.MouseCursor.CLICK, 
             on_click=self.redo_task, disabled=True
         )
         self.sidebar_header.controls.insert(1, self.undo_button)

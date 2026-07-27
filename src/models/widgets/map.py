@@ -17,6 +17,7 @@ from models.dataclasses.canvas_shape import CanvasShape
 import uuid
 from styles.colors import colors
 from styles.text_fields import TextField
+from styles.text_styles import TextShadow
 
 
 class Map(Widget):
@@ -254,13 +255,15 @@ class Map(Widget):
                 self.widget.update_data(**{'labels': self.widget.data.get('labels', {})})
                 self.label_tf.parent.ignore_interactions = True
                 self.label_tf.parent.update()
-
             
-
             # Text field for editing our label
             self.label_tf = ft.TextField(
                 self.label, color=self.color, 
-                text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),
+                text_style=ft.TextStyle(
+                    weight=ft.FontWeight.BOLD, 
+                    overflow=ft.TextOverflow.ELLIPSIS, 
+                    shadow=TextShadow()
+                ),
                 expand=True, text_align=ft.TextAlign.CENTER,
                 content_padding=ft.Padding.all(0),
                 on_blur=save_label, dense=True, border_radius=4,
@@ -658,7 +661,7 @@ class Map(Widget):
             ], width=self.map_width, height=self.map_height),
             expand=3, 
             constrained=False,
-            scale_factor=800, boundary_margin=500,
+            scale_factor=800, boundary_margin=1500,
             min_scale=0.01, max_scale=3.0,
         )
 

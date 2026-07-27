@@ -835,7 +835,7 @@ class PlotChart(Widget):
             ], width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT),
             expand=3, 
             constrained=False,
-            scale_factor=800, boundary_margin=500,
+            scale_factor=800, boundary_margin=1500,
             min_scale=0.02, max_scale=3.0,
         )
 

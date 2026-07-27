@@ -14,6 +14,7 @@ import time
 import asyncio
 from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
+from styles.text_styles import TextShadow
 
 # Locations that appear on our map
 class MapLocation(MiniWidget):
@@ -304,7 +305,7 @@ class MapLocation(MiniWidget):
         # Create our label above our icon in our content
         self.map_label_tf = ft.TextField(
             self.data.get('title'), color=self.data.get('color', None), 
-            text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),
+            text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS, shadow=TextShadow(),),
             expand=True, text_align=ft.TextAlign.CENTER,
             content_padding=ft.Padding.all(0),
             on_blur=save_rename, dense=True, border_radius=10,
