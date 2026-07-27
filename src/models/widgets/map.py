@@ -18,6 +18,7 @@ import uuid
 from styles.colors import colors
 from styles.text_fields import TextField
 from styles.text_styles import TextShadow
+from styles.snack_bar import SnackBar
 
 
 class Map(Widget):
@@ -556,10 +557,108 @@ class Map(Widget):
         self.new_location_position = (e.local_position.x, e.local_position.y)
         super().set_mouse_coords(e)
 
+    def toggle_draw_mode(self, e=None):
+        new_draw_mode = not self.data.get('draw_mode', False)
+        self.update_data(**{'draw_mode': new_draw_mode})
+        self.map_controller.mouse_cursor = ft.MouseCursor.PRECISE if new_draw_mode else None
+        self.map_controller.on_tap = lambda: self.story.open_menu(self.get_new_item_options()) if not new_draw_mode else None
+        self.map_controller.update()
+
     # Creates our header controls for the sidebar, including our settings button
     def create_sidebar_header_ctrls(self) -> list[ft.Control]:
-        ctrls: list = super().create_sidebar_header_ctrls()
 
+        def set_canvas_bg_image(e: ft.Event[ft.MenuItemButton]):
+        
+            # Set the canvas id when selecting a canvas from the radio group
+            def select_canvas(e: ft.Event[ft.RadioGroup]):
+                nonlocal canvas_id
+                canvas_id = e.data
+
+            # Sets the canvas image from the returned canvas snapshot
+            def set_canvas_image(e=None):
+                if canvas_id is None:
+                    self.page.pop_dialog()
+                    return
+                widget = self.story.get_widget_by_id(canvas_id)
+                if widget is None:
+                    self.page.show_dialog(SnackBar("Canvas not found. Please try again."))
+                    self.page.pop_dialog()
+                    return
+
+                snapshot_str = widget.get_snapshot_string()
+                title = widget.data.get('title', 'Untitled')
+                if snapshot_str is None:
+                    self.page.show_dialog(SnackBar("Failed to get canvas snapshot. Please try again."))
+                    self.page.pop_dialog()
+                    return
+
+                self.update_data(**{'background_image': snapshot_str})  # Update our data
+                
+                # Update the image in our widget
+                self.bg_image.image = ft.DecorationImage(
+                    f"data:image/png;base64,{snapshot_str}",
+                    fit=ft.BoxFit.FILL
+                )
+                self.bg_image.update()
+                self.page.pop_dialog()
+
+            canvas_id: str = None
+        
+            dlg = ft.AlertDialog(
+                title=ft.Text("Set a Canvas as Image", weight=ft.FontWeight.BOLD),
+                content=ft.RadioGroup(
+                    ft.Column([
+                        ft.Radio(
+                            label=widget.data.get('title', 'Untitled'),
+                            value=id, mouse_cursor=ft.MouseCursor.CLICK,
+                        ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"],
+                    ),
+                    on_change=select_canvas
+                ),
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                    ft.TextButton("Select", on_click=set_canvas_image, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),]
+            )
+            self.page.show_dialog(dlg)
+
+        async def handle_set_bg_image(e: ft.Event[ft.MenuItemButton]):
+            await self.story.close_menu()   # Close menu
+            
+            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            if files:
+
+                file_path = files[0].path
+                try:
+                    import base64
+
+                    with open(file_path, "rb") as image_file:
+                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                        # Save to our data
+                        self.update_data(**{'background_image': f"{encoded_string}"})
+
+                    # Update the image in our widget
+                    self.bg_image.image = ft.DecorationImage(
+                        f"data:image/png;base64,{encoded_string}",
+                        fit=ft.BoxFit.FILL
+                    )
+                    self.bg_image.update()
+
+                except Exception:
+                    pass
+
+        def handle_set_built_in_image(e: ft.Event[ft.MenuItemButton]):
+
+            self.update_data(**{'background_image': e.control.data})
+            self.bg_image.image = ft.DecorationImage(
+                e.control.data,
+                fit=ft.BoxFit.FILL
+            )
+            self.bg_image.update()
+
+
+
+
+        ctrls: list = super().create_sidebar_header_ctrls()
         # TODO: 
 
         ctrls.append(
@@ -569,37 +668,42 @@ class Map(Widget):
                         ft.Icon(ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                         [
                             ft.MenuItemButton(
-                                "Enable/Disable Drawing", close_on_click=True, leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
+                                "Disable" if self.data.get('draw_mode') else "Enable" + " Drawing", 
+                                close_on_click=True, on_click=self.toggle_draw_mode,
+                                leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                             ),
                             ft.SubmenuButton(
                                 "Set Background Image",
                                 [
-                                    
-                                    ft.MenuItemButton(      # 1
-                                        "Built in 1", leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), 
-                                        close_on_click=True,
-                                        tooltip="Choose a built-in image to use as the background for this map",
-                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                    ), 
-                                    ft.MenuItemButton(      # 2
-                                        "Built in 2", leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), 
-                                        close_on_click=True,
-                                        tooltip="Choose a built-in image to use as the background for this map",
-                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                    ),
                                     ft.MenuItemButton(      
-                                        leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Select Canvas", 
+                                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, self.data.get('color', 'primary'),), content="Select Canvas", 
                                         close_on_click=True,
+                                        on_click=set_canvas_bg_image,
                                         tooltip="Select a canvas to use as the background for this map",
                                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                     ), 
                                     ft.MenuItemButton(      # Folders
-                                        leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Upload Image", 
+                                        leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, self.data.get('color', 'primary'),), content="Upload Image", 
                                         close_on_click=True,
                                         tooltip="Upload an image to use as the background for this map",
+                                        on_click=handle_set_bg_image,
                                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                     ),  
+                                    ft.MenuItemButton(      # 1
+                                        "Fantasy", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                                        close_on_click=True,
+                                        data="map_bg_fantasy.jpg", on_click=handle_set_built_in_image,
+                                        tooltip="Choose a built-in image to use as the background for this map",
+                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                    ), 
+                                    ft.MenuItemButton(      # 2
+                                        "Sci-Fi", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                                        close_on_click=True,
+                                        tooltip="Choose a built-in image to use as the background for this map",
+                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                    ),
                                 ],
+                                leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
                                 menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                             ),
                             
@@ -628,7 +732,7 @@ class Map(Widget):
             ignore_interactions=True,
             width=self.map_width, height=self.map_height,
             image=ft.DecorationImage(       # Background image
-                "map_bg_fantasy.jpg", 
+                self.data.get('background_image', "map_bg_fantasy.jpg"),
                 #ft.ColorFilter(ft.Colors.with_opacity(1, ft.Colors.BLACK), ft.BlendMode.SOFT_LIGHT),
                 #repeat=ft.ImageRepeat.REPEAT
                 fit=ft.BoxFit.FILL
@@ -673,7 +777,7 @@ class Map(Widget):
             # Non-drawing event handlers
             on_secondary_tap=lambda: self.story.open_menu(self.get_new_item_options()),
             on_hover=self.set_mouse_coords,
-            #on_tap=lambda: self.story.open_menu(self.get_new_item_options()),
+            on_tap=lambda: self.story.open_menu(self.get_new_item_options()) if not self.data.get('draw_mode', False) else None,
         )
                 
         interactive_viewer = ft.InteractiveViewer(
