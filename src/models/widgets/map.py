@@ -195,15 +195,16 @@ class Map(Widget):
             # Handles deleteing a label
             async def handle_delete(e: ft.Event[ft.Button]):
                 await self.widget.story.close_menu()
-                self.widget.data.get('labels', {}).pop(self.label, None)
+                self.widget.data.get('labels', {}).pop(self.id, None)
                 self.widget.update_data(**{'labels': self.widget.data.get('labels', {})})
-                self.widget.location_stack.controls.remove(self)
-                self.widget.location_stack.update()
+                self.widget.label_stack.controls.remove(self)
+                self.widget.label_stack.update()
 
             # Handles changing the outline thickness of our label text
-            def change_outline_thickness(e: ft.Event[ft.Slider]):
+            async def change_outline_thickness(e: ft.Event[ft.MenuItemButton]):
                 # Update data
-                self.outline_thickness = e.control.value
+                await self.widget.story.close_menu()
+                self.outline_thickness = int(e.control.content)
                 self.widget.update_data(**{'labels': {self.id: {'outline_thickness': self.outline_thickness}}})
                 # Update our text field style
                 self.label_tf.text_style.shadow = TextShadow(thickness=self.outline_thickness)
@@ -222,7 +223,7 @@ class Map(Widget):
                     ft.SubmenuButton(
                         ft.Row([
                             ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.color), 
-                            ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Text("Label Color", weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
                         [
@@ -234,19 +235,22 @@ class Map(Widget):
                         ],
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                         style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="Change label color"
                     ),
                     no_padding=True, no_effects=True
                 ),
+
                 MenuOptionStyle(        # Text outline thickness
-                    ft.Column([
-                        ft.Text("Outline Thickness", weight=ft.FontWeight.BOLD),
-                        ft.Slider(
-                            min=0, max=3, divisions=3, value=self.outline_thickness,
-                            label="{value}", on_change=change_outline_thickness,
-                            #expand=True
-                        ),
-                    ], spacing=0, tight=True),
+                    ft.SubmenuButton(
+                        ft.Row([
+                            ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, self.color), 
+                            ft.Text("Label Outline Width", weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Icon(ft.Icons.ARROW_RIGHT),
+                        ], expand=True),
+                        [ft.MenuItemButton(str(i), on_click=change_outline_thickness, close_on_click=True) for i in range(4)], 
+                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    ),
+                    no_effects=True, no_padding=True
                 ),
                 MenuOptionStyle(        # Delete label
                     ft.MenuItemButton(

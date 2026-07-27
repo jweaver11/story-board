@@ -42,7 +42,7 @@ class MiniWidget(ft.GestureDetector):
                 'tag': str(),                           # Default mini widget tag, but should be overwritten by child classes
                 'alignment': data.get('alignment', (0, 0)),     # Alignment of the mini widget on its parents stack
                 'position': data.get('position', (200, 200)),       # Position of the mini widget on its parents stack
-                'color': data.get('color', 'primary'),          # Color of the mini widget
+                'color': data.get('color', '#FFFFFF'),          # Color of the mini widget
                 'info': list(),                          # Info stored about this MW. Child classes expand this
             }
 
@@ -87,6 +87,7 @@ class MiniWidget(ft.GestureDetector):
         self.position = (self.left, self.top)
         self.update_data(**{'position': self.position})
         self.widget.set_mouse_coords(e)     # Reset the menu position
+        self.stop_highlight()
 
         
 

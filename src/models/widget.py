@@ -69,6 +69,7 @@ class Widget(ft.Container):
         self.w: int = 0          # Width of content space of the widget
         self.h: int = 0          # Height of content space of the widget
         self.needs_file_write: bool = False        # Whether we need to write to file or not. Set to true when data changes, and false when saved  
+        self.visible_mw_id: str = ""                # ID of the miniwidget we are currently showing in the sidebar
                        
         # Sidebar controls
         self.sidebar_title: ft.Text       # Title of the sidebar for this widget that sits in the header
