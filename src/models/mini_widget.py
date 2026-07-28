@@ -40,7 +40,6 @@ class MiniWidget(ft.GestureDetector):
                 'id': str(uuid.uuid4()),
                 'title': data.get('title', ''),         # Title of the mini widget, should match the object title
                 'tag': str(),                           # Default mini widget tag, but should be overwritten by child classes
-                'alignment': data.get('alignment', (0, 0)),     # Alignment of the mini widget on its parents stack
                 'position': data.get('position', (200, 200)),       # Position of the mini widget on its parents stack
                 'color': data.get('color', '#FFFFFF'),          # Color of the mini widget
                 'info': list(),                          # Info stored about this MW. Child classes expand this

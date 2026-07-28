@@ -335,6 +335,7 @@ class MapLocation(MiniWidget):
         ctrls: list = super().create_sidebar_header_ctrls()
 
         # TODO: Figure out map_id if needed and how to impliment
+        # Set preview to read the description of the location right below the image
         
 
         ctrls.append(
