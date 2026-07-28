@@ -493,7 +493,7 @@ class Map(Widget):
         ]  
             
             
-    async def hide_sidebar(self, e=None):
+    async def hide_sidebar(self, e=None): 
         await super().hide_sidebar(e)
         self.showing_info = False
 
@@ -503,7 +503,6 @@ class Map(Widget):
         # Close menu
         await self.story.close_menu()
         if self.showing_info:   # Already showing info, so no need to re-call it
-            print("Showing info, close early")
             return
         
         # Re-build header, body, and footer

@@ -171,7 +171,7 @@ class Canvas(Widget):
             return
         if self.layer_stack.controls[self.active_layer_idx].visible == False:
             new_mouse_cursor = None
-            print("Mouse cursor set to: 4", new_mouse_cursor)
+            #print("Mouse cursor set to: ", new_mouse_cursor)
 
         # Paints a shape we're modifying if the rail tool changes
         if self.state.manipulating_shape:
@@ -416,7 +416,7 @@ class Canvas(Widget):
             return
         
         # Grab the current path
-        self.current_path = canvas.shapes[-1] if canvas.shapes and len(canvas.shapes) > 1 else None
+        self.current_path = canvas.shapes[-1] if canvas.shapes and len(canvas.shapes) > 1 else None # Trips if drawing but havnt finished capture
 
         # Catch errors
         if not self.current_path:
@@ -474,7 +474,6 @@ class Canvas(Widget):
     # Called when we release the mouse to stop drawing a line
     async def end_stroke(self, e: ft.DragEndEvent=None, canvas: cv.Canvas=None):
         """ Saves our paths to our canvas data for storage """
-        # TODO: Have img and color sets reset the bytes for better performance
 
         # Set our canvas, layer name, and update our shapes count
         canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx] if canvas is None else canvas
@@ -571,6 +570,7 @@ class Canvas(Widget):
        
     # Accepts the formatted undo task data, adds it to state and handles UI updates for the undo/redo buttons
     def add_undo_task(self, task_data: dict):
+        return
         # Add most recent path to undo list, clear redo list, and check undo list not too long
         self.state.undo_list.append(task_data)
         self.state.redo_list.clear()    
@@ -587,6 +587,7 @@ class Canvas(Widget):
             self.redo_button.update()
 
     def add_redo_task(self, task_data: dict):
+        return
         # Add most recent path to redo list, clear undo list, and check redo list not too long
         self.state.redo_list.append(task_data)
         self.state.undo_list.clear()    
@@ -605,6 +606,7 @@ class Canvas(Widget):
 
     # Called when undoing a stroke on the canvas
     def undo_task(self, e=None):
+        return
 
         # If there's nothing to undo, return early
         if len(self.state.undo_list) == 0:
@@ -643,6 +645,7 @@ class Canvas(Widget):
 
     # Called when redoing a stroke on the canvas after a previous undo
     def redo_task(self, e=None):
+        return
         # Return early if nothing to redo
         if len(self.state.redo_list) == 0:
             return
@@ -1283,12 +1286,16 @@ class Canvas(Widget):
             min_scale=0.02, max_scale=3.0,
         )
         self.undo_button = ft.IconButton(
-            ft.Icons.UNDO, ft.Colors.OUTLINE_VARIANT, tooltip="Undo last task (ctrl+z)", mouse_cursor=ft.MouseCursor.CLICK, 
-            on_click=self.undo_task, disabled=True
+            ft.Icons.UNDO, ft.Colors.OUTLINE_VARIANT, #tooltip="Undo last task (ctrl+z)", 
+            mouse_cursor=ft.MouseCursor.CLICK, 
+            on_click=self.undo_task, disabled=True,
+            tooltip="Coming Soon"
         )
         self.redo_button = ft.IconButton(
-            ft.Icons.REDO_OUTLINED, ft.Colors.OUTLINE_VARIANT, tooltip="Redo last task (ctrl+y or ctrl+shift+z)", mouse_cursor=ft.MouseCursor.CLICK, 
-            on_click=self.redo_task, disabled=True
+            ft.Icons.REDO_OUTLINED, ft.Colors.OUTLINE_VARIANT, #tooltip="Redo last task (ctrl+y or ctrl+shift+z)", 
+            mouse_cursor=ft.MouseCursor.CLICK, 
+            on_click=self.redo_task, disabled=True,
+            tooltip="Coming Soon"
         )
         self.sidebar_header.controls.insert(1, self.undo_button)
         self.sidebar_header.controls.insert(2, self.redo_button)

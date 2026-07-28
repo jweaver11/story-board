@@ -260,7 +260,7 @@ class Widget(ft.Container):
                             width=150,
                             height=150,
                             fit=ft.BoxFit.FILL,
-                        ), shape=ft.BoxShape.CIRCLE, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                        ), border_radius=4, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
                     )
                     self.select_image_button.update()
 
@@ -300,7 +300,8 @@ class Widget(ft.Container):
                         height=150,
                         fit=ft.BoxFit.FILL,
                     ), #shape=ft.BoxShape.CIRCLE, 
-                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+                    border_radius=4
                 )
                 self.select_image_button.update()
                 
@@ -387,7 +388,7 @@ class Widget(ft.Container):
         
         self.update_data(**{'visible': False})
         if self.data.get('tag', '') == "canvas":    # Canvas saves dirty strokes first before hiding
-            await self.save_file()  
+            await self.save_file() 
         await self.story.workspace.remove_widget_from_workspace(self)
         
 
@@ -702,10 +703,11 @@ class Widget(ft.Container):
                         width=150,
                         height=150,
                         fit=ft.BoxFit.FILL,
-                    ), #shape=ft.BoxShape.CIRCLE, 
+                    ), 
                     clip_behavior=ft.ClipBehavior.ANTI_ALIAS
                 ) if self.data.get('image_base64', '') else ft.Icons.IMAGE_OUTLINED, 
                 ft.Colors.PRIMARY, icon_size=150,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
                 tooltip="Upload an Image for this widget", mouse_cursor=ft.MouseCursor.CLICK,
                 on_click=lambda: self.story.open_menu(self.set_widget_image_options()), 
             ),

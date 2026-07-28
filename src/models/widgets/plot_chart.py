@@ -701,14 +701,14 @@ class PlotChart(Widget):
 
     # Show sidebar hides the button since it also exists in sidebar
     async def show_sidebar(self, e: ft.Event=None):
-        self.add_node_button.visible = False
-        self.add_node_button.update()
+        #self.add_node_button.visible = False
+        #self.add_node_button.update()
         await super().show_sidebar(e)
 
     # Hiding shows the add node button
     async def hide_sidebar(self, e: ft.Event=None):
-        self.add_node_button.visible = True
-        self.add_node_button.update()
+        #self.add_node_button.visible = True
+        #self.add_node_button.update()
         await super().hide_sidebar(e)
 
     # Redraws all edges on the canvas, useful after nodes have moved or been updated
@@ -853,14 +853,14 @@ class PlotChart(Widget):
         viewer_stack = ft.Stack([
             
             self.iv,
-            self.add_node_button
+            #self.add_node_button
         ], expand=3)
 
         
 
         # Set up our main conent
         self.content = ft.Stack([
-            viewer_stack,
+            self.iv,
             ft.Row(
                 [self.toggle_sidebar_visibility_button, self.sidebar], 
                 spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
