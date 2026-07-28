@@ -16,6 +16,7 @@ from models.app import app
 import asyncio 
 import uuid
 from constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
+from styles.colors import colors
 
 
 class Plotline(Widget):
@@ -141,6 +142,81 @@ class Plotline(Widget):
                 highlight_container1.shadow = None
                 highlight_container2.shadow = None
                 self.update()
+
+            def get_menu_options() -> list[ft.Control]:
+
+                # Called when rename button is clicked
+                async def handle_rename(e: ft.Event):
+                    await self.widget.story.close_menu()
+                    await title_tf.focus()
+
+                # Called when color button is clicked
+                def get_color_options() -> list[ft.Control]:
+                    ''' Returns a list of all available colors for icon changing '''
+            
+                    # Changes our color in data and the UI to reflect
+                    async def change_color(e: ft.Event[ft.MenuItemButton]):
+                        await self.widget.story.close_menu()
+                        self.update_data(**{'color': e.control.data})
+                        for shape in canvas.shapes:
+                            shape.paint.color = e.control.data
+                        self.update()
+                        
+            
+                    return [
+                        ft.MenuItemButton(
+                            content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
+                            on_click=change_color, close_on_click=True,
+                            data=color,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
+                        ) for color in colors
+                    ]
+
+                # Delete the marker from data and UI
+                async def delete_marker(e: ft.Event):
+                    await self.widget.story.close_menu()
+                    self.widget.data.get('markers', {}).pop(self.data.get('id', ''), None)
+                    self.widget.update_data(**{'markers': self.widget.data.get('markers', {})})
+                    self.widget.marker_stack.controls.remove(self)
+                    self.widget.marker_stack.update()
+                    
+                    
+                return [
+                    MenuOptionStyle(
+                        on_click=handle_rename,
+                        content=ft.Row([
+                            ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
+                            ft.Text(
+                                f"Rename Marker", 
+                                weight=ft.FontWeight.BOLD, 
+                                overflow=ft.TextOverflow.ELLIPSIS, expand=True
+                            ), 
+                        ]),
+                    ),
+                    MenuOptionStyle(
+                        ft.SubmenuButton(
+                            ft.Row([
+                                ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
+                                ft.Text("Marker Color", weight=ft.FontWeight.BOLD, expand=True),
+                                ft.Icon(ft.Icons.ARROW_RIGHT),
+                            ], expand=True),
+                            get_color_options(), 
+                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            tooltip="Change this markers color"
+                        ),
+                        no_padding=True, no_effects=True
+                    ),
+                    MenuOptionStyle(
+                        ft.MenuItemButton(
+                            f"Delete Marker", leading=ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR),
+                            on_click=delete_marker, 
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            tooltip="Delete this marker from the plotline",
+                        ),
+                        no_effects=True, no_padding=True
+                    )
+                ]
                 
 
             # Set our size
@@ -150,7 +226,7 @@ class Plotline(Widget):
             # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
             self.controls = [
                 highlight_container1 := ft.Container(
-                    ft.TextField(
+                    title_tf := ft.TextField(
                         self.data.get('title'), color=self.data.get('label_color', None), 
                         text_style=ft.TextStyle(
                             weight=ft.FontWeight.BOLD, 
@@ -166,7 +242,7 @@ class Plotline(Widget):
                     ), width=PLOTLINE_PADDING * 2
                 ),
                 highlight_container2 := ft.Container(
-                    cv.Canvas(
+                    canvas := cv.Canvas(
                         width=10, opacity=.7,
                         expand=True,   
                         content=ft.GestureDetector(
@@ -176,7 +252,7 @@ class Plotline(Widget):
                             on_pan_update=self.move_marker,
                             expand=True,
                             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
-                            #on_secondary_tap=lambda _: self.widget.story.open_menu(self.get_menu_options()),
+                            on_secondary_tap=lambda _: self.widget.story.open_menu(get_menu_options()),
                         ),
                         shapes=[
                             cv.Line(
@@ -209,9 +285,9 @@ class Plotline(Widget):
                             ft.Text("New", weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
-                        padding=ft.Padding.all(0), 
+                        padding=ft.Padding.all(8), 
                         shape=ft.RoundedRectangleBorder(radius=4),
-                        
+                        border_radius=ft.BorderRadius.all(4),
                     ),
                     [
                         ft.MenuItemButton(      # Documents
