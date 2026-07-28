@@ -84,7 +84,10 @@ class Plotline(Widget):
         ):
             self.widget = widget
             # Set our variables
-            super().__init__(data=data, horizontal_alignment=ft.CrossAxisAlignment.CENTER, offset=ft.Offset(-0.5, 0)) # Sets our data to the passed in data
+            super().__init__(
+                data=data, horizontal_alignment=ft.CrossAxisAlignment.CENTER, offset=ft.Offset(-0.5, 0),
+                animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            ) # Sets our data to the passed in data
 
             # If we're new, give default values for our data 
             if is_new:
@@ -95,6 +98,8 @@ class Plotline(Widget):
                     'color': "primary",
                     'position': self.widget.locked_position
                 }
+
+            self.is_dragging: bool = False
 
         def update_data(self, **kwargs):
             # Allow Updates our data
@@ -127,6 +132,9 @@ class Plotline(Widget):
         def build(self):
             """ Rebuilds our plotline control that holds our plot point and slider """
 
+            def start_drag(e=None):
+                self.is_dragging = True
+
             def highlight(e=None):
                 shadow = ft.BoxShadow(
                     2, 4, 
@@ -136,12 +144,21 @@ class Plotline(Widget):
                 highlight_container1.shadow = shadow
                 highlight_container2.shadow = shadow
                 self.update()
+                
 
             # Called when we stop hovering over our marker
-            async def stop_highlight(e=None):
+            def stop_highlight(e=None):
+                if self.is_dragging == True:
+                    return
                 highlight_container1.shadow = None
                 highlight_container2.shadow = None
                 self.update()
+
+            def stop_drag(e=None):
+                self.update_data(**{'position': (self.left, None)})
+                self.is_dragging = False
+                stop_highlight()
+                
 
             def get_menu_options() -> list[ft.Control]:
 
@@ -248,7 +265,8 @@ class Plotline(Widget):
                         content=ft.GestureDetector(
                             on_enter=highlight,
                             on_exit=stop_highlight,
-                            on_pan_end=lambda: self.update_data(**{'position': (self.left, None)}),
+                            on_pan_start=start_drag,
+                            on_pan_end=stop_drag,
                             on_pan_update=self.move_marker,
                             expand=True,
                             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,

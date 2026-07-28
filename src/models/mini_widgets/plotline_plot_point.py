@@ -6,149 +6,54 @@ from styles.text_styles import text_style
 import flet.canvas as cv
 from styles.icons import icons
 from styles.text_fields import TextField
+from constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
 
 # Plotpoint mini widget object that appear on plotlines and arcs
 class PlotlinePlotPoint(MiniWidget):
 
-    # Constructor. Requires title, widget widget, page reference, and optional data dictionary
     def __init__(
         self, 
-        title: str, 
         widget: Widget, 
-        key: str,                           # Key is plot_points for plotlines
-        x_alignment: float = None,          # Position of plot point on plotline if we pass one in (between -1 and 1)
-        left: int = None,                   # Absolute left position on plotline. If not provided, will be calculated from x_alignment
-        data: dict = None       
+        data: dict = {},
+        is_new: bool=False
     ):
-        
+
         # Parent constructor
-        super().__init__(
-            title=title,        
-            widget=widget,             
-            key=key,  
-            data=data,    
-        ) 
+        super().__init__(widget=widget, data=data, is_new=is_new) 
 
         # If we're new, give default values for our data 
-        if data is None:
-            self.data = {
+        if self.is_new:
+            self.data.update({ 
                 'tag': "plot_point",            # Tag to identify what type of object this is
-                'x_alignment': x_alignment if x_alignment is not None else float(),           # Float between -1 and 1 on x axis of plotline. 0 is center
-                'left': left, 
-                'color': "primary",           # Color of the plot point on the plotline
-
-                # Information for our information display
-                'Description': str(),
-                'When': str(),
-                'Where': str(),
-                'Relevant Characters': list(),
-            }
-
-        # Set our x alignment to position on our plotline. -1 is left, 0 is center, 1 is right. Default 0
-        self.x_alignment = ft.Alignment(self.data.get('x_alignment', 0), 0)
-
-        # UI elements
-        self.plotline_control: ft.Container = None    # Circle container to show our plot point on the plotline
-
-        # State variables
-        self.is_dragging: bool = False              # If we are currently dragging our plot point
-        self.is_first_launch: bool = True            # If this is the first time we're loading this plot point, used to trigger animations on first load
-
-        # Reloads the information display of the canvas
-        self.reload_plotline_control()
-        self.reload_mini_widget()
-
+                
+                'when': str(),
+                'where': str(),
+                'relevant_characters': list(),
+            })
 
     
     async def move_plot_point(self, e: ft.DragUpdateEvent):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
 
-       
-        if e is None:
-            delta_x = 0
-        else:
-            delta_x = e.local_delta.x
-
-        if not isinstance(delta_x, (int, float)):
-            delta_x = 0
-        
-        
-        # Calculate our new absolute positioning based on our delta x from dragging
-        new_left = self.plotline_control.left + delta_x
-
-        # Clamp sides and use timeline padding
-        if new_left < 0:        # Padding on left because canvas draws in middle (5px)
-            new_left = 0
-        elif new_left > self.widget.plotline_width - 25:  # No padding needed on right
-            new_left = self.widget.plotline_width - 25
-        
-        # Set our new left position within our stack
-        self.plotline_control.left = new_left
-
-        self.data['left'] = new_left
-
-        self.plotline_control.update()
-        
-            
-    # Called when toggling whether this plot point is shown on the plotline in the plotline filters
-    async def toggle_plotline_control(self, value: bool):
-        ''' Toggles whether this plot point is shown on the plotline '''
-
-        # Change the control visibility, data, and save it
-        self.plotline_control.visible = value
-        self.update_data(**{'is_shown_on_widget': value})
-        
-        # If we're hiding it, also hide our mini widget if it's open
-        if value == False:
-            await self.hide_mini_widget()
-
-        for mw in self.widget.mini_widgets:
-            if hasattr(mw, 'plotline_control'):
-                mw.reload_plotline_control(no_update=True)
-        self.widget.reload_widget()
-          
-    # Called when we start dragging
-    async def _drag_start(self, e: ft.DragStartEvent):
-        ''' Called when we start dragging our plot point. Sets our state to dragging and changes our mouse cursor '''
-
-        self.plotline_control.content.mouse_cursor = ft.MouseCursor.RESIZE_LEFT_RIGHT
-        self.plotline_control.update()
-        self.is_dragging = True
-
-    # Quick fixer for the mouse cursor and highlight is we just clicked the plotpoint without dragging
-    async def _tap_up(self, e=None):
-        self.plotline_control.content.mouse_cursor = ft.MouseCursor.CLICK
-        await self._highlight()
-
-    # Called when we finish dragging our plotline_marker to save our position
-    async def _drag_end(self, e=None):
-        ''' Updates our alignment and side location, and applies the updadte to the canvas for our label '''
-
-        self.plotline_control.content.mouse_cursor = ft.MouseCursor.CLICK
-        self.is_dragging = False
-        if not self.visible:        # Turn of highlight if we're not visilbe
-            self.plotline_control.shadow = None
-        
-        x_alignment = (self.data.get('left', 0) / (self.widget.plotline_width - 10)) * 2.0 - 1.0
-
-        self.update_data(**{'x_alignment': x_alignment, 'left': self.data.get('left', 0)})
-
-        if self.widget.information_display.visible:
-            self.widget.information_display.reload_mini_widget()
-
-        await self.widget.rebuild_plotline_canvas(True)
-        #self.widget.story.active_rail.reload_rail()
+        # Calculate new left and clamp. Apply updates
+        new_left = self.left + e.local_delta.x
+        if new_left < PLOTLINE_PADDING:       
+            new_left = PLOTLINE_PADDING
+        elif new_left > PLOTLINE_WIDTH - PLOTLINE_PADDING: 
+            new_left = PLOTLINE_WIDTH - PLOTLINE_PADDING
+        self.left = new_left
+        self.update()
 
     # Called when hovering over our plot point to show the slider
-    async def _highlight(self, e=None):
+    async def highlight(self, e=None):
         ''' Shows our slider and hides our plotline_marker. Makes sure all other sliders are hidden '''
 
         # Gives us a focused shadow
-        self.plotline_control.shadow = ft.BoxShadow(5, 10, ft.Colors.with_opacity(.6, self.data.get('color'))) #if self.plotline_control.shadow is None else None
-        self.plotline_control.update()
+        self.shadow = ft.BoxShadow(5, 10, ft.Colors.with_opacity(.6, self.data.get('color'))) #if self.plotline_control.shadow is None else None
+        self.update()
 
     # Hides are shadow unless our info display is visible, then stay highlighted
-    async def _stop_highlight(self, e=None):
+    async def stop_highlight(self, e=None):
 
         # If we're dragging, keep highlighted
         if self.is_dragging:
@@ -156,22 +61,18 @@ class PlotlinePlotPoint(MiniWidget):
 
         # If our info display is visible, keep highlighted
         if not self.visible:
-            self.plotline_control.shadow = None
-            self.plotline_control.update()
+            self.shadow = None
+            self.update()
 
     def _get_icon_options(self) -> list[ft.Control]:
         ''' Returns a list of all available icons for icon changing '''
 
         # Called when an icon option is clicked on popup menu to change icon
-        async def _change_icon(e):
+        async def _change_icon(e: ft.Event[ft.MenuItemButton]):
             ''' Passes in our kwargs to the widget, and applies the updates '''
 
             # Set our data and update our button icon
             self.update_data(**{'icon': e.control.data})
-
-            # Update the UI to match. Plotline control needs widget to reload as well
-            self.reload_mini_widget()
-            self.widget.reload_widget()
 
         # List for our icons when formatted
         icon_controls = [] 
@@ -188,16 +89,9 @@ class PlotlinePlotPoint(MiniWidget):
             )
 
         return icon_controls
-    
-    # Makes sure we stop highlighting
-    async def hide_mini_widget(self, e=None, update=True):
-        self.plotline_control.shadow = None
-        self.plotline_control.update()
-        return await super().hide_mini_widget(update=update)
 
-
-    # Called from reload_mini_widget
-    def reload_plotline_control(self, no_update=False):
+ 
+    def build(self):
         """ Rebuilds our plotline control that holds our plot point and slider """
 
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
@@ -210,25 +104,17 @@ class PlotlinePlotPoint(MiniWidget):
             left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.GestureDetector(
                 mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
-                on_enter=self._highlight, on_exit=self._stop_highlight, on_pan_start=self._drag_start,
-                on_pan_update=self.move_plot_point, drag_interval=20, on_pan_end=self._drag_end,
+                on_enter=self.highlight, on_exit=self.stop_highlight, on_pan_start=self.drag_start,
+                on_pan_update=self.move_plot_point, drag_interval=20, on_pan_end=self.drag_end,
                 on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
-                on_tap=self.show_mini_widget, on_tap_down=self._drag_start,
+                on_tap=self.show_mini_widget, on_tap_down=self.drag_start,
                 content=ft.Icon(ft.Icons.CIRCLE, self.data.get('color', None))
             ),
         )
-        
-        if no_update:
-            return
-
-        try:
-            self.plotline_control.update()
-        except Exception as _:
-            pass
 
 
-    # Called when reloading changes to our plot point and in constructor
-    def reload_mini_widget(self):
+    
+    def create_sidebar_body_ctrls(self):
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
         title_control = ft.Row([
@@ -243,18 +129,12 @@ class PlotlinePlotPoint(MiniWidget):
             ft.IconButton(
                 ft.Icons.CLOSE, ft.Colors.OUTLINE,
                 tooltip=f"Close {self.title}",
-                on_click=self.hide_mini_widget,
+                on_click=self.widget.hide_sidebar,
                 mouse_cursor="click"
             ),
         ], spacing=0)
 
 
-        description_tf = TextField(
-            value=self.data.get('Description', ''), multiline=True, expand=True, 
-            on_blur=lambda e: self.update_data(**{'Description': e.control.value}), 
-            label="Description", capitalization=ft.TextCapitalization.SENTENCES,
-            dense=True
-        )
 
         when_tf = TextField(
             value=self.data.get('When', ''), multiline=True, expand=True, 
@@ -381,35 +261,17 @@ class PlotlinePlotPoint(MiniWidget):
             spacing=0,
         )
 
-        
-
-        notes_label = ft.Row([
-            ft.Container(width=6),
-            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None),),
-            ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, self.data.get('color', "primary"),
-                tooltip="Add Note",
-                on_click=self._new_note_clicked,
-                mouse_cursor="click"
-            )
-        ], spacing=0)
-
-        notes_column = self._build_notes_column()
-
         content = ft.Column(
             expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
             controls=[
                 ft.Container(height=1),
-                description_tf,
+                
                 ft.Row([when_tf, where_tf]),
                 
                 Relevant_characters_row,        # Holds label, buttons for each Relevant character, and add/remove button
                 Relevant_characters_selector,
                 ft.Divider(2, 2),
-                
-                
-                notes_label,
-                ft.Container(notes_column, margin=ft.Margin.symmetric(horizontal=20)),
+     
             ]
         )
 

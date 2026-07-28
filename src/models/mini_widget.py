@@ -89,27 +89,21 @@ class MiniWidget(ft.GestureDetector):
         self.widget.set_mouse_coords(e)     # Reset the menu position
         self.stop_highlight()
 
-        
-
     def get_menu_options(self) -> list[ft.Control]:
 
         # Color, rename, delete
         return []
-        
-
         
     
     
     # Called when hovering over stacked control to give us a highlighted shadow
     async def highlight(self, e=None):
         ''' Shows our slider and hides our plotline_marker. Makes sure all other sliders are hidden '''
-        self.shadow = ft.BoxShadow(2, 2, self.data.get('color', ft.Colors.PRIMARY), blur_style=ft.BlurStyle.OUTER)
-        self.update()
+        return
 
     # Called when we stop hovering over our marker
     async def stop_highlight(self, e=None):
-        self.shadow = None
-        self.update()  
+        return
 
     
 
