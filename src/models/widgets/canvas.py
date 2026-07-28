@@ -21,11 +21,12 @@ from styles.menu_option_style import MenuOptionStyle
 from models.dataclasses.canvas_shape import CanvasShape    
 from styles.text_fields import TextField
 import time
+import uuid
+import os
 
 MINIMUM_SEGMENT_DISTANCE = 2
 MAX_SHAPES_BEFORE_CAPTURE = 30
 MAX_UNDO_LIST_TASKS = 30
-MIN_UPDATE_INTERVAL = 0.016  # ~60fps cap on canvas updates
 
 
 class Canvas(Widget):
@@ -51,16 +52,15 @@ class Canvas(Widget):
 
         # If we're new, give default values for our data 
         if self.is_new == True:
+            layer_1_id = str(uuid.uuid4())
+            layer_2_id = str(uuid.uuid4())
             self.data.update({
                 # Widget data
                 "tag": "canvas",
+                'layer_directory_path': os.path.join(self.story.data.get('canvas_directory_path'), self.data.get('id')),  # Path to the canvas folder for this story
+
                 'color': app.settings.data.get('widget_defaults', {}).get('canvas', {}).get('color'),
                 'show_sidebar': True,   # Whether to show the info column on the side of our charts or not.
-
-                'capture': str(),             # Capture of what we currently look like
-                'snapshot': str(),            # Most recent completed snapshot of our canvas used by other widgets
-
-                'reference_images': list(),     # Reference images from sketches from a canvas board or uploaded images that appear in sidebar
 
                 # Info about the canvas
                 'canvas_data': {
@@ -74,16 +74,20 @@ class Canvas(Widget):
                     # Layer info for our canvases
                     'layers': [
                         {       # First/Bottom most layer
-                            'name': "Background",       # Name of that layer. We keep unique so our undo/redo system can correctly identify it
+                            'id': layer_1_id,           # Unique ID for saving files and tracking changes
+                            'name': "Background",       # Name of that layer
                             'visible': True,            # Whether this layer is currently visible or not
-                            'dirty': False,              # Whether this layer has been modified since last save and needs to be re-captured
-                            'capture': "",              # The current displayed capture for this layer
+                            'dirty': False,             # Whether this layer has been modified since last save and needs to be re-captured
+                            'needs_file_write': False,  # Whether this layer has been modified since last file write and needs to be written to disk
+                            'file_path': os.path.join(self.story.data.get('canvas_directory_path'), self.data.get('id'), f"{layer_1_id}.png"),  # Path to the capture for this layer
                         },
                         {        # Second layer
+                            'id': layer_2_id,
                             'name': "Layer 1", 
                             'visible': True, 
                             'dirty': False,
                             'capture': "",   
+                            'file_path': os.path.join(self.story.data.get('canvas_directory_path'), self.data.get('id'), f"{layer_2_id}.png"),  # Path to the capture for this layer
                         }
                     ],    
                 }
@@ -94,6 +98,18 @@ class Canvas(Widget):
         self.state = State()                # Used for tracking our coords and current drawing data for the active stroke/shape being applied
         self.canvas_width = self.data.get('canvas_data', {}).get('width', 0)    # Ez size grabbing later
         self.canvas_height = self.data.get('canvas_data', {}).get('height', 0)   
+
+        # Save layer byte data in memory for better performance, and easy identifying
+        self.layer_bytes: dict[str, bytes] = {}
+
+        # Load our layer captures into memory for better performance
+        for layer_data in self.data.get('canvas_data', {}).get('layers', []):
+            try:
+                os.makedirs(os.path.dirname(layer_data.get('file_path', '')), exist_ok=True)
+                with open(layer_data.get('file_path', ''), 'rb') as f:
+                    self.layer_bytes.update(**{layer_data.get('id'): f.read()})   # Add the bytes to live cache list
+            except OSError:
+                pass    # File doesnt exist yet
 
         # Drawing stuff
         self.current_path: cv.Path      # The current path being drawn on the canvas, if any
@@ -110,15 +126,29 @@ class Canvas(Widget):
         self.redo_button: ft.IconButton
 
 
-    # If we have changes that havnt been saved to data, we save them before writing
+    # Overwrite our standard save_file call since we have multiple files
     async def save_file(self):
+
+        # Go through our layer data
         for i, layer in enumerate(self.data.get('canvas_data', {}).get('layers', [])):
+            # If a change has been made to the layer, save that change.
             if layer.get('dirty', False) == True:
                 canvas: cv.Canvas = self.layer_stack.controls[i]
                 try:
                     await self.save_canvas(canvas)
                 except RuntimeError as e:
-                    print(e)
+                    print(f"Error saving layer {layer.get('name', '')}: {e}")
+                    return
+                self.needs_file_write = True    # Mark our widget as dirty if we saved anything
+
+            # If the layer needs to be written to disk, write it
+            if layer.get('needs_file_write', False) == True:
+                try:
+                    os.makedirs(os.path.dirname(layer.get('file_path', '')), exist_ok=True)
+                    with open(layer.get('file_path', ''), 'wb') as f:
+                        f.write(self.layer_bytes.get(layer.get('id', ''), b''))  # Write the bytes to disk
+                except Exception as e:
+                    print(f"Error writing layer {layer.get('name', '')} to file: {e}")
                     return
                 self.needs_file_write = True    # Mark our widget as dirty if we saved anything
         await super().save_file()            
@@ -203,7 +233,7 @@ class Canvas(Widget):
         paste_y = int(rotation_cy - rotated.height / 2)
 
         # Grab the existing capture
-        layer_b64 = self.data['canvas_data']['layers'][self.active_layer_idx].get('capture')
+        layer_b64 = self.layer_bytes.get(self.data.get('canvas_data', {}).get('layers', [])[self.active_layer_idx].get('id', ''), None)
         if layer_b64:
             layer_img = Image.open(BytesIO(base64.b64decode(layer_b64))).convert("RGBA")
         else:
@@ -386,7 +416,7 @@ class Canvas(Widget):
             return
         
         # Grab the current path
-        self.current_path = canvas.shapes[-1] if canvas.shapes else None
+        self.current_path = canvas.shapes[-1] if canvas.shapes and len(canvas.shapes) > 1 else None
 
         # Catch errors
         if not self.current_path:
@@ -444,6 +474,7 @@ class Canvas(Widget):
     # Called when we release the mouse to stop drawing a line
     async def end_stroke(self, e: ft.DragEndEvent=None, canvas: cv.Canvas=None):
         """ Saves our paths to our canvas data for storage """
+        # TODO: Have img and color sets reset the bytes for better performance
 
         # Set our canvas, layer name, and update our shapes count
         canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx] if canvas is None else canvas
@@ -453,6 +484,7 @@ class Canvas(Widget):
         # Grab our layer and mark it as dirty
         layer_idx = int(canvas.data)
         layer_data = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]
+        layer_id = layer_data.get('id', '')
         layer_data['dirty'] = True
         self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})   # Update our data with the new capture for this layer
 
@@ -460,60 +492,83 @@ class Canvas(Widget):
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
         canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
 
-        # If we have too many shapes on the canvas, save its capture to the layer data
+        # If we have too many shapes on the canvas, flatten them into the layer's PNG file
         if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:
-            updated_capture = await self.save_canvas(canvas)
+            await self.save_canvas(canvas)
             canvas.shapes.clear()
-            canvas.shapes.append(cv.Image(updated_capture, 0, 0, self.canvas_width, self.canvas_height)) 
+            canvas.shapes.append(cv.Image(self.layer_bytes.get(layer_id), 0, 0, self.canvas_width, self.canvas_height))
             canvas.update()
-            
-            
-        # Always re-render end of erase strokes, or they will appear broken?
-        #elif canvas_settings.get('current_control_mode', "") == "tool" and canvas_settings.get('current_tool_name', "") == "erase":   
-            #updated_capture = await self.save_canvas(canvas)
-            #canvas.shapes.clear()
-            #canvas.shapes.append(cv.Image(updated_capture, 0, 0, self.canvas_width, self.canvas_height))
-            #canvas.update()
-
-        # Always re-render end of non-none blend mode strokes, or they will appear broken?
-        #elif paint_settings.get('blend_mode', "") is not None: 
-            #updated_capture = await self.save_canvas(canvas)
-            #canvas.shapes.clear()
-            #canvas.shapes.append(cv.Image(updated_capture, 0, 0, self.canvas_width, self.canvas_height))
-            #canvas.update()
 
         self.add_undo_task({
             'task_type': 'path_stroke',
-            'layer_name': layer_data.get('name', ''),
+            'layer_id': layer_data.get('name', ''),
             #'data': self.current_path
         })
 
         
 
-    # Saves the current capture of a canvas to data
+    # Saves any changes to the current layer canvas to its png file, and returns the bytes if other functions need it
     async def save_canvas(self, canvas: cv.Canvas) -> bytes:
 
         # Protect bad calls
         if canvas.visible == False:  
             return
-                
-        # Grab our capture for the canvas
-        await canvas.capture()
-        capture = await canvas.get_capture()
-        encoded_capture = base64.b64encode(capture).decode('utf-8') 
-        await canvas.clear_capture()
 
         # Grab the layer data using the index
         layer_idx = int(canvas.data)
         layer_data = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]
+        layer_id = layer_data.get('id', '')
+        
+                
+        # Set new shapes to ignore the base image if it exists, and capture only the new strokes
+        shapes = list(canvas.shapes)
+        base_is_stored_image = shapes and isinstance(shapes[0], cv.Image)
+        new_strokes = shapes[1:] if base_is_stored_image else shapes    # New changes to this layer
 
-        # Update its capture and mark it as not dirty anymore
-        layer_data['capture'] = encoded_capture      
-        layer_data['dirty'] = False    
-        self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})   # Update our data with the new capture
+        # Capture and get these new strokes, then restore the original shapes to the canvas
+        canvas.shapes[:] = new_strokes  
+        await canvas.capture()
+        new_bytes = await canvas.get_capture()
+        await canvas.clear_capture()
+        canvas.shapes[:] = shapes  # Restore the original shapes to the canvas
 
-        return capture  # Return capture if other functions want to use it
-    
+        # Error capturing new strokes (should be impossible)
+        if not new_bytes:
+            self.page.show_dialog(SnackBar(f"Error capturing new strokes for layer {layer_data.get('name', '')}."))
+            return
+
+        # Load the existing layer capture
+        existing_bytes = self.layer_bytes.get(layer_id, None)
+
+        # If we have an existing capture, composite the new strokes onto it; otherwise, create a new base image
+        if existing_bytes:
+            base_img = Image.open(BytesIO(existing_bytes)).convert("RGBA")
+        else:
+            base_img = Image.new("RGBA", (self.canvas_width, self.canvas_height), (0, 0, 0, 0))
+
+        # Composite the new strokes onto the existing base — base pixels are never re-rendered through Flet
+        delta_img = Image.open(BytesIO(new_bytes)).convert("RGBA")
+        if delta_img.size != base_img.size: # Handle size errors (should be impossible)
+            delta_img = delta_img.resize(base_img.size, Image.Resampling.LANCZOS)
+
+        # Merge the two images together and add them to our in memory cache for the next save
+        result = Image.alpha_composite(base_img, delta_img)
+        output = BytesIO()
+        result.save(output, format="PNG")
+        combined_bytes = output.getvalue()
+
+        # Update the in-memory cache, and mark the layer as dirty for saving
+        self.layer_bytes[layer_id] = combined_bytes
+
+        # Mark the layer as no longer dirty, but needs a file write
+        layer_data['dirty'] = False
+        layer_data['needs_file_write'] = True
+        self.data.get('canvas_data', {}).get('layers', [])[layer_idx].update(layer_data)
+        self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
+
+        return combined_bytes   # Return our now updated bytes
+
+       
     # Accepts the formatted undo task data, adds it to state and handles UI updates for the undo/redo buttons
     def add_undo_task(self, task_data: dict):
         # Add most recent path to undo list, clear redo list, and check undo list not too long
@@ -561,16 +616,16 @@ class Canvas(Widget):
         # Grab the task we're going to carry out and its name and capture
         task = self.state.undo_list.pop()    
         task_type = task.get('task_type', None)
-        layer_name = task.get('layer_name', None)
+        layer_id = task.get('layer_id', None)
         data = task.get('data', None)
 
         layer_canvas = None
         for idx, layer in enumerate(self.data.get('canvas_data', {}).get('layers', [])):
-            if layer.get('name', None) == layer_name:
+            if layer.get('name', None) == layer_id:
                 layer_canvas = self.layer_stack.controls[idx]
                 break
         if layer_canvas is None:
-            self.page.show_dialog(SnackBar(f"Error finding layer {layer_name} to undo task."))
+            self.page.show_dialog(SnackBar(f"Error finding layer {layer_id} to undo task."))
             return
 
         match str(task_type):
@@ -598,16 +653,16 @@ class Canvas(Widget):
         # Grab the task we're going to carry out and its name and capture
         task = self.state.redo_list.pop()    
         task_type = task.get('task_type', None)
-        layer_name = task.get('layer_name', None)
+        layer_id = task.get('layer_id', None)
         data = task.get('data', None)
 
         layer_canvas = None
         for idx, layer in enumerate(self.data.get('canvas_data', {}).get('layers', [])):
-            if layer.get('name', None) == layer_name:
+            if layer.get('name', None) == layer_id:
                 layer_canvas = self.layer_stack.controls[idx]
                 break
         if layer_canvas is None:
-            self.page.show_dialog(SnackBar(f"Error finding layer {layer_name} to undo task."))
+            self.page.show_dialog(SnackBar(f"Error finding layer {layer_id} to undo task."))
             return
 
         match task_type:
@@ -629,7 +684,7 @@ class Canvas(Widget):
 
         content_type = e.control.data
         layer_idx = e.control.parent.parent.parent.data
-        layer_name = self.data.get('canvas_data', {}).get('layers', [])[layer_idx].get('name', '')
+        layer_id = self.data.get('canvas_data', {}).get('layers', [])[layer_idx].get('name', '')
 
         # Set a color as the background
         if content_type == "color":
@@ -641,6 +696,7 @@ class Canvas(Widget):
 
                 canvas: cv.Canvas = self.layer_stack.controls[layer_idx]
                 canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
+                self.layer_bytes[layer_id] = None   # Clear the current capture to ignore it when saving
                 canvas.shapes.append(cv.Color(color_picker.color))   # Re-add empty images so it can capture
                 canvas.update()
                 self.page.pop_dialog()
@@ -653,7 +709,7 @@ class Canvas(Widget):
             )
             dlg = ft.AlertDialog(
                 ft.Column([color_picker], tight=True, expand=False),
-                title=f"Set {layer_name} to a Color",
+                title=f"Set {layer_id} to a Color",
                 actions=[
                     ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
                     ft.TextButton("Set", on_click=_set_color_confirmed, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
@@ -673,6 +729,7 @@ class Canvas(Widget):
                         encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                         canvas: cv.Canvas = self.layer_stack.controls[layer_idx]
                         canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
+                        self.layer_bytes[layer_id] = None   # Clear the current capture to ignore it when saving
                         canvas.shapes.append(cv.Image(f"{encoded_string}", 0, 0, self.canvas_width, self.canvas_height))   # Re-add empty images so it can capture
                         canvas.update()
                         self.page.pop_dialog()
@@ -731,11 +788,25 @@ class Canvas(Widget):
 
         # Add the entire canvas to the preview, but mark the active layer we will change blur of
         for layer in self.data.get('canvas_data', {}).get('layers', []):
+
+            # Active layer that the blur will adjust
             if layer.get('name') == layer_name:
-                active_preview_image = cv.Image(layer.get('capture', ""), 0, 0, self.page.width / 2, self.page.height / 2, paint=ft.Paint(blur_image=1))
+                active_preview_image = cv.Image(
+                    self.layer_bytes.get(layer.get('id', ''), None),   # Grab our capture from memory
+                    0, 0, 
+                    self.page.width / 2, self.page.height / 2, 
+                    paint=ft.Paint(blur_image=1)
+                )
                 preview_canvas.content.shapes.append(active_preview_image)
                 continue
-            preview_canvas.content.shapes.append(cv.Image(layer.get('capture', ""), 0, 0, self.page.width / 2, self.page.height / 2))
+            # All other layers
+            preview_canvas.content.shapes.append(
+                cv.Image(
+                    self.layer_bytes.get(layer.get('id', ''), None),   # Grab our capture from memory
+                    0, 0, 
+                    self.page.width / 2, self.page.height / 2
+                )
+            )
             
         if active_preview_image is None:
             self.page.show_dialog(SnackBar("Error finding layer capture for blur"))
@@ -795,7 +866,7 @@ class Canvas(Widget):
             return output.getvalue()
 
         # List to store our captures for each layer of our canvas (skip empty captures)
-        captures_list = [base64.b64decode(layer.get('capture', '')) for layer in self.data.get('canvas_data', {}).get('layers', []) if layer.get('capture')]
+        captures_list = [capture for capture in self.layer_bytes.values() if capture is not None]
 
         # Our exportable image bytes from merging all our layers captures together
         return _merge_captures(captures_list)
@@ -822,22 +893,20 @@ class Canvas(Widget):
             )
 
     # Adds a new layer into data, on the canvas, and in the sidebar
-    def create_new_layer(self, e: ft.Event=None):
-        # Find a unique layer name
-        existing_names = {layer.get('name') for layer in self.data.get('canvas_data', {}).get('layers', [])}
-        n = len(existing_names)
-        while f"Layer {n}" in existing_names:
-            n += 1
-        new_name = f"Layer {n}"
-        # Update data
+    def create_new_layer(self, e=None):
+        
+        # Add layer to topmost part of the list
+        new_id = str(uuid.uuid4())
         self.data.get('canvas_data', {}).get('layers', []).append({
-            'name': new_name,
+            'id': new_id,
+            'name': f"Layer {len(self.data.get('canvas_data', {}).get('layers', [])) + 1}" ,
             'visible': True,
-            'capture': None
+            'dirty': False,
+            'file_path': os.path.join(self.data.get('layer_directory_path'), f"{new_id}.png")
         })
 
+        # Grab its index
         new_layer_idx = len(self.data.get('canvas_data', {}).get('layers', [])) - 1
-        
 
         # Add new layer to the stack of canvas controls and sidebar list tiles
         new_canvas_ctrl = self.create_new_layer_canvas_ctrl(
@@ -868,7 +937,7 @@ class Canvas(Widget):
     # Cretes a new layer canvas control for the stack
     def create_new_layer_canvas_ctrl(self, idx: int, canvas_data: dict):
         visible = canvas_data.get('visible', True)
-        capture = canvas_data.get('capture', None)
+        capture = self.layer_bytes.get(canvas_data.get('id', ''), None)  # Grab the capture for this layer if it exists
 
         return cv.Canvas(
             data=idx,        # Save the index of this layer so we know where to save it in our data
@@ -982,10 +1051,10 @@ class Canvas(Widget):
         return ft.ReorderableDragHandle(
             ft.ListTile(
                 title=ft.Row([
-                    title_text := ft.Text(name, weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE), 
+                    title_text := ft.Text(name, weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True), 
                     title_tf := ft.TextField(
                         value=name, visible=False,
-                        dense=True, 
+                        dense=True, expand=True,
                         on_submit=update_layer_name,
                         on_blur=hide_layer_name_tf,
                         #border=ft.InputBorder.NONE, 
@@ -995,7 +1064,8 @@ class Canvas(Widget):
                         bgcolor=ft.Colors.TRANSPARENT,
                         capitalization=ft.TextCapitalization.WORDS,
                     ),
-                ]),
+                    # TODO: Preview img here
+                ], expand=True),
                 leading=ft.IconButton(   # Toggle visibility button
                     ft.Icons.VISIBILITY if visible else ft.Icons.VISIBILITY_OFF, 
                     ft.Colors.PRIMARY,
@@ -1149,8 +1219,6 @@ class Canvas(Widget):
     def build(self):
         super().build()
 
-
-
         # Reorder layers
         async def reorder_layers(e: ft.OnReorderEvent):
             # Grab the active layer name before we move
@@ -1172,29 +1240,7 @@ class Canvas(Widget):
             self.update()
             self.update_indices()  # Update indices so sidebar controls maintain correct idx reference
             
-        # Downscales images for preview to improve performance
-        def downscale_image(image_str: str) -> str:
-
-            try:
-                image_bytes = base64.b64decode(image_str)
-                img = Image.open(BytesIO(image_bytes))
-                if img.mode in ("P", "PA"):  # palette images with transparency must go via RGBA
-                    img = img.convert("RGBA")
-                has_alpha = img.mode in ("RGBA", "LA")
-                if not has_alpha:
-                    img = img.convert("RGB")
-                max_dim = 2160  # cap at 4K height; anything larger is not visible anyway
-                if img.width > max_dim or img.height > max_dim:
-                    img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
-                output = BytesIO()
-                if has_alpha:
-                    img.save(output, format="PNG", optimize=True)
-                else:
-                    img.save(output, format="JPEG", quality=92, optimize=True)
-                image_str = base64.b64encode(output.getvalue()).decode("utf-8")
-            except Exception:
-                pass 
-            return image_str
+        
         
 
         self.layer_stack = ft.Stack(

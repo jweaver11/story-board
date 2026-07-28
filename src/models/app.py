@@ -34,7 +34,7 @@ class App:
         # Should just look for our settings file to load our data from. Settings should do all other logic
 
         # Path to our settings file
-        settings_file_path = os.path.join(constants.app_data_path, "settings.json")
+        settings_file_path = os.path.join(constants.APP_DATA_PATH, "settings.json")
 
         # Create settings.json with empty dict if it doesn't exist
         if not os.path.exists(settings_file_path):
@@ -105,8 +105,7 @@ class App:
             if e.type == ft.WindowEventType.CLOSE:
                 await app.settings.save_story()
                 page.window.prevent_close = False
-                await page.window.close()
-                page.update()
+                await page.window.destroy()
 
         # Set size and route change events
         page.window.on_event = _on_window_event
@@ -133,12 +132,12 @@ class App:
         from models.app import app
         
         # Create the stories directory if it doesnt exist already
-        os.makedirs(constants.stories_directory_path, exist_ok=True)
+        os.makedirs(constants.STORIES_DIRECTOR_PATH, exist_ok=True)
             
         # Iterate through all items in the stories directory
-        for story_folder in os.listdir(constants.stories_directory_path):
+        for story_folder in os.listdir(constants.STORIES_DIRECTOR_PATH):
 
-            story_directory = os.path.join(constants.stories_directory_path, story_folder)
+            story_directory = os.path.join(constants.STORIES_DIRECTOR_PATH, story_folder)
                 
             # Look for JSON files within this story folder (ignore subdirectories)
             try:
@@ -193,7 +192,7 @@ class App:
         ''' Creates the new story object and has it run its 'startup' method. Changes route so our view displays the new story '''
         
         story = Story(title)
-        page.run_task(story.save_file)
+        page.run_task(story.save_file)  # Save it to data
         
         # Create a new story object and add it to our stories dict
         self.stories[title.title()] = story

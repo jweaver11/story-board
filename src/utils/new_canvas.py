@@ -50,7 +50,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         create_button.update()
         error_text.update()
 
-        print("Canvas data updated: ", canvas_data)
+        #print("Canvas data updated: ", canvas_data)
 
         return True
         

@@ -77,7 +77,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
         )
 
         create_button = ft.TextButton(
-            "Create", on_click=lambda e: submit_new_story(story_title_field), disabled=True, style=ft.ButtonStyle(mouse_cursor="click")
+            "Create", on_click=submit_new_story, disabled=True, style=ft.ButtonStyle(mouse_cursor="click")
         )
 
         # The dialog that will pop up whenever the new story button is clicked

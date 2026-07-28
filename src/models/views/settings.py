@@ -5,6 +5,7 @@ A Settings object is created for every story
 
 import flet as ft
 from models.views.story import Story
+import constants
 from models.widget import Widget
 from styles.colors import colors, theme_colors
 import os
@@ -217,14 +218,13 @@ class Settings(ft.View):
         print("Saved settings to file")
 
         try:
-            
+            os.makedirs(constants.SETTINGS_FILE_PATH, exist_ok=True)
             # Save the data to the file (creates file if doesnt exist)
             with open(self.file_path, "w", encoding='utf-8') as f:   
                 json.dump(self.data, f, indent=4)
         
-        except Exception as e:
-            print(f"Error saving widget to {self.file_path}: {e}") 
-            print("Data that failed to save: ", self.data)
+        except Exception:
+            pass
 
     async def close_settings(self, e=None):
         ''' Closes the settings view and returns to the story or home view '''
@@ -236,8 +236,8 @@ class Settings(ft.View):
         if self.story is not None:
             for widget in self.story.widgets.values():
                 await widget.save_file()
+            await self.story.save_file()
         await self.save_file()
-        #await asyncio.sleep(0.1)
         
     def create_character_template(self, template_name: str, data: dict):
         ''' Creates a new character template with the given name '''

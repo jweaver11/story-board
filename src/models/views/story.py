@@ -14,6 +14,7 @@ from styles.snack_bar import SnackBar
 from utils.safe_string_checker import return_safe_name
 import asyncio
 from utils.tutorial import run_tutorial
+import uuid
 
 
  
@@ -38,28 +39,34 @@ class Story(ft.View):
 
         # Verifies this object has the required data fields, and creates them if not
         if data is None:
+            id = str(uuid.uuid4())
             self.data = {
                 'title': title,
-                'directory_path': os.path.join(constants.stories_directory_path, return_safe_name(f"/{title}_story")),
                 'tag': "story",
+                'id': id,
+
+                # Directory paths and file paths
+                'directory_path': os.path.join(constants.STORIES_DIRECTOR_PATH, id),
+                'content_directory_path': os.path.join(constants.STORIES_DIRECTOR_PATH, id, "content"),   # Path to store widget json files
+                'canvas_directory_path': os.path.join(constants.STORIES_DIRECTOR_PATH, id, "canvas"),     # Path to store canvas png captures
+                'file_path': os.path.join(constants.STORIES_DIRECTOR_PATH, id, f"{id}.json"),   # Path to story's json file
+                
+
                 'selected_rail': "content",
                 'workspace_selected_index': 0,   # Index of the selected widget in the main pin, used for switching between tabs in the main pin
-                'content_directory_path': os.path.join(constants.stories_directory_path, return_safe_name(f"/{title}_story"), "content"),
-                
+
                 'created_at': str(),
                 'last_modified': str(),
 
                 # Sort methods for our specialized rails
                 'character_rail_sort_method': "Index",
                 'character_rail_sort_direction': "Ascending",
-
                 'plotline_rail_sort_method': "Index",
                 'plotline_rail_sort_direction': "Ascending",
-
                 'world_building_rail_sort_method': "Index",
                 'world_building_rail_sort_direction': "Ascending",
                 
-                # Dict of all our categories INSIDE of basic story structure (content, characters, plotlines)
+                # Dict of our folders an their metadata
                 'folders': {
                     'path': {                   # Path to the folder (used as the key, since all will be unique)
                         'name': str(),            # Name of folder just in case
@@ -67,7 +74,6 @@ class Story(ft.View):
                         'is_expanded': True     # Whether this folder is expanded in the tree view
                     }
                 },        
-
             }
         
 
@@ -113,23 +119,19 @@ class Story(ft.View):
 
         _merge_data(self.data, kwargs)  # Merge the new data into the existing data
 
-        self.page.run_task(self.save_file)  # Save the updated data to the file
+        #self.page.run_task(self.save_file)  # Save the updated data to the file
 
     # Called whenever there are changes in our data that need to be saved
     async def save_file(self):
         ''' Saves the data of our story to its JSON File, and all its folders as well '''
 
-        self.data['directory_path'] = os.path.join(constants.stories_directory_path, self.route)   # Make sure our directory path is updated
-        self.data['content_directory_path'] = os.path.join(constants.stories_directory_path, self.route, "content")  # Make sure our content directory path is updated
-        file_path = os.path.join(self.data['directory_path'], f"{self.route}.json") # Make sure our file path is updated
-
         try: 
 
             # Create the directory if it doesn't exist. Catches errors from users deleting folders
-            os.makedirs(self.data['directory_path'], exist_ok=True)
+            os.makedirs(self.data.get('directory_path'), exist_ok=True)
             
             # Save the data to the file (creates file if doesnt exist)
-            with open(file_path, "w", encoding='utf-8') as f:   
+            with open(self.data.get('file_path'), "w", encoding='utf-8') as f:   
                 json.dump(self.data, f, indent=4)
         
         # Handle errors
@@ -260,14 +262,13 @@ class Story(ft.View):
             self.data['folders'][old_path]['name'] = os.path.basename(new_path)
             self.data['folders'][new_path] = self.data['folders'].pop(old_path)
 
-        self.page.run_task(self.save_file)
+        self.update_data(**{'folders': self.data['folders']})  # Save the updated folders data
         
     # Called every 5 minutes to save our widgets that need file writes
     async def save_widgets_to_file(self):
-        from models.app import app
         for widget in self.widgets.values():
             await widget.save_file()
-        #await app.settings.save_file()
+
 
     # Wrapper function to call save widgets to file every 5 minutes
     async def _periodic_save_widget(self):

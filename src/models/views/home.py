@@ -21,65 +21,30 @@ def create_home_view(page: ft.Page) -> ft.View:
         is_unique = True
 
 
-        async def submit_new_story(e):
+        def submit_new_story(e=None):
             ''' Creates a new story with the given title '''
 
             # Import our variable if it is unique or nah
-            nonlocal is_unique
+            nonlocal is_unique, story_title_field
 
-            if isinstance(e, ft.TextField):
-                title = e.value
-            else:
-                title = e.control.value
-
-            print(title)
-
-            for story in app.stories.values():
-                if story.title == title:
-                    is_unique = False
-                    break
+            title = story_title_field.value.strip()  # Get the title from the text field and strip whitespace
 
             # Check if the title is unique
-            if is_unique:
                 #print("title is unique, story being created: ", title)
-                app.create_new_story(title, page) # Needs the story object
-                dlg.open = False
-                page.update()
-            else:
-                #print("Title not unique, no story created")
-                story_title_field.error = "Title must be unique"
-                await story_title_field.focus()   # refocus the text field since the title was not unique
-                page.update()
-
- 
-        # Called everytime the user enters a new letter in the text box
-        async def check_story_title_unique(e):
-            ''' Called when the text in the text box changes '''
-
-            nonlocal is_unique
-
-            is_unique = story_is_unique(e.control.value)
-            print("Is unique: ", is_unique)
-
-            if is_unique and e.control.value.strip() != "":
-                create_button.disabled = False
-            else:
-                create_button.disabled = True
-
+            app.create_new_story(title, page) # Needs the story object
+            dlg.open = False
             page.update()
             
-
         # Create a reference to the text field so we can access its value
         story_title_field = ft.TextField(
             label="Story Title",
             autofocus=True,
             capitalization=ft.TextCapitalization.SENTENCES,
             on_submit=submit_new_story,
-            on_change=check_story_title_unique,
         )
 
-        create_button = ft.TextButton(
-            "Create", on_click=lambda _: page.run_task(submit_new_story, story_title_field), 
+        create_button = ft.Button(
+            "Create", on_click=submit_new_story, 
             disabled=True, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor=ft.MouseCursor.CLICK)
         )
             
@@ -94,7 +59,7 @@ def create_home_view(page: ft.Page) -> ft.View:
 
             # Our two action buttons at the bottom of the dialog
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK)),
+                ft.Button("Cancel", on_click=lambda _: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK)),
                 create_button,
             ],
         )
