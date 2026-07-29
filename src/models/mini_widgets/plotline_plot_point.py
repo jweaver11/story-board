@@ -27,7 +27,7 @@ class PlotlinePlotPoint(MiniWidget):
         if self.is_new:
             self.data.update({ 
                 'tag': "plot_point",            # Tag to identify what type of object this is
-                'relevant_characters': list(),
+                'relevant_characters': dict(),  # ids and name to relevant characters. {'id': {'id': "id_val", 'name': "name_val"}...}
                 'icon': "circle",
 
                 # Information for our information display
@@ -139,146 +139,139 @@ class PlotlinePlotPoint(MiniWidget):
             arc.stop_highlight()
 
     
-
-    def create_sidebar_header_ctrls(self) -> list[ft.Control]:
-        ctrls = super().create_sidebar_header_ctrls()
-        # TODO: ADjust icon size here too
-
-        return ctrls
-
-    
+    # Create our sidebar body controls
     def create_sidebar_body_ctrls(self) -> list[ft.Control]:
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
 
-        # Adds or removes characters from our Relevant characters list
-        def _toggle_Relevant_characters(e):
-            
-            should_add_key = True   # Flag to check if we need to remove or not
-            char_key = e.control.data   # Key of the character
+        # Create a control for the relevant character in data, with a remove button
+        def create_relevant_character_ctrl(char_data: dict) -> ft.Row:
 
-            for key in self.data.get('Relevant Characters', []):
-                if char_key == key:     # If the character is in there, remove them and break
-                    self.data['Relevant Characters'].remove(key)
-                    should_add_key = False      # Make sure we don't re-add them after
-                    break
-
-            # If we went through the list and didn't find them, add them to the list
-            if should_add_key:
-                #print("Adding key")
-                self.data.get('Relevant Characters', []).append(char_key)
-
-            self.update_data(**{'Relevant Characters': self.data.get('Relevant Characters', [])})
-
-            Relevant_characters_row.controls = _set_Relevant_characters_controls()
-            Relevant_characters_selector.controls = _get_Relevant_characters()
-            self.update()
-
-        # Called to check our list of characters Relevant on this plotpoint. They are stored as keys and returned as names for display
-        def _get_Relevant_characters() -> list[str]:
-            char_list = []
-            
-            for widget in self.widget.story.widgets.values():
-                break
-                if widget.data.get('tag', None) == 'character':
-                    char_key = widget.data.get('key', "")
-                    
-                    char_list.append(
-                        ft.Checkbox(
-                            widget.title,
-                            True if char_key in self.data.get('Relevant Characters', []) else False,
-                            data=char_key,
-                            label_style=ft.TextStyle(color=widget.data.get('color', None), weight=ft.FontWeight.BOLD),
-                            on_change=_toggle_Relevant_characters,
-                            mouse_cursor="click"
-                        )
+            # Remove the character form data
+            def remove_relevant_character(e: ft.Event[ft.IconButton]):
+                char_id = e.control.data
+                if char_id in self.data.get('relevant_characters', []):
+                    self.data.get('relevant_characters', {}).pop(char_id, None)
+                    self.update_data(**{'relevant_characters': self.data.get('relevant_characters', [])})
+                    other_characters[char_id] = {'id': char_id, 'name': char_data.get('name')}
+                relevant_characters_row.controls.remove(e.control.parent.parent)
+                relevant_characters_row.update()
+                return
+    
+            return ft.Container(
+                ft.Row([
+                    ft.Text(char_data.get('name'), weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),   # Char name
+                    ft.IconButton(      # Remove button
+                        ft.Icons.CLOSE, ft.Colors.ERROR, tooltip=f"Remove {char_data.get('name')} from relevant characters for this plot point",
+                        mouse_cursor=ft.MouseCursor.CLICK,
+                        on_click=remove_relevant_character,
+                        data=char_data.get('id'), 
                     )
+                    ], spacing=0, margin=ft.Margin.only(left=8), tight=True
+                ),
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, 
+                border_radius=4,
+                padding=ft.Padding.only(left=6),
+            )
+            
 
-            if len(char_list) == 0:
-                char_list.append(ft.Text("No characters in story yet", color=ft.Colors.OUTLINE, italic=True))
-            return char_list
+        # Pass in the characters you want
+        def create_search_bar_ctrls(characters: list[dict]):
+            return [
+                ft.ListTile(
+                    title=ft.Text(char_data.get('name')),
+                    data=char_data,
+                    on_click=handle_adding_relevant_characters,
+                ) for char_data in characters
+            ] 
 
-        def _toggle_Relevant_characters_selector(e=None):
-            Relevant_characters_selector.visible = not Relevant_characters_selector.visible
-            Relevant_characters_selector.controls = _get_Relevant_characters()
+        # Adds the character to data and a control to the column
+        async def handle_adding_relevant_characters(e: ft.Event[ft.IconButton]):
+            new_char_data = e.control.data
+            new_char_id = new_char_data.get('id')
+            self.data.get('relevant_characters', {})[new_char_id] = new_char_data
+            self.update_data(**{'relevant_characters': self.data.get('relevant_characters', [])})
+            relevant_characters_row.controls.append(create_relevant_character_ctrl(new_char_data))
+            relevant_characters_row.update()
+            await close_search_bar()
 
-            if Relevant_characters_selector.visible:
-                #add_Relevant_characters_button.icon = ft.Icons.EDIT_OFF_OUTLINED
-                add_Relevant_characters_button.content.controls[1].icon = ft.Icons.EDIT_OFF_OUTLINED
-            else:
-                add_Relevant_characters_button.content.controls[1].icon = ft.Icons.EDIT_OUTLINED
-
-            self.update()
-
-        add_Relevant_characters_button = ft.TextButton(
-            ft.Row([
-                ft.Text("Relevant Characters", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None)), 
-                ft.Icon(ft.Icons.EDIT_OUTLINED, self.data.get('color', None))
-            ], tight=True),
-            tooltip="Add or remove relevant characters for this plot point",
-            style=ft.ButtonStyle(text_style=ft.TextStyle(weight=ft.FontWeight.BOLD), mouse_cursor="click", color=self.data.get('color', ft.Colors.PRIMARY)),
-            on_click=_toggle_Relevant_characters_selector,
-        )
-
-        Relevant_characters_selector = ft.Column(
-            _get_Relevant_characters(),
-            visible=False,
-        )
-
-        def _set_Relevant_characters_controls(e=None) -> list[ft.Control]:
-
-            controls = [
-                add_Relevant_characters_button,
+        # Handles when we type in search bar to filter our characters list
+        async def handle_change(e: ft.Event[ft.SearchBar]):
+            nonlocal character_search_bar, other_characters
+            query = e.control.value.strip().lower()
+            matching = [
+                {
+                    'id': char_data.get('id'),
+                    'name': char_data.get('name') 
+                } for char_data in other_characters.values() if char_data.get('name').lower().startswith(query) and char_data.get('id') not in self.data.get('relevant_characters', {})
+            ] if query else [
+                {
+                    'id': char_data.get('id'), 
+                    'name': char_data.get('name')
+                } for char_data in other_characters.values()
             ]
-            char = None
-            for idx, ic_key in enumerate(self.data.get('Relevant Characters', [])):
-                for widget in self.widget.story.widgets.values():
-                    if widget.data.get('key', "") == ic_key and widget.data.get('tag', None) == 'character':
-                        char = widget
-                        break
-                if char is not None:
-                    name = char.data.get('title', ic_key)
+            character_search_bar.controls = create_search_bar_ctrls(matching)
+            character_search_bar.update()
 
+        # Opens search bar and populates correct controls
+        async def open_search_bar(e=None):
+            character_search_bar.controls = create_search_bar_ctrls([char_data for char_data in other_characters.values() if char_data.get('id') not in self.data.get('relevant_characters', {})])
+            character_search_bar.update()
+            await character_search_bar.open_view()
 
-                    # Add the control now
-                    controls.append(
-                        ft.Row([
-                            ft.Text(f"\t\t\t{name}", color=char.data.get('color', None), weight=ft.FontWeight.BOLD),
-                            ft.IconButton(
-                                ft.Icons.CLOSE, char.data.get('color', None), scale=0.8,
-                                data=ic_key, mouse_cursor="click",
-                                on_click=_toggle_Relevant_characters,
-                            )
-                        ], spacing=0, tight=True)
-                    )
-                    
-                    if idx < len(self.data.get('Relevant Characters', [])) - 1: # Skip adding container to last character
-                        controls.append(ft.Container(width=10))
-                           
+        # Reset the value of the search bar
+        def reset_search_bar(e=None):
+            character_search_bar.value = ""
+            character_search_bar.update()
 
-            return controls
+        # When closing search bar, reset it and close the view
+        async def close_search_bar(e=None):
+            reset_search_bar()
+            await character_search_bar.close_view()
 
-        Relevant_characters_row = ft.Column(
-            _set_Relevant_characters_controls(),
-            spacing=0,
+        # All other characters in our story that are not relevant to this plot point, so we can add them
+        other_characters = {
+            widget.data.get('id'): {
+                'id': widget.data.get('id'), 
+                'name': widget.data.get('title')
+            } for widget in self.widget.story.widgets.values() if widget.data.get('tag') == 'character' and widget.data.get('id') not in self.data.get('relevant_characters', {})
+        }        
+
+        # Build UI to display all relevant characters in our data
+        relevant_characters_row = ft.Row(
+            [create_relevant_character_ctrl(char_data) for char_data in self.data.get('relevant_characters', {}).values()],
+            wrap=True, margin=ft.Margin.only(bottom=10)
         )
 
-        self.description_tf.value = self.data.get('description', '')
+        # Search bar for adding relevant characters
+        character_search_bar = ft.SearchBar(
+            value="", view_elevation=4,
+            controls=create_search_bar_ctrls([char_data for char_data in other_characters.values() if char_data.get('id') not in self.data.get('relevant_characters', {})]), 
+            bar_padding=ft.Padding.only(left=6, right=6),
+            divider_color=ft.Colors.PRIMARY,
+            bar_bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            bar_hint_text="Search character names here",
+            bar_shape=ft.RoundedRectangleBorder(radius=4),
+            view_shape=ft.RoundedRectangleBorder(radius=4),
+            bar_size_constraints=ft.BoxConstraints(min_height=40, max_height=50, max_width=400),
+            on_tap=open_search_bar,
+            on_tap_outside_bar=close_search_bar,
+            on_change=handle_change,
+            on_blur=reset_search_bar,
+            capitalization=ft.TextCapitalization.WORDS,
+        )
 
-        content = ft.Column(
-            expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
-            controls=[
+        return [
                 
-                
-                Relevant_characters_row,        # Holds label, buttons for each Relevant character, and add/remove button
-                Relevant_characters_selector,
-                ft.Divider(2, 2),
-                self.sidebar_info_label,
-                self.sidebar_info_column,
-     
+            ft.Text(f"Relevant Characters", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True, margin=ft.Margin.only(bottom=4)), 
+
+            relevant_characters_row,
+            character_search_bar,
+
+            self.sidebar_info_label,
+            self.sidebar_info_column,
+    
             ]
-        )
-
-        return content
+        
 
     # Called when hovering over our plot point to show the slider
     def highlight(self, e=None):

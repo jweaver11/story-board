@@ -46,7 +46,12 @@ class MiniWidget(ft.GestureDetector):
                 'info': list(),                          # Info stored about this MW. Child classes expand this 
             }
 
+        # Sidebar ctrls
         self.sidebar_title: SidebarTitleTextField    # Title of our miniwidget in the sidebar
+        self.sidebar_info_label: ft.Row         # Label for our info section in the sidebar
+        self.sidebar_info_column: ft.Column      # Column that holds all our info textfields in
+
+        # Other ctrls
         self.icon: ft.Icon      # Some mw's have icons, so we store it here to change its size and color
 
         # State trackers
@@ -142,6 +147,7 @@ class MiniWidget(ft.GestureDetector):
             return      # Already showing, don't need to do anything
 
         # Build our sidebar header, body, and footer
+        self.description_tf.value = self.data.get('description', '')    # Make sure description up to date
         self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()
         self.widget.sidebar_body.controls = self.create_sidebar_body_ctrls() 
         self.widget.sidebar_footer.controls = [self.description_tf]

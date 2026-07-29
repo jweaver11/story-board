@@ -37,6 +37,8 @@ class ContentRail(Rail):
     # Called to return our list of menu options for the content rail
     def get_new_item_menu_options(self) -> list[ft.Control]:
 
+        # TODO: Add warning icon and tooltip next to doc and canvas
+
         return [
             MenuOptionStyle(
                 content=ft.SubmenuButton(

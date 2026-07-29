@@ -49,7 +49,7 @@ class Plotline(Widget):
                 'end_label': "10",                            # Start and end date of the branch, for plotline view
                 'divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
               
-                'relevant_characters': list(),  # List of relevant characters for this plotline
+                'relevant_characters': dict(),  # keys and name to relevant characters. {'id': {'id': "id_val", 'name': "name_val"}...}
                 'markers': dict(),  # 'id': {data}
                 
                 # Holds our data for all markers, plot points, and arcs
@@ -441,141 +441,135 @@ class Plotline(Widget):
 
     def create_sidebar_body_ctrls(self) -> list[ft.Control]:
 
-        # TODO: Sidebar for plotline and pp. Divisions stack instead of drawing them?
+        # TODO: Sidebar for plotline and pp, divisions, events. Divisions stack instead of drawing them?
 
         
 
-        async def _new_divisions_clicked(e=None):
-            ''' Called to add a new division to the bottom of the divisions list '''
-            text_control = TextField(
-                expand=True, value=len(self.data.get('Divisions', [])) + 1, dense=True, 
-                capitalization=ft.TextCapitalization.SENTENCES,
-                #on_blur=self._change_our_data,
-                data=['Divisions', len(self.data.get('Divisions', [])), False],
-                suffix_icon=ft.IconButton(
-                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
-                    tooltip="Delete Division", 
-                    #on_click=self._change_our_data,
-                    data=['Divisions', idx, True],
-                    mouse_cursor="click"
+
+        # Create a control for the relevant character in data, with a remove button
+        def create_relevant_character_ctrl(char_data: dict) -> ft.Row:
+
+            # Remove the character form data
+            def remove_relevant_character(e: ft.Event[ft.IconButton]):
+                char_id = e.control.data
+                if char_id in self.data.get('relevant_characters', []):
+                    self.data.get('relevant_characters', {}).pop(char_id, None)
+                    self.update_data(**{'relevant_characters': self.data.get('relevant_characters', [])})
+                    other_characters[char_id] = {'id': char_id, 'name': char_data.get('name')}
+                relevant_characters_row.controls.remove(e.control.parent.parent)
+                relevant_characters_row.update()
+                return
+    
+            return ft.Container(
+                ft.Row([
+                    ft.Text(char_data.get('name'), weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),   # Char name
+                    ft.IconButton(      # Remove button
+                        ft.Icons.CLOSE, ft.Colors.ERROR, tooltip=f"Remove {char_data.get('name')} from relevant characters for this plot point",
+                        mouse_cursor=ft.MouseCursor.CLICK,
+                        on_click=remove_relevant_character,
+                        data=char_data.get('id'), 
+                    )
+                    ], spacing=0, margin=ft.Margin.only(left=8), tight=True
                 ),
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, 
+                border_radius=4,
+                padding=ft.Padding.only(left=6),
             )
+            
 
-            self.divisions_column.controls.append(text_control)
-                        
+        # Pass in the characters you want
+        def create_search_bar_ctrls(characters: list[dict]):
+            return [
+                ft.ListTile(
+                    title=ft.Text(char_data.get('name')),
+                    data=char_data,
+                    on_click=handle_adding_relevant_characters,
+                ) for char_data in characters
+            ] 
 
-            current_divisions = self.data.get('Divisions', [])
-            current_divisions.append(str(len(current_divisions) + 1))
+        # Adds the character to data and a control to the column
+        async def handle_adding_relevant_characters(e: ft.Event[ft.IconButton]):
+            new_char_data = e.control.data
+            new_char_id = new_char_data.get('id')
+            self.data.get('relevant_characters', {})[new_char_id] = new_char_data
+            self.update_data(**{'relevant_characters': self.data.get('relevant_characters', [])})
+            relevant_characters_row.controls.append(create_relevant_character_ctrl(new_char_data))
+            relevant_characters_row.update()
+            await close_search_bar()
 
-            self.data['Divisions'] = current_divisions
-            self.update_data(**{'Divisions': current_divisions})
-            self.update()
+        # Handles when we type in search bar to filter our characters list
+        async def handle_change(e: ft.Event[ft.SearchBar]):
+            nonlocal character_search_bar, other_characters
+            query = e.control.value.strip().lower()
+            matching = [
+                {
+                    'id': char_data.get('id'),
+                    'name': char_data.get('name') 
+                } for char_data in other_characters.values() if char_data.get('name').lower().startswith(query) and char_data.get('id') not in self.data.get('relevant_characters', {})
+            ] if query else [
+                {
+                    'id': char_data.get('id'), 
+                    'name': char_data.get('name')
+                } for char_data in other_characters.values()
+            ]
+            character_search_bar.controls = create_search_bar_ctrls(matching)
+            character_search_bar.update()
 
-        plotline_side_labels = ft.Row([
-            SingleLineTextField(
-                expand=True, label="Start Label", value=self.data.get('start_label', ""), dense=True, 
-                capitalization=ft.TextCapitalization.SENTENCES,
-                #on_blur=change_label,
-                data='start_label',
-            ),
-            SingleLineTextField(
-                expand=True, label="End Label", value=self.data.get('end_label', ""), dense=True, 
-                capitalization=ft.TextCapitalization.SENTENCES,
-                #on_blur=change_label,
-                data='end_label',
-            )
-        ])
+        # Opens search bar and populates correct controls
+        async def open_search_bar(e=None):
+            character_search_bar.controls = create_search_bar_ctrls([char_data for char_data in other_characters.values() if char_data.get('id') not in self.data.get('relevant_characters', {})])
+            character_search_bar.update()
+            await character_search_bar.open_view()
 
-        
-        self.divisions_column = ft.Column(expand=True)  # Column to hold our divisions text controls
+        # Reset the value of the search bar
+        def reset_search_bar(e=None):
+            character_search_bar.value = ""
+            character_search_bar.update()
 
-        
+        # When closing search bar, reset it and close the view
+        async def close_search_bar(e=None):
+            reset_search_bar()
+            await character_search_bar.close_view()
 
+        # All other characters in our story that are not relevant to this plot point, so we can add them
+        other_characters = {
+            widget.data.get('id'): {
+                'id': widget.data.get('id'), 
+                'name': widget.data.get('title')
+            } for widget in self.story.widgets.values() if widget.data.get('tag') == 'character' and widget.data.get('id') not in self.data.get('relevant_characters', {})
+        }        
 
-        # Go through and list all our events in order. We'll sort them by their left positions
-        events_list = []
-
-        # Sort that list
-        #events_list = sorted(events_list, key=lambda e: e.left)
-
-        # Hold our text spans for the events
-        events_spans = []  
-
-        # Make our text control with our built spans
-        events_text = ft.Text(spans=events_spans, selectable=True, expand=True)
-
-        # Container to hold the text control for events
-        events_container = ft.Container(               
-            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
-            content=ft.Row([events_text]), margin=ft.Margin.only(top=6)
+        # Build UI to display all relevant characters in our data
+        relevant_characters_row = ft.Row(
+            [create_relevant_character_ctrl(char_data) for char_data in self.data.get('relevant_characters', {}).values()],
+            wrap=True, margin=ft.Margin.only(bottom=10)
         )
 
-        events_label = ft.Row([
-            ft.Text(
-                "\tSequence of Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), 
-                tooltip="The order of events that occur in this plotline"
-            ),
-            
-        ], spacing=0)
-        
-
-        divisions_label = ft.Row([
-            ft.Text(
-                "\tDivisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), 
-                tooltip="The number and label of the divisions on this plotline."
-            ),
-            ft.IconButton(
-                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY),
-                tooltip="Add Division", on_click=_new_divisions_clicked,
-                mouse_cursor="click"
-            )
-        ], spacing=0)
-
-
-        self.divisions_column.controls.clear()  
-        
-        # Add all our current divisions
-        for idx, division in enumerate(self.data.get('Divisions', [])):
-            # Create text control for this division
-            text_control = TextField(
-                expand=True,  value=division, dense=True, 
-                capitalization=ft.TextCapitalization.SENTENCES,
-                #on_blur=self._change_our_data,
-                data=['Divisions', idx, False],
-                focus_color=self.data.get('color', None),
-                cursor_color=self.data.get('color', None),
-                focused_border_color=self.data.get('color', None),
-                suffix_icon=ft.IconButton(
-                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
-                    tooltip="Delete Division", 
-                    #on_click=self._change_our_data,
-                    data=['Divisions', idx, True],
-                    mouse_cursor="click"
-                ),
-            )
-
-            # Add to a row with delete button to remove divisions
-            self.divisions_column.controls.append(text_control)
+        # Search bar for adding relevant characters
+        character_search_bar = ft.SearchBar(
+            value="", view_elevation=4,
+            controls=create_search_bar_ctrls([char_data for char_data in other_characters.values() if char_data.get('id') not in self.data.get('relevant_characters', {})]), 
+            bar_padding=ft.Padding.only(left=6, right=6),
+            divider_color=ft.Colors.PRIMARY,
+            bar_bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            bar_hint_text="Search character names here",
+            bar_shape=ft.RoundedRectangleBorder(radius=4),
+            view_shape=ft.RoundedRectangleBorder(radius=4),
+            bar_size_constraints=ft.BoxConstraints(min_height=40, max_height=50, max_width=400),
+            on_tap=open_search_bar,
+            on_tap_outside_bar=close_search_bar,
+            on_change=handle_change,
+            on_blur=reset_search_bar,
+            capitalization=ft.TextCapitalization.WORDS,
+        )
 
 
         return [
                 
+                ft.Text(f"Relevant Characters", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True, margin=ft.Margin.only(bottom=4)), 
                 
-                #plotline_side_labels,       # Labels
-
-
-
-                #ft.Divider(2, 2),
-
-                divisions_label,        # Divisions
-                ft.Container(self.divisions_column, margin=ft.Margin.symmetric(horizontal=20)),
-                
-
-                events_label,       # Events
-                events_container,
-
-                ft.Divider(),
+                relevant_characters_row,
+                character_search_bar,
                 self.sidebar_notes_label,
                 self.sidebar_notes_column,
                 

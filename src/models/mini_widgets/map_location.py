@@ -521,7 +521,6 @@ class MapLocation(MiniWidget):
     # Called when reloading changes to our plot point and in constructor
     def create_sidebar_body_ctrls(self) -> list[ft.Control]:
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
-        self.description_tf.value = self.data.get('description', '')
         # Our image button 
         self.set_image_preview_button = ft.GestureDetector(
             ft.IconButton(
