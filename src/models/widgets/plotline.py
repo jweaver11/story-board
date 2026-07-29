@@ -137,11 +137,11 @@ class Plotline(Widget):
 
             def highlight(e=None):
                 shadow = ft.BoxShadow(
-                    2, 4, 
+                    20, 40, 
                     ft.Colors.with_opacity(0.24, self.data.get('color', ft.Colors.PRIMARY)), 
                     #blur_style=ft.BlurStyle.OUTER
                 )
-                highlight_container1.shadow = shadow
+                #highlight_container1.shadow = shadow
                 highlight_container2.shadow = shadow
                 self.update()
                 
@@ -150,7 +150,7 @@ class Plotline(Widget):
             def stop_highlight(e=None):
                 if self.is_dragging == True:
                     return
-                highlight_container1.shadow = None
+                #highlight_container1.shadow = None
                 highlight_container2.shadow = None
                 self.update()
 
@@ -349,7 +349,7 @@ class Plotline(Widget):
 
     # Simple highlight and stop highlight functions
     def highlight_plotline_canvas(self):
-        self.plotline_highlight_container.shadow = ft.BoxShadow(1, 1, ft.Colors.with_opacity(0.25, self.data.get('color', ft.Colors.PRIMARY)))
+        self.plotline_highlight_container.shadow = ft.BoxShadow(20, 40, ft.Colors.with_opacity(0.25, self.data.get('color', ft.Colors.PRIMARY)))
         self.plotline_canvas.content.mouse_cursor = ft.MouseCursor.CLICK
         self.plotline_highlight_container.update()
         self.plotline_canvas.update()
@@ -416,6 +416,18 @@ class Plotline(Widget):
     async def create_plot_point(self, e: ft.Event=None):
         ''' Creates plot point in data, control and control on event stack'''
         await self.story.close_menu()
+        new_plot_point = PlotlinePlotPoint(
+            widget=self, 
+            is_new=True, 
+            data={
+                'position': self.locked_position, 
+                'title': "New Plot Point",
+            }
+        )
+        self.update_data(**{'mini_widgets_data': {new_plot_point.data.get('id', ''): new_plot_point.data}})
+        self.plot_point_stack.controls.append(new_plot_point)
+        self.plot_point_stack.update()
+        await new_plot_point.show_mini_widget()   # Show in sidebar
 
     async def create_arc(self, e: ft.Event=None):
         ''' Creates an arc in data, control and control on event stack'''
@@ -544,7 +556,7 @@ class Plotline(Widget):
                 expand=True, 
                 on_secondary_tap=self.open_menu,
                 on_hover=self.hover_plotline_canvas,
-                #on_exit=self._exit_canvas,
+                on_exit=self.stop_highlight_plotline_canvas,
                 on_tap=may_show_sidebar,
                 hover_interval=20,
             ),
@@ -552,7 +564,9 @@ class Plotline(Widget):
         )
         self.draw_plotline_canvas()
 
-        self.plotline_highlight_container = ft.Container(width=PLOTLINE_WIDTH, height=50, shadow=None, ignore_interactions=True, margin=ft.Margin.symmetric(horizontal=PLOTLINE_PADDING))
+        self.plotline_highlight_container = ft.Container(
+            width=PLOTLINE_WIDTH, height=3, shadow=None, ignore_interactions=True, margin=ft.Margin.symmetric(horizontal=PLOTLINE_PADDING)
+        )
 
         self.arc_stack = ft.Stack([], expand=True, alignment=ft.Alignment(0, 0), width=PLOTLINE_WIDTH, height=PLOTLINE_HEIGHT,)
         self.marker_stack = ft.Stack([], expand=True, alignment=ft.Alignment(0, 0), width=PLOTLINE_WIDTH, height=PLOTLINE_HEIGHT,)
@@ -567,9 +581,9 @@ class Plotline(Widget):
         for mw in self.data.get('mini_widgets_data', {}).values():
             if mw.get('tag', '') == "arc":
                 arcs_data_list.append(mw)
-            
             else:
                 plot_points_data_list.append(mw)
+        # Load our markers as well
         for marker in self.data.get('markers', {}).values():
             markers_data_list.append(marker)
 
@@ -586,7 +600,7 @@ class Plotline(Widget):
 
         # Add plot points last
         for plot_point_data in plot_points_data_list:    
-            self.plot_point_stack.controls.append(PlotlinePlotPoint())
+            self.plot_point_stack.controls.append(PlotlinePlotPoint(self, plot_point_data))
 
         self.sidebar_body.controls = self.create_sidebar_body_ctrls()  
         if self.data.get('show_sidebar', True) == False:

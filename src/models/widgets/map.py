@@ -53,7 +53,7 @@ class Map(Widget):
 
                 # Info about the map
                 'draw_mode': False,      # Whether we're in draw mode or not
-                'background_image': "map_bg_fantasy_dark.jpg",    # The background image of the map
+                'background_image': "map_bg_fantasy_dark.png",    # The background image of the map
 
                 'lore': list(),     # List of lores [{'label': "Lore Label", 'content': "Lore Content"}]
                 'history': list(),      # List of histories  [{'label': "History Label", 'content': "History Content"}]
@@ -311,7 +311,6 @@ class Map(Widget):
         # Create the new location and add it to data
         new_location = MapLocation(
             widget=self,
-            
             is_new=True,
             data={
                 'position': self.locked_new_location_position, 

@@ -61,7 +61,7 @@ class MapLocation(MiniWidget):
         
        
     # Moves our location on the map
-    async def move_location(self, e: ft.DragUpdateEvent):
+    def move_location(self, e: ft.DragUpdateEvent):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
         # Update our position
         self.left += e.local_delta.x
@@ -81,11 +81,10 @@ class MapLocation(MiniWidget):
     
 
     # Called when hovering over our plot point to show the slider
-    async def highlight(self, e=None):
+    def highlight(self, e=None):
         ''' Shows our slider and hides our map_marker. Makes sure all other sliders are hidden '''
-
         #self.map_label_tf.parent.shadow = ft.BoxShadow(4, 8, ft.Colors.with_opacity(0.25, self.data.get('color'))) 
-        self.icon.parent.shadow = ft.BoxShadow(4, 8, ft.Colors.with_opacity(0.25, self.data.get('color')))
+        self.icon.parent.shadow = ft.BoxShadow(20, 40, ft.Colors.with_opacity(0.4, self.data.get('color')))
         self.update()
         if self._hover_task:
             self._hover_task.cancel()
@@ -109,8 +108,6 @@ class MapLocation(MiniWidget):
         self.icon.parent.shadow = None
         self.update()
         self.hover_timer = 0.0    # Reset our hover timer so we don't show our snapshot after we stop hovering
-
-        
 
     # Shows our image on the stack after 1 second of hovering
     async def show_image_preview(self):

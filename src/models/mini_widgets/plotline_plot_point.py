@@ -7,6 +7,8 @@ import flet.canvas as cv
 from styles.icons import icons
 from styles.text_fields import TextField
 from constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
+from styles.icons import icons
+from styles.menu_option_style import MenuOptionStyle
 
 # Plotpoint mini widget object that appear on plotlines and arcs
 class PlotlinePlotPoint(MiniWidget):
@@ -31,6 +33,8 @@ class PlotlinePlotPoint(MiniWidget):
                 'relevant_characters': list(),
             })
 
+        self.icon: ft.Icon
+
     
     async def move_plot_point(self, e: ft.DragUpdateEvent):
         ''' Changes our x position on the slider, and saves it to our data dictionary, but not to our file yet '''
@@ -44,95 +48,71 @@ class PlotlinePlotPoint(MiniWidget):
         self.left = new_left
         self.update()
 
-    # Called when hovering over our plot point to show the slider
-    async def highlight(self, e=None):
-        ''' Shows our slider and hides our plotline_marker. Makes sure all other sliders are hidden '''
+    # Handles deleting our location from the map and data
+    async def handle_delete(self, e=None):
+       
+        await super().handle_delete()   # Delete from data
+        # Remove from stack and sidebar if we're showing
+        self.widget.plot_point_stack.controls.remove(self)
+        self.widget.plot_point_stack.update()
+        if self.widget.visible_mw_id == self.data.get('id', ''):
+            await self.widget.show_info()
+    
 
-        # Gives us a focused shadow
-        self.shadow = ft.BoxShadow(5, 10, ft.Colors.with_opacity(.6, self.data.get('color'))) #if self.plotline_control.shadow is None else None
-        self.update()
-
-    # Hides are shadow unless our info display is visible, then stay highlighted
-    async def stop_highlight(self, e=None):
-
-        # If we're dragging, keep highlighted
-        if self.is_dragging:
-            return
-
-        # If our info display is visible, keep highlighted
-        if not self.visible:
-            self.shadow = None
-            self.update()
-
-    def _get_icon_options(self) -> list[ft.Control]:
+    def get_icon_options(self) -> list[ft.Control]:
         ''' Returns a list of all available icons for icon changing '''
-
-        # Called when an icon option is clicked on popup menu to change icon
-        async def _change_icon(e: ft.Event[ft.MenuItemButton]):
-            ''' Passes in our kwargs to the widget, and applies the updates '''
-
-            # Set our data and update our button icon
+        async def change_icon(e: ft.Event[ft.MenuItemButton]):
+            await self.widget.story.close_menu()
             self.update_data(**{'icon': e.control.data})
+            self.icon.icon = icons.get(e.control.data, ft.Icons.LOCATION_PIN)
+            self.update()
+            if self.widget.visible_mw_id == self.data.get('id', ''):
+                self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()    # Rebuild our header if we're shown in sidebar
+                self.widget.sidebar_header.update()
+        return [
+            ft.MenuItemButton(
+                ft.Icon(icon, self.data.get('color', "primary")),
+                on_click=change_icon, close_on_click=True,
+                data=icon_str,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
+            ) for icon_str, icon in icons.items()
+        ]
 
-        # List for our icons when formatted
-        icon_controls = [] 
 
-        # Create our controls for our icon options
-        for icon in icons:
-            icon_controls.append(
-                ft.MenuItemButton(
-                    content=ft.Icon(icon, self.data.get('color', 'note')),
-                    on_click=_change_icon,
-                    data=icon,
-                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)
-                )
-            )
-
-        return icon_controls
-
- 
-    def build(self):
-        """ Rebuilds our plotline control that holds our plot point and slider """
-
-        # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
-        self.plotline_control = ft.Container(
-            margin=ft.Margin(16, 0, 16, 0), 
-            opacity=1.0, shape=ft.BoxShape.CIRCLE,
-            #bgcolor="red", 
-            width=24, height=24,
-            alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            left=self.data.get('left', 0), animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            content=ft.GestureDetector(
-                mouse_cursor=ft.MouseCursor.CLICK, on_tap_up=self._tap_up,
-                on_enter=self.highlight, on_exit=self.stop_highlight, on_pan_start=self.drag_start,
-                on_pan_update=self.move_plot_point, drag_interval=20, on_pan_end=self.drag_end,
-                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
-                on_tap=self.show_mini_widget, on_tap_down=self.drag_start,
-                content=ft.Icon(ft.Icons.CIRCLE, self.data.get('color', None))
+    def get_menu_options(self) -> list[ft.Control]:
+        return [
+            MenuOptionStyle(
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(icons.get(self.data.get('icon'), ft.Icons.CIRCLE), self.data.get('color', "primary")), 
+                        ft.Text("Icon", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    self.get_icon_options(), 
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="Change this locations icon on the map"
+                ),
+                no_padding=True, no_effects=True
             ),
-        )
+            MenuOptionStyle(
+                on_click=self.handle_delete,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
+                    ft.Text(f"Delete {self.data.get('title')}", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
+                ]),
+            )
+        ]
 
+
+    def create_sidebar_header_ctrls(self) -> list[ft.Control]:
+        ctrls = super().create_sidebar_header_ctrls()
+
+        return ctrls
 
     
-    def create_sidebar_body_ctrls(self):
+    def create_sidebar_body_ctrls(self) -> list[ft.Control]:
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
-
-        title_control = ft.Row([
-            ft.GestureDetector(
-                ft.Text(f"\t{self.data['title']}", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, 
-                color=self.data.get('color', None), expand=True),
-                on_double_tap=self._rename_clicked,
-                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
-                mouse_cursor="click", hover_interval=500, expand=True
-            ),
-            
-            ft.IconButton(
-                ft.Icons.CLOSE, ft.Colors.OUTLINE,
-                tooltip=f"Close {self.title}",
-                on_click=self.widget.hide_sidebar,
-                mouse_cursor="click"
-            ),
-        ], spacing=0)
 
 
 
@@ -178,6 +158,7 @@ class PlotlinePlotPoint(MiniWidget):
             char_list = []
             
             for widget in self.widget.story.widgets.values():
+                break
                 if widget.data.get('tag', None) == 'character':
                     char_key = widget.data.get('key', "")
                     
@@ -275,16 +256,27 @@ class PlotlinePlotPoint(MiniWidget):
             ]
         )
 
-        column = ft.Column([
-            title_control,
-            ft.Divider(),
-            content
-        ], expand=True, scroll="none", spacing=0)
+        return content
+
+    def build(self):
+        """ Rebuilds our plotline control that holds our plot point and slider """
+
+        super().build()
+
+        self.mouse_cursor=ft.MouseCursor.CLICK
+        self.on_enter = self.highlight
+        self.on_exit = self.stop_highlight
+        self.on_pan_update=self.move_plot_point 
+        self.on_pan_end=self.save_position
+        self.on_secondary_tap=lambda: self.widget.story.open_menu(self.get_menu_options())
+        self.on_tap=self.show_mini_widget
+        self.left = self.data.get('position', (200, 0))[0]
+        self.tooltip = self.data.get('title', "Plot Point")
+        self.offset = ft.Offset(-0.5, 0)
+
+        self.icon = ft.Icon(icons.get(self.data.get('icon', None), ft.Icons.CIRCLE), self.data.get('color', None))
         
-        self.content = column
+    
+        # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
+        self.content = ft.Container(self.icon, shape=ft.BoxShape.CIRCLE)
         
-      
-        try:
-            self.update()
-        except Exception as _:
-            pass

@@ -29,6 +29,7 @@ class MiniWidget(ft.GestureDetector):
             data=data, 
             animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             on_right_pan_end=lambda: None,  # Needs an event or gets angy
+            drag_interval=20,
         )
 
         # If we're new, give default values for our data 
@@ -42,8 +43,7 @@ class MiniWidget(ft.GestureDetector):
                 'tag': str(),                           # Default mini widget tag, but should be overwritten by child classes
                 'position': data.get('position', (200, 200)),       # Position of the mini widget on its parents stack
                 'color': data.get('color', '#FFFFFF'),          # Color of the mini widget
-                'info': list(),                          # Info stored about this MW. Child classes expand this
-                
+                'info': list(),                          # Info stored about this MW. Child classes expand this 
             }
 
         self.sidebar_title: SidebarTitleTextField    # Title of our miniwidget in the sidebar
@@ -96,14 +96,23 @@ class MiniWidget(ft.GestureDetector):
         
     
     
-    # Called when hovering over stacked control to give us a highlighted shadow
-    async def highlight(self, e=None):
-        ''' Shows our slider and hides our plotline_marker. Makes sure all other sliders are hidden '''
-        return
+    # Called when hovering over our plot point to show the slider
+    def highlight(self, e=None):
+        self.content.shadow = ft.BoxShadow(20, 40, ft.Colors.with_opacity(.25, self.data.get('color'))) #if self.plotline_control.shadow is None else None
+        self.update()
 
-    # Called when we stop hovering over our marker
-    async def stop_highlight(self, e=None):
-        return
+    # Hides are shadow unless our info display is visible, then stay highlighted
+    def stop_highlight(self, e=None):
+
+        # If we're dragging, keep highlighted
+        if self.is_dragging:
+            return
+
+        # Stay highlighted if we're showing our info display
+        if self.widget.visible_mw_id == self.data.get('id', ''):
+            return
+        self.content.shadow = None
+        self.update()
 
     
 
