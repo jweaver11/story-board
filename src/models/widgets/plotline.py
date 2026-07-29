@@ -9,7 +9,6 @@ import flet as ft
 from styles.menu_option_style import MenuOptionStyle
 from models.views.story import Story
 from models.widget import Widget
-from models.mini_widgets.plotline_arc import PlotlineArc
 from models.mini_widgets.plotline_plot_point import PlotlinePlotPoint
 import flet.canvas as cv
 from models.app import app
@@ -50,7 +49,7 @@ class Plotline(Widget):
                 'end_label': "10",                            # Start and end date of the branch, for plotline view
                 'divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
               
-
+                'relevant_characters': list(),  # List of relevant characters for this plotline
                 'markers': dict(),  # 'id': {data}
                 
                 # Holds our data for all markers, plot points, and arcs
@@ -87,7 +86,7 @@ class Plotline(Widget):
             # Set our variables
             super().__init__(
                 data=data, horizontal_alignment=ft.CrossAxisAlignment.CENTER, offset=ft.Offset(-0.5, 0),
-                animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                animate_position=ft.Animation(250, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             ) # Sets our data to the passed in data
 
             # If we're new, give default values for our data 
@@ -191,7 +190,7 @@ class Plotline(Widget):
                     ]
 
                 # Delete the marker from data and UI
-                async def delete_marker(e: ft.Event):
+                async def delete_marker(e=None):
                     await self.widget.story.close_menu()
                     self.widget.data.get('markers', {}).pop(self.data.get('id', ''), None)
                     self.widget.update_data(**{'markers': self.widget.data.get('markers', {})})
@@ -319,14 +318,6 @@ class Plotline(Widget):
                             tooltip="Mark important, short term events as plot points in your story",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ), 
-                        
-                        ft.MenuItemButton(
-                            "Arc", leading=ft.Icon(ft.Icons.SHOW_CHART_OUTLINED, ft.Colors.PRIMARY),
-                            on_click=self.create_arc,
-                            close_on_click=True,
-                            tooltip="Create extented events in your story as arcs with set start and end points",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        ),
                         ft.MenuItemButton(
                             "Marker", leading=ft.Icon(ft.Icons.FLAG_OUTLINED, ft.Colors.PRIMARY),
                             on_click=self.create_marker, 
@@ -438,10 +429,6 @@ class Plotline(Widget):
         self.plot_point_stack.update()
         await new_plot_point.show_mini_widget()   # Show in sidebar
 
-    async def create_arc(self, e: ft.Event=None):
-        ''' Creates an arc in data, control and control on event stack'''
-        await self.story.close_menu()
-
     # Creates a marker in data and a control on the event stack. Has no info for sidebar
     async def create_marker(self):
         await self.story.close_menu()
@@ -454,8 +441,7 @@ class Plotline(Widget):
 
     def create_sidebar_body_ctrls(self) -> list[ft.Control]:
 
-        # TODO:
-        # Divisions, left-right-time labels, events
+        # TODO: Sidebar for plotline and pp. Divisions stack instead of drawing them?
 
         
 
@@ -718,10 +704,6 @@ class Plotline(Widget):
 
         # Sort arcs so biggest is in the back
         arcs_data_list.sort(key=lambda item: item[1].data.get('left', 0) + item[1].data.get('right', 0))
-
-        # Add all our controls to the right stack
-        for arc_data in arcs_data_list:
-            self.arc_stack.controls.append(PlotlineArc())
 
         # Add markers next since they are next biggest
         for marker_data in markers_data_list:    

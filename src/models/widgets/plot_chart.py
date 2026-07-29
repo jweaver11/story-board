@@ -80,7 +80,7 @@ class PlotChart(Widget):
                 top=position[1],
                 width=150, 
                 offset=ft.Offset(0, -1),
-                animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                animate_position=ft.Animation(250, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
                 on_secondary_tap=self.open_menu,
                 on_hover=self.widget.set_mouse_coords,
             )

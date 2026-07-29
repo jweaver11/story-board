@@ -83,7 +83,7 @@ class CharacterRelationshipMap(Widget):
                 on_pan_end=self._create_new_connection if not self.in_character_bank else self._drag_end,  
                 left=position[0] if position else None,
                 top=position[1] if position else None,
-                animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN) if not self.in_character_bank else None,
+                animate_position=ft.Animation(250, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN) if not self.in_character_bank else None,
                 offset=ft.Offset(-0.5, -0.5) if self.position else None,
                 #width=90,
                 #height=90,
@@ -258,7 +258,7 @@ class CharacterRelationshipMap(Widget):
                 self.dragging_content = self.build_content()
                 self.dragging_content.shadow = ft.BoxShadow(8, 8, ft.Colors.with_opacity(0.2, self.color))
                 self.dragging_content.offset = ft.Offset(-0.5, -0.5)
-                self.dragging_content.animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN)
+                self.dragging_content.animate_position=ft.Animation(250, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN)
                 
                 # Position us on the local stack based on where the drag starts globally for the top position
                 self.dragging_content.left = 50     # Just use half the character bank width for left position
@@ -341,7 +341,7 @@ class CharacterRelationshipMap(Widget):
                 self.left = self.dragging_content.left
                 self.top = self.dragging_content.top
                 self.offset = ft.Offset(-0.5, -0.5)
-                self.animate_position = ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN)
+                self.animate_position = ft.Animation(250, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN)
                 self.on_pan_start = self.start_new_connection
                 self.on_pan_update = self._update_line
                 self.on_pan_end = self._create_new_connection

@@ -27,7 +27,7 @@ class MiniWidget(ft.GestureDetector):
         # Parent constructor
         super().__init__(
             data=data, 
-            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            animate_position=ft.Animation(250, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             on_right_pan_end=lambda: None,  # Needs an event or gets angy
             drag_interval=20,
         )
