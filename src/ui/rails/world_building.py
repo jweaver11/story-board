@@ -44,9 +44,10 @@ class WorldBuildingRail(Rail):
                     [
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
-                            data="map", on_click=self.new_item_clicked, close_on_click=True,
+                            data="map", on_click=self.new_item_clicked, close_on_click=True, expand=True,
                             tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                         ),
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 

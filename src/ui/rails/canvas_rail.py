@@ -1206,10 +1206,6 @@ class CanvasRail(Rail):
                     value=str(canvas_settings.get('rectangle_border_radius', 0)),
                     expand=True,
                 ),
-        
-
-                
-                
                 
             ]
         )        
@@ -1228,19 +1224,29 @@ class CanvasRail(Rail):
                         leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
                         data="canvas", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new Canvas for sketching drawing, or visual note taking",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), #disabled=True
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
+                        trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="SVG Canvas",
+                        data="canvas", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="A Canvas of scalable vector graphics that allow for infinite zooming. Coming Soon! (but not that soon)",
+                        disabled=True,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                     ),
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
                         data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                     ),
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
                         data="map", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                        trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                     ),
                 ],
                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
@@ -1279,6 +1285,6 @@ class CanvasRail(Rail):
 
 # TODO: 
 # Add fonts and shadow options
-# Background font colors
+# Font outline colors
 # Build in dialoge bubbles shapes for dialogue (up-left, up-right, down-left, down-right, middle-up, middle-down). See canvas example on flet docs, they have one
 # -- Both round and normal for above dialogue boxes

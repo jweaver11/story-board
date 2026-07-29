@@ -837,13 +837,9 @@ class Map(Widget):
                 vertical_alignment=ft.CrossAxisAlignment.CENTER
             )
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
-
-
-
-        
-               
+         
     
 
-
+# TODO: Right click to set backgrounds or enable/disable draw mode
 
         
