@@ -5,13 +5,8 @@ icons = {
     "circle": ft.Icons.CIRCLE,
     "flag": ft.Icons.FLAG,
     "location_pin": ft.Icons.LOCATION_PIN,
-    "terrain": ft.Icons.TERRAIN,
-    "forest": ft.Icons.FOREST,
-    "water": ft.Icons.WATER,
     "dangerous": ft.Icons.DANGEROUS,
     "star": ft.Icons.STAR,
-    "flare": ft.Icons.FLARE,
-    "fireplace": ft.Icons.FIREPLACE,
     "warning": ft.Icons.WARNING,
     "lightbulb": ft.Icons.LIGHTBULB,
     "help": ft.Icons.HELP,
@@ -67,6 +62,8 @@ location_icons = {
     'cottage': ft.Icons.COTTAGE,
     'location_searching': ft.Icons.LOCATION_SEARCHING,
     'star': ft.Icons.STAR,
+    "flare": ft.Icons.FLARE,
+    "fireplace": ft.Icons.FIREPLACE,
 }
 
 # TODO: Could not find (ASK AI):

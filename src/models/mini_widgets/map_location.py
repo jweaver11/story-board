@@ -84,7 +84,7 @@ class MapLocation(MiniWidget):
     def highlight(self, e=None):
         ''' Shows our slider and hides our map_marker. Makes sure all other sliders are hidden '''
         #self.map_label_tf.parent.shadow = ft.BoxShadow(4, 8, ft.Colors.with_opacity(0.25, self.data.get('color'))) 
-        self.icon.parent.shadow = ft.BoxShadow(20, 40, ft.Colors.with_opacity(0.4, self.data.get('color')))
+        self.icon.parent.shadow = ft.BoxShadow(20, 40, ft.Colors.with_opacity(0.5, self.data.get('color')))
         self.update()
         if self._hover_task:
             self._hover_task.cancel()
@@ -210,19 +210,7 @@ class MapLocation(MiniWidget):
             ) for icon_str, icon in location_icons.items()
         ]
 
-    async def set_icon_size(self, e: ft.Event[ft.MenuItemButton]):
-        ''' Sets the size of our icon on the map '''
-        await self.widget.story.close_menu()
-        self.update_data(**{'icon_size': e.control.data})
-        if e.control.data == "Small":
-            self.icon.size = 30
-        elif e.control.data == "Medium":
-            self.icon.size = 65
-        elif e.control.data == "Large":
-            self.icon.size = 100
-        else:
-            self.icon.size = 150
-        self.update()
+    
         if self.widget.visible_mw_id == self.data.get('id', ''):
             self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()    # Rebuild our header if we're shown in sidebar
             self.widget.sidebar_header.update()
@@ -232,18 +220,6 @@ class MapLocation(MiniWidget):
 
             
         return [
-            
-           MenuOptionStyle(
-                on_click=self.handle_rename,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
-                    ft.Text(
-                        f"Rename {self.data.get('title')}", 
-                        weight=ft.FontWeight.BOLD, 
-                        overflow=ft.TextOverflow.ELLIPSIS, expand=True
-                    ), 
-                ]),
-            ),
             MenuOptionStyle(
                 ft.SubmenuButton(
                     ft.Row([
@@ -304,18 +280,23 @@ class MapLocation(MiniWidget):
                 ),
                 no_padding=True, no_effects=True
             ),
-            ft.SubmenuButton(
-                f"Icon Size: {self.data.get('icon_size', "Small")}",
-                [
-                    ft.MenuItemButton(
-                        size, data=size, close_on_click=True,
-                        on_click=self.set_icon_size, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
-                    ) for size in ("Small", "Medium", "Large", "Beefy")
-                ],
-                tooltip="Adjust the spacing between panels in the preview display.",
-                leading=ft.Icon(ft.Icons.PHOTO_SIZE_SELECT_SMALL_OUTLINED, self.data.get('color', "primary")),
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            MenuOptionStyle(
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(ft.Icons.PHOTO_SIZE_SELECT_SMALL_OUTLINED, self.data.get('color', "primary")),
+                        ft.Text("Icon Size", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    [
+                        ft.MenuItemButton(
+                            size, data=size, close_on_click=True,
+                            on_click=self.set_icon_size, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
+                        ) for size in ("Small", "Medium", "Large", "Beefy")
+                    ],
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                ),
+                no_padding=True, no_effects=True
             ),
 
             MenuOptionStyle(
@@ -330,6 +311,7 @@ class MapLocation(MiniWidget):
     # Return a list of header controls
     def create_sidebar_header_ctrls(self) -> list[ft.Control]:
         ctrls: list = super().create_sidebar_header_ctrls()
+        return ctrls
 
         # TODO: Figure out map_id if needed and how to impliment
         # Set preview to read the description of the location right below the image
@@ -390,7 +372,7 @@ class MapLocation(MiniWidget):
                                 style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                             ),
                             ft.MenuItemButton(
-                                "Delete", leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR), 
+                                f"Delete {self.data.get('title')}", leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR), 
                                 close_on_click=True,
                                 on_click=self.handle_delete,
                                 tooltip="Delete this location",
@@ -539,7 +521,7 @@ class MapLocation(MiniWidget):
     # Called when reloading changes to our plot point and in constructor
     def create_sidebar_body_ctrls(self) -> list[ft.Control]:
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
-
+        self.description_tf.value = self.data.get('description', '')
         # Our image button 
         self.set_image_preview_button = ft.GestureDetector(
             ft.IconButton(

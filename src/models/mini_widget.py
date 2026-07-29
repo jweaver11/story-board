@@ -47,6 +47,7 @@ class MiniWidget(ft.GestureDetector):
             }
 
         self.sidebar_title: SidebarTitleTextField    # Title of our miniwidget in the sidebar
+        self.icon: ft.Icon      # Some mw's have icons, so we store it here to change its size and color
 
         # State trackers
         self.is_dragging: bool = False              # If we are currently dragging our mini widget
@@ -57,6 +58,21 @@ class MiniWidget(ft.GestureDetector):
         ''' Stores our mouse positioning so we know where to open menus '''
         self.widget.story.mouse_x = e.global_position.x 
         self.widget.story.mouse_y = e.global_position.y
+
+    async def set_icon_size(self, e: ft.Event[ft.MenuItemButton]):
+        ''' Sets the size of our icon on the map '''
+        await self.widget.story.close_menu()
+        self.update_data(**{'icon_size': e.control.data})
+        if e.control.data == "Small":
+            self.icon.size = 30
+        elif e.control.data == "Medium":
+            self.icon.size = 65
+        elif e.control.data == "Large":
+            self.icon.size = 100
+        else:
+            self.icon.size = 150
+        self.update()
+        return
             
     # Called by delete buttons to delete ourselves from data. Children deal with the UI
     async def handle_delete(self, e=None):
@@ -81,7 +97,7 @@ class MiniWidget(ft.GestureDetector):
         self.widget.update_data(**{'mini_widgets_data': {self.data.get('id', ''): self.data}})
 
     # Saves updated position to our data
-    async def save_position(self, e: ft.DragEndEvent):
+    def save_position(self, e: ft.DragEndEvent):
         # Update our data to match our new position
         self.is_dragging = False
         self.position = (self.left, self.top)
@@ -98,8 +114,9 @@ class MiniWidget(ft.GestureDetector):
     
     # Called when hovering over our plot point to show the slider
     def highlight(self, e=None):
-        self.content.shadow = ft.BoxShadow(20, 40, ft.Colors.with_opacity(.25, self.data.get('color'))) #if self.plotline_control.shadow is None else None
-        self.update()
+        if self.content.shadow is None:
+            self.content.shadow = ft.BoxShadow(20, 40, ft.Colors.with_opacity(.5, self.data.get('color'))) #if self.plotline_control.shadow is None else None
+            self.update()
 
     # Hides are shadow unless our info display is visible, then stay highlighted
     def stop_highlight(self, e=None):
@@ -111,8 +128,9 @@ class MiniWidget(ft.GestureDetector):
         # Stay highlighted if we're showing our info display
         if self.widget.visible_mw_id == self.data.get('id', ''):
             return
-        self.content.shadow = None
-        self.update()
+        if self.content.shadow is not None:
+            self.content.shadow = None
+            self.update()
 
     
 
@@ -137,6 +155,8 @@ class MiniWidget(ft.GestureDetector):
         if not await self.widget.show_sidebar():
             self.widget.sidebar.update()
 
+        self.highlight()    # Highlight our mini widget since we're showing it in the sidebar
+
 
     def create_sidebar_header_ctrls(self) -> list:
         ''' Creates the controls for the header of the sidebar for this mini widget '''
@@ -160,6 +180,7 @@ class MiniWidget(ft.GestureDetector):
     # Child classes override this
     def create_sidebar_body_ctrls(self) -> list:
         ''' Creates the controls for the sidebar for this mini widget '''
+        
 
     # Updates our title in sidebar if we're shown in sidebar after a rname
     async def save_rename(self, e: ft.Event[ft.TextField]):

@@ -17,6 +17,7 @@ import asyncio
 import uuid
 from constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
 from styles.colors import colors
+from styles.text_fields import TextField, SingleLineTextField
 
 
 class Plotline(Widget):
@@ -45,8 +46,8 @@ class Plotline(Widget):
 
                 # Data in our info_display
                 'time_label': "Years",                          # Label for the time axis (any str they want)
-                'left_label': "0",                              # Start label
-                'right_label': "10",                            # Start and end date of the branch, for plotline view
+                'start_label': "0",                              # Start label
+                'end_label': "10",                            # Start and end date of the branch, for plotline view
                 'divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
               
 
@@ -288,8 +289,11 @@ class Plotline(Widget):
             ]        
 
     async def hide_sidebar(self, e=None): 
-        await super().hide_sidebar(e)
         self.showing_info = False
+        self.visible_mw_id = ""     # Reset our state for tracking visible mw
+        await super().hide_sidebar(e)
+
+        
 
     # Called when right clicking our controls for either plotline or an arc
     def get_new_event_menu_options(self) -> list[ft.Control]:
@@ -349,7 +353,7 @@ class Plotline(Widget):
 
     # Simple highlight and stop highlight functions
     def highlight_plotline_canvas(self):
-        self.plotline_highlight_container.shadow = ft.BoxShadow(20, 40, ft.Colors.with_opacity(0.25, self.data.get('color', ft.Colors.PRIMARY)))
+        self.plotline_highlight_container.shadow = ft.BoxShadow(20, 40, ft.Colors.with_opacity(0.15, self.data.get('color', ft.Colors.PRIMARY)))
         self.plotline_canvas.content.mouse_cursor = ft.MouseCursor.CLICK
         self.plotline_highlight_container.update()
         self.plotline_canvas.update()
@@ -404,6 +408,11 @@ class Plotline(Widget):
         if not await self.show_sidebar():   # If already showing, just update the sidebar
             self.sidebar.update()
         self.showing_info = True
+        # Stop all highlights if there were any previous
+        for pp in self.plot_point_stack.controls:
+            pp.stop_highlight()
+        for arc in self.arc_stack.controls:
+            arc.stop_highlight()
 
     # Called when right clicking our plotline on the canvas
     async def open_menu(self, e: ft.PointerEvent=None):
@@ -444,19 +453,153 @@ class Plotline(Widget):
         self.marker_stack.update()
 
     def create_sidebar_body_ctrls(self) -> list[ft.Control]:
+
+        # TODO:
+        # Divisions, left-right-time labels, events
+
         
+
+        async def _new_divisions_clicked(e=None):
+            ''' Called to add a new division to the bottom of the divisions list '''
+            text_control = TextField(
+                expand=True, value=len(self.data.get('Divisions', [])) + 1, dense=True, 
+                capitalization=ft.TextCapitalization.SENTENCES,
+                #on_blur=self._change_our_data,
+                data=['Divisions', len(self.data.get('Divisions', [])), False],
+                suffix_icon=ft.IconButton(
+                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                    tooltip="Delete Division", 
+                    #on_click=self._change_our_data,
+                    data=['Divisions', idx, True],
+                    mouse_cursor="click"
+                ),
+            )
+
+            self.divisions_column.controls.append(text_control)
+                        
+
+            current_divisions = self.data.get('Divisions', [])
+            current_divisions.append(str(len(current_divisions) + 1))
+
+            self.data['Divisions'] = current_divisions
+            self.update_data(**{'Divisions': current_divisions})
+            self.update()
+
+        plotline_side_labels = ft.Row([
+            SingleLineTextField(
+                expand=True, label="Start Label", value=self.data.get('start_label', ""), dense=True, 
+                capitalization=ft.TextCapitalization.SENTENCES,
+                #on_blur=change_label,
+                data='start_label',
+            ),
+            SingleLineTextField(
+                expand=True, label="End Label", value=self.data.get('end_label', ""), dense=True, 
+                capitalization=ft.TextCapitalization.SENTENCES,
+                #on_blur=change_label,
+                data='end_label',
+            )
+        ])
+
         
+        self.divisions_column = ft.Column(expand=True)  # Column to hold our divisions text controls
+
+        
+
+
+        # Go through and list all our events in order. We'll sort them by their left positions
+        events_list = []
+
+        # Sort that list
+        #events_list = sorted(events_list, key=lambda e: e.left)
+
+        # Hold our text spans for the events
+        events_spans = []  
+
+        # Make our text control with our built spans
+        events_text = ft.Text(spans=events_spans, selectable=True, expand=True)
+
+        # Container to hold the text control for events
+        events_container = ft.Container(               
+            padding=ft.Padding.all(6), border_radius=ft.BorderRadius.all(10), expand=True,
+            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
+            content=ft.Row([events_text]), margin=ft.Margin.only(top=6)
+        )
+
+        events_label = ft.Row([
+            ft.Text(
+                "\tSequence of Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), 
+                tooltip="The order of events that occur in this plotline"
+            ),
+            
+        ], spacing=0)
+        
+
+        divisions_label = ft.Row([
+            ft.Text(
+                "\tDivisions", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=self.data.get('color', None), 
+                tooltip="The number and label of the divisions on this plotline."
+            ),
+            ft.IconButton(
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY),
+                tooltip="Add Division", on_click=_new_divisions_clicked,
+                mouse_cursor="click"
+            )
+        ], spacing=0)
+
+
+        self.divisions_column.controls.clear()  
+        
+        # Add all our current divisions
+        for idx, division in enumerate(self.data.get('Divisions', [])):
+            # Create text control for this division
+            text_control = TextField(
+                expand=True,  value=division, dense=True, 
+                capitalization=ft.TextCapitalization.SENTENCES,
+                #on_blur=self._change_our_data,
+                data=['Divisions', idx, False],
+                focus_color=self.data.get('color', None),
+                cursor_color=self.data.get('color', None),
+                focused_border_color=self.data.get('color', None),
+                suffix_icon=ft.IconButton(
+                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                    tooltip="Delete Division", 
+                    #on_click=self._change_our_data,
+                    data=['Divisions', idx, True],
+                    mouse_cursor="click"
+                ),
+            )
+
+            # Add to a row with delete button to remove divisions
+            self.divisions_column.controls.append(text_control)
+
+
         return [
                 
+                
+                #plotline_side_labels,       # Labels
+
+
+
+                #ft.Divider(2, 2),
+
+                divisions_label,        # Divisions
+                ft.Container(self.divisions_column, margin=ft.Margin.symmetric(horizontal=20)),
+                
+
+                events_label,       # Events
+                events_container,
+
                 ft.Divider(),
                 self.sidebar_notes_label,
                 self.sidebar_notes_column,
-            
-        ]  
-
+                
+            ]
+        
+        
+        
 
     # Called for any size changes to our plotline canvas
-    def draw_plotline_canvas(self):
+    def redraw_plotline_canvas(self):
         ''' Redraws our plotline on the canvas when it is resized. Does it on startup as well '''
                
         # Draw our plotline on the canvas with its two end markers ------------------------------------------------
@@ -475,7 +618,7 @@ class Plotline(Widget):
                     cv.Path.MoveTo(PLOTLINE_WIDTH - PLOTLINE_PADDING, PLOTLINE_HEIGHT // 2 + (PLOTLINE_PADDING / 2)),
                     cv.Path.LineTo(PLOTLINE_WIDTH - PLOTLINE_PADDING, PLOTLINE_HEIGHT // 2 - (PLOTLINE_PADDING / 2)),
                 ],
-                paint=ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', "primary")},.7")
+                paint=ft.Paint(stroke_width=4, style="stroke", color=f"{self.data.get('color', "primary")}")
             ),
         ]
 
@@ -490,7 +633,7 @@ class Plotline(Widget):
         # Create a path for our divisions
         divisions_path = cv.Path(
             elements=[],
-            paint=ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', "primary")},.7")
+            paint=ft.Paint(stroke_width=2, style="stroke", color=f"{self.data.get('color', "primary")}")
         )
 
         # Go through our number of divisions and add markers to the path
@@ -505,7 +648,7 @@ class Plotline(Widget):
             if not self.data.get('hide_division_labels', False):
                 self.plotline_canvas.shapes.append(
                     cv.Text(
-                        x, PLOTLINE_HEIGHT // 2 - PLOTLINE_PADDING,
+                        x, PLOTLINE_HEIGHT / 2 - PLOTLINE_PADDING / 2,
                         str(divisions[i]), 
                         ft.TextStyle(14, weight=ft.FontWeight.BOLD),
                         alignment=ft.Alignment.CENTER
@@ -515,31 +658,6 @@ class Plotline(Widget):
         # Add our divisions path to the canvas
         self.plotline_canvas.shapes.append(divisions_path)
 
-        # Add our plotline ends labels ---------------------------------------------------------------------------
-        left_label = str(self.data.get('left_label', '0'))
-        left_label = left_label.split('.', 1)[0] if '.' in left_label else left_label
-        right_label = str(self.data.get('right_label', '10'))
-        right_label = right_label.split('.', 1)[0] if '.' in right_label else right_label
-        time_label = str(self.data.get('time_label', 'years')).capitalize()
-
-        # Set the text width, and align it in center, make sure it wraps
-        self.plotline_canvas.shapes.append(cv.Text(
-            PLOTLINE_PADDING, PLOTLINE_HEIGHT // 2 - 60, left_label, 
-            ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
-            max_width=50,   # Prevent overflow left
-            text_align=ft.TextAlign.CENTER, 
-        ))
-        self.plotline_canvas.shapes.append(cv.Text(
-            PLOTLINE_WIDTH - PLOTLINE_PADDING, PLOTLINE_HEIGHT // 2 - 60, right_label, 
-            ft.TextStyle(18, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
-            text_align=ft.TextAlign.CENTER, max_width=50,   # Prevent overflow right
-        ))
-        self.plotline_canvas.shapes.append(cv.Text(
-            PLOTLINE_WIDTH // 2, PLOTLINE_HEIGHT - 50, time_label, 
-            ft.TextStyle(24, weight=ft.FontWeight.BOLD), alignment=ft.Alignment.CENTER,
-            text_align=ft.TextAlign.CENTER
-        ))
-
                      
     def build(self):
         super().build()
@@ -547,8 +665,19 @@ class Plotline(Widget):
         # When clicking our canvas. If we're in center vertically and not showing sidebar, show sidebar
         async def may_show_sidebar(e: ft.PointerEvent):
             if self.can_open_menu:
-                await self.show_sidebar()
+                await self.show_info()
             #print("Open menu")
+
+        # Called when we change one of our labels
+        def change_label(e: ft.Event[ft.TextField]):
+            label = e.control.data
+            new_value = e.control.value
+            if label == "start_label":
+                self.update_data(**{'start_label': new_value})
+            elif label == "end_label":
+                self.update_data(**{'end_label': new_value})
+            else:
+                self.update_data(**{'time_label': new_value})
             
         # Our canvas that 
         self.plotline_canvas = cv.Canvas(
@@ -562,7 +691,7 @@ class Plotline(Widget):
             ),
             width=PLOTLINE_WIDTH, height=PLOTLINE_HEIGHT,
         )
-        self.draw_plotline_canvas()
+        
 
         self.plotline_highlight_container = ft.Container(
             width=PLOTLINE_WIDTH, height=3, shadow=None, ignore_interactions=True, margin=ft.Margin.symmetric(horizontal=PLOTLINE_PADDING)
@@ -606,7 +735,55 @@ class Plotline(Widget):
         if self.data.get('show_sidebar', True) == False:
             self.showing_info = False
 
-        
+        start_label = ft.TextField(
+            value=self.data.get('start_label', ""), dense=True,
+            capitalization=ft.TextCapitalization.SENTENCES,
+            bgcolor=ft.Colors.TRANSPARENT,
+            on_blur=change_label,
+            border_radius=4, content_padding=ft.Padding.all(0),
+            border_color=ft.Colors.TRANSPARENT,
+            focused_border_color=ft.Colors.PRIMARY,
+            data='start_label',
+            text_align=ft.TextAlign.CENTER,
+            left=PLOTLINE_PADDING,
+            top=PLOTLINE_HEIGHT / 2 - PLOTLINE_PADDING,
+            offset=ft.Offset(-0.5, 0),
+            width=PLOTLINE_PADDING * 2, 
+            text_style=ft.TextStyle(size=18, weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),
+        )
+
+        end_label = ft.TextField(
+            value=self.data.get('end_label', ""), dense=True,
+            capitalization=ft.TextCapitalization.SENTENCES,
+            bgcolor=ft.Colors.TRANSPARENT,
+            on_blur=change_label,
+            border_radius=4, content_padding=ft.Padding.all(0),
+            border_color=ft.Colors.TRANSPARENT,
+            focused_border_color=ft.Colors.PRIMARY,
+            data='end_label',
+            text_align=ft.TextAlign.CENTER,
+            left=PLOTLINE_WIDTH - PLOTLINE_PADDING,
+            top=PLOTLINE_HEIGHT / 2 - PLOTLINE_PADDING,
+            offset=ft.Offset(-0.5, 0),
+            width=PLOTLINE_PADDING * 2, 
+            text_style=ft.TextStyle(size=18, weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),
+        )
+
+        time_label = ft.TextField(
+            value=self.data.get('time_label', ""), dense=True,
+            capitalization=ft.TextCapitalization.SENTENCES,
+            bgcolor=ft.Colors.TRANSPARENT,
+            on_blur=change_label,
+            border_radius=4,
+            border_color=ft.Colors.TRANSPARENT,
+            focused_border_color=ft.Colors.PRIMARY,
+            data='time_label',
+            text_align=ft.TextAlign.CENTER,
+            left=PLOTLINE_WIDTH / 2,
+            top=PLOTLINE_HEIGHT - PLOTLINE_PADDING,
+            offset=ft.Offset(-0.5, 0),
+            text_style=ft.TextStyle(size=24, weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),
+        )
 
         # Holds our drawing so we can interact with it, zoom, pan, etc.
         interactive_viewer = ft.InteractiveViewer(
@@ -616,6 +793,9 @@ class Plotline(Widget):
                     width=PLOTLINE_WIDTH, height=PLOTLINE_HEIGHT,
                 ),
                 self.plotline_canvas,
+                start_label,
+                time_label,
+                end_label,
                 self.plotline_highlight_container,
                 self.arc_stack,
                 self.marker_stack,
@@ -634,6 +814,8 @@ class Plotline(Widget):
                 vertical_alignment=ft.CrossAxisAlignment.CENTER
             )
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
+
+        self.redraw_plotline_canvas()
 
 
 

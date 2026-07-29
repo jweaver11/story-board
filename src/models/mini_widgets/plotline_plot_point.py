@@ -27,13 +27,18 @@ class PlotlinePlotPoint(MiniWidget):
         if self.is_new:
             self.data.update({ 
                 'tag': "plot_point",            # Tag to identify what type of object this is
-                
-                'when': str(),
-                'where': str(),
                 'relevant_characters': list(),
+                'icon': "circle",
+
+                # Information for our information display
+                'info': [
+                    {'label': 'When', 'value': ""},
+                    {'label': 'Where', 'value': ""},
+                ]
             })
 
         self.icon: ft.Icon
+        self.plotline_description_tf: TextField
 
     
     async def move_plot_point(self, e: ft.DragUpdateEvent):
@@ -96,6 +101,25 @@ class PlotlinePlotPoint(MiniWidget):
                 no_padding=True, no_effects=True
             ),
             MenuOptionStyle(
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(ft.Icons.PHOTO_SIZE_SELECT_SMALL_OUTLINED, self.data.get('color', "primary")),
+                        ft.Text("Icon Size", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    [
+                        ft.MenuItemButton(
+                            size, data=size, close_on_click=True,
+                            on_click=self.set_icon_size, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
+                        ) for size in ("Small", "Medium", "Large", "Beefy")
+                    ],
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                ),
+                no_padding=True, no_effects=True
+            ),
+            
+            MenuOptionStyle(
                 on_click=self.handle_delete,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
@@ -104,31 +128,27 @@ class PlotlinePlotPoint(MiniWidget):
             )
         ]
 
+    # Make sure to unhighlight any highlighted plot points when we close our mini widget
+    async def show_mini_widget(self, e=None):
+        
+        await super().show_mini_widget(e)
+        for pp in self.widget.plot_point_stack.controls:
+            if pp.data.get('id', '') != self.data.get('id', ''):
+                pp.stop_highlight()
+        for arc in self.widget.arc_stack.controls:
+            arc.stop_highlight()
+
+    
 
     def create_sidebar_header_ctrls(self) -> list[ft.Control]:
         ctrls = super().create_sidebar_header_ctrls()
+        # TODO: ADjust icon size here too
 
         return ctrls
 
     
     def create_sidebar_body_ctrls(self) -> list[ft.Control]:
         ''' Rebuilds any parts of our UI and information that may have changed when we update our data '''
-
-
-
-        when_tf = TextField(
-            value=self.data.get('When', ''), multiline=True, expand=True, 
-            on_blur=lambda e: self.update_data(**{'When': e.control.value}), 
-            label="When", capitalization=ft.TextCapitalization.SENTENCES,
-            dense=True
-        )
-
-        where_tf = TextField(
-            value=self.data.get('Where'), multiline=True, expand=True, 
-            on_blur=lambda e: self.update_data(**{'Where': e.control.value}), 
-            label="Where", capitalization=ft.TextCapitalization.SENTENCES,
-            dense=True
-        )
 
         # Adds or removes characters from our Relevant characters list
         def _toggle_Relevant_characters(e):
@@ -242,41 +262,140 @@ class PlotlinePlotPoint(MiniWidget):
             spacing=0,
         )
 
+        self.description_tf.value = self.data.get('description', '')
+
         content = ft.Column(
             expand=True, tight=True, scroll="auto", alignment=ft.MainAxisAlignment.START, 
             controls=[
-                ft.Container(height=1),
                 
-                ft.Row([when_tf, where_tf]),
                 
                 Relevant_characters_row,        # Holds label, buttons for each Relevant character, and add/remove button
                 Relevant_characters_selector,
                 ft.Divider(2, 2),
+                self.sidebar_info_label,
+                self.sidebar_info_column,
      
             ]
         )
 
         return content
 
+    # Called when hovering over our plot point to show the slider
+    def highlight(self, e=None):
+        if self.content.controls[0].shadow is None:
+            self.content.controls[0].shadow = ft.BoxShadow(20, 40, ft.Colors.with_opacity(.5, self.data.get('color'))) #if self.plotline_control.shadow is None else None
+            self.update()
+
+    # Hides are shadow unless our info display is visible, then stay highlighted
+    def stop_highlight(self, e=None):
+
+        # If we're dragging, keep highlighted
+        if self.is_dragging:
+            return
+
+        # Stay highlighted if we're showing our info display
+        if self.widget.visible_mw_id == self.data.get('id', ''):
+            return
+        if self.content.controls[0].shadow is not None:
+            self.content.controls[0].shadow = None
+            self.update()
+
+    async def set_icon_size(self, e: ft.Event[ft.MenuItemButton]):
+        await super().set_icon_size(e)
+        self.top = PLOTLINE_HEIGHT / 2 - self.icon.size / 2
+        self.update()
+
     def build(self):
         """ Rebuilds our plotline control that holds our plot point and slider """
 
+        # Update our new description in real time without saving to data
+        def update_description(e: ft.Event[ft.TextField]):
+            new_description = e.control.value
+            if self.widget.visible_mw_id == self.data.get('id', ''):
+                self.description_tf.value = new_description
+                self.description_tf.update()
+            self.plotline_description_tf.value = new_description
+            self.plotline_description_tf.update()
+
+        def rename(e: ft.Event[ft.TextField]):
+            new_title = e.control.value
+            if self.widget.visible_mw_id == self.data.get('id', ''):
+                self.sidebar_title.value = new_title
+                self.sidebar_title.update()
+            self.plotline_title_tf.value = new_title
+            self.plotline_title_tf.update()
+
+            
         super().build()
 
-        self.mouse_cursor=ft.MouseCursor.CLICK
-        self.on_enter = self.highlight
-        self.on_exit = self.stop_highlight
-        self.on_pan_update=self.move_plot_point 
-        self.on_pan_end=self.save_position
-        self.on_secondary_tap=lambda: self.widget.story.open_menu(self.get_menu_options())
-        self.on_tap=self.show_mini_widget
+        
         self.left = self.data.get('position', (200, 0))[0]
-        self.tooltip = self.data.get('title', "Plot Point")
+        
         self.offset = ft.Offset(-0.5, 0)
 
-        self.icon = ft.Icon(icons.get(self.data.get('icon', None), ft.Icons.CIRCLE), self.data.get('color', None))
+        # Create our icon with the right color and size
+        icon_size_map = {"Small": 30, "Medium": 65, "Large": 100, "Beefy": 150}
+        self.icon = ft.Icon(
+            icons.get(self.data.get('icon'), ft.Icons.LOCATION_PIN), self.data.get('color', None), expand=False, 
+            size=icon_size_map.get(self.data.get('icon_size', 30), 30),
+            animate_size=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+        )
+
+        self.top = PLOTLINE_HEIGHT / 2 - self.icon.size / 2
+
+        self.plotline_title_tf = ft.TextField(
+            value=self.data.get('title', ''), 
+            bgcolor=ft.Colors.TRANSPARENT, 
+            text_style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD),
+            border_color=ft.Colors.TRANSPARENT,
+            focused_border_color=ft.Colors.PRIMARY,
+            multiline=False, dense=True, width=150,
+            on_blur=lambda e: self.update_data(**{'title': e.control.value}),
+            on_change=rename,
+            capitalization=ft.TextCapitalization.SENTENCES,
+            label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
+            content_padding=ft.Padding.all(0),
+            text_align=ft.TextAlign.CENTER
+        )
+
+        self.plotline_description_tf = ft.TextField(
+            value=self.data.get('description', ''), 
+            bgcolor=ft.Colors.TRANSPARENT, 
+            text_style=ft.TextStyle(size=10, italic=True),
+            border_color=ft.Colors.TRANSPARENT,
+            focused_border_color=ft.Colors.PRIMARY,
+            multiline=True, dense=True, width=150,
+            on_blur=lambda e: self.update_data(**{'description': e.control.value}),
+            capitalization=ft.TextCapitalization.SENTENCES,
+            label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
+            on_change = update_description, content_padding=ft.Padding.all(0),
+            text_align=ft.TextAlign.CENTER
+        )   
+
+        
+
+        self.description_tf.on_change = update_description
         
     
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
-        self.content = ft.Container(self.icon, shape=ft.BoxShape.CIRCLE)
+        self.content = ft.Column([
+            ft.Container(
+                ft.GestureDetector(
+                    self.icon, 
+                    on_enter=self.highlight, on_exit=self.stop_highlight, 
+                    on_pan_update=self.move_plot_point, on_pan_end=self.save_position,
+                    on_secondary_tap=lambda: self.widget.story.open_menu(self.get_menu_options()),
+                    on_tap=self.show_mini_widget,
+                    mouse_cursor=ft.MouseCursor.CLICK
+                ),
+                shape=ft.BoxShape.CIRCLE, 
+            ),
+            ft.Container(expand=True, width=1, bgcolor=ft.Colors.ON_SURFACE_VARIANT, height=PLOTLINE_HEIGHT / 8, margin=ft.Margin.only(top=10)),
+            self.plotline_title_tf,
+            self.plotline_description_tf
+        ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.START)
+
+
+
+        
         
