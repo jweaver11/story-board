@@ -5,7 +5,7 @@ A Settings object is created for every story
 
 import flet as ft
 from models.views.story import Story
-import constants
+from constants import SETTINGS_FILE_PATH, APP_DATA_PATH
 from models.widget import Widget
 from styles.colors import colors, theme_colors
 import os
@@ -24,8 +24,6 @@ class Settings(ft.View):
     # Constructor
     def __init__(
         self, 
-        page: ft.Page, 
-        file_path: str, 
         story: Story = None, 
         data: dict = None,
         selected_index: int = 0,   # Which folder to show when opening settings. 0 = Appearance, 1 = Widgets, 2 = Templates, 3 = Resources
@@ -39,16 +37,14 @@ class Settings(ft.View):
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
         )
 
-        #self.page = page   # Grabs our original page, as sometimes the reference gets lost. with all the UI changes that happen. p.update() always works
         self.route = "/settings"   # Sets our route for our settings view
         self.story = story
-        self.file_path = file_path
         self.data = data
         self.selected_index = selected_index
 
         # If we're new, give default values for our data 
         if data is None or data == {}:
-            self.data.update({
+            self.data = {
                 
                 
                 'is_first_launch': True,    # If this is the first time the app has been launched or not
@@ -186,8 +182,7 @@ class Settings(ft.View):
                 'world_templates': {    
                     'Default': default_world_template_data_dict(),
                 },
-            })
-            page.run_task(self.save_file)
+            }
 
 
     def before_update(self):
@@ -197,7 +192,7 @@ class Settings(ft.View):
 
     # Called for little data changes
     def update_data(self, **kwargs):
-        ''' Changes a key/value pair in our data and saves the json file '''
+        ''' Changes a key/value pair in our data and saves the json file ''' 
 
         # Allow updating of nested dicts without overriding the entire dict
         def _merge_data(target: dict, updates: dict):
@@ -215,16 +210,14 @@ class Settings(ft.View):
     async def save_file(self):
         ''' Saves our current data to the json file '''
 
-        print("Saved settings to file")
-
         try:
-            os.makedirs(constants.SETTINGS_FILE_PATH, exist_ok=True)
+            os.makedirs(APP_DATA_PATH, exist_ok=True)
             # Save the data to the file (creates file if doesnt exist)
-            with open(self.file_path, "w", encoding='utf-8') as f:   
+            with open(SETTINGS_FILE_PATH, "w", encoding='utf-8') as f:   
                 json.dump(self.data, f, indent=4)
         
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error saving settings to {SETTINGS_FILE_PATH}: {e}")
 
     async def close_settings(self, e=None):
         ''' Closes the settings view and returns to the story or home view '''
@@ -250,7 +243,6 @@ class Settings(ft.View):
             'template_data': data,
         }
         self.update_data(**{'character_templates': self.data['character_templates']})
-        #self.page.run_task(self.save_file)
         
 
     # Called when the page is resized

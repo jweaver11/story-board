@@ -67,6 +67,13 @@ class ContentRail(Rail):
                             tooltip="Create a new Canvas for sketching drawing, or visual note taking",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                         ),
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="SVG Canvas",
+                            data="canvas", on_click=self.new_item_clicked, close_on_click=True,
+                            tooltip="A Canvas of scalable vector graphics that allow for infinite zooming. Coming Soon!",
+                            disabled=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                        ),
                         ft.MenuItemButton(      
                             leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY), content="Note", 
                             data="note", on_click=self.new_item_clicked, close_on_click=True,

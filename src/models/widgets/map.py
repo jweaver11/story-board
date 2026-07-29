@@ -53,7 +53,7 @@ class Map(Widget):
 
                 # Info about the map
                 'draw_mode': False,      # Whether we're in draw mode or not
-                'background_image': "map_bg_fantasy.jpg",    # The background image of the map
+                'background_image': "map_bg_fantasy_dark.jpg",    # The background image of the map
 
                 'lore': list(),     # List of lores [{'label': "Lore Label", 'content': "Lore Content"}]
                 'history': list(),      # List of histories  [{'label': "History Label", 'content': "History Content"}]
@@ -701,16 +701,29 @@ class Map(Widget):
                                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                     ),  
                                     ft.MenuItemButton(      # 1
-                                        "Fantasy Background", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                                        "Dark Fantasy", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
                                         close_on_click=True,
-                                        data="map_bg_fantasy.jpg", on_click=handle_set_built_in_image,
+                                        data="map_bg_fantasy_dark.png", on_click=handle_set_built_in_image,
+                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                    ), 
+                                    ft.MenuItemButton(      # 1
+                                        "Light Fantasy", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                                        close_on_click=True,
+                                        data="map_bg_fantasy_light.png", on_click=handle_set_built_in_image,
                                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                     ), 
                                     ft.MenuItemButton(      # 2
-                                        "Sci-Fi Background", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                                        "Sci-Fi", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
                                         close_on_click=True,
+                                        data="map_bg_scifi.png", on_click=handle_set_built_in_image,
                                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                     ),
+                                    ft.MenuItemButton(      # 1
+                                        "Space", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                                        close_on_click=True,
+                                        data="map_bg_space.jpg", on_click=handle_set_built_in_image,
+                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                    ), 
                                     ft.MenuItemButton(      # 2
                                         "None", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
                                         close_on_click=True,

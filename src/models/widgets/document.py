@@ -1,11 +1,8 @@
 import flet as ft
 from models.views.story import Story
 from models.widget import Widget
-from styles.menu_option_style import MenuOptionStyle
 from flet_quill import FletQuill, FletQuillEditor, FletQuillToolbar
 from models.app import app
-from models.isolated_controls.row import IsolatedRow
-from models.isolated_controls.column import IsolatedColumn
 import math
 from utils.safe_string_checker import return_safe_name
 import asyncio
@@ -37,18 +34,30 @@ class Document(Widget):
                 'color': app.settings.data.get('widget_defaults', {}).get('document', {}).get('color'),
                 'show_sidebar': True,
 
+                # Settings for the toolbar
+                'toolbar_settings': {
+                    'font_family': "Arial",
+                    'font_size': 12,
+                    'bold': False,
+                    'italic': False,
+                    'decoration': None,
+                },
+
                 # Holds our comments and reference images in data
-                'mini_widgets': dict(),
+                'comments': dict(),
 
                 # The text as json list data that is loaded and saved
                 'document_data': list(),       
             }
         )  
+        self.dirty: bool = False  # Marks if our document has unsaved changes that need to be written to file
+        self.quill_editor: FletQuillEditor  # Will hold our flet quill editor object
+        self.comments_column: ft.Column  # Will hold our comments and reference images on the right side of the document
 
     class Comment(TextField):
 
         # Constructor
-        def __init__(self, title: str, widget: Widget, data: dict=None):
+        def __init__(self, title: str, widget: 'Document', data: dict=None):
 
             self.widget = widget
 
@@ -72,14 +81,17 @@ class Document(Widget):
                 label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
             ) 
 
-        # Updates our data then the associated dict inside parents 'mini_widgets' dict
+        # Updates our data then the associated dict inside parents 'comments' dict
         def update_data(self, **kwargs):
             self.data.update(kwargs)
-            self.widget.update_data(mini_widgets={self.data["id"]: self.data})
+            self.widget.update_data(comments={self.data["id"]: self.data})
 
         # Deletes this comment from parents data and controls
-        def delete_comment(self, e: ft.Event):
-            pass
+        def delete_comment(self, e=None):
+            self.widget.data['comments'].pop(self.data["id"], None)
+            self.widget.update_data(**{'comments': self.widget.data.get('comments', {})})
+            self.widget.comments_column.controls.remove(self)
+            self.widget.comments_column.update()
             
 
         # Build the comment
@@ -89,7 +101,7 @@ class Document(Widget):
             self.label_style = ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
     
     class ReferenceImage(ft.Container):
-        def __init__(self, widget: Widget, data: dict=None):
+        def __init__(self, widget: 'Document', data: dict=None):
 
             self.widget = widget
 
@@ -109,14 +121,17 @@ class Document(Widget):
                 padding=10,
             ) 
 
-        # Updates our data then the associated dict inside parents 'mini_widgets' dict
+        # Updates our data then the associated dict inside parents 'comments' dict
         def update_data(self, **kwargs):
             self.data.update(kwargs)
-            self.widget.update_data(mini_widgets={self.data["id"]: self.data})
+            self.widget.update_data(comments={self.data["id"]: self.data})
             
         # Deletes this comment from parents data and controls
-        def delete_image(self, e: ft.Event):
-            pass
+        def delete_image(self, e=None):
+            self.widget.data['comments'].pop(self.data["id"], None)
+            self.widget.update_data(**{'comments': self.widget.data.get('comments', {})})
+            self.widget.comments_column.controls.remove(self)
+            self.widget.comments_column.update()
             
 
         # Build the image
@@ -143,6 +158,13 @@ class Document(Widget):
                 on_exit=hide_delete_icon,
             )
             
+    # Checks if our document is dirty, and saves it if it is
+    async def save_file(self):
+        if self.dirty == True:
+            self.dirty = False
+            self.update_data(**{'document_data': await self.quill_editor.save()})
+        await super().save_file()
+        
 
     # Called after any changes happen to the data that need to be reflected in the UI
     def build(self):
@@ -183,7 +205,7 @@ class Document(Widget):
         async def create_comment(e: ft.Event):
             comment_title = e.control.value.strip()
             new_comment = self.Comment(title=comment_title, widget=self)
-            self.update_data(**{'mini_widgets': {new_comment.data["id"]: new_comment.data}})
+            self.update_data(**{'comments': {new_comment.data["id"]: new_comment.data}})
             self.comments_column.controls.append(new_comment)
             self.comments_column.update()
 
@@ -208,7 +230,7 @@ class Document(Widget):
                             'image': encoded_string,
                         }
                     )
-                    self.update_data(**{'mini_widgets': {reference_image.data["id"]: reference_image.data}})
+                    self.update_data(**{'comments': {reference_image.data["id"]: reference_image.data}})
                     self.comments_column.controls.append(reference_image)
                     self.comments_column.update()
                         
@@ -218,52 +240,38 @@ class Document(Widget):
 
 
         # Loads our comments and ref images from data into controls to display on right side of document
-        def load_mini_widgets() -> list:
+        def load_comments() -> list:
             mini_widget_controls = []
-            for mw_data in self.data.get('mini_widgets', {}).values():
+            for mw_data in self.data.get('comments', {}).values():
                 if mw_data['tag'] == "comment":
                     mini_widget_controls.append(self.Comment(title=mw_data.get('title'), widget=self, data=mw_data))
                 elif mw_data['tag'] == "reference_image":
                     mini_widget_controls.append(self.ReferenceImage(widget=self, data=mw_data))
             return mini_widget_controls
         
-        # Async data update so we dont bog down when we dont need to
-        async def update_data_async(**kwargs):
-            # Allow updating of nested dicts without overriding the entire dict
-            def _merge_data(target: dict, updates: dict):
-                for key, value in updates.items():
-                    current_value = target.get(key)
-                    if isinstance(current_value, dict) and isinstance(value, dict):
-                        _merge_data(current_value, value)
-                    else:
-                        target[key] = value
-
-            _merge_data(self.data, kwargs)  # Merge the new data into the existing data
-
-            # Mark widget as dirty for file write
-            if self.needs_file_write == False:
-                self.needs_file_write = True
-
-        async def save_quill():
-            ''' Saves our quill data, but marks that it needs to be saved '''
-            await update_data_async(**{'document_data': await quill_editor.save()})
+        # Marks ourselves as dirty after any changes to the document
+        def mark_dirty(e=None):
+            if self.dirty == False:
+                self.dirty = True
             
         
         # Toolbar only
         quill_toolbar = FletQuillToolbar(
-            show_toolbar_divider=False,
-            center_toolbar=True,
+            #show_toolbar_divider=True,
+            #center_toolbar=True,
         )
         # Editor only 
-        quill_editor = FletQuillEditor(
+        self.quill_editor = FletQuillEditor(
             text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),
             placeholder_text="Start your masterpiece here...",
+            expand=True
         )
         # Both
-        #quill = FletQuill(
-            #show_toolbar_divider=False,
+        #self.quill = FletQuill(
+            #show_toolbar_divider=True,
             #center_toolbar=False,
-            #text_data=[{"insert": "Hello from the combined control!\n"}],
+            #text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),
+            #expand=True
         #)
 
         # Holds our flet quill
@@ -275,7 +283,7 @@ class Document(Widget):
             border_radius=4,
             
             content=ft.Container(
-                ft.Column([ft.KeyboardListener(quill_editor, on_key_down=save_quill, expand=True)]),
+                ft.Column([ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty, expand=True)], expand=True, scroll=ft.ScrollMode.AUTO),
                 border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
                 border_radius=4,
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
@@ -287,7 +295,7 @@ class Document(Widget):
             
         
         # Otherwise, build our info column
-        self.comments_column = ft.Column(load_mini_widgets(), expand=1, scroll="auto")
+        self.comments_column = ft.Column(load_comments(), expand=True, scroll=ft.ScrollMode.AUTO)
         
         self.sidebar_body.controls.extend([
             ft.Row([
@@ -296,11 +304,7 @@ class Document(Widget):
                 ft.MenuBar(
                     [
                         new_mini_widget_button := ft.SubmenuButton(
-                            ft.Container(
-                                ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
-                                padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
-                                width=40, height=40, alignment=ft.Alignment.CENTER
-                            ),
+                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY),
                             [
                                 ft.MenuItemButton(      # Folders
                                     leading=ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, ft.Colors.PRIMARY), content="Text", 
@@ -328,11 +332,10 @@ class Document(Widget):
                 new_comment_tf := ft.TextField(
                     label="Comment Title", dense=True, margin=ft.Margin.symmetric(horizontal=6),
                     capitalization=ft.TextCapitalization.WORDS,
-                    on_blur=show_new_mini_widget_button, #bgcolor=ft.Colors.SURFACE_CONTAINER,
+                    on_blur=show_new_mini_widget_button, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                     on_submit=create_comment, animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
                     visible=False, autofocus=True, expand=True,
                 ),
-                #new_comment_tf_placeholder := ft.Container(expand=True, visible=True),
                     
             ], spacing=0),
             
@@ -352,15 +355,10 @@ class Document(Widget):
 
         self.content = ft.Column([
             ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT),
-            
-            
-                ft.Row(
-                    [editor_container, self.toggle_sidebar_visibility_button, self.sidebar], 
-                    spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
-                    vertical_alignment=ft.CrossAxisAlignment.CENTER
-                )
-            
-        ], spacing=0, expand=True)
-
-
-# TODO: Deleting comment and ref image not done
+            ft.Divider(2, 2),
+            ft.Row([
+                editor_container,
+                self.toggle_sidebar_visibility_button, 
+                self.sidebar
+            ], spacing=0, expand=True)
+        ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)

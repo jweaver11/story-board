@@ -8,6 +8,7 @@ import os
 import json
 import asyncio
 from utils.route_change import route_change
+from constants import SETTINGS_FILE_PATH, STORIES_DIRECTOR_PATH
 
 
 class App:
@@ -34,17 +35,17 @@ class App:
         # Should just look for our settings file to load our data from. Settings should do all other logic
 
         # Path to our settings file
-        settings_file_path = os.path.join(constants.APP_DATA_PATH, "settings.json")
+        
 
         # Create settings.json with empty dict if it doesn't exist
-        if not os.path.exists(settings_file_path):
-            os.makedirs(os.path.dirname(settings_file_path), exist_ok=True)  # Ensure directory exists
-            with open(settings_file_path, "w", encoding='utf-8') as f:
+        if not os.path.exists(SETTINGS_FILE_PATH):
+            os.makedirs(os.path.dirname(SETTINGS_FILE_PATH), exist_ok=True)  # Ensure directory exists
+            with open(SETTINGS_FILE_PATH, "w", encoding='utf-8') as f:
                 json.dump({}, f)
         
         try:
             # Read the JSON file
-            with open(settings_file_path, "r", encoding='utf-8') as f:
+            with open(SETTINGS_FILE_PATH, "r", encoding='utf-8') as f:
                 settings_data = json.load(f)
 
         # If no file exists, create one with default settings
@@ -54,11 +55,11 @@ class App:
                 
         # Other errors
         except Exception as e:
-            print(f"Error loading settings {settings_file_path}: {e}")
+            print(f"Error loading settings {SETTINGS_FILE_PATH}: {e}")
             settings_data = None  # If there's an error, we will create default settings
 
         # Sets our app settings to our loaded settings. If none were loaded (I.E. first launch), Settings with create its own defaults
-        app.settings = Settings(page=page, file_path=settings_file_path, data=settings_data)
+        app.settings = Settings(data=settings_data)
 
 
         ''' Page styling '''
@@ -110,6 +111,8 @@ class App:
         # Set size and route change events
         page.window.on_event = _on_window_event
         page.on_route_change = route_change 
+
+        #print("Settings loaded with data: ", app.settings.data)
         
 
         # Import and set page fonts here
@@ -128,16 +131,15 @@ class App:
     async def load_previous_story(self, page: ft.Page):
         ''' Loads our saved stories from the json files in story folders within the stories directory. If none exist, do nothing '''
         
-        import constants
         from models.app import app
         
         # Create the stories directory if it doesnt exist already
-        os.makedirs(constants.STORIES_DIRECTOR_PATH, exist_ok=True)
+        os.makedirs(STORIES_DIRECTOR_PATH, exist_ok=True)
             
         # Iterate through all items in the stories directory
-        for story_folder in os.listdir(constants.STORIES_DIRECTOR_PATH):
+        for story_folder in os.listdir(STORIES_DIRECTOR_PATH):
 
-            story_directory = os.path.join(constants.STORIES_DIRECTOR_PATH, story_folder)
+            story_directory = os.path.join(STORIES_DIRECTOR_PATH, story_folder)
                 
             # Look for JSON files within this story folder (ignore subdirectories)
             try:
