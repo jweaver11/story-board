@@ -469,46 +469,21 @@ class Settings(ft.View):
                 self.border_color=ft.Colors.TRANSPARENT
                 self.focused_border_color=ft.Colors.PRIMARY
                 self.capitalization=ft.TextCapitalization.WORDS
-                self.content_padding=ft.Padding.all(0)
+                self.content_padding=ft.Padding.only(left=10)
                 self.border_radius=4
                 self.text_style=ft.TextStyle(weight=ft.FontWeight.BOLD)
                 self.label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
+                self.margin=ft.Margin.only(left=20)
 
         # Sets the color in data for each widget upon a change
-        def set_default_widget_color(e: ft.Event[ft.MenuItemButton], widget_tag: str):
-            color_str = e.control.data
-            self.update_data(**{'widget_defaults': {widget_tag: {'color': color_str}}})
-            e.control.parent.trailing.color = color_str
-            e.control.parent.update()
-
-            
-
-        # Gives a default color changer for each widget
-        def create_default_color_selector(widget_tag: str) -> ft.MenuBar:
-            return ft.MenuBar(
-                [
-                    ft.SubmenuButton(
-                        f"Default Color",
-                        [
-                            ft.MenuItemButton(
-                                color.capitalize(), True, data=color, style=ft.ButtonStyle(color, mouse_cursor="click"),
-                                on_click=lambda e: set_default_widget_color(e, widget_tag),
-                            ) for color in colors
-                        ],
-                        trailing=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('widget_defaults', {}).get(widget_tag, {}).get('color', "#FFFFFF")),
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                        style=ft.ButtonStyle(
-                            alignment=ft.Alignment.CENTER, mouse_cursor="click",
-                            shape=ft.RoundedRectangleBorder(radius=4), bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
-                        ),
-                    )
-                ],
-                style=ft.MenuStyle(
-                    bgcolor="transparent", shadow_color="transparent",
-                    shape=ft.RoundedRectangleBorder(radius=4),
-                    padding=ft.Padding.all(0)
-                )
-            )
+        def set_default_widget_color(e: ft.Event[Dropdown]):
+            new_color = e.control.value.lower()
+            widget_tag = e.control.data
+            self.update_data(**{'widget_defaults': {widget_tag: {'color': new_color}}})
+            e.control.color = new_color
+            e.control.update()
+            #e.control.parent.trailing.color = color_str
+            #e.control.parent.update()
 
         def update_plotline_division_count(e: ft.Event[ft.TextField]):
             if not e.control.value:
@@ -564,19 +539,71 @@ class Settings(ft.View):
 
             ft.Column([
                 ft.Text("Document", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("document")),
-                create_default_color_selector("document"),
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('document', {}).get('color', "primary")).capitalize(),
+                    label="Default Document Color", 
+                    color=self.data.get('widget_defaults', {}).get('document', {}).get('color', "primary"),
+                    on_select=set_default_widget_color,
+                    data="document",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
                 ft.Divider(),
 
                 ft.Text("Canvas", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("canvas")),
-                create_default_color_selector("canvas"),
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('canvas', {}).get('color', "primary")).capitalize(),
+                    label="Default Canvas Color", 
+                    color=self.data.get('widget_defaults', {}).get('canvas', {}).get('color', "primary"),
+                    on_select=set_default_widget_color,
+                    data="canvas",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
                 ft.Divider(),
                 
                 ft.Text("Note", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("note")),
-                create_default_color_selector("note"),
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('note', {}).get('color', "primary")).capitalize(),
+                    label="Default Note Color", 
+                    color=self.data.get('widget_defaults', {}).get('note', {}).get('color', "primary"),
+                    on_select=set_default_widget_color,
+                    data="note",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
                 ft.Divider(),
 
                 ft.Text("Plotline", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("plotline")),
-                create_default_color_selector("plotline"),
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('plotline', {}).get('color', "primary")).capitalize(),
+                    label="Default Plotline Color",
+                    color=self.data.get('widget_defaults', {}).get('plotline', {}).get('color', "primary"),
+                    on_select=set_default_widget_color,
+                    data="plotline",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
 
                 SettingsTextField(    # Change the default number of divisions for new plotlines
                     label="Starting Division Count",
@@ -604,7 +631,21 @@ class Settings(ft.View):
                 ft.Divider(),
 
                 ft.Text("Canvas Board", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("canvas_board")),
-                create_default_color_selector("canvas_board"),
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('canvas_board', {}).get('color', "primary")).capitalize(),
+                    label="Default Canvas Board Color", 
+                    color=self.data.get('widget_defaults', {}).get('canvas_board', {}).get('color', "primary"),
+                    on_select=set_default_widget_color,
+                    data="canvas_board",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
+
 
                 SettingsTextField(    # Change the default number of divisions for new plotlines
                     label="Sketch Width",
@@ -627,19 +668,74 @@ class Settings(ft.View):
                 # Sketch width and height
                 ft.Divider(),
 
+                ft.Text("Map", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("map")),
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('map', {}).get('color', "primary")).capitalize(),
+                    label="Default Map Color", 
+                    color=self.data.get('widget_defaults', {}).get('map', {}).get('color', "primary"),
+                    on_select=set_default_widget_color,
+                    data="map",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
+                ft.Divider(),
+
                 
 
                 ft.Text("Item", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("item")),
-                create_default_color_selector("item"),
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('item', {}).get('color', "primary")).capitalize(),
+                    label="Default Item Color", 
+                    color=self.data.get('widget_defaults', {}).get('item', {}).get('color', "primary"),
+                    on_select=set_default_widget_color,
+                    data="item",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
                 ft.Divider(),
 
                 ft.Text("Plot Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("plot_chart")),
-                create_default_color_selector("plot_chart"),
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('plot_chart', {}).get('color', "primary")).capitalize(),
+                    label="Default Plot Chart Color", 
+                    color=self.data.get('widget_defaults', {}).get('plot_chart', {}).get('color', "primary"),
+                    on_select=set_default_widget_color,
+                    data="plot_chart",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
                 ft.Divider(),
 
                 ft.Text("Comic Preview", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("comic_preview")),
-                create_default_color_selector("comic_preview"),
-                
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('color', "primary")).capitalize(),
+                    label="Default Comic Preview Color", 
+                    color=self.data.get('widget_defaults', {}).get('comic_preview', {}).get('color', "primary"),
+                    on_select=set_default_widget_color,
+                    data="comic_preview",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
                 ft.Button(
                     "Swap Preview Direction", 
                     ft.Icons.SWAP_VERT if self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
@@ -698,8 +794,21 @@ class Settings(ft.View):
                     style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                 ),
                 ft.Text("Character Relationship Map", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character_relationship_map")),
-                        create_default_color_selector("character_relationship_map"),
-                
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('character_relationship_map', {}).get('color', "primary")).capitalize(),
+                    label="Default Character Relationship Map Color", 
+                    color=self.data.get('widget_defaults', {}).get('character_relationship_map', {}).get('color', "primary"),
+                    on_select=set_default_widget_color,
+                    data="character_relationship_map",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
+
                 ft.SubmenuButton(
                     f"Image Filter Quality: {self.data.get('filter_quality', 'medium').capitalize()}",
                     [
@@ -715,19 +824,58 @@ class Settings(ft.View):
                 ft.Divider(),
 
                 ft.Text("Character", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character")),
-                create_default_color_selector("character"),
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('character', {}).get('color', "primary")).capitalize(),
+                    label="Default Character Color", 
+                    color=self.data.get('widget_defaults', {}).get('character', {}).get('color', "primary"),
+                    on_select=set_default_widget_color,
+                    data="character",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
                 ft.Divider(),
 
                 ft.Text("World", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("world")),
-                create_default_color_selector("world"),
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('world', {}).get('color', "primary")).capitalize(),
+                    label="Default World Color", 
+                    color=self.data.get('widget_defaults', {}).get('world', {}).get('color', "primary"),
+                    on_select=set_default_widget_color,
+                    data="world",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
                 ft.Divider(),
 
                 ft.Text("Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("chart")),
-                create_default_color_selector("chart"),
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('chart', {}).get('color', "primary")).capitalize(),
+                    label="Default Chart Color", 
+                    color=self.data.get('widget_defaults', {}).get('chart', {}).get('color', "primary"),
+                    on_select=set_default_widget_color,
+                    data="chart",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                )
 
                 
 
-            ], expand=True, scroll=ft.ScrollMode.AUTO),
+            ], expand=True, scroll=ft.ScrollMode.AUTO, spacing=16),
             
         ], expand=True)
             

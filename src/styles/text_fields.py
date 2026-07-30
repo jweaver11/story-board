@@ -54,6 +54,7 @@ class SettingsTextField(ft.TextField):
         self.border_radius=4
         self.border_color=ft.Colors.TRANSPARENT
         self.focused_border_color=ft.Colors.PRIMARY
+        self.margin=ft.Margin.only(left=20)
 
 # Styling for title in the sidebar
 class SidebarTitleTextField(ft.TextField):

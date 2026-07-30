@@ -43,7 +43,7 @@ class Chart(Widget):
             self.data.update({
                 # Widget data
                 'tag': "chart",             # Tag to identify what type of object this is
-                'color': app.settings.data.get('widget_defauls', {}).get('chart', {}).get('color', "primary"),
+                'color': app.settings.data.get('widget_defaults', {}).get('chart', {}).get('color', "primary"),
                 'chart_type': type,             # How our chart is being displayed (bar or radar)
 
                 'show_sidebar': True,   # Whether to show the info column on the side of our charts or not.
