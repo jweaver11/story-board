@@ -16,6 +16,7 @@ from styles.text_fields import TextField
 from models.dataclasses.world_template import default_world_template_data_dict
 import asyncio
 from styles.text_fields import SettingsTextField
+import base64
 
  
 class Settings(ft.View):
@@ -97,7 +98,9 @@ class Settings(ft.View):
                         'sketch_height': 300,   # Default height for preview and sketches for new canvas boards
                     },
                     'map': {
-                        'color': "primary"
+                        'color': "primary",
+                        'draw_mode': False,   # If the map is in draw mode or not
+                        'background_image': "map_bg_fantasy_dark.png",   # Default background image for new maps
                     },
                     'world': {
                         'color': "primary"
@@ -177,6 +180,8 @@ class Settings(ft.View):
                     'use_paint_for_shapes': True,           # If True, shapes are black/white and use default paint settings rather than live brush settings
                     'rectangle_border_radius': 0,               # Border radius for rectangle shapes
                 },
+
+                'document_controller_settings': {}, #? Needed??
 
                 # Hold our default character templates
                 'character_templates': {    
@@ -463,7 +468,7 @@ class Settings(ft.View):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.dense=True
-                self.menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_CENTER, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4))
+                self.menu_style=ft.MenuStyle(alignment=ft.Alignment.CENTER_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4))
                 self.fill_color=ft.Colors.SURFACE_CONTAINER_HIGHEST
                 self.filled=True
                 self.border_color=ft.Colors.TRANSPARENT
@@ -474,6 +479,14 @@ class Settings(ft.View):
                 self.text_style=ft.TextStyle(weight=ft.FontWeight.BOLD)
                 self.label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
                 self.margin=ft.Margin.only(left=20)
+                self.width=200
+
+        class Switch(ft.Switch):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.adaptive=True
+                self.margin=ft.Margin.only(left=20)
+                
 
         # Sets the color in data for each widget upon a change
         def set_default_widget_color(e: ft.Event[Dropdown]):
@@ -482,8 +495,7 @@ class Settings(ft.View):
             self.update_data(**{'widget_defaults': {widget_tag: {'color': new_color}}})
             e.control.color = new_color
             e.control.update()
-            #e.control.parent.trailing.color = color_str
-            #e.control.parent.update()
+            
 
         def update_plotline_division_count(e: ft.Event[ft.TextField]):
             if not e.control.value:
@@ -517,7 +529,29 @@ class Settings(ft.View):
                 return
             self.update_data(**{'widget_defaults': {'canvas_board': {dimension: new_value}}})
 
+        async def update_map_bg_image(e: ft.Event[ft.Dropdown]):
+            new_image = e.control.value
+            if new_image == "upload_image":   # Wait for user to pick and image if uploading
+                new_image = await get_uploaded_map_bg_image()
+            if not new_image:   # If user canceled the upload, just return
+                new_image = self.data.get('widget_defaults', {}).get('map', {}).get('background_image', "map_bg_fantasy_dark.png")
+                e.control.value = self.data.get('widget_defaults', {}).get("map", {}).get('background_image', "map_bg_fantasy_dark.png")  # Reset the dropdown to the previous value
+                e.control.update()
+                return
+            self.update_data(**{'widget_defaults': {'map': {'background_image': new_image}}})
+            
 
+        # Uploads an image and sets it as the background image for our map
+        async def get_uploaded_map_bg_image():
+            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            if files:
+                file_path = files[0].path
+                try:
+                    with open(file_path, "rb") as image_file:
+                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                        return encoded_string
+                except Exception:
+                    pass
 
 
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
@@ -534,8 +568,6 @@ class Settings(ft.View):
             ft.Container(height=10),    # Spacer
 
             ft.Divider(),
-            
-            
 
             ft.Column([
                 ft.Text("Document", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("document")),
@@ -663,12 +695,12 @@ class Settings(ft.View):
                     on_blur=update_sketch_size,
                     data="sketch_height"
                 ),
-                
-
-                # Sketch width and height
                 ft.Divider(),
 
+                # Map options
                 ft.Text("Map", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("map")),
+
+                # Default map color
                 Dropdown(
                     value=str(self.data.get('widget_defaults', {}).get('map', {}).get('color', "primary")).capitalize(),
                     label="Default Map Color", 
@@ -683,10 +715,63 @@ class Settings(ft.View):
                         ) for color in colors
                     ]
                 ),
+
+                # Map draw mode
+                Switch(
+                    value=self.data.get('widget_defaults', {}).get('map', {}).get('draw_mode', False),
+                    label="Draw Mode",
+                    on_change=lambda e: self.update_data(**{'widget_defaults': {'map': {'draw_mode': e.control.value}}}),
+
+                ),
+
+                # Set defualt background image for new maps
+                Dropdown(
+                    label="Default Background Image",
+                    value=self.data.get('widget_defaults', {}).get("map", {}).get('background_image', "map_bg_fantasy_dark.png"),
+                    on_select=update_map_bg_image,
+                    color=ft.Colors.ON_SURFACE,
+                    options=[
+                        ft.DropdownOption(
+                            key="map_bg_fantasy_dark.png",
+                            text="Dark Fantasy",
+                            content=ft.Text("Dark Fantasy", weight=ft.FontWeight.BOLD),
+                            leading_icon=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY)
+                        ),
+                        ft.DropdownOption(
+                            key="map_bg_fantasy_light.png",
+                            text="Light Fantasy",
+                            content=ft.Text("Light Fantasy", weight=ft.FontWeight.BOLD),
+                            leading_icon=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY)
+                        ),
+                        ft.DropdownOption(
+                            key="map_bg_scifi.png",
+                            text="Sci-Fi",
+                            content=ft.Text("Sci-Fi", weight=ft.FontWeight.BOLD),
+                            leading_icon=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY)
+                        ),
+                        ft.DropdownOption(
+                            key="map_bg_space.jpg",
+                            text="Space",
+                            content=ft.Text("Space", weight=ft.FontWeight.BOLD),
+                            leading_icon=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY)
+                        ),
+                        ft.DropdownOption(
+                            key="upload_image",
+                            text="Upload Image",
+                            content=ft.Text("Upload Image", weight=ft.FontWeight.BOLD),
+                            leading_icon=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY)
+                        )
+                    ],
+                ),
+
+                # Default label color, label outline size, 
+                # Default location label color, location label outline size, icon, icon color, icon size
+                # label size, 
+
                 ft.Divider(),
 
                 
-
+                # Item options
                 ft.Text("Item", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("item")),
                 Dropdown(
                     value=str(self.data.get('widget_defaults', {}).get('item', {}).get('color', "primary")).capitalize(),
@@ -704,6 +789,7 @@ class Settings(ft.View):
                 ),
                 ft.Divider(),
 
+                # Plot Chart Options
                 ft.Text("Plot Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("plot_chart")),
                 Dropdown(
                     value=str(self.data.get('widget_defaults', {}).get('plot_chart', {}).get('color', "primary")).capitalize(),
@@ -793,6 +879,9 @@ class Settings(ft.View):
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                     style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                 ),
+                ft.Divider(),
+
+
                 ft.Text("Character Relationship Map", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character_relationship_map")),
                 Dropdown(
                     value=str(self.data.get('widget_defaults', {}).get('character_relationship_map', {}).get('color', "primary")).capitalize(),

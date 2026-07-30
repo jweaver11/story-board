@@ -53,7 +53,7 @@ class Map(Widget):
 
                 # Info about the map
                 'draw_mode': False,      # Whether we're in draw mode or not
-                'background_image': "map_bg_fantasy_dark.png",    # The background image of the map
+                'background_image': app.settings.data.get('widget_defaults', {}).get('map', {}).get('background_image'),    # The background image of the map
 
                 'lore': list(),     # List of lores [{'label': "Lore Label", 'content': "Lore Content"}]
                 'history': list(),      # List of histories  [{'label': "History Label", 'content': "History Content"}]
@@ -98,6 +98,9 @@ class Map(Widget):
         self.location_stack: ft.Stack
         self.label_stack: ft.Stack
         self.map_controller: ft.GestureDetector
+
+        # Sidebar elements
+        self.sidebar_draw_mode_toggle_button: ft.MenuItemButton
 
         # Rest of state elements
         self.new_location_position = (200, 200)     # Where new locations go 
@@ -552,6 +555,15 @@ class Map(Widget):
                     tooltip="Show this map's info in the sidebar",
                 ),
                 no_effects=True, no_padding=True
+            ),
+            MenuOptionStyle(
+                ft.MenuItemButton(
+                    ("Disable" if self.data.get('draw_mode') else "Enable") + " Drawing", 
+                    close_on_click=True, on_click=self.toggle_draw_mode,
+                    leading=ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('draw_mode', False) else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                ),
+                no_effects=True, no_padding=True
             )
         ]
     
@@ -561,14 +573,16 @@ class Map(Widget):
         super().set_mouse_coords(e)
 
     
-    def toggle_draw_mode(self, e: ft.Event[ft.MenuItemButton]):
+    async def toggle_draw_mode(self, e=None):
+        await self.story.close_menu()   # Close menu
         new_draw_mode = not self.data.get('draw_mode', False)
         self.update_data(**{'draw_mode': new_draw_mode})
-        e.control.content = ("Disable" if new_draw_mode else "Enable") + " Drawing"
-        e.control.leading = ft.Icon(ft.Icons.EDIT_OUTLINED if new_draw_mode else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY)
+        if self.showing_info:
+            self.sidebar_draw_mode_toggle_button.content = ("Disable" if new_draw_mode else "Enable") + " Drawing"
+            self.sidebar_draw_mode_toggle_button.leading = ft.Icon(ft.Icons.EDIT_OUTLINED if new_draw_mode else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY)
+            self.sidebar_draw_mode_toggle_button.update()
         self.map_controller.mouse_cursor = ft.MouseCursor.PRECISE if new_draw_mode else None
         self.map_controller.on_tap = lambda: self.story.open_menu(self.get_new_item_options()) if not new_draw_mode else None
-        e.control.update()
         self.map_controller.update()
 
     # Creates our header controls for the sidebar, including our settings button
@@ -668,7 +682,13 @@ class Map(Widget):
 
 
         ctrls: list = super().create_sidebar_header_ctrls()
-        
+
+        self.sidebar_draw_mode_toggle_button = ft.MenuItemButton(
+            ("Disable" if self.data.get('draw_mode') else "Enable") + " Drawing", 
+            close_on_click=True, on_click=self.toggle_draw_mode,
+            leading=ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('draw_mode', False) else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY),
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+        )
 
         ctrls.append(
             ft.MenuBar(
@@ -676,12 +696,7 @@ class Map(Widget):
                     ft.SubmenuButton(
                         ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
                         [
-                            ft.MenuItemButton(
-                                ("Disable" if self.data.get('draw_mode') else "Enable") + " Drawing", 
-                                close_on_click=True, on_click=self.toggle_draw_mode,
-                                leading=ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('draw_mode', False) else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY),
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            ),
+                            self.sidebar_draw_mode_toggle_button,
                             ft.SubmenuButton(
                                 "Set Background Image",
                                 [
@@ -723,12 +738,12 @@ class Map(Widget):
                                         data="map_bg_space.jpg", on_click=handle_set_built_in_image,
                                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                                     ), 
-                                    ft.MenuItemButton(      # 2
-                                        "None", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
-                                        close_on_click=True,
-                                        data="", on_click=handle_set_built_in_image,
-                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                    ),
+                                    #ft.MenuItemButton(      # 2
+                                        #"None", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                                        #close_on_click=True,
+                                        #data="", on_click=handle_set_built_in_image,
+                                        #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                                    #),
                                 ],
                                 leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY),
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
@@ -837,9 +852,6 @@ class Map(Widget):
                 vertical_alignment=ft.CrossAxisAlignment.CENTER
             )
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
-         
-    
 
-# TODO: Right click to set backgrounds or enable/disable draw mode
 
-        
+# TODO Label and Location label size adjustments
