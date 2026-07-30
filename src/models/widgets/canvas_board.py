@@ -219,8 +219,8 @@ class CanvasBoard(Widget):
                 'preview_capture': "",    # Base64 string of the preview capture
                 'sketch_capture': "",    # Base64 string of the sketch capture
                 'description': "",    # Description of the sketch
-                'height': 300,      # Height of the canvas
-                'width': 300,       # Width of the canvas
+                'height': app.settings.data.get('widget_defaults', {}).get('canvas_board', {}).get('sketch_width'),      # Height of the canvas
+                'width': app.settings.data.get('widget_defaults', {}).get('canvas_board', {}).get('sketch_height'),       # Width of the canvas
                 'dirty': False,      # State tracking - Whether this row's sketch has unsaved changes
             }
             

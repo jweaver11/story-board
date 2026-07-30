@@ -6,13 +6,11 @@ A Settings object is created for every story
 import flet as ft
 from models.views.story import Story
 from constants import SETTINGS_FILE_PATH, APP_DATA_PATH
-from models.widget import Widget
 from styles.colors import colors, theme_colors
 import os
 import json
-from styles.colors import dark_gradient
 from ui.menu_bar import create_menu_bar
-from ui.workspaces_rail import WorkspacesRail
+from styles.snack_bar import SnackBar
 from models.dataclasses.character_template import default_character_template_data_dict
 from styles.text_fields import TextField
 from models.dataclasses.world_template import default_world_template_data_dict
@@ -94,7 +92,9 @@ class Settings(ft.View):
                         'plot_point_color': "white",   # Default color for new plot points
                     },
                     'canvas_board': {
-                        'color': "primary"
+                        'color': "primary",
+                        'sketch_width': 300,    # Default width for preview and sketches for new canvas boards
+                        'sketch_height': 300,   # Default height for preview and sketches for new canvas boards
                     },
                     'map': {
                         'color': "primary"
@@ -526,7 +526,23 @@ class Settings(ft.View):
             self.update_data(**{'widget_defaults': {'plotline': {'plot_point_color': new_color}}})
             e.control.color = new_color
             e.control.update()
-           
+
+        def update_sketch_size(e: ft.Event[ft.TextField]):
+            dimension = e.control.data
+            new_value = int(e.control.value) if e.control.value else None
+            def show_error():
+                self.page.show_dialog(SnackBar("Please enter a number between 200 and 300"))
+                e.control.value = str(self.data.get('widget_defaults', {}).get('canvas_board', {}).get(dimension, 300))
+                e.control.update()
+            if not new_value:
+                show_error()
+                return
+            if new_value < 200 or new_value > 300:
+                show_error()
+                return
+            self.update_data(**{'widget_defaults': {'canvas_board': {dimension: new_value}}})
+
+
 
 
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
@@ -589,6 +605,26 @@ class Settings(ft.View):
 
                 ft.Text("Canvas Board", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("canvas_board")),
                 create_default_color_selector("canvas_board"),
+
+                SettingsTextField(    # Change the default number of divisions for new plotlines
+                    label="Sketch Width",
+                    value=str(self.data.get('widget_defaults', {}).get('canvas_board', {}).get('sketch_width', 300)),
+                    tooltip="The default sketch and preview width for new canvas boards.",
+                    input_filter=ft.NumbersOnlyInputFilter(),
+                    on_blur=update_sketch_size,
+                    data="sketch_width"
+                ),
+                SettingsTextField(    # Change the default number of divisions for new plotlines
+                    label="Sketch Height",
+                    value=str(self.data.get('widget_defaults', {}).get('canvas_board', {}).get('sketch_height', 300)),
+                    tooltip="The default sketch and preview height for new canvas boards.",
+                    input_filter=ft.NumbersOnlyInputFilter(),
+                    on_blur=update_sketch_size,
+                    data="sketch_height"
+                ),
+                
+
+                # Sketch width and height
                 ft.Divider(),
 
                 
