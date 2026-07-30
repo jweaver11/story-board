@@ -199,16 +199,13 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                 await page.push_route("/")
 
     # Create our menu bar with submenu items
-    menubar = ft.MenuBar(
-        expand=True,
+    file_options = ft.MenuBar(
+        #expand=True,
         style=ft.MenuStyle(     # Styling our menubar
             alignment=ft.Alignment.CENTER,
             bgcolor=ft.Colors.TRANSPARENT,
             shadow_color=ft.Colors.TRANSPARENT,
-            mouse_cursor={
-                ft.ControlState.HOVERED: ft.MouseCursor.WAIT,
-                ft.ControlState.DEFAULT: ft.MouseCursor.ZOOM_OUT,
-            },
+            
         ),
         controls=[  # The controls shown in our menu bar from left to right
             ft.SubmenuButton(   # Button that opens a subment
@@ -216,7 +213,6 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
                     content=ft.Text("File", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),     # Content of subment button
                     alignment=ft.Alignment.CENTER
                 ), 
-                #style=menubar_style,    # styling for the button
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 menu_style=ft.MenuStyle(padding=ft.Padding.all(0)),
                 
@@ -277,8 +273,6 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
             ),
         ], 
     )
-
-    
         
     # Return our formatted menubar
     return ft.Container(
@@ -287,9 +281,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
         content=ft.Row(
             spacing=0,
             controls=[
-                menubar,    # Menubar on left
-                #ft.Container(expand=True),  # empty space in middle of menubar
-                # Fix broken widgets button
+                file_options,    # Menubar on left
 
                 ft.Text(
                     "Alpha", color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD, 

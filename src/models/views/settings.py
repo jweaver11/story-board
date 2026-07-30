@@ -17,6 +17,7 @@ from models.dataclasses.world_template import default_world_template_data_dict
 import asyncio
 from styles.text_fields import SettingsTextField
 import base64
+from models.dataclasses.text_controller import TextController, TextControllerView
 
  
 class Settings(ft.View):
@@ -37,10 +38,12 @@ class Settings(ft.View):
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
         )
 
+        # Set attributes
         self.route = "/settings"   # Sets our route for our settings view
         self.story = story
         self.data = data
         self.selected_index = selected_index
+        
 
         # If we're new, give default values for our data 
         if data is None or data == {}:
@@ -181,7 +184,7 @@ class Settings(ft.View):
                     'rectangle_border_radius': 0,               # Border radius for rectangle shapes
                 },
 
-                'document_controller_settings': {}, #? Needed??
+                'text_controller_settings': {}, #? Needed??
 
                 # Hold our default character templates
                 'character_templates': {    
@@ -191,6 +194,9 @@ class Settings(ft.View):
                     'Default': default_world_template_data_dict(),
                 },
             }
+
+        #self.text_controller = TextController(self.data.get('text_controller_settings', {}))
+        #self.text_controller_view = TextControllerView(self.text_controller)
 
 
     def before_update(self):
@@ -764,6 +770,7 @@ class Settings(ft.View):
                     ],
                 ),
 
+                # TODO: Map settings -- 
                 # Default label color, label outline size, 
                 # Default location label color, location label outline size, icon, icon color, icon size
                 # label size, 

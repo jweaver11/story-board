@@ -830,8 +830,6 @@ class Story(ft.View):
         # Load our widgets
         self.load_widgets() 
 
-        
-
         # Create our menubar, workspaces rail, active rail, and workspace objects
         self.menubar = create_menu_bar(self.page, self)
         self.workspaces_rail = WorkspacesRail(self) 
@@ -852,6 +850,8 @@ class Story(ft.View):
             on_pan_end=save_active_rail_width,  # Save the resize when app is done dragging
             drag_interval=20,
         )
+
+        #self.menubar.content.controls.insert(1, app.settings.text_controller_view)
 
         
 

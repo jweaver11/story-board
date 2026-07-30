@@ -2,17 +2,19 @@
 State management model for our drawings
 '''
 import flet as ft
-import flet.canvas as cv
+from dataclasses import dataclass, field
 
+@ft.observable
+@dataclass
 class State:
 
     # Track our previous position for drawing
-    x: float = 0.0
-    y: float = 0.0
+    x: float = field(default_factory=float)
+    y: float = field(default_factory=float)
 
     # If we are currently manipulating a shape
-    manipulating_shape: bool = False    
+    manipulating_shape: bool = field(default_factory=bool) 
 
     # Undo and Redo lists for our canvas actions
-    undo_list: list = []       # [{'task_type': '', 'layer_id': '', 'data': ''}, {...}]
-    redo_list: list = []        
+    undo_list: list = field(default_factory=list)      # [{'task_type': '', 'layer_id': '', 'data': ''}, {...}]
+    redo_list: list = field(default_factory=list)       
