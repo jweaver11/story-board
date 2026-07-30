@@ -10,7 +10,6 @@ def default_world_template_data_dict() -> dict:
         'Social Systems': {},
         'Geography': {},
         'Technology': {},
-        'History': {},
         'Governments': {},
         'Notes': {},
     }
