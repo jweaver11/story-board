@@ -14,5 +14,5 @@ class State:
     manipulating_shape: bool = False    
 
     # Undo and Redo lists for our canvas actions
-    undo_list: list[cv.Path] = []       # [{'task_type': '', 'layer_id': '', 'data': ''}, {...}]
-    redo_list: list[cv.Path] = []        
+    undo_list: list = []       # [{'task_type': '', 'layer_id': '', 'data': ''}, {...}]
+    redo_list: list = []        

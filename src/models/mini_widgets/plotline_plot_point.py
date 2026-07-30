@@ -135,8 +135,14 @@ class PlotlinePlotPoint(MiniWidget):
         for pp in self.widget.plot_point_stack.controls:
             if pp.data.get('id', '') != self.data.get('id', ''):
                 pp.stop_highlight()
-        for arc in self.widget.arc_stack.controls:
-            arc.stop_highlight()
+
+    def save_position(self, e: ft.DragEndEvent):
+        super().save_position(e)
+        # Refresh event data in the sidebar to match updated drag
+        if self.widget.showing_info:
+            self.widget.sidebar_body.controls = self.widget.create_sidebar_body_ctrls()
+            self.widget.sidebar_body.update()
+        
 
     
     # Create our sidebar body controls
@@ -298,25 +304,45 @@ class PlotlinePlotPoint(MiniWidget):
         self.top = PLOTLINE_HEIGHT / 2 - self.icon.size / 2
         self.update()
 
+    def update_rename(self, e: ft.Event[ft.TextField]):
+        new_title = e.control.value
+        # Update title in sidebar if we're showing our info
+        if self.widget.visible_mw_id == self.data.get('id', ''):
+            self.sidebar_title.value = new_title
+            self.sidebar_title.update()
+        # Update our event title in the sidebar if plotline is showing info
+        elif self.widget.showing_info:
+            for ctrl in self.widget.events_column.controls:
+                if ctrl.data == self.data.get('id', ''):
+                    ctrl.controls[0].value = new_title
+                    ctrl.controls[0].update()
+                    break
+        self.plotline_title_tf.value = new_title
+        self.plotline_title_tf.update()
+
     def build(self):
         """ Rebuilds our plotline control that holds our plot point and slider """
 
         # Update our new description in real time without saving to data
         def update_description(e: ft.Event[ft.TextField]):
             new_description = e.control.value
+            # Update description in sidebar if we're showing our info
             if self.widget.visible_mw_id == self.data.get('id', ''):
                 self.description_tf.value = new_description
                 self.description_tf.update()
+            # Update our event title in the sidebar if plotline is showing info
+            elif self.widget.showing_info:
+                for ctrl in self.widget.events_column.controls:
+                    if ctrl.data == self.data.get('id', ''):
+                        ctrl.controls[1].value = new_description
+                        ctrl.controls[1].update()
+                        break
+            # Make sure our description on the stack matches if our sidebar description was updated
             self.plotline_description_tf.value = new_description
             self.plotline_description_tf.update()
 
-        def rename(e: ft.Event[ft.TextField]):
-            new_title = e.control.value
-            if self.widget.visible_mw_id == self.data.get('id', ''):
-                self.sidebar_title.value = new_title
-                self.sidebar_title.update()
-            self.plotline_title_tf.value = new_title
-            self.plotline_title_tf.update()
+        
+            
 
             
         super().build()
@@ -343,8 +369,8 @@ class PlotlinePlotPoint(MiniWidget):
             border_color=ft.Colors.TRANSPARENT,
             focused_border_color=ft.Colors.PRIMARY,
             multiline=False, dense=True, width=150,
-            on_blur=lambda e: self.update_data(**{'title': e.control.value}),
-            on_change=rename,
+            on_blur=self.save_rename,
+            on_change=self.update_rename,
             capitalization=ft.TextCapitalization.SENTENCES,
             label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
             content_padding=ft.Padding.all(0),
@@ -358,10 +384,10 @@ class PlotlinePlotPoint(MiniWidget):
             border_color=ft.Colors.TRANSPARENT,
             focused_border_color=ft.Colors.PRIMARY,
             multiline=True, dense=True, width=150,
-            on_blur=lambda e: self.update_data(**{'description': e.control.value}),
+            on_blur=self.save_description,
             capitalization=ft.TextCapitalization.SENTENCES,
             label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
-            on_change = update_description, content_padding=ft.Padding.all(0),
+            on_change=update_description, content_padding=ft.Padding.all(0),
             text_align=ft.TextAlign.CENTER
         )   
 

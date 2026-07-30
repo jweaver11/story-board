@@ -163,6 +163,8 @@ class MiniWidget(ft.GestureDetector):
 
         self.highlight()    # Highlight our mini widget since we're showing it in the sidebar
 
+    def update_rename(self, e: ft.Event[ft.TextField]):
+        return
 
     def create_sidebar_header_ctrls(self) -> list:
         ''' Creates the controls for the header of the sidebar for this mini widget '''
@@ -175,8 +177,8 @@ class MiniWidget(ft.GestureDetector):
         # Title that sits in the header
         self.sidebar_title = SidebarTitleTextField(
             value=self.data.get('title', ''),
-            on_blur=set_title_value,
-            on_submit=self.save_rename
+            on_change=self.update_rename,
+            on_blur=self.save_rename
         )
 
         # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
@@ -187,16 +189,11 @@ class MiniWidget(ft.GestureDetector):
     def create_sidebar_body_ctrls(self) -> list:
         ''' Creates the controls for the sidebar for this mini widget '''
         
-
+    def save_description(self, e: ft.Event[ft.TextField]):
+        self.update_data(**{'description': e.control.value})
     # Updates our title in sidebar if we're shown in sidebar after a rname
-    async def save_rename(self, e: ft.Event[ft.TextField]):
-        await self.widget.story.close_menu()
-        new_title = e.control.value
-        self.update_data(**{'title': new_title})
-        if self.widget.visible_mw_id == self.data.get('id'):
-            self.sidebar_title.value = new_title
-            self.sidebar_title.update()
-        
+    def save_rename(self, e: ft.Event[ft.TextField]):
+        self.update_data(**{'title': e.control.value})
     
     # Set the content of our mini widget
     def build(self):
@@ -291,7 +288,7 @@ class MiniWidget(ft.GestureDetector):
             margin=ft.Margin.only(top=4),
             focused_border_color=ft.Colors.PRIMARY,
             multiline=True, dense=True, expand=True, 
-            on_blur=lambda e: self.update_data(**{'description': e.control.value}),
+            on_blur=self.save_description,
             capitalization=ft.TextCapitalization.SENTENCES,
             label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
         )   

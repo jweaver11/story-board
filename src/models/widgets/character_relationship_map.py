@@ -38,8 +38,8 @@ class CharacterRelationshipMap(Widget):
                 },
                 'connections': [    # List of our connections
                     #{
-                        # char 1 key: str
-                        # char 1 key: str
+                        # char 1 id: str
+                        # char 2 ud: str
                         # icon: str -- icon of the connection
                         # color: str  -- color of the drawn line and icon for the connection
                     #}
