@@ -200,12 +200,11 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
 
     # Create our menu bar with submenu items
     file_options = ft.MenuBar(
-        #expand=True,
+        expand=True,
         style=ft.MenuStyle(     # Styling our menubar
             alignment=ft.Alignment.CENTER,
             bgcolor=ft.Colors.TRANSPARENT,
             shadow_color=ft.Colors.TRANSPARENT,
-            
         ),
         controls=[  # The controls shown in our menu bar from left to right
             ft.SubmenuButton(   # Button that opens a subment
@@ -274,60 +273,7 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
         ], 
     )
 
-    class TextController(ft.Row):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.alignment = ft.MainAxisAlignment.CENTER
-            self.data = app.settings.data.get('text_controller_settings', {})
-            self.expand = True
-            self.spacing = 0
-
-        def build(self):
-
-            # Sets dropdowns on UI changes and updates the correct data
-            def set_dropdowns(e: ft.Event[ft.Dropdown]):
-                pass
-
-            # Sets buttons on UI changes and updates the correct data
-            def set_buttons(e: ft.Event[ft.IconButton]):
-                setting = e.control.data
-                new_value = not self.data.get(setting, False)
-                self.data[setting] = new_value
-                if new_value == True:
-                    e.control.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGH
-                    e.control.icon_color = ft.Colors.PRIMARY
-                else:
-                    e.control.bgcolor = ft.Colors.TRANSPARENT
-                    e.control.icon_color = ft.Colors.ON_SURFACE_VARIANT
-                e.control.update()
-                app.settings.update_data(**{'text_controller_settings': self.data})
-
-
-            self.controls = [   
-
-                #ft.Text("Text Controller", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT, size=14, italic=True, opacity=.5),
-
-                ft.IconButton(
-                    ft.Icons.FORMAT_BOLD,
-                    ft.Colors.PRIMARY if self.data.get('bold', False) else ft.Colors.ON_SURFACE_VARIANT,
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH if self.data.get('bold', False) else ft.Colors.TRANSPARENT,
-                    data="bold", on_click=set_buttons,
-                    visible=False,  # TEMP
-                ),
-                ft.IconButton(
-                    ft.Icons.FORMAT_ITALIC,
-                    ft.Colors.PRIMARY if self.data.get('italic', False) else ft.Colors.ON_SURFACE_VARIANT,
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH if self.data.get('italic', False) else ft.Colors.TRANSPARENT,
-                    data="italic", on_click=set_buttons,
-                    visible=False,  # TEMP
-                ),
-
-                # TODO: Text Controller
-                # size, format_align, font family, letter_spacing, word_spacing, color
-                # decoration, decoration color, decoration thickness, decoration style
-            ]
-
-    text_controller = TextController()
+    
     
         
     # Return our formatted menubar
@@ -338,7 +284,6 @@ def create_menu_bar(page: ft.Page, story: Story = None) -> ft.Container:
             spacing=0,
             controls=[
                 file_options,    # Menubar on left
-                text_controller,
 
                 ft.Text(
                     "Alpha", color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD, 

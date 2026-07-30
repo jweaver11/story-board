@@ -35,12 +35,15 @@ class Document(Widget):
                 'show_sidebar': True,
 
                 # Settings for the toolbar
-                'toolbar_settings': {
+                'text_controller_settings': {
                     'font_family': "Arial",
                     'font_size': 12,
                     'bold': False,
                     'italic': False,
                     'decoration': None,
+                    # TODO:
+                    # size, format_align, font family, letter_spacing, word_spacing, color
+                    # decoration, decoration color, decoration thickness, decoration style
                 },
 
                 # Holds our comments and reference images in data
@@ -49,6 +52,17 @@ class Document(Widget):
 
                 # The text as json list data that is loaded and saved
                 'document_data': list(),       
+
+                'new_doc_data': list(), 
+                #[
+                # {
+                # 'style': {
+                    # 'bold': False, 
+                    # 'italic', False...
+                    # }, 
+                # 'text': "Hello World!\n"
+                # }, ...
+                # ],  # Default data for new documents
             }
         )  
         self.dirty: bool = False  # Marks if our document has unsaved changes that need to be written to file
@@ -157,6 +171,62 @@ class Document(Widget):
                 on_enter=show_delete_icon,
                 on_exit=hide_delete_icon,
             )
+
+
+    class TextController(ft.Row):
+        def __init__(self, widget, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            #self.alignment = ft.MainAxisAlignment.CENTER
+            #self.data = app.settings.data.get('text_controller_settings', {})
+            self.widget = widget
+            self.expand = True
+            self.spacing = 0
+
+        def build(self):
+
+            # Sets dropdowns on UI changes and updates the correct data
+            def set_dropdowns(e: ft.Event[ft.Dropdown]):
+                pass
+
+            # Sets buttons on UI changes and updates the correct data
+            def set_buttons(e: ft.Event[ft.IconButton]):
+                setting = e.control.data
+                new_value = not self.data.get(setting, False)
+                self.data[setting] = new_value
+                if new_value == True:
+                    e.control.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGH
+                    e.control.icon_color = ft.Colors.PRIMARY
+                else:
+                    e.control.bgcolor = ft.Colors.TRANSPARENT
+                    e.control.icon_color = ft.Colors.ON_SURFACE_VARIANT
+                e.control.update()
+                self.widget.update_data(**{'text_controller_settings': self.data})
+
+
+            self.controls = [   
+
+                #ft.Text("Text Controller", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT, size=14, italic=True, opacity=.5),
+
+                ft.IconButton(
+                    ft.Icons.FORMAT_BOLD,
+                    ft.Colors.PRIMARY if self.data.get('bold', False) else ft.Colors.ON_SURFACE_VARIANT,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH if self.data.get('bold', False) else ft.Colors.TRANSPARENT,
+                    data="bold", on_click=set_buttons,
+                    #visible=False,  # TEMP
+                ),
+                ft.IconButton(
+                    ft.Icons.FORMAT_ITALIC,
+                    ft.Colors.PRIMARY if self.data.get('italic', False) else ft.Colors.ON_SURFACE_VARIANT,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH if self.data.get('italic', False) else ft.Colors.TRANSPARENT,
+                    data="italic", on_click=set_buttons,
+                    #visible=False,  # TEMP
+                ),
+
+                # TODO: Text Controller
+                # size, format_align, font family, letter_spacing, word_spacing, color
+                # decoration, decoration color, decoration thickness, decoration style
+            ]
+    
             
     # Checks if our document is dirty, and saves it if it is
     async def save_file(self):
@@ -269,6 +339,8 @@ class Document(Widget):
             aspect_ratio=8.5/11.0,  # paper-like ratio
         )
 
+        
+
             
         
         # Otherwise, build our info column
@@ -313,10 +385,7 @@ class Document(Widget):
             ], spacing=0),
 
             self.ref_img_column
-
-           
         ])
-        
 
         self.content = ft.Column([
             ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT),
@@ -325,5 +394,114 @@ class Document(Widget):
                 editor_container,
                 self.toggle_sidebar_visibility_button, 
                 self.sidebar
-            ], spacing=0, expand=True)
+            ], spacing=0, expand=True),
         ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+
+
+        
+
+        # New testing stuff -------------------------------------------------------------------------
+        def remove_cursor_span():
+            if cursor_span in self.document_text.spans:
+                self.cursor_blink_task.cancel()
+                self.document_text.spans.remove(cursor_span)
+                self.document_text.update()
+
+        def add_cursor_span(span_idx: int):
+            # The index to insert the span and restart our task
+            return
+            self.cursor_blink_task = asyncio.create_task(blink_cursor())
+
+        # Temp for manipulating
+        def handle_select_text(e: ft.TextSelectionChangeEvent):
+
+            # Also check if selecting cursor and ignore that
+
+            # Start and end idx of each letter in the text
+            start_idx = e.selection.start
+            end_idx = e.selection.end
+            selected_length = end_idx - start_idx
+
+            # When there was just a tap, we insert the cursor span at the 
+            if start_idx == end_idx:
+
+                remove_cursor_span()
+
+                
+
+                span_lengths = [len(span.text) for span in self.document_text.spans if span is not cursor_span]
+
+                # add_cursor_span(span_idx)
+                # Calculate new idx for spans adding here and do it
+                # Add it here
+
+                return
+            # Highlighted something, so remove the cursor
+            remove_cursor_span()
+
+            print(start_idx, end_idx)
+
+            # Find included spans here based in index and length of highlighted text
+
+
+
+        async def blink_cursor():
+            while True:
+                await asyncio.sleep(0.75)
+                if cursor_span is not None:
+                    if cursor_span.style.color == ft.Colors.TRANSPARENT:
+                        cursor_span.style.color = ft.Colors.PRIMARY
+                    else:
+                        cursor_span.style.color = ft.Colors.TRANSPARENT
+                    cursor_span.update()
+
+
+        def handle_keystroke(e: ft.KeyboardEvent):
+            # Mark us dirty
+            if self.dirty == False:
+                self.dirty = True
+            # Standard keys, arrow keys, delete, paste, etc.
+        
+
+        self.cursor_blink_task: asyncio.Task = None
+        self.cursor_blink_task = asyncio.create_task(blink_cursor())
+        self.selected_text: set = set()  # Selected letter start and end idxs for manipulating text
+
+        self.active_span: ft.TextSpan = ft.TextSpan()   # Active span to manipulate text
+        cursor_span = ft.TextSpan(
+            "|",
+            style=ft.TextStyle(color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD)
+        )
+
+        text_controller = self.TextController(self, data=self.data.get('text_controller_settings', {}))
+
+        self.document_text = ft.Text(   # Text control to hold our spans
+            spans=[ft.TextSpan("Temp for testing\n"), ft.TextSpan("Even more text"), cursor_span,],
+            on_selection_change=handle_select_text, selectable=True, expand=True, expand_loose=True,
+        )      
+        
+        
+        editor_container =ft.Container(
+            ft.Column([ft.KeyboardListener(self.document_text, on_key_down=handle_keystroke, expand=True)], expand=True, scroll=ft.ScrollMode.AUTO),
+            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
+            border_radius=4,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+            padding=ft.Padding.all(80), 
+            expand=True, alignment=ft.Alignment.TOP_LEFT, 
+            margin=ft.Margin.symmetric(horizontal=70, vertical=50),
+            #aspect_ratio=8.5/11.0,  # paper-like ratio
+        )
+        
+
+        self.content = ft.Column([
+            ft.Container(text_controller, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT),
+            ft.Divider(2, 2),
+            ft.Row([
+                editor_container,
+                self.toggle_sidebar_visibility_button, 
+                self.sidebar
+            ], spacing=0, expand=True),
+        ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+
+
+# TODO New cursor solution, since the one currently sux
