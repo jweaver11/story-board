@@ -43,7 +43,6 @@ class Settings(ft.View):
         self.story = story
         self.data = data
         self.selected_index = selected_index
-        
 
         # If we're new, give default values for our data 
         if data is None or data == {}:
@@ -195,15 +194,9 @@ class Settings(ft.View):
                 },
             }
 
-        #self.text_controller = TextController(self.data.get('text_controller_settings', {}))
-        #self.text_controller_view = TextControllerView(self.text_controller)
+        
 
-
-    def before_update(self):
-        #print(f"Successful update for settings")
-        return super().before_update()
     
-
     # Called for little data changes
     def update_data(self, **kwargs):
         ''' Changes a key/value pair in our data and saves the json file ''' 
@@ -1842,6 +1835,8 @@ class Settings(ft.View):
             )
             
         ]
+
+        
 
 
 

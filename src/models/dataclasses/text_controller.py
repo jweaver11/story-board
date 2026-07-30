@@ -1,6 +1,6 @@
 import flet as ft
 from dataclasses import dataclass, field
-from models.app import app
+
 
 # Source of truth. The data for the textcontroller stored here
 @ft.observable
@@ -18,7 +18,7 @@ class TextController:
     decoration_thickness: float = 1.0
     decoration_style: str = "solid"
 
-
+# Essentially the build function for the text controller class, passing in persistant data
 @ft.component
 def TextControllerView(text_controller: TextController) -> ft.Row:
 
@@ -28,6 +28,7 @@ def TextControllerView(text_controller: TextController) -> ft.Row:
 
     # Update the data before UI reset
     def update_data():
+        from models.app import app
         set_settings(text_controller.__dict__)
         app.settings.update_data(**{'text_controller_settings': text_controller.__dict__})
 

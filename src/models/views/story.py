@@ -851,8 +851,6 @@ class Story(ft.View):
             drag_interval=20,
         )
 
-        #self.menubar.content.controls.insert(1, app.settings.text_controller_view)
-
         
 
         # Views render like columns, so we add elements top-down

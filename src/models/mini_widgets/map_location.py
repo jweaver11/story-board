@@ -552,8 +552,8 @@ class MapLocation(MiniWidget):
 
         ]
 
-    async def save_rename(self, e: ft.Event[ft.TextField]):
-        await super().save_rename(e)
+    def save_rename(self, e: ft.Event[ft.TextField]):
+        super().save_rename(e)
         self.map_label_tf.value = e.control.value
         self.map_label_tf.update()
     
