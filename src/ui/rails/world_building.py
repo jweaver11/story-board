@@ -43,11 +43,14 @@ class WorldBuildingRail(Rail):
                     ),
                     [
                         ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
+                            content=ft.Row([
+                                ft.Text("Map"), 
+                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                        tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                            leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
                             data="map", on_click=self.new_item_clicked, close_on_click=True, expand=True,
                             tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                         ),
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
@@ -82,7 +85,7 @@ class WorldBuildingRail(Rail):
                 content=ft.SubmenuButton(
                     ft.Container(
                         ft.Row([
-                            ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY), 
+                            ft.Icon(ft.Icons.IMPORT_EXPORT_OUTLINED, ft.Colors.PRIMARY), 
                             ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
@@ -155,7 +158,11 @@ class WorldBuildingRail(Rail):
                 ),
                 [
                     ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
+                        content=ft.Row([
+                            ft.Text("Map"), 
+                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                    tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                        leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
                         data="map", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
@@ -187,7 +194,7 @@ class WorldBuildingRail(Rail):
             ),
             ft.SubmenuButton(
                 ft.Container(
-                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.OUTLINE),
+                    ft.Icon(ft.Icons.IMPORT_EXPORT_OUTLINED, ft.Colors.OUTLINE),
                     shape=ft.BoxShape.CIRCLE,
                     alignment=ft.Alignment.CENTER
                 ),

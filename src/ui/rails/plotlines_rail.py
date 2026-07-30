@@ -61,7 +61,7 @@ class PlotlinesRail(Rail):
                 content=ft.SubmenuButton(
                     ft.Container(
                         ft.Row([
-                            ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY), 
+                            ft.Icon(ft.Icons.IMPORT_EXPORT_OUTLINED, ft.Colors.PRIMARY), 
                             ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
@@ -152,7 +152,7 @@ class PlotlinesRail(Rail):
             ),
             ft.SubmenuButton(
                 ft.Container(
-                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.OUTLINE),
+                    ft.Icon(ft.Icons.IMPORT_EXPORT_OUTLINED, ft.Colors.OUTLINE),
                     shape=ft.BoxShape.CIRCLE,
                     alignment=ft.Alignment.CENTER
                 ),

@@ -1221,32 +1221,35 @@ class CanvasRail(Rail):
                 ),
                 [
                     ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
+                        content=ft.Row([
+                            ft.Text("Canvas"), 
+                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                    tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
                         data="canvas", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new Canvas for sketching drawing, or visual note taking",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"), 
-                        trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                     ),
+            
                     ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="SVG Canvas",
-                        data="canvas", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="A Canvas of scalable vector graphics that allow for infinite zooming. Coming Soon! (but not that soon)",
-                        disabled=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
-                    ),
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
+                        content=ft.Row([
+                            ft.Text("Canvas Board"), 
+                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                    tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                        leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), 
                         data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                     ),
                     ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
+                        content=ft.Row([
+                            ft.Text("Map"), 
+                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                    tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                        leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY),
                         data="map", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                     ),
                 ],
                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=10)),
@@ -1254,7 +1257,7 @@ class CanvasRail(Rail):
             ),
             ft.SubmenuButton(
                 ft.Container(
-                    ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.OUTLINE),
+                    ft.Icon(ft.Icons.IMPORT_EXPORT_OUTLINED, ft.Colors.OUTLINE),
                     padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
                     width=40, height=40, alignment=ft.Alignment.CENTER
                 ),

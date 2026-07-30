@@ -58,33 +58,34 @@ class ContentRail(Rail):
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ), 
                         ft.MenuItemButton(      # Documents
-                            leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY), content="Document", 
+                            content=ft.Row([
+                                ft.Text("Document"), 
+                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                        tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                            leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY), 
                             data="document", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new document for text chapters or scenes in your story",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                         ), 
                         ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
+                            content=ft.Row([
+                                ft.Text("Canvas"), 
+                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                        tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                            leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
                             data="canvas", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new Canvas for sketching drawing, or visual note taking",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                             trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                         ),
-                        ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="SVG Canvas",
-                            data="canvas", on_click=self.new_item_clicked, close_on_click=True,
-                            tooltip="A Canvas of scalable vector graphics that allow for infinite zooming. Coming Soon! (but not that soon)",
-                            disabled=True,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
-                        ),
+                        
                         ft.MenuItemButton(      
                             leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY), content="Note", 
                             data="note", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ), 
-                        
                         ft.MenuItemButton(
                             leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
                             data="plotline", on_click=self.new_item_clicked, close_on_click=True,
@@ -92,18 +93,24 @@ class ContentRail(Rail):
                             tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
                         ),
                         ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
+                            content=ft.Row([
+                                ft.Text("Canvas Board"), 
+                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                        tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                            leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), 
                             data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                         ),
                         ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
+                            content=ft.Row([
+                                ft.Text("Map"), 
+                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                        tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                            leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
                             data="map", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                         ),
                         
                         ft.MenuItemButton(
@@ -165,7 +172,7 @@ class ContentRail(Rail):
                 content=ft.SubmenuButton(
                     ft.Container(
                         ft.Row([
-                            ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY), 
+                            ft.Icon(ft.Icons.IMPORT_EXPORT_OUTLINED, ft.Colors.PRIMARY), 
                             ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
@@ -200,26 +207,26 @@ class ContentRail(Rail):
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     ), 
                     ft.MenuItemButton(      # Documents
-                        leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY), content="Document", 
+                        content=ft.Row([
+                            ft.Text("Document"), 
+                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                    tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                        leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY),
                         data="document", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new document for text chapters or scenes in your story",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                     ), 
                     ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Canvas",
+                        content=ft.Row([
+                            ft.Text("Canvas"), 
+                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                    tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
                         data="canvas", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new Canvas for sketching drawing, or visual note taking",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                     ),
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="SVG Canvas",
-                        data="canvas", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="A Canvas of scalable vector graphics that allow for infinite zooming. Coming Soon! (but not that soon)",
-                        disabled=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
-                    ),
+                    
                     ft.MenuItemButton(      
                         leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY), content="Note", 
                         data="note", on_click=self.new_item_clicked, close_on_click=True,
@@ -233,18 +240,24 @@ class ContentRail(Rail):
                         tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
                     ),
                     ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), content="Canvas Board",
+                        content=ft.Row([
+                            ft.Text("Canvas Board"), 
+                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                    tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                        leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), 
                         data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                     ),
                     ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), content="Map",
+                        content=ft.Row([
+                            ft.Text("Map"), 
+                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                    tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                        leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
                         data="map", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                     ),
                     
                     ft.MenuItemButton(
