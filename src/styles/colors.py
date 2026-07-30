@@ -38,14 +38,12 @@ colors = [
 dark_gradient = ft.LinearGradient(
     begin=ft.Alignment.TOP_CENTER,
     end=ft.Alignment.BOTTOM_CENTER,
+    tile_mode=ft.GradientTileMode.REPEATED,
+    stops=[0.8, 1.0],
     colors=[
-
-        ft.Colors.with_opacity(0.6, ft.Colors.OUTLINE_VARIANT),
-        ft.Colors.with_opacity(0.3, ft.Colors.OUTLINE_VARIANT),
-
-
-        #ft.Colors.with_opacity(.8, ft.Colors.OUTLINE_VARIANT), ft.Colors.with_opacity(0.3, ft.Colors.OUTLINE_VARIANT),
-
-        #ft.Colors.CYAN_400, ft.Colors.PURPLE_500   # Highlight colors
+        #ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE_VARIANT),
+        #ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE_VARIANT),
+        ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE_VARIANT),
+        ft.Colors.with_opacity(0.2, ft.Colors.OUTLINE_VARIANT),
     ],
 )

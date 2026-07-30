@@ -45,6 +45,7 @@ class Document(Widget):
 
                 # Holds our comments and reference images in data
                 'comments': dict(),
+                'reference_images': dict(),
 
                 # The text as json list data that is loaded and saved
                 'document_data': list(),       
@@ -93,7 +94,6 @@ class Document(Widget):
             self.widget.comments_column.controls.remove(self)
             self.widget.comments_column.update()
             
-
         # Build the comment
         def build(self):
             self.value = self.data.get('content', "")
@@ -124,14 +124,14 @@ class Document(Widget):
         # Updates our data then the associated dict inside parents 'comments' dict
         def update_data(self, **kwargs):
             self.data.update(kwargs)
-            self.widget.update_data(comments={self.data["id"]: self.data})
+            self.widget.update_data(reference_images={self.data["id"]: self.data})
             
         # Deletes this comment from parents data and controls
         def delete_image(self, e=None):
-            self.widget.data['comments'].pop(self.data["id"], None)
-            self.widget.update_data(**{'comments': self.widget.data.get('comments', {})})
-            self.widget.comments_column.controls.remove(self)
-            self.widget.comments_column.update()
+            self.widget.data['reference_images'].pop(self.data["id"], None)
+            self.widget.update_data(**{'reference_images': self.widget.data.get('reference_images', {})})
+            self.widget.ref_img_column.controls.remove(self)
+            self.widget.ref_img_column.update()
             
 
         # Build the image
@@ -172,37 +172,26 @@ class Document(Widget):
 
         super().build()
 
-        async def new_mini_widget_clicked(e: ft.Event):
-            
-            # Get the type of mini widget (comment or reference image)
-            mw_type = e.control.data   
-
-            # If reference image, handle that seperately and return
-            if mw_type == "reference_image":
-                await new_ref_image_clicked(e)
-                return
+        async def new_comment_clicked(e=None):
             
             # Otherwise its a comment, so hide our button and show our textfield
-            new_mini_widget_button.parent.visible = False
-            new_mini_widget_button.parent.update()
-            #new_comment_tf_placeholder.visible = False
-            #new_comment_tf_placeholder.update()
+            new_comment_button.visible = False
+            new_comment_button.update()
             new_comment_tf.visible = True
             new_comment_tf.value = ""
-            new_comment_tf.data = mw_type
             new_comment_tf.update()
             await new_comment_tf.focus()  
 
         # Shows our new mini widget button and hides our textfield after creating/blurring comment tf
-        async def show_new_mini_widget_button(e: ft.Event):
-            new_mini_widget_button.parent.visible = True
-            new_mini_widget_button.parent.update()
+        def show_new_comment_button(e=None):
+            new_comment_button.visible = True
+            new_comment_button.update()
             new_comment_tf.value = ""
             new_comment_tf.visible = False
             new_comment_tf.update()
 
         # Creates our new comment in data then adds it to the column
-        async def create_comment(e: ft.Event):
+        def create_comment(e: ft.Event[ft.TextField]):
             comment_title = e.control.value.strip()
             new_comment = self.Comment(title=comment_title, widget=self)
             self.update_data(**{'comments': {new_comment.data["id"]: new_comment.data}})
@@ -211,7 +200,7 @@ class Document(Widget):
 
             
         # Opens our file picker to imoprt our image
-        async def new_ref_image_clicked(e: ft.Event):
+        async def new_ref_image_clicked(e: ft.Event[ft.IconButton]):
             files = await ft.FilePicker().pick_files(allowed_extensions=["jpg", "jpeg", "png", "webp"])
             if files:
 
@@ -230,24 +219,12 @@ class Document(Widget):
                             'image': encoded_string,
                         }
                     )
-                    self.update_data(**{'comments': {reference_image.data["id"]: reference_image.data}})
-                    self.comments_column.controls.append(reference_image)
-                    self.comments_column.update()
+                    self.update_data(**{'reference_images': {reference_image.data["id"]: reference_image.data}})
+                    self.ref_img_column.controls.append(reference_image)
+                    self.ref_img_column.update()
                         
                 except Exception as e:
-                    e.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
-
-
-
-        # Loads our comments and ref images from data into controls to display on right side of document
-        def load_comments() -> list:
-            mini_widget_controls = []
-            for mw_data in self.data.get('comments', {}).values():
-                if mw_data['tag'] == "comment":
-                    mini_widget_controls.append(self.Comment(title=mw_data.get('title'), widget=self, data=mw_data))
-                elif mw_data['tag'] == "reference_image":
-                    mini_widget_controls.append(self.ReferenceImage(widget=self, data=mw_data))
-            return mini_widget_controls
+                    e.control.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
         
         # Marks ourselves as dirty after any changes to the document
         def mark_dirty(e=None):
@@ -295,44 +272,29 @@ class Document(Widget):
             
         
         # Otherwise, build our info column
-        self.comments_column = ft.Column(load_comments(), expand=True, scroll=ft.ScrollMode.AUTO)
+        self.comments_column = ft.Column(
+            [self.Comment(title=comment_data.get('title'), widget=self, data=comment_data) for comment_data in self.data.get('comments', {}).values()], 
+            tight=True
+        )
+        self.ref_img_column = ft.Column(
+            [self.ReferenceImage(widget=self, data=mw_data) for mw_data in self.data.get('reference_images', {}).values()], 
+            tight=True
+        )
+        
         
         self.sidebar_body.controls.extend([
             ft.Row([
                 
                 ft.Text("Comments", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-                ft.MenuBar(
-                    [
-                        new_mini_widget_button := ft.SubmenuButton(
-                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY),
-                            [
-                                ft.MenuItemButton(      # Folders
-                                    leading=ft.Icon(ft.CupertinoIcons.BUBBLE_RIGHT, ft.Colors.PRIMARY), content="Text", 
-                                    data="comment", on_click=new_mini_widget_clicked, close_on_click=True,
-                                    tooltip="Create a new folder to organize your story",
-                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                ), 
-                                ft.MenuItemButton(      # Documents
-                                    leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY), content="Image", 
-                                    data="reference_image", on_click=new_mini_widget_clicked, close_on_click=True,
-                                    tooltip="Create a new document for text chapters or scenes in your story",
-                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                ), 
-                            ],
-                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                            style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                        ),
-                    ],
-                    style=ft.MenuStyle(
-                        bgcolor="transparent", shadow_color="transparent",
-                        shape=ft.RoundedRectangleBorder(radius=4),
-                        padding=ft.Padding.all(0)
-                    ),
-                ),
+                new_comment_button := ft.IconButton(     
+                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+                    on_click=new_comment_clicked, 
+                    mouse_cursor="click",
+                ), 
                 new_comment_tf := ft.TextField(
                     label="Comment Title", dense=True, margin=ft.Margin.symmetric(horizontal=6),
                     capitalization=ft.TextCapitalization.WORDS,
-                    on_blur=show_new_mini_widget_button, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+                    on_blur=show_new_comment_button, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                     on_submit=create_comment, animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
                     visible=False, autofocus=True, expand=True,
                 ),
@@ -341,15 +303,18 @@ class Document(Widget):
             
             self.comments_column, 
 
-            # Testing purposes
-            #ft.Text(
-                #spans=[
-                    #ft.TextSpan("Span 1"),
-                    #ft.TextSpan("Span 2")
-                #],
-                #on_selection_change=lambda e: print(e),
-                #selectable=True
-            #)
+            ft.Row([
+                ft.Text("Reference Images", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
+                ft.IconButton(     
+                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+                    on_click=new_ref_image_clicked, 
+                    mouse_cursor="click",
+                ), 
+            ], spacing=0),
+
+            self.ref_img_column
+
+           
         ])
         
 

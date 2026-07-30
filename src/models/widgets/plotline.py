@@ -495,7 +495,7 @@ class Plotline(Widget):
                 ft.Row([
                     ft.Text(char_data.get('name'), weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),   # Char name
                     ft.IconButton(      # Remove button
-                        ft.Icons.CLOSE, ft.Colors.ERROR, tooltip=f"Remove {char_data.get('name')} from relevant characters for this plot point",
+                        ft.Icons.CLOSE, ft.Colors.ERROR, tooltip=f"Remove {char_data.get('name')} from relevant characters for this plotline",
                         mouse_cursor=ft.MouseCursor.CLICK,
                         on_click=remove_relevant_character,
                         data=char_data.get('id'), 
