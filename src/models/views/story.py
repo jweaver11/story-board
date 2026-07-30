@@ -33,7 +33,7 @@ class Story(ft.View):
             route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
             padding=ft.Padding.all(0),      # No padding for the page
             spacing=0,                                                      # No spacing between menubar and rest of page
-            #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
         )  
 
         self.data = data                # Sets our data (if any) passed in. New stories just have none
@@ -863,7 +863,8 @@ class Story(ft.View):
                 self.workspaces_rail,
                 self.active_rail,
                 self.active_rail_resizer,
-                ft.Container(self.workspace, expand=True, gradient=dark_gradient)
+                self.workspace,
+                #ft.Container(self.workspace, expand=True, gradient=dark_gradient)
             ], spacing=0, expand=True)
         ]
 

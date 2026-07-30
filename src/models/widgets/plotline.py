@@ -47,7 +47,9 @@ class Plotline(Widget):
                 'time_label': "Years",                          # Label for the time axis (any str they want)
                 'start_label': "0",                              # Start label
                 'end_label': "10",                            # Start and end date of the branch, for plotline view
-                'divisions': ["1", "2", "3", "4", "5", "6", "7", "8", "9"],    # List len is the num of divisions, and each value is its label
+
+                # List of divisions for our plotline. Default to 4 divisions
+                'divisions': [str(i) for i in range(1, app.settings.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 9) + 1)],   
               
                 'relevant_characters': dict(),  # keys and name to relevant characters. {'id': {'id': "id_val", 'name': "name_val"}...}
                 'markers': dict(),  # 'id': {data}
@@ -491,7 +493,7 @@ class Plotline(Widget):
                 relevant_characters_row.update()
                 return
     
-            return ft.Container(
+            return ft.Container( 
                 ft.Row([
                     ft.Text(char_data.get('name'), weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),   # Char name
                     ft.IconButton(      # Remove button
@@ -635,6 +637,7 @@ class Plotline(Widget):
         events_list.sort(key=lambda x: x.get('position', (0, 0))[0])  # Sort by position on the plotline
 
         self.events_column = ft.Column(
+            [ft.Row(height=1)] +    # Force expansion right if empty, otherwise does nothing
             [create_event_ctrl(event_data) for event_data in events_list], 
             spacing=0, tight=True
         )

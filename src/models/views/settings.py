@@ -17,6 +17,7 @@ from models.dataclasses.character_template import default_character_template_dat
 from styles.text_fields import TextField
 from models.dataclasses.world_template import default_world_template_data_dict
 import asyncio
+from styles.text_fields import SettingsTextField
 
  
 class Settings(ft.View):
@@ -88,7 +89,9 @@ class Settings(ft.View):
                         'color': "primary"
                     },
                     'plotline': {
-                        'color': "primary"
+                        'color': "primary",
+                        'starting_division_count': 9,    # Default number of divisions for new plotlines
+                        'plot_point_color': "white",   # Default color for new plot points
                     },
                     'canvas_board': {
                         'color': "primary"
@@ -456,12 +459,28 @@ class Settings(ft.View):
     def _load_widget_settings(self) -> ft.Container:
         ''' Loads our account settings view '''
 
+        class Dropdown(ft.Dropdown):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.dense=True
+                self.menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_CENTER, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4))
+                self.fill_color=ft.Colors.SURFACE_CONTAINER_HIGHEST
+                self.filled=True
+                self.border_color=ft.Colors.TRANSPARENT
+                self.focused_border_color=ft.Colors.PRIMARY
+                self.capitalization=ft.TextCapitalization.WORDS
+                self.content_padding=ft.Padding.all(0)
+                self.border_radius=4
+                self.text_style=ft.TextStyle(weight=ft.FontWeight.BOLD)
+                self.label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
+
         # Sets the color in data for each widget upon a change
         def set_default_widget_color(e: ft.Event[ft.MenuItemButton], widget_tag: str):
             color_str = e.control.data
             self.update_data(**{'widget_defaults': {widget_tag: {'color': color_str}}})
             e.control.parent.trailing.color = color_str
             e.control.parent.update()
+
             
 
         # Gives a default color changer for each widget
@@ -490,56 +509,24 @@ class Settings(ft.View):
                     padding=ft.Padding.all(0)
                 )
             )
-        
-        # Adjusts the spacing between panels in the preview display
-        async def adjust_comic_preview_spacing(e: ft.Event):
-            new_spacing = int(e.control.data)
-            self.update_data(**{'widget_defaults': {'comic_preview': {'preview_spacing': new_spacing}}})
-            e.control.parent.content = f"Preview Spacing: {str(new_spacing)}"
-            e.control.parent.update()
-            print(new_spacing)
-            
-        # Adjusts the scaling of the preview display
-        async def adjust_comic_preview_scaling(e: ft.Event):
-            new_scaling = int(e.control.data)
-            self.update_data(**{'widget_defaults': {'comic_preview': {'preview_scale': new_scaling}}})
-            e.control.parent.content = f"Preview Scaling: {str(new_scaling)}"
-            e.control.parent.update()
-            print(new_scaling)
-            
 
-        # Sets the background color of the preview display
-        async def set_comic_preview_background_color(e: ft.Event):
-            new_color = e.control.data
-            self.update_data(**{'widget_defaults': {'comic_preview': {'preview_background_color': new_color}}})
-            e.control.parent.leading.color = new_color
-            e.control.parent.update()
-            print(new_color)
-            
-
-        # Sets the filter quality of the preview display
-        async def set_comic_preview_filter_quality(e: ft.Event):
-            new_quality = str(e.control.data)
-            self.update_data(**{'widget_defaults': {'comic_preview': {'filter_quality': new_quality}}})
-            e.control.parent.content = f"Filter Quality: {new_quality.capitalize()}"
-            e.control.parent.update()
-            print(new_quality)
-            
-        async def toggle_comic_preview_anti_aliasing(e: ft.Event):
-            new_value = not self.data.get('widget_defaults', {}).get('comic_preview', {}).get('use_anti_aliasing', True)
-            self.update_data(**{'widget_defaults': {'comic_preview': {'use_anti_aliasing': new_value}}})
-            e.control.content = f"Anti-Aliasing: {str(new_value)}"
+        def update_plotline_division_count(e: ft.Event[ft.TextField]):
+            if not e.control.value:
+                e.control.error = "Please enter a valid number"
+                e.control.value = str(self.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 9))
+                e.control.update()
+                return
+            e.control.error = None
+            new_count = int(e.control.value)
+            self.update_data(**{'widget_defaults': {'plotline': {'starting_division_count': new_count}}})
             e.control.update()
 
-        async def toggle_comic_preview_direction(e: ft.Event):
-            if self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction') == "vertical":
-                new_value = "horizontal"
-            else:
-                new_value = "vertical"
-            self.update_data(**{'widget_defaults': {'comic_preview': {'preview_direction': new_value}}})
-            e.control.content = f"Preview Direction: {str(new_value)}"
-            e.control.icon = ft.Icons.SWAP_VERT if new_value == "vertical" else ft.Icons.SWAP_HORIZ
-            e.control.update()  
+        def update_plotline_pp_color(e: ft.Event[ft.Dropdown]):
+            new_color = e.control.value.lower()
+            self.update_data(**{'widget_defaults': {'plotline': {'plot_point_color': new_color}}})
+            e.control.color = new_color
+            e.control.update()
+           
 
 
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
@@ -572,21 +559,39 @@ class Settings(ft.View):
                 create_default_color_selector("note"),
                 ft.Divider(),
 
-                ft.Text("Character", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character")),
-                create_default_color_selector("character"),
-                ft.Divider(),
-
                 ft.Text("Plotline", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("plotline")),
                 create_default_color_selector("plotline"),
+
+                SettingsTextField(    # Change the default number of divisions for new plotlines
+                    label="Starting Division Count",
+                    value=str(self.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 4)),
+                    tooltip="The default number of divisions for new plotlines.",
+                    input_filter=ft.NumbersOnlyInputFilter(),
+                    on_blur=update_plotline_division_count
+                ),
+                
+                # Default plotpoint color
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('plotline', {}).get('plot_point_color', "primary")).capitalize(),
+                    label="Default Plot Point Color", 
+                    color=self.data.get('widget_defaults', {}).get('plotline', {}).get('plot_point_color', "primary"),
+                    on_select=update_plotline_pp_color,
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
+
                 ft.Divider(),
 
                 ft.Text("Canvas Board", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("canvas_board")),
                 create_default_color_selector("canvas_board"),
                 ft.Divider(),
 
-                ft.Text("World", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("world")),
-                create_default_color_selector("world"),
-                ft.Divider(),
+                
 
                 ft.Text("Item", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("item")),
                 create_default_color_selector("item"),
@@ -604,7 +609,7 @@ class Settings(ft.View):
                     ft.Icons.SWAP_VERT if self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
                     ft.Colors.PRIMARY,
                     tooltip="Swap the preview direction between vertical and horizontal.",
-                    on_click=toggle_comic_preview_direction,
+                    #on_click=toggle_comic_preview_direction,
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
                 ),
                 
@@ -613,7 +618,7 @@ class Settings(ft.View):
                     ft.Icons.ANIMATION_OUTLINED, 
                     ft.Colors.PRIMARY,
                     tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
-                    on_click=toggle_comic_preview_anti_aliasing,
+                    #on_click=toggle_comic_preview_anti_aliasing,
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
                 ),
                 ft.SubmenuButton(
@@ -621,9 +626,9 @@ class Settings(ft.View):
                     [
                         ft.MenuItemButton(
                             ft.Icon(ft.Icons.CIRCLE, color), data=color,
-                            on_click=set_comic_preview_background_color,
+                            #on_click=set_comic_preview_background_color,
                         ) for color in colors
-                    ] + [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_comic_preview_background_color,)],
+                    ], #+ [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_comic_preview_background_color,)],
                     tooltip="Adjust the scale of the preview display.",
                     leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
@@ -634,7 +639,7 @@ class Settings(ft.View):
                     [
                         ft.MenuItemButton(
                             str(i), data=i,
-                            on_click=adjust_comic_preview_spacing,
+                            #on_click=adjust_comic_preview_spacing,
                         ) for i in range(0, 21) if i % 2 == 0
                     ],
                     tooltip="Adjust the spacing between panels in the preview display.",
@@ -648,7 +653,7 @@ class Settings(ft.View):
                     [
                         ft.MenuItemButton(
                             str(i), data=i,
-                            on_click=adjust_comic_preview_scaling,
+                            #on_click=adjust_comic_preview_scaling,
                         ) for i in range(1, 6)
                     ],
                     tooltip="Adjust the scale of the preview display.",
@@ -656,13 +661,15 @@ class Settings(ft.View):
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                     style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                 ),
+                ft.Text("Character Relationship Map", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character_relationship_map")),
+                        create_default_color_selector("character_relationship_map"),
                 
                 ft.SubmenuButton(
                     f"Image Filter Quality: {self.data.get('filter_quality', 'medium').capitalize()}",
                     [
-                        ft.MenuItemButton("Low", data="low", on_click=set_comic_preview_filter_quality),
-                        ft.MenuItemButton("Medium", data="medium", on_click=set_comic_preview_filter_quality),
-                        ft.MenuItemButton("High", data="high", on_click=set_comic_preview_filter_quality),
+                        #ft.MenuItemButton("Low", data="low", on_click=set_comic_preview_filter_quality),
+                        #ft.MenuItemButton("Medium", data="medium", on_click=set_comic_preview_filter_quality),
+                        #ft.MenuItemButton("High", data="high", on_click=set_comic_preview_filter_quality),
                     ],
                     tooltip="Adjust the filter quality of the preview display. This will affect performance and image quality",
                     leading=ft.Icon(ft.Icons.PHOTO_FILTER_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
@@ -671,12 +678,18 @@ class Settings(ft.View):
                 ),      
                 ft.Divider(),
 
-                ft.Text("Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("chart")),
-                create_default_color_selector("chart"),
+                ft.Text("Character", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character")),
+                create_default_color_selector("character"),
                 ft.Divider(),
 
-                ft.Text("Character Relationship Map", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character_relationship_map")),
-                create_default_color_selector("character_relationship_map"),
+                ft.Text("World", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("world")),
+                create_default_color_selector("world"),
+                ft.Divider(),
+
+                ft.Text("Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("chart")),
+                create_default_color_selector("chart"),
+
+                
 
             ], expand=True, scroll=ft.ScrollMode.AUTO),
             

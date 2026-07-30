@@ -42,8 +42,8 @@ class MiniWidget(ft.GestureDetector):
                 'title': data.get('title', ''),         # Title of the mini widget, should match the object title
                 'tag': str(),                           # Default mini widget tag, but should be overwritten by child classes
                 'position': data.get('position', (200, 200)),       # Position of the mini widget on its parents stack
-                'color': data.get('color', '#FFFFFF'),          # Color of the mini widget
-                'info': list(),                          # Info stored about this MW. Child classes expand this 
+                'color': data.get('color', "white"),          # Color of the mini widget
+                'info': list(),                          # Info stored about this MW. Child classes expand this  
             }
 
         # Sidebar ctrls
