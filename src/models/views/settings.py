@@ -166,7 +166,7 @@ class Settings(ft.View):
                     'current_tool_name': "erase",        # Current tool or shape being used
                     'saved_brushes': dict(),             # Saved brushes the user has created that we can load
                     'use_brush_smoothing': True,         # Uses cv.Path for constistant shapes if true, otherwise use cv.line
-                    'path_smoothing_strength': 1,        # If stroke smoothing is enabled, how strong the smoothing is. 1 = low, 10 = high 0=off
+                    'stroke_smoothing_strength': 1,        # If stroke smoothing is enabled, how strong the smoothing is. 1 = low, 10 = high 0=off
                     # Text settings -- OLD PHASING OUT
                     'text_shape_size': 24,                # Font size for text shapes
                     'text_shape_font': "Arial",              # Font family for text shapes

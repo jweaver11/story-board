@@ -620,7 +620,9 @@ class PlotChart(Widget):
 
         self.data['nodes'].append({
             'label': node_label, 
-            'position': self.new_node_position, 'color': '#FFFFFF', 'description': ""
+            'position': self.new_node_position, 
+            'color': '#FFFFFF', 
+            'description': ""
         })
         self.update_data(**{'nodes': self.data['nodes']})
 

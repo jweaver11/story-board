@@ -40,24 +40,6 @@ class TextController:
     word_spacing: int = 0
     baseline: str = "alphabetic"  # Options: alphabetic, ideographic, hanging, mathematical, central, middle, text-bottom, text-top   
 
-
-
-    bold: bool = False
-    italic: bool = False
-    decoration: str = "none"  # Options: none, underline, overline, line-through
-    font_size: int = 14
-    font_family: str = "Arial"
-    letter_spacing: int = 0
-    word_spacing: int = 0
-    color: str = "#FFFFFF"
-    decoration_color: str = "#000000"
-    decoration_thickness: float = 1.0
-    decoration_style: str = "solid"
-
-    # Update the data in our settings
-    def update_data(self, **kwargs):
-        pass
-
 # Essentially the build function for the text controller class, passing in persistant data
 @ft.component
 def TextControllerView(text_controller: TextController) -> ft.Row:
