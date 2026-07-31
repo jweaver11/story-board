@@ -295,6 +295,13 @@ class Document(Widget):
                         
                 except Exception as e:
                     e.control.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
+
+        # Gets our word count 
+        def get_word_count() -> int:
+            for block in self.data.get('document_data', []):
+                if "insert" in block:
+                    word_count = len(block["insert"].split())
+                    return word_count
         
         # Marks ourselves as dirty after any changes to the document
         def mark_dirty(e=None):
@@ -346,6 +353,15 @@ class Document(Widget):
             [self.ReferenceImage(widget=self, data=mw_data) for mw_data in self.data.get('reference_images', {}).values()], 
             tight=True
         )
+
+
+        # Word count button
+        word_count_button = ft.PopupMenuButton(
+            icon=ft.CupertinoIcons.TEXTFORMAT_SIZE, icon_color=ft.Colors.PRIMARY,
+            tooltip="Word Count", menu_padding=ft.Padding.all(0),
+            items=[ft.PopupMenuItem(f"Word Count: {get_word_count()}")],
+        )
+        self.sidebar_header.controls.append(word_count_button)
         
         
         self.sidebar_body.controls.extend([

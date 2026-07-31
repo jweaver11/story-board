@@ -176,7 +176,7 @@ class Workspace(ft.Container):
     async def remove_widget_from_workspace(self, widget: Widget):
         # Grab index
         widget_idx = widget.data.get('index', -100)
-        if widget_idx < 0 or widget_idx >= len(self.tab_bar.tabs):
+        if widget_idx < 0 or widget_idx >= len(self.tab_bar.tabs):  # Should be impossible
             self.page.show_dialog(SnackBar("Error: Widget index out of range when trying to remove from workspace: " + str(widget_idx)))
             return
         
