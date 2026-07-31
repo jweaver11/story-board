@@ -60,7 +60,7 @@ class ContentRail(Rail):
                         ft.MenuItemButton(      # Documents
                             content=ft.Row([
                                 ft.Text("Document"), 
-                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, visible=False,
                                         tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                             leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY), 
                             data="document", on_click=self.new_item_clicked, close_on_click=True,
@@ -209,7 +209,7 @@ class ContentRail(Rail):
                     ft.MenuItemButton(      # Documents
                         content=ft.Row([
                             ft.Text("Document"), 
-                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, visible=False, 
                                     tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                         leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY),
                         data="document", on_click=self.new_item_clicked, close_on_click=True,

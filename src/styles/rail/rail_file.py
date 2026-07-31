@@ -8,6 +8,7 @@ from styles.text_fields import TextField
 import os
 import asyncio
 import math
+from styles.snack_bar import SnackBar
 
 # Class for items within a tree view on the rail
 class RailFile(ft.GestureDetector):
@@ -75,6 +76,44 @@ class RailFile(ft.GestureDetector):
             self.title_text.visible = False
             self.update()
             await self.edit_title_tf.focus()
+
+        async def handle_delete(e=None):
+            
+            async def _delete_confirmed(_=ft.Event):
+                ''' Deletes the widget after confirmation '''
+
+                # Delete file, remove from dict
+                if await self.widget.delete_file():
+                    self.widget.story.widgets.pop(self.widget.data.get('id', ''), None)   # Remove ourselves from the story's widgets
+                else:
+                    self.page.pop_dialog()
+                    self.page.show_dialog(SnackBar("Error deleting file. Please try again."))
+                    return
+
+                if self.widget.data.get('visible', False) == True:
+                    await self.widget.story.workspace.remove_widget_from_workspace(self.widget)  # Remove ourselves from the workspace if we were visible
+
+                self.parent.controls.remove(self)  # Remove ourselves from the rail
+                self.parent.update()
+
+                self.page.pop_dialog()
+
+            
+
+            # Append an overlay to confirm the deletion
+            dlg = ft.AlertDialog(
+                title=ft.Text(f"Are you sure you want to delete {self.widget.data.get('title', '')} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
+                alignment=ft.Alignment.CENTER,
+                title_padding=ft.Padding.all(25),
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
+                    ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ]
+            )
+
+            await self.widget.story.close_menu()
+            self.page.show_dialog(dlg)
+            await self.widget.story.close_menu()
 
         return [
             MenuOptionStyle(

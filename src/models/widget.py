@@ -147,8 +147,9 @@ class Widget(ft.Container):
     async def move_file(self, new_directory: str) -> bool:
         ''' Deletes our old file and updates our directory, then saves the new file there '''
 
+        # If didn't move, don't run logic
         if new_directory == self.data.get('directory_path', ''):
-            return
+            return False
     
         # Delete our old file
         if await self.delete_file():
@@ -481,7 +482,6 @@ class Widget(ft.Container):
     # Called when the delete button is clicked in the menu options
     def delete_clicked(self, e: ft.Event):
         ''' Deletes this file from the story '''
-        from models.app import app
 
         async def _delete_confirmed(_=ft.Event):
             ''' Deletes the widget after confirmation '''

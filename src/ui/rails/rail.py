@@ -11,6 +11,7 @@ from styles.rail.rail_folder import RailFolder
 from utils.new_canvas import new_canvas_alert_dlg
 import asyncio
 from models.app import app
+from styles.snack_bar import SnackBar
 
 
 @ft.control
@@ -103,33 +104,16 @@ class Rail(ft.Column):
     # Called when a widget is dragged and dropped into this directory
     def move_widget_file(self, e: ft.DragTargetEvent, new_directory: str):
         ''' Moves our widgets into this directory from wherever they were '''
-        #print("Drag accepting")
 
         draggable = e.page.get_control(e.src_id)
 
         widget = self.story.get_widget_by_id(draggable.data)
 
         if widget is None:
-            print("Error: Widget not found for drag accept")
+            self.page.show_dialog(SnackBar("Error, file not found."))
             return
 
-        # Call the move file using the new directory path
-        #self.story.blocker.visible = True
-        #self.story.blocker.update()
-        
-
-        if self.page.run_task(widget.move_file, new_directory):
-            #self.story.blocker.visible = False
-            #self.story.blocker.update()
-            return
-        
-        else:
-
-            # Update the background color
-            e.control.content.bgcolor = ft.Colors.with_opacity(0.0, ft.Colors.ON_SURFACE)
-            #e.control.content.update()
-            #self.story.blocker.visible = False
-            #self.story.blocker.update()
+        self.page.run_task(widget.move_file, new_directory)
 
 
     # Called when new category button or menu option is clicked
