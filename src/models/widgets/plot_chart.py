@@ -35,7 +35,7 @@ class PlotChart(Widget):
                 'tag': "plot_chart",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('color'),
 
-                'spider_web_view': False,
+                'spider_web_view': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('spider_web_view', False),   # If the plot chart is in spider web view or not
 
                 'nodes': [],
                   # List of all our Nodes/events
@@ -483,16 +483,16 @@ class PlotChart(Widget):
             start_y -= 20
             end_y -= 20
 
-            # Adjust for in/out nodes
-            if start_x > end_x:
-                end_x += 150
-            else:
-                start_x += 150
-
-            mid_x = (start_x + end_x) / 2
-
             # Straight edges between nodes
             if self.widget.data.get('spider_web_view', False):
+                # Adjust for in/out nodes
+                if start_x < end_x:
+                    start_x += 140  # 150 width - 10 for mid node
+                    end_x += 10
+                else:
+                    end_x += 140
+                    start_x += 10
+                     
                 self.elements = [
                     cv.Path.MoveTo(start_x, start_y),
                     cv.Path.LineTo(end_x, end_y),
@@ -500,6 +500,13 @@ class PlotChart(Widget):
 
             # Three-node turns
             else:
+                # Adjust for in/out nodes
+                if start_x > end_x:
+                    end_x += 150
+                else:
+                    start_x += 150
+    
+                mid_x = (start_x + end_x) / 2
                 self.elements = [
                     cv.Path.MoveTo(start_x, start_y),
                     cv.Path.LineTo(mid_x, start_y),
@@ -639,6 +646,17 @@ class PlotChart(Widget):
                 await self.create_node(e)
                 await self.story.close_menu()
             self.locked_new_node_position = self.new_node_position
+
+            async def _toggle_view_mode(e: ft.Event):
+                await self.story.close_menu()
+                self.data['spider_web_view'] = not self.data.get('spider_web_view', False)
+                self.update_data(**{'spider_web_view': self.data.get('spider_web_view', False)})
+                for edge in self.edge_canvas.shapes:
+                    if isinstance(edge, self.Edge):
+                        edge.draw_edge()
+                        edge.update()
+                self.update()
+
             return [
                 MenuOptionStyle(
                     on_click=_create_node,
@@ -647,6 +665,16 @@ class PlotChart(Widget):
                         ft.Text("Node", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True), 
                     ]),
                     data="right_click"
+                ),
+                MenuOptionStyle(
+                    on_click=_toggle_view_mode,
+                    content=ft.Row([
+                        ft.Icon(
+                            ft.Icons.VERTICAL_DISTRIBUTE_OUTLINED if self.data.get('spider_web_view', False) == True else ft.Icons.SHOW_CHART,
+                            ft.Colors.PRIMARY
+                        ),
+                        ft.Text("Toggle Connector View", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True), 
+                    ], tooltip="Toggle between spider web connections and 3 line connections"),
                 ),
             ]
             
@@ -760,5 +788,4 @@ class PlotChart(Widget):
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
 
         # TODO: Add spider web view
-        # Fix Rename to be seemless
         # In sidebar, show sequence of events like plotline

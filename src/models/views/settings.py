@@ -112,7 +112,8 @@ class Settings(ft.View):
                     },
                     'plot_chart': {
                         'color': "primary",
-                        'node_color': "white"
+                        'node_color': "white",
+                        'spider_web_view': False,   # If the plot chart is in spider web view or not
                     },
                     'comic_preview': {
                         'color': "primary",
@@ -617,6 +618,16 @@ class Settings(ft.View):
             e.control.color = new_color
             e.control.update()
 
+        def toggle_plot_chart_spider_web_view(e: ft.Event):
+            new_value = not self.data.get('widget_defaults', {}).get('plot_chart', {}).get('spider_web_view', False)
+            self.data['widget_defaults']['plot_chart']['spider_web_view'] = new_value
+            self.update_data(**{'widget_defaults': {'plot_chart': {'spider_web_view': new_value}}})
+            if new_value:
+                e.control.icon = ft.Icons.VERTICAL_DISTRIBUTE_OUTLINED
+            else:
+                e.control.icon = ft.Icons.SHOW_CHART
+            e.control.update()
+
 
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
         content=ft.Column([
@@ -892,6 +903,13 @@ class Settings(ft.View):
                         ) for color in colors
                     ]
                 ),
+                Button(
+                    content="Toggle Connector View",
+                    icon=ft.Icons.VERTICAL_DISTRIBUTE_OUTLINED if self.data.get('spider_web_view', False) == True else ft.Icons.SHOW_CHART,
+                    tooltip="Toggle between spider web connections and 3 line connections",
+                    on_click=toggle_plot_chart_spider_web_view
+                ),
+                
                 ft.Divider(),
 
                 ft.Text("Comic Preview", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("comic_preview")),
