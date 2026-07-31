@@ -322,14 +322,14 @@ class CanvasBoard(Widget):
                         return
                     widget = self.story.get_widget_by_id(canvas_id)
                     if widget is None:
-                        self.page.show_dialog(SnackBar("Canvas not found. Please try again."))
                         self.page.pop_dialog()
+                        self.page.show_dialog(SnackBar("Canvas not found. Please try again."))
                         return
     
                     snapshot_str = widget.get_snapshot_string(quality="medium")
                     title = widget.data.get('title', 'Untitled')
-                    if snapshot_str is None:
-                        self.page.show_dialog(SnackBar("Failed to get canvas snapshot. Please try again."))
+                    if not snapshot_str:
+                        self.page.show_dialog(SnackBar("Empty Canvas cannot be made as the image"))
                         self.page.pop_dialog()
                         return
 
@@ -413,11 +413,13 @@ class CanvasBoard(Widget):
             elif row_data.get('preview_capture'): preview_capture = row_data.get('preview_capture', "")
             else: preview_capture = "canvas_bg.png"
 
+            #self.padding=ft.Padding.only(bottom=10)
+
             canvas_title = self.story.get_widget_by_id(row_data.get('canvas_id')).data.get('title', 'Untitled') if row_data.get('canvas_id') else ""
             
             row_ctrl = ft.Row(
                 vertical_alignment=ft.CrossAxisAlignment.CENTER, 
-                margin=ft.Margin.only(right=10),
+                margin=ft.Margin.only(right=20),
                 spacing=20, expand=True,
                 controls=[
                     ft.Container(
@@ -592,6 +594,8 @@ class CanvasBoard(Widget):
             update_indices()
 
         self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_LOWEST
+        self.description_tf.margin = ft.Margin.only(left=6, right=6, bottom=6)
+        self.description_tf.label = "Scope"
         
         # Labels for our rows data (columns)
         rows_labels = ft.Row(
@@ -599,20 +603,24 @@ class CanvasBoard(Widget):
                 ft.Text(
                     "Preview", style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                     text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS, width=300,
-                    tooltip="Preview of the canvas or image this sketch is attached to. Use for tracking progress or reference."
+                    tooltip="Preview of the canvas or image this sketch is attached to.\nUse for tracking progress or reference."
                 ),
                 ft.Text(
                     "Sketch", style=ft.TextStyle(weight=ft.FontWeight.BOLD, ),
                     text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS, width=300,
-                    tooltip="Sketch for this panel in the story."
+                    tooltip="Sketch for this panel in the story.\nThis sketch is meant only for simple concept art.\nUse a canvas for more complex sketches."
                 ),
                 ft.Text(
                     "Details", style=ft.TextStyle(weight=ft.FontWeight.BOLD),
                     text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS, expand=True,
                     tooltip="Details about this sketch, such as what it is, what it represents, or any other notes.\nSize of the sketch can be adjusted here, between 200 and 300 pixels.\nNotice: previews with different aspect ratios may look warped from the preview"
                 ),
-                ft.IconButton(ft.Icons.DELETE, opacity=0, disabled=True,)   # Spacer to match the delete button in the rows, but not clickable
-            ], spacing=20, margin=ft.Margin.only(right=40, left=10))
+                ft.Button(
+                    "Add Row", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                    on_click=create_row, 
+                    style=ft.ButtonStyle( mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
+                )  
+            ], spacing=20, margin=ft.Margin.only(left=10))
         
         # Column that holds our rows data
         rows_column = ft.ReorderableListView(
@@ -632,11 +640,7 @@ class CanvasBoard(Widget):
                 
                 ft.Row([
                     self.description_tf,
-                    ft.Button(
-                        "Add Row", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-                        on_click=create_row,
-                        style=ft.ButtonStyle( mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=20)),
-                    )
+                    
                 ], spacing=0)
 
             ])

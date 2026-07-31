@@ -282,12 +282,12 @@ class Widget(ft.Container):
                     return
                 widget = self.story.get_widget_by_id(canvas_id)
                 if widget is None:
-                    self.page.show_dialog(SnackBar("Canvas not found. Please try again."))
                     self.page.pop_dialog()
+                    self.page.show_dialog(SnackBar("Canvas not found. Please try again."))
                     return
 
                 snapshot_str = widget.get_snapshot_string(quality="low")
-                if snapshot_str is None:
+                if not snapshot_str:
                     self.page.pop_dialog()
                     self.page.show_dialog(SnackBar("Empty Canvas cannot be made as the image"))
                     return
