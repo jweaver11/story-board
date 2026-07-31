@@ -163,7 +163,7 @@ class Workspace(ft.Container):
         tab_gd = ft.GestureDetector(
             ft.Row([tab_icon, tab_title, edit_title_tf, hide_widget_button]),
             mouse_cursor=ft.MouseCursor.CLICK,
-            hover_interval=100,
+            hover_interval=40,
             on_hover=widget.set_mouse_coords,
             on_secondary_tap=lambda: self.story.open_menu(menu_options),
         )
@@ -297,7 +297,9 @@ class Workspace(ft.Container):
         # Build at tab bar with tabs for each widget
         self.tab_bar = ft.TabBar(
             tabs=[self.create_widget_tab_ctrl(widget) for widget in sorted_visible_widgets],    # Gives a tab for each widget
-            scrollable=True, indicator_color=indicator_color, divider_height=2
+            scrollable=True, indicator_color=indicator_color, divider_height=2,
+            enable_feedback=False, 
+            label_padding=ft.Padding.only(left=6), #padding=ft.Padding.all(20)
         )
 
         # Build our tab view that holds each widget
