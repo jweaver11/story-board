@@ -323,22 +323,16 @@ class Document(Widget):
 
         # Holds our flet quill
         editor_container = ft.Container(
-            expand=True, 
-            alignment=ft.Alignment.TOP_CENTER, 
-            margin=ft.Margin.symmetric(horizontal=40, vertical=20),
-            padding=ft.Padding.all(30),
+            ft.Column([ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty, expand=True)], expand=True, scroll=ft.ScrollMode.AUTO),
+            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
             border_radius=4,
-            
-            content=ft.Container(
-                ft.Column([ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty, expand=True)], expand=True, scroll=ft.ScrollMode.AUTO),
-                border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
-                border_radius=4,
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-                padding=ft.Padding.all(80), expand=True, 
-            ),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+            padding=ft.Padding.all(80), 
+            expand=True, 
+            alignment=ft.Alignment.TOP_LEFT, 
+            margin=ft.Margin.symmetric(horizontal=70, vertical=50),
             aspect_ratio=8.5/11.0,  # paper-like ratio
         )
-
         
 
             
@@ -398,7 +392,7 @@ class Document(Widget):
         ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
 
-        
+        '''
 
         # New testing stuff -------------------------------------------------------------------------
         def remove_cursor_span():
@@ -502,6 +496,8 @@ class Document(Widget):
                 self.sidebar
             ], spacing=0, expand=True),
         ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+        # TODO New cursor solution, since the one currently sux
+
+        '''
 
 
-# TODO New cursor solution, since the one currently sux
