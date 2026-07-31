@@ -16,6 +16,7 @@ import asyncio
 from utils.tutorial import run_tutorial
 import uuid
 from styles.colors import dark_gradient
+from models.dataclasses.text_controller import TextController
 
 
  
@@ -78,7 +79,7 @@ class Story(ft.View):
             }
         
 
-        # Variables to store our mouse position for opening menus
+        # State for storying mouse coords
         self.mouse_x: int = 0
         self.mouse_y: int = 0
             
@@ -100,6 +101,10 @@ class Story(ft.View):
         
         # Store all our widgets above in a master list for easier rendering in the UI
         self.widgets: dict = {} 
+
+        # Controller for text shapes (canvas), labels and location labels (maps)
+        # Canvas shapes get updated with this in real time if they are being edited
+        self.text_controller: TextController
 
           
     # Isolates stories from page.update calls. Needed for keeping performance when opening menus
@@ -831,6 +836,7 @@ class Story(ft.View):
         self.load_widgets() 
 
         # Create our menubar, workspaces rail, active rail, and workspace objects
+        self.text_controller = TextController(**app.settings.data.get('text_controller_settings', {}))
         self.menubar = create_menu_bar(self.page, self)
         self.workspaces_rail = WorkspacesRail(self) 
         self.workspace = Workspace(self)  
