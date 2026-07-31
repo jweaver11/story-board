@@ -17,6 +17,7 @@ import uuid
 from constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
 from styles.colors import colors
 from styles.text_fields import TextField, SingleLineTextField
+from styles.snack_bar import SnackBar
 
 
 class Plotline(Widget):
@@ -49,6 +50,7 @@ class Plotline(Widget):
                 'end_label': "10",                            # Start and end date of the branch, for plotline view
 
                 # List of divisions for our plotline. Default to 4 divisions
+                'show_division_labels': app.settings.data.get('widget_defaults', {}).get('plotline', {}).get('show_division_labels', True),  # Whether to hide the labels for our divisions
                 'divisions': [str(i) for i in range(1, app.settings.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 9) + 1)],   
               
                 'relevant_characters': dict(),  # keys and name to relevant characters. {'id': {'id': "id_val", 'name': "name_val"}...}
@@ -308,11 +310,21 @@ class Plotline(Widget):
         def edit_division_count(e: ft.Event[ft.MenuItemButton]):
             func = e.control.data
             if func == "add":
-                self.data.get('divisions', []).append(str(len(self.data.get('divisions', [])) + 1))
+                if len(self.data.get('divisions', [])) < 30:
+                    self.data.get('divisions', []).append(str(len(self.data.get('divisions', [])) + 1))
+                else:
+                    self.page.show_dialog(SnackBar("The maximum number of divisions is 30"))
+                    return
             else:
                 if len(self.data.get('divisions', [])) > 0:
                     self.data.get('divisions', []).pop(-1)
             self.update_data(**{'divisions': self.data.get('divisions', [])})
+            self.redraw_plotline_canvas()
+            self.plotline_canvas.update()
+            self.divisions_stack.update()
+
+        def show_division_labels(e: ft.Event[ft.MenuItemButton]):
+            self.update_data(**{'show_division_labels': not self.data.get('show_division_labels', True)})
             self.redraw_plotline_canvas()
             self.plotline_canvas.update()
             self.divisions_stack.update()
@@ -357,6 +369,15 @@ class Plotline(Widget):
                     on_click=self.show_info, 
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     tooltip="Show this map's info in the sidebar",
+                ),
+                no_effects=True, no_padding=True
+            ),
+            MenuOptionStyle(
+                ft.MenuItemButton(
+                    "Show Division Labels", leading=ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, ft.Colors.PRIMARY),
+                    on_click=show_division_labels, 
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="Whether to show each divisions label or not",
                 ),
                 no_effects=True, no_padding=True
             ),
@@ -735,7 +756,10 @@ class Plotline(Widget):
             x = PLOTLINE_PADDING + (i + 1) * division_spacing
             divisions_path.elements.append(cv.Path.MoveTo(x, PLOTLINE_HEIGHT // 2 + 10))
             divisions_path.elements.append(cv.Path.LineTo(x, PLOTLINE_HEIGHT // 2 - 10))  
-            self.divisions_stack.controls.append(create_division_ctrl(i, divisions[i], x))
+
+            # If we are showing the labels, draw them here
+            if self.data.get('show_division_labels', True):
+                self.divisions_stack.controls.append(create_division_ctrl(i, divisions[i], x))
 
         # Add our divisions path to the canvas
         self.plotline_canvas.shapes.append(divisions_path)

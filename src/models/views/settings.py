@@ -91,6 +91,7 @@ class Settings(ft.View):
                     },
                     'plotline': {
                         'color': "primary",
+                        'show_division_labels': True,  # Whether to show each divisions label or not
                         'starting_division_count': 9,    # Default number of divisions for new plotlines
                         'plot_point_color': "white",   # Default color for new plot points
                     },
@@ -111,7 +112,8 @@ class Settings(ft.View):
                         'color': "primary"
                     },
                     'plot_chart': {
-                        'color': "primary"
+                        'color': "primary",
+                        'node_color': "white"
                     },
                     'comic_preview': {
                         'color': "primary",
@@ -502,6 +504,11 @@ class Settings(ft.View):
                 e.control.value = str(self.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 9))
                 e.control.update()
                 return
+            elif int(e.control.value) < 0 or int(e.control.value) > 30:
+                e.control.error = "Maximum is 30"
+                e.control.value = str(self.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 9))
+                e.control.update()
+                return
             e.control.error = None
             new_count = int(e.control.value)
             self.update_data(**{'widget_defaults': {'plotline': {'starting_division_count': new_count}}})
@@ -551,6 +558,13 @@ class Settings(ft.View):
                         return encoded_string
                 except Exception:
                     pass
+
+        # Sets the color in data for each widget upon a change
+        def set_default_node_color(e: ft.Event[Dropdown]):
+            new_color = e.control.value.lower()
+            self.update_data(**{'widget_defaults': {'plot_chart': {'node_color': new_color}}})
+            e.control.color = new_color
+            e.control.update()
 
 
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
@@ -636,6 +650,8 @@ class Settings(ft.View):
                     ]
                 ),
 
+                
+
                 SettingsTextField(    # Change the default number of divisions for new plotlines
                     label="Starting Division Count",
                     value=str(self.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 4)),
@@ -657,6 +673,12 @@ class Settings(ft.View):
                             content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
                         ) for color in colors
                     ]
+                ),
+                Switch(
+                    value=self.data.get('widget_defaults', {}).get('plotline', {}).get('show_division_labels', True),
+                    label="Show Division Labels",
+                    tooltip="Whether to show each divisions label or not.",
+                    on_change=lambda e: self.update_data(**{'widget_defaults': {'plotline': {'show_division_labels': e.control.value}}}),
                 ),
 
                 ft.Divider(),
@@ -715,13 +737,7 @@ class Settings(ft.View):
                     ]
                 ),
 
-                # Map draw mode
-                Switch(
-                    value=self.data.get('widget_defaults', {}).get('map', {}).get('draw_mode', False),
-                    label="Draw Mode",
-                    on_change=lambda e: self.update_data(**{'widget_defaults': {'map': {'draw_mode': e.control.value}}}),
-
-                ),
+                
 
                 # Set defualt background image for new maps
                 Dropdown(
@@ -762,6 +778,13 @@ class Settings(ft.View):
                         )
                     ],
                 ),
+                # Map draw mode
+                Switch(
+                    value=self.data.get('widget_defaults', {}).get('map', {}).get('draw_mode', False),
+                    label="Draw Mode",
+                    on_change=lambda e: self.update_data(**{'widget_defaults': {'map': {'draw_mode': e.control.value}}}),
+
+                ),
 
                 # TODO: Map settings -- 
                 # Default label color, label outline size, 
@@ -797,6 +820,19 @@ class Settings(ft.View):
                     color=self.data.get('widget_defaults', {}).get('plot_chart', {}).get('color', "primary"),
                     on_select=set_default_widget_color,
                     data="plot_chart",
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
+                        ) for color in colors
+                    ]
+                ),
+                Dropdown(       # New Node Colors
+                    value=str(self.data.get('widget_defaults', {}).get('plot_chart', {}).get('node_color', "white")).capitalize(),
+                    label="Default Node Color", 
+                    color=self.data.get('widget_defaults', {}).get('plot_chart', {}).get('node_color', "white"),
+                    on_select=set_default_node_color,
                     options=[
                         ft.DropdownOption(
                             key=color.capitalize(),

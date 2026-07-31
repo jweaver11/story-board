@@ -628,7 +628,7 @@ class PlotChart(Widget):
                 widget=self,
                 label=node_label,
                 position=self.new_node_position,
-                color='#FFFFFF',
+                color=app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('node_color'),
             )
         )
 

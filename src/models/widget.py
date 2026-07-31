@@ -288,8 +288,8 @@ class Widget(ft.Container):
 
                 snapshot_str = widget.get_snapshot_string(quality="low")
                 if snapshot_str is None:
-                    self.page.show_dialog(SnackBar("Failed to get canvas snapshot. Please try again."))
                     self.page.pop_dialog()
+                    self.page.show_dialog(SnackBar("Empty Canvas cannot be made as the image"))
                     return
 
                 self.update_data(**{'image_base64': snapshot_str})

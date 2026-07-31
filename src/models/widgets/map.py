@@ -52,7 +52,7 @@ class Map(Widget):
                 'show_sidebar': True,
 
                 # Info about the map
-                'draw_mode': False,      # Whether we're in draw mode or not
+                'draw_mode': app.settings.data.get('widget_defaults', {}).get('map', {}).get('draw_mode'),      # Whether we're in draw mode or not
                 'background_image': app.settings.data.get('widget_defaults', {}).get('map', {}).get('background_image'),    # The background image of the map
 
                 'lore': list(),     # List of lores [{'label': "Lore Label", 'content': "Lore Content"}]
