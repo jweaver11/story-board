@@ -11,6 +11,8 @@ from styles.snack_bar import SnackBar
 from styles.colors import colors
 import asyncio
 from constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT
+import uuid
+from styles.text_fields import NoLabelTextField
 
 class PlotChart(Widget):
 
@@ -51,7 +53,6 @@ class PlotChart(Widget):
         self.edge_canvas: cv.Canvas           # Canvas that holds our edges (cv.shapes)
         self.node_stack: ft.Stack           # Stack that holds our nodes (gesture detectors)
         self.node_sidebar_column: ft.Column
-        self.edge_sidebar_column: ft.Column
 
         # State trackers
         self.source_node: str = None        # Tracks which node we are dragging from when creating a new edge
@@ -67,18 +68,16 @@ class PlotChart(Widget):
     # Class for handling all node logic
     class Node(ft.GestureDetector):
 
-        def __init__(self, widget: 'PlotChart', label: str, description: str="", position: tuple=tuple(), color: str="white"):
+        def __init__(self, widget: 'PlotChart',  data: dict={}):
 
             # Initialize node properties
-            self.label = label
-            self.color = color
             self.widget = widget
-            self.description = description
+            position = data.get('position', (200, 200))
 
             super().__init__(
                 left=position[0],
                 top=position[1],
-                width=150, 
+                width=150, data=data,
                 offset=ft.Offset(0, -1),
                 animate_position=ft.Animation(250, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
                 on_secondary_tap=self.open_menu,
@@ -96,46 +95,50 @@ class PlotChart(Widget):
                 self.left = 0
             if self.top < 0:
                 self.top = 0
-            # Update data
+            # Update data - Edge needs this to redraw as we drag, so we can't wait until drag is over
             for node in self.widget.data.get('nodes', []):
-                if node['label'] == self.label:
+                if node.get('id', '') == self.data.get('id', ''):
                     node['position'] = (self.left, self.top)
                     break
             # Redraw any relevant edges
             for edge in self.widget.edge_canvas.shapes:
-                if isinstance(edge, self.widget.Edge) and (edge.source_node == self.label or edge.target_node == self.label):
+                if isinstance(edge, self.widget.Edge) and (edge.source_node == self.data.get('id', '') or edge.target_node == self.data.get('id', '')):
                     edge.draw_edge()   
                     edge.update()
 
         # Saves our new position when we are done dragging
         async def save_position(self, e: ft.DragEndEvent):
             # Make sure data is accurate
-            for node in self.widget.data.get('nodes', []):
-                if node['label'] == self.label:
-                    node['position'] = (self.left, self.top)
+            for node_data in self.widget.data.get('nodes', []):
+                if node_data.get('id', '') == self.data.get('id', ''):
+                    node_data['position'] = (self.left, self.top)
                     break
             self.widget.update_data(**{'nodes': self.widget.data.get('nodes', [])})
             self.widget.set_mouse_coords(e) # Reset the menu position 
 
+        async def rename_clicked(self, e=None):
+            await self.widget.story.close_menu()
+            await self.title_tf.focus()
+
         # Opens a menu with our options when right clicking a node
-        async def open_menu(self, e: ft.PointerEvent):
+        async def open_menu(self, e=None):
             menu_options = [
                 MenuOptionStyle(
-                    on_click=self.widget.rename_node_clicked,
+                    on_click=self.rename_clicked,
                     content=ft.Row([
-                        ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.color,),
+                        ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', '#FFFFFF')),
                         ft.Text(
-                            "Rename", 
+                            "Edit Label", 
                             weight=ft.FontWeight.BOLD, 
                             
                         ), 
                     ]),
-                    data=self.label
+                    data=self.data.get('id', ''),
                 ),
                 MenuOptionStyle(
                     ft.SubmenuButton(
                         ft.Row([
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.color), 
+                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', '#FFFFFF')), 
                             ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
@@ -162,18 +165,18 @@ class PlotChart(Widget):
 
             # Remove the node from data
             for idx, node in enumerate(self.widget.data.get('nodes', [])):
-                if node['label'] == self.label:
+                if node.get('id', '') == self.data.get('id', ''):
                     self.widget.data['nodes'].pop(idx)
                     self.widget.node_stack.controls.pop(idx)
                     break
             # Remove any edges connected to the node from data and canvas
             self.widget.data['edges'] = [
                 edge for edge in self.widget.data.get('edges', [])
-                if edge['source'] != self.label and edge['target'] != self.label
+                if edge.get('source', '') != self.data.get('id', '') and edge.get('target', '') != self.data.get('id', '')
             ]
             self.widget.edge_canvas.shapes = [
                 shape for shape in self.widget.edge_canvas.shapes
-                if not (isinstance(shape, self.widget.Edge) and (shape.source_node == self.label or shape.target_node == self.label))
+                if not (isinstance(shape, self.widget.Edge) and (shape.source_node == self.data.get('id', '') or shape.target_node == self.data.get('id', '')))
             ]
 
             self.widget.update_data(**{'nodes': self.widget.data.get('nodes', []), 'edges': self.widget.data.get('edges', [])})
@@ -188,10 +191,9 @@ class PlotChart(Widget):
             async def _change_icon_color(e: ft.Event):
                 ''' Passes in our kwargs to the widget, and applies the updates '''
                 color = e.control.data
-                self.color = color
 
                 for node in self.widget.data.get('nodes', []):
-                    if node['label'] == self.label:
+                    if node.get('id') == self.data.get('id'):
                         node['color'] = color
                         break
                 self.widget.update_data(**{'nodes': self.widget.data.get('nodes', [])})
@@ -199,16 +201,6 @@ class PlotChart(Widget):
                 self.content.content.controls[3].controls[0].content.content.color = color
                 self.content.content.controls[3].controls[1].content.content.color = color
                 self.update()
-                
-                for ctrl in self.widget.edge_sidebar_column.controls:
-                    if ctrl.spans[0].text == self.label:
-                        ctrl.spans[0].style.color = color
-                        ctrl.update()
-                        break
-                    elif ctrl.spans[2].text == self.label:
-                        ctrl.spans[2].style.color = color
-                        ctrl.update()
-                        break
                     
                 await self.widget.story.close_menu()
 
@@ -233,11 +225,11 @@ class PlotChart(Widget):
             async def _highlight_node(e: ft.PointerEvent):
                 # If we are dragging, update our target as this node side
                 if self.widget.source_node:   # Only highlight if we're dragging from another node
-                    self.widget.target_node = e.control.data.get('label')
+                    self.widget.target_node = e.control.data.get('id')
                     self.widget.target_side = e.control.data.get('side')
 
                 # Visual highlight
-                e.control.content.shadow = ft.BoxShadow(8, 8, ft.Colors.with_opacity(0.6, self.color))
+                e.control.content.shadow = ft.BoxShadow(10, 20, ft.Colors.with_opacity(0.25, self.data.get('color', '#FFFFFF')))
                 e.control.update()
             async def _stop_highlight_node(e: ft.PointerEvent):
                 # Reset state trackers
@@ -280,7 +272,7 @@ class PlotChart(Widget):
                 
                 # If the edge already exists, delete it
                 for edge in self.widget.data.get('edges', []):
-                    if (edge['source'] == self.widget.source_node and edge['target'] == self.widget.target_node) or (edge['source'] == self.widget.target_node and edge['target'] == self.widget.source_node):
+                    if (edge.get('source', '') == self.widget.source_node and edge.get('target', '') == self.widget.target_node) or (edge.get('source', '') == self.widget.target_node and edge.get('target', '') == self.widget.source_node):
                         edge_data = self.widget.data.get('edges', [])[-1]
                         self.widget.data['edges'].remove(edge)
                         self.widget.needs_file_write = True
@@ -297,17 +289,11 @@ class PlotChart(Widget):
                         for edge in self.widget.edge_canvas.shapes:
                             if edge.source_node == source_node and edge.target_node == target_node:
                                 self.widget.edge_canvas.shapes.remove(edge)
-                                print("Removing edge from canvas")
+                                #print("Removing edge from canvas")
                                 break
                             if edge.source_node == target_node and edge.target_node == source_node:
                                 self.widget.edge_canvas.shapes.remove(edge)
-                                print("Removing edge from canvas")
-                                break
-
-                        for ctrl in self.widget.edge_sidebar_column.controls:
-                            if ctrl.spans[0].text == source_node or ctrl.spans[0].text == target_node and ctrl.spans[2].text == source_node or ctrl.spans[2].text == target_node:
-                                self.widget.edge_sidebar_column.controls.remove(ctrl)
-                                print("Removing sidebar edge")
+                                #print("Removing edge from canvas")
                                 break
                             
 
@@ -337,20 +323,14 @@ class PlotChart(Widget):
                         self.widget.data.get('edges')[-1]
                     )
                 )
-
-                self.widget.edge_sidebar_column.controls.append(
-                    self.widget.create_edge_sidebar_ctrl(
-                        self.widget.data.get('edges')[-1]
-                    )
-                )
-                self.widget.update()
+                self.widget.edge_canvas.update()
 
                 
 
             # Update our state trackers for new edges and show visual feedback
             async def start_new_edge(e: ft.PointerEvent):
                 await self.widget.story.close_menu()
-                self.widget.source_node = e.control.data.get('label')
+                self.widget.source_node = e.control.data.get('id', '')
                 self.widget.source_side = e.control.data.get('side')
                 self.page.overlay.append(
                     ft.Container(
@@ -374,31 +354,60 @@ class PlotChart(Widget):
                 line.y2 = e.global_position.y
                 self.page.overlay[-1].update()
 
-            # Saves the description for this node when the text field loses focus
-            async def _save_description(e: ft.Event):
-                for node in self.widget.data.get('nodes', []):
-                    if node['label'] == self.label:
-                        node['description'] = e.control.value
-                        break
-                self.widget.update_data(**{'nodes': self.widget.data.get('nodes', [])})
-
+            def _update_title(e: ft.Event[ft.TextField]):
+                new_title = e.control.value
                 for ctrl in self.widget.node_sidebar_column.controls:
-                    if ctrl.data == node['label']:
-                        ctrl.value = e.control.value
+                    if ctrl.data == self.data.get('id', ''):
+                        ctrl.label = new_title
                         ctrl.update()
                         break
 
+            def _save_title(e: ft.Event[ft.TextField]):
+                for node_data in self.widget.data.get('nodes', []):
+                    if node_data.get('id', '') == self.data.get('id', ''):
+                        node_data['label'] = e.control.value
+                        break
+                self.widget.update_data(**{'nodes': self.widget.data.get('nodes', [])})
+
+            def _update_description(e: ft.Event[ft.TextField]):
+                new_desc = e.control.value
+                for ctrl in self.widget.node_sidebar_column.controls:
+                    if ctrl.data == self.data.get('id', ''):
+                        ctrl.value = new_desc
+                        ctrl.update()
+                        break
+
+            # Saves the description for this node when the text field loses focus
+            async def _save_description(e: ft.Event[ft.TextField]):
+                for node_data in self.widget.data.get('nodes', []):
+                    if node_data.get('id', '') == self.data.get('id', ''):
+                        node_data['description'] = e.control.value
+                        break
+                self.widget.update_data(**{'nodes': self.widget.data.get('nodes', [])})
+
             # Text field for editing the node's description
             self.description_ctrl = SmallTextField(
-                self.description, 
-                expand=True,  on_change=_save_description,
+                self.data.get('description', ''),
+                expand=True, 
+                on_change=_update_description,
+                on_blur=_save_description,
+            )
+
+            self.title_tf = NoLabelTextField(
+                value=self.data.get('label', ''),
+                on_change=_update_title,
+                on_blur=_save_title,
+                #text_style=ft.TextStyle()
+                text_align=ft.TextAlign.CENTER,
+                expand=True, border_radius=4
             )
 
             # Our nodes content. Column with label, divider, description text field, and connection points
             self.content = ft.Container(
                 ft.Column([
                     ft.GestureDetector(
-                        ft.Row([ft.Text(self.label, expand=True,  weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER)], alignment=ft.MainAxisAlignment.CENTER),
+                        ft.Container(self.title_tf, ignore_interactions=True, expand=True),
+                                
                         on_pan_start=self.widget.story.close_menu,
                         on_pan_update=self.move_node,
                         on_pan_end=self.save_position,
@@ -409,9 +418,9 @@ class PlotChart(Widget):
                     self.description_ctrl,
                     ft.Row([
                         ft.GestureDetector(
-                            ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.color, scale=1.25), shape=ft.BoxShape.CIRCLE), 
+                            ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.data.get('color'), scale=1.25), shape=ft.BoxShape.CIRCLE), 
                             mouse_cursor=ft.MouseCursor.PRECISE,
-                            data={'label': self.label, 'side': "left"},                            
+                            data={'id': self.data.get('id'), 'side': "left"},                            
                             on_enter=_highlight_node,   # Highlight and set target source trackers if we enter a node while dragging from another
                             on_pan_start=start_new_edge,   # Show line to follow mouse
                             on_pan_update=_update_line,   # Update line to follow mouse
@@ -420,9 +429,9 @@ class PlotChart(Widget):
                             drag_interval=20, 
                         ),
                         ft.GestureDetector(
-                            ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.color, scale=1.25), shape=ft.BoxShape.CIRCLE), 
+                            ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.data.get('color'), scale=1.25), shape=ft.BoxShape.CIRCLE), 
                             mouse_cursor=ft.MouseCursor.PRECISE,
-                            data={'label': self.label, 'side': "right"},                        
+                            data={'id': self.data.get('id'), 'side': "right"},                        
                             on_enter=_highlight_node,  
                             on_pan_start=start_new_edge,   
                             on_pan_update=_update_line,   
@@ -433,7 +442,7 @@ class PlotChart(Widget):
                         
                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
-                expand=True, shadow=ft.BoxShadow(1, 1, blur_style=ft.BlurStyle.OUTER),
+                expand=True, #shadow=ft.BoxShadow(1, 1, blur_style=ft.BlurStyle.OUTER),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 #bgcolor=ft.Colors.with_opacity(0.12, self.color),
                 border_radius=8, padding=ft.Padding.all(8),
@@ -457,9 +466,9 @@ class PlotChart(Widget):
             self.start_position = None
             self.end_position = None
             for node in self.widget.data.get('nodes', []):
-                if node['label'] == self.source_node:
+                if node['id'] == self.source_node:
                     self.start_position = node.get('position', (0, 0))
-                elif node['label'] == self.target_node:
+                elif node['id'] == self.target_node:
                     self.end_position = node.get('position', (0, 0))
 
             # Catch errors
@@ -500,49 +509,30 @@ class PlotChart(Widget):
                 
     async def rename_node_clicked(self, e: ft.Event):
         ''' Opens a dialog to rename the node or cancel '''
-
-        # Checks that node title is unique
-        async def _check_node_title(title: str) -> bool:
-            for node in self.data.get('nodes', []):
-                if node['label'] == title and title != old_label:   # Allow the same title if it's the same node
-                    node_title.error = "Node label taken"
-                    node_title.update()
-                    return False
-            return True
+        return
         
         async def _rename_node(_):
-            if not node_title.value:
-                node_title.error = "Node must have a label"
-                node_title.update()
-                await node_title.focus()
-                return
-            
-            if old_label == node_title.value:
-                self.page.pop_dialog()
-                return
+                
+            # Update the data
+            for node in self.data.get('nodes', []):
+                if node['label'] == old_label:
+                    node['label'] = node_title.value
+                    break
+            for edge in self.data.get('edges', []):
+                if edge['source'] == old_label:
+                    edge['source'] = node_title.value
+                elif edge['target'] == old_label:
+                    edge['target'] = node_title.value
+            self.update_data(**{'nodes': self.data.get('nodes', []), 'edges': self.data.get('edges', [])})
 
-            # If the title is unique, we start renaming
-            if await _check_node_title(node_title.value):
-                # Update the data
-                for node in self.data.get('nodes', []):
-                    if node['label'] == old_label:
-                        node['label'] = node_title.value
-                        break
-                for edge in self.data.get('edges', []):
-                    if edge['source'] == old_label:
-                        edge['source'] = node_title.value
-                    elif edge['target'] == old_label:
-                        edge['target'] = node_title.value
-                self.update_data(**{'nodes': self.data.get('nodes', []), 'edges': self.data.get('edges', [])})
-
-                # Update node on the stack
-                for ctrl in self.node_stack.controls:
-                    if ctrl.label == old_label:
-                        ctrl.label = node_title.value
-                        ctrl.content.content.controls[0].content.controls[0].value = node_title.value
-                       
-                        ctrl.update()
-                        break
+            # Update node on the stack
+            for ctrl in self.node_stack.controls:
+                if ctrl.label == old_label:
+                    ctrl.label = node_title.value
+                    ctrl.content.content.controls[0].content.controls[0].value = node_title.value
+                    
+                    ctrl.update()
+                    break
 
                 # Update node in the sidebar
                 for ctrl in self.node_sidebar_column.controls:
@@ -552,45 +542,17 @@ class PlotChart(Widget):
                         ctrl.update()
                         break
 
-                # Update edge labels in the sidebar
-                for ctrl in self.edge_sidebar_column.controls:
-                    for span in ctrl.spans:
-                        if span.text == old_label:
-                            span.text = node_title.value
-                    ctrl.update()
-
 
                 self.page.pop_dialog()
 
         await self.story.close_menu()
 
-        old_label = e.control.data
-
-        node_title = ft.TextField(
-            old_label, hint_text="Node Label", capitalization=ft.TextCapitalization.SENTENCES, 
-            autofocus=True, on_submit=_rename_node, multiline=False
-        )
-
-        self.page.show_dialog(
-            ft.AlertDialog(
-                title="Rename Node",
-                content=node_title,
-                actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
-                    ft.TextButton("Rename", on_click=_rename_node, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))
-                ]
-            )
-        )
 
     # Creates our node with given title if unique
     async def create_node(self, e: ft.Event[ft.Control]):
 
-        # Give a default unique name
-        existing_names = {node.get('label') for node in self.data.get('nodes', [])}
-        n = len(existing_names)
-        while f"Node {n}" in existing_names:
-            n += 1
-        node_label = f"Node {n}"
+        # Default label
+        node_label = f"Node {len(self.data.get('nodes', [])) + 1}"
 
         required_offset = str(e.control.data)
         locked_position = str(e.control.data) == "right_click"
@@ -619,22 +581,16 @@ class PlotChart(Widget):
             self.new_node_position = (min(FIXED_STACK_WIDTH, self.new_node_position[0]), min(FIXED_STACK_HEIGHT, self.new_node_position[1]))
 
         self.data['nodes'].append({
+            'id': str(uuid.uuid4()),
             'label': node_label, 
             'position': self.new_node_position, 
-            'color': '#FFFFFF', 
+            'color': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('node_color'), 
             'description': ""
         })
         self.update_data(**{'nodes': self.data['nodes']})
 
         # Add the node to the stack
-        self.node_stack.controls.append(
-            self.Node(
-                widget=self,
-                label=node_label,
-                position=self.new_node_position,
-                color=app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('node_color'),
-            )
-        )
+        self.node_stack.controls.append(self.Node(widget=self, data=self.data.get('nodes')[-1]))
 
         # Add the node to the sidebar
         self.node_sidebar_column.controls.append(
@@ -648,14 +604,14 @@ class PlotChart(Widget):
     # Returns a sidebar control for a node
     def create_node_sidebar_ctrl(self, idx: int, node_data: dict) -> ft.TextField:
         async def update_node_description(e: ft.Event):
-            node_label = e.control.data
+            node_id = e.control.data
             for node in self.data.get('nodes', []):
-                if node['label'] == node_label:
+                if node.get('id') == node_id:
                     node['description'] = str(e.control.value)
                     break
             self.update_data(**{'nodes': self.data['nodes']})
             for node in self.node_stack.controls:
-                if node.label == node_label:
+                if node.data.get('id') == node_id:
                     node.description_ctrl.value = str(e.control.value)
                     node.description_ctrl.update()
         return ft.TextField(
@@ -663,64 +619,13 @@ class PlotChart(Widget):
             on_change=update_node_description,
             label=f"{node_data.get('label', f"Node {idx+1}")}",
             text_style=ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=14),
-            data=node_data.get('label', f"Node {idx+1}"),
+            data=node_data.get('id'),
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
             multiline=True, dense=True, expand=True, border_radius=4,
             capitalization=ft.TextCapitalization.SENTENCES,
             label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
         )
-    
-    def create_edge_sidebar_ctrl(self, edge_data: dict) -> ft.Text:
-        # Grab nodes colors. order them by x
-        source_node = None
-        target_node = None
-        for node in self.data.get('nodes', []):
-            if node['label'] == edge_data['source']:
-                source_node = node
-            elif node['label'] == edge_data['target']:
-                target_node = node
 
-        if source_node is None or target_node is None:
-            print("Invalid Nodes: ", edge_data['source'], edge_data['target'])
-            return ft.Text("Invalid edge")
-            
-        # Grab source and target label and colors
-        if source_node.get('position', (0, 0))[0] <= target_node.get('position', (0, 0))[0]:  # If x_source is left of x_target
-            source_node_label = source_node.get('label', edge_data['source'])
-            target_node_label = target_node.get('label', edge_data['target'])
-            source_color = source_node.get('color', ft.Colors.ON_SURFACE)
-            target_color = target_node.get('color', ft.Colors.ON_SURFACE)
-        else:       # If x_source is right of x_target, swap them
-            source_node_label = target_node.get('label', edge_data['target'])
-            target_node_label = source_node.get('label', edge_data['source'])
-            source_color = target_node.get('color', ft.Colors.ON_SURFACE)
-            target_color = source_node.get('color', ft.Colors.ON_SURFACE)
-
-        return ft.Text(
-            spans=[
-                ft.TextSpan(source_node_label, style=ft.TextStyle(color=source_color, weight=ft.FontWeight.W_500,)),
-                ft.TextSpan(" ➜ ", style=ft.TextStyle(color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500,)),
-                ft.TextSpan(target_node_label, style=ft.TextStyle(color=target_color, weight=ft.FontWeight.W_500,))
-            ],
-        )
-
-    # Show sidebar hides the button since it also exists in sidebar
-    async def show_sidebar(self, e: ft.Event=None):
-        #self.add_node_button.visible = False
-        #self.add_node_button.update()
-        await super().show_sidebar(e)
-
-    # Hiding shows the add node button
-    async def hide_sidebar(self, e: ft.Event=None):
-        #self.add_node_button.visible = True
-        #self.add_node_button.update()
-        await super().hide_sidebar(e)
-
-    # Redraws all edges on the canvas, useful after nodes have moved or been updated
-    #def reload_edges(self):
-        #for edge in self.edge_canvas.shapes:
-            #edge.draw_edge()
-        #self.edge_canvas.update()
 
     def set_mouse_coords(self, e: ft.PointerEvent):
         self.new_node_position = (e.local_position.x, e.local_position.y)
@@ -751,7 +656,7 @@ class PlotChart(Widget):
             content=ft.GestureDetector(
                 ft.Container(
                     width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT,
-                    border=ft.Border.all(2, ft.Colors.OUTLINE),
+                    border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
                 ),
                 width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT,
                 on_hover=self.set_mouse_coords,
@@ -764,22 +669,11 @@ class PlotChart(Widget):
 
         # Stack that holdes our nodes
         self.node_stack = ft.Stack([], width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT)
-
-        
-        
-        # Load all our edges into controls
-        def _load_edges() -> ft.Column:
-
-            controls = []
-            for edge_data in self.data.get('edges', []):
-                controls.append(self.create_edge_sidebar_ctrl(edge_data))
-            return ft.Column(controls, tight=True, margin=ft.Margin.only(left=10, right=10))
         
         self.node_sidebar_column = ft.Column(
             [self.create_node_sidebar_ctrl(idx, node_data) for idx, node_data in enumerate(self.data.get('nodes', []))],
             tight=True, margin=ft.Margin.only(left=10, right=10)
         )
-        self.edge_sidebar_column = _load_edges()
 
         # Info container on the right to show details of our edges and nodes
         self.sidebar_body.controls.extend([
@@ -796,11 +690,7 @@ class PlotChart(Widget):
 
             # Nodes here
             self.node_sidebar_column,
-            ft.Divider(),
-            ft.Text(f"Connections", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-
-            self.edge_sidebar_column,
-            ft.Divider(),
+            
             self.sidebar_notes_label,
             self.sidebar_notes_column
 
@@ -809,14 +699,11 @@ class PlotChart(Widget):
         
             
         # Add our nodes and edges to the stack/canvas
-        for node in self.data.get('nodes', []):
+        for node_data in self.data.get('nodes', []):
             self.node_stack.controls.append(
                 self.Node(
                     self, 
-                    label=node['label'], 
-                    description=node['description'], 
-                    position=node['position'], 
-                    color=node['color']
+                    node_data
                 )
             )
 
@@ -824,7 +711,6 @@ class PlotChart(Widget):
 
         # Go through and draw our edges on the canvas
         for edge in self.data.get('edges', []):
-
             self.edge_canvas.shapes.append(self.Edge(self, edge))
         
 
@@ -833,7 +719,7 @@ class PlotChart(Widget):
             content=ft.Stack([      # Hold the edge canvas and node stack
                 ft.Container(
                     image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
-                    expand=True,
+                    expand=True, border_radius=4
                 ),
                 self.edge_canvas,
                 self.node_stack, 
@@ -874,4 +760,5 @@ class PlotChart(Widget):
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
 
         # TODO: Add spider web view
-        # Save pan events so we can load back to how we looked on launch
+        # Fix Rename to be seemless
+        # In sidebar, show sequence of events like plotline

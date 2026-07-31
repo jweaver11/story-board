@@ -887,6 +887,8 @@ class Plotline(Widget):
                 ft.Container(   # Background image
                     image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
                     width=PLOTLINE_WIDTH, height=PLOTLINE_HEIGHT,
+                    border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
+                    border_radius=4
                 ),
 
                 self.plotline_canvas,   # Canvas holding the plotline shapes

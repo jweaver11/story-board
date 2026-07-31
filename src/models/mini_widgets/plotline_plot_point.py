@@ -10,6 +10,7 @@ from constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
 from styles.icons import icons
 from styles.menu_option_style import MenuOptionStyle
 from models.app import app
+from styles.colors import colors
 
 # Plotpoint mini widget object that appear on plotlines and arcs
 class PlotlinePlotPoint(MiniWidget):
@@ -87,6 +88,26 @@ class PlotlinePlotPoint(MiniWidget):
 
 
     def get_menu_options(self) -> list[ft.Control]:
+        # Called when color button is clicked
+        def get_color_options() -> list[ft.Control]:
+            ''' Returns a list of all available colors for icon changing '''
+    
+            # Changes our color in data and the UI to reflect
+            async def change_color(e: ft.Event[ft.MenuItemButton]):
+                await self.widget.story.close_menu()
+                self.update_data(**{'color': e.control.data})
+                self.icon.color = e.control.data
+                self.icon.update()
+                
+    
+            return [
+                ft.MenuItemButton(
+                    content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
+                    on_click=change_color, close_on_click=True,
+                    data=color,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
+                ) for color in colors
+            ]
         return [
             MenuOptionStyle(
                 ft.SubmenuButton(
@@ -117,6 +138,20 @@ class PlotlinePlotPoint(MiniWidget):
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                     style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                ),
+                no_padding=True, no_effects=True
+            ),
+            MenuOptionStyle(
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
+                        ft.Text("Plot Point Color", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    get_color_options(), 
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="Change this markers color"
                 ),
                 no_padding=True, no_effects=True
             ),

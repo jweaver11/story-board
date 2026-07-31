@@ -104,7 +104,9 @@ class Story(ft.View):
 
         # Controller for text shapes (canvas), labels and location labels (maps)
         # Canvas shapes get updated with this in real time if they are being edited
+        #self.brush_controller: 
         self.text_controller: TextController
+        #self.canvas_controller:
 
           
     # Isolates stories from page.update calls. Needed for keeping performance when opening menus
