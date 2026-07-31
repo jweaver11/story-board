@@ -44,7 +44,7 @@ class ComicPreview(Widget):
                 'preview_spacing': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_spacing', 0),                       # Spacing between images
                 'preview_scale': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_scale', 2),                         # Scale of the images in the preview, 1 = 1:1, 2 = 2:1, etc. 
                 'filter_quality': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('filter_quality', "medium"),                 # Filter quality for the images in the preview, can be low, medium, or high
-                'use_anti_aliasing': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('use_anti_aliasing', True),                  # Whether to use anti-aliasing when rendering the images in the preview
+                'use_anti_aliasing': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('anti_aliasing', True),                  # Whether to use anti-aliasing when rendering the images in the preview
 
                 # List to hold our featured_panels of the canvases. Also allows png uploads
                 'featured_panels': [              

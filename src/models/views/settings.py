@@ -122,7 +122,7 @@ class Settings(ft.View):
                         'preview_spacing': 0,                       # Spacing between images
                         'preview_scale': 2,                         # Scale of the images in the preview, 1 = 1:1, 2 = 2:1, etc. 
                         'filter_quality': "medium",                 # Filter quality for the images in the preview, can be low, medium, or high
-                        'use_anti_aliasing': True,                  # Whether to use anti-aliasing when rendering the images in the preview
+                        'anti_aliasing': True,                  # Whether to use anti-aliasing when rendering the images in the preview
                     },
                     'chart': {
                         'color': "primary",
@@ -487,6 +487,13 @@ class Settings(ft.View):
                 super().__init__(*args, **kwargs)
                 self.adaptive=True
                 self.margin=ft.Margin.only(left=20)
+
+        class Button(ft.Button):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
+                self.margin=ft.Margin.only(left=20)
+                self.icon_color=ft.Colors.PRIMARY
                 
 
         # Sets the color in data for each widget upon a change
@@ -563,6 +570,19 @@ class Settings(ft.View):
         def set_default_node_color(e: ft.Event[Dropdown]):
             new_color = e.control.value.lower()
             self.update_data(**{'widget_defaults': {'plot_chart': {'node_color': new_color}}})
+            e.control.color = new_color
+            e.control.update()
+
+        def toggle_comic_preview_direction(e: ft.Event[ft.Button]):
+            new_direction = "horizontal" if self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical" else "vertical"
+            self.update_data(**{'widget_defaults': {'comic_preview': {'preview_direction': new_direction}}})
+            e.control.icon = ft.Icons.SWAP_VERT if new_direction == "vertical" else ft.Icons.SWAP_HORIZ
+            e.control.update()
+
+        # Sets the color in data for each widget upon a change
+        def set_comic_preview_background_color(e: ft.Event[Dropdown]):
+            new_color = e.control.value.lower()
+            self.update_data(**{'widget_defaults': {'comic_preview': {'preview_background_color': new_color}}})
             e.control.color = new_color
             e.control.update()
 
@@ -858,63 +878,73 @@ class Settings(ft.View):
                         ) for color in colors
                     ]
                 ),
-                ft.Button(
-                    "Swap Preview Direction", 
-                    ft.Icons.SWAP_VERT if self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
-                    ft.Colors.PRIMARY,
-                    tooltip="Swap the preview direction between vertical and horizontal.",
-                    #on_click=toggle_comic_preview_direction,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-                ),
-                
-                ft.Button(
-                    f"Anti-Aliasing: {self.data.get('widget_defaults', {}).get('use_anti_aliasing', True)}",
-                    ft.Icons.ANIMATION_OUTLINED, 
-                    ft.Colors.PRIMARY,
-                    tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
-                    #on_click=toggle_comic_preview_anti_aliasing,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-                ),
-                ft.SubmenuButton(
-                    f"Change Background Color",
-                    [
-                        ft.MenuItemButton(
-                            ft.Icon(ft.Icons.CIRCLE, color), data=color,
-                            #on_click=set_comic_preview_background_color,
+                Dropdown(
+                    value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_background_color', "transparent")).capitalize(),   
+                    label="Preview Background Color",
+                    color=self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_background_color', "transparent"),
+                    on_select=set_comic_preview_background_color,
+                    options=[
+                        ft.DropdownOption(
+                            key=color.capitalize(),
+                            text=color.capitalize(),
+                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
                         ) for color in colors
                     ], #+ [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_comic_preview_background_color,)],
-                    tooltip="Adjust the scale of the preview display.",
-                    leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                    tooltip="Background color for transparent panels in the preview display, as well as between panels",
                 ),
-                ft.SubmenuButton(
-                    f"Preview Spacing: {self.data.get('preview_spacing', 0)}",
-                    [
-                        ft.MenuItemButton(
-                            str(i), data=i,
-                            #on_click=adjust_comic_preview_spacing,
+                Dropdown(
+                    label="Panel Spacing",
+                    value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_spacing', 0)),
+                    on_select=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'preview_spacing': int(e.control.value)}}}),
+                    options=[
+                        ft.DropdownOption(
+                            key=str(i),
+                            text=str(i),
+                            content=ft.Text(str(i), weight=ft.FontWeight.BOLD),
                         ) for i in range(0, 21) if i % 2 == 0
                     ],
                     tooltip="Adjust the spacing between panels in the preview display.",
-                    leading=ft.Icon(ft.Icons.SPACE_BAR_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                 ),
-                
-                ft.SubmenuButton(
-                    f"Preview Scaling: {self.data.get('preview_scale', 0)}",
-                    [
-                        ft.MenuItemButton(
-                            str(i), data=i,
-                            #on_click=adjust_comic_preview_scaling,
+                Dropdown(
+                    label="Preview Scaling",
+                    value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_scale', 1)),
+                    on_select=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'preview_scale': int(e.control.value)}}}),
+                    options=[
+                        ft.DropdownOption(
+                            key=str(i),
+                            text=str(i),
+                            content=ft.Text(str(i), weight=ft.FontWeight.BOLD),
                         ) for i in range(1, 6)
                     ],
                     tooltip="Adjust the scale of the preview display.",
-                    leading=ft.Icon(ft.Icons.CROP_FREE_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                 ),
+                Dropdown(
+                    label="Filter Quality",
+                    value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('filter_quality', "medium")).capitalize(),
+                    on_select=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'filter_quality': e.control.value.lower()}}}),
+                    options=[
+                        ft.DropdownOption(
+                            key=quality.capitalize(),
+                            text=quality.capitalize(),
+                            content=ft.Text(quality.capitalize(), weight=ft.FontWeight.BOLD),
+                        ) for quality in ["low", "medium", "high"]
+                    ],
+                    tooltip="Adjust the filter quality of the preview display. This will affect performance and image quality.",
+                ),
+                Button(
+                    "Preview Direction", 
+                    ft.Icons.SWAP_VERT if self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
+                    tooltip="Swap the preview direction between vertical and horizontal.",
+                    on_click=toggle_comic_preview_direction,
+                ),
+                Switch(
+                    value=self.data.get('widget_defaults', {}).get('comic_preview', {}).get('anti_aliasing', True),
+                    label="Anti-Aliasing",
+                    tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
+                    on_change=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'anti_aliasing': e.control.value}}})
+                ),
+                
+                
                 ft.Divider(),
 
 
