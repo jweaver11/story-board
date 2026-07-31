@@ -138,7 +138,8 @@ class Plotline(Widget):
         def build(self):
             """ Rebuilds our plotline control that holds our plot point and slider """
 
-            def start_drag(e=None):
+            async def start_drag(e=None):
+                await self.widget.story.close_menu()
                 self.is_dragging = True
 
             def highlight(e=None):

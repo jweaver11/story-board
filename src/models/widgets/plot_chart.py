@@ -349,7 +349,7 @@ class PlotChart(Widget):
 
             # Update our state trackers for new edges and show visual feedback
             async def start_new_edge(e: ft.PointerEvent):
-                
+                await self.widget.story.close_menu()
                 self.widget.source_node = e.control.data.get('label')
                 self.widget.source_side = e.control.data.get('side')
                 self.page.overlay.append(
@@ -399,6 +399,7 @@ class PlotChart(Widget):
                 ft.Column([
                     ft.GestureDetector(
                         ft.Row([ft.Text(self.label, expand=True,  weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER)], alignment=ft.MainAxisAlignment.CENTER),
+                        on_pan_start=self.widget.story.close_menu,
                         on_pan_update=self.move_node,
                         on_pan_end=self.save_position,
                         mouse_cursor=ft.MouseCursor.MOVE,
@@ -602,6 +603,7 @@ class PlotChart(Widget):
 
 
         # If from sidebar or button, 
+        old_new_node_position = self.new_node_position  # Keep ref to old position to reset after
         self.new_node_position = (
             self.new_node_position[0] - offset_amount[0],
             self.new_node_position[1] - offset_amount[1]
@@ -638,6 +640,7 @@ class PlotChart(Widget):
         )
 
         self.update()
+        self.new_node_position = old_new_node_position  # Reset node pos so we dont drift when adding multiple nodes from sidebar
 
 
     # Returns a sidebar control for a node

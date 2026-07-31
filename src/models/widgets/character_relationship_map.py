@@ -92,6 +92,7 @@ class CharacterRelationshipMap(Widget):
             )
 
         async def start_new_connection(self, e: ft.DragStartEvent):
+            await self.widget.story.close_menu()
             self.is_dragging = True
             self.widget.char1 = e.control.data
             self.page.overlay.append(
@@ -248,7 +249,7 @@ class CharacterRelationshipMap(Widget):
             self.update()
 
         async def _start_drag(self, e: ft.DragStartEvent):
-            
+            await self.widget.story.close_menu()
             self.is_dragging = True
             
             # If we're still in the character bank, don't try and move us, just reflect us moving on the stack

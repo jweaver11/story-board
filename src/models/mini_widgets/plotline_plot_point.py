@@ -404,6 +404,7 @@ class PlotlinePlotPoint(MiniWidget):
                 ft.GestureDetector(
                     self.icon, 
                     on_enter=self.highlight, on_exit=self.stop_highlight, 
+                    on_pan_start=self.widget.story.close_menu,
                     on_pan_update=self.move_plot_point, on_pan_end=self.save_position,
                     on_secondary_tap=lambda: self.widget.story.open_menu(self.get_menu_options()),
                     on_tap=self.show_mini_widget,
