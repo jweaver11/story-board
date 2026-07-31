@@ -23,10 +23,12 @@ from styles.text_fields import TextField
 import time
 import uuid
 import os
+from PIL import Image, ImageDraw, ImageTk
 
 MINIMUM_SEGMENT_DISTANCE = 2
 MAX_SHAPES_BEFORE_CAPTURE = 30
 MAX_UNDO_LIST_TASKS = 30
+SUPERSAMPLE = 2
 
 
 class Canvas(Widget):
@@ -125,6 +127,30 @@ class Canvas(Widget):
         self.undo_button: ft.IconButton
         self.redo_button: ft.IconButton
 
+    class RawImage(ft.RawImage):
+        def __init__(self, widget: 'Canvas', idx: int, canvas_data: dict):
+            visible = canvas_data.get('visible', True)
+            capture = widget.layer_bytes.get(canvas_data.get('id', ''), None)  # Grab the capture for this layer if it exists
+            self.widget = widget
+            super().__init__(
+                visible=visible,
+                data=idx,
+                width=widget.canvas_width,
+                height=widget.canvas_height,
+                fit=ft.BoxFit.FILL,
+                filter_quality=ft.FilterQuality.HIGH
+            )
+
+        def load_capture(self):
+            image = Image.new(
+                "RGBA", (self.widget.canvas_width * SUPERSAMPLE, self.widget.canvas_height * SUPERSAMPLE), "white"
+            )
+            image = ImageTk.PhotoImage()
+            draw = ImageDraw.Draw(image)
+
+        def build(self):
+            return
+
 
     # Overwrite our standard save_file call since we have multiple files
     async def save_file(self):
@@ -183,7 +209,6 @@ class Canvas(Widget):
     async def show_sidebar(self, e: ft.Event):
         if self.state.manipulating_shape:
             await self.paint_tool_on_canvas()
-            
         await super().show_sidebar(e)
            
     # If we have an active tool/shape that we are manipulating, paint it on the canvas
@@ -957,6 +982,15 @@ class Canvas(Widget):
             opacity=0.99    # Forces dif render layer
         )
 
+    def create_new_raw_img_ctrl(self, idx: int, canvas_data: dict) -> ft.RawImage:
+        visible = canvas_data.get('visible', True)
+        capture = self.layer_bytes.get(canvas_data.get('id', ''), None)  # Grab the capture for this layer if it exists
+
+        return ft.RawImage(
+            visible=visible,
+            data=idx
+        )
+
     # Creates a new sidebar ctrl for each layer as a reorderable drag handle
     def create_new_layer_sidebar_ctrl(self, idx: int, layer_data: dict) -> ft.ReorderableDragHandle:
 
@@ -1352,3 +1386,16 @@ class Canvas(Widget):
                 vertical_alignment=ft.CrossAxisAlignment.CENTER
             )
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
+
+
+
+        def start_raw_imgs():
+            async def render(raw_img_ctrl: ft.RawImage):
+                idx=raw_img_ctrl.data,
+                capture = self.layer_bytes.get(self.data.get('canvas_data', {}).get('layers', [])[idx].get('id', ''), None)
+                if capture:
+                    encoded_string = base64.b64encode(capture).decode('utf-8')
+                    raw_img_ctrl.src_base64 = f"data:image/png;base64,{encoded_string}"
+                    raw_img_ctrl.update()
+            for raw_img_ctrl in self.layer_stack.controls:
+                asyncio.create_task(render(raw_img_ctrl))

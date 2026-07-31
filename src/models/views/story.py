@@ -17,6 +17,7 @@ from utils.tutorial import run_tutorial
 import uuid
 from styles.colors import dark_gradient
 from models.dataclasses.text_controller import TextController
+from models.dataclasses.brush_controller import BrushController
 
 
  
@@ -104,8 +105,8 @@ class Story(ft.View):
 
         # Controller for text shapes (canvas), labels and location labels (maps)
         # Canvas shapes get updated with this in real time if they are being edited
-        #self.brush_controller: 
-        self.text_controller: TextController
+        self.brush_controller: BrushController = BrushController()
+        self.text_controller: TextController = TextController()
         #self.canvas_controller:
 
           
