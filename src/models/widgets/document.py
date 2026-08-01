@@ -11,6 +11,9 @@ from styles.text_fields import TextField
 from styles.snack_bar import SnackBar
 from styles.menu_option_style import MenuOptionStyle
 
+DOCUMENT_WIDTH = 820
+DOCUMENT_HEIGHT = 1060
+
 
 # Class that holds our text document objects
 class Document(Widget):
@@ -69,6 +72,8 @@ class Document(Widget):
         self.dirty: bool = False  # Marks if our document has unsaved changes that need to be written to file
         self.quill_editor: FletQuillEditor  # Will hold our flet quill editor object
         self.comments_column: ft.Column  # Will hold our comments and reference images on the right side of the document
+        self.ref_img_column: ft.Column  # Will hold our comments and reference images on the right side of the document
+        self.editor_stack: ft.Stack  # Will hold our editor container and any other overlays that need to be on top of it
 
     class Comment(TextField):
 
@@ -173,7 +178,7 @@ class Document(Widget):
                 on_exit=hide_delete_icon,
             )
 
-
+    '''
     class TextController(ft.Row):
         def __init__(self, widget, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -227,7 +232,7 @@ class Document(Widget):
                 # size, format_align, font family, letter_spacing, word_spacing, color
                 # decoration, decoration color, decoration thickness, decoration style
             ]
-    
+    '''
             
     # Checks if our document is dirty, and saves it if it is
     async def save_file(self):
@@ -235,7 +240,6 @@ class Document(Widget):
             self.dirty = False
             self.update_data(**{'document_data': await self.quill_editor.save()})
         await super().save_file()
-        
 
     # Called after any changes happen to the data that need to be reflected in the UI
     def build(self):
@@ -297,8 +301,8 @@ class Document(Widget):
                 except Exception as e:
                     e.control.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
 
-        # Gets our word count 
-        async def get_word_count() -> list[MenuOptionStyle]:
+        # Gets our word count and opens a menu to show it
+        async def get_word_count():
             word_count = 0
             doc_data = await self.quill_editor.save()
             for block in doc_data:
@@ -312,40 +316,35 @@ class Document(Widget):
                 self.dirty = True
             
         
-        # Toolbar only
-        quill_toolbar = FletQuillToolbar(
-            #show_toolbar_divider=True,
-            #center_toolbar=True,
-        )
-        # Editor only 
-        self.quill_editor = FletQuillEditor(
-            text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),
+        # Grab our flet quill elements
+        quill_toolbar = FletQuillToolbar()  # Toolbar
+        self.quill_editor = FletQuillEditor(    # Editor
+            text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),   # Pass in data
             placeholder_text="Start your masterpiece here...",
             expand=True
         )
+
         # Both
         #self.quill = FletQuill(
-            #show_toolbar_divider=True,
-            #center_toolbar=False,
             #text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),
             #expand=True
         #)
 
         # Holds our flet quill
         editor_container = ft.Container(
-            ft.Column([ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty, expand=True)], expand=True, scroll=ft.ScrollMode.AUTO),
+            ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty, expand=True),
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
             border_radius=4,
+            width=DOCUMENT_WIDTH, height=DOCUMENT_HEIGHT,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
             padding=ft.Padding.all(80), 
-            expand=True, 
+            #expand=True, 
+            #expand=True,
+            align=ft.Alignment.TOP_CENTER,
             alignment=ft.Alignment.TOP_LEFT, 
             margin=ft.Margin.symmetric(horizontal=70, vertical=50),
-            aspect_ratio=8.5/11.0,  # paper-like ratio
+            #aspect_ratio=8.5/11.0,  # paper-like ratio
         )
-        
-
-            
         
         # Otherwise, build our info column
         self.comments_column = ft.Column(
@@ -400,13 +399,15 @@ class Document(Widget):
             self.ref_img_column
         ])
 
+        
+
         self.content = ft.Column([
             ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT),
             ft.Divider(2, 2),
             ft.Row([
-                editor_container,
+                ft.Container(ft.Column([editor_container], scroll=ft.ScrollMode.HIDDEN), expand=True),
                 self.toggle_sidebar_visibility_button, 
-                self.sidebar
+                self.sidebar,
             ], spacing=0, expand=True),
         ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 

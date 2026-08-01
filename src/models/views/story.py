@@ -18,6 +18,7 @@ import uuid
 from styles.colors import dark_gradient
 from models.dataclasses.text_controller import TextController
 from models.dataclasses.brush_controller import BrushController
+from constants import MIN_ACTIVE_RAIL_WIDTH
 
 
  
@@ -787,23 +788,14 @@ class Story(ft.View):
         from models.isolated_controls.row import IsolatedRow
 
         # Called when resizing the active rail by dragging the resizer
-        def move_active_rail_divider(e: ft.DragUpdateEvent):
+        def resize_active_rail(e: ft.DragUpdateEvent):
             ''' Responsible for altering the width of the active rail '''
-            self.workspace.is_resizing = True
-
             self.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
-            if self.active_rail.width < 250:
-                self.active_rail.width = 250
+            if self.active_rail.width < MIN_ACTIVE_RAIL_WIDTH:
+                self.active_rail.width = MIN_ACTIVE_RAIL_WIDTH
             elif self.active_rail.width > 600:
                 self.active_rail.width = 600
-            self.active_rail.update()
-
-
-        # Called when app stops dragging the resizer to resize the active rail
-        def save_active_rail_width(e=None):
-            ''' Saves our new width that will be loaded next time app opens the app '''
-            self.workspace.is_resizing = False
-            app.settings.update_data(**{'story': {'active_rail_width': self.active_rail.width}})
+            self.active_rail.update()     
 
         # Handles keyboard events for the story
         async def handle_keyboard_event(e: ft.KeyboardEvent):
@@ -855,8 +847,8 @@ class Story(ft.View):
                 bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
             ),
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
-            on_pan_update=move_active_rail_divider, # Resize the active rail as app is dragging
-            on_pan_end=save_active_rail_width,  # Save the resize when app is done dragging
+            on_pan_update=resize_active_rail, # Resize the active rail as app is dragging
+            on_pan_end=lambda: app.settings.update_data(**{'story': {'active_rail_width': self.active_rail.width}}),  # Save the resize when app is done dragging
             drag_interval=20,
         )
 
