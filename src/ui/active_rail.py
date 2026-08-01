@@ -13,7 +13,6 @@ from ui.rails.plotlines_rail import PlotlinesRail
 from ui.rails.world_building import WorldBuildingRail
 from ui.rails.canvas_rail import CanvasRail
 from ui.rails.planning_rail import PlanningRail  
-from constants import MIN_ACTIVE_RAIL_WIDTH
 
 
 # Class is created in main on program startup
@@ -34,19 +33,6 @@ class ActiveRail(ft.Container):
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
         )
-
-    def toggle_collapse_rail(self, e: ft.Event[ft.IconButton]):
-        # use the resizer as our state
-        if self.width > 40:
-            self.width = 40
-            e.control.icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED
-            self.content.controls[0].visible = False
-        else:
-            self.width = MIN_ACTIVE_RAIL_WIDTH
-            e.control.icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED
-            self.content.controls[0].visible = True
-        self.update()
-        app.settings.update_data(**{'story': {'active_rail_width': self.width}})
         
     # Reload our rail on startup
     def build(self):
@@ -59,34 +45,13 @@ class ActiveRail(ft.Container):
         # Grab our selected rail and re-set our content to a new one of those
         selected_rail = self.story.data.get('selected_rail', "content")
         match selected_rail:
-            case "content": selected_rail = ContentRail(self.story)
-            case "characters": selected_rail = CharactersRail(self.story)
-            case "plot": selected_rail = PlotlinesRail(self.story)
-            case "world_building": selected_rail = WorldBuildingRail(self.story)
-            case "canvas": selected_rail = CanvasRail(self.story)
-            case "planning": selected_rail = PlanningRail(self.story)
-            case _: selected_rail = ContentRail(self.story)
-
-        if self.width > 40:
-            collapse_icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED
-            col_visible = True
-        else:
-            collapse_icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED
-            col_visible = False  # Hide the rail if it's collapsed
-
-        # To collapse the active rail
-        collapse_icon_button = ft.IconButton(
-            collapse_icon, ft.Colors.PRIMARY,
-            on_click=self.toggle_collapse_rail,
-        )
-
-        self.content = ft.Stack(
-            [
-                ft.Column([selected_rail], expand=True, visible=col_visible),    # Force rail to take up all the space
-                ft.Column([ft.Row([collapse_icon_button], alignment=ft.MainAxisAlignment.END)], expand=True, alignment=ft.MainAxisAlignment.END)
-            ], 
-            expand=True
-        )
+            case "content": self.content = ContentRail(self.story)
+            case "characters": self.content = CharactersRail(self.story)
+            case "plot": self.content = PlotlinesRail(self.story)
+            case "world_building": self.content = WorldBuildingRail(self.story)
+            case "canvas": self.content = CanvasRail(self.story)
+            case "planning": self.content = PlanningRail(self.story)
+            case _: self.content = ContentRail(self.story)
                 
         # Update except on build where it updates automatically
         if update: 
