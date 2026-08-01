@@ -641,13 +641,13 @@ class Widget(ft.Container):
         self.toggle_sidebar_visibility_button = ft.Container(
             ft.Icon(
                 ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED if not self.data.get('show_sidebar', True) else ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED,
-                ft.Colors.PRIMARY
+                ft.Colors.PRIMARY, 
             ),
             on_click=self.show_sidebar if not self.data.get('show_sidebar', True) else self.hide_sidebar,
             ink=True, border_radius=4, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE_CONTAINER_LOWEST),
-            padding=ft.Padding.symmetric(horizontal=0, vertical=4),
-            #border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
+            padding=ft.Padding.symmetric(horizontal=0, vertical=0),
+            height=40
         )
 
         # Container on right side of widgets to hold mini widgets or sidebar info
