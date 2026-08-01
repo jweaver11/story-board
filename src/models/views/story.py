@@ -790,6 +790,8 @@ class Story(ft.View):
         # Called when resizing the active rail by dragging the resizer
         def resize_active_rail(e: ft.DragUpdateEvent):
             ''' Responsible for altering the width of the active rail '''
+            if self.active_rail.width < MIN_ACTIVE_RAIL_WIDTH:
+                return
             self.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
             if self.active_rail.width < MIN_ACTIVE_RAIL_WIDTH:
                 self.active_rail.width = MIN_ACTIVE_RAIL_WIDTH
