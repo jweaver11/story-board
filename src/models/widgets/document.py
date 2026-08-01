@@ -9,6 +9,7 @@ import asyncio
 import uuid
 from styles.text_fields import TextField
 from styles.snack_bar import SnackBar
+from styles.menu_option_style import MenuOptionStyle
 
 
 # Class that holds our text document objects
@@ -194,7 +195,7 @@ class Document(Widget):
                 new_value = not self.data.get(setting, False)
                 self.data[setting] = new_value
                 if new_value == True:
-                    e.control.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGH
+                    e.control.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
                     e.control.icon_color = ft.Colors.PRIMARY
                 else:
                     e.control.bgcolor = ft.Colors.TRANSPARENT
@@ -297,11 +298,13 @@ class Document(Widget):
                     e.control.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
 
         # Gets our word count 
-        def get_word_count() -> int:
-            for block in self.data.get('document_data', []):
+        async def get_word_count() -> list[MenuOptionStyle]:
+            word_count = 0
+            doc_data = await self.quill_editor.save()
+            for block in doc_data:
                 if "insert" in block:
-                    word_count = len(block["insert"].split())
-                    return word_count
+                    word_count += len(block["insert"].split())
+            self.story.open_menu([MenuOptionStyle(ft.Text(f"Word Count: {word_count}"))])
         
         # Marks ourselves as dirty after any changes to the document
         def mark_dirty(e=None):
@@ -356,12 +359,12 @@ class Document(Widget):
 
 
         # Word count button
-        word_count_button = ft.PopupMenuButton(
+        word_count_button = ft.IconButton(
             icon=ft.CupertinoIcons.TEXTFORMAT_SIZE, icon_color=ft.Colors.PRIMARY,
-            tooltip="Word Count", menu_padding=ft.Padding.all(0),
-            items=[ft.PopupMenuItem(f"Word Count: {get_word_count()}")],
+            tooltip="Word Count", 
+            on_click=get_word_count,
         )
-        self.sidebar_header.controls.append(word_count_button)
+        self.sidebar_header.controls.append(ft.GestureDetector(word_count_button, on_hover=self.set_mouse_coords, hover_interval=50))
         
         
         self.sidebar_body.controls.extend([
@@ -431,6 +434,7 @@ class Document(Widget):
             start_idx = e.selection.start
             end_idx = e.selection.end
             selected_length = end_idx - start_idx
+            print(e.selected_text, "\n", e)
 
             # When there was just a tap, we insert the cursor span at the 
             if start_idx == end_idx:
@@ -514,6 +518,6 @@ class Document(Widget):
         ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         # TODO New cursor solution, since the one currently sux
 
+        
         '''
-
 
