@@ -120,6 +120,7 @@ class Canvas(Widget):
         self.active_layer_idx: int = self.data.get('canvas_data', {}).get('active_layer_idx', 1)        # Which layer we are drawing on
         self.layer_stack: ft.Stack                # Stack to hold our list of layer canvases on top of each other
         self.canvas_controller: ft.GestureDetector  # Controller that sits over our layer stack and handles mouse events for drawing and tool usage 
+        self.mouse_cursor: ft.Icon  # Our 'mouse cursor' that sits overtop the canvas_controller
         
         # Tool and shape stuff
         self.current_tool: CanvasShape = None                     # The active shape being added if we're using a tool
@@ -155,13 +156,23 @@ class Canvas(Widget):
                     print(f"Error writing layer {layer.get('name', '')} to file: {e}")
                     return
                 self.needs_file_write = True    # Mark our widget as dirty if we saved anything
-        await super().save_file()            
+        await super().save_file()   
+
+    # Moves our mouse cursor around to match our drawing
+    def move_mouse_cursor(self, position: ft.Offset):
+        self.mouse_cursor.left = position.x
+        self.mouse_cursor.top = position.y
+        self.mouse_cursor.update()         
    
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     def set_mouse_cursor(self):
+
+        # TODO: Setting for it to be precice or match stroke (circle)
         
         control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
         active_tool = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+
+
         
         if active_tool == "erase" or active_tool == "line":
             new_mouse_cursor = ft.MouseCursor.PRECISE
@@ -180,6 +191,10 @@ class Canvas(Widget):
         # Paints a shape we're modifying if the rail tool changes
         if self.state.manipulating_shape:
             self.page.run_task(self.paint_tool_on_canvas)
+
+        self.mouse_cursor.icon = ft.Icons.CIRCLE
+        self.mouse_cursor.size = app.settings.data.get('paint_settings', {}).get('stroke_width', 3) 
+        self.mouse_cursor.color = app.settings.data.get('paint_settings', {}).get('color', ft.Colors.BLACK)
         
         return new_mouse_cursor
 
@@ -427,6 +442,7 @@ class Canvas(Widget):
         
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
         canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
+        self.move_mouse_cursor(e.local_position)
                 
         # Check if we're in tool mode, and what tool we're using
         if canvas_settings.get('current_control_mode', "") == "tool":
@@ -1277,22 +1293,32 @@ class Canvas(Widget):
         #self.active_layer = self.layer_stack.controls[1] if self.layer_stack.controls else None
         #print("Acitve layer: ", self.active_layer)
 
+
+        
         
         # Controls drawing for our canvases
         self.canvas_controller = ft.GestureDetector(
-            mouse_cursor=self.set_mouse_cursor(),        # Set our mouse cursor based on current control mode
+            mouse_cursor=ft.MouseCursor.NONE,        # Set our mouse cursor based on current control mode
             on_pan_start=self.start_stroke,         # Starts a new brush stroke with current paint settings
             on_pan_update=self.update_stroke,           # Updates the current stroke based on mouse movement
-
-            #on_pan_start=self.start_stroke_new,         # Starts a new brush stroke with current paint settings
-            #on_pan_update=self.update_stroke_new,           # Updates the current stroke based on mouse movement
-
             on_pan_end=self.end_stroke,                # Saves the now complete stroke to our data and canvas capture
+            on_hover=lambda e: self.move_mouse_cursor(e.local_position),
             #on_tap_up=self.handle_tap,                   # Handles adding dots and tools
             width=self.CANVAS_WIDTH,
             height=self.CANVAS_HEIGHT,
-            drag_interval=5
+            drag_interval=5,
+            hover_interval=5
         )
+
+        self.mouse_cursor = ft.Icon(
+            ft.Icons.CIRCLE_OUTLINED,
+            size=18, 
+            animate_position=ft.Animation(5, ft.AnimationCurve.LINEAR),
+            offset=ft.Offset(-0.5, -0.5),
+            left=self.CANVAS_WIDTH / 2,
+            top=self.CANVAS_HEIGHT / 2,
+        )
+        self.set_mouse_cursor()
         
         
         # Holds our drawing so we can interact with it, zoom, pan, etc.
@@ -1308,7 +1334,8 @@ class Canvas(Widget):
                 #canvas_transparent_bg_dark_mode.png
                 #dark_mode_transparent_background.jpg
                 self.layer_stack, 
-                self.canvas_controller      # Controller that sits on top
+                self.mouse_cursor,
+                self.canvas_controller,
             ]),
             expand=3, 
             constrained=False,
