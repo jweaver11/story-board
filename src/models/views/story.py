@@ -16,9 +16,6 @@ import asyncio
 from utils.tutorial import run_tutorial
 import uuid
 from styles.colors import dark_gradient
-from models.dataclasses.text_controller import TextController
-from models.dataclasses.brush_controller import BrushController
-
 
  
 class Story(ft.View):
@@ -105,9 +102,6 @@ class Story(ft.View):
 
         # Controller for text shapes (canvas), labels and location labels (maps)
         # Canvas shapes get updated with this in real time if they are being edited
-        self.brush_controller: BrushController = BrushController()
-        self.text_controller: TextController = TextController()
-        #self.canvas_controller:
 
           
     # Isolates stories from page.update calls. Needed for keeping performance when opening menus
@@ -832,7 +826,6 @@ class Story(ft.View):
         self.load_widgets() 
 
         # Create our menubar, workspaces rail, active rail, and workspace objects
-        self.text_controller = TextController(**app.settings.data.get('text_controller_settings', {}))
         self.menubar = create_menu_bar(self.page, self)
         self.workspaces_rail = WorkspacesRail(self) 
         self.workspace = Workspace(self)  

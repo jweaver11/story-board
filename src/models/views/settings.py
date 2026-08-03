@@ -80,7 +80,8 @@ class Settings(ft.View):
                         'color': "primary"
                     },
                     'canvas': {
-                        'color': "primary"
+                        'color': "primary",
+                        'use_standard_cursor': True,     # if the mouse cursor will reflect the current paint settings or not. False=standard cursor
                     },
                     'note': {
                         'color': "primary"
@@ -185,7 +186,7 @@ class Settings(ft.View):
                     'use_paint_for_shapes': True,           # If True, shapes are black/white and use default paint settings rather than live brush settings
                     'rectangle_border_radius': 0,               # Border radius for rectangle shapes
                 },
-                'text_controller_settings': {
+                'text_settings': {
                     'size': 14,
                     'weight': "normal",  # Options: None, w100, w200, w300, w400, w500, w600, w700, w800, w900, bold
                     'italic': False,
@@ -677,6 +678,12 @@ class Settings(ft.View):
                             content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
                         ) for color in colors
                     ]
+                ),
+                Switch(
+                    value=self.data.get('widget_defaults', {}).get('canvas', {}).get('use_standard_cursor', True),
+                    label="Use Standard Mouse Cursor", 
+                    tooltip="Whether to use a standard mouse cursor for Canvases or use a mouse cursor that reflects the current brush settings.",
+                    on_change=lambda e: self.update_data(**{'widget_defaults': {'canvas': {'use_standard_cursor': e.control.value}}}),
                 ),
                 ft.Divider(),
                 
