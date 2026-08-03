@@ -140,7 +140,6 @@ class Canvas(Widget):
             # If a change has been made to the layer, save that change.
             if layer.get('dirty', False) == True:
                 canvas: cv.Canvas = self.layer_stack.controls[i]
-                print("Dirty Layer", layer.get('name', ''), "Saving...")
                 try:
                     await self.save_canvas(canvas)
                 except RuntimeError as e:
@@ -187,10 +186,11 @@ class Canvas(Widget):
 
         # For setting a custom cursor that reflects our paint settings
         def set_custom_cursor():
+            
             self.canvas_controller.mouse_cursor = ft.MouseCursor.NONE   # Hide standard
             self.mouse_cursor.visible = True    # Make sure we're showing
             
-            self.mouse_cursor.size = paint_settings.get('stroke_width', 3) 
+            self.mouse_cursor.size = paint_settings.get('stroke_width', 3) * 1.25
             self.mouse_cursor.color = paint_settings.get('color', ft.Colors.BLACK)
 
             
@@ -199,6 +199,13 @@ class Canvas(Widget):
             if stroke_cap == 'round': self.mouse_cursor.icon = ft.Icons.CIRCLE
             elif stroke_cap == 'square':self.mouse_cursor.icon = ft.Icons.SQUARE
             else: self.mouse_cursor.icon = ft.Icons.SQUARE_ROUNDED
+
+            # If using tool mode, hide our custom one and use the standard, unless using erase or line tool
+            if control_mode == "tool":
+                if active_tool != "erase" or active_tool != "line": # Erase or line get normal draw cursor
+                    self.canvas_controller.mouse_cursor = ft.MouseCursor.CLICK     # Other tools get responsive click cursor
+                    self.mouse_cursor.visible = False       # Hide the custom one
+            
 
         # Grab out settings for paint and canvas
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
@@ -218,7 +225,7 @@ class Canvas(Widget):
 
         # Check if active layer is hidden, and overrite cursors
         if self.layer_stack.controls[self.active_layer_idx].visible == False:
-            standard_mouse_cursor = None
+            self.canvas_controller.mouse_cursor = None
             self.mouse_cursor.visible = False
 
         if update:
@@ -308,6 +315,7 @@ class Canvas(Widget):
     def update_tool_preview(self):
         canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
+        text_settings = app.settings.data.get('text_settings', {}).copy()
 
         decoration = canvas_settings.get('text_shape_decoration', "none")
         match decoration:
@@ -328,16 +336,7 @@ class Canvas(Widget):
             self.current_tool.paint.anti_alias=paint_settings.get('anti_alias', True) if canvas_settings.get('use_paint_for_shapes', True) else True
         
             if self.current_tool.shape_type == "text":
-                self.current_tool.cv_shape.style = ft.TextStyle(
-                    size=canvas_settings.get('text_shape_size', 20),
-                    weight=ft.FontWeight.BOLD if canvas_settings.get('text_shape_bold', False) else ft.FontWeight.NORMAL,
-                    color=canvas_settings.get('text_shape_color', ft.Colors.ON_SURFACE),
-                    italic=canvas_settings.get('text_shape_italic', False),
-                    decoration=text_decoration,
-                    shadow=ft.BoxShadow(color=canvas_settings.get('text_shadow_color', ft.Colors.TRANSPARENT), blur_radius=5),
-                    letter_spacing=canvas_settings.get('text_shape_letter_spacing', 0),
-                    word_spacing=canvas_settings.get('text_shape_word_spacing', 0),
-                )
+                self.current_tool.cv_shape.style = ft.TextStyle(**text_settings)
             elif self.current_tool.shape_type == "rectangle":
                 self.current_tool.cv_shape.border_radius = ft.BorderRadius.all(
                     canvas_settings.get('rectangle_border_radius', 0)
@@ -393,6 +392,7 @@ class Canvas(Widget):
             canvas.shapes.append(cv.Points(points=[(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings)))
             canvas.update()
             await self.end_stroke(canvas)
+            
         
     # Called when we start drawing on the canvas
     def start_stroke(self, e: ft.DragStartEvent):
@@ -1316,7 +1316,7 @@ class Canvas(Widget):
             on_pan_update=self.update_stroke,           # Updates the current stroke based on mouse movement
             on_pan_end=self.end_stroke,                # Saves the now complete stroke to our data and canvas capture
             on_hover=lambda e: self.move_mouse_cursor(e.local_position),
-            #on_tap_up=self.handle_tap,                   # Handles adding dots and tools
+            on_tap_up=self.handle_tap,                   # Handles adding dots and tools
             width=self.CANVAS_WIDTH,
             height=self.CANVAS_HEIGHT,
             drag_interval=5,
