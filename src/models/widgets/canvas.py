@@ -250,7 +250,7 @@ class Canvas(Widget):
             self.page.show_dialog(SnackBar("Error finding visible canvas or tool."))
             return
 
-        self.manipulating_shape = False   # Update state
+        self.state.manipulating_shape = False   # Update state
         
         # Text can be rotated, so we can just grab it and put it in the right spot
         if self.current_tool.shape_type == "text":
@@ -274,45 +274,31 @@ class Canvas(Widget):
         await self.current_tool.canvas.capture()
         shape_capture = await self.current_tool.canvas.get_capture()
 
+        if not shape_capture:
+            self.page.show_dialog(SnackBar("Error capturing shape."))
+            return
+
         # Grab the image and rotate
         shape_img = Image.open(BytesIO(shape_capture)).convert("RGBA")
         angle = self.current_tool.rotate.angle
-
-        # Flet rotate.angle is radians; PIL rotate() takes degrees counterclockwise
         angle_degrees = -math.degrees(angle)
         rotated = shape_img.rotate(angle_degrees, expand=True, resample=Image.Resampling.BICUBIC)
+
         # Set rotation (with border padding)
         rotation_cx = self.current_tool.left + (self.current_tool.canvas.width + 4) / 2
         rotation_cy = self.current_tool.top + (self.current_tool.canvas.height + 4) / 2
-
-        # Calculate the position to paste the rotated image onto the canvas
         paste_x = int(rotation_cx - rotated.width / 2)
         paste_y = int(rotation_cy - rotated.height / 2)
 
-        # Grab the existing capture
-        layer_b64 = self.layer_bytes.get(canvas_id)
-        if layer_b64:
-            layer_img = Image.open(BytesIO(layer_b64)).convert("RGBA")
-        else:
-            layer_img = Image.new("RGBA", (self.CANVAS_WIDTH, self.CANVAS_HEIGHT), (0, 0, 0, 0))
-
-        # Composite using the shape's alpha channel as the mask
-        overlay = Image.new("RGBA", layer_img.size, (0, 0, 0, 0))
-        overlay.paste(rotated, (paste_x, paste_y))
-        layer_img = Image.alpha_composite(layer_img, overlay)
 
         output = BytesIO()
-        layer_img.save(output, format="PNG")
-        #encoded = base64.b64encode(output.getvalue()).decode('utf-8')
+        rotated.save(output, format="PNG")
+        stamped_bytes = output.getvalue()
 
-        canvas.shapes.clear()   
-        canvas.shapes.append(cv.Image(layer_img, 0, 0))
+        canvas.shapes.append(cv.Image(stamped_bytes, paste_x, paste_y))
         await self.end_stroke(canvas=canvas)
+        canvas.update()
             
-        # Finally, remove the active tool stuff
-        #self.current_tool.visible = False
-        #self.current_tool.rotate_handle.visible = False
-        #self.update()
         self.canvas_controller.parent.controls.remove(self.current_tool)
         self.canvas_controller.parent.controls.remove(self.current_tool.rotate_handle)
         self.canvas_controller.parent.update()
@@ -323,32 +309,21 @@ class Canvas(Widget):
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
         text_settings = app.settings.data.get('text_settings', {}).copy()
 
-        decoration = canvas_settings.get('text_shape_decoration', "none")
-        match decoration:
-            case "Underline": text_decoration = ft.TextDecoration.UNDERLINE
-            case "Overline": text_decoration = ft.TextDecoration.OVERLINE
-            case "Line Through": text_decoration = ft.TextDecoration.LINE_THROUGH
-            case _: text_decoration = None
-
         if self.state.manipulating_shape:
         
             # Fix any paint changess
-            self.current_tool.paint.color = paint_settings.get('color', ft.Colors.BLACK) if canvas_settings.get('use_paint_for_shapes', True) else ft.Colors.BLACK
-            self.current_tool.paint.stroke_width=paint_settings.get('stroke_width', 3) if canvas_settings.get('use_paint_for_shapes', True) else 3
-            self.current_tool.paint.style=paint_settings.get('style', ft.PaintingStyle.STROKE)
-            self.current_tool.paint.stroke_cap=paint_settings.get('stroke_cap', "round") if canvas_settings.get('use_paint_for_shapes', True) else "round"
-            self.current_tool.paint.stroke_join=paint_settings.get('stroke_join', "round") if canvas_settings.get('use_paint_for_shapes', True) else "round"
-            self.current_tool.paint.blur_image=paint_settings.get('blur_image', 0) if canvas_settings.get('use_paint_for_shapes', True) else 0
-            self.current_tool.paint.anti_alias=paint_settings.get('anti_alias', True) if canvas_settings.get('use_paint_for_shapes', True) else True
+            self.current_tool.paint = ft.Paint(**paint_settings)
+
         
             if self.current_tool.shape_type == "text":
                 self.current_tool.cv_shape.style = ft.TextStyle(**text_settings)
             elif self.current_tool.shape_type == "rectangle":
-                self.current_tool.cv_shape.border_radius = ft.BorderRadius.all(
-                    canvas_settings.get('rectangle_border_radius', 0)
-                )
+                self.current_tool.cv_shape.border_radius = ft.BorderRadius.all(canvas_settings.get('rectangle_border_radius', 0))
+            else:
+                for shape in self.current_tool.canvas.shapes:
+                    shape.paint = ft.Paint(**paint_settings)
 
-            self.current_tool.cv_shape.update()
+            self.current_tool.update()
 
 
     # Called when we click the canvas and don't initiate a drag. Adds either a point if in draw mode, or active tool/shape if in tool mode

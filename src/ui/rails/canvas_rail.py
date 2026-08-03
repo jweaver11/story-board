@@ -72,7 +72,7 @@ class CanvasRail(Rail):
 
         # Checks all our widgets. If any of them are manipulating a tool, we paint it on the canvas if switching from tool to draw mode
         def update_canvas_tool_preview():
-            for widget in self.story.widgets.values():
+            for widget in self.story.workspace.tab_view.controls:
                 if widget.data.get('tag') == "canvas":
                     if widget.data.get('visible', True):
                         if widget.state.manipulating_shape == True:
@@ -92,6 +92,7 @@ class CanvasRail(Rail):
             color_selector.trailing.color = color_picker.color
             self.update()
             set_canvas_mouse_cursor()
+            update_canvas_tool_preview()
 
         # Sets current control mode to drawing
         def set_draw_mode(e=None):
@@ -159,6 +160,7 @@ class CanvasRail(Rail):
             set_draw_mode()
             self.update()
             set_canvas_mouse_cursor()
+            update_canvas_tool_preview()
 
 
         # builds a list of our built in and custom brush options for our brush selector when its open
@@ -534,6 +536,7 @@ class CanvasRail(Rail):
             update_brush_preview()
             self.update()
             set_canvas_mouse_cursor()
+            update_canvas_tool_preview()
 
         # Called when changing paint width
         def update_paint_blur(e: ft.Event[ft.Slider]):
@@ -542,6 +545,7 @@ class CanvasRail(Rail):
             app.settings.update_data(**{"paint_settings": paint_settings})
             update_brush_preview()
             self.update()
+            update_canvas_tool_preview()
 
         # Add fill or not to our style based on teh switch state
         def update_paint_fill(e: ft.Event[ft.Switch]):
@@ -554,6 +558,7 @@ class CanvasRail(Rail):
             app.settings.update_data(**{"paint_settings": paint_settings})
             update_brush_preview()
             self.update()
+            update_canvas_tool_preview()
 
         # Called when changing paint anti-aliasing
         def update_paint_anti_alias(e: ft.Event[ft.Switch]):
@@ -562,6 +567,7 @@ class CanvasRail(Rail):
             app.settings.update_data(**{"paint_settings": paint_settings})
             update_brush_preview()
             self.update()
+            update_canvas_tool_preview()
 
         # Updates whether we'll use path smoothing or not
         def update_paint_brush_smoothing(e: ft.Event[ft.Switch]):
@@ -593,6 +599,7 @@ class CanvasRail(Rail):
             update_brush_preview()
             self.update()
             set_canvas_mouse_cursor()
+            update_canvas_tool_preview()
 
         # Returns the correct icon for the current stroke join setting based on current paint settings
         def get_stroke_join_icon() -> ft.Icon:
@@ -611,6 +618,7 @@ class CanvasRail(Rail):
             stroke_join_selector.trailing.icon = get_stroke_join_icon()
             update_brush_preview()
             self.update()
+            update_canvas_tool_preview()
 
         # Set the blend mode label based on current mode in settings
         def set_blend_mode_label() -> str:
@@ -663,6 +671,7 @@ class CanvasRail(Rail):
             app.settings.update_data(**{"paint_settings": paint_settings})
             blend_mode_selector.content = set_blend_mode_label()
             self.update()
+            update_canvas_tool_preview()
 
         # Set the color pickers color upon change
         def set_text_color(e: ft.Event[ColorPicker]):
@@ -712,6 +721,7 @@ class CanvasRail(Rail):
                 case "Overline": return ft.Icons.FORMAT_OVERLINE    
                 case "Line Through": return ft.Icons.FORMAT_STRIKETHROUGH
                 case _: return ft.Icons.FORMAT_CLEAR
+            
 
         # Changes the text decoration setting and updates the icon in the selector
         def change_text_decoration(e: ft.Event[ft.MenuItemButton]):
