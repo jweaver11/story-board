@@ -8,16 +8,19 @@ import flet.canvas as cv
 import math
 from models.app import app
 
-class CanvasShape(ft.Container):
+class CanvasShape(cv.Text):
 
     def __init__(self, shape_type: str, left=0, top=0):
         super().__init__(
-            left=left,
-            top=top,
+            x=left,
+            y=top,
+            value="Text",
             rotate=ft.Rotate(0),
-            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            animate_rotation=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            animate_size=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            max_width=180, 
+            rotate=0,
+            alignment=ft.Alignment.CENTER,
+            text_align=ft.TextAlign.CENTER,
+            style=ft.TextStyle(app.settings.data.get('text_settings', {})),
         )
 
         self.shape_type = shape_type
@@ -394,21 +397,7 @@ class CanvasShape(ft.Container):
                     case "Line Through": decoration = ft.TextDecoration.LINE_THROUGH
                     case _: decoration = ft.TextDecoration.NONE
                 self.cv_shape = cv.Text(
-                    100, 100, "Text", 
-                    max_width=180, 
-                    rotate=0,
-                    alignment=ft.Alignment.CENTER,
-                    text_align=ft.TextAlign.CENTER,
-                    style=ft.TextStyle(
-                        color=app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE), 
-                        size=app.settings.data.get('canvas_settings', {}).get('text_shape_size', 16),
-                        weight=ft.FontWeight.BOLD if app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False) else None,
-                        italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
-                        decoration=decoration,
-                        #shadow=ft.BoxShadow(app.settings.data.get('canvas_settings', {}).get('text_shadow_color', "#00000000"), blur_radius=4, offset=ft.Offset(2, 2)),
-                        letter_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0),
-                        word_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0),
-                    ),
+                    100, 100, 
                 )
 
             case "arc":

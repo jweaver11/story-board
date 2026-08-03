@@ -1,6 +1,5 @@
 ''' 
-Shapes added to the canvas that the user can drag, edit, and resize. This class is removed from the canvas
-after editing is done, and the shape is then painted onto the canvas
+Base class for all canvas shapes
 '''
 
 import flet as ft
@@ -8,8 +7,7 @@ import flet.canvas as cv
 import math
 from models.app import app
 
-class CanvasShape(ft.Container):
-
+class CanvasShape(cv.Shape):
     def __init__(self, shape_type: str, left=0, top=0):
         super().__init__(
             left=left,
@@ -22,6 +20,9 @@ class CanvasShape(ft.Container):
 
         self.shape_type = shape_type
         self.paint = ft.Paint(**app.settings.data.get('paint_settings', {}))
+        
+        self.width = 100
+        self.height = 100
     
 
         # State management for rotation and resizing
@@ -50,6 +51,9 @@ class CanvasShape(ft.Container):
             return ft.MouseCursor.RESIZE_UP_DOWN              # ↕
         else:
             return ft.MouseCursor.RESIZE_UP_RIGHT_DOWN_LEFT   # ↙↗  (/)
+
+
+
         
     # Changes the text when typing in the text field
     async def _change_text(self, e):

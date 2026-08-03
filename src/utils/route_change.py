@@ -14,6 +14,11 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
     # Grabs our page from the event for easier reference
     page: ft.Page = e.page
 
+    # If we have a story loaded with unsaved changes, save them first
+    if len(page.views) > 0:
+        if isinstance(page.views[0], Story):
+            await page.views[0].save_widgets_to_file()
+
     # Clear our views and any existing overlay controls
     page.views.clear()
     page.overlay.clear()
@@ -31,7 +36,6 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
             page.update()
             return
         case "/settings":
-            #app.settings.reload_settings()
             page.views.append(app.settings)
             page.update()
             return

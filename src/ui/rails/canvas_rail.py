@@ -421,7 +421,7 @@ class CanvasRail(Rail):
                     ]),
                     data="erase",
                     on_click=set_active_tool,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
                     tooltip="Erase parts of your Canvas using your current brush width"
                 ),
                 ft.MenuItemButton(
@@ -431,7 +431,7 @@ class CanvasRail(Rail):
                     ]),
                     data="line",
                     on_click=set_active_tool,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
                     tooltip="Draw straight lines. Click and drag to draw a line between your starting point and the current position of your mouse."
                 ),
                 ft.MenuItemButton(
@@ -441,7 +441,7 @@ class CanvasRail(Rail):
                     ]),
                     data="text",
                     on_click=set_active_tool,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
                     tooltip="Add text only to your canvas. Useful for labels"
                 ),
                 
@@ -458,7 +458,7 @@ class CanvasRail(Rail):
                     #]),
                     #data="dialogue_box",
                     #on_click=set_active_tool,
-                    #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                    #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
                     #tooltip="Add dialogue boxes to your canvas"
                 #),
     
@@ -469,7 +469,7 @@ class CanvasRail(Rail):
                     ]),
                     data="circle",
                     on_click=set_active_tool,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
                     tooltip="Add perfect circles to your canvas"
                 ),
                 ft.MenuItemButton(
@@ -479,7 +479,7 @@ class CanvasRail(Rail):
                     ]),
                     data="oval",
                     on_click=set_active_tool,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
                     tooltip="Add ovals and ellipses to your canvas"
                 ),
                 ft.MenuItemButton(
@@ -489,7 +489,7 @@ class CanvasRail(Rail):
                     ]),
                     data="arc",
                     on_click=set_active_tool,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
                     tooltip="Add arcs and partial circles to your canvas"
                 ),
                 ft.MenuItemButton(
@@ -499,7 +499,7 @@ class CanvasRail(Rail):
                     ]),
                     data="rectangle",
                     on_click=set_active_tool,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
                     tooltip="Add rectangles and squares to your canvas"
                 ),
                 ft.MenuItemButton(
@@ -509,7 +509,7 @@ class CanvasRail(Rail):
                     ]),
                     data="triangle",
                     on_click=set_active_tool,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor=ft.MouseCursor.CLICK),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
                     tooltip="Add triangles to your canvas"
                 ),    
             ]

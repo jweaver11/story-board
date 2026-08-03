@@ -245,6 +245,7 @@ class Canvas(Widget):
         ''' Converts the displayed shapes rotation and size onto our active layer and paints it there '''
 
         canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
+        canvas_id = self.data.get('canvas_data', {}).get('layers', [])[self.active_layer_idx].get('id', '')
         if not canvas.visible or self.current_tool is None:  # Catch errors
             self.page.show_dialog(SnackBar("Error finding visible canvas or tool."))
             return
@@ -261,10 +262,12 @@ class Canvas(Widget):
             
             canvas.shapes.append(text_shape)
             await self.end_stroke(canvas=canvas)
-            self.current_tool.visible = False
-            self.current_tool.rotate_handle.visible = False
-           
-            self.update()
+            #self.current_tool.visible = False
+            #self.current_tool.rotate_handle.visible = False
+            self.canvas_controller.parent.controls.remove(self.current_tool)
+            self.canvas_controller.parent.controls.remove(self.current_tool.rotate_handle)
+            self.canvas_controller.parent.update()
+            #self.update()
             return
 
         # Capture the current tool
@@ -287,9 +290,9 @@ class Canvas(Widget):
         paste_y = int(rotation_cy - rotated.height / 2)
 
         # Grab the existing capture
-        layer_b64 = self.layer_bytes.get(self.data.get('canvas_data', {}).get('layers', [])[self.active_layer_idx].get('id', ''), None)
+        layer_b64 = self.layer_bytes.get(canvas_id)
         if layer_b64:
-            layer_img = Image.open(BytesIO(base64.b64decode(layer_b64))).convert("RGBA")
+            layer_img = Image.open(BytesIO(layer_b64)).convert("RGBA")
         else:
             layer_img = Image.new("RGBA", (self.CANVAS_WIDTH, self.CANVAS_HEIGHT), (0, 0, 0, 0))
 
@@ -300,16 +303,19 @@ class Canvas(Widget):
 
         output = BytesIO()
         layer_img.save(output, format="PNG")
-        encoded = base64.b64encode(output.getvalue()).decode('utf-8')
+        #encoded = base64.b64encode(output.getvalue()).decode('utf-8')
 
         canvas.shapes.clear()   
-        canvas.shapes.append(cv.Image(encoded, 0, 0))
+        canvas.shapes.append(cv.Image(layer_img, 0, 0))
         await self.end_stroke(canvas=canvas)
             
         # Finally, remove the active tool stuff
-        self.current_tool.visible = False
-        self.current_tool.rotate_handle.visible = False
-        self.update()
+        #self.current_tool.visible = False
+        #self.current_tool.rotate_handle.visible = False
+        #self.update()
+        self.canvas_controller.parent.controls.remove(self.current_tool)
+        self.canvas_controller.parent.controls.remove(self.current_tool.rotate_handle)
+        self.canvas_controller.parent.update()
 
     # Updates any live text tools if we changed a setting that would affect it
     def update_tool_preview(self):
@@ -378,8 +384,10 @@ class Canvas(Widget):
                     self.canvas_controller.parent.controls.append(self.current_tool.rotate_handle)
                     self.canvas_controller.parent.update()
             return
-            
+
+        # Not in tool mode, just draw a point on the canvas
         else:
+
             # We're not manipulating a shape, so we can add a point to the canvas
             self.state.manipulating_shape = False 
 
@@ -537,23 +545,19 @@ class Canvas(Widget):
         self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})   # Update our data with the new capture for this layer
 
         # Grab paint and canvas settings
-        paint_settings = app.settings.data.get('paint_settings', {}).copy()
-        canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
+        #paint_settings = app.settings.data.get('paint_settings', {}).copy()
+        #canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
 
         # If we have too many shapes on the canvas, flatten them into the layer's PNG file
         if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:
             self.story.block_page()
             await self.save_canvas(canvas)
             canvas.shapes.clear()
-            canvas.shapes.append(cv.Image(self.layer_bytes.get(layer_id), 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT))
+            canvas.shapes.append(cv.Image(self.layer_bytes.get(layer_id), 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, data=layer_id))
             canvas.update()
             self.story.unblock_page()
-            
 
-            
-           
-        
-
+        # TODO
         self.add_undo_task({
             'task_type': 'path_stroke',
             'layer_id': layer_data.get('name', ''),
@@ -577,7 +581,7 @@ class Canvas(Widget):
                 
         # Set new shapes to ignore the base image if it exists, and capture only the new strokes
         shapes = list(canvas.shapes)
-        base_is_stored_image = shapes and isinstance(shapes[0], cv.Image)
+        base_is_stored_image = shapes and isinstance(shapes[0], cv.Image) and shapes[0].data    # Marked as loaded
         new_strokes = shapes[1:] if base_is_stored_image else shapes    # New changes to this layer
 
         # Capture and get these new strokes, then restore the original shapes to the canvas
@@ -786,11 +790,12 @@ class Canvas(Widget):
                 try:
                     
                     with open(file_path, "rb") as image_file:
-                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                        bytes = image_file.read()
+                        #encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                         canvas: cv.Canvas = self.layer_stack.controls[layer_idx]
                         canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
                         self.layer_bytes[layer_id] = None   # Clear the current capture to ignore it when saving
-                        canvas.shapes.append(cv.Image(f"{encoded_string}", 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT))   # Re-add empty images so it can capture
+                        canvas.shapes.append(cv.Image(bytes, 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, data=layer_id))   # Re-add empty images so it can capture
                         canvas.update()
                         self.page.pop_dialog()
                         await self.save_canvas(canvas=canvas)
@@ -805,6 +810,7 @@ class Canvas(Widget):
         layer_name = e.control.parent.parent.parent.parent.data
         layer_idx = e.control.parent.parent.parent.data
         layer_name = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]['name']
+        layer_id = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]['id']
         capture = None
         capture = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]['capture']
         if not capture:
@@ -825,7 +831,7 @@ class Canvas(Widget):
             # Apply the blur to the correct canvas
             canvas: cv.Canvas = self.layer_stack.controls[layer_idx]
             canvas.shapes.clear()
-            canvas.shapes.append(cv.Image(capture, 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, paint=ft.Paint(blur_image=blur_strength)))
+            canvas.shapes.append(cv.Image(capture, 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, paint=ft.Paint(blur_image=blur_strength), data=layer_id))
             canvas.update()
             self.page.pop_dialog()
 
@@ -1005,7 +1011,8 @@ class Canvas(Widget):
                 cv.Image(       # Sets the background image of the layer to its most recent capture
                     capture, 0, 0, 
                     width=self.CANVAS_WIDTH,          # Ignore setting size before we know it
-                    height=self.CANVAS_HEIGHT
+                    height=self.CANVAS_HEIGHT,
+                    data=canvas_data.get('id', '')
                 )    
             ],
             visible=visible,
