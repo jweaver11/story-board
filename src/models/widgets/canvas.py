@@ -26,7 +26,7 @@ import os
 from PIL import Image, ImageDraw, ImageTk
 
 MINIMUM_SEGMENT_DISTANCE = 2
-MAX_SHAPES_BEFORE_CAPTURE = 30
+MAX_SHAPES_BEFORE_CAPTURE = 100
 MAX_UNDO_LIST_TASKS = 30
 SUPERSAMPLE = 1 # TODO: Setting
 
@@ -80,6 +80,7 @@ class Canvas(Widget):
                             'name': "Background",       # Name of that layer
                             'visible': True,            # Whether this layer is currently visible or not
                             'dirty': False,             # Whether this layer has been changed and needs to be saved
+                            'needs_file_write': False,   # Whether this layer needs to be written to disk or not
                             'file_path': os.path.join(self.story.data.get('canvas_directory_path'), self.data.get('id'), f"{layer_1_id}.png"),  # Path to the capture for this layer
                         },
                         {        # Second layer
@@ -87,7 +88,7 @@ class Canvas(Widget):
                             'name': "Layer 1", 
                             'visible': True, 
                             'dirty': False,
-                            'capture': "",   
+                            'needs_file_write': False,
                             'file_path': os.path.join(self.story.data.get('canvas_directory_path'), self.data.get('id'), f"{layer_2_id}.png"),  # Path to the capture for this layer
                         }
                     ],    
@@ -104,20 +105,6 @@ class Canvas(Widget):
 
         # Save layer byte data in memory for better performance, and easy identifying
         self.layer_bytes: dict[str, bytes] = {}
-        self.layers: dict[str, dict] = {
-            #'id': {
-                #'id',  # id for layer
-                #'name',    # Name of layer
-                #'dirty',   # Dirty state (needed??s)
-                #'file_path':   # Path to file for saving a loading
-                #'image',   # PIL Image we manipulate
-                #'draw',    # PIL Image.draw we manipulate
-                #'raw_image': # ft.RawImage ctrl
-                #'bytes': # png bytes
-            #},
-            #...
-        }
-        self.active_layer = None    # Raw img ctrl for the active layer we're using
 
         # Load our layer captures into memory for better performance
         for layer_data in self.data.get('canvas_data', {}).get('layers', []):
@@ -127,32 +114,12 @@ class Canvas(Widget):
                     self.layer_bytes.update(**{layer_data.get('id'): f.read()})   # Add the bytes to live cache list
             except OSError:
                 pass    # File doesnt exist yet
-
-        for layer_data in self.data.get('canvas_data', {}).get('layers', []):
-            try:
-                os.makedirs(os.path.dirname(layer_data.get('file_path', '')), exist_ok=True)
-                with open(layer_data.get('file_path', ''), 'rb') as f:
-                    self.layers[layer_data.get('id')]['bytes'] = f.read()   # Add the bytes to live cache list
-                    #self.layers.update(**{layer_data.get('id'): f.read()})   # Add the bytes to live cache list
-            except OSError:
-                pass    # File doesnt exist yet
-
         
-
         # Drawing stuff
         self.current_path: cv.Path      # The current path being drawn on the canvas, if any
         self.active_layer_idx: int = self.data.get('canvas_data', {}).get('active_layer_idx', 1)        # Which layer we are drawing on
         self.layer_stack: ft.Stack                # Stack to hold our list of layer canvases on top of each other
-        self.canvas_controller: ft.GestureDetector  # Controller that sits over our layer stack and handles mouse events for drawing and tool usage
-
-
-        
-
-        #self.story.brush_controller
-        self.last_point: tuple[float, float] | None = None  # in canvas pixels
-
-        
-
+        self.canvas_controller: ft.GestureDetector  # Controller that sits over our layer stack and handles mouse events for drawing and tool usage 
         
         # Tool and shape stuff
         self.current_tool: CanvasShape = None                     # The active shape being added if we're using a tool
@@ -161,79 +128,6 @@ class Canvas(Widget):
         # Sidebar controls. Undo/redo buttons
         self.undo_button: ft.IconButton
         self.redo_button: ft.IconButton
-
-
-
-
-    class RawImage(ft.RawImage):
-        def __init__(self, widget: 'Canvas', idx: int, canvas_data: dict):
-
-            # Data has id, visible, name,...
-            visible = canvas_data.get('visible', True)
-            self.capture = widget.layers.get(canvas_data.get('id', ''), {}).get('bytes', None)  # Grab the bytes for this layer if it exists
-            self.widget = widget
-
-            # Creates our new 'image' for the canvas, which is a blank white image that we can draw on. Need to change to load dif images
-            self.image = Image.new(
-                "RGBA", (self.widget.CANVAS_WIDTH * SUPERSAMPLE, self.widget.CANVAS_HEIGHT * SUPERSAMPLE), "#000000"
-            )
-            self.draw = ImageDraw.Draw(self.image)
-
-            # Pan events arrive faster than frames can be displayed, so handlers
-            # only mutate the Pillow image and flag it dirty; a single loop below
-            # streams the latest state as fast as the display confirms frames.
-            self.dirty = asyncio.Event()
-
-            #ft.RawImage()
-            super().__init__(
-                visible=visible,
-                data=idx,
-                width=widget.CANVAS_WIDTH,
-                height=widget.CANVAS_HEIGHT,
-                fit=ft.BoxFit.FILL,
-                filter_quality=ft.FilterQuality.HIGH
-            )
-
-        # Handles drawing a stroke to the raw image
-        async def stroke_to(self, point: ft.Offset):
-            # Pointer coordinates are in control (logical) pixels; the canvas
-            # lives at SUPERSAMPLE resolution.
-            x = point.x * SUPERSAMPLE
-            y = point.y * SUPERSAMPLE
-            radius = self.widget.story.brush_controller.size * SUPERSAMPLE
-            
-            if self.widget.last_point is not None:
-                self.draw.line(
-                    (self.widget.last_point[0], self.widget.last_point[1], x, y),
-                    fill=self.widget.story.brush_controller.color,
-                    width=int(radius * 2),
-                )
-            
-            # Round cap: a line alone leaves flat, jagged joints.
-            self.draw.ellipse(
-                (x - radius, y - radius, x + radius, y + radius),
-                fill=self.widget.story.brush_controller.color,
-            )
-            self.widget.last_point = (x, y)
-            self.dirty.set()
-
-        async def render_loop(self):
-            while True:
-                #if not self.visible:
-                    #return
-                await self.dirty.wait()
-                self.dirty.clear()
-                try:
-                    # The canvas is opaque, so it is premultiplied by definition.
-                    # Awaiting the render paces this loop to display speed: any
-                    # strokes drawn meanwhile coalesce into the next frame.
-                    await self.render(self.image, premultiplied=True)
-                except (RuntimeError, TimeoutError):
-                    return  # window closed — session destroyed
-
-        def build(self):
-            self.dirty.set()  # show the blank canvas
-            asyncio.create_task(self.render_loop())
 
 
     # Overwrite our standard save_file call since we have multiple files
@@ -602,10 +496,17 @@ class Canvas(Widget):
 
         # If we have too many shapes on the canvas, flatten them into the layer's PNG file
         if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:
+            self.story.block_page()
             await self.save_canvas(canvas)
             canvas.shapes.clear()
             canvas.shapes.append(cv.Image(self.layer_bytes.get(layer_id), 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT))
             canvas.update()
+            self.story.unblock_page()
+            
+
+            
+           
+        
 
         self.add_undo_task({
             'task_type': 'path_stroke',
@@ -635,7 +536,8 @@ class Canvas(Widget):
 
         # Capture and get these new strokes, then restore the original shapes to the canvas
         canvas.shapes[:] = new_strokes  
-        await canvas.capture()
+        
+        await canvas.capture(app.settings.data.get('canvas_settings', {}).get('capture_ratio', 1))
         new_bytes = await canvas.get_capture()
         await canvas.clear_capture()
         canvas.shapes[:] = shapes  # Restore the original shapes to the canvas
@@ -1063,16 +965,6 @@ class Canvas(Widget):
             visible=visible,
             width=self.CANVAS_WIDTH,
             height=self.CANVAS_HEIGHT,
-            opacity=0.99    # Forces dif render layer
-        )
-
-    def create_new_raw_img_ctrl(self, idx: int, canvas_data: dict) -> ft.RawImage:
-        visible = canvas_data.get('visible', True)
-        capture = self.layer_bytes.get(canvas_data.get('id', ''), None)  # Grab the capture for this layer if it exists
-
-        return ft.RawImage(
-            visible=visible,
-            data=idx
         )
 
     # Creates a new sidebar ctrl for each layer as a reorderable drag handle
@@ -1377,23 +1269,25 @@ class Canvas(Widget):
         
 
         self.layer_stack = ft.Stack(
-            #[self.create_new_layer_canvas_ctrl(idx, canvas_data) for idx, canvas_data in enumerate(self.data.get('canvas_data', {}).get('layers', []))],  
-            [self.RawImage(self, idx, canvas_data) for idx, canvas_data in enumerate(self.data.get('canvas_data', {}).get('layers', []))],
+            [self.create_new_layer_canvas_ctrl(idx, canvas_data) for idx, canvas_data in enumerate(self.data.get('canvas_data', {}).get('layers', []))],  
+            #[self.RawImage(self, idx, canvas_data) for idx, canvas_data in enumerate(self.data.get('canvas_data', {}).get('layers', []))],
             alignment=ft.Alignment.CENTER, expand=False
         ) 
 
-        self.active_layer = self.layer_stack.controls[1] if self.layer_stack.controls else None
-        print("Acitve layer: ", self.active_layer)
+        #self.active_layer = self.layer_stack.controls[1] if self.layer_stack.controls else None
+        #print("Acitve layer: ", self.active_layer)
 
         
         # Controls drawing for our canvases
         self.canvas_controller = ft.GestureDetector(
             mouse_cursor=self.set_mouse_cursor(),        # Set our mouse cursor based on current control mode
-            #on_pan_start=self.start_stroke,         # Starts a new brush stroke with current paint settings
-            on_pan_start=self.start_stroke_new,         # Starts a new brush stroke with current paint settings
-            #on_pan_update=self.update_stroke,           # Updates the current stroke based on mouse movement
-            on_pan_update=self.update_stroke_new,           # Updates the current stroke based on mouse movement
-            #on_pan_end=self.end_stroke,                # Saves the now complete stroke to our data and canvas capture
+            on_pan_start=self.start_stroke,         # Starts a new brush stroke with current paint settings
+            on_pan_update=self.update_stroke,           # Updates the current stroke based on mouse movement
+
+            #on_pan_start=self.start_stroke_new,         # Starts a new brush stroke with current paint settings
+            #on_pan_update=self.update_stroke_new,           # Updates the current stroke based on mouse movement
+
+            on_pan_end=self.end_stroke,                # Saves the now complete stroke to our data and canvas capture
             #on_tap_up=self.handle_tap,                   # Handles adding dots and tools
             width=self.CANVAS_WIDTH,
             height=self.CANVAS_HEIGHT,

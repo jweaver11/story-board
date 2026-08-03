@@ -766,13 +766,12 @@ class Story(ft.View):
         self.menu.update()
 
     # Blocks the page from interacting while intense loading is being done
-    async def block_page(self, e=None):
+    def block_page(self, e=None):
         self.blocker.visible = True
         self.blocker.update()
-        await asyncio.sleep(0)
 
     # Unblocks page interactions
-    async def unblock_page(self, e=None):
+    def unblock_page(self, e=None):
         self.blocker.visible = False
         self.blocker.update()
 

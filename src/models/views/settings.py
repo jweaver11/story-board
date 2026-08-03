@@ -162,6 +162,7 @@ class Settings(ft.View):
                 # Other canvas and drawing settings outside of the brushes paint
                 'canvas_settings':{
                     # Brush vs tool mode settings
+                    'capture_ratio': 1,                       # Ratio to capture the canvas. Higher means better quality -> worse performance
                     'current_control_mode': "draw",      # Either drawing (use brush settings), or tools (use built in tools)
                     'current_brush_name': "stroke",      # Name of the currently selected brush, either default or custom. Just used for display purposes
                     'current_tool_name': "erase",        # Current tool or shape being used
