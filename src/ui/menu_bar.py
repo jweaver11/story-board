@@ -30,6 +30,25 @@ class MenuBar(ft.Container):
 
 
     def build(self):
+
+        class Dropdown(ft.Dropdown):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.border_color=ft.Colors.OUTLINE_VARIANT
+                self.menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4))
+                self.label_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
+                self.margin=ft.Margin.only(top=8, left=4, right=4)
+                self.dense=True
+
+        class Switch(ft.Switch):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.adaptive=True
+                self.label_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
+                #self.margin=ft.Margin.only(top=8, left=4, right=4)
+                
+
+
         def _rename_clicked(e):
             # Should pop open dialog to rename current story
             pass
@@ -362,7 +381,8 @@ class MenuBar(ft.Container):
             paint_settings.update({"color": color_picker.color})
             app.settings.update_data(**{"paint_settings": paint_settings})
             #update_brush_preview()
-            brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            #brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            brush_preview.content = build_preview_brush()   # Update the brush selector with the new brush
             set_tool_mode_button.icon = update_tool_icon()
             color_selector.content.color = color_picker.color
             self.update()
@@ -378,7 +398,8 @@ class MenuBar(ft.Container):
             app.settings.update_data(**{'paint_settings': paint_settings, 'canvas_settings': canvas_settings})
             # Update UI
             #update_brush_preview()
-            brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            #brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            brush_preview.content = build_preview_brush()
             set_canvas_mouse_cursor()
             brush_selector.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
             color_selector.content.color = paint_settings.get('color', "#000000")
@@ -429,7 +450,8 @@ class MenuBar(ft.Container):
             paint_settings.update(**brush_settings)
             app.settings.update_data(**{"canvas_settings": canvas_settings, "paint_settings": brush_settings})
             #update_brush_preview()
-            brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            #brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            brush_preview.content = build_preview_brush()
             set_draw_mode()
             self.update()
             set_canvas_mouse_cursor()
@@ -452,6 +474,7 @@ class MenuBar(ft.Container):
 
                 self.page.pop_dialog()
                 brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+                brush_preview.content = build_preview_brush()
                 self.update()
 
             # Deletes a color
@@ -469,6 +492,7 @@ class MenuBar(ft.Container):
                 content.update()
 
                 brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+                brush_preview.content = build_preview_brush()
                 self.update()
 
                 # If we were going to override it but instead deleted it, apply that UI change
@@ -613,7 +637,7 @@ class MenuBar(ft.Container):
             ''' Gets our tool options for the popup menu. '''
     
             return [
-                ft.Text("Tools", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
+                ft.Text("Tools", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4, top=4, right=4)),   # Placeholder for shapes section
                 ft.MenuItemButton(
                     ft.Row([
                         ft.Text("Erase", overflow=ft.TextOverflow.ELLIPSIS, expand=True),
@@ -648,7 +672,7 @@ class MenuBar(ft.Container):
     
                 # Shapes we can use
                 ft.Divider(), 
-                ft.Text("Shapes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   # Placeholder for shapes section
+                ft.Text("Shapes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4, right=4)),   # Placeholder for shapes section
                 
                 #ft.MenuItemButton(
                     #ft.Row([
@@ -730,7 +754,8 @@ class MenuBar(ft.Container):
             paint_settings.update({"stroke_width": int(e.control.value)})
             app.settings.update_data(**{"paint_settings": paint_settings})
             #update_brush_preview()
-            brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            #brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            brush_preview.content = build_preview_brush()
             self.update()
             set_canvas_mouse_cursor()
             update_canvas_tool_preview()
@@ -741,7 +766,8 @@ class MenuBar(ft.Container):
             paint_settings.update({"blur_image": int(e.control.value)})
             app.settings.update_data(**{"paint_settings": paint_settings})
             #update_brush_preview()
-            brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            #brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            brush_preview.content = build_preview_brush()
             self.update()
             update_canvas_tool_preview()
 
@@ -755,7 +781,8 @@ class MenuBar(ft.Container):
                 paint_settings.update({"style": paint_settings['style'].replace("_fill", "")})
             app.settings.update_data(**{"paint_settings": paint_settings})
             #update_brush_preview()
-            brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            #brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            brush_preview.content = build_preview_brush()
             self.update()
             update_canvas_tool_preview()
 
@@ -765,7 +792,8 @@ class MenuBar(ft.Container):
             paint_settings.update({"anti_alias": e.control.value})
             app.settings.update_data(**{"paint_settings": paint_settings})
             #update_brush_preview()
-            brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            #brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            brush_preview.content = build_preview_brush()
             self.update()
             update_canvas_tool_preview()
 
@@ -797,7 +825,8 @@ class MenuBar(ft.Container):
             app.settings.update_data(**{"paint_settings": {"stroke_cap": new_stroke_cap}})
             e.control.leading_icon = get_stroke_cap_icon()
             #update_brush_preview()
-            brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            #brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            brush_preview.content = build_preview_brush()
             self.update()
             set_canvas_mouse_cursor()
             update_canvas_tool_preview()
@@ -819,7 +848,8 @@ class MenuBar(ft.Container):
             app.settings.update_data(**{"paint_settings": {"stroke_join": new_stroke_join}})
             e.control.leading_icon = get_stroke_join_icon()
             #update_brush_preview()
-            brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            #brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
+            brush_preview.content = build_preview_brush()
             self.update()
             update_canvas_tool_preview()
 
@@ -1020,24 +1050,19 @@ class MenuBar(ft.Container):
             )
     
             # If we use anti aliasing or not
-            anti_alias_switch = ft.Switch(
+            anti_alias_switch = Switch(
                 True, "Anti-Aliasing", on_change=update_paint_anti_alias,
-                label_text_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True,),
                 value=paint_settings.get('anti_alias', True),
                 tooltip="Whether to use anti-aliasing for smoother brush strokes. Disabling may result in jagged edges",
             )
 
             # Selector for the shape of the ends of strokes
-            stroke_cap_dropdown = ft.Dropdown(
+            stroke_cap_dropdown = Dropdown(
                 label="Stroke Cap Shape",
                 value=paint_settings.get('stroke_cap', 'butt').capitalize(),
                 leading_icon=get_stroke_cap_icon(), 
-                border_color=ft.Colors.OUTLINE_VARIANT,
                 tooltip="The shape that your brush strokes will have at the end of each line segment.",
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                label_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
                 on_select=update_paint_stroke_cap,
-                margin=ft.Margin.only(top=8), dense=True,
                 options=[
                     ft.DropdownOption("Butt", "Butt",  leading_icon=ft.Icons.SQUARE_ROUNDED, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, icon_color=ft.Colors.PRIMARY),),
                     ft.DropdownOption("Round", "Round", leading_icon=ft.Icons.CIRCLE, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, icon_color=ft.Colors.PRIMARY),),
@@ -1047,16 +1072,12 @@ class MenuBar(ft.Container):
     
            
 
-            stroke_join_dropdown = ft.Dropdown(
+            stroke_join_dropdown = Dropdown(
                 label="Stroke Join Shape",
                 value=paint_settings.get('stroke_join', 'butt').capitalize(),
                 leading_icon=get_stroke_join_icon(), 
-                border_color=ft.Colors.OUTLINE_VARIANT,
                 tooltip="The shape that your brush strokes will have at sharp turns and corners.",
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                label_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
                 on_select=update_paint_stroke_join,
-                margin=ft.Margin.only(top=8), dense=True,
                 options=[
                     ft.DropdownOption("Miter", "Miter",  leading_icon=ft.Icons.SQUARE_ROUNDED, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, icon_color=ft.Colors.PRIMARY),),
                     ft.DropdownOption("Round", "Round", leading_icon=ft.Icons.CIRCLE, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, icon_color=ft.Colors.PRIMARY),),
@@ -1065,16 +1086,12 @@ class MenuBar(ft.Container):
             )
     
             # Selector for the blend mode of the brush strokes
-            blend_mode_dropdown = ft.Dropdown(
+            blend_mode_dropdown = Dropdown(
                 label="Blend Mode",
                 value=set_blend_mode_value(),
                 leading_icon=ft.Icon(ft.Icons.LENS_BLUR, ft.Colors.PRIMARY),
-                border_color=ft.Colors.OUTLINE_VARIANT,
                 tooltip="The Current blend effects applied to your brush strokes.",
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                label_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
                 on_select=update_paint_blend_mode,
-                margin=ft.Margin.only(top=8), dense=True,
                 options=get_blend_mode_options()
             )
 
@@ -1087,8 +1104,8 @@ class MenuBar(ft.Container):
                 ], margin=ft.Margin.only(left=4)),
 
                 ft.Row([
-                    ft.Text("Current", color=ft.Colors.ON_SURFACE_VARIANT,),
-                    ft.Container(build_preview_brush(), expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, alignment=ft.Alignment.CENTER, border_radius=4)
+                    ft.Text("Brush Preview", color=ft.Colors.ON_SURFACE_VARIANT,),
+                    brush_preview,
                 ], margin=ft.Margin.only(left=8)),
 
                 # Slider about the width of the current brush strokes
@@ -1100,29 +1117,9 @@ class MenuBar(ft.Container):
                 fill_switch, 
                 anti_alias_switch,
 
-                ft.MenuBar(
-                    [stroke_cap_dropdown],
-                    style=ft.MenuStyle(
-                        bgcolor="transparent", shadow_color="transparent",
-                        shape=ft.RoundedRectangleBorder(radius=4),
-                    ),
-                ),
-                ft.MenuBar(
-                    [stroke_join_dropdown],
-                    style=ft.MenuStyle(
-                        bgcolor="transparent", shadow_color="transparent",
-                        shape=ft.RoundedRectangleBorder(radius=4),
-                    ),
-                ),
-
-                # Causes glitches in UI between renders
-                ft.MenuBar(
-                    [blend_mode_dropdown],
-                    style=ft.MenuStyle(
-                        bgcolor="transparent", shadow_color="transparent",
-                        shape=ft.RoundedRectangleBorder(radius=4),
-                    ),
-                ),
+                stroke_cap_dropdown,
+                stroke_join_dropdown,
+                blend_mode_dropdown,
 
                 ft.Divider(),
 
@@ -1167,18 +1164,175 @@ class MenuBar(ft.Container):
                 )
 
             ctrls.append(ft.MenuItemButton(
-                "Done", close_on_click=True, on_click=lambda: None,
-                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))))
+                "Close Brush Settings", close_on_click=True, on_click=lambda: None,
+                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR, shape=ft.RoundedRectangleBorder(radius=4))))
             return ctrls
 
         def get_text_options() -> list[ft.Control]:
-            return
+
+            # Updating standard text settings
+            def update_text_setting(e: ft.Event[ft.TextField | Dropdown | ft.Slider | Switch]):
+                nonlocal text_settings
+
+                if isinstance(e.control, Dropdown):
+                    value = e.control.value.lower()
+
+                elif isinstance(e.control, Switch):
+                    if e.control.data == "weight":
+                        value = "bold" if e.control.value else "normal"
+                    elif e.control.data == "italic":
+                        value = e.control.value
+
+                key = e.control.data
+                text_settings.update({key: value})
+                app.settings.update_data(**{"text_settings": text_settings})
+
+                text_preview.style = ft.TextStyle(**text_settings)
+                text_preview.update()
+                update_canvas_tool_preview()
+
+            # Update text shadow settings
+            def update_text_shadow_setting(e: ft.Event[ft.TextField | ft.Dropdown | ft.Slider | ft.Switch]):
+                nonlocal text_settings
+
+            # Update text foreground settings
+            def update_text_foreground_setting(e: ft.Event[ft.TextField | ft.Dropdown | ft.Slider | ft.Switch]):
+                nonlocal text_settings
+                
+
+            # TODO: Have update any option re-set the controls inside
+
+            ft.TextStyle()
+
+            # color - color picker
+            # bgcolor - color picker
+
+            # size - slider
+            # letter_spacing - slider
+            # word_spacing - slider
+
+            # decoration options - exptile with
+                # decoration - dropdown
+                # decoration_style - dropdown
+                # decoration_color - color picker
+                # decoration_thickness - slider
+                
+            # shadow - ExpansionTile w/ lot of other options
+                # blur radius - slider
+                # blur style - dropdown
+                # color - color picker
+                # offset - x/y sliders ??
+                # spread radius - slider
+
+            # foregound - ExpansionTile w/ lot of other options (call outline??)
+                #'color': "white",     # Hex color folowed by opacity
+                #'stroke_width': 3,          # Size of the strokees
+                #'style': "stroke",          # style of the strokes. Either stroke or fill
+                #'stroke_cap': "round",      # Each end of the strokes shape
+                #'stroke_join': "round",     # How corners between strokes are drawn
+                #'stroke_miter_limit': 10, 
+                #'stroke_dash_pattern': None,         # If we should use dashed lines, and the pattern for them
+                #'anti_alias': True,     # Use anti aliasing for smoother strokes or not
+                #'blur_image': 0,        # How much blur to apply to the stroke
+                #'blend_mode': None,     # Any blend mode to apply to the stroke, or None for normal
+
+            baseline_dd = Dropdown(
+                label="Baseline",
+                value=text_settings.get('baseline', 'alphabetic').capitalize(),
+                tooltip="The shape that your brush strokes will have at the end of each line segment.",
+                on_select=update_text_setting,
+                data="baseline",
+                options=[
+                    ft.DropdownOption("Alphabetic", "Alphabetic", style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
+                    ft.DropdownOption("Ideographic", "Ideographic", style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
+                ]
+            )
+
+            font_family_dd = Dropdown(
+                label="Font Family",
+                value=text_settings.get('font_family', 'Arial'),
+                tooltip="The font family to use for text shapes.",
+                on_select=update_text_setting,
+                data="font_family",
+                options=[
+                    ft.DropdownOption("Arial", "Arial", style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
+                ]
+            )
+
+
+            bold_switch = Switch(
+                True, "Bold", on_change=update_text_setting,
+                value=text_settings.get('weight', 'normal').lower() == "bold",
+                data="weight",
+            )
+
+            italic_switch = Switch(
+                True, "Italic", on_change=update_text_setting,
+                value=text_settings.get('italic', False),
+                data="italic",
+            )
+
+            # 'text_settings': {
+            #'size': 14,
+            #'weight': "normal",  # Options: None, w100, w200, w300, w400, w500, w600, w700, w800, w900, bold
+            #'italic': False,
+            #'decoration': None,  # Options: none, underline, overline, line_through
+            #'decoration_color': "#000000",
+            #'decoration_thickness': 1.0,
+            #'decoration_style': "solid",    # options: solid, wavy, double, dotted, dashed
+            #'font_family': "Arial",
+            #'color': "#FFFFFF",
+            #'bgcolor': "#00000000",  # Background color for text shapes
+            #'shadow': {
+                #'blur_radius': 0,
+                #'blur_style': 'normal', # Options: normal, solid, outer, inner
+                #'color': "black",
+                #'offset': (0, 0),
+                #'spread_radius': 0,
+            #},   # Boxshad values
+            #'foreground': {
+                #'color': "white",     # Hex color folowed by opacity
+                #'stroke_width': 3,          # Size of the strokees
+                #'style': "stroke",          # style of the strokes. Either stroke or fill
+                #'stroke_cap': "round",      # Each end of the strokes shape
+                #'stroke_join': "round",     # How corners between strokes are drawn
+                #'stroke_miter_limit': 10, 
+                #'stroke_dash_pattern': None,         # If we should use dashed lines, and the pattern for them
+                #'anti_alias': True,     # Use anti aliasing for smoother strokes or not
+                #'blur_image': 0,        # How much blur to apply to the stroke
+                #'blend_mode': None,     # Any blend mode to apply to the stroke, or None for normal
+            #},      
+            #'letter_spacing': 0,
+            #'word_spacing': 0,
+            #'baseline': "alphabetic",  # How text is rendered - Options: alphabetic or ideographic
+        #},
+
+
+
+
+
+
+            return [
+                ft.Text("Text & Shape Settings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, expand=True),  
+                ft.Row([
+                    ft.Container(text_preview, expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, alignment=ft.Alignment.CENTER, border_radius=4, padding=ft.Padding.all(10))
+                ]),
+
+                #baseline_dd, Not needed
+                font_family_dd, # TODO: Add fonts still
+                
+                bold_switch,  
+                italic_switch,
+
+
+            ]
             
 
 
         # Grab our data for easier manipulation
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
         canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
+        text_settings = app.settings.data.get('text_settings', {}).copy()
 
         # Color picker for changing brush color
         color_picker = ColorPicker(
@@ -1229,6 +1383,8 @@ class MenuBar(ft.Container):
             data="draw", on_click=set_draw_mode
         )
 
+        brush_preview = ft.Container(build_preview_brush(), expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, alignment=ft.Alignment.CENTER, border_radius=4)
+            
         # Selector to choose a build in brush or a custom brush
         brush_selector = ft.SubmenuButton(
             #build_preview_brush(paint_settings),
@@ -1279,11 +1435,12 @@ class MenuBar(ft.Container):
                 padding=ft.Padding.all(0)
             ),
             expand=True,
-            width=30
+            width=30,
         )
 
+        text_preview = ft.Text("Preview text", selectable=True, style=ft.TextStyle(**text_settings))
+
         text_settings_button = ft.SubmenuButton(
-            #build_preview_brush(paint_settings),
             controls=get_text_options(),
             content=ft.Icon(ft.Icons.TEXT_FIELDS, ft.Colors.PRIMARY),
             style=ft.ButtonStyle(
@@ -1301,6 +1458,8 @@ class MenuBar(ft.Container):
             expand=True,
             width=40,
         )
+
+        
 
 
         

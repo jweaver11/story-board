@@ -388,27 +388,14 @@ class CanvasShape(ft.Container):
             case "oval":
                 self.cv_shape = cv.Oval(10, 10, 180, 180, paint=self.paint)
             case "text":
-                match app.settings.data.get('canvas_settings', {}).get('text_shape_decoration', "None"):
-                    case "Underline": decoration = ft.TextDecoration.UNDERLINE
-                    case "Overline": decoration = ft.TextDecoration.OVERLINE
-                    case "Line Through": decoration = ft.TextDecoration.LINE_THROUGH
-                    case _: decoration = ft.TextDecoration.NONE
+               
                 self.cv_shape = cv.Text(
                     100, 100, "Text", 
                     max_width=180, 
                     rotate=0,
                     alignment=ft.Alignment.CENTER,
                     text_align=ft.TextAlign.CENTER,
-                    style=ft.TextStyle(
-                        color=app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE), 
-                        size=app.settings.data.get('canvas_settings', {}).get('text_shape_size', 16),
-                        weight=ft.FontWeight.BOLD if app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False) else None,
-                        italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
-                        decoration=decoration,
-                        #shadow=ft.BoxShadow(app.settings.data.get('canvas_settings', {}).get('text_shadow_color', "#00000000"), blur_radius=4, offset=ft.Offset(2, 2)),
-                        letter_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0),
-                        word_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0),
-                    ),
+                    style=ft.TextStyle(**app.settings.data.get('text_settings', {})),
                 )
 
             case "arc":
