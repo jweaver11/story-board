@@ -1089,7 +1089,7 @@ class CanvasRail(Rail):
             expand=True,
             controls=[
                 # New item tf for canvas boards
-                self.new_item_textfield,
+                #self.new_item_textfield,
 
                 # Label brush settings
                 ft.Text("Control Mode", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.W_500, 

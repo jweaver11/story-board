@@ -1,5 +1,5 @@
 import flet as ft
-from ui.menu_bar import create_menu_bar
+from ui.menu_bar import MenuBar
 from styles.colors import dark_gradient
 from utils.check_story_unique import story_is_unique
 
@@ -9,7 +9,7 @@ def create_home_view(page: ft.Page) -> ft.View:
     ''' Creates a custom menu bar with new, open, and import new story buttons, and a create new story button in the middle'''
     from models.app import app
 
-    menubar = create_menu_bar(page)   
+    menubar = MenuBar()
 
 
     # Called when giant new story button is clicked

@@ -772,7 +772,7 @@ class Story(ft.View):
     # Builds our view
     def build(self) -> list[ft.Control]:
         ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
-        from ui.menu_bar import create_menu_bar
+        from ui.menu_bar import MenuBar
         from ui.workspaces_rail import WorkspacesRail
         from ui.active_rail import ActiveRail
         from ui.workspace import Workspace
@@ -826,7 +826,7 @@ class Story(ft.View):
         self.load_widgets() 
 
         # Create our menubar, workspaces rail, active rail, and workspace objects
-        self.menubar = create_menu_bar(self.page, self)
+        self.menubar = MenuBar(self)
         self.workspaces_rail = WorkspacesRail(self) 
         self.workspace = Workspace(self)  
         self.active_rail = ActiveRail(self) 

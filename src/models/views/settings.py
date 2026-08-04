@@ -9,7 +9,7 @@ from constants import SETTINGS_FILE_PATH, APP_DATA_PATH
 from styles.colors import colors, theme_colors
 import os
 import json
-from ui.menu_bar import create_menu_bar
+from ui.menu_bar import MenuBar
 from styles.snack_bar import SnackBar
 from models.dataclasses.character_template import default_character_template_data_dict
 from styles.text_fields import TextField
@@ -1894,7 +1894,7 @@ class Settings(ft.View):
         self.controls.clear()
         
         # Set our menubar
-        menubar = create_menu_bar(self.page, self.story)   
+        menubar = MenuBar(self.story)
 
         # Set the rail we use for different settings categories
         nav_rail = ft.NavigationRail(
