@@ -339,7 +339,7 @@ class CanvasRail(Rail):
             # Our save button that just changes text from save to overwrite
             save_button = ft.TextButton("Save", on_click=_save_and_close, style=ft.ButtonStyle(mouse_cursor="click")) 
 
-            content = ft.Column([new_custom_brush_name_text_field], scroll="auto", height=self.page.height / 2) 
+            content = ft.Column([new_custom_brush_name_text_field], scroll=ft.ScrollMode.AUTO, height=self.page.height / 2) 
 
             dlg = ft.AlertDialog(
                 title=ft.Text("Name your custom brush"), 
@@ -862,7 +862,8 @@ class CanvasRail(Rail):
             menu_style=ft.MenuStyle(
                 alignment=ft.Alignment.TOP_RIGHT,
                 bgcolor=ft.Colors.SURFACE_CONTAINER, 
-                shape=ft.RoundedRectangleBorder(radius=10)
+                shape=ft.RoundedRectangleBorder(radius=4),
+                padding=ft.Padding.all(0)
             ),
             expand=True,
         )
@@ -1082,7 +1083,7 @@ class CanvasRail(Rail):
         
         # Build the content of our rail
         content = ft.Column(
-            scroll=ft.ScrollMode.AUTO,
+            scroll=ft.ScrollMode.HIDDEN,
             margin=ft.Margin.only(left=8),
             spacing=4,
             expand=True,
@@ -1091,14 +1092,10 @@ class CanvasRail(Rail):
                 self.new_item_textfield,
 
                 # Label brush settings
-                ft.Text("Brush Settings", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.W_500, 
+                ft.Text("Control Mode", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.W_500, 
                         italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
             
-                # Hold our color selector
-                ft.MenuBar(
-                    [color_selector],
-                    style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)),
-                ),
+                
 
                 # Our set_draw_mode_button, brush selector, and save custom brush button
                 ft.Row([
@@ -1112,6 +1109,16 @@ class CanvasRail(Rail):
                     set_tool_mode_button, 
                     ft.MenuBar([tool_selector], style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0))),
                 ], spacing=4, wrap=True),
+
+                # Label brush settings
+                ft.Text("Brush Settings", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.W_500, 
+                        italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
+
+                # Hold our color selector
+                ft.MenuBar(
+                    [color_selector],
+                    style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0)),
+                ),
                     
                 # Slider about the width of the current brush strokes
                 ft.Row([ft.Text("Size", theme_style=ft.TextThemeStyle.LABEL_LARGE), width_slider], spacing=0, tooltip="Size of your strokes"),      # Size slider
@@ -1210,14 +1217,14 @@ class CanvasRail(Rail):
 
                 # Divider between text and tool settings
                 ft.Divider(),
-                ft.Text("Tool Settings", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.W_500, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
-                ft.Switch(
-                    True, "Use Brush Paint for Shapes", on_change=change_shape_options, data="use_paint_for_shapes",
-                    label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
-                    value=app.settings.data.get('canvas_settings', {}).get('use_paint_for_shapes', False),
-                    tooltip="Whether shapes will use the current paint settings (color, stroke width, blur, etc.)\nor will just be painted with a standard fill or stroke with no effects.\nText shapes are not affected by this setting",
+                #ft.Text("Tool Settings", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.W_500, italic=True, color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
+                #ft.Switch(
+                    #True, "Use Brush Paint for Shapes", on_change=change_shape_options, data="use_paint_for_shapes",
+                    #label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
+                    #value=app.settings.data.get('canvas_settings', {}).get('use_paint_for_shapes', False),
+                    #tooltip="Whether shapes will use the current paint settings (color, stroke width, blur, etc.)\nor will just be painted with a standard fill or stroke with no effects.\nText shapes are not affected by this setting",
                     #label_position=ft.LabelPosition.LEFT
-                ), 
+                #), 
                 # Border radius on rectangles
                 TextField(
                     label="Rectangle Border Radius", on_blur=change_shape_options, data="border_radius", dense=True,

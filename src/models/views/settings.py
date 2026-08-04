@@ -183,7 +183,7 @@ class Settings(ft.View):
                     'text_shape_outline_thickness': 0,                       # Thickness of the text shapes outline (0=off)
                     'text_shape_outline_blur_radius': 0,                    # Blur radius of the text shapes outline (0=off)
                     # Other shape settings
-                    'use_paint_for_shapes': True,           # If True, shapes are black/white and use default paint settings rather than live brush settings
+                    #'use_paint_for_shapes': True,           # If True, shapes are black/white and use default paint settings rather than live brush settings
                     'rectangle_border_radius': 0,               # Border radius for rectangle shapes
                 },
                 'text_settings': {
