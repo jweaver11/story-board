@@ -1116,7 +1116,8 @@ class Canvas(Widget):
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH if self.active_layer_idx == idx and visible == True else None,  # Lighter bg for selected layer
                 on_click=self.set_new_active_layer, 
                 data=idx,
-                dense=True, content_padding=ft.Padding.only(left=10, right=30), 
+                dense=True, 
+                content_padding=ft.Padding.only(left=20, right=30) if self.active_layer_idx == idx and visible == True else ft.Padding.only(left=10, right=30),
                 shape=ft.RoundedRectangleBorder(radius=4), 
                 tooltip="Click to select this layer",
                 trailing=ft.MenuBar(
@@ -1193,6 +1194,7 @@ class Canvas(Widget):
         # Deselcted old list tile:
         for ctrl in self.sidebar_layers_list_view.controls:
             ctrl.content.bgcolor = None
+            ctrl.content.content_padding = ft.Padding.only(left=10, right=30)
 
         # Update our new index live and in data
         new_layer_idx = e.control.data
@@ -1212,6 +1214,7 @@ class Canvas(Widget):
 
         # Update sidebar list tile background to reflect
         e.control.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGH
+        e.control.content_padding = ft.Padding.only(left=20, right=30)
         self.set_mouse_cursor()
         self.update()
 
