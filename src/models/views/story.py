@@ -84,6 +84,7 @@ class Story(ft.View):
         # Declare our UI elements before we create them later. They are stored as objects so we can reload them when needed
         self.menubar: ft.Container     # Menu bar at top of page
         self.workspaces_rail: ft.Container      # Rail on left side showing our 6 workspaces
+        self.canvas_rail: ft.Container      # Rail on left side showing our 6 workspaces
         self.active_rail: ft.Container    # Rail showing whichever workspace is selected
         self.workspace: ft.Container       # Main workspace area where our pins display our widgets
 
@@ -774,6 +775,7 @@ class Story(ft.View):
         ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
         from ui.menu_bar import MenuBar
         from ui.workspaces_rail import WorkspacesRail
+        from ui.canvas_rail import CanvasRail
         from ui.active_rail import ActiveRail
         from ui.workspace import Workspace
         from models.app import app
@@ -827,9 +829,11 @@ class Story(ft.View):
 
         # Create our menubar, workspaces rail, active rail, and workspace objects
         self.menubar = MenuBar(self)
-        self.workspaces_rail = WorkspacesRail(self) 
-        self.workspace = Workspace(self)  
+        #self.workspaces_rail = WorkspacesRail(self) 
+        self.canvas_rail = CanvasRail(self)
         self.active_rail = ActiveRail(self) 
+        self.workspace = Workspace(self)  
+        
 
 
         # The actual resizer for the active rail (gesture detector)
@@ -853,7 +857,8 @@ class Story(ft.View):
             self.menubar,
             IsolatedRow([
                 
-                self.workspaces_rail,
+                #self.workspaces_rail,
+                self.canvas_rail,
                 self.active_rail,
                 self.active_rail_resizer,
                 self.workspace,

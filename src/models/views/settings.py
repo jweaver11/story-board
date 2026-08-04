@@ -65,6 +65,7 @@ class Settings(ft.View):
                     'workspaces_rail_is_collapsed': False,
                     'active_rail_width': 250,  
                     'default_folder_color': "primary",    # Categories thrown in here
+                    'hide_canvas_rail': False,   # If the canvas rail is hidden or not
                     'workspaces_rail_order': [      # Order of the workspace rail 
                         "content",
                         "canvas",
@@ -164,10 +165,11 @@ class Settings(ft.View):
                 'canvas_settings':{
                     # Brush vs tool mode settings
                     'capture_ratio': 1,                       # Ratio to capture the canvas. Higher means better quality -> worse performance
-                    'current_control_mode': "draw",      # Either drawing (use brush settings), or tools (use built in tools)
+                    'current_control_mode': "draw",      # Either drawing, (use brush settings), tools (use built in tools), or text
                     'current_brush_name': "stroke",      # Name of the currently selected brush, either default or custom. Just used for display purposes
                     'current_tool_name': "erase",        # Current tool or shape being used
                     'saved_brushes': dict(),             # Saved brushes the user has created that we can load
+                    'saved_colors': list(),              # Saved colors the user has created that we can load [{'name': 'name_val', 'value': 'value']
                     'use_brush_smoothing': True,         # Uses cv.Path for constistant shapes if true, otherwise use cv.line
                     'stroke_smoothing_strength': 1,        # If stroke smoothing is enabled, how strong the smoothing is. 1 = low, 10 = high 0=off
                     # Text settings -- OLD PHASING OUT
@@ -443,6 +445,8 @@ class Settings(ft.View):
             border=ft.Border.all(2, ft.Colors.ON_SURFACE_VARIANT) if self.data.get('page', {}).get('theme_mode', "dark") == "light" else ft.Border.all(2, ft.Colors.PRIMARY), 
             bgcolor=ft.Colors.GREY_900, on_click=_toggle_theme, tooltip="Set dark mode", ink=True
         )
+
+        
         
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
         content=ft.Column([
@@ -490,7 +494,16 @@ class Settings(ft.View):
                     color=self.data.get('story', {}).get('default_folder_color', "primary"),
                     dense=True, data="folder",
                 ),
-            ]),   
+            ]),  
+
+
+            ft.Switch(
+                label="Hide Canvas Rail", margin=ft.Margin.only(top=10),
+                value=self.data.get('story', {}).get('hide_canvas_rail', False), 
+                on_change=lambda e: self.update_data(**{'story': {'hide_canvas_rail': e.control.value}}),
+                tooltip="Hides the canvas rail on the left side of the page. Turn off if you never plan on drawing",
+            ),
+
         ])
 
         return content

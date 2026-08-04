@@ -1,35 +1,53 @@
-''' 
-Class for our menubar, which will hold our file options, drawing controls, and setting shortcut
-'''
+''' UI model file to create our all_workspaces_rail on the left side of the screen.
+This object is stored in app.all_workspaces_rail.
+Handles new workspace selections, re-ordering, collapsing, and expanding the rail. '''
 
 import flet as ft
-from models.app import app
-from models.views.story import Story
-from utils.check_story_unique import story_is_unique
-from styles.snack_bar import SnackBar
-from styles.text_fields import TextField
 from flet_color_pickers import ColorPicker
 import math
 import flet.canvas as cv
 from utils.safe_string_checker import return_safe_name
+from models.views.story import Story
 
-
-
-class MenuBar(ft.Container):
-    def __init__(self, story: Story = None):
+# Class so we can store our all workspaces rail as an object inside of app
+class CanvasRail(ft.Container):
+    
+    # Constructor for our all_workspaces_rail object. Needs a page reference passed in
+    def __init__(self, story: Story):
 
         self.story = story
-
+       
+        # Style our rail (container)
         super().__init__(
-            border=ft.Border.only(bottom=ft.BorderSide(width=1, color=ft.Colors.OUTLINE_VARIANT)),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            alignment=ft.Alignment.CENTER,  # Aligns content to the 
+            padding=ft.Padding.only(bottom=10, right=10, left=10),
+            animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
         )
 
-    def is_isolated(self):
-        return True
+    # Called by clicking button on bottom right of rail
+    def toggle_collapse_rail(self, e: ft.Event[ft.IconButton]):
+        ''' Collapses or expands the rail, and saves the state in settings '''
+        from models.app import app    # Always grabs updated reference when collapsing/expanding
+
+        # Toggle our collapsed state
+        app.settings.update_data(**{'story': {'workspaces_rail_is_collapsed': not app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False)}})
+
+        if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False):  # If we are collapsed, make the rail less wide
+            self.width = 100
+            e.control.icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED
+            self.rail_label.opacity = 0
+        else:   # If not collapsed, make rail normal size
+            self.width = 120
+            e.control.icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED
+            self.rail_label.opacity = 1
+        self.update()  # Reload the rail to apply changes
 
 
-    def build(self):
+    # Called mostly when re-ordering or collapsing the rail. Also called on start
+    def build(self) -> ft.Control:
+        from models.app import app   
 
         class Dropdown(ft.Dropdown):
             def __init__(self, *args, **kwargs):
@@ -46,305 +64,6 @@ class MenuBar(ft.Container):
                 self.adaptive=True
                 self.label_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
                 #self.margin=ft.Margin.only(top=8, left=4, right=4)
-                
-
-
-        def _rename_clicked(e):
-            # Should pop open dialog to rename current story
-            pass
-    
-    
-        # Called when file -> new is clicked
-        def _create_new_story_clicked(e):
-            ''' Opens a dialog to create a new story. Checks story is unique or not '''
-    
-    
-            
-    
-            async def submit_new_story(e):
-                ''' Creates a new story with the given title '''
-    
-                # Import our variable if it is unique or nah
-                is_unique = not create_button.disabled
-                if not is_unique:
-                    await story_title_field.focus()   # refocus the text field since the title was not unique
-                    story_title_field.update()
-                    return
-    
-                title = story_title_field.value.strip()
-    
-                # Check if the title is unique
-                if is_unique:
-                    #print("title is unique, story being created: ", title)
-                    app.create_new_story(title, self.page) # Needs the story object
-                    self.page.pop_dialog()
-                else:
-                    story_title_field.error = "Story Title must be unique"
-                    await story_title_field.focus()   # refocus the text field since the title was not unique
-                    story_title_field.update()
-    
-    
-            # Called everytime the user enters a new letter in the text box
-            async def textbox_value_changed(e):
-                ''' Called when the text in the text box changes '''
-    
-                is_unique = story_is_unique(story_title_field.value)
-    
-                if story_title_field.value.strip() == "":   # Disable the button if the text box is empty
-                    is_unique = False
-    
-                create_button.disabled = not is_unique
-                story_title_field.error = None if is_unique else "Story Title must be unique"
-                
-                    
-                create_button.update()
-                await story_title_field.focus()   # refocus the text field so user can keep typing without clicking back in
-                story_title_field.update()
-    
-    
-            # Create a reference to the text field so we can access its value
-            story_title_field = ft.TextField(
-                label="Story Title",
-                autofocus=True, capitalization=ft.TextCapitalization.WORDS,
-                on_submit=submit_new_story,
-                on_change=textbox_value_changed,
-            )
-    
-            create_button = ft.TextButton(
-                "Create", on_click=submit_new_story, disabled=True, style=ft.ButtonStyle(mouse_cursor="click")
-            )
-    
-            # The dialog that will pop up whenever the new story button is clicked
-            dlg = ft.AlertDialog(
-    
-                # Title of our dialog
-                title=ft.Text(
-                    "Create New Story", 
-                    color=ft.Colors.ON_SURFACE,
-                    weight=ft.FontWeight.BOLD,
-                ),
-    
-                # Main content is text box for user to input story title
-                content=story_title_field,
-    
-                # Our two action buttons at the bottom of the dialog
-                actions=[
-                    ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                    create_button,
-                ],
-            )
-    
-            # Open our dialog in the overlay
-            self.page.show_dialog(dlg)
-    
-    
-        # Called when file -> open is clicked
-        async def _open_clicked(e=None):
-            ''' Opens a dialog to open an existing story '''
-    
-            #print("Open Story Clicked")
-    
-            selected_story = None
-    
-            # Called when a new story text button is clicked
-            def change_selected_story(e):
-                ''' Changes our selected story variable '''
-    
-                nonlocal selected_story
-                selected_story = e.control.value
-                open_button.disabled = False
-                open_button.style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")
-                open_button.update()
-    
-            # Returns a list of all story titles available to open
-            def get_stories_list() -> ft.Control:
-                ''' Returns a list of all story titles available to open '''
-    
-                # List of our story choices
-                stories = []
-    
-                # Set style for our options
-                style = ft.TextStyle(
-                    size=14,
-                    color=ft.Colors.ON_SURFACE,
-                    weight=ft.FontWeight.BOLD,
-                )
-    
-                # Use something better than radio in future, but for now this works
-                for story in app.stories.values():
-                    stories.append(
-                        ft.Radio(expand=False, value=story.data.get('title'), label=story.data.get('title'), label_style=style, mouse_cursor=ft.MouseCursor.CLICK)
-                    )
-    
-                # Return our list of stories
-                return stories
-    
-    
-            # Called when the 'open' button is clicked in the bottom right of the dialog
-            async def open_selected_story(e=None):
-                ''' Changes the route to the selected story '''
-    
-                #print("Open button clicked, selected story is: ", selected_story)
-    
-                if selected_story is not None:
-                    await self.page.push_route(app.stories[selected_story].route)
-                    app.settings.story = app.stories[selected_story]  # Gives our settings widget the story reference it needs
-                    self.page.pop_dialog()
-                    self.page.update()
-                else:
-                    print("No story selected")
-    
-                self.page.pop_dialog()
-                self.page.update()
-    
-            open_button = ft.TextButton("Open", on_click=open_selected_story, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
-    
-            # Our alert dialog that pops up when file -> open is clicked
-            dlg = ft.AlertDialog(
-                title=ft.Text(
-                    "What story would you like to open?",
-                    color=ft.Colors.ON_SURFACE,
-                    weight=ft.FontWeight.BOLD,
-                ),
-                alignment=ft.Alignment.CENTER,
-                title_padding=ft.Padding.all(25),
-                content=ft.RadioGroup(
-                    content=ft.Column(scroll=ft.ScrollMode.AUTO, expand=False, controls=get_stories_list()),
-                    on_change=change_selected_story
-                ),
-                actions=[
-                    ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                    open_button,
-                ]
-            )
-    
-            # Opens our dialog
-            self.page.show_dialog(dlg)
-    
-        async def _settings_clicked(e=None):
-            ''' Goes to the settings page '''
-            if self.page.route != "/settings":
-                await self.page.push_route("/settings")
-            else:
-                # Get the active story title and find its route
-                if self.story is not None:
-                    await self.page.push_route(self.story.route)
-                else:
-                    await self.page.push_route("/")
-    
-        # Create our menu bar with submenu items
-        file_options = ft.MenuBar(
-            #expand=True,
-            style=ft.MenuStyle(     # Styling our menubar
-                alignment=ft.Alignment.CENTER,
-                bgcolor=ft.Colors.TRANSPARENT,
-                shadow_color=ft.Colors.TRANSPARENT,
-            ),
-            controls=[  # The controls shown in our menu bar from left to right
-                ft.SubmenuButton(   # Button that opens a subment
-                    content=ft.Container(
-                        content=ft.Text("File", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),     # Content of subment button
-                        alignment=ft.Alignment.CENTER
-                    ), 
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    menu_style=ft.MenuStyle(padding=ft.Padding.all(0)),
-                    
-                    controls=[      # The options shown inside of our button
-                        ft.MenuItemButton(
-                            content=ft.Text("New Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, ft.Colors.PRIMARY),
-                            close_on_click=True,
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=_create_new_story_clicked,
-                        ),
-                        ft.MenuItemButton(
-                            content=ft.Text("Open Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.CupertinoIcons.BOOK, ft.Colors.PRIMARY),
-                            close_on_click=True,
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=_open_clicked,
-                        ),
-                        ft.MenuItemButton(
-                            content=ft.Text("Rename Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY),
-                            close_on_click=True,
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=_rename_clicked,
-                        ),
-                        ft.MenuItemButton(
-                            content=ft.Text("Import Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            tooltip="Import a folder containing an exported story from Story Board on another device.",
-                            leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
-                            close_on_click=True,
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            #on_click=_open_clicked,
-                        ),
-                        ft.MenuItemButton(
-                            content=ft.Text("Export Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
-                            close_on_click=True,
-                            tooltip="Export's your story to a folder on your device. Allows for easy import to Story Board on another device.",
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            #on_click=_open_clicked,
-                        ),
-                        
-                        ft.MenuItemButton(
-                            content=ft.Text("Settings", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
-                            close_on_click=True,
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=_settings_clicked,
-                        ),
-                        ft.MenuItemButton(
-                            content=ft.Text("Delete Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.Icons.DELETE_FOREVER_ROUNDED, ft.Colors.ERROR),
-                            close_on_click=True,
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            #on_click=_delete_clicked,
-                        ),
-                    ],
-                ),
-            ], 
-        )
-
-
-
-
-
-
-
-        # DRAW MODE STUFFF -----------------------------------------------------
-
-
-
-        # Our settings for easier reference
-        paint_settings: dict        # Paint for our brush
-        canvas_settings: dict       # Other drawing and shape related settings
-        text_settings: dict         # Text settings
-
-        # UI elements used in the canvas rail
-        color_picker: ColorPicker              # Color picker for changing brush color
-        color_selector: ft.SubmenuButton       # Button on the rail for selected a color. Clicking shows our color picker
-
-        set_draw_mode_button: ft.IconButton          # Button for setting draw mode on the current brush. Only does anything if in tool mode
-        brush_selector: ft.SubmenuButton        # Button on the rail for selecting a brush. Clicking shows our brush options
-
-        set_tool_mode_button: ft.IconButton          # Button for setting tool mode on the current brush. Only does anything if in draw mode
-        tool_selector: ft.SubmenuButton         # Button on the rail for selecting a tool. Clicking shows our tool options
-        #stroke_smoothing_strength_slider : ft.Slider              # Slider for changing the strength of the smooth stroke effect
-
-        #brush_smoothing_switch: ft.Switch        # If we should use path smoothing switch
-        
-        
-        stroke_dashed_pattern_switch: ft.Switch            # Switch for enabling dashed strokes or not
-        # Something stroke dashed editor here
-
-        
-
-
-        # Text controller settings -----------------------------------------------------
-
-
 
         # Updates the mouse cursor or all visible canvases based on updated tool mode
         def set_canvas_mouse_cursor():
@@ -409,6 +128,8 @@ class MenuBar(ft.Container):
             set_tool_mode_button.icon = ft.Icons.BUILD_OUTLINED
             set_tool_mode_button.icon = update_tool_icon()
             tool_selector.style.bgcolor = None
+            text_settings_button.style.bgcolor = None
+            set_text_mode_button.bgcolor = None
             self.update()
 
         
@@ -619,7 +340,7 @@ class MenuBar(ft.Container):
 
         # Sets current control mode to tool
         def set_tool_mode(e=None):
-            nonlocal canvas_settings, paint_settings, brush_selector, set_tool_mode_button
+            nonlocal canvas_settings, paint_settings, brush_selector, set_tool_mode_button, set_text_mode_button, text_settings_button, tool_selector
             canvas_settings['current_control_mode'] = "tool"
             app.settings.update_data(**{'canvas_settings': canvas_settings})
             set_canvas_mouse_cursor()
@@ -631,7 +352,22 @@ class MenuBar(ft.Container):
             set_tool_mode_button.icon = ft.Icons.BUILD_ROUNDED
             tool_selector.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
             set_tool_mode_button.icon = update_tool_icon()
+            text_settings_button.style.bgcolor = None
+            set_text_mode_button.bgcolor = None
             self.update() 
+
+        def set_text_mode(e=None):
+            nonlocal canvas_settings, paint_settings, brush_selector, set_tool_mode_button
+            canvas_settings['current_control_mode'] = "text"
+            app.settings.update_data(**{'canvas_settings': canvas_settings})
+            set_text_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            text_settings_button.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            set_tool_mode_button.bgcolor = None
+            set_draw_mode_button.bgcolor = None
+            brush_selector.style.bgcolor = None
+            tool_selector.style.bgcolor = None
+            set_canvas_mouse_cursor()
+            self.update()
 
         def get_tool_options() -> list[ft.Control]:
             ''' Gets our tool options for the popup menu. '''
@@ -988,7 +724,7 @@ class MenuBar(ft.Container):
                 ]
             )
     
-           
+            
 
             stroke_join_dropdown = Dropdown(
                 label="Stroke Join Shape",
@@ -1064,7 +800,7 @@ class MenuBar(ft.Container):
                     
 
                 #ft.Divider(),   # Placeholder for shapes section
-                   # Placeholder for shapes section
+                    # Placeholder for shapes section
             ]
 
             # Go through our saved brushes and add options to select them
@@ -1081,9 +817,9 @@ class MenuBar(ft.Container):
                     )
                 )
 
-            ctrls.append(ft.MenuItemButton(
-                "Close Brush Settings", close_on_click=True, on_click=lambda: None,
-                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR, shape=ft.RoundedRectangleBorder(radius=4))))
+            #ctrls.append(ft.MenuItemButton(
+                #"Close Brush Settings", close_on_click=True, on_click=lambda: None,
+                #style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR, shape=ft.RoundedRectangleBorder(radius=4))))
             return ctrls
 
         def get_text_options() -> list[ft.Control]:
@@ -1232,9 +968,10 @@ class MenuBar(ft.Container):
 
             return [
                 ft.Text("Text & Shape Settings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, expand=True),  
-                ft.Row([
-                    ft.Container(text_preview, expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, alignment=ft.Alignment.CENTER, border_radius=4, padding=ft.Padding.all(10))
-                ]),
+                ft.Row([text_preview], alignment=ft.MainAxisAlignment.CENTER, margin=ft.Margin.all(10)),
+                #ft.Row([
+                    #ft.Container(text_preview, expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, alignment=ft.Alignment.CENTER, border_radius=4, padding=ft.Padding.all(10))
+                #]),
 
                 #baseline_dd, Not needed
                 font_family_dd, # TODO: Add fonts still
@@ -1244,8 +981,6 @@ class MenuBar(ft.Container):
 
 
             ]
-            
-
 
         # Grab our data for easier manipulation
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
@@ -1256,7 +991,7 @@ class MenuBar(ft.Container):
         color_picker = ColorPicker(
             color=paint_settings.get('color', "#000000").split(",", 1)[0], 
             on_color_change=set_color, 
-            scale=.8, 
+            #scale=.8, 
             picker_area_border_radius=ft.BorderRadius.all(4)
         )   
 
@@ -1264,9 +999,10 @@ class MenuBar(ft.Container):
         color_selector = ft.SubmenuButton(
             ft.Icon(ft.Icons.CIRCLE, app.settings.data.get('paint_settings', {}).get('color', ft.Colors.PRIMARY)), 
             tooltip="The color of your brush strokes.",
-            on_close=save_color, expand=True,
-            margin=ft.Margin.only(right=20),
+            on_close=save_color, #expand=True,
+            #margin=ft.Margin.only(right=20),
             width=40,
+            height=40,
             controls=[ft.Column([
                 color_picker,  
                 ft.MenuItemButton(
@@ -1274,21 +1010,116 @@ class MenuBar(ft.Container):
                     on_click=lambda: None,  # Something so its not disabled
                     style=ft.ButtonStyle(
                         shape=ft.RoundedRectangleBorder(radius=4), #mouse_cursor=ft.MouseCursor.CLICK,
-                        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
+                        bgcolor=ft.Colors.SURFACE_CONTAINER
                     )
                 )
             ])],
             style=ft.ButtonStyle(
                 #mouse_cursor=ft.MouseCursor.CLICK,  
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-                shape=ft.RoundedRectangleBorder(radius=4),
+                #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                shape=ft.RoundedRectangleBorder(radius=0),
             ),
             menu_style=ft.MenuStyle(
-                alignment=ft.Alignment.BOTTOM_LEFT,
+                alignment=ft.Alignment.TOP_RIGHT,
                 bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
                 shape=ft.RoundedRectangleBorder(radius=4),
                 padding=ft.Padding.all(0)
             ),
+        )
+        #ft.Icon(ft.Icons.SAVE_ROUNDED, ft.Colors.PRIMARY, scale=0.8),
+
+        def get_color_options() -> list[ft.Control]:
+            nonlocal paint_settings, canvas_settings
+
+            def set_saved_color(e: ft.Event[ft.MenuItemButton]):
+                nonlocal paint_settings
+                color_data = e.control.data
+                paint_settings['color'] = color_data.get('value', "#000000")
+                app.settings.update_data(**{"paint_settings": {"color": color_data.get('value', "#000000")}})
+                color_selector.content = ft.Icon(ft.Icons.CIRCLE, color_data.get('value'))
+                brush_preview.content = build_preview_brush()
+                self.update()
+                update_canvas_tool_preview()
+
+            def delete_color(e: ft.Event[ft.IconButton]):
+                nonlocal canvas_settings
+                idx = e.control.data
+                canvas_settings['saved_colors'].pop(idx)
+                app.settings.update_data(**{"canvas_settings": {"saved_colors": canvas_settings['saved_colors']}})
+                e.control.parent.parent.parent.controls.remove(e.control.parent.parent)
+                e.control.parent.parent.parent.update()
+
+            def save_custom_color(e=None):
+
+                # Saves the color to data and pops the dialog
+                def save_color_name(e=None):
+                    nonlocal paint_settings, canvas_settings
+                    color_name = name_tf.value.strip()
+                    current_color = paint_settings.get('color', "#000000")
+                    canvas_settings['saved_colors'].append({'name': color_name, 'value': current_color})
+                    app.settings.update_data(**{"canvas_settings": {"saved_colors": canvas_settings['saved_colors']}})
+                    color_options_button.controls = get_color_options()
+                    self.update()
+                    self.page.pop_dialog()
+
+            
+
+                name_tf = ft.TextField(label="Color Name", autofocus=True, on_submit=save_color_name, capitalization=ft.TextCapitalization.WORDS)
+                self.page.show_dialog(
+                    ft.AlertDialog(
+                        title="Name Color",
+                        content=name_tf,
+                        actions=[
+                            ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK)),
+                            ft.TextButton("Save", on_click=save_color_name, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
+                        ]
+                    )
+                )
+                
+                pass
+
+            ctrls = [ft.Text("Saved Colors", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, expand=True, margin=ft.Margin.only(left=4))]
+            for idx, color_data in enumerate(canvas_settings.get('saved_colors', [])):
+                ctrls.append(
+                    ft.MenuItemButton(
+                        content=ft.Row([
+                            ft.Text(color_data.get('name', 'Unnamed Color')),
+                            ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, data=idx, tooltip="Delete this saved color", on_click=delete_color),
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN), 
+                        close_on_click=True,
+                        leading=ft.Icon(ft.Icons.CIRCLE, color_data.get('value', "#000000")),
+                        on_click=set_saved_color,
+                        data=color_data
+                    )
+                )
+            ctrls.append(ft.MenuItemButton(
+                "Save current color", True,
+                leading=ft.Icon(ft.Icons.SAVE_ROUNDED, ft.Colors.PRIMARY),
+                on_click=save_custom_color,
+                style=ft.ButtonStyle(
+                    shape=ft.RoundedRectangleBorder(radius=4), #mouse_cursor=ft.MouseCursor.CLICK,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER
+                )
+            ))
+            return ctrls
+
+        color_options_button = ft.SubmenuButton(
+            #build_preview_brush(paint_settings),
+            controls=get_color_options(),
+            content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
+            style=ft.ButtonStyle(
+                #mouse_cursor=ft.MouseCursor.CLICK,  
+                shape=ft.RoundedRectangleBorder(radius=0),
+                padding=ft.Padding.all(0),
+            ),
+            menu_style=ft.MenuStyle(
+                alignment=ft.Alignment.TOP_RIGHT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER, 
+                shape=ft.RoundedRectangleBorder(radius=4),
+                padding=ft.Padding.all(0)
+            ),
+            expand=True,
+            width=30,
         )
 
         # Button to set the control mode to draw mode
@@ -1307,7 +1138,7 @@ class MenuBar(ft.Container):
         brush_selector = ft.SubmenuButton(
             #build_preview_brush(paint_settings),
             controls=get_brush_options(),
-            content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.ON_SURFACE_VARIANT, scale=0.8),
+            content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
             style=ft.ButtonStyle(
                 #mouse_cursor=ft.MouseCursor.CLICK,  
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if app.settings.data.get('canvas_settings', {}).get('current_control_mode', '') == "draw" else None,
@@ -1315,7 +1146,7 @@ class MenuBar(ft.Container):
                 padding=ft.Padding.all(0),
             ),
             menu_style=ft.MenuStyle(
-                alignment=ft.Alignment.BOTTOM_LEFT,
+                alignment=ft.Alignment.TOP_RIGHT,
                 bgcolor=ft.Colors.SURFACE_CONTAINER, 
                 shape=ft.RoundedRectangleBorder(radius=4),
                 padding=ft.Padding.all(0)
@@ -1339,7 +1170,7 @@ class MenuBar(ft.Container):
         # Selector to choose a tool to use on the canvas
         tool_selector = ft.SubmenuButton(
             controls=get_tool_options(),
-            content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.ON_SURFACE_VARIANT, scale=0.8),
+            content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
             style=ft.ButtonStyle(
                 #mouse_cursor=ft.MouseCursor.CLICK,  
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if app.settings.data.get('canvas_settings', {}).get('current_control_mode', '') == "tool" else None,
@@ -1347,7 +1178,7 @@ class MenuBar(ft.Container):
                 padding=ft.Padding.all(0),
             ),
             menu_style=ft.MenuStyle(
-                alignment=ft.Alignment.BOTTOM_LEFT,
+                alignment=ft.Alignment.TOP_RIGHT,
                 bgcolor=ft.Colors.SURFACE_CONTAINER, 
                 shape=ft.RoundedRectangleBorder(radius=4),
                 padding=ft.Padding.all(0)
@@ -1358,80 +1189,87 @@ class MenuBar(ft.Container):
 
         text_preview = ft.Text("Preview text", selectable=True, style=ft.TextStyle(**text_settings))
 
+
+        set_text_mode_button = ft.IconButton(
+            ft.Icons.TEXT_FIELDS if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "text" else ft.Icons.TEXT_FIELDS_OUTLINED,
+            ft.Colors.PRIMARY,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_control_mode', '') == "text" else None,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0)),
+            tooltip="Set the active control to text mode.",
+            data="text", on_click=set_text_mode
+        )
+
         text_settings_button = ft.SubmenuButton(
             controls=get_text_options(),
-            content=ft.Icon(ft.Icons.TEXT_FIELDS, ft.Colors.PRIMARY),
+            content=ft.Icon(
+                ft.Icons.ARROW_DROP_DOWN, 
+                ft.Colors.PRIMARY,
+                scale=0.8
+            ),
             style=ft.ButtonStyle(
                 #mouse_cursor=ft.MouseCursor.CLICK,  
-                shape=ft.RoundedRectangleBorder(radius=4),
+                shape=ft.RoundedRectangleBorder(radius=0),
                 padding=ft.Padding.all(0),
-                #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_control_mode', '') == "text" else None
             ),
             menu_style=ft.MenuStyle(
-                alignment=ft.Alignment.BOTTOM_LEFT,
+                alignment=ft.Alignment.TOP_RIGHT,
                 bgcolor=ft.Colors.SURFACE_CONTAINER, 
                 shape=ft.RoundedRectangleBorder(radius=4),
                 padding=ft.Padding.all(0)
             ),
             expand=True,
-            width=40,
+            width=30,
         )
 
         
-        # Strength path smoothing effect
-        stroke_smoothing_strength_slider = ft.Slider(
-            min=1, max=10,  expand=True,
-            divisions=10, value=canvas_settings.get('stroke_smoothing_strength', 1),
-            label="Strength: {value}",
-            on_change_end=update_paint_stroke_smoothing_strength,
-            tooltip="The strength of the stroke smoothing effect. Higher values will make strokes appear smoother and more natural",
-        )
 
-        # Toggles path smoothing
-        brush_smoothing_switch =  ft.Switch(
-            True, "Brush Smoothing", on_change=update_paint_brush_smoothing,
-            label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=12),
-            value=canvas_settings.get('use_brush_smoothing', True),
-            tooltip="Makes the brushes paint color appear consistant for an entire stroke, especially at lower opacity values.",
-        )
-
-       
-
-        
-          
-
-# TODO: 
-# Add fonts and shadow options
-# Font outline colors
-# Build in dialoge bubbles shapes for dialogue (up-left, up-right, down-left, down-right, middle-up, middle-down). See canvas example on flet docs, they have one
-# -- Both round and normal for above dialogue boxes
-        
-
-        # Create our menu bar with submenu items
-        drawing_controls = ft.MenuBar(
-            #expand=True,
-            visible=self.page.platform.is_mobile(),
-            style=ft.MenuStyle(     # Styling our menubar
-                alignment=ft.Alignment.CENTER,
-                bgcolor=ft.Colors.TRANSPARENT,
-                shadow_color=ft.Colors.TRANSPARENT,
+        drawing_controls = [
+            ft.MenuBar(
+                [
+                    ft.Container(
+                        color_selector,
+                        border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
+                    ),
+                    ft.Container(
+                        color_options_button,    
+                        border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
+                        #margin=ft.Margin.only(right=20)
+                    ),  # Button to save current color to settings
+                ],
+                style=ft.MenuStyle(
+                    alignment=ft.Alignment.CENTER_LEFT,
+                    bgcolor=ft.Colors.TRANSPARENT,
+                    shadow_color=ft.Colors.TRANSPARENT,
+                    padding=ft.Padding.all(0)
+                ),
             ),
-            controls=[  # Segment button of draw mode, brush options, and dropdown of saved brushes with option to save current
-                
-                color_selector,   # Color selector with color picker and option to save color to settings
+            
+            ft.MenuBar(
+                [
+                    ft.Container(
+                        set_draw_mode_button,
+                        border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
+                    ),
 
-
-                ft.Container(
-                    set_draw_mode_button,
-                    border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
+                    ft.Container(
+                        brush_selector,    
+                        border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
+                        #margin=ft.Margin.only(right=20)
+                    ),
+                ],
+                style=ft.MenuStyle(
+                    alignment=ft.Alignment.CENTER_LEFT,
+                    bgcolor=ft.Colors.TRANSPARENT,
+                    shadow_color=ft.Colors.TRANSPARENT,
+                    padding=ft.Padding.all(0)
                 ),
+            ),
 
-                ft.Container(
-                    brush_selector,    
-                    border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
-                    margin=ft.Margin.only(right=20)
-                ),
-                
+            ft.MenuBar(
+                [
+
+            
                 ft.Container(
                     set_tool_mode_button,
                     border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
@@ -1439,35 +1277,79 @@ class MenuBar(ft.Container):
                 ft.Container(
                     tool_selector,     
                     border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
-                    margin=ft.Margin.only(right=20)
+                    #margin=ft.Margin.only(right=20)
                 ),
+                ],
+                style=ft.MenuStyle(
+                    alignment=ft.Alignment.CENTER_LEFT,
+                    bgcolor=ft.Colors.TRANSPARENT,
+                    shadow_color=ft.Colors.TRANSPARENT,
+                    padding=ft.Padding.all(0)
+                ),
+            ),
 
-                ft.MenuBar([text_settings_button], style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0))),
-
-                
-
-                # Text editor
-            ], 
-        )
-
-        self.content = ft.Row(
-            spacing=0,
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            controls=[
-                file_options,    # File options button
-
-                drawing_controls,   # Main drawing controls
-
-                ft.Row([        # Row that has alpha text, info button, and settings button
-                    ft.Text(
-                        "Alpha", color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD, 
-                        tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nCheck out Settings -> Resources for a list of planned features and known issues. \nJoin the Discord to suggest your features and report bugs."
-                    ),  # Feedback button
-                    ft.Icon(
-                        ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, 
-                        tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nCheck out Settings -> Resources for a list of planned features and known issues. \nJoin the Discord to suggest your features and report bugs."
+            ft.MenuBar(
+                [
+                    ft.Container(
+                        set_text_mode_button,
+                        border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
                     ),
-                    ft.IconButton(ft.Icons.SETTINGS_OUTLINED, "primary", on_click=_settings_clicked, mouse_cursor=ft.MouseCursor.CLICK),   # Settings button
-                ], tight=True, spacing=0)
-            ]
+                    ft.Container(
+                        text_settings_button,     
+                        border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
+                        #margin=ft.Margin.only(right=20)
+                    ),
+                ],
+                style=ft.MenuStyle(
+                alignment=ft.Alignment.CENTER_LEFT,
+                bgcolor=ft.Colors.TRANSPARENT,
+                shadow_color=ft.Colors.TRANSPARENT,
+                padding=ft.Padding.all(0)
+            ),
+            ),
+        ]
+        
+        # If we're collapsed...
+        if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False):
+
+            self.width = 100     # Make the rail less wide
+            
+            # Set our collapsed icon buttons icon depending on collapsed state
+            collapse_icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED
+
+        # If not collapsed, make rail normal size and set the correct icon
+        else:
+            self.width = 120
+            collapse_icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED
+
+        self.width = 92
+
+
+        # Set our collapsed icon button using our defined icon above
+        self.collapse_icon_button = ft.IconButton(
+            collapse_icon, ft.Colors.PRIMARY,
+            on_click=self.toggle_collapse_rail,
         )
+
+        self.rail_label = ft.Text(
+            "Canvas\nSettings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, 
+            text_align=ft.TextAlign.CENTER,
+            #opacity=1 if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False) == False else 0
+        )
+
+        # Sets our content as a column. This will fill our width and hold...
+        # Either our list of workspaces, or a reorderable list of our workspaces
+        self.content = ft.Column(
+            [ft.Row([self.rail_label], alignment=ft.MainAxisAlignment.CENTER)] + 
+            drawing_controls, 
+            #[ft.Container(expand=True), ft.Row([self.collapse_icon_button], alignment=ft.MainAxisAlignment.END)],
+            #horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=20,
+        )
+
+        
+        self.visible = not self.page.platform.is_mobile()
+        self.visible = app.settings.data.get('story', {}).get('hide_canvas_rail', False) == False  
+
+
+    

@@ -42,6 +42,11 @@ class ActiveRail(ft.Container):
     def reload_rail(self, update: bool=True):
         ''' Reloads the active rail based on the selected workspace in workspaces_rail '''
 
+        self.content = ContentRail(self.story)
+        if update:
+            self.update()
+        return
+
         # Grab our selected rail and re-set our content to a new one of those
         selected_rail = self.story.data.get('selected_rail', "content")
         match selected_rail:
