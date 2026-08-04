@@ -390,9 +390,7 @@ class MenuBar(ft.Container):
             tool_selector.style.bgcolor = None
             self.update()
 
-        # Updates the brush preview canvas with the current brush settings upon changes
-        def update_brush_preview():
-            set_draw_mode_button.content = build_preview_brush(paint_settings)
+        
 
         # Build a small preview of current or passed in brush settings to show in the brush selector
         def build_preview_brush(brush_settings: dict=None) -> ft.Control:
@@ -405,7 +403,7 @@ class MenuBar(ft.Container):
                 brush_settings = brush_settings.copy()
 
             # Create our preview canvas. Paint like w=100, and h=30. Extra height is justp adding
-            preview_canvas = cv.Canvas(width=105, height=35)
+            preview_canvas = cv.Canvas(width=120, height=50)
 
             # Set max values of paint so that it fits normally on our small preview
             if brush_settings.get('stroke_width', 3) > 6:
@@ -414,12 +412,12 @@ class MenuBar(ft.Container):
                 brush_settings['blur_image'] = 6
             brush_settings['blend_mode'] = None     # Turn off blend mode
 
-            # Paint the stroke with safe paint settings
+            # Paint the stroke with safe paint settings, leaving 10px padding on all sides
             preview_canvas.shapes = [
                 cv.Path([
-                    cv.Path.MoveTo(5, 25),
-                    cv.Path.CubicTo(5, 25, 10, 16, 50, 15),
-                    cv.Path.CubicTo(50, 15, 90, 14, 100, 5)
+                    cv.Path.MoveTo(10, 40),     # Bottom Left
+                    cv.Path.CubicTo(10, 40, 35, 20, 60, 25),    # Bottom left -> Middle
+                    cv.Path.CubicTo(60, 25, 80, 30, 110, 10)    # Middle -> Top Right
                 ], brush_settings)
             ]
             return preview_canvas   # Return the canvas
@@ -1172,6 +1170,9 @@ class MenuBar(ft.Container):
                 "Done", close_on_click=True, on_click=lambda: None,
                 style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))))
             return ctrls
+
+        def get_text_options() -> list[ft.Control]:
+            return
             
 
 
@@ -1189,24 +1190,24 @@ class MenuBar(ft.Container):
 
         # Create our color selector button
         color_selector = ft.SubmenuButton(
-            #"Color",
             ft.Icon(ft.Icons.CIRCLE, app.settings.data.get('paint_settings', {}).get('color', ft.Colors.PRIMARY)), 
             tooltip="The color of your brush strokes.",
             on_close=save_color, expand=True,
             margin=ft.Margin.only(right=20),
+            width=40,
             controls=[ft.Column([
                 color_picker,  
                 ft.MenuItemButton(
                     "Set Color", 
                     on_click=lambda: None,  # Something so its not disabled
                     style=ft.ButtonStyle(
-                        shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK,
+                        shape=ft.RoundedRectangleBorder(radius=4), #mouse_cursor=ft.MouseCursor.CLICK,
                         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
                     )
                 )
             ])],
             style=ft.ButtonStyle(
-                mouse_cursor=ft.MouseCursor.CLICK,  
+                #mouse_cursor=ft.MouseCursor.CLICK,  
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 shape=ft.RoundedRectangleBorder(radius=4),
             ),
@@ -1223,7 +1224,7 @@ class MenuBar(ft.Container):
             ft.Icons.BRUSH_ROUNDED if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "draw" else ft.Icons.BRUSH_OUTLINED,
             ft.Colors.PRIMARY,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "draw" else None,
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=0)),
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0)),
             tooltip="Set the active control to the last used brush",
             data="draw", on_click=set_draw_mode
         )
@@ -1234,7 +1235,7 @@ class MenuBar(ft.Container):
             controls=get_brush_options(),
             content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.ON_SURFACE_VARIANT, scale=0.8),
             style=ft.ButtonStyle(
-                mouse_cursor=ft.MouseCursor.CLICK,  
+                #mouse_cursor=ft.MouseCursor.CLICK,  
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if app.settings.data.get('canvas_settings', {}).get('current_control_mode', '') == "draw" else None,
                 shape=ft.RoundedRectangleBorder(radius=0),
                 padding=ft.Padding.all(0),
@@ -1256,7 +1257,7 @@ class MenuBar(ft.Container):
             update_tool_icon(),
             ft.Colors.PRIMARY,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "tool" else None,
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=0)),
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0)),
             tooltip="Set the active control to the last used tool",
             data="tool", on_click=set_tool_mode
         )
@@ -1266,19 +1267,39 @@ class MenuBar(ft.Container):
             controls=get_tool_options(),
             content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.ON_SURFACE_VARIANT, scale=0.8),
             style=ft.ButtonStyle(
-                mouse_cursor=ft.MouseCursor.CLICK,  
+                #mouse_cursor=ft.MouseCursor.CLICK,  
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if app.settings.data.get('canvas_settings', {}).get('current_control_mode', '') == "tool" else None,
                 shape=ft.RoundedRectangleBorder(radius=0),
                 padding=ft.Padding.all(0),
             ),
             menu_style=ft.MenuStyle(
-                alignment=ft.Alignment.TOP_RIGHT,
+                alignment=ft.Alignment.BOTTOM_LEFT,
                 bgcolor=ft.Colors.SURFACE_CONTAINER, 
                 shape=ft.RoundedRectangleBorder(radius=4),
                 padding=ft.Padding.all(0)
             ),
             expand=True,
             width=30
+        )
+
+        text_settings_button = ft.SubmenuButton(
+            #build_preview_brush(paint_settings),
+            controls=get_text_options(),
+            content=ft.Icon(ft.Icons.TEXT_FIELDS, ft.Colors.PRIMARY),
+            style=ft.ButtonStyle(
+                #mouse_cursor=ft.MouseCursor.CLICK,  
+                shape=ft.RoundedRectangleBorder(radius=4),
+                padding=ft.Padding.all(0),
+                #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
+            ),
+            menu_style=ft.MenuStyle(
+                alignment=ft.Alignment.BOTTOM_LEFT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER, 
+                shape=ft.RoundedRectangleBorder(radius=4),
+                padding=ft.Padding.all(0)
+            ),
+            expand=True,
+            width=40,
         )
 
 
@@ -1326,13 +1347,13 @@ class MenuBar(ft.Container):
                     "Set Color", 
                     on_click=lambda: None,  # Something so its not disabled
                     style=ft.ButtonStyle(
-                        shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK,
+                        shape=ft.RoundedRectangleBorder(radius=4),
                         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
                     )
                 )
             ])],
             style=ft.ButtonStyle(
-                mouse_cursor=ft.MouseCursor.CLICK,  
+                #mouse_cursor=ft.MouseCursor.CLICK,  
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 shape=ft.RoundedRectangleBorder(radius=4),
             ),
@@ -1362,13 +1383,13 @@ class MenuBar(ft.Container):
                     "Set Color", 
                     on_click=lambda: None,  # Something so its not disabled
                     style=ft.ButtonStyle(
-                        shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK,
+                        shape=ft.RoundedRectangleBorder(radius=4), #mouse_cursor=ft.MouseCursor.CLICK,
                         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
                     )
                 )
             ])],
             style=ft.ButtonStyle(
-                mouse_cursor=ft.MouseCursor.CLICK,  
+                #mouse_cursor=ft.MouseCursor.CLICK,  
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 shape=ft.RoundedRectangleBorder(radius=4),
             ),
@@ -1388,26 +1409,26 @@ class MenuBar(ft.Container):
             [
                 ft.MenuItemButton(
                     "None", on_click=change_text_decoration,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4),),
                 ),
                 ft.MenuItemButton(
                     "Underline", on_click=change_text_decoration,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), ),
                     
                 ),
                 ft.MenuItemButton(
                     "Overline", on_click=change_text_decoration,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), ),
                 ),
                 ft.MenuItemButton(
                     "Line Through", on_click=change_text_decoration,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), ),
                 ),     
             ],
             trailing=ft.Icon(set_text_decoration_icon(), canvas_settings.get('text_shape_color', ft.Colors.ON_SURFACE)),
             tooltip="The text decoration for text shapes",
             style=ft.ButtonStyle(
-                mouse_cursor=ft.MouseCursor.CLICK,  
+                #mouse_cursor=ft.MouseCursor.CLICK,  
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 shape=ft.RoundedRectangleBorder(radius=4),
             ),
@@ -1577,7 +1598,7 @@ class MenuBar(ft.Container):
                 ),
 
                 ft.Container(
-                    brush_selector,     # TODO: Put brush preview in brush selector
+                    brush_selector,    
                     border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
                     margin=ft.Margin.only(right=20)
                 ),
@@ -1591,6 +1612,8 @@ class MenuBar(ft.Container):
                     border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
                     margin=ft.Margin.only(right=20)
                 ),
+
+                ft.MenuBar([text_settings_button], style=ft.MenuStyle(bgcolor="transparent", shadow_color="transparent", padding=ft.Padding.all(0))),
 
                 
 
