@@ -170,6 +170,8 @@ class Canvas(Widget):
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     def set_mouse_cursor(self, update: bool=True):
 
+        # TODO: Only use custom on drawing tools and erase. Tools and text should use standard even if the option is set
+
         # For setting the standard cursor
         def set_standard_cursor():
             # If using tool mode
@@ -178,6 +180,8 @@ class Canvas(Widget):
                     standard_mouse_cursor = ft.MouseCursor.PRECISE
                 else:
                     standard_mouse_cursor = ft.MouseCursor.CLICK     # Other tools get responsive click cursor
+            elif control_mode == "text":
+                standard_mouse_cursor = ft.MouseCursor.TEXT
             # Draw mode
             else:
                 standard_mouse_cursor = ft.MouseCursor.PRECISE
@@ -332,6 +336,8 @@ class Canvas(Widget):
         # Set our paint settings in case we need to change them
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
         canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
+
+        # TODO: Fix text tool since it is now its own control mode
 
         # Check if we're in tool mode, and what tool we're using
         if canvas_settings.get('current_control_mode', "") == "tool":

@@ -109,15 +109,15 @@ class CanvasRail(ft.Container):
         # Updates the mouse cursor or all visible canvases based on updated tool mode
         def set_canvas_mouse_cursor():
             if self.story is None:
+                print("Story none")
                 return
             for widget in self.story.workspace.tab_view.controls:
                 if not widget.data: # Protect empty
                     return
                 if widget.data.get('tag') == "canvas":
                     if widget.data.get('visible', True):
-                        if widget.state.manipulating_shape == True:
-                            widget.set_mouse_cursor()
-                            break
+                        widget.set_mouse_cursor()
+                        break
 
         # Checks all our widgets. If any of them are manipulating a tool, we paint it on the canvas if switching from tool to draw mode
         def update_canvas_tool_preview():
@@ -526,26 +526,7 @@ class CanvasRail(ft.Container):
             self.update()
             set_canvas_mouse_cursor()
 
-        # Called when changing paint width
-        def update_paint_width(e: ft.Event[ft.Slider]):
-            nonlocal paint_settings
-            paint_settings.update({"stroke_width": int(e.control.value)})
-            app.settings.update_data(**{"paint_settings": paint_settings})
-            
-            brush_preview.content = build_preview_brush()
-            self.update()
-            set_canvas_mouse_cursor()
-            update_canvas_tool_preview()
-
-        # Called when changing paint width
-        def update_paint_blur(e: ft.Event[ft.Slider]):
-            nonlocal paint_settings
-            paint_settings.update({"blur_image": int(e.control.value)})
-            app.settings.update_data(**{"paint_settings": paint_settings})
-           
-            brush_preview.content = build_preview_brush()
-            self.update()
-            update_canvas_tool_preview()
+        
 
         # Add fill or not to our style based on teh switch state
         def update_paint_fill(e: ft.Event[ft.Switch]):
