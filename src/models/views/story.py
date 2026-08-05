@@ -788,8 +788,8 @@ class Story(ft.View):
             self.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
 
             # Clamp rail
-            if self.active_rail.width <= 0:
-                self.active_rail.width = 0
+            if self.active_rail.width <= 120:
+                self.active_rail.width = 120
             elif self.active_rail.width > 600:
                 self.active_rail.width = 600
             self.active_rail.update()     

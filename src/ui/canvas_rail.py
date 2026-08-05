@@ -911,9 +911,14 @@ class CanvasRail(ft.Container):
                 on_select=update_text_setting,
                 data="font_family",
                 options=[
-                    ft.DropdownOption("Arial", "Arial", style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
-                ]
+                    ft.DropdownOption(
+                        key, key, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                    ) for key, value in self.page.fonts.items()
+                    
+                ] 
             )
+
+            # TODO: Have value of DD (switching to dif control) reflect the selected font
 
 
             bold_switch = Switch(
@@ -1341,18 +1346,22 @@ class CanvasRail(ft.Container):
             #opacity=1 if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False) == False else 0
         )
 
+        
+
         # Sets our content as a column. This will fill our width and hold...
         # Either our list of workspaces, or a reorderable list of our workspaces
         self.content = ft.Column(
             [ft.Row([self.rail_label], alignment=ft.MainAxisAlignment.CENTER)] + 
-            drawing_controls, 
+            drawing_controls,
             #[ft.Container(expand=True), ft.Row([self.collapse_icon_button], alignment=ft.MainAxisAlignment.END)],
             #horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=20,
         )
 
-        
+        # If mobile, this will be shown on menubar instead
         self.visible = not self.page.platform.is_mobile()
+
+        # If the user has set to hide the canvas rail, then hide it on startup
         self.visible = app.settings.data.get('story', {}).get('hide_canvas_rail', False) == False  
 
 
