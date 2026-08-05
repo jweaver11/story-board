@@ -909,9 +909,14 @@ class CanvasRail(ft.Container):
                 on_select=update_text_setting,
                 data="font_family",
                 options=[
-                    ft.DropdownOption("Arial", "Arial", style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),),
-                ]
+                    ft.DropdownOption(
+                        key, key, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+                    ) for key, value in self.page.fonts.items()
+                    
+                ] 
             )
+
+            # TODO: Have value of DD (switching to dif control) reflect the selected font
 
 
             bold_switch = Switch(

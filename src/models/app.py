@@ -121,6 +121,8 @@ class App:
             "Roboto": "/fonts/Roboto-VariableFont_wght.ttf",
         }        
 
+        # TODO: Load custom fonts here from FONTS DIRECTORY
+
 
       # Called on app startup in main
     async def load_previous_story(self, page: ft.Page):
