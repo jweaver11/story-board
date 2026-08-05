@@ -710,21 +710,63 @@ class CanvasRail(ft.Container):
                 style=ft.ButtonStyle( #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                     shape=ft.RoundedRectangleBorder(radius=4), padding=ft.Padding.all(0)),
             )  
-            # Width/Size of brush
-            width_slider = ft.Slider(
-                min=1, max=100, tooltip="The size of your brush strokes.", expand=True,
-                divisions=99, value=paint_settings.get('stroke_width', 5),
-                label="Brush Size: {value}px",
-                on_change_end=update_paint_width, mouse_cursor=None,
+            
+
+            def update_tf(e: ft.Event[ft.TextField]):
+                nonlocal paint_settings
+                # If less than 0, reset to the value it was
+                if not e.control.value.strip():
+                    e.control.value = str(text_settings.get(e.control.data, 10))
+                    e.control.update()
+                    return
+
+                # Make sure value within bounds
+                clamp_bounds = 50 if e.control.data == "blur_image" else 100
+                value = int(max(min(int(e.control.value), clamp_bounds), 0))
+                e.control.value = str(value)    # Reupdate clamped value
+                e.control.update()
+
+                key = e.control.data
+                paint_settings.update({key: value})
+                app.settings.update_data(**{"paint_settings": paint_settings})
+
+                brush_preview.content = build_preview_brush()
+
+                self.update()
+                set_canvas_mouse_cursor()
+                update_canvas_tool_preview()
+                
+
+
+            # Increase the value (clamped) and pass the event along for settings
+            def increate_tf_value(e: ft.Event[TextField]):
+                current_val = int(e.control.parent.parent.value)
+                clamp_bounds = 50 if e.control.parent.parent.data == "blur_image" else 100
+                new_val = min(current_val + 1, clamp_bounds)
+                e.control.parent.parent.value = str(new_val)
+                update_tf(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
+
+            # Decrease the value (clamped) and pass the event along for settings
+            def decrease_tf_value(e: ft.Event[TextField]):
+                current_val = int(e.control.parent.parent.value)
+                new_val = max(current_val - 1, 0)
+                e.control.parent.parent.value = str(new_val)
+                update_tf(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
+
+            
+            width_tf = TextField(
+                label="Brush Size", value=str(paint_settings.get('stroke_width', 5)), 
+                on_blur=update_tf, data="stroke_width", input_filter=ft.NumbersOnlyInputFilter(),
+                suffix_icon=UpDownButtons(increate_tf_value, decrease_tf_value),
             )
 
-            # Blur strength of the brush strokes
-            blur_slider = ft.Slider(
-                min=0, max=50,  tooltip="The blur effect of your brush strokes.", expand=True,
-                divisions=50, value=paint_settings.get('blur_image', 0),
-                label="Stroke Blur: {value}",  
-                on_change_end=update_paint_blur, mouse_cursor=None,
+            blur_tf = TextField(
+                label="Stroke Blur", value=str(paint_settings.get('blur_image', 0)),
+                on_blur=update_tf, data="blur_image", input_filter=ft.NumbersOnlyInputFilter(),
+                suffix_icon=UpDownButtons(increate_tf_value, decrease_tf_value),
             )
+
+            
 
             # Whether to fill strokes and shapes or not
             fill_switch = Switch(
@@ -771,7 +813,7 @@ class CanvasRail(ft.Container):
             )
     
             
-            blend_mode_dropdown = ft.RadioGroup(
+            blend_mode_rg = ft.RadioGroup(
                 content=ExpansionTile(
                     title="Blend Mode",
                     tooltip="The blend effects applied to your brush strokes.",
@@ -796,17 +838,20 @@ class CanvasRail(ft.Container):
                 ], margin=ft.Margin.only(left=8)),
 
                 # Slider about the width of the current brush strokes
-                ft.Row([ft.Text("Size", color=ft.Colors.ON_SURFACE_VARIANT, ), width_slider], spacing=0, tooltip="Size of your strokes", margin=ft.Margin.only(left=8)),      # Size slider
+                #ft.Row([ft.Text("Size", color=ft.Colors.ON_SURFACE_VARIANT, ), width_slider], spacing=0, tooltip="Size of your strokes", margin=ft.Margin.only(left=8)),      # Size slider
 
                 # Slider about the blur of the current brush strokes
-                ft.Row([ft.Text("Blur", color=ft.Colors.ON_SURFACE_VARIANT, ), blur_slider], spacing=0, margin=ft.Margin.only(left=8)),
+                #ft.Row([ft.Text("Blur", color=ft.Colors.ON_SURFACE_VARIANT, ), blur_slider], spacing=0, margin=ft.Margin.only(left=8)),
 
                 fill_switch, 
                 anti_alias_switch,
 
+                width_tf,
+                blur_tf,
+
                 stroke_cap_rg,
                 stroke_join_rg,
-                blend_mode_dropdown,
+                blend_mode_rg,
 
                 ft.Divider(),
 
@@ -885,8 +930,6 @@ class CanvasRail(ft.Container):
                     value = int(max(min(int(e.control.value), 128), 0))
                     e.control.value = str(value)    # Reupdate clamped value
                     e.control.update()
-                    print("After new value: ", value)
-                    
 
                 else:
                     return
@@ -894,7 +937,6 @@ class CanvasRail(ft.Container):
                 key = e.control.data
                 text_settings.update(**{key: value})
                 app.settings.update_data(**{"text_settings": text_settings})
-                print("Updated: ", key, value)
 
                 text_preview.style = ft.TextStyle(**text_settings)
                 text_preview.update()
