@@ -66,7 +66,7 @@ class CanvasRail(ft.Container):
                 self.collapsed_shape = ft.RoundedRectangleBorder(radius=4)
                 self.title_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
                 self.dense=True
-                self.margin=ft.Margin.only(top=8)
+                self.margin=ft.Margin.only(top=8, left=4, right=4)
 
         class TextField(ft.TextField):
             def __init__(self, *args, **kwargs):
@@ -210,6 +210,7 @@ class CanvasRail(ft.Container):
             app.settings.update_data(**{"canvas_settings": canvas_settings, "paint_settings": brush_settings})
             
             brush_preview.content = build_preview_brush()
+            brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
             set_draw_mode()
             self.update()
             set_canvas_mouse_cursor()
@@ -667,8 +668,8 @@ class CanvasRail(ft.Container):
         # Updates the blend mode of the current paint settings
         def update_paint_blend_mode(e: ft.Event[ft.RadioGroup]):
             nonlocal paint_settings
-            mode = e.control.data
-            paint_settings.update({"blend_mode": mode})
+            mode = e.control.value
+            paint_settings.update(**{"blend_mode": mode})
             app.settings.update_data(**{"paint_settings": paint_settings})
             self.update()
             update_canvas_tool_preview()
@@ -755,19 +756,18 @@ class CanvasRail(ft.Container):
 
             
             width_tf = TextField(
-                label="Brush Size", value=str(paint_settings.get('stroke_width', 5)), 
+                label="Size", value=str(paint_settings.get('stroke_width', 5)), 
                 on_blur=update_tf, data="stroke_width", input_filter=ft.NumbersOnlyInputFilter(),
                 suffix_icon=UpDownButtons(increate_tf_value, decrease_tf_value),
             )
 
             blur_tf = TextField(
-                label="Stroke Blur", value=str(paint_settings.get('blur_image', 0)),
+                label="Blur Strength", value=str(paint_settings.get('blur_image', 0)),
                 on_blur=update_tf, data="blur_image", input_filter=ft.NumbersOnlyInputFilter(),
                 suffix_icon=UpDownButtons(increate_tf_value, decrease_tf_value),
             )
 
             
-
             # Whether to fill strokes and shapes or not
             fill_switch = Switch(
                 label="Fill Paint", on_change=update_paint_fill,
@@ -820,7 +820,7 @@ class CanvasRail(ft.Container):
                     leading=ft.Icon(ft.Icons.LENS_BLUR, ft.Colors.PRIMARY),
                     controls=get_blend_mode_options()
                 ),
-                value=paint_settings.get('stroke_join', 'miter').capitalize(),
+                value=paint_settings.get('blend_mode', 'src_over'),
                 on_change=update_paint_blend_mode,
             )
 
