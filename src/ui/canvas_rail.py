@@ -3,7 +3,7 @@ This object is stored in app.all_workspaces_rail.
 Handles new workspace selections, re-ordering, collapsing, and expanding the rail. '''
 
 import flet as ft
-from flet_color_pickers import ColorPicker
+from flet_color_pickers import ColorLabelType, ColorPicker, PaletteType
 import math
 import flet.canvas as cv
 from utils.safe_string_checker import return_safe_name
@@ -114,9 +114,10 @@ class CanvasRail(ft.Container):
                             widget.update_tool_preview()
                             break
 
-        # Set the color pickers color upon change
+        # Set the color pickers color upon change, so that saving it goes to right spot
         def set_color(e: ft.Event[ColorPicker]):
-            color_picker.color = e.data
+            e.control.color = e.data
+            
 
         # Saves our color to data and updates the brush selector
         def save_color(e=None):
@@ -913,15 +914,47 @@ class CanvasRail(ft.Container):
             # Update text foreground settings
             def update_text_foreground_setting(e: ft.Event[ft.TextField | ft.Dropdown | ft.Slider | ft.Switch]):
                 nonlocal text_settings
+
+            def save_text_color(e: ft.Event[ft.SubmenuButton]):
+                nonlocal text_color_picker, text_color_selector
+                color = text_color_picker.color
+                text_settings.update({"color": color})
+                app.settings.update_data(**{"text_settings": text_settings})
+                text_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
+                self.update()
+                update_canvas_tool_preview()
+                text_preview.style = ft.TextStyle(**text_settings)
+                text_preview.update()
+
+            def save_text_bg_color(e: ft.Event[ft.SubmenuButton]):
+                nonlocal text_bg_color_picker, text_bg_color_selector
+                color = text_bg_color_picker.color
+                text_settings.update({"bgcolor": color})
+                app.settings.update_data(**{"text_settings": text_settings})
+                text_bg_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
+                self.update()
+                update_canvas_tool_preview()
+                text_preview.style = ft.TextStyle(**text_settings)
+                text_preview.update()
+
+            # Increase the value (clamped) and pass the event along for settings
+            def increate_tf_value(e: ft.Event[TextField]):
+                current_val = int(e.control.parent.parent.value)
+                new_val = min(current_val + 1, 128)
+                e.control.parent.parent.value = str(new_val)
+                update_text_setting(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
+
+            # Decrease the value (clamped) and pass the event along for settings
+            def decrease_tf_value(e: ft.Event[TextField]):
+                current_val = int(e.control.parent.parent.value)
+                new_val = max(current_val - 1, 0)
+                e.control.parent.parent.value = str(new_val)
+                update_text_setting(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
                 
 
             # TODO: Finish rest of this
 
             ft.TextStyle()
-
-            # Have these load color picker and saved colors
-            # color - color picker
-            # bgcolor - color picker
             
             # decoration options - exptile with
                 # decoration - dropdown
@@ -964,19 +997,7 @@ class CanvasRail(ft.Container):
                 data="italic",
             )
 
-            # Increase the value (clamped) and pass the event along for settings
-            def increate_tf_value(e: ft.Event[TextField]):
-                current_val = int(e.control.parent.parent.value)
-                new_val = min(current_val + 1, 128)
-                e.control.parent.parent.value = str(new_val)
-                update_text_setting(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
-
-            # Decrease the value (clamped) and pass the event along for settings
-            def decrease_tf_value(e: ft.Event[TextField]):
-                current_val = int(e.control.parent.parent.value)
-                new_val = max(current_val - 1, 0)
-                e.control.parent.parent.value = str(new_val)
-                update_text_setting(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
+            
 
             size_tf = TextField(
                 value=str(text_settings.get('size', 14)),
@@ -1011,6 +1032,113 @@ class CanvasRail(ft.Container):
                 on_change=update_text_setting,
                 data="font_family"
             )
+
+              
+
+            
+
+            # Color picker for changing brush color
+            text_color_picker = ColorPicker(
+                color=text_settings.get('color', None),
+                on_color_change=set_color, 
+                picker_area_border_radius=ft.BorderRadius.all(4)
+            ) 
+    
+            # Create our color selector button
+            text_color_selector = ft.SubmenuButton(
+                ft.Icon(ft.Icons.CIRCLE, text_settings.get('color', ft.Colors.PRIMARY)), 
+                tooltip="The color of your text",
+                on_close=save_text_color, #expand=True,
+                width=40,
+                height=40,
+                controls=[ft.Column([
+                    text_color_picker,  
+                    ft.MenuItemButton(
+                        "Set Color", 
+                        on_click=lambda: None,  # Something so its not disabled
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=4), #mouse_cursor=ft.MouseCursor.CLICK,
+                            bgcolor=ft.Colors.SURFACE_CONTAINER
+                        )
+                    )
+                ])],
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0)),
+                menu_style=ft.MenuStyle(
+                    alignment=ft.Alignment.TOP_RIGHT,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                    shape=ft.RoundedRectangleBorder(radius=4),
+                    padding=ft.Padding.all(0)
+                ),
+            )
+
+            # Color picker for changing brush color
+            text_bg_color_picker = ColorPicker(
+                color=text_settings.get('bgcolor', None),
+                on_color_change=set_color, 
+                picker_area_border_radius=ft.BorderRadius.all(4)
+            )   
+    
+            # Create our color selector button
+            text_bg_color_selector = ft.SubmenuButton(
+                ft.Icon(ft.Icons.CIRCLE, text_settings.get('bgcolor', ft.Colors.PRIMARY)), 
+                tooltip="The color of your background behind your text.",
+                on_close=save_text_bg_color, #expand=True,
+                width=40,
+                height=40,
+                controls=[ft.Column([
+                    text_bg_color_picker,  
+                    ft.MenuItemButton(
+                        "Set Color", 
+                        on_click=lambda: None,  # Something so its not disabled
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=4), #mouse_cursor=ft.MouseCursor.CLICK,
+                            bgcolor=ft.Colors.SURFACE_CONTAINER
+                        )
+                    )
+                ])],
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0),),
+                menu_style=ft.MenuStyle(
+                    alignment=ft.Alignment.TOP_RIGHT,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                    shape=ft.RoundedRectangleBorder(radius=4),
+                    padding=ft.Padding.all(0)
+                ),
+            )
+
+            text_color_options_button = ft.SubmenuButton(
+                controls=get_color_options(),
+                content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
+                style=ft.ButtonStyle(
+                    #mouse_cursor=ft.MouseCursor.CLICK,  
+                    shape=ft.RoundedRectangleBorder(radius=0),
+                    padding=ft.Padding.all(0),
+                ),
+                menu_style=ft.MenuStyle(
+                    alignment=ft.Alignment.TOP_RIGHT,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER, 
+                    shape=ft.RoundedRectangleBorder(radius=4),
+                    padding=ft.Padding.all(0)
+                ),
+                expand=True,
+                width=30,
+            )  
+
+            text_bg_color_options_button = ft.SubmenuButton(
+                controls=get_color_options(),
+                content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
+                style=ft.ButtonStyle(
+                    shape=ft.RoundedRectangleBorder(radius=0),
+                    padding=ft.Padding.all(0),
+                ),
+                menu_style=ft.MenuStyle(
+                    alignment=ft.Alignment.TOP_RIGHT,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER, 
+                    shape=ft.RoundedRectangleBorder(radius=4),
+                    padding=ft.Padding.all(0)
+                ),
+                expand=True,
+                width=30,
+            )  
 
             # 'text_settings': {
             #'size': 14,
@@ -1054,7 +1182,11 @@ class CanvasRail(ft.Container):
                 ft.Row([
                     ft.Text("Text Settings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, tooltip="Settings for text shapes used on canvases"),
                 ], alignment=ft.MainAxisAlignment.CENTER),   
-                ft.Row([text_preview], alignment=ft.MainAxisAlignment.CENTER, margin=ft.Margin.all(10)),
+                ft.Container(
+                    ft.Row([text_preview], alignment=ft.MainAxisAlignment.CENTER), 
+                    margin=ft.Margin.all(10), border_radius=4, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                    alignment=ft.Alignment.CENTER, padding=ft.Padding.all(10)
+                ),
                 ft.Divider(2, 2),
                 #ft.Row([
                     #ft.Container(text_preview, expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, alignment=ft.Alignment.CENTER, border_radius=4, padding=ft.Padding.all(10))
@@ -1067,6 +1199,52 @@ class CanvasRail(ft.Container):
                 letter_spacing_tf,
                 word_spacing_tf,
 
+                ft.Row([
+                    ft.Text("Text Color"),
+                    ft.MenuBar(
+                        [
+                            ft.Container(
+                                text_color_selector,
+                                border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
+                            ),
+                            ft.Container(
+                                text_color_options_button,    
+                                border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
+                                alignment=ft.Alignment.CENTER
+                            ),  # Button to save current color to settings
+                        ],
+                        style=ft.MenuStyle(
+                            alignment=ft.Alignment.CENTER_LEFT,
+                            bgcolor=ft.Colors.TRANSPARENT,
+                            shadow_color=ft.Colors.TRANSPARENT,
+                            padding=ft.Padding.all(0)
+                        ),
+                    ),
+                    
+                ], margin=ft.Margin.only(left=4), spacing=0),
+                ft.Row([
+                    ft.Text("Text Background Color"),
+                    ft.MenuBar(
+                        [
+                            ft.Container(
+                                text_bg_color_selector,
+                                border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
+                            ),
+                            ft.Container(
+                                text_bg_color_options_button,    
+                                border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
+                                alignment=ft.Alignment.CENTER
+                            ),  # Button to save current color to settings
+                        ],
+                        style=ft.MenuStyle(
+                            alignment=ft.Alignment.CENTER_LEFT,
+                            bgcolor=ft.Colors.TRANSPARENT,
+                            shadow_color=ft.Colors.TRANSPARENT,
+                            padding=ft.Padding.all(0)
+                        ),
+                    ),
+                ], spacing=0, margin=ft.Margin.only(left=4)),
+
                 font_family_rg,
             ]
 
@@ -1077,18 +1255,16 @@ class CanvasRail(ft.Container):
 
         # Color picker for changing brush color
         color_picker = ColorPicker(
-            color=paint_settings.get('color', "#000000").split(",", 1)[0], 
+            color=paint_settings.get('color', "#000000"),
             on_color_change=set_color, 
-            #scale=.8, 
-            picker_area_border_radius=ft.BorderRadius.all(4)
+            picker_area_border_radius=ft.BorderRadius.all(4),
         )   
 
         # Create our color selector button
         color_selector = ft.SubmenuButton(
-            ft.Icon(ft.Icons.CIRCLE, app.settings.data.get('paint_settings', {}).get('color', ft.Colors.PRIMARY)), 
+            ft.Icon(ft.Icons.CIRCLE, paint_settings.get('color', ft.Colors.PRIMARY)), 
             tooltip="The color of your brush strokes.",
             on_close=save_color, #expand=True,
-            #margin=ft.Margin.only(right=20),
             width=40,
             height=40,
             controls=[ft.Column([
@@ -1114,7 +1290,6 @@ class CanvasRail(ft.Container):
                 padding=ft.Padding.all(0)
             ),
         )
-        #ft.Icon(ft.Icons.SAVE_ROUNDED, ft.Colors.PRIMARY, scale=0.8),
 
         def get_color_options() -> list[ft.Control]:
             nonlocal paint_settings, canvas_settings
@@ -1135,6 +1310,7 @@ class CanvasRail(ft.Container):
                 canvas_settings['saved_colors'].pop(idx)
                 app.settings.update_data(**{"canvas_settings": {"saved_colors": canvas_settings['saved_colors']}})
                 color_options_button.controls = get_color_options()
+                text_settings_button.controls = get_text_options()
                 self.update()
 
             def save_custom_color(e=None):
@@ -1147,6 +1323,7 @@ class CanvasRail(ft.Container):
                     canvas_settings['saved_colors'].append({'name': color_name, 'value': current_color})
                     app.settings.update_data(**{"canvas_settings": {"saved_colors": canvas_settings['saved_colors']}})
                     color_options_button.controls = get_color_options()
+                    text_settings_button.controls = get_text_options()
                     self.update()
                     self.page.pop_dialog()
             
@@ -1171,7 +1348,7 @@ class CanvasRail(ft.Container):
                     ft.IconButton(  # Save button
                         ft.Icons.SAVE_ROUNDED, ft.Colors.PRIMARY, on_click=save_custom_color, 
                         tooltip="Save the current color to your saved colors", 
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
                     ),
                 ], margin=ft.Margin.only(left=4), alignment=ft.MainAxisAlignment.CENTER)   
             ]
@@ -1207,11 +1384,7 @@ class CanvasRail(ft.Container):
             ),
             expand=True,
             width=30,
-        )
-
-        #color_options_button = 
-
-        
+        )  
 
         # Button to set the control mode to draw mode
         set_draw_mode_button = ft.IconButton(
@@ -1315,8 +1488,7 @@ class CanvasRail(ft.Container):
             width=30,
         )
 
-        async def open_menu(e: ft.Event[ft.Container]):
-            await e.control.content.open()
+        
 
         drawing_controls = [
             ft.MenuBar(
@@ -1328,12 +1500,7 @@ class CanvasRail(ft.Container):
                     ft.Container(
                         color_options_button,    
                         border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
-                        on_click=open_menu,
-                        ink=True,
-                        #height=30,
-                        expand=True,
-                        width=30,
-                        alignment=ft.Alignment.CENTER,
+                        alignment=ft.Alignment.CENTER
                     ),  # Button to save current color to settings
                 ],
                 style=ft.MenuStyle(
