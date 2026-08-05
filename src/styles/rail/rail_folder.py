@@ -78,7 +78,7 @@ class RailFolder(ft.GestureDetector):
 
         self.expansion_tile = IsolatedExpansionTile(
             title=ft.Row([
-                leading_control, ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True)], 
+                leading_control, ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True, overflow=ft.TextOverflow.ELLIPSIS)], 
                 expand=True, spacing=6
             ),
             #trailing=ft.IconButton(

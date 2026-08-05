@@ -113,18 +113,13 @@ class App:
         page.on_route_change = route_change 
 
         #print("Settings loaded with data: ", app.settings.data)
-        
-
-        # Import and set page fonts here
-        #page.fonts = {
-            #"Bangers": "/fonts/Bangers-Regular.ttf",
-            #"PatrickHand": "/fonts/PatrickHand-Regular.ttf",
-            #"Oswald": "/fonts/Oswald-Regular.ttf",
-            #"Caveat": "/fonts/Caveat-Regular.ttf",
-            #"SpecialElite": "/fonts/SpecialElite-Regular.ttf",
-        #}
-
-        #page.theme = ft.Theme(font_family="Bangers")  # Default app font
+        page.fonts = {
+            "Open Sans Italic": "/fonts/OpenSans-VariableFont_wdth,wght.ttf",
+            "Pacifico": "/fonts/Pacifico-Regular.ttf",
+            "Ibarra Real Nova": "/fonts/IbarraRealNova-VariableFont_wght.ttf",
+            "Nunito": "/fonts/Nunito-VariableFont_wght.ttf",
+            "Roboto": "/fonts/Roboto-VariableFont_wght.ttf",
+        }        
 
 
       # Called on app startup in main
