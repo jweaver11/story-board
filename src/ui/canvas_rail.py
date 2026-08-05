@@ -26,24 +26,6 @@ class CanvasRail(ft.Container):
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
         )
 
-    # Called by clicking button on bottom right of rail
-    def toggle_collapse_rail(self, e: ft.Event[ft.IconButton]):
-        ''' Collapses or expands the rail, and saves the state in settings '''
-        from models.app import app    # Always grabs updated reference when collapsing/expanding
-
-        # Toggle our collapsed state
-        app.settings.update_data(**{'story': {'workspaces_rail_is_collapsed': not app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False)}})
-
-        if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False):  # If we are collapsed, make the rail less wide
-            self.width = 100
-            e.control.icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED
-            self.rail_label.opacity = 0
-        else:   # If not collapsed, make rail normal size
-            self.width = 120
-            e.control.icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED
-            self.rail_label.opacity = 1
-        self.update()  # Reload the rail to apply changes
-
 
     # Called mostly when re-ordering or collapsing the rail. Also called on start
     def build(self) -> ft.Control:
@@ -933,31 +915,26 @@ class CanvasRail(ft.Container):
                 nonlocal text_settings
                 
 
-            # TODO: Have update any option re-set the controls inside
-            # Remove dropdowns that close them enu
-            # Finish rest of this
+            # TODO: Finish rest of this
 
             ft.TextStyle()
 
+            # Have these load color picker and saved colors
             # color - color picker
             # bgcolor - color picker
-
-            # size - slider
-            # letter_spacing - slider
-            # word_spacing - slider
-
+            
             # decoration options - exptile with
                 # decoration - dropdown
                 # decoration_style - dropdown
                 # decoration_color - color picker
-                # decoration_thickness - slider
+                # decoration_thickness - tf
                 
             # shadow - ExpansionTile w/ lot of other options
-                # blur radius - slider
+                # blur radius - tf
                 # blur style - dropdown
                 # color - color picker
-                # offset - x/y sliders ??
-                # spread radius - slider
+                # offset - x/y tfs
+                # spread radius - tf
 
             # foregound - ExpansionTile w/ lot of other options (call outline??)
                 #'color': "white",     # Hex color folowed by opacity
@@ -975,7 +952,7 @@ class CanvasRail(ft.Container):
             # TODO: Have value of DD (switching to dif control) reflect the selected font
 
 
-            bold_switch = Switch(
+            bold_switch = Switch(   # TODO: make radio with normal, 100-1000, bold
                 True, "Bold", on_change=update_text_setting,
                 value=text_settings.get('weight', 'normal').lower() == "bold",
                 data="weight",
@@ -1027,7 +1004,7 @@ class CanvasRail(ft.Container):
                 content=ExpansionTile(
                     title="Font Family",
                     controls=[
-                        ft.Radio(key, value=key, data=key) for key in self.page.fonts.keys()
+                        ft.Radio(key, value=key) for key in self.page.fonts.keys()
                     ]
                 ),
                 value=text_settings.get('font_family', 'Arial'),
@@ -1431,27 +1408,6 @@ class CanvasRail(ft.Container):
             ),
         ]
         
-        # If we're collapsed...
-        if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False):
-
-            self.width = 100     # Make the rail less wide
-            
-            # Set our collapsed icon buttons icon depending on collapsed state
-            collapse_icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED
-
-        # If not collapsed, make rail normal size and set the correct icon
-        else:
-            self.width = 120
-            collapse_icon = ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED
-
-        self.width = 92
-
-
-        # Set our collapsed icon button using our defined icon above
-        self.collapse_icon_button = ft.IconButton(
-            collapse_icon, ft.Colors.PRIMARY,
-            on_click=self.toggle_collapse_rail,
-        )
 
         self.rail_label = ft.Text(
             "Canvas\nSettings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, 
@@ -1475,7 +1431,10 @@ class CanvasRail(ft.Container):
         self.visible = not self.page.platform.is_mobile()
 
         # If the user has set to hide the canvas rail, then hide it on startup
-        self.visible = app.settings.data.get('story', {}).get('hide_canvas_rail', False) == False  
+        if app.settings.data.get('story', {}).get('show_canvas_rail', False) == True:
+            self.width = 92
+        else:
+            self.width = 0
 
 
     

@@ -505,10 +505,10 @@ class Settings(ft.View):
 
 
             ft.Switch(
-                label="Hide Canvas Rail", margin=ft.Margin.only(top=10),
-                value=self.data.get('story', {}).get('hide_canvas_rail', False), 
-                on_change=lambda e: self.update_data(**{'story': {'hide_canvas_rail': e.control.value}}),
-                tooltip="Hides the canvas rail on the left side of the page. Turn off if you never plan on drawing",
+                label="Show Canvas Rail", margin=ft.Margin.only(top=10),
+                value=self.data.get('story', {}).get('show_canvas_rail', False), 
+                on_change=lambda e: self.update_data(**{'story': {'show_canvas_rail': e.control.value}}),
+                tooltip="Show or hide the canvas rail on the left side of the page. Turn off if you never plan on drawing",
             ),
 
         ])

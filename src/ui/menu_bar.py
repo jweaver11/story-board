@@ -231,6 +231,22 @@ class MenuBar(ft.Container):
                     await self.page.push_route(self.story.route)
                 else:
                     await self.page.push_route("/")
+
+        def toggle_show_canvas_rail(e: ft.Event[ft.MenuItemButton]):
+            ''' Toggles the visibility of the canvas rail on the left side of the page '''
+            new_value = not app.settings.data.get('story', {}).get('show_canvas_rail', False)
+            app.settings.update_data(**{'story': {'show_canvas_rail': new_value}})
+            if new_value:
+                e.control.leading.icon = ft.Icons.VISIBILITY_OUTLINED
+            else:
+                e.control.leading.icon = ft.Icons.VISIBILITY_OFF_OUTLINED
+            if self.story is not None:
+                if new_value:
+                    self.story.canvas_rail.width = 92
+                else:
+                    self.story.canvas_rail.width = 0
+                self.story.canvas_rail.update()
+            e.control.update()
     
         # Create our menu bar with submenu items
         file_options = ft.MenuBar(
@@ -290,9 +306,20 @@ class MenuBar(ft.Container):
                         ),
                         
                         ft.MenuItemButton(
+                            content=ft.Text("Toggle Canvas Rail", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                            leading=ft.Icon(
+                                ft.Icons.VISIBILITY_OUTLINED if app.settings.data.get('story', {}).get('show_canvas_rail', False) else ft.Icons.VISIBILITY_OFF_OUTLINED,
+                                ft.Colors.PRIMARY
+                            ),
+                            close_on_click=True, 
+                            disabled=self.story is None,
+                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
+                            on_click=toggle_show_canvas_rail,
+                        ),
+                        ft.MenuItemButton(
                             content=ft.Text("Settings", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                             leading=ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
-                            close_on_click=True,
+                            close_on_click=True, 
                             style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
                             on_click=_settings_clicked,
                         ),

@@ -129,8 +129,6 @@ class App:
             if font_name and file_name:
                 page.fonts[font_name] = f"/fonts/{file_name}"
 
-        
-
 
       # Called on app startup in main
     async def load_previous_story(self, page: ft.Page):
