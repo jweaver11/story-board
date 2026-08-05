@@ -239,6 +239,7 @@ class MenuBar(ft.Container):
                 alignment=ft.Alignment.CENTER,
                 bgcolor=ft.Colors.TRANSPARENT,
                 shadow_color=ft.Colors.TRANSPARENT,
+                padding=ft.Padding.all(0)
             ),
             controls=[  # The controls shown in our menu bar from left to right
                 ft.SubmenuButton(   # Button that opens a subment

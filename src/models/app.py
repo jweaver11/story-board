@@ -114,14 +114,22 @@ class App:
 
         #print("Settings loaded with data: ", app.settings.data)
         page.fonts = {
-            "Open Sans Italic": "/fonts/OpenSans-VariableFont_wdth,wght.ttf",
+            "Arial": None,
+            "Open Sans": "/fonts/OpenSans-VariableFont_wdth,wght.ttf",
             "Pacifico": "/fonts/Pacifico-Regular.ttf",
             "Ibarra Real Nova": "/fonts/IbarraRealNova-VariableFont_wght.ttf",
             "Nunito": "/fonts/Nunito-VariableFont_wght.ttf",
             "Roboto": "/fonts/Roboto-VariableFont_wght.ttf",
-        }        
+        }       
 
-        # TODO: Load custom fonts here from FONTS DIRECTORY
+        # Load our custom fonts
+        for saved_font in app.settings.data.get('text_options', {}).get('fonts', []):
+            font_name = saved_font.get('font_name')
+            file_name = saved_font.get('file_name')
+            if font_name and file_name:
+                page.fonts[font_name] = f"/fonts/{file_name}"
+
+        
 
 
       # Called on app startup in main

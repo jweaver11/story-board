@@ -196,31 +196,38 @@ class Settings(ft.View):
                     'decoration_color': "#000000",
                     'decoration_thickness': 1.0,
                     'decoration_style': "solid",    # options: solid, wavy, double, dotted, dashed
-                    'font_family': "Arial",
-                    'color': "#FFFFFF",
-                    'bgcolor': "#00000000",  # Background color for text shapes
-                    'shadow': {
-                        'blur_radius': 0,
-                        'blur_style': 'normal', # Options: normal, solid, outer, inner
-                        'color': "black",
-                        'offset': (0, 0),
-                        'spread_radius': 0,
-                    },   # Boxshad values
-                    'foreground': {
-                        'color': "white",     # Hex color folowed by opacity
-                        'stroke_width': 3,          # Size of the strokees
-                        'style': "stroke",          # style of the strokes. Either stroke or fill
-                        'stroke_cap': "round",      # Each end of the strokes shape
-                        'stroke_join': "round",     # How corners between strokes are drawn
-                        'stroke_miter_limit': 10, 
-                        'stroke_dash_pattern': None,         # If we should use dashed lines, and the pattern for them
-                        'anti_alias': True,     # Use anti aliasing for smoother strokes or not
-                        'blur_image': 0,        # How much blur to apply to the stroke
-                        'blend_mode': None,     # Any blend mode to apply to the stroke, or None for normal
-                    },      
+                    'font_family': None,
+                    'color': None,
+                    'bgcolor': None,  # Background color for text shapes
+                    'shadow': None, #{
+                        #'blur_radius': 0,
+                        #'blur_style': 'normal', # Options: normal, solid, outer, inner
+                        #'color': "black",
+                        #'offset': (0, 0),
+                        #'spread_radius': 0,
+                    #},   # Boxshad values
+                    'foreground': None, #{
+                        #'color': "#32AA38AE",     # Hex color folowed by opacity
+                        #'stroke_width': 3,          # Size of the strokees
+                        #'style': "stroke",          # style of the strokes. Either stroke or fill
+                        #'stroke_cap': "round",      # Each end of the strokes shape
+                        #'stroke_join': "round",     # How corners between strokes are drawn
+                        #'stroke_miter_limit': 10, 
+                        #'stroke_dash_pattern': None,         # If we should use dashed lines, and the pattern for them
+                        #'anti_alias': True,     # Use anti aliasing for smoother strokes or not
+                        #'blur_image': 0,        # How much blur to apply to the stroke
+                        #'blend_mode': None,     # Any blend mode to apply to the stroke, or None for normal
+                    #},      
                     'letter_spacing': 0,
                     'word_spacing': 0,
                     'baseline': "alphabetic",  # How text is rendered - Options: alphabetic or ideographic
+                },
+                'text_options': {
+                    'use_shadow': False,
+                    'shadow': dict(),  # Store shadow settings here so the on/off switch above loads last used settings into text_settings
+                    'use_foreground': False,
+                    'foreground': dict(),  # Store foreground settings here so the on/off switch above loads last used settings into text_settings
+                    'fonts': list()    # [{'font_name': 'name_of_font': 'file_name': 'file_name.ttf'}, ...]
                 },
 
                 # Hold our default character templates
