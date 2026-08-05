@@ -66,7 +66,45 @@ class CanvasRail(ft.Container):
                 self.collapsed_shape = ft.RoundedRectangleBorder(radius=4)
                 self.title_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
                 self.dense=True
-                self.margin=ft.Margin.only(top=8,)
+                self.margin=ft.Margin.only(top=8)
+
+        class TextField(ft.TextField):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.dense=True
+                self.label_style=ft.TextStyle(color=ft.Colors.PRIMARY, italic=True)
+                self.border_radius=ft.BorderRadius.all(4)
+                #self.content_padding=ft.Padding.only(left=6, right=6, top=4, bottom=4)
+                #self.expand=False
+                self.multiline=False
+                self.text_size=12
+                self.input_filter=ft.NumbersOnlyInputFilter()
+                self.margin=ft.Margin.only(top=8, left=4, right=4)
+                self.border_color=ft.Colors.OUTLINE_VARIANT
+                self.focused_border_color=ft.Colors.PRIMARY
+
+        class UpDownButtons(ft.Column):
+            def __init__(self, up_function=None, down_function=None):
+                super().__init__(
+                    spacing=2,
+                    #tight=True,
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    horizontal_alignment=ft.CrossAxisAlignment.END,
+                    margin=ft.Margin.only(right=4),
+                    controls=[
+                    ft.IconButton(
+                        ft.Icons.ARROW_DROP_UP, ft.Colors.PRIMARY, 16, width=20, height=16, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                        on_click=up_function,
+                    ),
+                    ft.IconButton(
+                        ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, 16, width=20, height=16, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                        on_click=down_function
+                    )
+                    ]
+                )
+                
                 
         # Updates the mouse cursor or all visible canvases based on updated tool mode
         def set_canvas_mouse_cursor():
@@ -822,7 +860,7 @@ class CanvasRail(ft.Container):
         def get_text_options() -> list[ft.Control]:
 
             # Updating standard text settings
-            def update_text_setting(e: ft.Event[ft.TextField | ft.RadioGroup | ft.Slider | Switch | ft.MenuItemButton]):
+            def update_text_setting(e: ft.Event[TextField | ft.RadioGroup | ft.Slider | Switch]):
                 nonlocal text_settings
 
                 if isinstance(e.control, ft.RadioGroup):
@@ -833,8 +871,22 @@ class CanvasRail(ft.Container):
                         value = "bold" if e.control.value else "normal"
                     elif e.control.data == "italic":
                         value = e.control.value
-                elif isinstance(e.control, ft.MenuItemButton):
-                    value = str(e.control.content)
+                elif isinstance(e.control, ft.Slider):
+                    value = e.control.value
+
+                elif isinstance(e.control, TextField):
+                    # If less than 0, reset to the value it was
+                    if not e.control.value.strip():
+                        e.control.value = str(text_settings.get(e.control.data, 10))
+                        e.control.update()
+                        return
+
+                    # Make sure value within bounds
+                    value = int(max(min(int(e.control.value), 128), 0))
+                    e.control.value = str(value)    # Reupdate clamped value
+                    e.control.update()
+                    print("After new value: ", value)
+                    
 
                 else:
                     return
@@ -842,10 +894,11 @@ class CanvasRail(ft.Container):
                 key = e.control.data
                 text_settings.update(**{key: value})
                 app.settings.update_data(**{"text_settings": text_settings})
+                print("Updated: ", key, value)
 
                 text_preview.style = ft.TextStyle(**text_settings)
                 text_preview.update()
-                print("New font family: ", text_preview.style.font_family)
+                
                 update_canvas_tool_preview()
 
             # Update text shadow settings
@@ -911,6 +964,41 @@ class CanvasRail(ft.Container):
                 data="italic",
             )
 
+            # Increase the value (clamped) and pass the event along for settings
+            def increate_tf_value(e: ft.Event[TextField]):
+                current_val = int(e.control.parent.parent.value)
+                new_val = min(current_val + 1, 128)
+                e.control.parent.parent.value = str(new_val)
+                update_text_setting(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
+
+            # Decrease the value (clamped) and pass the event along for settings
+            def decrease_tf_value(e: ft.Event[TextField]):
+                current_val = int(e.control.parent.parent.value)
+                new_val = max(current_val - 1, 0)
+                e.control.parent.parent.value = str(new_val)
+                update_text_setting(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
+
+            size_tf = TextField(
+                value=str(text_settings.get('size', 14)),
+                on_blur=update_text_setting, data="size", label="Text Size", 
+                input_filter=ft.NumbersOnlyInputFilter(), 
+                suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value)
+            )
+
+            letter_spacing_tf = TextField(
+                value=str(text_settings.get('letter_spacing', 0)),
+                on_blur=update_text_setting, data="letter_spacing", label="Letter Spacing",
+                input_filter=ft.NumbersOnlyInputFilter(),
+                suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value)
+            )
+
+            word_spacing_tf = TextField(
+                value=str(text_settings.get('word_spacing', 0)),
+                on_blur=update_text_setting, data="word_spacing", label="Word Spacing",
+                input_filter=ft.NumbersOnlyInputFilter(),
+                suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value)
+            )
+
             # Add baseline rg here if wanted (not wanted rn)
             font_family_rg = ft.RadioGroup(
                 content=ExpansionTile(
@@ -963,19 +1051,21 @@ class CanvasRail(ft.Container):
 
 
             return [
-                ft.Text("Text & Shape Settings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, expand=True, margin=ft.Margin.only(left=4)),  
+                ft.Row([
+                    ft.Text("Text Settings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, tooltip="Settings for text shapes used on canvases"),
+                ], alignment=ft.MainAxisAlignment.CENTER),   
                 ft.Row([text_preview], alignment=ft.MainAxisAlignment.CENTER, margin=ft.Margin.all(10)),
                 ft.Divider(2, 2),
                 #ft.Row([
                     #ft.Container(text_preview, expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, alignment=ft.Alignment.CENTER, border_radius=4, padding=ft.Padding.all(10))
                 #]),
-
-                
-                
-                
                 
                 bold_switch,  
                 italic_switch,
+
+                size_tf,
+                letter_spacing_tf,
+                word_spacing_tf,
 
                 font_family_rg,
             ]
@@ -1192,7 +1282,6 @@ class CanvasRail(ft.Container):
             "Preview text", selectable=True, 
             style=ft.TextStyle(**text_settings)
         )
-
 
         set_text_mode_button = ft.IconButton(
             ft.Icons.TEXT_FIELDS if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "text" else ft.Icons.TEXT_FIELDS_OUTLINED,
