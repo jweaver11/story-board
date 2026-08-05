@@ -855,6 +855,8 @@ class CanvasRail(ft.Container):
                 
 
             # TODO: Have update any option re-set the controls inside
+            # Remove dropdowns that close them enu
+            # Finish rest of this
 
             ft.TextStyle()
 
@@ -962,7 +964,9 @@ class CanvasRail(ft.Container):
         #},
 
 
-
+            # TODO: 
+            # Remove dropdowns that close the menu
+            # Finish rest of this
 
 
 
