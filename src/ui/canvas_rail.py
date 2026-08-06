@@ -9,6 +9,27 @@ import flet.canvas as cv
 from utils.safe_string_checker import return_safe_name
 from models.views.story import Story
 
+tool_icons = {
+    'brush': ft.Icons.BRUSH_ROUNDED,
+    'brush_outlined': ft.Icons.BRUSH_OUTLINED,
+    'text': ft.Icons.TEXT_FIELDS,
+    'text_outlined': ft.Icons.TEXT_FIELDS_OUTLINED,
+    'erase': ft.Icons.AUTO_FIX_NORMAL,
+    'erase_outlined': ft.Icons.AUTO_FIX_NORMAL_OUTLINED,
+    'line': ft.Icons.REMOVE,
+    'line_outlined': ft.Icons.REMOVE_OUTLINED,
+    'circle': ft.Icons.CIRCLE,
+    'circle_outlined': ft.Icons.CIRCLE_OUTLINED,
+    'oval': ft.Icon(ft.Icons.CIRCLE, ft.Colors.PRIMARY, scale=ft.Scale(scale_x=0.8)),
+    'oval_outlined': ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.PRIMARY, scale=ft.Scale(scale_x=0.8)),
+    'arc': ft.Icon(ft.CupertinoIcons.CIRCLE_RIGHTHALF_FILL, ft.Colors.PRIMARY, rotate=math.pi*1.5),
+    'arc_outlined': ft.Icon(ft.CupertinoIcons.CIRCLE_RIGHTHALF_FILL, ft.Colors.PRIMARY, rotate=math.pi/2),
+    'rectangle': ft.Icons.RECTANGLE,
+    'rectangle_outlined': ft.Icons.RECTANGLE_OUTLINED,
+    'triangle': ft.CupertinoIcons.ARROWTRIANGLE_UP_FILL,
+    'triangle_outlined': ft.CupertinoIcons.ARROWTRIANGLE_UP,
+}
+
 # Class so we can store our all workspaces rail as an object inside of app
 class CanvasRail(ft.Container):
     
@@ -20,7 +41,7 @@ class CanvasRail(ft.Container):
         # Style our rail (container)
         super().__init__(
             alignment=ft.Alignment.CENTER,  # Aligns content to the 
-            padding=ft.Padding.only(bottom=10, right=10, left=10),
+            padding=ft.Padding.only(bottom=10, right=6, left=6, top=10),
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
@@ -146,16 +167,13 @@ class CanvasRail(ft.Container):
             
             brush_preview.content = build_preview_brush()
             set_canvas_mouse_cursor()
-            brush_selector.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-            color_selector.content.color = paint_settings.get('color', "#000000")
+            reset_button_bgcolors()
+            reset_tool_icons()
+
             set_draw_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-            set_draw_mode_button.icon = ft.Icons.BRUSH_ROUNDED
-            set_tool_mode_button.bgcolor = None
-            set_tool_mode_button.icon = ft.Icons.BUILD_OUTLINED
-            set_tool_mode_button.icon = update_tool_icon()
-            tool_selector.style.bgcolor = None
-            text_settings_button.style.bgcolor = None
-            set_text_mode_button.bgcolor = None
+            set_draw_mode_button.icon = tool_icons.get('brush')
+            brush_selector.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+
             self.update()
 
         
@@ -365,22 +383,42 @@ class CanvasRail(ft.Container):
                     return ft.Icon(ft.Icons.BUILD if in_tool_mode else ft.Icons.BUILD_OUTLINED, ft.Colors.PRIMARY, scale=0.8)
 
         # Sets current control mode to tool
-        def set_tool_mode(e=None):
-            nonlocal canvas_settings, paint_settings, brush_selector, set_tool_mode_button, set_text_mode_button, text_settings_button, tool_selector
+        def set_tool_mode(e: ft.Event[ft.IconButton]):
+            nonlocal canvas_settings, paint_settings, brush_selector, tool_selector
             canvas_settings['current_control_mode'] = "tool"
+            canvas_settings['current_tool_name'] = e.control.data
             app.settings.update_data(**{'canvas_settings': canvas_settings})
             set_canvas_mouse_cursor()
-            # Update buttons
-            brush_selector.style.bgcolor = None
-            set_draw_mode_button.bgcolor = None
-            set_draw_mode_button.icon = ft.Icons.BRUSH_OUTLINED
-            set_tool_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-            set_tool_mode_button.icon = ft.Icons.BUILD_ROUNDED
-            tool_selector.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-            set_tool_mode_button.icon = update_tool_icon()
-            text_settings_button.style.bgcolor = None
-            set_text_mode_button.bgcolor = None
+            
+            reset_button_bgcolors()
+            reset_tool_icons()
+            
+            e.control.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            e.control.icon = tool_icons.get(e.control.data)
             self.update() 
+
+        # Turn off all bgcolors
+        def reset_button_bgcolors():
+            for ctrl in self.content.controls:
+                if isinstance(ctrl, ft.IconButton):
+                    ctrl.bgcolor = None
+            set_draw_mode_button.bgcolor = None
+            brush_selector.style.bgcolor = None
+            set_text_mode_button.bgcolor = None
+            text_settings_button.style.bgcolor = None
+
+        # Set icons to outlined values
+        def reset_tool_icons():
+            set_draw_mode_button.icon = tool_icons.get('brush_outlined')
+            set_text_mode_button.icon = tool_icons.get('text_outlined')
+            erase_tool_button.icon = tool_icons.get('erase_outlined')
+            line_tool_button.icon = tool_icons.get('line_outlined')
+            circle_tool_button.icon = tool_icons.get('circle_outlined')
+            oval_tool_button.icon = tool_icons.get('oval_outlined')
+            arc_tool_button.icon = tool_icons.get('arc_outlined')
+            rectangle_tool_button.icon = tool_icons.get('rectangle_outlined')
+            triangle_tool_button.icon = tool_icons.get('triangle_outlined')
+
 
         def set_text_mode(e=None):
             nonlocal canvas_settings, paint_settings, brush_selector, set_tool_mode_button
@@ -388,11 +426,17 @@ class CanvasRail(ft.Container):
             app.settings.update_data(**{'canvas_settings': canvas_settings})
             set_text_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
             text_settings_button.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-            set_tool_mode_button.bgcolor = None
-            set_draw_mode_button.bgcolor = None
-            brush_selector.style.bgcolor = None
-            tool_selector.style.bgcolor = None
+            
             set_canvas_mouse_cursor()
+
+            reset_button_bgcolors()
+            reset_tool_icons()
+
+            text_settings_button.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            set_text_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+            set_text_mode_button.icon = tool_icons.get('text')
+
+
             self.update()
 
         def get_tool_options() -> list[ft.Control]:
@@ -510,7 +554,7 @@ class CanvasRail(ft.Container):
             tool_name = e.control.data
             canvas_settings.update({"current_tool_name": tool_name})
             app.settings.update_data(**{"canvas_settings": canvas_settings})
-            set_tool_mode()
+            set_tool_mode(e.control)
             self.update()
             set_canvas_mouse_cursor()
 
@@ -1144,7 +1188,7 @@ class CanvasRail(ft.Container):
                     padding=ft.Padding.all(0)
                 ),
                 expand=True,
-                width=30,
+                width=24,
             )  
 
             text_bg_color_options_button = ft.SubmenuButton(
@@ -1161,7 +1205,7 @@ class CanvasRail(ft.Container):
                     padding=ft.Padding.all(0)
                 ),
                 expand=True,
-                width=30,
+                width=24,
             )  
 
             # 'text_settings': {
@@ -1408,7 +1452,7 @@ class CanvasRail(ft.Container):
                 padding=ft.Padding.all(0)
             ),
             expand=True,
-            width=30,
+            width=24,
         )  
 
         # Button to set the control mode to draw mode
@@ -1441,7 +1485,7 @@ class CanvasRail(ft.Container):
                 padding=ft.Padding.all(0)
             ),
             expand=True,
-            width=30,
+            width=24,
         )
 
         
@@ -1473,7 +1517,7 @@ class CanvasRail(ft.Container):
                 padding=ft.Padding.all(0)
             ),
             expand=True,
-            width=30,
+            width=24,
         )
 
         text_preview = ft.Text(
@@ -1510,8 +1554,74 @@ class CanvasRail(ft.Container):
                 padding=ft.Padding.all(0)
             ),
             expand=True,
-            width=30,
+            width=24,
         )
+
+        erase_tool_button = ft.IconButton(
+            ft.Icons.AUTO_FIX_NORMAL if canvas_settings.get('current_tool_name', 'draw') == "erase" and canvas_settings.get('current_control_mode', "draw") == "tool" else ft.Icons.AUTO_FIX_NORMAL_OUTLINED,
+            ft.Colors.PRIMARY,
+            data="erase",
+            on_click=set_tool_mode,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4),),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_tool_name', 'draw') == "erase" and canvas_settings.get('current_control_mode', "draw") == "tool" else None,
+            tooltip="Erase Tool"
+        )
+        line_tool_button = ft.IconButton(
+            ft.Icons.REMOVE if canvas_settings.get('current_tool_name', 'draw') == "line" and canvas_settings.get('current_control_mode', "draw") == "tool" else ft.Icons.REMOVE_OUTLINED,
+            ft.Colors.PRIMARY,
+            data="line",
+            on_click=set_tool_mode,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4),),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_tool_name', 'draw') == "line" and canvas_settings.get('current_control_mode', "draw") == "tool" else None,
+            tooltip="Line Tool"
+        )
+        circle_tool_button = ft.IconButton(
+            ft.Icons.CIRCLE if canvas_settings.get('current_tool_name', 'draw') == "circle" and canvas_settings.get('current_control_mode', "draw") == "tool" else ft.Icons.CIRCLE_OUTLINED,
+            ft.Colors.PRIMARY,
+            data="circle",
+            on_click=set_tool_mode,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_tool_name', 'draw') == "circle" and canvas_settings.get('current_control_mode', "draw") == "tool" else None,
+            tooltip="Circle Shape"
+        )
+                              
+        oval_tool_button = ft.IconButton(
+            ft.Icon(ft.Icons.CIRCLE, ft.Colors.PRIMARY, scale=ft.Scale(scale_x=0.8),) if canvas_settings.get('current_tool_name', 'draw') == "oval" and canvas_settings.get('current_control_mode', "draw") == "tool" else ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.PRIMARY, scale=ft.Scale(scale_x=0.8),),
+            data="oval",
+            on_click=set_tool_mode,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_tool_name', 'draw') == "oval" and canvas_settings.get('current_control_mode', "draw") == "tool" else None, 
+            tooltip="Oval Shape"
+        )
+        arc_tool_button = ft.IconButton(
+            tool_icons.get('arc') if canvas_settings.get('current_tool_name', 'draw') == "arc" and canvas_settings.get('current_control_mode', "draw") == "tool" else tool_icons.get('arc_outlined'),
+            
+            data="arc",
+            on_click=set_tool_mode,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), ),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_tool_name', 'draw') == "arc" and canvas_settings.get('current_control_mode', "draw") == "tool" else None,
+            tooltip="Arc Shape"
+        )
+        rectangle_tool_button = ft.IconButton(
+            ft.Icons.RECTANGLE if canvas_settings.get('current_tool_name', 'draw') == "rectangle" and canvas_settings.get('current_control_mode', "draw") == "tool" else ft.Icons.RECTANGLE_OUTLINED,
+            ft.Colors.PRIMARY,
+            data="rectangle",
+            on_click=set_tool_mode,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4),),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_tool_name', 'draw') == "rectangle" and canvas_settings.get('current_control_mode', "draw") == "tool" else None,
+            tooltip="Rectangle Shape"
+        )
+        triangle_tool_button = ft.IconButton(
+            ft.CupertinoIcons.ARROWTRIANGLE_UP_FILL if canvas_settings.get('current_tool_name', 'draw') == "triangle" and canvas_settings.get('current_control_mode', "draw") == "tool" else ft.CupertinoIcons.ARROWTRIANGLE_UP,
+            ft.Colors.PRIMARY,
+            data="triangle",
+            on_click=set_tool_mode,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), ),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_tool_name', 'draw') == "triangle" and canvas_settings.get('current_control_mode', "draw") == "tool" else None,
+            tooltip="Triangle Shape"
+        )
+
+        #print("Starting control mode and tool:", canvas_settings.get('current_control_mode', 'none'), canvas_settings.get('current_tool_name_name', 'none'))
 
         
 
@@ -1557,27 +1667,6 @@ class CanvasRail(ft.Container):
                 ),
             ),
 
-            ft.MenuBar(
-                [
-
-            
-                ft.Container(
-                    set_tool_mode_button,
-                    border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
-                ),
-                ft.Container(
-                    tool_selector,     
-                    border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
-                    #margin=ft.Margin.only(right=20)
-                ),
-                ],
-                style=ft.MenuStyle(
-                    alignment=ft.Alignment.CENTER_LEFT,
-                    bgcolor=ft.Colors.TRANSPARENT,
-                    shadow_color=ft.Colors.TRANSPARENT,
-                    padding=ft.Padding.all(0)
-                ),
-            ),
 
             ft.MenuBar(
                 [
@@ -1592,31 +1681,35 @@ class CanvasRail(ft.Container):
                     ),
                 ],
                 style=ft.MenuStyle(
-                alignment=ft.Alignment.CENTER_LEFT,
-                bgcolor=ft.Colors.TRANSPARENT,
-                shadow_color=ft.Colors.TRANSPARENT,
-                padding=ft.Padding.all(0)
+                    alignment=ft.Alignment.CENTER_LEFT,
+                    bgcolor=ft.Colors.TRANSPARENT,
+                    shadow_color=ft.Colors.TRANSPARENT,
+                    padding=ft.Padding.all(0)
+                    ),
             ),
-            ),
+
+
+            erase_tool_button,
+            line_tool_button,
+            circle_tool_button,
+            oval_tool_button,
+            arc_tool_button,
+            rectangle_tool_button,
+            triangle_tool_button
+
+
         ]
         
-
-        self.rail_label = ft.Text(
-            "Canvas\nSettings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, 
-            text_align=ft.TextAlign.CENTER,
-            #opacity=1 if app.settings.data.get('story', {}).get('workspaces_rail_is_collapsed', False) == False else 0
-        )
-
         
 
         # Sets our content as a column. This will fill our width and hold...
         # Either our list of workspaces, or a reorderable list of our workspaces
         self.content = ft.Column(
-            [ft.Row([self.rail_label], alignment=ft.MainAxisAlignment.CENTER)] + 
+            #[ft.Row([self.rail_label], alignment=ft.MainAxisAlignment.CENTER)] + 
             drawing_controls,
             #[ft.Container(expand=True), ft.Row([self.collapse_icon_button], alignment=ft.MainAxisAlignment.END)],
             #horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=20,
+            #spacing=20,
         )
 
         # If mobile, this will be shown on menubar instead
@@ -1624,7 +1717,7 @@ class CanvasRail(ft.Container):
 
         # If the user has set to hide the canvas rail, then hide it on startup
         if app.settings.data.get('story', {}).get('show_canvas_rail', False) == True:
-            self.width = 92
+            self.width = 78
         else:
             self.width = 0
 

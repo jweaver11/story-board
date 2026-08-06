@@ -242,7 +242,7 @@ class MenuBar(ft.Container):
                 e.control.leading.icon = ft.Icons.VISIBILITY_OFF_OUTLINED
             if self.story is not None:
                 if new_value:
-                    self.story.canvas_rail.width = 92
+                    self.story.canvas_rail.width = 78
                 else:
                     self.story.canvas_rail.width = 0
                 self.story.canvas_rail.update()
@@ -411,7 +411,7 @@ class MenuBar(ft.Container):
             #update_brush_preview()
             #brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
             brush_preview.content = build_preview_brush()   # Update the brush selector with the new brush
-            set_tool_mode_button.icon = update_tool_icon()
+            #set_tool_mode_button.icon = update_tool_icon()
             color_selector.content.color = color_picker.color
             self.update()
             set_canvas_mouse_cursor()
@@ -433,9 +433,9 @@ class MenuBar(ft.Container):
             color_selector.content.color = paint_settings.get('color', "#000000")
             set_draw_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
             set_draw_mode_button.icon = ft.Icons.BRUSH_ROUNDED
-            set_tool_mode_button.bgcolor = None
-            set_tool_mode_button.icon = ft.Icons.BUILD_OUTLINED
-            set_tool_mode_button.icon = update_tool_icon()
+            #set_tool_mode_button.bgcolor = None
+            #set_tool_mode_button.icon = ft.Icons.BUILD_OUTLINED
+            #set_tool_mode_button.icon = update_tool_icon()
             tool_selector.style.bgcolor = None
             self.update()
 
@@ -646,7 +646,7 @@ class MenuBar(ft.Container):
                     return ft.Icon(ft.Icons.BUILD if in_tool_mode else ft.Icons.BUILD_OUTLINED, ft.Colors.PRIMARY, scale=0.8)
 
         # Sets current control mode to tool
-        def set_tool_mode(e=None):
+        def set_tool_mode(e: ft.Event[ft.IconButton]):
             nonlocal canvas_settings, paint_settings, brush_selector, set_tool_mode_button
             canvas_settings['current_control_mode'] = "tool"
             app.settings.update_data(**{'canvas_settings': canvas_settings})
