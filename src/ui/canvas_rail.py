@@ -176,8 +176,8 @@ class CanvasRail(ft.Container):
             # Set max values of paint so that it fits normally on our small preview
             if brush_settings.get('stroke_width', 3) > 6:
                 brush_settings['stroke_width'] = 6
-            if brush_settings.get('blur_image', 0) > 6:
-                brush_settings['blur_image'] = 6
+            if brush_settings.get('blur_image', 0) > 10:
+                brush_settings['blur_image'] = 10
             brush_settings['blend_mode'] = None     # Turn off blend mode
 
             # Paint the stroke with safe paint settings, leaving 10px padding on all sides
@@ -725,13 +725,13 @@ class CanvasRail(ft.Container):
 
             
             width_tf = TextField(
-                label="Size", value=str(paint_settings.get('stroke_width', 5)), 
+                label="Size (0-100)", value=str(paint_settings.get('stroke_width', 5)), 
                 on_blur=update_tf, data="stroke_width", input_filter=ft.NumbersOnlyInputFilter(),
                 suffix_icon=UpDownButtons(increate_tf_value, decrease_tf_value),
             )
 
             blur_tf = TextField(
-                label="Blur Strength", value=str(paint_settings.get('blur_image', 0)),
+                label="Blur Strength (0-50)", value=str(paint_settings.get('blur_image', 0)),
                 on_blur=update_tf, data="blur_image", input_filter=ft.NumbersOnlyInputFilter(),
                 suffix_icon=UpDownButtons(increate_tf_value, decrease_tf_value),
             )
@@ -1014,21 +1014,21 @@ class CanvasRail(ft.Container):
 
             size_tf = TextField(
                 value=str(text_settings.get('size', 14)),
-                on_blur=update_text_setting, data="size", label="Text Size", 
+                on_blur=update_text_setting, data="size", label="Text Size (0-128)", 
                 input_filter=ft.NumbersOnlyInputFilter(), 
-                suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value)
+                suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value),
             )
 
             letter_spacing_tf = TextField(
                 value=str(text_settings.get('letter_spacing', 0)),
-                on_blur=update_text_setting, data="letter_spacing", label="Letter Spacing",
+                on_blur=update_text_setting, data="letter_spacing", label="Letter Spacing (0-128)",
                 input_filter=ft.NumbersOnlyInputFilter(),
                 suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value)
             )
 
             word_spacing_tf = TextField(
                 value=str(text_settings.get('word_spacing', 0)),
-                on_blur=update_text_setting, data="word_spacing", label="Word Spacing",
+                on_blur=update_text_setting, data="word_spacing", label="Word Spacing (0-128)",
                 input_filter=ft.NumbersOnlyInputFilter(),
                 suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value)
             )
