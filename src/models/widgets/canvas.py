@@ -160,6 +160,12 @@ class Canvas(Widget):
                 layer['needs_file_write'] = False  # Mark the layer as no longer needing a file write
         await super().save_file()   
 
+    async def hide_widget(self, e=None):
+        self.story.block_page()
+        await super().hide_widget()
+        self.story.unblock_page()
+        
+
     # Moves our mouse cursor around to match our drawing
     def move_mouse_cursor(self, position: ft.Offset):
         if not self.use_standard_cursor:
@@ -568,7 +574,8 @@ class Canvas(Widget):
         # Capture and get these new strokes, then restore the original shapes to the canvas
         canvas.shapes[:] = new_strokes  
         
-        await canvas.capture(app.settings.data.get('canvas_settings', {}).get('capture_ratio', 1))
+        #await canvas.capture(app.settings.data.get('canvas_settings', {}).get('capture_ratio', 1))
+        await canvas.capture()
         new_bytes = await canvas.get_capture()
         await canvas.clear_capture()
         canvas.shapes[:] = shapes  # Restore the original shapes to the canvas

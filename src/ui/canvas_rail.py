@@ -126,9 +126,14 @@ class CanvasRail(ft.Container):
             brush_preview.content = build_preview_brush()   # Update the brush selector with the new brush
             set_tool_mode_button.icon = update_tool_icon()
             color_selector.content.color = color_picker.color
+            if color_picker.color not in color_picker.color_history:
+                color_picker.color_history.append(color_picker.color)
+                if len(color_picker.color_history) > 6:
+                    color_picker.color_history.pop(0)
             self.update()
             set_canvas_mouse_cursor()
             update_canvas_tool_preview()
+
 
         # Sets current control mode to drawing
         def set_draw_mode(e=None):
@@ -921,6 +926,10 @@ class CanvasRail(ft.Container):
                 text_settings.update({"color": color})
                 app.settings.update_data(**{"text_settings": text_settings})
                 text_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
+                if text_color_picker.color not in text_color_picker.color_history:
+                    text_color_picker.color_history.append(text_color_picker.color)
+                    if len(text_color_picker.color_history) > 6:
+                        text_color_picker.color_history.pop(0)
                 self.update()
                 update_canvas_tool_preview()
                 text_preview.style = ft.TextStyle(**text_settings)
@@ -932,6 +941,10 @@ class CanvasRail(ft.Container):
                 text_settings.update({"bgcolor": color})
                 app.settings.update_data(**{"text_settings": text_settings})
                 text_bg_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
+                if text_bg_color_picker.color not in text_bg_color_picker.color_history:
+                    text_bg_color_picker.color_history.append(text_bg_color_picker.color)
+                    if len(text_bg_color_picker.color_history) > 6:
+                        text_bg_color_picker.color_history.pop(0)
                 self.update()
                 update_canvas_tool_preview()
                 text_preview.style = ft.TextStyle(**text_settings)
@@ -1041,7 +1054,8 @@ class CanvasRail(ft.Container):
             text_color_picker = ColorPicker(
                 color=text_settings.get('color', None),
                 on_color_change=set_color, 
-                picker_area_border_radius=ft.BorderRadius.all(4)
+                picker_area_border_radius=ft.BorderRadius.all(4),
+                color_history=[]
             ) 
     
             # Create our color selector button
@@ -1051,17 +1065,7 @@ class CanvasRail(ft.Container):
                 on_close=save_text_color, #expand=True,
                 width=40,
                 height=40,
-                controls=[ft.Column([
-                    text_color_picker,  
-                    ft.MenuItemButton(
-                        "Set Color", 
-                        on_click=lambda: None,  # Something so its not disabled
-                        style=ft.ButtonStyle(
-                            shape=ft.RoundedRectangleBorder(radius=4), #mouse_cursor=ft.MouseCursor.CLICK,
-                            bgcolor=ft.Colors.SURFACE_CONTAINER
-                        )
-                    )
-                ])],
+                controls=[text_color_picker],
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0)),
                 menu_style=ft.MenuStyle(
                     alignment=ft.Alignment.TOP_RIGHT,
@@ -1075,7 +1079,8 @@ class CanvasRail(ft.Container):
             text_bg_color_picker = ColorPicker(
                 color=text_settings.get('bgcolor', None),
                 on_color_change=set_color, 
-                picker_area_border_radius=ft.BorderRadius.all(4)
+                picker_area_border_radius=ft.BorderRadius.all(4),
+                color_history=[]
             )   
     
             # Create our color selector button
@@ -1085,17 +1090,7 @@ class CanvasRail(ft.Container):
                 on_close=save_text_bg_color, #expand=True,
                 width=40,
                 height=40,
-                controls=[ft.Column([
-                    text_bg_color_picker,  
-                    ft.MenuItemButton(
-                        "Set Color", 
-                        on_click=lambda: None,  # Something so its not disabled
-                        style=ft.ButtonStyle(
-                            shape=ft.RoundedRectangleBorder(radius=4), #mouse_cursor=ft.MouseCursor.CLICK,
-                            bgcolor=ft.Colors.SURFACE_CONTAINER
-                        )
-                    )
-                ])],
+                controls=[text_bg_color_picker],
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0),),
                 menu_style=ft.MenuStyle(
                     alignment=ft.Alignment.TOP_RIGHT,
@@ -1258,6 +1253,7 @@ class CanvasRail(ft.Container):
             color=paint_settings.get('color', "#000000"),
             on_color_change=set_color, 
             picker_area_border_radius=ft.BorderRadius.all(4),
+            color_history=[]
         )   
 
         # Create our color selector button
