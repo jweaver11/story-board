@@ -543,13 +543,13 @@ class CanvasRail(ft.Container):
         # Updates whether we'll use path smoothing or not
         def update_paint_brush_smoothing(e: ft.Event[ft.Switch]):
             nonlocal canvas_settings
-            canvas_settings.update({"use_brush_smoothing": e.control.value})
+            canvas_settings.update(**{"use_brush_smoothing": e.control.value})
             app.settings.update_data(**{"canvas_settings": canvas_settings})
 
         # Updates the strength of the smooth stroke effect
         def update_paint_stroke_smoothing_strength(e: ft.Event[ft.Slider]):
             nonlocal canvas_settings
-            canvas_settings.update({"stroke_smoothing_strength": e.control.value})
+            canvas_settings.update(**{"stroke_smoothing_strength": e.control.value})
             app.settings.update_data(**{"canvas_settings": canvas_settings})
 
         # Returns the correct icon for the current stroke cap setting based on current paint settings
@@ -692,13 +692,19 @@ class CanvasRail(ft.Container):
 
                 # Make sure value within bounds
                 clamp_bounds = 50 if e.control.data == "blur_image" else 100
+                if e.control.data == "stroke_smoothing_strength":
+                    clamp_bounds = 10
                 value = int(max(min(int(e.control.value), clamp_bounds), 0))
                 e.control.value = str(value)    # Reupdate clamped value
                 e.control.update()
 
                 key = e.control.data
                 paint_settings.update({key: value})
-                app.settings.update_data(**{"paint_settings": paint_settings})
+                if e.control.data != "stroke_smoothing_strength":
+                    app.settings.update_data(**{"paint_settings": paint_settings})
+                else:
+                    canvas_settings.update(**{"stroke_smoothing_strength": value})
+                    app.settings.update_data(**{"canvas_settings": canvas_settings})
 
                 brush_preview.content = build_preview_brush()
 
@@ -712,6 +718,8 @@ class CanvasRail(ft.Container):
             def increate_tf_value(e: ft.Event[TextField]):
                 current_val = int(e.control.parent.parent.value)
                 clamp_bounds = 50 if e.control.parent.parent.data == "blur_image" else 100
+                if e.control.parent.parent.data == "stroke_smoothing_strength":
+                    clamp_bounds = 10
                 new_val = min(current_val + 1, clamp_bounds)
                 e.control.parent.parent.value = str(new_val)
                 update_tf(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
@@ -736,6 +744,12 @@ class CanvasRail(ft.Container):
                 suffix_icon=UpDownButtons(increate_tf_value, decrease_tf_value),
             )
 
+            stroke_smoothing_tf = TextField(
+                label="Stroke Smoothing Strength (0-10)", value=str(canvas_settings.get('stroke_smoothing_strength', 1)),
+                on_blur=update_tf, data="stroke_smoothing_strength", input_filter=ft.NumbersOnlyInputFilter(),
+                suffix_icon=UpDownButtons(increate_tf_value, decrease_tf_value),
+            )
+
             
             # Whether to fill strokes and shapes or not
             fill_switch = Switch(
@@ -749,6 +763,13 @@ class CanvasRail(ft.Container):
                 label="Anti-Aliasing", on_change=update_paint_anti_alias,
                 value=paint_settings.get('anti_alias', True),
                 tooltip="Whether to use anti-aliasing for smoother brush strokes. Disabling may result in jagged edges",
+            )
+
+            brush_smoothing_switch = Switch(
+                label="Brush Smoothing", on_change=update_paint_brush_smoothing,
+                value=canvas_settings.get('use_brush_smoothing', True),
+                tooltip="Whether to smooth brush strokes to have a uniform color and opacity.",
+                
             )
 
             # Selector for the shape of the ends of strokes
@@ -812,11 +833,19 @@ class CanvasRail(ft.Container):
                 # Slider about the blur of the current brush strokes
                 #ft.Row([ft.Text("Blur", color=ft.Colors.ON_SURFACE_VARIANT, ), blur_slider], spacing=0, margin=ft.Margin.only(left=8)),
 
-                fill_switch, 
-                anti_alias_switch,
 
                 width_tf,
                 blur_tf,
+                stroke_smoothing_tf,
+
+                #ft.Row([
+                    #brush_smoothing_switch,
+                    #ft.Icon(ft.Icons.INFO_OUTLINED, ft.Colors.OUTLINE, scale=0.6, tooltip="Long brush strokes with no break will cause performance issues.")
+                #], vertical_alignment=ft.CrossAxisAlignment.CENTER, margin=ft.Margin.only(top=8), spacing=0),
+                ft.Container(height=8),  # Spacer
+                fill_switch, 
+                anti_alias_switch,
+                
 
                 stroke_cap_rg,
                 stroke_join_rg,

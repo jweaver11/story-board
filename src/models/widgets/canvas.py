@@ -324,7 +324,6 @@ class Canvas(Widget):
             # Fix any paint changess
             self.current_tool.paint = ft.Paint(**paint_settings)
 
-        
             if self.current_tool.shape_type == "text":
                 self.current_tool.cv_shape.style = ft.TextStyle(**text_settings)
             elif self.current_tool.shape_type == "rectangle":
@@ -335,70 +334,142 @@ class Canvas(Widget):
 
             self.current_tool.update()
 
-
-    # Called when we click the canvas and don't initiate a drag. Adds either a point if in draw mode, or active tool/shape if in tool mode
-    async def handle_tap(self, e: ft.TapEvent):
-
-        # Set our paint settings in case we need to change them
-        paint_settings = app.settings.data.get('paint_settings', {}).copy()
-        canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
-
-        # TODO: Fix text tool since it is now its own control mode
-
-        # Check if we're in tool mode, and what tool we're using
-        if canvas_settings.get('current_control_mode', "") == "tool":
-            tool_name = canvas_settings.get('current_tool_name', "")
-            match tool_name:
-
-                # Skip lines and erase mode, since they are drawn normally
-                case "line" | "erase":
-                    pass
-
-                # All other tools/shapes get added here
-                case _:
-
-                    # If we are currently manipulating one shape, paint it to the canvas
-                    if self.state.manipulating_shape:
-                        self.state.manipulating_shape = False
-                        await self.paint_tool_on_canvas()
-                        return
     
 
-                    self.state.manipulating_shape = True
-                    self.current_tool = CanvasShape(tool_name, left=e.local_position.x, top=e.local_position.y)
-                    self.canvas_controller.parent.controls.append(self.current_tool)
-                    self.canvas_controller.parent.update()
-                    self.canvas_controller.parent.controls.append(self.current_tool.rotate_handle)
-                    self.canvas_controller.parent.update()
+    # Handles all tap events on the canvas and decides how to handle them based on the current control mode
+    async def handle_tap(self, e: ft.TapEvent):
+        control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
+        # Add a point if in draw mode
+        if control_mode == "draw":
+            await self.add_point(e)
+        # Add a tool if in tool mode, unless its a line or erase tool, which are drawn like normal
+        elif control_mode == "tool":
+            tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+            if tool_name == "line" or tool_name == "erase":
+                await self.add_point(e)
+            else:
+                await self.add_tool(e)
+        # Add text if in text mode
+        else:
+            await self.add_text(e)
+
+    # Handles all pan start events
+    async def handle_pan_start(self, e: ft.DragStartEvent):
+        control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
+        # Draw mode, so we start our stroke
+        if control_mode == "draw":
+            self.start_stroke(e)
+        # Tool mode - lines and erase draw like normal, so we start our stroke
+        elif control_mode == "tool":
+            tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+            if tool_name == "line" or tool_name == "erase":
+                self.start_stroke(e)
+        # Tool and Text control themselves, so we don't need to do anything here
+
+    # Handles all pan update events
+    async def handle_pan_update(self, e: ft.DragUpdateEvent):
+        control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
+        # Draw mode, so we update our stroke
+        if control_mode == "draw": 
+            self.update_stroke(e)
+        # Tool mode - lines and erase draw like normal, so we update our stroke
+        elif control_mode == "tool":    
+            tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+            if tool_name == "line" or tool_name == "erase":
+                self.update_stroke(e)
+        # Text and other tools (shapes) handle themselves, so do nothing here
+
+    # Handles all pan end events
+    async def handle_pan_end(self, e: ft.DragEndEvent):
+        control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
+        # Draw mode, so we end our stroke
+        if control_mode == "draw":  
+            await self.end_stroke(e)
+        # Tool mode - lines and erase draw like normal, so we end our stroke
+        elif control_mode == "tool":   
+            tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+            if tool_name == "line" or tool_name == "erase":
+                await self.end_stroke(e)
+        # Text and other tools (shapes) handle themselves, so do nothing here
+
+    # Tap event for adding a circular point to the canvas using our paint settings
+    async def add_point(self, e: ft.TapEvent):
+        paint_settings = app.settings.data.get('paint_settings', {}).copy()
+
+        # Grab our canvas
+        canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
+        if not canvas.visible:  # Catch errors
             return
 
-        # Not in tool mode, just draw a point on the canvas
-        else:
+        control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
+        tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
 
-            # We're not manipulating a shape, so we can add a point to the canvas
-            self.state.manipulating_shape = False 
-
-            # Grab our canvas
-            canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
-            if not canvas.visible:  # Catch errors
-                return
-            
-            # Add our point to the canvas and our paint settings, update, and save
-            canvas.shapes.append(cv.Points(points=[(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings)))
-            canvas.update()
-            await self.end_stroke(canvas)
-            
+        # Adjust paint settings for erase tool to just add a point. Not compatible with blur or fill, so temp turned off
+        if control_mode == "tool":
+            if tool_name == "erase":
+                paint_settings['blend_mode'] = "clear"
+                paint_settings['blur_image'] = 0
+                paint_settings['style'] = "stroke"
         
-    # Called when we start drawing on the canvas
+        # Add our point to the canvas and our paint settings, update, and save
+        canvas.shapes.append(cv.Points(points=[(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings)))
+        canvas.update()
+        await self.end_stroke(canvas)   # Force a stroke end since it wont have pan end events
+
+        # TODO: Erase not saving on canvases
+        # Use cap/get gap checks to avoid pasting images where not needed
+
+    # Tap event for adding a tool to the canvas
+    async def add_tool(self, e: ft.TapEvent):
+        
+        # Check if we're in tool mode, and what tool we're using
+        tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
+
+        # Skip lines and erase mode, since they are drawn normally, I.E. have no tap event
+        if tool_name == "line" or tool_name == "erase":
+            return 
+        
+        # If we are currently manipulating one shape, paint it to the canvas and return early
+        if self.state.manipulating_shape:
+            self.state.manipulating_shape = False
+            await self.paint_tool_on_canvas()
+            return
+        
+        # All other tools/shapes get added here
+        self.state.manipulating_shape = True
+        self.current_tool = CanvasShape(tool_name, left=e.local_position.x, top=e.local_position.y)
+        self.canvas_controller.parent.controls.append(self.current_tool)
+        self.canvas_controller.parent.update()
+        self.canvas_controller.parent.controls.append(self.current_tool.rotate_handle)
+        self.canvas_controller.parent.update()
+
+    # Adds our canvas shape (text) control to our stack oto start controlling
+    async def add_text(self, e: ft.DragStartEvent):
+        
+        # If we are currently manipulating one shape, paint it to the canvas
+        if self.state.manipulating_shape:
+            self.state.manipulating_shape = False
+            await self.paint_tool_on_canvas()
+            return
+
+        # Update state and add our text control to the canvas stack
+        self.state.manipulating_shape = True
+        self.current_tool = CanvasShape("text", left=e.local_position.x, top=e.local_position.y)
+        self.canvas_controller.parent.controls.append(self.current_tool)
+        self.canvas_controller.parent.update()
+        self.canvas_controller.parent.controls.append(self.current_tool.rotate_handle)
+        self.canvas_controller.parent.update()
+        
+    # Adds our initial stroke (cv.Shape) to the canvas with correct settings
     def start_stroke(self, e: ft.DragStartEvent):
-        ''' Set our initial starting x and y coordinates for the element we're drawing. '''
 
         # Grab the canvas and paint settings
         canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
         if not canvas.visible:  # Protect when we shouldnt be drawing with it
             self.page.show_dialog(SnackBar("Set an active layer to draw on."))
             return
-        
+
+        # Grab settings for ez reference
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
         canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
     
@@ -408,44 +479,41 @@ class Canvas(Widget):
         # Check if we're in tool mode, and what tool we're using
         if canvas_settings.get('current_control_mode', "") == "tool":
             tool_name = canvas_settings.get('current_tool_name', "")
-            match tool_name:
-                # Erase tool - make sure our paint settings don't break the drawing because of blur or style
-                case "erase":
-                    paint_settings['blend_mode'] = "clear"
-                    paint_settings['blur_image'] = 0
-                    paint_settings['style'] = "stroke"
-                    self.current_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
-                # For line tool - add the first line element to the path
-                case "line":
-                    paint_settings['style'] = "stroke"
-                    self.current_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
-                    line_element = cv.Path.LineTo(self.state.x, self.state.y)
-                    self.current_path.elements.append(line_element)
 
-                # Ignore all other tools, as they will control themselves by getting added to the canvas
-                case _:
-                    return
-                
-            # Add our tool to the canvas so we can see it
+            # Erase tool - Update the paint settings and create a normal path
+            if tool_name == "erase":
+                paint_settings['blend_mode'] = "clear"
+                paint_settings['blur_image'] = 0
+                paint_settings['style'] = "stroke"
+                self.current_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
+
+            # Line tool - Create a path using one straight line element that we'll update differently
+            elif tool_name == "line":                
+                paint_settings['style'] = "stroke"
+                self.current_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
+                line_element = cv.Path.LineTo(self.state.x, self.state.y)
+                self.current_path.elements.append(line_element)
+
+            # Add our tool path to the canvas and return
             canvas.shapes.append(self.current_path)
             canvas.update()
             return
 
         # Otherwise we're in draw mode
         else:
-            # If we're using brush smoothing, create a path element for consistant paint
+            # Brush smoothing - use a normal path
             if canvas_settings.get('use_brush_smoothing', False) == True or paint_settings.get('style', "") == "stroke_fill":
                 self.current_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
                 canvas.shapes.append(self.current_path)
-
             # No brush smoothing, just add a line element to the canvas
             else: 
                 canvas.shapes.append(cv.Line(self.state.x, self.state.y, e.local_position.x, e.local_position.y, paint=ft.Paint(**paint_settings)))
             canvas.update()
         
-    # Called when actively drawing on the canvas
+    # Updates the current stroke shape on the canvas depending on our settings
     def update_stroke(self, e: ft.DragUpdateEvent):
-        ''' Determines which drawing tool we're using, and updates accordingly as we drag our mouse '''
+
+        # TODO: Handle brush and stroke smoothing
         
         # Sampling to improve perforamance. If the line length is too small, we skip it
         #dx = e.local_position.x - self.state.x
@@ -458,39 +526,35 @@ class Canvas(Widget):
         if not canvas.visible:  
             return
         
-        # Grab the current path
+        # Grab the current path and catch errors
         self.current_path = canvas.shapes[-1] if canvas.shapes and len(canvas.shapes) > 1 else None # Trips if drawing but havnt finished capture
-
-        # Catch errors
         if not self.current_path:
             return
-        
+
+        # Paint settings
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
         canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
-        self.move_mouse_cursor(e.local_position)
+
+        self.move_mouse_cursor(e.local_position)    # Make our custom mouse_cursor follow our mouse position when drawing if using it
                 
         # Check if we're in tool mode, and what tool we're using
         if canvas_settings.get('current_control_mode', "") == "tool":
-
             tool_name = canvas_settings.get('current_tool_name', "")
             match tool_name:
 
-                # Make erase tool use a path
+                # Erase tool - Add another smooth line to the path
                 case "erase":
                     path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
                     self.current_path.elements.append(path_element)
 
-                # For line tool - Update our straight line element to the current mouse position
+                # Line tool - Update our straight line element to the current mouse position
                 case "line":
                     # Set the element and update its position
                     line_element = self.current_path.elements[-1]
                     line_element.x = e.local_position.x
                     line_element.y = e.local_position.y
-                    
-                # Ignore all other tools and return out so we don't draw
-                case _:
-                    pass
 
+            # Update state and return
             self.state.x = e.local_position.x
             self.state.y =  e.local_position.y
             self.current_path.update()
@@ -515,44 +579,39 @@ class Canvas(Widget):
             self.state.y =  e.local_position.y
         
 
-    # Called when we release the mouse to stop drawing a line
+    # Ends the current stroke (cv.Shape) and marks that layer as dirty for saving, and saves if we hit max shape count
     async def end_stroke(self, e: ft.DragEndEvent=None, canvas: cv.Canvas=None):
         """ Saves our paths to our canvas data for storage """
 
-        # Set our canvas, layer name, and update our shapes count
+        # Grab our canvas and protect against errors
         canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx] if canvas is None else canvas
-        if not canvas.visible:  # Protect when we shouldnt be drawing with it
+        if not canvas.visible:  
             return
         
-        # Grab our layer and mark it as dirty
+        # Grab our layer data and mark it as dirty, so we know to save it when program closes
         layer_idx = int(canvas.data)
         layer_data = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]
         layer_id = layer_data.get('id', '')
         layer_data['dirty'] = True
-        self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})   # Update our data with the new capture for this layer
-
-        # Grab paint and canvas settings
-        #paint_settings = app.settings.data.get('paint_settings', {}).copy()
-        #canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
+        self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})   # Update our meta data for the layer
 
         # If we have too many shapes on the canvas, flatten them into the layer's PNG file
         if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:
-            self.story.block_page()
-            await self.save_canvas(canvas)
+            self.story.block_page()     # Block page to prevent other events whil we do this one
+            await self.save_canvas(canvas)  # Save the current canvas added shapes to its bytes stored in memory
             canvas.shapes.clear()
             canvas.shapes.append(cv.Image(self.layer_bytes.get(layer_id), 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, data=layer_id))
             canvas.update()
-            self.story.unblock_page()
+            self.story.unblock_page()   # Unblock page
 
-        # TODO
-        self.add_undo_task({
-            'task_type': 'path_stroke',
-            'layer_id': layer_data.get('name', ''),
+        # TODO: UNDO/REDO
+        #self.add_undo_task({
+            #'task_type': 'path_stroke',
+            #'layer_id': layer_data.get('name', ''),
             #'data': self.current_path
-        })
+        #})
 
         
-
     # Saves any changes to the current layer canvas to its png file, and returns the bytes if other functions need it
     async def save_canvas(self, canvas: cv.Canvas) -> bytes:
 
