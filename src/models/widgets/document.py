@@ -14,6 +14,8 @@ from styles.menu_option_style import MenuOptionStyle
 DOCUMENT_WIDTH = 820
 DOCUMENT_HEIGHT = 1060
 DOCUMENT_PADDING = 80
+DOCUMENT_VERTICAL_MARGIN = 50
+DOCUMENT_HORIZONTAL_MARGIN = 70
 
 
 # Class that holds our text document objects
@@ -42,10 +44,10 @@ class Document(Widget):
                 # Settings for the toolbar
                 'text_controller_settings': {
                     'font_family': app.settings.data.get('widget_defaults', {}).get('document', {}).get('text_controller_settings', {}).get('font_family', "Arial"),
-                    'font_size': 12,
-                    'bold': False,
+                    #'font_size': 12,
+                    'weight': "normal",
                     'italic': False,
-                    'decoration': None,
+                    #'decoration': None,
                     # TODO:
                     # size, format_align, font family, letter_spacing, word_spacing, color
                     # decoration, decoration color, decoration thickness, decoration style
@@ -176,60 +178,7 @@ class Document(Widget):
             )
 
     
-    class TextController(ft.Row):
-        def __init__(self, widget, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            #self.alignment = ft.MainAxisAlignment.CENTER
-            #self.data = app.settings.data.get('text_controller_settings', {})
-            self.widget = widget
-            self.expand = True
-            self.spacing = 0
-            self.wrap = True
-
-        def build(self):
-
-            # Sets dropdowns on UI changes and updates the correct data
-            def set_dropdowns(e: ft.Event[ft.Dropdown]):
-                pass
-
-            # Sets buttons on UI changes and updates the correct data
-            def set_buttons(e: ft.Event[ft.IconButton]):
-                setting = e.control.data
-                new_value = not self.data.get(setting, False)
-                self.data[setting] = new_value
-                if new_value == True:
-                    e.control.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-                    e.control.icon_color = ft.Colors.PRIMARY
-                else:
-                    e.control.bgcolor = ft.Colors.TRANSPARENT
-                    e.control.icon_color = ft.Colors.ON_SURFACE_VARIANT
-                e.control.update()
-                self.widget.update_data(**{'text_controller_settings': self.data})
-
-
-            self.controls = [   
-
-                #ft.Text("Text Controller", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT, size=14, italic=True, opacity=.5),
-
-                ft.IconButton(
-                    ft.Icons.FORMAT_BOLD,
-                    ft.Colors.PRIMARY if self.data.get('bold', False) else ft.Colors.ON_SURFACE_VARIANT,
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH if self.data.get('bold', False) else ft.Colors.TRANSPARENT,
-                    data="bold", on_click=set_buttons,
-                    #visible=False,  # TEMP
-                ),
-                ft.IconButton(
-                    ft.Icons.FORMAT_ITALIC,
-                    ft.Colors.PRIMARY if self.data.get('italic', False) else ft.Colors.ON_SURFACE_VARIANT,
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH if self.data.get('italic', False) else ft.Colors.TRANSPARENT,
-                    data="italic", on_click=set_buttons,
-                    #visible=False,  # TEMP
-                ),
-
-                # TODO: Text Controller
-                # size, format_align, font family, letter_spacing, word_spacing, color
-                # decoration, decoration color, decoration thickness, decoration style
-            ]
+    
     
             
     # Checks if our document is dirty, and saves it if it is
@@ -297,12 +246,88 @@ class Document(Widget):
         ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         '''
 
-
-        super().build()
-        
-        async def new_comment_clicked(e=None):
+        class TextController(ft.Row):
+            def __init__(self, widget: 'Document', data: dict):
+                super().__init__(
+                    data=data,
+                    spacing=0,
+                    expand=True,
+                    wrap=True,
+                )
+                self.widget = widget
+                
             
-            # Otherwise its a comment, so hide our button and show our textfield
+            def build(self):
+    
+                # Sets dropdowns on UI changes and updates the correct data
+                def set_dropdowns(e: ft.Event[ft.Dropdown]):
+                    pass
+    
+                # Sets buttons on UI changes and updates the correct data
+                def set_buttons(e: ft.Event[ft.IconButton]):
+                    setting = e.control.data
+                    new_value = not self.data.get(setting, False)
+                    self.data[setting] = new_value
+                    if new_value == True:
+                        e.control.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+                        e.control.icon_color = ft.Colors.PRIMARY
+                    else:
+                        e.control.bgcolor = ft.Colors.TRANSPARENT
+                        e.control.icon_color = ft.Colors.ON_SURFACE_VARIANT
+                    e.control.update()
+                    self.widget.update_data(**{'text_controller_settings': self.data})
+    
+    
+                self.controls = [   
+    
+                    #ft.Text("Text Controller", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT, size=14, italic=True, opacity=.5),
+    
+                    ft.IconButton(
+                        ft.Icons.FORMAT_BOLD,
+                        ft.Colors.PRIMARY if self.data.get('bold', False) else ft.Colors.ON_SURFACE_VARIANT,
+                        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH if self.data.get('bold', False) else ft.Colors.TRANSPARENT,
+                        data="bold", on_click=set_buttons,
+                        #visible=False,  # TEMP
+                    ),
+                    ft.IconButton(
+                        ft.Icons.FORMAT_ITALIC,
+                        ft.Colors.PRIMARY if self.data.get('italic', False) else ft.Colors.ON_SURFACE_VARIANT,
+                        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH if self.data.get('italic', False) else ft.Colors.TRANSPARENT,
+                        data="italic", on_click=set_buttons,
+                        #visible=False,  # TEMP
+                    ),
+    
+                    # TODO: Text Controller
+                    # size, format_align, font family, letter_spacing, word_spacing, color
+                    # decoration, decoration color, decoration thickness, decoration style
+                ]
+
+
+        super().build() # Parent constructor
+
+        # State managments
+        insert_index: int = None    # Where we will insert the new text when typing
+        selected_text_indexes: set = None  # Selected letter start and end idxs for manipulating text when we highlight text
+        cursor_blink_task: asyncio.Task  # Task to blink our cursor span
+
+        # UI elements
+        pages_column: ft.Column = None  # Column that holds our document pages (containers)
+        keyboard_listener: ft.KeyboardListener = None  # Keyboard listener for our document pages
+
+        def create_text_cursor() -> ft.TextSpan:
+            return ft.TextSpan("|", style=ft.TextStyle(color=ft.Colors.TRANSPARENT, weight=ft.FontWeight.BOLD))
+
+        # Cursor text span we insert into our text control to show where the user is typing.
+        text_cursor: ft.TextSpan = create_text_cursor()
+        text_cursor_idx: int = None  # Span index of our text cursor
+
+        # Toolbar for controlling text style and other settings. This is a custom widget that we build below.
+        text_controller_toolbar: TextController = TextController(widget=self, data=self.data.get('text_controller_settings', {}))
+
+
+
+        # Handles adding a new comment, hiding the button and showing the textfield for input
+        async def new_comment_clicked(e=None):
             new_comment_button.visible = False
             new_comment_button.update()
             new_comment_tf.visible = True
@@ -326,7 +351,6 @@ class Document(Widget):
             comments_column.controls.append(new_comment)
             comments_column.update()
 
-            
         # Opens our file picker to imoprt our image
         async def new_ref_image_clicked(e: ft.Event[ft.IconButton]):
             files = await ft.FilePicker().pick_files(allowed_extensions=["jpg", "jpeg", "png", "webp"])
@@ -357,136 +381,272 @@ class Document(Widget):
         # Gets our word count and opens a menu to show it
         async def get_word_count():
             word_count = 0
-            doc_data = await self.quill_editor.save()
-            for block in doc_data:
-                if "insert" in block:
-                    word_count += len(block["insert"].split())
+
+            # OLD
+            #doc_data = await self.quill_editor.save()
+            #for block in doc_data:
+                #if "insert" in block:
+                    #word_count += len(block["insert"].split())
+
+            doc_data = ""
+            # Go through each page and get the text from each span and count the words
+            for container in pages_column.controls:
+                text_span = container.content
+                for span in text_span.spans:
+                    doc_data += span.text
+            word_count = len(doc_data.split())
             self.story.open_menu([MenuOptionStyle(ft.Text(f"Word Count: {word_count}"))])
 
 
-
-
-        # New testing stuff -------------------------------------------------------------------------
-
         # Creates a document with a text control inside that holds our spans and allows for selection and manipulation of text
-        def check_size(e):
-            # TODO: If height > DOCUMENT_HEIGHT - padding*2, make a new doc page ctrl
+        def check_size(e: ft.LayoutSizeChangeEvent[ft.Text]):
+            
             print("New size:", e.width, e.height)
+            if e.height > DOCUMENT_HEIGHT - DOCUMENT_PADDING*2:
+                # TODO: See if new page exists below, if so add to it or smth
+                pass
 
-        def create_doc_txt_ctrl() -> ft.Text:
-            pass
-        def create_doc_page_ctrl() -> ft.Container:
-            pass
-        def create_span(text: str, style: ft.TextStyle=None) -> ft.TextSpan:
-            return ft.TextSpan(text, style=style)
+        # Create our text span with passed in text and style
+        def create_text_span_ctrl(text: str, text_style: ft.TextStyle=None) -> ft.TextSpan:
+            return ft.TextSpan(text=text, style=text_style)
 
+        # Create our text ctrl (1 per page) that holds our spans and allows for selection and manipulation of text
+        def create_doc_txt_ctrl(txt_data: list[dict]) -> ft.Text:
+            nonlocal text_controller_toolbar, text_cursor
 
-        def remove_cursor_span():
-            if cursor_span in document_text.spans:
-                cursor_blink_task.cancel()
-                document_text.spans.remove(cursor_span)
-                document_text.update()
+            # Load our spans
+            spans = [
+                create_text_span_ctrl(
+                    text=block.get('text', ""), 
+                    text_style=ft.TextStyle(**block.get('text_style', {}))
+                ) for block in txt_data
+            ]
 
-        def add_cursor_span(span_idx: int):
-            # The index to insert the span and restart our task
-            return
+            # Create empty span if there is not text
+            if not spans:
+                spans.append(create_text_span_ctrl(text="ABCDEFG", text_style=ft.TextStyle(**text_controller_toolbar.data)))
+
+            spans.append(text_cursor)  # Add our text cursor span to the end of the spans
+
+            # Return the text control
+            return ft.Text(
+                spans=spans,
+                selectable=True, 
+                on_selection_change=handle_select_text,
+                on_size_change=check_size,
+            )
+            
+        def create_doc_page_ctrl(text_ctrl: ft.Text) -> ft.GestureDetector:
+
+            # Updates mouse cursor for visual feedback when hovering
+            def change_mouse_cursor(e: ft.HoverEvent[ft.GestureDetector]):
+                if e.local_position.x < DOCUMENT_PADDING or e.local_position.y < DOCUMENT_PADDING or e.local_position.x > DOCUMENT_WIDTH - DOCUMENT_PADDING or e.local_position.y > DOCUMENT_HEIGHT - DOCUMENT_PADDING:
+                    e.control.mouse_cursor = None
+                else:
+                    e.control.mouse_cursor = ft.MouseCursor.CLICK
+                e.control.update()
+
+            def handle_taps(e: ft.TapEvent[ft.GestureDetector]):
+                # Check we tapped within bounds
+                if e.control.mouse_cursor is not None:
+
+                    print("Tapped page")
+
+            return ft.GestureDetector(
+                ft.Container(
+                    text_ctrl,
+                    border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
+                    border_radius=4,
+                    width=DOCUMENT_WIDTH, 
+                    height=DOCUMENT_HEIGHT,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                    padding=ft.Padding.all(DOCUMENT_PADDING), 
+                    align=ft.Alignment.TOP_CENTER,
+                    alignment=ft.Alignment.TOP_LEFT, 
+                    #margin=ft.Margin.symmetric(horizontal=DOCUMENT_HORIZONTAL_MARGIN, vertical=DOCUMENT_VERTICAL_MARGIN),
+                ),
+                on_tap=handle_taps,
+                on_hover=change_mouse_cursor,
+                hover_interval=50,
+                width=DOCUMENT_WIDTH, 
+                height=DOCUMENT_HEIGHT,
+                margin=ft.Margin.symmetric(horizontal=DOCUMENT_HORIZONTAL_MARGIN, vertical=DOCUMENT_VERTICAL_MARGIN),
+            )
+               
+        
+        # TODO: Check if doc blank and auto-visible cursor
+
+        
+                
+        # Re-creates the text cursor and blink task
+        def build_text_cursor():
+            nonlocal cursor_blink_task, text_cursor
+            text_cursor = create_text_cursor()  # Reset the cursor span
             cursor_blink_task = asyncio.create_task(blink_cursor())
+
+        # Removes our text cursor from thep age if its on it and sets it to None
+        def remove_text_cursor() -> int | None:
+            nonlocal cursor_blink_task, text_cursor
+            span_idx = 0
+            for page_ctrl in pages_column.controls:
+                text_ctrl = page_ctrl.content.content  # Grab the text control we tapped on
+                for idx, span in enumerate(text_ctrl.spans):
+                    if span == text_cursor:
+                        text_ctrl.spans.remove(span)
+                        span_idx = idx
+                        break   
+            if cursor_blink_task:  
+                cursor_blink_task.cancel()
+            text_cursor = None
+            return span_idx  # Return the index of the span we removed so we can insert it back in the same place if needed
 
         # Temp for manipulating
         def handle_select_text(e: ft.TextSelectionChangeEvent):
+            nonlocal insert_index, selected_text_indexes, text_cursor
 
-            # Also check if selecting cursor and ignore that
+            # Grab the page index and page ctrl we clicked on
+            page_idx = pages_column.controls.index(e.control.parent.parent)    # Grag the page we're on
+            page_ctrl = pages_column.controls[page_idx]
 
             # Start and end idx of each letter in the text
-            start_idx = e.selection.start
-            end_idx = e.selection.end
-            selected_length = end_idx - start_idx
-            #print(e.selected_text, "\n", e)
+            start_character_idx = e.selection.start
+            end_character_idx = e.selection.end
 
-            # When there was just a tap, we insert the cursor span at the 
-            if start_idx == end_idx:
 
-                remove_cursor_span()
+            if start_character_idx != end_character_idx:
+                remove_text_cursor()  # Remove the text cursor if its already on the page
+                selected_text_indexes = (start_character_idx, end_character_idx)
+
+            # When there was just a tap (start == ends), we unsert our cursor span there
+            else:
+
+                # Find our insert index based on where we tapped
+                insert_index = start_character_idx  # Set our insert index to where we tapped
+
+                text_ctrl = page_ctrl.content.content  # Grab the text control we tapped on
+
+                # Find the span length of the text control on the page and totla character length of the text control
+                span_length = len(text_ctrl.spans) - 1 if text_cursor in text_ctrl.spans else len(text_ctrl.spans)
+                character_length = sum(len(span.text) for span in text_ctrl.spans if span != text_cursor)  # Get the total number of characters in the text control
+                
+                # If at the start, just insert our text_cursor there and skip all logic
+                if insert_index == 0:
+                    remove_text_cursor()  # Remove the text cursor if its already on the page
+                    build_text_cursor()  # Recreates the text cursor, but doesnt add it back to the page yet
+                    text_ctrl.spans.insert(0, text_cursor)
+
+                # If inserting at end, just append our text_cursor to the end and skip all logics
+                elif insert_index >= character_length:
+                    remove_text_cursor()  # Remove the text cursor if its already on the page
+                    build_text_cursor()  # Recreates the text cursor, but doesnt add it back to
+                    text_ctrl.spans.append(text_cursor)
+
+                # Otherwise we're in the middle, so we have to split a text span
+                else:
+
+                    text_cursor_idx = None
+                    for page_ctrl in pages_column.controls:
+                        text_ctrl = page_ctrl.content.content  # Grab the text control we tapped on
+                        for idx, span in enumerate(text_ctrl.spans):
+                            if span == text_cursor:
+                                text_cursor_idx = idx
+                                break
+                    text_cursor_char_idx = sum(len(span.text) for span in text_ctrl.spans[:text_cursor_idx]) if text_cursor_idx is not None else 0  # Get the character index of the text cursor if it was on the page
+
+                    # Catch clicking just in front or behind text cursor, and ignore movement
+                    if text_cursor_char_idx is not None and insert_index == text_cursor_char_idx or insert_index == text_cursor_char_idx + 1:
+                        remove_text_cursor()  # Remove the text cursor if its already on the page
+                        build_text_cursor()  # Recreates the text cursor, but doesnt add it back to the page yet
+                        text_ctrl.spans.insert(text_cursor_idx, text_cursor)  # Insert the cursor span
+                        page_ctrl.update()
+                        return
+                    
+                    
+                    # Set a character index to keep track of where in the text control we have checked
+                    char_idx = 0 
+
+                    # Go through each span
+                    for span_idx, span in enumerate(text_ctrl.spans):
+
+                        span_length = len(span.text)    # Grab this spans length
+
+                        # If our current char_index + this spans length is less than our insert index, skip the span and just add its length
+                        if char_idx + span_length < insert_index:
+                            char_idx += span_length
+                            continue
+
+                        split_idx = insert_index - char_idx  # Find the index to split this span at
+
+                        before_text = span.text[:split_idx]  # Text before the split
+                        after_text = span.text[split_idx:]   # Text after the split
+
+                        # Create new spans for before and after
+                        before_span = create_text_span_ctrl(text=before_text, text_style=span.style) if before_text else None
+                        after_span = create_text_span_ctrl(text=after_text, text_style=span.style) if after_text else None
+
+                        text_ctrl.spans.remove(span)  # Remove the original span
+                        # Remove the text cursor
+                        remove_text_cursor()
+                        build_text_cursor()  # Recreates text cursor, but doesnt add it back to the page yet
+
+                        # Add our before span, cursor span, and after span back to the text control in the correct order
+                        if before_span:
+                            text_ctrl.spans.insert(span_idx, before_span)  # Insert the before span
+                            text_ctrl.spans.insert(span_idx + 1, text_cursor)  # Insert the
+                            if after_span:
+                                text_ctrl.spans.insert(span_idx + 2, after_span)  # Insert the after span
+                            break
+
+                        text_ctrl.spans.insert(span_idx, text_cursor)  # Insert the cursor span if no before span
+                        if after_span:
+                            text_ctrl.spans.insert(span_idx + 1, after_span)  # Insert the after span
+                        break
+                page_ctrl.update()
+                print("New page spans:", [span.text for span in text_ctrl.spans])
+                return
+
+            # No tap, we hide the cursor and let the text highlight. update indexes we need
+            
+            page_ctrl.update()
+            # TODO: Bug where inserting right after text cursor span issue
+            # TODO: Update toolbar as well based on selected text
 
                 
-
-                span_lengths = [len(span.text) for span in document_text.spans if span is not cursor_span]
-
-                # add_cursor_span(span_idx)
-                # Calculate new idx for spans adding here and do it
-                # Add it here
-
-                return
-            # Highlighted something, so remove the cursor
-            remove_cursor_span()
-
-            #print(start_idx, end_idx)
-
-            # Find included spans here based in index and length of highlighted text
-
-
-
+            
+            
+        # Blinks the cursor between invisible and our primary color
         async def blink_cursor():
             while True:
-                await asyncio.sleep(0.75)
-                if cursor_span is not None:
-                    if cursor_span.style.color == ft.Colors.TRANSPARENT:
-                        cursor_span.style.color = ft.Colors.PRIMARY
+                if text_cursor:
+                    if text_cursor.style.color == ft.Colors.TRANSPARENT:
+                        text_cursor.style.color = ft.Colors.PRIMARY
                     else:
-                        cursor_span.style.color = ft.Colors.TRANSPARENT
-                    #cursor_span.update()
+                        text_cursor.style.color = ft.Colors.TRANSPARENT
+                    text_cursor.update()
+                await asyncio.sleep(0.7)
 
 
         def handle_keystroke(e: ft.KeyboardEvent):
+            nonlocal insert_index, selected_text_indexes, text_cursor
+
+            # If we're not focused on the text control, ignore
+            if not text_cursor.visible:
+                return
+            
             # TODO: # Standard keys, arrow keys, delete, copy, cut, paste, etc.
             
             self.needs_file_write = True
             #print(e.key)
             print(e)
-            document_text.spans[-1].text = document_text.spans[-1].text + str(e.key)
-            document_text.update()
-            print("New text:", document_text.spans[-1].text)
+            #document_text.spans[-1].text = document_text.spans[-1].text + str(e.key)
+            #document_text.update()
+            #print("New text:", document_text.spans[-1].text)
+
+        cursor_blink_task = asyncio.create_task(blink_cursor()) 
             
-        
-
-        
-        selected_text: set = set()  # Selected letter start and end idxs for manipulating text
-
-        active_span: ft.TextSpan = ft.TextSpan()   # Active span to manipulate text
-        cursor_span = ft.TextSpan(
-            "|",
-            style=ft.TextStyle(color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD)
-        )
-
-        text_controller_toolbar = self.TextController(widget=self, data=self.data.get('text_controller_settings', {}))
-
-        
-
-        document_text = ft.Text(   # Text control to hold our spans
-            spans=[
-                ft.TextSpan("Temp for testing\n", expand=True), 
-                ft.TextSpan("Even more text", expand=True), 
-                #cursor_span,
-            ],
-            on_selection_change=handle_select_text, selectable=True, expand=True,
-            on_size_change=check_size
-        )      
-        cursor_blink_task: asyncio.Task = asyncio.create_task(blink_cursor())
-        
-        
-        editor_container = ft.Container(
-            document_text, 
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
-            border_radius=4,
-            width=DOCUMENT_WIDTH, 
-            height=DOCUMENT_HEIGHT,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-            padding=ft.Padding.all(DOCUMENT_PADDING), 
-            align=ft.Alignment.TOP_CENTER,
-            alignment=ft.Alignment.TOP_LEFT, 
-            margin=ft.Margin.symmetric(horizontal=70, vertical=50),
-        )
-
+        # Create initial text controls (1), but upon building, they will size and scale out to new pages if needed
+        initial_text_ctrl = create_doc_txt_ctrl(self.data.get('new_doc_data', []))
+        initial_page_ctrl = create_doc_page_ctrl(initial_text_ctrl)
 
         # Build our comments and reference images columns from data
         comments_column = ft.Column(
@@ -497,7 +657,6 @@ class Document(Widget):
             [self.ReferenceImage(widget=self, data=mw_data) for mw_data in self.data.get('reference_images', {}).values()], 
             tight=True
         )
-
 
         # Word count button
         word_count_button = ft.IconButton(
@@ -542,13 +701,18 @@ class Document(Widget):
 
             ref_img_column
         ])
-        
+
+        # Create the pages column that holds our document pages (containers) and add the keyboard listener to it
+        pages_column = ft.Column([initial_page_ctrl], spacing=0, scroll=ft.ScrollMode.HIDDEN, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+
+        # Create the keyboard listener for handling events inside the pages column
         keyboard_listener = ft.KeyboardListener(
-            ft.Column([editor_container], scroll=ft.ScrollMode.HIDDEN, spacing=0), 
+            pages_column, 
             on_key_down=handle_keystroke, # Normal presses
             on_key_repeat=handle_keystroke  # Holding keys
         )
 
+        # Format our content
         self.content = ft.Column([
             ft.Container(text_controller_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT, padding=ft.Padding.only(left=4)),
             ft.Divider(2, 2),
