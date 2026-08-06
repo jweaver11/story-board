@@ -836,7 +836,7 @@ class CanvasRail(ft.Container):
 
                 width_tf,
                 blur_tf,
-                stroke_smoothing_tf,
+                #stroke_smoothing_tf,
 
                 #ft.Row([
                     #brush_smoothing_switch,

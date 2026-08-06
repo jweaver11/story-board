@@ -28,7 +28,6 @@ from PIL import Image, ImageDraw, ImageTk
 MINIMUM_SEGMENT_DISTANCE = 2
 MAX_SHAPES_BEFORE_CAPTURE = 100
 MAX_UNDO_LIST_TASKS = 30
-SUPERSAMPLE = 1 # TODO: Setting
 
 
 class Canvas(Widget):
@@ -416,8 +415,7 @@ class Canvas(Widget):
         canvas.update()
         await self.end_stroke(canvas)   # Force a stroke end since it wont have pan end events
 
-        # TODO: Erase not saving on canvases
-        # Use cap/get gap checks to avoid pasting images where not needed
+        
 
     # Tap event for adding a tool to the canvas
     async def add_tool(self, e: ft.TapEvent):
@@ -513,7 +511,7 @@ class Canvas(Widget):
     # Updates the current stroke shape on the canvas depending on our settings
     def update_stroke(self, e: ft.DragUpdateEvent):
 
-        # TODO: Handle brush and stroke smoothing
+        # TODO: Handle Stroke smoothing
         
         # Sampling to improve perforamance. If the line length is too small, we skip it
         #dx = e.local_position.x - self.state.x
@@ -610,6 +608,8 @@ class Canvas(Widget):
             #'layer_id': layer_data.get('name', ''),
             #'data': self.current_path
         #})
+
+        # TODO: Erase not saving on canvases
 
         
     # Saves any changes to the current layer canvas to its png file, and returns the bytes if other functions need it
@@ -1369,9 +1369,9 @@ class Canvas(Widget):
         # Controls drawing for our canvases
         self.canvas_controller = ft.GestureDetector(
             #mouse_cursor=ft.MouseCursor.NONE,
-            on_pan_start=self.start_stroke,         # Starts a new brush stroke with current paint settings
-            on_pan_update=self.update_stroke,           # Updates the current stroke based on mouse movement
-            on_pan_end=self.end_stroke,                # Saves the now complete stroke to our data and canvas capture
+            on_pan_start=self.handle_pan_start,         # Starts a new brush stroke with current paint settings
+            on_pan_update=self.handle_pan_update,           # Updates the current stroke based on mouse movement
+            on_pan_end=self.handle_pan_end,                # Saves the now complete stroke to our data and canvas capture
             on_hover=lambda e: self.move_mouse_cursor(e.local_position),
             on_tap_up=self.handle_tap,                   # Handles adding dots and tools
             width=self.CANVAS_WIDTH,
