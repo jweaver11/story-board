@@ -13,6 +13,7 @@ from styles.menu_option_style import MenuOptionStyle
 
 DOCUMENT_WIDTH = 820
 DOCUMENT_HEIGHT = 1060
+DOCUMENT_PADDING = 80
 
 
 # Class that holds our text document objects
@@ -40,7 +41,7 @@ class Document(Widget):
 
                 # Settings for the toolbar
                 'text_controller_settings': {
-                    'font_family': "Arial",
+                    'font_family': app.settings.data.get('widget_defaults', {}).get('document', {}).get('text_controller_settings', {}).get('font_family', "Arial"),
                     'font_size': 12,
                     'bold': False,
                     'italic': False,
@@ -57,23 +58,19 @@ class Document(Widget):
                 # The text as json list data that is loaded and saved
                 'document_data': list(),       
 
+                # Temp data name when testing new doc data
                 'new_doc_data': list(), 
                 #[
                 # {
-                # 'style': {
+                # 'text_style': {
                     # 'bold': False, 
                     # 'italic', False...
                     # }, 
                 # 'text': "Hello World!\n"
                 # }, ...
                 # ],  # Default data for new documents
-            }
-        )  
-        self.dirty: bool = False  # Marks if our document has unsaved changes that need to be written to file
-        self.quill_editor: FletQuillEditor  # Will hold our flet quill editor object
-        self.comments_column: ft.Column  # Will hold our comments and reference images on the right side of the document
-        self.ref_img_column: ft.Column  # Will hold our comments and reference images on the right side of the document
-        self.editor_stack: ft.Stack  # Will hold our editor container and any other overlays that need to be on top of it
+            })  
+            ft.TextStyle()
 
     class Comment(TextField):
 
@@ -178,7 +175,7 @@ class Document(Widget):
                 on_exit=hide_delete_icon,
             )
 
-    '''
+    
     class TextController(ft.Row):
         def __init__(self, widget, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -187,6 +184,7 @@ class Document(Widget):
             self.widget = widget
             self.expand = True
             self.spacing = 0
+            self.wrap = True
 
         def build(self):
 
@@ -232,83 +230,21 @@ class Document(Widget):
                 # size, format_align, font family, letter_spacing, word_spacing, color
                 # decoration, decoration color, decoration thickness, decoration style
             ]
-    '''
+    
             
     # Checks if our document is dirty, and saves it if it is
     async def save_file(self):
-        if self.dirty == True:
-            self.dirty = False
-            self.update_data(**{'document_data': await self.quill_editor.save()})
+        #if self.dirty == True:
+            #self.dirty = False
+
+            #self.update_data(**{'document_data': await self.quill_editor.save()})
         await super().save_file()
 
     # Called after any changes happen to the data that need to be reflected in the UI
     def build(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
-        super().build()
-
-        async def new_comment_clicked(e=None):
-            
-            # Otherwise its a comment, so hide our button and show our textfield
-            new_comment_button.visible = False
-            new_comment_button.update()
-            new_comment_tf.visible = True
-            new_comment_tf.value = ""
-            new_comment_tf.update()
-            await new_comment_tf.focus()  
-
-        # Shows our new mini widget button and hides our textfield after creating/blurring comment tf
-        def show_new_comment_button(e=None):
-            new_comment_button.visible = True
-            new_comment_button.update()
-            new_comment_tf.value = ""
-            new_comment_tf.visible = False
-            new_comment_tf.update()
-
-        # Creates our new comment in data then adds it to the column
-        def create_comment(e: ft.Event[ft.TextField]):
-            comment_title = e.control.value.strip()
-            new_comment = self.Comment(title=comment_title, widget=self)
-            self.update_data(**{'comments': {new_comment.data["id"]: new_comment.data}})
-            self.comments_column.controls.append(new_comment)
-            self.comments_column.update()
-
-            
-        # Opens our file picker to imoprt our image
-        async def new_ref_image_clicked(e: ft.Event[ft.IconButton]):
-            files = await ft.FilePicker().pick_files(allowed_extensions=["jpg", "jpeg", "png", "webp"])
-            if files:
-
-                file_path = files[0].path
-                try:
-                    import base64
-
-                    with open(file_path, "rb") as image_file:
-                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-
-                    reference_image = self.ReferenceImage(
-                        widget=self, 
-                        data={
-                            'id': str(uuid.uuid4()),
-                            'tag': "reference_image",
-                            'image': encoded_string,
-                        }
-                    )
-                    self.update_data(**{'reference_images': {reference_image.data["id"]: reference_image.data}})
-                    self.ref_img_column.controls.append(reference_image)
-                    self.ref_img_column.update()
-                        
-                except Exception as e:
-                    e.control.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
-
-        # Gets our word count and opens a menu to show it
-        async def get_word_count():
-            word_count = 0
-            doc_data = await self.quill_editor.save()
-            for block in doc_data:
-                if "insert" in block:
-                    word_count += len(block["insert"].split())
-            self.story.open_menu([MenuOptionStyle(ft.Text(f"Word Count: {word_count}"))])
+        '''
         
         # Marks ourselves as dirty after any changes to the document
         def mark_dirty(e=None):
@@ -346,12 +282,218 @@ class Document(Widget):
             #aspect_ratio=8.5/11.0,  # paper-like ratio
         )
         
-        # Otherwise, build our info column
-        self.comments_column = ft.Column(
+        
+
+        
+
+        self.content = ft.Column([
+            ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT),
+            ft.Divider(2, 2),
+            ft.Row([
+                ft.Container(ft.Column([editor_container], scroll=ft.ScrollMode.HIDDEN), expand=True),
+                self.toggle_sidebar_visibility_button, 
+                self.sidebar,
+            ], spacing=0, expand=True),
+        ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+        '''
+
+
+        super().build()
+        
+        async def new_comment_clicked(e=None):
+            
+            # Otherwise its a comment, so hide our button and show our textfield
+            new_comment_button.visible = False
+            new_comment_button.update()
+            new_comment_tf.visible = True
+            new_comment_tf.value = ""
+            new_comment_tf.update()
+            await new_comment_tf.focus()  
+
+        # Shows our new mini widget button and hides our textfield after creating/blurring comment tf
+        def show_new_comment_button(e=None):
+            new_comment_button.visible = True
+            new_comment_button.update()
+            new_comment_tf.value = ""
+            new_comment_tf.visible = False
+            new_comment_tf.update()
+
+        # Creates our new comment in data then adds it to the column
+        def create_comment(e: ft.Event[ft.TextField]):
+            comment_title = e.control.value.strip()
+            new_comment = self.Comment(title=comment_title, widget=self)
+            self.update_data(**{'comments': {new_comment.data["id"]: new_comment.data}})
+            comments_column.controls.append(new_comment)
+            comments_column.update()
+
+            
+        # Opens our file picker to imoprt our image
+        async def new_ref_image_clicked(e: ft.Event[ft.IconButton]):
+            files = await ft.FilePicker().pick_files(allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            if files:
+
+                file_path = files[0].path
+                try:
+                    import base64
+
+                    with open(file_path, "rb") as image_file:
+                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+
+                    reference_image = self.ReferenceImage(
+                        widget=self, 
+                        data={
+                            'id': str(uuid.uuid4()),
+                            'tag': "reference_image",
+                            'image': encoded_string,
+                        }
+                    )
+                    self.update_data(**{'reference_images': {reference_image.data["id"]: reference_image.data}})
+                    ref_img_column.controls.append(reference_image)
+                    ref_img_column.update()
+                        
+                except Exception as e:
+                    e.control.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
+
+        # Gets our word count and opens a menu to show it
+        async def get_word_count():
+            word_count = 0
+            doc_data = await self.quill_editor.save()
+            for block in doc_data:
+                if "insert" in block:
+                    word_count += len(block["insert"].split())
+            self.story.open_menu([MenuOptionStyle(ft.Text(f"Word Count: {word_count}"))])
+
+
+
+
+        # New testing stuff -------------------------------------------------------------------------
+
+        # Creates a document with a text control inside that holds our spans and allows for selection and manipulation of text
+        def check_size(e):
+            # TODO: If height > DOCUMENT_HEIGHT - padding*2, make a new doc page ctrl
+            print("New size:", e.width, e.height)
+
+        def create_doc_txt_ctrl() -> ft.Text:
+            pass
+        def create_doc_page_ctrl() -> ft.Container:
+            pass
+        def create_span(text: str, style: ft.TextStyle=None) -> ft.TextSpan:
+            return ft.TextSpan(text, style=style)
+
+
+        def remove_cursor_span():
+            if cursor_span in document_text.spans:
+                cursor_blink_task.cancel()
+                document_text.spans.remove(cursor_span)
+                document_text.update()
+
+        def add_cursor_span(span_idx: int):
+            # The index to insert the span and restart our task
+            return
+            cursor_blink_task = asyncio.create_task(blink_cursor())
+
+        # Temp for manipulating
+        def handle_select_text(e: ft.TextSelectionChangeEvent):
+
+            # Also check if selecting cursor and ignore that
+
+            # Start and end idx of each letter in the text
+            start_idx = e.selection.start
+            end_idx = e.selection.end
+            selected_length = end_idx - start_idx
+            #print(e.selected_text, "\n", e)
+
+            # When there was just a tap, we insert the cursor span at the 
+            if start_idx == end_idx:
+
+                remove_cursor_span()
+
+                
+
+                span_lengths = [len(span.text) for span in document_text.spans if span is not cursor_span]
+
+                # add_cursor_span(span_idx)
+                # Calculate new idx for spans adding here and do it
+                # Add it here
+
+                return
+            # Highlighted something, so remove the cursor
+            remove_cursor_span()
+
+            #print(start_idx, end_idx)
+
+            # Find included spans here based in index and length of highlighted text
+
+
+
+        async def blink_cursor():
+            while True:
+                await asyncio.sleep(0.75)
+                if cursor_span is not None:
+                    if cursor_span.style.color == ft.Colors.TRANSPARENT:
+                        cursor_span.style.color = ft.Colors.PRIMARY
+                    else:
+                        cursor_span.style.color = ft.Colors.TRANSPARENT
+                    #cursor_span.update()
+
+
+        def handle_keystroke(e: ft.KeyboardEvent):
+            # TODO: # Standard keys, arrow keys, delete, copy, cut, paste, etc.
+            
+            self.needs_file_write = True
+            #print(e.key)
+            print(e)
+            document_text.spans[-1].text = document_text.spans[-1].text + str(e.key)
+            document_text.update()
+            print("New text:", document_text.spans[-1].text)
+            
+        
+
+        
+        selected_text: set = set()  # Selected letter start and end idxs for manipulating text
+
+        active_span: ft.TextSpan = ft.TextSpan()   # Active span to manipulate text
+        cursor_span = ft.TextSpan(
+            "|",
+            style=ft.TextStyle(color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD)
+        )
+
+        text_controller_toolbar = self.TextController(widget=self, data=self.data.get('text_controller_settings', {}))
+
+        
+
+        document_text = ft.Text(   # Text control to hold our spans
+            spans=[
+                ft.TextSpan("Temp for testing\n", expand=True), 
+                ft.TextSpan("Even more text", expand=True), 
+                #cursor_span,
+            ],
+            on_selection_change=handle_select_text, selectable=True, expand=True,
+            on_size_change=check_size
+        )      
+        cursor_blink_task: asyncio.Task = asyncio.create_task(blink_cursor())
+        
+        
+        editor_container = ft.Container(
+            document_text, 
+            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
+            border_radius=4,
+            width=DOCUMENT_WIDTH, 
+            height=DOCUMENT_HEIGHT,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+            padding=ft.Padding.all(DOCUMENT_PADDING), 
+            align=ft.Alignment.TOP_CENTER,
+            alignment=ft.Alignment.TOP_LEFT, 
+            margin=ft.Margin.symmetric(horizontal=70, vertical=50),
+        )
+
+
+        # Build our comments and reference images columns from data
+        comments_column = ft.Column(
             [self.Comment(title=comment_data.get('title'), widget=self, data=comment_data) for comment_data in self.data.get('comments', {}).values()], 
             tight=True
         )
-        self.ref_img_column = ft.Column(
+        ref_img_column = ft.Column(
             [self.ReferenceImage(widget=self, data=mw_data) for mw_data in self.data.get('reference_images', {}).values()], 
             tight=True
         )
@@ -363,9 +505,11 @@ class Document(Widget):
             tooltip="Word Count", 
             on_click=get_word_count,
         )
+
+        # Set our mouse coords whenever we hover over word count button
         self.sidebar_header.controls.append(ft.GestureDetector(word_count_button, on_hover=self.set_mouse_coords, hover_interval=50))
         
-        
+        # Build the sidebar
         self.sidebar_body.controls.extend([
             ft.Row([
                 
@@ -385,7 +529,7 @@ class Document(Widget):
                     
             ], spacing=0),
             
-            self.comments_column, 
+            comments_column, 
 
             ft.Row([
                 ft.Text("Reference Images", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
@@ -396,129 +540,26 @@ class Document(Widget):
                 ), 
             ], spacing=0),
 
-            self.ref_img_column
+            ref_img_column
         ])
-
         
+        keyboard_listener = ft.KeyboardListener(
+            ft.Column([editor_container], scroll=ft.ScrollMode.HIDDEN, spacing=0), 
+            on_key_down=handle_keystroke, # Normal presses
+            on_key_repeat=handle_keystroke  # Holding keys
+        )
 
         self.content = ft.Column([
-            ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT),
+            ft.Container(text_controller_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT, padding=ft.Padding.only(left=4)),
             ft.Divider(2, 2),
-            ft.Row([
-                ft.Container(ft.Column([editor_container], scroll=ft.ScrollMode.HIDDEN), expand=True),
+             ft.Row([
+                ft.Container(keyboard_listener, expand=True),
                 self.toggle_sidebar_visibility_button, 
                 self.sidebar,
             ], spacing=0, expand=True),
         ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-
-
-        '''
-
-        # New testing stuff -------------------------------------------------------------------------
-        def remove_cursor_span():
-            if cursor_span in self.document_text.spans:
-                self.cursor_blink_task.cancel()
-                self.document_text.spans.remove(cursor_span)
-                self.document_text.update()
-
-        def add_cursor_span(span_idx: int):
-            # The index to insert the span and restart our task
-            return
-            self.cursor_blink_task = asyncio.create_task(blink_cursor())
-
-        # Temp for manipulating
-        def handle_select_text(e: ft.TextSelectionChangeEvent):
-
-            # Also check if selecting cursor and ignore that
-
-            # Start and end idx of each letter in the text
-            start_idx = e.selection.start
-            end_idx = e.selection.end
-            selected_length = end_idx - start_idx
-            print(e.selected_text, "\n", e)
-
-            # When there was just a tap, we insert the cursor span at the 
-            if start_idx == end_idx:
-
-                remove_cursor_span()
-
-                
-
-                span_lengths = [len(span.text) for span in self.document_text.spans if span is not cursor_span]
-
-                # add_cursor_span(span_idx)
-                # Calculate new idx for spans adding here and do it
-                # Add it here
-
-                return
-            # Highlighted something, so remove the cursor
-            remove_cursor_span()
-
-            print(start_idx, end_idx)
-
-            # Find included spans here based in index and length of highlighted text
-
-
-
-        async def blink_cursor():
-            while True:
-                await asyncio.sleep(0.75)
-                if cursor_span is not None:
-                    if cursor_span.style.color == ft.Colors.TRANSPARENT:
-                        cursor_span.style.color = ft.Colors.PRIMARY
-                    else:
-                        cursor_span.style.color = ft.Colors.TRANSPARENT
-                    cursor_span.update()
-
-
-        def handle_keystroke(e: ft.KeyboardEvent):
-            # Mark us dirty
-            if self.dirty == False:
-                self.dirty = True
-            # Standard keys, arrow keys, delete, paste, etc.
         
 
-        self.cursor_blink_task: asyncio.Task = None
-        self.cursor_blink_task = asyncio.create_task(blink_cursor())
-        self.selected_text: set = set()  # Selected letter start and end idxs for manipulating text
-
-        self.active_span: ft.TextSpan = ft.TextSpan()   # Active span to manipulate text
-        cursor_span = ft.TextSpan(
-            "|",
-            style=ft.TextStyle(color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD)
-        )
-
-        text_controller = self.TextController(self, data=self.data.get('text_controller_settings', {}))
-
-        self.document_text = ft.Text(   # Text control to hold our spans
-            spans=[ft.TextSpan("Temp for testing\n"), ft.TextSpan("Even more text"), cursor_span,],
-            on_selection_change=handle_select_text, selectable=True, expand=True, expand_loose=True,
-        )      
         
         
-        editor_container =ft.Container(
-            ft.Column([ft.KeyboardListener(self.document_text, on_key_down=handle_keystroke, expand=True)], expand=True, scroll=ft.ScrollMode.AUTO),
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
-            border_radius=4,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-            padding=ft.Padding.all(80), 
-            expand=True, alignment=ft.Alignment.TOP_LEFT, 
-            margin=ft.Margin.symmetric(horizontal=70, vertical=50),
-            #aspect_ratio=8.5/11.0,  # paper-like ratio
-        )
-        
-
-        self.content = ft.Column([
-            ft.Container(text_controller, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT),
-            ft.Divider(2, 2),
-            ft.Row([
-                editor_container,
-                self.toggle_sidebar_visibility_button, 
-                self.sidebar
-            ], spacing=0, expand=True),
-        ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-        # TODO New cursor solution, since the one currently sux
-
-        
-        '''
 
