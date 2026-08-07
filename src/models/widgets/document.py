@@ -73,6 +73,7 @@ class Document(Widget):
                 # ],  # Default data for new documents
             })  
             ft.TextStyle()
+        self.dirty = False  # Marks if the document has unsaved changes
 
     class Comment(TextField):
 
@@ -183,17 +184,72 @@ class Document(Widget):
             
     # Checks if our document is dirty, and saves it if it is
     async def save_file(self):
-        #if self.dirty == True:
-            #self.dirty = False
-
-            #self.update_data(**{'document_data': await self.quill_editor.save()})
+        if self.dirty == True:
+            self.dirty = False
+            self.update_data(**{'document_data': await self.quill_editor.save()})
         await super().save_file()
 
-    # Called after any changes happen to the data that need to be reflected in the UI
     def build(self):
+
+
+
+
+        # TODO: build editor stuff here
+        # Marks ourselves as dirty after any changes to the document
+        def mark_dirty(e=None):
+            if self.dirty == False:
+                self.dirty = True
+
+        super().build() # Parent constructor
+            
+        
+        # Grab our flet quill elements
+        quill_toolbar = FletQuillToolbar()  # Toolbar
+        self.quill_editor = FletQuillEditor(    # Editor
+            text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),   # Pass in data
+            placeholder_text="Start your masterpiece here...",
+            expand=True
+        )
+
+        # Holds our flet quill
+        editor_container = ft.Container(
+            ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty, expand=True),
+            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
+            border_radius=4,
+            width=DOCUMENT_WIDTH, height=DOCUMENT_HEIGHT,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+            padding=ft.Padding.all(80), 
+            align=ft.Alignment.TOP_CENTER,
+            alignment=ft.Alignment.TOP_LEFT, 
+            margin=ft.Margin.symmetric(horizontal=70, vertical=50),
+            on_size_change=lambda e: print("New size:", e.width, e.height),
+            #aspect_ratio=8.5/11.0,  # paper-like ratio
+        )
+        
+        
+        # TODO:
+        # Make sure editor and containers fit correctly like how they did in build_old
+        # Re-add build_old functionality that is needed here, mostly for sidebar
+        # Use a stack to hold 'pages' (containers with bgcolor and padding) sit...
+        # under the quill editor. When quill editor becomes too tall, we 
+        # await editor.page_break() to insert its break
+        
+
+        self.content = ft.Column([
+            ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT, padding=ft.Padding.only(left=4)),
+            ft.Divider(2, 2),
+            ft.Row([
+                ft.Container(ft.Column([editor_container], scroll=ft.ScrollMode.HIDDEN), expand=True),
+                self.toggle_sidebar_visibility_button, 
+                self.sidebar,
+            ], spacing=0, expand=True),
+        ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+
+    # Called after any changes happen to the data that need to be reflected in the UI
+    def build_old(self):
         ''' Reloads/Rebuilds our widget based on current data '''
 
-        '''
+        
         
         # Marks ourselves as dirty after any changes to the document
         def mark_dirty(e=None):
@@ -223,8 +279,6 @@ class Document(Widget):
             width=DOCUMENT_WIDTH, height=DOCUMENT_HEIGHT,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
             padding=ft.Padding.all(80), 
-            #expand=True, 
-            #expand=True,
             align=ft.Alignment.TOP_CENTER,
             alignment=ft.Alignment.TOP_LEFT, 
             margin=ft.Margin.symmetric(horizontal=70, vertical=50),
@@ -236,7 +290,7 @@ class Document(Widget):
         
 
         self.content = ft.Column([
-            ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT),
+            ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT, padding=ft.Padding.only(left=4)),
             ft.Divider(2, 2),
             ft.Row([
                 ft.Container(ft.Column([editor_container], scroll=ft.ScrollMode.HIDDEN), expand=True),
@@ -244,7 +298,7 @@ class Document(Widget):
                 self.sidebar,
             ], spacing=0, expand=True),
         ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-        '''
+        
 
         class TextController(ft.Row):
             def __init__(self, widget: 'Document', data: dict):
@@ -324,6 +378,7 @@ class Document(Widget):
         # Toolbar for controlling text style and other settings. This is a custom widget that we build below.
         text_controller_toolbar: TextController = TextController(widget=self, data=self.data.get('text_controller_settings', {}))
 
+        pages_column = ft.Column([initial_page_ctrl], spacing=0, scroll=ft.ScrollMode.HIDDEN, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
 
         # Handles adding a new comment, hiding the button and showing the textfield for input
@@ -703,7 +758,6 @@ class Document(Widget):
         ])
 
         # Create the pages column that holds our document pages (containers) and add the keyboard listener to it
-        pages_column = ft.Column([initial_page_ctrl], spacing=0, scroll=ft.ScrollMode.HIDDEN, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
         # Create the keyboard listener for handling events inside the pages column
         keyboard_listener = ft.KeyboardListener(
