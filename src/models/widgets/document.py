@@ -177,10 +177,6 @@ class Document(Widget):
                 on_enter=show_delete_icon,
                 on_exit=hide_delete_icon,
             )
-
-    
-    
-    
             
     # Checks if our document is dirty, and saves it if it is
     async def save_file(self):
@@ -192,13 +188,80 @@ class Document(Widget):
     def build(self):
 
 
-
+        # Gets our word count and opens a menu to show it
+        async def get_word_count():
+            word_count = 0
+            doc_data = await self.quill_editor.save()
+            for block in doc_data:
+                if "insert" in block:
+                    word_count += len(block["insert"].split())
+            self.story.open_menu([MenuOptionStyle(ft.Text(f"Word Count: {word_count}"))])
 
         # TODO: build editor stuff here
         # Marks ourselves as dirty after any changes to the document
         def mark_dirty(e=None):
             if self.dirty == False:
                 self.dirty = True
+
+        # Creates a document with a text control inside that holds our spans and allows for selection and manipulation of text
+        def check_size(e: ft.LayoutSizeChangeEvent[ft.Text]):
+            
+            print("New size:", e.width, e.height)
+            if e.height > DOCUMENT_HEIGHT - DOCUMENT_PADDING*2:
+                # TODO: See if new page exists below, if so add to it or smth
+                pass
+
+        # Handles adding a new comment, hiding the button and showing the textfield for input
+        async def new_comment_clicked(e=None):
+            new_comment_button.visible = False
+            new_comment_button.update()
+            new_comment_tf.visible = True
+            new_comment_tf.value = ""
+            new_comment_tf.update()
+            await new_comment_tf.focus()  
+
+        # Shows our new mini widget button and hides our textfield after creating/blurring comment tf
+        def show_new_comment_button(e=None):
+            new_comment_button.visible = True
+            new_comment_button.update()
+            new_comment_tf.value = ""
+            new_comment_tf.visible = False
+            new_comment_tf.update()
+
+        # Creates our new comment in data then adds it to the column
+        def create_comment(e: ft.Event[ft.TextField]):
+            comment_title = e.control.value.strip()
+            new_comment = self.Comment(title=comment_title, widget=self)
+            self.update_data(**{'comments': {new_comment.data["id"]: new_comment.data}})
+            comments_column.controls.append(new_comment)
+            comments_column.update()
+
+        # Opens our file picker to imoprt our image
+        async def new_ref_image_clicked(e: ft.Event[ft.IconButton]):
+            files = await ft.FilePicker().pick_files(allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            if files:
+
+                file_path = files[0].path
+                try:
+                    import base64
+
+                    with open(file_path, "rb") as image_file:
+                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+
+                    reference_image = self.ReferenceImage(
+                        widget=self, 
+                        data={
+                            'id': str(uuid.uuid4()),
+                            'tag': "reference_image",
+                            'image': encoded_string,
+                        }
+                    )
+                    self.update_data(**{'reference_images': {reference_image.data["id"]: reference_image.data}})
+                    ref_img_column.controls.append(reference_image)
+                    ref_img_column.update()
+                        
+                except Exception as e:
+                    e.control.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
 
         super().build() # Parent constructor
             
@@ -213,18 +276,72 @@ class Document(Widget):
 
         # Holds our flet quill
         editor_container = ft.Container(
-            ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty, expand=True),
+            ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty),
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
             border_radius=4,
-            width=DOCUMENT_WIDTH, height=DOCUMENT_HEIGHT,
+            width=DOCUMENT_WIDTH, 
+            height=DOCUMENT_HEIGHT,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-            padding=ft.Padding.all(80), 
+            padding=ft.Padding.all(DOCUMENT_PADDING), 
             align=ft.Alignment.TOP_CENTER,
             alignment=ft.Alignment.TOP_LEFT, 
-            margin=ft.Margin.symmetric(horizontal=70, vertical=50),
-            on_size_change=lambda e: print("New size:", e.width, e.height),
-            #aspect_ratio=8.5/11.0,  # paper-like ratio
+            margin=ft.Margin.symmetric(horizontal=DOCUMENT_HORIZONTAL_MARGIN, vertical=DOCUMENT_VERTICAL_MARGIN),
         )
+
+        # Build our comments and reference images columns from data
+        comments_column = ft.Column(
+            [self.Comment(title=comment_data.get('title'), widget=self, data=comment_data) for comment_data in self.data.get('comments', {}).values()], 
+            tight=True
+        )
+        ref_img_column = ft.Column(
+            [self.ReferenceImage(widget=self, data=mw_data) for mw_data in self.data.get('reference_images', {}).values()], 
+            tight=True
+        )
+
+        # Word count button
+        word_count_button = ft.IconButton(
+            icon=ft.CupertinoIcons.TEXTFORMAT_SIZE, icon_color=ft.Colors.PRIMARY,
+            tooltip="Word Count", 
+            on_click=get_word_count,
+        )
+
+        # Set our mouse coords whenever we hover over word count button
+        self.sidebar_header.controls.append(ft.GestureDetector(word_count_button, on_hover=self.set_mouse_coords, hover_interval=50))
+        
+
+        # Build the sidebar
+        self.sidebar_body.controls.extend([
+            ft.Row([
+                
+                ft.Text("Comments", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
+                new_comment_button := ft.IconButton(     
+                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+                    on_click=new_comment_clicked, 
+                    mouse_cursor="click",
+                ), 
+                new_comment_tf := ft.TextField(
+                    label="Comment Title", dense=True, margin=ft.Margin.symmetric(horizontal=6),
+                    capitalization=ft.TextCapitalization.WORDS,
+                    on_blur=show_new_comment_button, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+                    on_submit=create_comment, animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                    visible=False, autofocus=True, expand=True,
+                ),
+                    
+            ], spacing=0),
+            
+            comments_column, 
+
+            ft.Row([
+                ft.Text("Reference Images", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
+                ft.IconButton(     
+                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+                    on_click=new_ref_image_clicked, 
+                    mouse_cursor="click",
+                ), 
+            ], spacing=0),
+
+            ref_img_column
+        ])
         
         
         # TODO:
