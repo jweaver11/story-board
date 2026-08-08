@@ -265,32 +265,36 @@ class Document(Widget):
 
         super().build() # Parent constructor
 
-        done_page_break = False
-
-        async def handle_height_change(e: ft.LayoutSizeChangeEvent):
-            nonlocal done_page_break
-            if e.height > 50:
-                if not done_page_break:
-                    print(e.height)
-                    #await self.quill_editor.page_break()
-                    done_page_break = True
-                    print("Page broken")
-                    #data = await self.quill_editor.save()
-                    #print(data)
+        # Word count button
+        word_count_button = ft.IconButton(
+            icon=ft.CupertinoIcons.TEXTFORMAT_SIZE, #icon_color=ft.Colors.PRIMARY,
+            tooltip="Word Count", 
+            on_click=get_word_count,
+        )
             
         
         # Grab our flet quill elements
-        quill_toolbar = FletQuillToolbar()  # Toolbar
+        quill_toolbar = FletQuillToolbar(
+            font_sizes=[16, 24, 20],
+            toolbar_buttons=[
+                ft.GestureDetector(
+                    word_count_button, 
+                    on_hover=self.set_mouse_coords, hover_interval=50
+                ),
+                ft.IconButton(
+                    icon=ft.Icons.SAVE,
+                    tooltip="Print Delta",
+                    #on_click=save_editor,
+                ),
+            ])  # Toolbar
         self.quill_editor = FletQuillEditor(    # Editor
             text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),   # Pass in data
             placeholder_text="Start your masterpiece here...",
             expand=True,
-            page_break_height=400,
-            on_size_change=handle_height_change
         )
 
         # Holds our flet quill
-        editor_container = ft.Container(
+        editor_container_old = ft.Container(
             ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty),
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
             border_radius=4,
@@ -300,6 +304,11 @@ class Document(Widget):
             padding=ft.Padding.all(DOCUMENT_PADDING), 
             align=ft.Alignment.TOP_CENTER,
             alignment=ft.Alignment.TOP_LEFT, 
+            margin=ft.Margin.symmetric(horizontal=DOCUMENT_HORIZONTAL_MARGIN, vertical=DOCUMENT_VERTICAL_MARGIN),
+        )
+        editor_container = ft.Container(
+            ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty),
+            expand=True,
             margin=ft.Margin.symmetric(horizontal=DOCUMENT_HORIZONTAL_MARGIN, vertical=DOCUMENT_VERTICAL_MARGIN),
         )
 
@@ -313,15 +322,10 @@ class Document(Widget):
             tight=True
         )
 
-        # Word count button
-        word_count_button = ft.IconButton(
-            icon=ft.CupertinoIcons.TEXTFORMAT_SIZE, icon_color=ft.Colors.PRIMARY,
-            tooltip="Word Count", 
-            on_click=get_word_count,
-        )
+        
 
         # Set our mouse coords whenever we hover over word count button
-        self.sidebar_header.controls.append(ft.GestureDetector(word_count_button, on_hover=self.set_mouse_coords, hover_interval=50))
+        #self.sidebar_header.controls.append(ft.GestureDetector(word_count_button, on_hover=self.set_mouse_coords, hover_interval=50))
         
 
         # Build the sidebar
@@ -358,20 +362,12 @@ class Document(Widget):
             ref_img_column
         ])
         
-        
-        # TODO:
-        # Make sure editor and containers fit correctly like how they did in build_old
-        # Re-add build_old functionality that is needed here, mostly for sidebar
-        # Use a stack to hold 'pages' (containers with bgcolor and padding) sit...
-        # under the quill editor. When quill editor becomes too tall, we 
-        # await editor.page_break() to insert its break
-        
 
         self.content = ft.Column([
             ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT, padding=ft.Padding.only(left=4)),
             ft.Divider(2, 2),
             ft.Row([
-                ft.Container(ft.Column([editor_container], scroll=ft.ScrollMode.HIDDEN), expand=True),
+                ft.Column([editor_container], scroll=ft.ScrollMode.HIDDEN, expand=True),
                 self.toggle_sidebar_visibility_button, 
                 self.sidebar,
             ], spacing=0, expand=True),
