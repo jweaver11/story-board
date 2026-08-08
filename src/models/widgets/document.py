@@ -264,6 +264,19 @@ class Document(Widget):
                     e.control.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
 
         super().build() # Parent constructor
+
+        done_page_break = False
+
+        async def handle_height_change(e: ft.LayoutSizeChangeEvent):
+            nonlocal done_page_break
+            if e.height > 50:
+                if not done_page_break:
+                    print(e.height)
+                    #await self.quill_editor.page_break()
+                    done_page_break = True
+                    print("Page broken")
+                    #data = await self.quill_editor.save()
+                    #print(data)
             
         
         # Grab our flet quill elements
@@ -271,7 +284,9 @@ class Document(Widget):
         self.quill_editor = FletQuillEditor(    # Editor
             text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),   # Pass in data
             placeholder_text="Start your masterpiece here...",
-            expand=True
+            expand=True,
+            page_break_height=400,
+            on_size_change=handle_height_change
         )
 
         # Holds our flet quill

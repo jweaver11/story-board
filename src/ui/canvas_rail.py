@@ -16,6 +16,8 @@ tool_icons = {
     'text_outlined': ft.Icons.TEXT_FIELDS_OUTLINED,
     'erase': ft.Icons.AUTO_FIX_NORMAL,
     'erase_outlined': ft.Icons.AUTO_FIX_NORMAL_OUTLINED,
+    'fill': ft.Icons.FORMAT_COLOR_FILL,
+    'fill_outlined': ft.Icons.FORMAT_COLOR_FILL_OUTLINED,
     'line': ft.Icons.REMOVE,
     'line_outlined': ft.Icons.REMOVE_OUTLINED,
     'circle': ft.Icons.CIRCLE,
@@ -1566,6 +1568,15 @@ class CanvasRail(ft.Container):
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_tool_name', 'draw') == "erase" and canvas_settings.get('current_control_mode', "draw") == "tool" else None,
             tooltip="Erase Tool"
         )
+        fill_tool_button = ft.IconButton(
+            ft.Icons.FORMAT_COLOR_FILL,
+            ft.Colors.PRIMARY,
+            data="fill",
+            on_click=set_tool_mode,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4),),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_tool_name', 'draw') == "fill" and canvas_settings.get('current_control_mode', "draw") == "tool" else None,
+            tooltip="Fill Tool"
+        )
         line_tool_button = ft.IconButton(
             ft.Icons.REMOVE if canvas_settings.get('current_tool_name', 'draw') == "line" and canvas_settings.get('current_control_mode', "draw") == "tool" else ft.Icons.REMOVE_OUTLINED,
             ft.Colors.PRIMARY,
@@ -1690,6 +1701,7 @@ class CanvasRail(ft.Container):
 
 
             erase_tool_button,
+            fill_tool_button,
             line_tool_button,
             circle_tool_button,
             oval_tool_button,

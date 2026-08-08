@@ -17,7 +17,6 @@ class CanvasShape(cv.Text):
             value="Text",
             rotate=ft.Rotate(0),
             max_width=180, 
-            rotate=0,
             alignment=ft.Alignment.CENTER,
             text_align=ft.TextAlign.CENTER,
             style=ft.TextStyle(app.settings.data.get('text_settings', {})),
