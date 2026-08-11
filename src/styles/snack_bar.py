@@ -14,9 +14,9 @@ class SnackBar(ft.SnackBar):
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                 border_radius=4,
                 border=ft.Border.only(
-                    top=ft.BorderSide(2, ft.Colors.ERROR),
-                    left=ft.BorderSide(2, ft.Colors.ERROR),
-                    right=ft.BorderSide(2, ft.Colors.ERROR),
+                    top=ft.BorderSide(2, ft.Colors.PRIMARY),
+                    #left=ft.BorderSide(2, ft.Colors.ERROR),
+                    #right=ft.BorderSide(2, ft.Colors.ERROR),
                 ),
                 padding=ft.Padding.symmetric(horizontal=20, vertical=14)
             ),

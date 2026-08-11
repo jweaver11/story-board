@@ -235,23 +235,23 @@ class MapLocation(MiniWidget):
                 no_padding=True, no_effects=True
             ),
             
-            MenuOptionStyle(        # Text outline thickness
-                ft.SubmenuButton(
-                    ft.Row([
-                        ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, self.data.get('label_color', "primary")), 
-                        ft.Text("Label Outline Size", weight=ft.FontWeight.BOLD, expand=True),
-                        ft.Icon(ft.Icons.ARROW_RIGHT),
-                    ], expand=True),
-                    [
-                        ft.MenuItemButton(
-                            str(i), on_click=self.change_outline_thickness, close_on_click=True, 
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4))
-                        ) for i in range(4)], 
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                ),
-                no_effects=True, no_padding=True
-            ),
+            #MenuOptionStyle(        # Text outline thickness
+                #ft.SubmenuButton(
+                    #ft.Row([
+                        #ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, self.data.get('label_color', "primary")), 
+                        #ft.Text("Label Outline Size", weight=ft.FontWeight.BOLD, expand=True),
+                        #ft.Icon(ft.Icons.ARROW_RIGHT),
+                    #], expand=True),
+                    #[
+                        #ft.MenuItemButton(
+                            #str(i), on_click=self.change_outline_thickness, close_on_click=True, 
+                            #style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4))
+                        #) for i in range(4)], 
+                    #menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    #style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                #),
+                #no_effects=True, no_padding=True
+            #),
             MenuOptionStyle(
                 ft.SubmenuButton(
                     ft.Row([

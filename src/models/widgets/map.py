@@ -242,24 +242,24 @@ class Map(Widget):
                     no_padding=True, no_effects=True
                 ),
 
-                MenuOptionStyle(        # Text outline thickness
-                    ft.SubmenuButton(
-                        ft.Row([
-                            ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, self.color), 
-                            ft.Text("Label Outline Size", weight=ft.FontWeight.BOLD, expand=True),
-                            ft.Icon(ft.Icons.ARROW_RIGHT),
-                        ], expand=True),
-                        [
-                            ft.MenuItemButton(
-                                str(i), on_click=change_outline_thickness, close_on_click=True, 
-                                style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4))
-                            ) for i in range(4)
-                        ], 
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    ),
-                    no_effects=True, no_padding=True
-                ),
+                #MenuOptionStyle(        # Text outline thickness
+                    #ft.SubmenuButton(
+                        #ft.Row([
+                            #ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, self.color), 
+                            #ft.Text("Label Outline Size", weight=ft.FontWeight.BOLD, expand=True),
+                            #ft.Icon(ft.Icons.ARROW_RIGHT),
+                       # ], expand=True),
+                        #[
+                            #ft.MenuItemButton(
+                                #str(i), on_click=change_outline_thickness, close_on_click=True, 
+                               # style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4))
+                           # ) for i in range(4)
+                        #], 
+                        #menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                       # style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    #),
+                   # no_effects=True, no_padding=True
+                #),
                 MenuOptionStyle(        # Delete label
                     ft.MenuItemButton(
                         ft.Text(f"Delete label", weight=ft.FontWeight.BOLD, expand=True), leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR),

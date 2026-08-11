@@ -57,8 +57,8 @@ class PlotChart(Widget):
         # State trackers
         self.source_node: str = None        # Tracks which node we are dragging from when creating a new edge
         self.target_node: str = None        # Tracks which node we are dragging to when creating a new edge
-        self.source_side: str = None      # Determines which sides of the nodes we start dragging from
-        self.target_side: str = None       # Determines which sides of the nodes we end dragging on
+        #self.source_side: str = None      # Determines which sides of the nodes we start dragging from
+        #self.target_side: str = None       # Determines which sides of the nodes we end dragging on
 
         self.add_node_button: ft.Button     # Button to add new nodes that is displayed OUTSIDE the sidebar
 
@@ -226,7 +226,7 @@ class PlotChart(Widget):
                 # If we are dragging, update our target as this node side
                 if self.widget.source_node:   # Only highlight if we're dragging from another node
                     self.widget.target_node = e.control.data.get('id')
-                    self.widget.target_side = e.control.data.get('side')
+                    #self.widget.target_side = e.control.data.get('side')
 
                 # Visual highlight
                 e.control.content.shadow = ft.BoxShadow(10, 20, ft.Colors.with_opacity(0.25, self.data.get('color', '#FFFFFF')))
@@ -234,7 +234,7 @@ class PlotChart(Widget):
             async def _stop_highlight_node(e: ft.PointerEvent):
                 # Reset state trackers
                 self.widget.target_node = None
-                self.widget.target_side = None
+                #self.widget.target_side = None
                 # Highlight reset
                 e.control.content.shadow = None
                 e.control.update()
@@ -250,43 +250,34 @@ class PlotChart(Widget):
                 if not self.widget.source_node or not self.widget.target_node:
                     self.widget.source_node = None
                     self.widget.target_node = None
-                    self.widget.source_side = None
-                    self.widget.target_side = None
+                    #self.widget.source_side = None
+                    #self.widget.target_side = None
                     await _stop_highlight_node(e)   # Stops the highlight
                     return  
-                
-                # Don't allow connections from the same side of the node, as that wouldnt make sense
-                elif self.widget.source_side == self.widget.target_side:   
-                    self.widget.source_node = None
-                    self.widget.target_node = None
-                    self.widget.source_side = None
-                    self.widget.target_side = None
-                    await _stop_highlight_node(e)   # Stops the highlight
-                    self.page.show_dialog(SnackBar("Cannot connect from the same side of the node."))
-                    return
                 
                 # Don't allow connections to self
                 if self.widget.source_node == self.widget.target_node:    # Don't allow connections to self
-                    self.page.show_dialog(SnackBar("Cannot connct a node to itself."))
+                    #self.page.show_dialog(SnackBar("Cannot connct a node to itself."))
                     return  
                 
                 # If the edge already exists, delete it
-                for edge in self.widget.data.get('edges', []):
-                    if (edge.get('source', '') == self.widget.source_node and edge.get('target', '') == self.widget.target_node) or (edge.get('source', '') == self.widget.target_node and edge.get('target', '') == self.widget.source_node):
-                        edge_data = self.widget.data.get('edges', [])[-1]
-                        self.widget.data['edges'].remove(edge)
+                for edge_data in self.widget.data.get('edges', []):
+                    if (edge_data.get('source', '') == self.widget.source_node and edge_data.get('target', '') == self.widget.target_node) or (edge_data.get('source', '') == self.widget.target_node and edge_data.get('target', '') == self.widget.source_node):
+                        self.widget.data['edges'].remove(edge_data)
                         self.widget.needs_file_write = True
                         # Reset state trackers
                         self.widget.source_node = None
                         self.widget.target_node = None
-                        self.widget.source_side = None
-                        self.widget.target_side = None
+                        #self.widget.source_side = None
+                        #self.widget.target_side = None
                         # Reload
                         source_node = edge_data['source']
                         target_node = edge_data['target']
 
                         # Remove from edge canvas
                         for edge in self.widget.edge_canvas.shapes:
+                            if not isinstance(edge, self.widget.Edge):
+                                continue
                             if edge.source_node == source_node and edge.target_node == target_node:
                                 self.widget.edge_canvas.shapes.remove(edge)
                                 #print("Removing edge from canvas")
@@ -296,7 +287,7 @@ class PlotChart(Widget):
                                 #print("Removing edge from canvas")
                                 break
                             
-
+                        self.widget.update_data(**{'edges': self.widget.data.get('edges', [])})
                         self.widget.update()
                         return  
 
@@ -310,8 +301,8 @@ class PlotChart(Widget):
                 # Reset state trackers
                 self.widget.source_node = None
                 self.widget.target_node = None
-                self.widget.source_side = None
-                self.widget.target_side = None
+                #self.widget.source_side = None
+                #self.widget.target_side = None
 
                 # Re-render page to show new edge
                 await _stop_highlight_node(e)   # Stops the highlight
@@ -331,7 +322,7 @@ class PlotChart(Widget):
             async def start_new_edge(e: ft.PointerEvent):
                 await self.widget.story.close_menu()
                 self.widget.source_node = e.control.data.get('id', '')
-                self.widget.source_side = e.control.data.get('side')
+                #self.widget.source_side = e.control.data.get('side')
                 self.page.overlay.append(
                     ft.Container(
                         cv.Canvas([
