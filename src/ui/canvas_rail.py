@@ -66,12 +66,13 @@ class CanvasRail(ft.Container):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.border_radius=ft.BorderRadius.all(4)
-                self.padding=ft.Padding.only(left=4, right=4, top=4, bottom=4)
+                self.tile_padding=ft.Padding.only(left=4, right=4, )
                 self.shape = ft.RoundedRectangleBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), radius=4)
                 self.collapsed_shape = ft.RoundedRectangleBorder(radius=4)
                 self.title_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
                 self.dense=True
-                self.margin=ft.Margin.only(top=8, left=4, right=4)
+                #self.margin=ft.Margin.only(left=4, right=4)
+                #ft.ExpansionTile()
 
         class TextField(ft.TextField):
             def __init__(self, *args, **kwargs):
@@ -980,9 +981,21 @@ class CanvasRail(ft.Container):
 
                 key = e.control.data
                 text_settings.update(**{key: value})
+                print("Updated key, value: ", key, value)
                 app.settings.update_data(**{"text_settings": text_settings})
 
                 text_preview.style = ft.TextStyle(**text_settings)
+                decoration = text_settings.get('decoration', None)
+                match decoration:
+                    case "underline":
+                        text_preview.style.decoration = ft.TextDecoration.UNDERLINE
+                    case "overline":
+                        text_preview.style.decoration = ft.TextDecoration.OVERLINE
+                    case "line_through":
+                        text_preview.style.decoration = ft.TextDecoration.LINE_THROUGH
+                    case _:
+                        text_preview.style.decoration = None
+                
                 text_preview.update()
                 
                 update_canvas_tool_preview()
@@ -1042,17 +1055,18 @@ class CanvasRail(ft.Container):
 
             # TODO: Finish rest of this
 
-            ft.TextStyle()
+            
             
             # decoration options - exptile with
-                # decoration - dropdown
-                # decoration_style - dropdown
+                # decoration - et
+                # decoration_style - et
                 # decoration_color - color picker
                 # decoration_thickness - tf
                 
+                
             # shadow - ExpansionTile w/ lot of other options
                 # blur radius - tf
-                # blur style - dropdown
+                # blur style - et
                 # color - color picker
                 # offset - x/y tfs
                 # spread radius - tf
@@ -1120,6 +1134,43 @@ class CanvasRail(ft.Container):
                 on_change=update_text_setting,
                 data="font_family"
             )
+
+            font_decoration_rg = ft.RadioGroup(
+                content=ExpansionTile(
+                    title="Font Decoration",
+                    controls=[
+                        ft.Radio(key.capitalize(), value=key) for key in ("none", "underline", "overline", "line_through")
+                    ]
+                ),
+                value=text_settings.get('decoration', 'none') if text_settings.get('decoration', None) is not None else 'none',
+                on_change=update_text_setting,
+                data="decoration"
+            )
+
+            font_shadow_rg = ft.RadioGroup(
+                content=ExpansionTile(
+                    title="Font Shadow",
+                    controls=[
+                        ft.Radio(key.capitalize(), value=key) for key in ("none", "normal", "solid", "outer", "inner")
+                    ]
+                ),
+                value=text_settings.get('shadow', {}).get('blur_style', 'none') if text_settings.get('shadow', None) is not None else 'none',
+                on_change=update_text_shadow_setting,
+                data="shadow_blur_style"
+            )
+
+            font_foreground_rg = ft.RadioGroup(
+                content=ExpansionTile(
+                    title="Font Foreground",
+                    controls=[
+                        ft.Radio(key.capitalize(), value=key) for key in ("none", "stroke", "fill")
+                    ]
+                ),
+                value=text_settings.get('foreground', {}).get('style', 'none') if text_settings.get('foreground', None) is not None else 'none',
+                on_change=update_text_foreground_setting,
+                data="foreground_style"
+            )
+
 
               
 
@@ -1316,6 +1367,9 @@ class CanvasRail(ft.Container):
                 ], spacing=0, margin=ft.Margin.only(left=4)),
 
                 font_family_rg,
+                font_decoration_rg,
+                font_shadow_rg,
+                font_foreground_rg,
             ]
 
         # Grab our data for easier manipulation
