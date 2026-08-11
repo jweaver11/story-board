@@ -288,6 +288,7 @@ class ContentRail(Rail):
                     ft.SubmenuButton(
                         ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                         self.get_template_options("character"), 
+                        expand=True,
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                         style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         tooltip="Create a new character for your story. Choose from templates or create a default character."

@@ -61,6 +61,8 @@ class Rail(ft.Column):
     def get_template_options(self, widget_type: str) -> list[ft.Control]:
         ''' Returns a list of template options when right clicking empty space in the rail '''
 
+        template_label = ft.Text("Templates", italic=True, color=ft.Colors.ON_SURFACE_VARIANT)
+
         template_options = []
 
         if widget_type == "character":
@@ -72,6 +74,8 @@ class Rail(ft.Column):
                         style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
                     )
                 )
+            #template_options.insert(0, template_label)
+            #template_options.insert(1, ft.Divider(2, 2))
 
         # Add add button to bottom that opens the settings to the template section
         # Add templates label at the top that is disabled
@@ -84,6 +88,7 @@ class Rail(ft.Column):
                         style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
                     )
                 )
+            #template_options.insert(0, template_label)
 
         elif widget_type == "chart":
             template_options = [

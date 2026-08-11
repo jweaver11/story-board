@@ -398,12 +398,12 @@ class PlotChart(Widget):
                 ft.Column([
                     ft.GestureDetector(
                         ft.Container(self.title_tf, ignore_interactions=True, expand=True),
-                                
                         on_pan_start=self.widget.story.close_menu,
                         on_pan_update=self.move_node,
                         on_pan_end=self.save_position,
                         mouse_cursor=ft.MouseCursor.MOVE,
                         drag_interval=20,
+                        on_double_tap=self.rename_clicked,
                     ),
                     ft.Divider(ft.Colors.SURFACE_CONTAINER_LOW, 2),
                     self.description_ctrl,

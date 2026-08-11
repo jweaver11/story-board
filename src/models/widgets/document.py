@@ -275,18 +275,10 @@ class Document(Widget):
         
         # Grab our flet quill elements
         quill_toolbar = FletQuillToolbar(
+            expand=True,
             font_sizes=[16, 24, 20],
-            toolbar_buttons=[
-                ft.GestureDetector(
-                    word_count_button, 
-                    on_hover=self.set_mouse_coords, hover_interval=50
-                ),
-                ft.IconButton(
-                    icon=ft.Icons.SAVE,
-                    tooltip="Print Delta",
-                    #on_click=save_editor,
-                ),
-            ])  # Toolbar
+            toolbar_buttons=[ft.GestureDetector(word_count_button, on_hover=self.set_mouse_coords, hover_interval=50)]
+        )  # Toolbar
         self.quill_editor = FletQuillEditor(    # Editor
             text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),   # Pass in data
             placeholder_text="Start your masterpiece here...",
@@ -364,7 +356,15 @@ class Document(Widget):
         
 
         self.content = ft.Column([
-            ft.Container(quill_toolbar, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, alignment=ft.Alignment.CENTER_LEFT, padding=ft.Padding.only(left=4)),
+            ft.Container(
+                ft.Row([
+                    
+                    quill_toolbar, 
+                ]),
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                alignment=ft.Alignment.CENTER_LEFT, 
+                padding=ft.Padding.only(left=4)
+            ),
             ft.Divider(2, 2),
             ft.Row([
                 ft.Column([editor_container], scroll=ft.ScrollMode.HIDDEN, expand=True),
