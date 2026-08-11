@@ -47,15 +47,11 @@ class Note(Widget):
 
         
         # Adds our new card to data and our column
-        async def create_card(e=None):
-            self.data['card_data'].append({"label": self.new_card_tf.value, "value": "", 'color': "onsurface"})
+        async def handle_create_card(e=None):
+            self.data['card_data'].append({"label": '', "value": "", 'color': "white"})
             self.update_data(**{'card_data': self.data['card_data']})
             card_row.controls.append(new_card(len(self.data['card_data']) - 1, self.data['card_data'][-1]))
             card_row.update()
-            self.new_card_tf.value = ""
-            self.new_card_tf.update()
-            add_card_button.visible = True
-            add_card_button.update()
             await asyncio.sleep(0.02)
             await card_row.parent.scroll_to(offset=-1, duration=200)
             
@@ -186,45 +182,23 @@ class Note(Widget):
         for idx, card_data in enumerate(self.data.get('card_data', [])):
             card_row.controls.append(new_card(idx, card_data))
 
-        # Show the textfield to label the new card
-        async def _create_new_card_clicked(e):
-            add_card_button.visible = False
-            add_card_button.update()
-            self.new_card_tf.value = ""
-            self.new_card_tf.visible = True
-            self.new_card_tf.label = "New card Label"
-            self.new_card_tf.update() 
-            await self.new_card_tf.focus()
-
-        # Hide the textfield
-        async def _hide_new_card_tf(e):
-            self.new_card_tf.visible = False
-            self.new_card_tf.update()
-            add_card_button.visible = True
-            add_card_button.update()
 
         # Button to click to add a new card
         add_card_button = ft.Button(
             "Add Card", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
             tooltip="Add a new card to your note.", 
-            on_click=_create_new_card_clicked, 
+            on_click=handle_create_card, 
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
         )
 
-        self.new_card_tf = ft.TextField(
-            label="Add New Card", dense=True, 
-            capitalization=ft.TextCapitalization.WORDS,
-            on_blur=_hide_new_card_tf,
-            on_submit=create_card, visible=False, autofocus=True,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
-        ) 
+        
 
 
         self.content = ft.Stack([
             ft.Column([card_row], expand=True, alignment=ft.MainAxisAlignment.START, scroll=ft.ScrollMode.AUTO),
             ft.Column([
-                self.new_card_tf,
+                
                 add_card_button, 
             ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
         ], alignment=ft.Alignment.TOP_LEFT, expand=True)
