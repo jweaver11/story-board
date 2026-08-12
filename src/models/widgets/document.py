@@ -195,7 +195,7 @@ class Document(Widget):
             for block in doc_data:
                 if "insert" in block:
                     word_count += len(block["insert"].split())
-            self.story.open_menu([MenuOptionStyle(ft.Text(f"Word Count: {word_count}"))])
+            self.story.open_menu([ft.Text(f"Word Count: {word_count}", margin=ft.Margin.only(left=6, right=6, top=10, bottom=10))])
 
         # TODO: build editor stuff here
         # Marks ourselves as dirty after any changes to the document
@@ -270,13 +270,15 @@ class Document(Widget):
             icon=ft.CupertinoIcons.TEXTFORMAT_SIZE, #icon_color=ft.Colors.PRIMARY,
             tooltip="Word Count", 
             on_click=get_word_count,
+            bgcolor=ft.Colors.TRANSPARENT,
+            highlight_color=ft.Colors.TRANSPARENT,
+            hover_color=ft.Colors.TRANSPARENT
         )
             
         
         # Grab our flet quill elements
         quill_toolbar = FletQuillToolbar(
             expand=True,
-            font_sizes=[16, 24, 20],
             toolbar_buttons=[ft.GestureDetector(word_count_button, on_hover=self.set_mouse_coords, hover_interval=50)]
         )  # Toolbar
         self.quill_editor = FletQuillEditor(    # Editor
@@ -357,10 +359,7 @@ class Document(Widget):
 
         self.content = ft.Column([
             ft.Container(
-                ft.Row([
-                    
-                    quill_toolbar, 
-                ]),
+                quill_toolbar, 
                 bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
                 alignment=ft.Alignment.CENTER_LEFT, 
                 padding=ft.Padding.only(left=4)
@@ -578,7 +577,7 @@ class Document(Widget):
                 for span in text_span.spans:
                     doc_data += span.text
             word_count = len(doc_data.split())
-            self.story.open_menu([MenuOptionStyle(ft.Text(f"Word Count: {word_count}"))])
+            self.story.open_menu([ft.Text(f"Word Count: {word_count}")])
 
 
         # Creates a document with a text control inside that holds our spans and allows for selection and manipulation of text
