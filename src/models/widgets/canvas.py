@@ -5,6 +5,7 @@ Canvases are drawings and images
 
 from flet_color_pickers import ColorPicker
 import flet as ft
+from collections import deque
 from models.widget import Widget
 from models.views.story import Story
 from styles.snack_bar import SnackBar
@@ -23,7 +24,7 @@ from styles.text_fields import TextField
 import time
 import uuid
 import os
-from PIL import Image, ImageDraw, ImageTk
+from PIL import Image, ImageDraw, ImageTk, ImageColor
 
 MINIMUM_SEGMENT_DISTANCE = 2
 MAX_SHAPES_BEFORE_CAPTURE = 100
@@ -346,8 +347,10 @@ class Canvas(Widget):
             tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
             if tool_name == "line" or tool_name == "erase":
                 await self.add_point(e)
+            if tool_name == "fill":
+                await self.fill_tool(e)
             else:
-                await self.add_tool(e)
+                await self.add_shape(e)
         # Add text if in text mode
         else:
             await self.add_text(e)
@@ -415,10 +418,311 @@ class Canvas(Widget):
         canvas.update()
         await self.end_stroke(canvas)   # Force a stroke end since it wont have pan end events
 
-        
+    async def fill_tool(self, e: ft.TapEvent):
+        # Parse any app color format we may get into a Pillow RGBA tuple.
+        def _parse_rgba(color_value) -> tuple[int, int, int, int]:
+            def _parse_hex_like(raw: str) -> tuple[int, int, int, int] | None:
+                value = raw.strip()
+
+                # Standard #RRGGBB or #RRGGBBAA path first.
+                try:
+                    color = ImageColor.getcolor(value, "RGBA")
+                    if isinstance(color, tuple) and len(color) == 4:
+                        rgba = color
+                    elif isinstance(color, tuple) and len(color) == 3:
+                        rgba = (color[0], color[1], color[2], 255)
+                    else:
+                        rgba = None
+                except Exception:
+                    rgba = None
+
+                # Heuristic support for possible #AARRGGBB sources.
+                if value.startswith("#") and len(value) == 9:
+                    argb_swapped = f"#{value[3:]}{value[1:3]}"
+                    try:
+                        alt = ImageColor.getcolor(argb_swapped, "RGBA")
+                        alt_rgba = (alt[0], alt[1], alt[2], alt[3])
+                    except Exception:
+                        alt_rgba = None
+
+                    if rgba is None:
+                        return alt_rgba
+                    if alt_rgba is None:
+                        return rgba
+
+                    # Prefer the parse that does not accidentally force near-zero alpha.
+                    if rgba[3] <= 8 < alt_rgba[3]:
+                        return alt_rgba
+                    if alt_rgba[3] <= 8 < rgba[3]:
+                        return rgba
+
+                    # Default to #RRGGBBAA interpretation (matches project comments/settings).
+                    return rgba
+
+                return rgba
+
+            if color_value is None:
+                return (0, 0, 0, 255)
+
+            # Handle Flet opacity format: "color,0.5"
+            if isinstance(color_value, str) and "," in color_value:
+                base, opacity_str = color_value.rsplit(",", 1)
+                try:
+                    opacity = float(opacity_str.strip())
+                except ValueError:
+                    opacity = None
+
+                if opacity is not None:
+                    base_rgba = _parse_rgba(base.strip())
+                    opacity = max(0.0, min(opacity, 1.0))
+                    scaled_alpha = int(round(base_rgba[3] * opacity))
+                    return (base_rgba[0], base_rgba[1], base_rgba[2], scaled_alpha)
+
+            # Normalize Flet color names like "primary" -> ft.Colors.PRIMARY if possible.
+            if isinstance(color_value, str) and not color_value.startswith("#"):
+                maybe_color = getattr(ft.Colors, color_value.upper(), None)
+                if maybe_color is not None:
+                    color_value = maybe_color
+
+            # Resolve theme semantic names like "primary" to an actual color value when possible.
+            if isinstance(color_value, str):
+                token = color_value.strip().lower().replace("_", "")
+                color_scheme = getattr(getattr(self.page, "theme", None), "color_scheme", None)
+                semantic_map = {
+                    "primary": "primary",
+                    "onprimary": "on_primary",
+                    "secondary": "secondary",
+                    "onsecondary": "on_secondary",
+                    "tertiary": "tertiary",
+                    "ontertiary": "on_tertiary",
+                    "surface": "surface",
+                    "onsurface": "on_surface",
+                    "onsurfacevariant": "on_surface_variant",
+                    "outline": "outline",
+                    "outlinevariant": "outline_variant",
+                    "error": "error",
+                    "onerror": "on_error",
+                }
+                attr_name = semantic_map.get(token)
+                if color_scheme is not None and attr_name:
+                    resolved = getattr(color_scheme, attr_name, None)
+                    if resolved:
+                        color_value = resolved
+
+            if isinstance(color_value, str):
+                parsed = _parse_hex_like(color_value)
+                if parsed is not None:
+                    return parsed
+
+            try:
+                color = ImageColor.getcolor(str(color_value), "RGBA")
+                if isinstance(color, tuple) and len(color) == 4:
+                    return color
+                if isinstance(color, tuple) and len(color) == 3:
+                    return (color[0], color[1], color[2], 255)
+            except Exception:
+                pass
+            return (0, 0, 0, 255)
+
+        # Alpha-composite fill over the destination pixel so translucent fills behave naturally.
+        def _composite_over(dst: tuple[int, int, int, int], src: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
+            src_a = src[3] / 255.0
+            dst_a = dst[3] / 255.0
+            out_a = src_a + dst_a * (1.0 - src_a)
+
+            if out_a <= 0.0:
+                return (0, 0, 0, 0)
+
+            out_r = int(round(((src[0] * src_a) + (dst[0] * dst_a * (1.0 - src_a))) / out_a))
+            out_g = int(round(((src[1] * src_a) + (dst[1] * dst_a * (1.0 - src_a))) / out_a))
+            out_b = int(round(((src[2] * src_a) + (dst[2] * dst_a * (1.0 - src_a))) / out_a))
+            out_alpha = int(round(out_a * 255.0))
+            return (out_r, out_g, out_b, out_alpha)
+
+        # RGBA distance check used for tolerance-based flood fill.
+        def _within_tolerance(px_a: tuple[int, int, int, int], px_b: tuple[int, int, int, int], tolerance: int) -> bool:
+            # Give alpha differences less weight than RGB so anti-aliased edges
+            # are easier to include without color bleeding across hard boundaries.
+            return (
+                abs(px_a[0] - px_b[0])
+                + abs(px_a[1] - px_b[1])
+                + abs(px_a[2] - px_b[2])
+                + int(abs(px_a[3] - px_b[3]) * 0.35)
+            ) <= tolerance
+
+        def _count_filled_neighbors(mask_px, x: int, y: int, width: int, height: int) -> int:
+            total = 0
+            for ny in range(max(0, y - 1), min(height, y + 2)):
+                for nx in range(max(0, x - 1), min(width, x + 2)):
+                    if nx == x and ny == y:
+                        continue
+                    if mask_px[nx, ny] != 0:
+                        total += 1
+            return total
+
+        # Scanline flood fill for better performance on large regions, plus
+        # an edge candidate pass to close tiny anti-aliased gaps.
+        def _flood_fill_rgba(
+            img: Image.Image,
+            start_x: int,
+            start_y: int,
+            fill_color: tuple[int, int, int, int],
+            tolerance: int,
+        ) -> bool:
+            width, height = img.size
+            pixels = img.load()
+            original_pixels = img.copy().load()
+            target_color = pixels[start_x, start_y]
+
+            if _within_tolerance(target_color, fill_color, tolerance):
+                return False
+
+            queue = deque([(start_x, start_y)])
+            fill_mask = Image.new("L", (width, height), 0)
+            fill_mask_px = fill_mask.load()
+            edge_candidates: set[tuple[int, int]] = set()
+
+            while queue:
+                x, y = queue.popleft()
+
+                if x < 0 or y < 0 or x >= width or y >= height:
+                    continue
+                if not _within_tolerance(pixels[x, y], target_color, tolerance):
+                    continue
+
+                left = x
+                while left - 1 >= 0 and _within_tolerance(pixels[left - 1, y], target_color, tolerance):
+                    left -= 1
+
+                right = x
+                while right + 1 < width and _within_tolerance(pixels[right + 1, y], target_color, tolerance):
+                    right += 1
+
+                for fill_x in range(left, right + 1):
+                    if fill_mask_px[fill_x, y] != 0:
+                        continue
+                    pixels[fill_x, y] = _composite_over(pixels[fill_x, y], fill_color)
+                    fill_mask_px[fill_x, y] = 255
+
+                    if y - 1 >= 0 and _within_tolerance(pixels[fill_x, y - 1], target_color, tolerance):
+                        queue.append((fill_x, y - 1))
+                    elif y - 1 >= 0:
+                        edge_candidates.add((fill_x, y - 1))
+                    if y + 1 < height and _within_tolerance(pixels[fill_x, y + 1], target_color, tolerance):
+                        queue.append((fill_x, y + 1))
+                    elif y + 1 < height:
+                        edge_candidates.add((fill_x, y + 1))
+
+                    if fill_x - 1 >= 0 and not _within_tolerance(pixels[fill_x - 1, y], target_color, tolerance):
+                        edge_candidates.add((fill_x - 1, y))
+                    if fill_x + 1 < width and not _within_tolerance(pixels[fill_x + 1, y], target_color, tolerance):
+                        edge_candidates.add((fill_x + 1, y))
+
+            # Edge anti-gap pass: iteratively close tiny transparent/near-transparent
+            # fringe holes around the filled frontier without crossing solid boundaries.
+            edge_tolerance = min(1020, tolerance + 100)
+            alpha_gap_limit = 112
+            frontier = set(edge_candidates)
+            for _ in range(3):
+                if not frontier:
+                    break
+
+                next_frontier: set[tuple[int, int]] = set()
+                to_fill: list[tuple[int, int]] = []
+
+                for edge_x, edge_y in frontier:
+                    if edge_x < 0 or edge_y < 0 or edge_x >= width or edge_y >= height:
+                        continue
+                    if fill_mask_px[edge_x, edge_y] != 0:
+                        continue
+
+                    filled_neighbors = _count_filled_neighbors(fill_mask_px, edge_x, edge_y, width, height)
+
+                    original_px = original_pixels[edge_x, edge_y]
+                    is_soft_gap = original_px[3] <= alpha_gap_limit
+                    is_similar_edge = _within_tolerance(original_px, target_color, edge_tolerance)
+
+                    if not is_soft_gap and not is_similar_edge:
+                        continue
+
+                    # Soft anti-aliased holes can be single-pixel wide, so allow one
+                    # neighbor for transparent fringe; keep stricter gating for color edges.
+                    if is_soft_gap and filled_neighbors < 1:
+                        continue
+                    if not is_soft_gap and filled_neighbors < 2:
+                        continue
+
+                    to_fill.append((edge_x, edge_y))
+
+                if not to_fill:
+                    break
+
+                for fill_x, fill_y in to_fill:
+                    pixels[fill_x, fill_y] = _composite_over(pixels[fill_x, fill_y], fill_color)
+                    fill_mask_px[fill_x, fill_y] = 255
+
+                    for ny in range(max(0, fill_y - 1), min(height, fill_y + 2)):
+                        for nx in range(max(0, fill_x - 1), min(width, fill_x + 2)):
+                            if fill_mask_px[nx, ny] == 0:
+                                next_frontier.add((nx, ny))
+
+                frontier = next_frontier
+
+            return True
+
+        canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
+        if not canvas.visible:
+            return
+
+        layer_idx = int(canvas.data)
+        layer_data = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]
+        layer_id = layer_data.get('id', '')
+
+        # Ensure any pending vector strokes are merged before we sample fill boundaries.
+        if layer_data.get('dirty', False):
+            await self.save_canvas(canvas)
+
+        self.story.block_page()
+        await asyncio.sleep(0)  # Allow UI to update before potentially long operation.
+        existing_bytes = self.layer_bytes.get(layer_id)
+        if existing_bytes:
+            image = Image.open(BytesIO(existing_bytes)).convert("RGBA")
+        else:
+            image = Image.new("RGBA", (self.CANVAS_WIDTH, self.CANVAS_HEIGHT), (0, 0, 0, 0))
+
+        x = max(0, min(int(e.local_position.x), image.width - 1))
+        y = max(0, min(int(e.local_position.y), image.height - 1))
+
+        paint_settings = app.settings.data.get('paint_settings', {}).copy()
+        canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
+
+        fill_color = _parse_rgba(paint_settings.get('color', ft.Colors.BLACK))
+        fill_tolerance = int(canvas_settings.get('fill_tolerance', 24))
+        fill_tolerance = max(0, min(fill_tolerance, 1020))
+
+        changed = _flood_fill_rgba(image, x, y, fill_color, fill_tolerance)
+        if not changed:
+            self.story.unblock_page()
+            return
+
+        output = BytesIO()
+        image.save(output, format="PNG")
+        filled_bytes = output.getvalue()
+
+        # Keep layer cache, canvas state, and file-write flags in sync with draw/save flow.
+        self.layer_bytes[layer_id] = filled_bytes
+        canvas.shapes.clear()
+        canvas.shapes.append(cv.Image(filled_bytes, 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, data=layer_id))
+        canvas.update()
+
+        layer_data['dirty'] = False
+        layer_data['needs_file_write'] = True
+        self.data.get('canvas_data', {}).get('layers', [])[layer_idx].update(layer_data)
+        self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
+        self.story.unblock_page()
 
     # Tap event for adding a tool to the canvas
-    async def add_tool(self, e: ft.TapEvent):
+    async def add_shape(self, e: ft.TapEvent):
         
         # Check if we're in tool mode, and what tool we're using
         tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")

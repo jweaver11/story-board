@@ -1720,7 +1720,7 @@ class CanvasRail(ft.Container):
             ft.Icons.FORMAT_COLOR_FILL,
             ft.Colors.PRIMARY,
             data="fill",
-            disabled=True,
+            #disabled=True,
             on_click=set_tool_mode,
             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4),),
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_tool_name', 'draw') == "fill" and canvas_settings.get('current_control_mode', "draw") == "tool" else None,
