@@ -188,14 +188,14 @@ class Settings(ft.View):
                     'font_family': None,
                     'color': "#FFFFFF",  # Hex color folowed by opacity
                     'bgcolor': "#00000000",  # Background color for text shapes
-                    'shadow': None, #{
-                        #'blur_radius': 0,
-                        #'blur_style': 'normal', # Options: normal, solid, outer, inner
-                        #'color': "black",
-                        #'offset': (0, 0),
-                        #'spread_radius': 0,
-                    #},   # Boxshad values
-                    'foreground': None, #{
+                    'shadow': {
+                        'blur_radius': 0,
+                        'blur_style': 'normal', # Options: normal, solid, outer, inner
+                        'color': "#00000000",
+                        'offset': (0, 0),
+                        'spread_radius': 0,
+                    },   # Boxshad values
+                    'foreground': None, #{ 
                         #'color': "#32AA38AE",     # Hex color folowed by opacity
                         #'stroke_width': 3,          # Size of the strokees
                         #'style': "stroke",          # style of the strokes. Either stroke or fill

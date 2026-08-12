@@ -949,6 +949,10 @@ class CanvasRail(ft.Container):
 
         def get_text_options() -> list[ft.Control]:
 
+            
+
+                
+
             # Updating standard text settings
             def update_text_setting(e: ft.Event[TextField | ft.RadioGroup | ft.Slider | Switch]):
                 nonlocal text_settings
@@ -984,19 +988,9 @@ class CanvasRail(ft.Container):
                 print("Updated key, value: ", key, value)
                 app.settings.update_data(**{"text_settings": text_settings})
 
-                text_preview.style = ft.TextStyle(**text_settings)
-                decoration = text_settings.get('decoration', None)
-                match decoration:
-                    case "underline":
-                        text_preview.style.decoration = ft.TextDecoration.UNDERLINE
-                    case "overline":
-                        text_preview.style.decoration = ft.TextDecoration.OVERLINE
-                    case "line_through":
-                        text_preview.style.decoration = ft.TextDecoration.LINE_THROUGH
-                    case _:
-                        text_preview.style.decoration = None
-                
+                update_text_preview()
                 text_preview.update()
+                
                 
                 update_canvas_tool_preview()
 
@@ -1020,7 +1014,7 @@ class CanvasRail(ft.Container):
                         text_color_picker.color_history.pop(0)
                 self.update()
                 update_canvas_tool_preview()
-                text_preview.style = ft.TextStyle(**text_settings)
+                update_text_preview()
                 text_preview.update()
 
             def save_text_bg_color(e: ft.Event[ft.SubmenuButton]):
@@ -1035,7 +1029,23 @@ class CanvasRail(ft.Container):
                         text_bg_color_picker.color_history.pop(0)
                 self.update()
                 update_canvas_tool_preview()
-                text_preview.style = ft.TextStyle(**text_settings)
+                update_text_preview()
+                text_preview.update()
+
+            def save_text_decoration_color(e: ft.Event[ft.SubmenuButton]):
+                nonlocal text_decoration_color_picker, text_decoration_color_selector
+                color = text_decoration_color_picker.color
+                print("New color")
+                text_settings.update(**{"decoration_color": color})
+                app.settings.update_data(**{"text_settings": text_settings})
+                text_decoration_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
+                if text_decoration_color_picker.color not in text_decoration_color_picker.color_history:
+                    text_decoration_color_picker.color_history.append(text_decoration_color_picker.color)
+                    if len(text_decoration_color_picker.color_history) > 6:
+                        text_decoration_color_picker.color_history.pop(0)
+                self.update()
+                update_canvas_tool_preview()
+                update_text_preview()
                 text_preview.update()
 
             # Increase the value (clamped) and pass the event along for settings
@@ -1135,21 +1145,10 @@ class CanvasRail(ft.Container):
                 data="font_family"
             )
 
-            font_decoration_rg = ft.RadioGroup(
+            
+            text_shadow_rg = ft.RadioGroup(
                 content=ExpansionTile(
-                    title="Font Decoration",
-                    controls=[
-                        ft.Radio(key.capitalize(), value=key) for key in ("none", "underline", "overline", "line_through")
-                    ]
-                ),
-                value=text_settings.get('decoration', 'none') if text_settings.get('decoration', None) is not None else 'none',
-                on_change=update_text_setting,
-                data="decoration"
-            )
-
-            font_shadow_rg = ft.RadioGroup(
-                content=ExpansionTile(
-                    title="Font Shadow",
+                    title="Text Shadow",
                     controls=[
                         ft.Radio(key.capitalize(), value=key) for key in ("none", "normal", "solid", "outer", "inner")
                     ]
@@ -1159,9 +1158,9 @@ class CanvasRail(ft.Container):
                 data="shadow_blur_style"
             )
 
-            font_foreground_rg = ft.RadioGroup(
+            text_foreground_rg = ft.RadioGroup(
                 content=ExpansionTile(
-                    title="Font Foreground",
+                    title="Text Foreground",
                     controls=[
                         ft.Radio(key.capitalize(), value=key) for key in ("none", "stroke", "fill")
                     ]
@@ -1184,6 +1183,22 @@ class CanvasRail(ft.Container):
                 color_history=[]
             ) 
     
+            
+            # Color picker for changing brush color
+            text_bg_color_picker = ColorPicker(
+                color=text_settings.get('bgcolor', None),
+                on_color_change=set_color, 
+                picker_area_border_radius=ft.BorderRadius.all(4),
+                color_history=[]
+            )   
+
+            text_decoration_color_picker = ColorPicker(
+                color=text_settings.get('decoration_color', None),
+                on_color_change=set_color, 
+                picker_area_border_radius=ft.BorderRadius.all(4),
+                color_history=[]
+            )
+
             # Create our color selector button
             text_color_selector = ft.SubmenuButton(
                 ft.Icon(ft.Icons.CIRCLE, text_settings.get('color', ft.Colors.PRIMARY)), 
@@ -1200,14 +1215,6 @@ class CanvasRail(ft.Container):
                     padding=ft.Padding.all(0)
                 ),
             )
-
-            # Color picker for changing brush color
-            text_bg_color_picker = ColorPicker(
-                color=text_settings.get('bgcolor', None),
-                on_color_change=set_color, 
-                picker_area_border_radius=ft.BorderRadius.all(4),
-                color_history=[]
-            )   
     
             # Create our color selector button
             text_bg_color_selector = ft.SubmenuButton(
@@ -1221,6 +1228,22 @@ class CanvasRail(ft.Container):
                 menu_style=ft.MenuStyle(
                     alignment=ft.Alignment.TOP_RIGHT,
                     bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                    shape=ft.RoundedRectangleBorder(radius=4),
+                    padding=ft.Padding.all(0)
+                ),
+            )
+
+            text_decoration_color_selector = ft.SubmenuButton(
+                ft.Icon(ft.Icons.CIRCLE, text_settings.get('decoration_color', ft.Colors.PRIMARY)),
+                tooltip="The color of your text decoration (underline, overline, line through).",
+                on_close=save_text_decoration_color, #expand=True,
+                width=40,
+                height=40,
+                controls=[text_decoration_color_picker],
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0),),
+                menu_style=ft.MenuStyle(
+                    alignment=ft.Alignment.TOP_RIGHT,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                     shape=ft.RoundedRectangleBorder(radius=4),
                     padding=ft.Padding.all(0)
                 ),
@@ -1260,6 +1283,59 @@ class CanvasRail(ft.Container):
                 expand=True,
                 width=24,
             )  
+
+            text_decoration_color_options_button = ft.SubmenuButton(
+                controls=get_color_options(),
+                content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
+                style=ft.ButtonStyle(
+                    shape=ft.RoundedRectangleBorder(radius=0),
+                    padding=ft.Padding.all(0),
+                ),
+                menu_style=ft.MenuStyle(
+                    alignment=ft.Alignment.TOP_RIGHT,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER, 
+                    shape=ft.RoundedRectangleBorder(radius=4),
+                    padding=ft.Padding.all(0)
+                ),
+                expand=True,
+                width=24,
+            )
+
+            text_decoration_rg = ft.RadioGroup(
+                content=ExpansionTile(
+                    title="Text Decoration",
+                    controls=[
+                        ft.Radio(key.capitalize(), value=key) for key in ("none", "underline", "overline", "line_through")
+                    ] + [
+                        ft.Row([
+                            ft.Text("Decoration Color"),
+                            ft.MenuBar(
+                                [
+                                    ft.Container(
+                                        text_decoration_color_selector,
+                                        border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
+                                    ),
+                                    ft.Container(
+                                        text_decoration_color_options_button,    
+                                        border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
+                                        alignment=ft.Alignment.CENTER
+                                    ),  # Button to save current color to settings
+                                ],
+                                style=ft.MenuStyle(
+                                    alignment=ft.Alignment.CENTER_LEFT,
+                                    bgcolor=ft.Colors.TRANSPARENT,
+                                    shadow_color=ft.Colors.TRANSPARENT,
+                                    padding=ft.Padding.all(0)
+                                ),
+                            ),
+                        ], spacing=0)
+                    ]
+                ),
+                value=text_settings.get('decoration', 'none') if text_settings.get('decoration', None) is not None else 'none',
+                on_change=update_text_setting,
+                data="decoration"
+            )
+            
 
             # 'text_settings': {
             #'size': 14,
@@ -1367,9 +1443,9 @@ class CanvasRail(ft.Container):
                 ], spacing=0, margin=ft.Margin.only(left=4)),
 
                 font_family_rg,
-                font_decoration_rg,
-                font_shadow_rg,
-                font_foreground_rg,
+                text_decoration_rg,
+                text_shadow_rg,
+                text_foreground_rg,
             ]
 
         # Grab our data for easier manipulation
@@ -1578,8 +1654,26 @@ class CanvasRail(ft.Container):
 
         text_preview = ft.Text(
             "Preview text", selectable=True, 
-            style=ft.TextStyle(**text_settings)
+            #style=ft.TextStyle(**text_settings)
         )
+
+        def update_text_preview():
+            nonlocal text_preview, text_settings
+            text_preview.style = ft.TextStyle(**text_settings)
+            
+            # Match decoration accordingly, since its str -> control doesnt work
+            decoration = text_settings.get('decoration', None)
+            match decoration:
+                case "underline":
+                    text_preview.style.decoration = ft.TextDecoration.UNDERLINE
+                case "overline":
+                    text_preview.style.decoration = ft.TextDecoration.OVERLINE
+                case "line_through":
+                    text_preview.style.decoration = ft.TextDecoration.LINE_THROUGH
+                case _:
+                    text_preview.style.decoration = None
+
+        update_text_preview()
 
         set_text_mode_button = ft.IconButton(
             ft.Icons.TEXT_FIELDS if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "text" else ft.Icons.TEXT_FIELDS_OUTLINED,
@@ -1598,7 +1692,7 @@ class CanvasRail(ft.Container):
                 scale=0.8
             ),
             style=ft.ButtonStyle(
-                #mouse_cursor=ft.MouseCursor.CLICK,  
+                #mouse_cursor=ft.MouseCursor.CLICK,  f
                 shape=ft.RoundedRectangleBorder(radius=0),
                 padding=ft.Padding.all(0),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_control_mode', '') == "text" else None
