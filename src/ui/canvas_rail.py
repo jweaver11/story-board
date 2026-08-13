@@ -1130,6 +1130,13 @@ class CanvasRail(ft.Container):
                 suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value)
             )
 
+            text_decoration_thickness_tf = TextField(
+                value=str(text_settings.get('decoration_thickness', 1)),
+                on_blur=update_text_setting, data="decoration_thickness", label="Text Decoration Thickness (0-128)",
+                input_filter=ft.NumbersOnlyInputFilter(),
+                suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value)
+            )
+
             # Add baseline rg here if wanted (not wanted rn)
             font_family_rg = ft.RadioGroup(
                 content=ExpansionTile(
@@ -1248,7 +1255,7 @@ class CanvasRail(ft.Container):
             )
 
             text_color_options_button = ft.SubmenuButton(
-                controls=get_color_options(),
+                controls=get_color_options(text_color_picker, save_text_color),
                 content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
                 style=ft.ButtonStyle(
                     #mouse_cursor=ft.MouseCursor.CLICK,  
@@ -1266,7 +1273,7 @@ class CanvasRail(ft.Container):
             )  
 
             text_bg_color_options_button = ft.SubmenuButton(
-                controls=get_color_options(),
+                controls=get_color_options(text_bg_color_picker, save_text_bg_color),
                 content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
                 style=ft.ButtonStyle(
                     shape=ft.RoundedRectangleBorder(radius=0),
@@ -1283,7 +1290,7 @@ class CanvasRail(ft.Container):
             )  
 
             text_decoration_color_options_button = ft.SubmenuButton(
-                controls=get_color_options(),
+                controls=get_color_options(text_decoration_color_picker, save_text_decoration_color),
                 content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
                 style=ft.ButtonStyle(
                     shape=ft.RoundedRectangleBorder(radius=0),
@@ -1326,7 +1333,9 @@ class CanvasRail(ft.Container):
                                     padding=ft.Padding.all(0)
                                 ),
                             ),
-                        ], spacing=0)
+                        ], spacing=0, margin=ft.Margin.only(left=4),)
+                    ] + [
+                        text_decoration_thickness_tf
                     ]
                 ),
                 value=text_settings.get('decoration', 'none') if text_settings.get('decoration', None) is not None else 'none',
@@ -1490,44 +1499,42 @@ class CanvasRail(ft.Container):
             ),
         )
 
-        def get_color_options() -> list[ft.Control]:
-            nonlocal paint_settings, canvas_settings
+        def get_color_options(target_color_picker: ColorPicker, apply_color) -> list[ft.Control]:
+            nonlocal canvas_settings
 
             def set_saved_color(e: ft.Event[ft.MenuItemButton]):
-                nonlocal paint_settings
                 color_data = e.control.data
-                paint_settings['color'] = color_data.get('value', "#000000")
-                app.settings.update_data(**{"paint_settings": {"color": color_data.get('value', "#000000")}})
-                color_selector.content = ft.Icon(ft.Icons.CIRCLE, color_data.get('value'))
-                brush_preview.content = build_preview_brush()
-                self.update()
-                update_canvas_tool_preview()
+                target_color_picker.color = color_data.get('value', "#000000")
+                apply_color(None)
 
             def delete_color(e: ft.Event[ft.IconButton]):
                 nonlocal canvas_settings
                 idx = e.control.data
                 canvas_settings['saved_colors'].pop(idx)
                 app.settings.update_data(**{"canvas_settings": {"saved_colors": canvas_settings['saved_colors']}})
-                color_options_button.controls = get_color_options()
+                color_options_button.controls = get_color_options(color_picker, save_color)
                 text_settings_button.controls = get_text_options()
                 self.update()
 
-            def save_custom_color(e=None):
+            def save_custom_color(e: ft.Event[ft.IconButton]):
 
                 # Saves the color to data and pops the dialog
                 async def save_color_name(e=None):
-                    nonlocal paint_settings, canvas_settings
+                    nonlocal canvas_settings
                     color_name = name_tf.value.strip()
-                    current_color = paint_settings.get('color', "#000000")
+                    # Always pull from the picker that triggered this save, not the paint picker
+                    current_color = target_color_picker.color
                     canvas_settings['saved_colors'].append({'name': color_name, 'value': current_color})
                     app.settings.update_data(**{"canvas_settings": {"saved_colors": canvas_settings['saved_colors']}})
-                    color_options_button.controls = get_color_options()
+                    color_options_button.controls = get_color_options(color_picker, save_color)
                     text_settings_button.controls = get_text_options()
                     self.update()
                     self.page.pop_dialog()
             
 
                 name_tf = ft.TextField(label="Color Name", autofocus=True, on_submit=save_color_name, capitalization=ft.TextCapitalization.WORDS)
+                #color = e.control.parent.parent.parent.parent.controls[0].content.color or paint_settings.get('color', "#000000")
+                
                 self.page.show_dialog(
                     ft.AlertDialog(
                         title="Name Color",
@@ -1568,7 +1575,7 @@ class CanvasRail(ft.Container):
             return ctrls
 
         color_options_button = ft.SubmenuButton(
-            controls=get_color_options(),
+            controls=get_color_options(color_picker, save_color),
             content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
             style=ft.ButtonStyle(
                 #mouse_cursor=ft.MouseCursor.CLICK,  

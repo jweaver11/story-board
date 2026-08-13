@@ -778,5 +778,7 @@ class PlotChart(Widget):
             )
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
 
+        #self.page.run_task(self.iv.pan, -FIXED_STACK_WIDTH / 4, -FIXED_STACK_HEIGHT / 4, 0)  # Center the view on the stack
+
         # TODO: Add spider web view
         # In sidebar, show sequence of events like plotline

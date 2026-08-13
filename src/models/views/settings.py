@@ -183,7 +183,7 @@ class Settings(ft.View):
                     'italic': False,
                     'decoration': None,  # Options: none, underline, overline, line_through
                     'decoration_color': None,
-                    'decoration_thickness': 1.0,
+                    'decoration_thickness': 1,
                     'decoration_style': "solid",    # options: solid, wavy, double, dotted, dashed
                     'font_family': None,
                     'color': "#FFFFFF",  # Hex color folowed by opacity

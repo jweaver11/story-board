@@ -20,6 +20,8 @@ from styles.text_fields import TextField
 from styles.text_styles import TextShadow
 from styles.snack_bar import SnackBar
 
+MAP_WIDTH = 2000
+MAP_HEIGHT = 1000
 
 class Map(Widget):
 
@@ -72,8 +74,8 @@ class Map(Widget):
                 'canvas_data': {
 
                     # Sizing
-                    "width": (data or {}).get('canvas_data', {}).get('width') or 2000,
-                    "height": (data or {}).get('canvas_data', {}).get('height') or 1000,
+                    "width": (data or {}).get('canvas_data', {}).get('width') or MAP_WIDTH,
+                    "height": (data or {}).get('canvas_data', {}).get('height') or MAP_HEIGHT,
 
                     # Undo and redo list
                     'undo_list': list(),        #['capture_str1', 'capture_str2']

@@ -882,7 +882,7 @@ class Plotline(Widget):
         )
 
         # Holds our drawing so we can interact with it, zoom, pan, etc.
-        interactive_viewer = ft.InteractiveViewer(
+        self.iv = ft.InteractiveViewer(
             content=ft.Stack([
                 ft.Container(   # Background image
                     image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
@@ -912,7 +912,7 @@ class Plotline(Widget):
         )
 
         self.content = ft.Stack([
-            interactive_viewer,
+            self.iv,
             ft.Row(
                 [self.toggle_sidebar_visibility_button, self.sidebar], 
                 spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
