@@ -56,8 +56,9 @@ class CharacterRelationshipMap(Widget):
 
         self.character_bank: ft.Column = None
         self.connections_stack: ft.Stack = None
-        self.cs_width: int = 0
-        self.cs_height: int = 0
+
+        self.add_char_position: tuple = (200, 200)  # Where we add characters to the stack 
+       
         
 
     class CharacterNode(ft.GestureDetector):
@@ -419,6 +420,8 @@ class CharacterRelationshipMap(Widget):
             self.char2_id = data.get('char2_id')
             self.color = data.get('color', "#FFFFFF")
             self.widget = widget
+            self.start_position: tuple
+            self.end_position: tuple
             super().__init__(data=data)
 
             # Set our content
@@ -598,11 +601,6 @@ class CharacterRelationshipMap(Widget):
 
         super().build()
         
-        # Set size of stack needed for ratios
-        async def _set_connection_stack_size(e: ft.LayoutSizeChangeEvent):
-            self.cs_width = e.width
-            self.cs_height = e.height
-
         # Tip control for pointing at the character bank to drag characters if we're empty
         self.tip_ctrl = ft.Row([
             ft.Icon(ft.Icons.ARROW_BACK_OUTLINED, size=50, color=ft.Colors.ON_SURFACE_VARIANT),
@@ -613,7 +611,7 @@ class CharacterRelationshipMap(Widget):
         self.character_bank = ft.Column(
             [
                 ft.Text("Character Bank", theme_style=ft.TextThemeStyle.LABEL_LARGE, weight=ft.FontWeight.W_500, italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
-                ft.Divider(2, 2)
+                ft.Divider(2, 2, leading_indent=10)
             ], 
             scroll=ft.ScrollMode.AUTO, 
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -626,32 +624,82 @@ class CharacterRelationshipMap(Widget):
                 on_exit=self.stop_highlight_character_bank
             ),
             border=ft.Border.only(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
-            width=140,
-            expand=True,
+            width=150,
             height=FIXED_STACK_HEIGHT,
-            padding=ft.Padding.all(10),
+            padding=ft.Padding.only(top=10, right=10, bottom=10),
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
         )
+
+        def toggle_char_on_map(e: ft.Event[ft.Checkbox]):
+            char_id = e.control.data.get('id')
+            value = e.control.value
+            new_position = (self.add_char_position[0] + 200, self.add_char_position[1])  # Add a new character to the map at a position offset from the last added character
+            if value:
+                self.data['characters'][char_id] = new_position
+                self.update_data(**{'characters': self.data['characters']})
+                char_node = self.CharacterNode(
+                    char_id,
+                    self,
+                    e.control.data.get('color'),
+                    e.control.data.get('title', ''),
+                    e.control.data.get('image_base64', ''),
+                    new_position
+                )
+                self.connections_stack.controls.append(char_node)
+                
+            else:
+                self.data['characters'].pop(char_id, None)
+                self.update_data(**{'characters': self.data['characters']})
+                for e in self.data['connections'][:]:
+                    if e['char1_id'] == char_id or e['char2_id'] == char_id:
+                        self.data['connections'].remove(e)
+                for connection in self.connections_canvas.shapes[:]:
+                    if isinstance(connection, self.ConnectionEdge) and (connection.char1_id == char_id or connection.char2_id == char_id):
+                        self.connections_canvas.shapes.remove(connection)
+                for ctrl in self.connections_stack.controls[:]:
+                    if isinstance(ctrl, self.CharacterNode) and ctrl.char_id == char_id:
+                        self.connections_stack.controls.remove(ctrl)
+                    elif isinstance(ctrl, self.ConnectionIcon) and (ctrl.char1_id == char_id or ctrl.char2_id == char_id):
+                        self.connections_stack.controls.remove(ctrl)
+
+            self.connections_stack.update()
 
         # Go through our stor
         for widget in self.story.widgets.values():
             if widget.data.get('tag') == 'character':
                 if widget.data.get('id') in self.data['characters']:
-                    continue
-                char_id = widget.data.get('id')
-                color = widget.data.get('color')
-                char_name = widget.data.get('title', '')
-                image = widget.data.get('image_base64')
+                    value = True
+                else:
+                    value = False
+                #char_id = widget.data.get('id')
+                #color = widget.data.get('color')
+                #char_name = widget.data.get('title', '')
+                #image = widget.data.get('image_base64')
 
-                self.character_bank.controls.append(self.CharacterNode(char_id, self, color, char_name, image))
+                self.character_bank.controls.append(
+                    ft.Checkbox(
+                        label=widget.data.get('title', ''),
+                        value=value,
+                        label_style=ft.TextStyle(overflow=ft.TextOverflow.ELLIPSIS),
+                        data=widget.data,
+                        on_change=toggle_char_on_map, 
+                        expand=True
+                    )
+                )
 
-        self.character_bank.controls.append(ft.Container(expand=True))
+                #self.character_bank.controls.append(self.CharacterNode(char_id, self, color, char_name, image))
+
+        #self.character_bank.controls.append(ft.Container(expand=True))
+
+        async def set_coords(e: ft.HoverEvent):
+            self.add_char_position = (e.local_position.x, e.local_position.y)
+            await self._get_coords(e)
 
         # Canvas that shows the drawn lines between characters for their connections and icons
         self.connections_canvas = cv.Canvas(
             content=ft.GestureDetector(
                 expand=True,
-                on_hover=self._get_coords,
+                on_hover=set_coords,
                 hover_interval=20,
             ),
             expand=True, 
@@ -659,12 +707,18 @@ class CharacterRelationshipMap(Widget):
         )
 
         # Create the stack to hold our bank, character nodes, and connections canvas
-        self.connections_stack = ft.Stack([
-            
-            self.connections_canvas,
-            
-            
-        ], expand=True, alignment=ft.Alignment.CENTER_LEFT, on_size_change=_set_connection_stack_size) 
+        self.connections_stack = ft.Stack(
+            [
+                ft.Container(
+                    image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
+                    expand=True, border_radius=4
+                ),
+                self.connections_canvas,
+            ], 
+            expand=True, alignment=ft.Alignment.CENTER_LEFT, 
+            width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT, 
+
+        ) 
 
         # Have a new 'edge' drawn for each connection
         for connection in self.data['connections']:
@@ -699,20 +753,15 @@ class CharacterRelationshipMap(Widget):
 
         # Interactive viewer to hold the stack for UI manipulation
         self.iv = ft.InteractiveViewer(
-            content=ft.Stack([      # Hold the edge canvas and node stack
-                ft.Container(
-                    image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
-                    expand=True, border_radius=4
-                ),
-                
-                self.connections_stack,
-                ft.Column([self.character_bank_container], width=140, height=FIXED_STACK_HEIGHT),
-            ], width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT),
+            content=self.connections_stack,
             expand=True, 
             constrained=False,
             scale_factor=800, boundary_margin=1500,
             min_scale=0.02, max_scale=3.0,
         )
 
-        self.content = self.iv
+        self.content = ft.Row([
+            self.character_bank_container,
+            self.iv
+        ], spacing=0, expand=True)
             
