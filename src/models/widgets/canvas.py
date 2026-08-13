@@ -176,7 +176,7 @@ class Canvas(Widget):
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     def set_mouse_cursor(self, update: bool=True):
 
-        # TODO: Only use custom on drawing tools and erase. Tools and text should use standard even if the option is set
+        
 
         # For setting the standard cursor
         def set_standard_cursor():
@@ -202,7 +202,6 @@ class Canvas(Widget):
             
             self.mouse_cursor.size = paint_settings.get('stroke_width', 3) * 1.25
             self.mouse_cursor.color = paint_settings.get('color', ft.Colors.BLACK)
-
             
             stroke_cap = paint_settings.get('stroke_cap', 'butt')
             # Set mouse cursor based on stroke cap
@@ -212,10 +211,13 @@ class Canvas(Widget):
 
             # If using tool mode, hide our custom one and use the standard, unless using erase or line tool
             if control_mode == "tool":
-                if active_tool != "erase" or active_tool != "line": # Erase or line get normal draw cursor
+                if active_tool != "erase" and active_tool != "line": # Erase or line get normal draw cursor
                     self.canvas_controller.mouse_cursor = ft.MouseCursor.CLICK     # Other tools get responsive click cursor
                     self.mouse_cursor.visible = False       # Hide the custom one
-            
+                    print("Custom hidden")
+                else:
+                    print("Using custom")
+                
 
         # Grab out settings for paint and canvas
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
@@ -225,13 +227,18 @@ class Canvas(Widget):
         # Catch errors
         if self.active_layer_idx > len(self.data.get('canvas_data', {}).get('layers', [])) - 1:
             self.active_layer_idx = len(self.data.get('canvas_data', {}).get('layers', [])) - 1
-            return        
+            return  
+
+        # TODO: Only use custom on drawing tools and erase. Tools and text should use standard even if the option is set      
 
         # Sets our mouse cursor as the standard one or custom one depending on setting
         if self.use_standard_cursor:
             set_standard_cursor()
         else:
-            set_custom_cursor()
+            if control_mode == "draw" or (control_mode == "tool" and (active_tool == "erase" or active_tool == "line")):
+                set_custom_cursor()
+            else:
+                set_standard_cursor()
 
         # Check if active layer is hidden, and overrite cursors
         if self.layer_stack.controls[self.active_layer_idx].visible == False:

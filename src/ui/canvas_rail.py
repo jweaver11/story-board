@@ -121,9 +121,8 @@ class CanvasRail(ft.Container):
                 if not widget.data: # Protect empty
                     return
                 if widget.data.get('tag') == "canvas":
-                    if widget.data.get('visible', True):
-                        widget.set_mouse_cursor()
-                        break
+                    widget.set_mouse_cursor()
+                    break
 
         # Checks all our widgets. If any of them are manipulating a tool, we paint it on the canvas if switching from tool to draw mode
         def update_canvas_tool_preview():
@@ -559,7 +558,6 @@ class CanvasRail(ft.Container):
             app.settings.update_data(**{"canvas_settings": canvas_settings})
             set_tool_mode(e.control)
             self.update()
-            set_canvas_mouse_cursor()
 
         
 
@@ -885,10 +883,10 @@ class CanvasRail(ft.Container):
                 blur_tf,
                 #stroke_smoothing_tf,
 
-                #ft.Row([
-                    #brush_smoothing_switch,
-                    #ft.Icon(ft.Icons.INFO_OUTLINED, ft.Colors.OUTLINE, scale=0.6, tooltip="Long brush strokes with no break will cause performance issues.")
-                #], vertical_alignment=ft.CrossAxisAlignment.CENTER, margin=ft.Margin.only(top=8), spacing=0),
+                ft.Row([
+                    brush_smoothing_switch,
+                    ft.Icon(ft.Icons.INFO_OUTLINED, ft.Colors.OUTLINE, scale=0.6, tooltip="Long brush strokes with no break will cause performance issues.")
+                ], vertical_alignment=ft.CrossAxisAlignment.CENTER, margin=ft.Margin.only(top=8), spacing=0),
                 ft.Container(height=8),  # Spacer
                 fill_switch, 
                 anti_alias_switch,
@@ -1845,7 +1843,7 @@ class CanvasRail(ft.Container):
                     bgcolor=ft.Colors.TRANSPARENT,
                     shadow_color=ft.Colors.TRANSPARENT,
                     padding=ft.Padding.all(0)
-                    ),
+                ),
             ),
 
 
