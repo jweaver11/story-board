@@ -678,7 +678,7 @@ class CharacterRelationshipMap(Widget):
 
                 self.character_bank.controls.append(
                     ft.Checkbox(
-                        label=widget.data.get('title', ''),
+                        label=ft.Text(widget.data.get('title', ''), overflow=ft.TextOverflow.ELLIPSIS, max_lines=1, expand=True, width=100),
                         value=value,
                         label_style=ft.TextStyle(overflow=ft.TextOverflow.ELLIPSIS),
                         data=widget.data,
