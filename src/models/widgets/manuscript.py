@@ -11,15 +11,15 @@ from styles.text_fields import TextField
 from styles.snack_bar import SnackBar
 from styles.menu_option_style import MenuOptionStyle
 
-DOCUMENT_WIDTH = 820
-DOCUMENT_HEIGHT = 1060
-DOCUMENT_PADDING = 80
-DOCUMENT_VERTICAL_MARGIN = 50
-DOCUMENT_HORIZONTAL_MARGIN = 70
+MANUSCRIPT_WIDTH = 820
+MANUSCRIPT_HEIGHT = 1060
+MANUSCRIPT_PADDING = 80
+MANUSCRIPT_VERTICAL_MARGIN = 50
+MANUSCRIPT_HORIZONTAL_MARGIN = 70
 
 
-# Class that holds our text document objects
-class Document(Widget):
+# Class that holds our text manuscript objects
+class Manuscript(Widget):
     # Constructor
     def __init__(self, title: str, directory_path: str, story: Story, data: dict={}, is_new: bool = False):
 
@@ -37,13 +37,13 @@ class Document(Widget):
         if self.is_new == True:
             self.data.update({
                 # Widget data
-                'tag': "document",
-                'color': app.settings.data.get('widget_defaults', {}).get('document', {}).get('color'),
+                'tag': "manuscript",
+                'color': app.settings.data.get('widget_defaults', {}).get('manuscript', {}).get('color'),
                 'show_sidebar': True,
 
                 # Settings for the toolbar
                 'text_controller_settings': {
-                    'font_family': app.settings.data.get('widget_defaults', {}).get('document', {}).get('text_controller_settings', {}).get('font_family', "Arial"),
+                    'font_family': app.settings.data.get('widget_defaults', {}).get('manuscript', {}).get('text_controller_settings', {}).get('font_family', "Arial"),
                     #'font_size': 12,
                     'weight': "normal",
                     'italic': False,
@@ -58,7 +58,7 @@ class Document(Widget):
                 'reference_images': dict(),
 
                 # The text as json list data that is loaded and saved
-                'document_data': list(),       
+                'manuscript_data': list(),       
 
                 # Temp data name when testing new doc data
                 'new_doc_data': list(), 
@@ -70,15 +70,15 @@ class Document(Widget):
                     # }, 
                 # 'text': "Hello World!\n"
                 # }, ...
-                # ],  # Default data for new documents
+                # ],  # Default data for new manuscripts
             })  
             ft.TextStyle()
-        self.dirty = False  # Marks if the document has unsaved changes
+        self.dirty = False  # Marks if the manuscript has unsaved changes
 
     class Comment(TextField):
 
         # Constructor
-        def __init__(self, title: str, widget: 'Document', data: dict=None):
+        def __init__(self, title: str, widget: 'Manuscript', data: dict=None):
 
             self.widget = widget
 
@@ -121,7 +121,7 @@ class Document(Widget):
             self.label_style = ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
     
     class ReferenceImage(ft.Container):
-        def __init__(self, widget: 'Document', data: dict=None):
+        def __init__(self, widget: 'Manuscript', data: dict=None):
 
             self.widget = widget
 
@@ -178,11 +178,11 @@ class Document(Widget):
                 on_exit=hide_delete_icon,
             )
             
-    # Checks if our document is dirty, and saves it if it is
+    # Checks if our manuscript is dirty, and saves it if it is
     async def save_file(self):
         if self.dirty == True:
             self.dirty = False
-            self.update_data(**{'document_data': await self.quill_editor.save()})
+            self.update_data(**{'manuscript_data': await self.quill_editor.save()})
         await super().save_file()
 
     def build(self):
@@ -198,16 +198,16 @@ class Document(Widget):
             self.story.open_menu([ft.Text(f"Word Count: {word_count}", margin=ft.Margin.only(left=6, right=6, top=10, bottom=10))])
 
         # TODO: build editor stuff here
-        # Marks ourselves as dirty after any changes to the document
+        # Marks ourselves as dirty after any changes to the manuscript
         def mark_dirty(e=None):
             if self.dirty == False:
                 self.dirty = True
 
-        # Creates a document with a text control inside that holds our spans and allows for selection and manipulation of text
+        # Creates a manuscript with a text control inside that holds our spans and allows for selection and manipulation of text
         def check_size(e: ft.LayoutSizeChangeEvent[ft.Text]):
             
             print("New size:", e.width, e.height)
-            if e.height > DOCUMENT_HEIGHT - DOCUMENT_PADDING*2:
+            if e.height > MANUSCRIPT_HEIGHT - MANUSCRIPT_PADDING*2:
                 # TODO: See if new page exists below, if so add to it or smth
                 pass
 
@@ -278,11 +278,13 @@ class Document(Widget):
         
         # Grab our flet quill elements
         quill_toolbar = FletQuillToolbar(
+            controller_id=self.data.get('id', None),
             expand=True,
             toolbar_buttons=[ft.GestureDetector(word_count_button, on_hover=self.set_mouse_coords, hover_interval=50)]
         )  # Toolbar
         self.quill_editor = FletQuillEditor(    # Editor
-            text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),   # Pass in data
+            controller_id=self.data.get('id', None),
+            text_data=self.data.get('manuscript_data', [{"insert": "Hello World!\n"}]),   # Pass in data
             placeholder_text="Start your masterpiece here...",
             expand=True,
         )
@@ -292,18 +294,18 @@ class Document(Widget):
             ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty),
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
             border_radius=4,
-            width=DOCUMENT_WIDTH, 
-            height=DOCUMENT_HEIGHT,
+            width=MANUSCRIPT_WIDTH, 
+            height=MANUSCRIPT_HEIGHT,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-            padding=ft.Padding.all(DOCUMENT_PADDING), 
+            padding=ft.Padding.all(MANUSCRIPT_PADDING), 
             align=ft.Alignment.TOP_CENTER,
             alignment=ft.Alignment.TOP_LEFT, 
-            margin=ft.Margin.symmetric(horizontal=DOCUMENT_HORIZONTAL_MARGIN, vertical=DOCUMENT_VERTICAL_MARGIN),
+            margin=ft.Margin.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN, vertical=MANUSCRIPT_VERTICAL_MARGIN),
         )
         editor_container = ft.Container(
             ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty),
             expand=True,
-            margin=ft.Margin.symmetric(horizontal=DOCUMENT_HORIZONTAL_MARGIN, vertical=DOCUMENT_VERTICAL_MARGIN),
+            margin=ft.Margin.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN, vertical=MANUSCRIPT_VERTICAL_MARGIN),
         )
 
         # Build our comments and reference images columns from data
@@ -378,7 +380,7 @@ class Document(Widget):
 
         
         
-        # Marks ourselves as dirty after any changes to the document
+        # Marks ourselves as dirty after any changes to the manuscript
         def mark_dirty(e=None):
             if self.dirty == False:
                 self.dirty = True
@@ -387,14 +389,14 @@ class Document(Widget):
         # Grab our flet quill elements
         quill_toolbar = FletQuillToolbar()  # Toolbar
         self.quill_editor = FletQuillEditor(    # Editor
-            text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),   # Pass in data
+            text_data=self.data.get('manuscript_data', [{"insert": "Hello World!\n"}]),   # Pass in data
             placeholder_text="Start your masterpiece here...",
             expand=True
         )
 
         # Both
         #self.quill = FletQuill(
-            #text_data=self.data.get('document_data', [{"insert": "Hello World!\n"}]),
+            #text_data=self.data.get('manuscript_data', [{"insert": "Hello World!\n"}]),
             #expand=True
         #)
 
@@ -403,7 +405,7 @@ class Document(Widget):
             ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty, expand=True),
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
             border_radius=4,
-            width=DOCUMENT_WIDTH, height=DOCUMENT_HEIGHT,
+            width=MANUSCRIPT_WIDTH, height=MANUSCRIPT_HEIGHT,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
             padding=ft.Padding.all(80), 
             align=ft.Alignment.TOP_CENTER,
@@ -428,7 +430,7 @@ class Document(Widget):
         
 
         class TextController(ft.Row):
-            def __init__(self, widget: 'Document', data: dict):
+            def __init__(self, widget: 'Manuscript', data: dict):
                 super().__init__(
                     data=data,
                     spacing=0,
@@ -492,8 +494,8 @@ class Document(Widget):
         cursor_blink_task: asyncio.Task  # Task to blink our cursor span
 
         # UI elements
-        pages_column: ft.Column = None  # Column that holds our document pages (containers)
-        keyboard_listener: ft.KeyboardListener = None  # Keyboard listener for our document pages
+        pages_column: ft.Column = None  # Column that holds our manuscript pages (containers)
+        keyboard_listener: ft.KeyboardListener = None  # Keyboard listener for our manuscript pages
 
         def create_text_cursor() -> ft.TextSpan:
             return ft.TextSpan("|", style=ft.TextStyle(color=ft.Colors.TRANSPARENT, weight=ft.FontWeight.BOLD))
@@ -580,11 +582,11 @@ class Document(Widget):
             self.story.open_menu([ft.Text(f"Word Count: {word_count}")])
 
 
-        # Creates a document with a text control inside that holds our spans and allows for selection and manipulation of text
+        # Creates a manuscript with a text control inside that holds our spans and allows for selection and manipulation of text
         def check_size(e: ft.LayoutSizeChangeEvent[ft.Text]):
             
             print("New size:", e.width, e.height)
-            if e.height > DOCUMENT_HEIGHT - DOCUMENT_PADDING*2:
+            if e.height > MANUSCRIPT_HEIGHT - MANUSCRIPT_PADDING*2:
                 # TODO: See if new page exists below, if so add to it or smth
                 pass
 
@@ -622,7 +624,7 @@ class Document(Widget):
 
             # Updates mouse cursor for visual feedback when hovering
             def change_mouse_cursor(e: ft.HoverEvent[ft.GestureDetector]):
-                if e.local_position.x < DOCUMENT_PADDING or e.local_position.y < DOCUMENT_PADDING or e.local_position.x > DOCUMENT_WIDTH - DOCUMENT_PADDING or e.local_position.y > DOCUMENT_HEIGHT - DOCUMENT_PADDING:
+                if e.local_position.x < MANUSCRIPT_PADDING or e.local_position.y < MANUSCRIPT_PADDING or e.local_position.x > MANUSCRIPT_WIDTH - MANUSCRIPT_PADDING or e.local_position.y > MANUSCRIPT_HEIGHT - MANUSCRIPT_PADDING:
                     e.control.mouse_cursor = None
                 else:
                     e.control.mouse_cursor = ft.MouseCursor.CLICK
@@ -639,20 +641,20 @@ class Document(Widget):
                     text_ctrl,
                     border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), 
                     border_radius=4,
-                    width=DOCUMENT_WIDTH, 
-                    height=DOCUMENT_HEIGHT,
+                    width=MANUSCRIPT_WIDTH, 
+                    height=MANUSCRIPT_HEIGHT,
                     bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-                    padding=ft.Padding.all(DOCUMENT_PADDING), 
+                    padding=ft.Padding.all(MANUSCRIPT_PADDING), 
                     align=ft.Alignment.TOP_CENTER,
                     alignment=ft.Alignment.TOP_LEFT, 
-                    #margin=ft.Margin.symmetric(horizontal=DOCUMENT_HORIZONTAL_MARGIN, vertical=DOCUMENT_VERTICAL_MARGIN),
+                    #margin=ft.Margin.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN, vertical=MANUSCRIPT_VERTICAL_MARGIN),
                 ),
                 on_tap=handle_taps,
                 on_hover=change_mouse_cursor,
                 hover_interval=50,
-                width=DOCUMENT_WIDTH, 
-                height=DOCUMENT_HEIGHT,
-                margin=ft.Margin.symmetric(horizontal=DOCUMENT_HORIZONTAL_MARGIN, vertical=DOCUMENT_VERTICAL_MARGIN),
+                width=MANUSCRIPT_WIDTH, 
+                height=MANUSCRIPT_HEIGHT,
+                margin=ft.Margin.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN, vertical=MANUSCRIPT_VERTICAL_MARGIN),
             )
                
         
@@ -820,9 +822,9 @@ class Document(Widget):
             self.needs_file_write = True
             #print(e.key)
             print(e)
-            #document_text.spans[-1].text = document_text.spans[-1].text + str(e.key)
-            #document_text.update()
-            #print("New text:", document_text.spans[-1].text)
+            #manuscript_text.spans[-1].text = manuscript_text.spans[-1].text + str(e.key)
+            #manuscript_text.update()
+            #print("New text:", manuscript_text.spans[-1].text)
 
         cursor_blink_task = asyncio.create_task(blink_cursor()) 
             
@@ -884,7 +886,7 @@ class Document(Widget):
             ref_img_column
         ])
 
-        # Create the pages column that holds our document pages (containers) and add the keyboard listener to it
+        # Create the pages column that holds our manuscript pages (containers) and add the keyboard listener to it
 
         # Create the keyboard listener for handling events inside the pages column
         keyboard_listener = ft.KeyboardListener(

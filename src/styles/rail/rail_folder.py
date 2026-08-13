@@ -141,9 +141,9 @@ class RailFolder(ft.GestureDetector):
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ), 
                         ft.MenuItemButton(      # Documents
-                            leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY), content="Document", 
-                            data="document", on_click=self.new_item_clicked, close_on_click=True,
-                            tooltip="Create a new document for text chapters or scenes in your story",
+                            leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY), content="Manuscript", 
+                            data="manuscript", on_click=self.new_item_clicked, close_on_click=True,
+                            tooltip="Create a new manuscript for text chapters or scenes in your story",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ), 
                         ft.MenuItemButton(

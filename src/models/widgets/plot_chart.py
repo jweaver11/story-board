@@ -25,7 +25,7 @@ class PlotChart(Widget):
             directory_path = directory_path,    # Path to our notes json file
             story = story,                      # Reference to our story object
             data = data,
-            is_new = is_new
+            is_new = is_new 
         )
 
         # If we're new, give default values for our data 

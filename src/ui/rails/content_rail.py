@@ -57,14 +57,14 @@ class ContentRail(Rail):
                             tooltip="Create a new folder to organize your story",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         ), 
-                        ft.MenuItemButton(      # Documents
+                        ft.MenuItemButton(      # Manuscripts
                             content=ft.Row([
-                                ft.Text("Document"), 
+                                ft.Text("Manuscript"), 
                                 ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, visible=False,
                                         tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                             leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY), 
-                            data="document", on_click=self.new_item_clicked, close_on_click=True,
-                            tooltip="Create a new document for text chapters or scenes in your story",
+                            data="manuscript", on_click=self.new_item_clicked, close_on_click=True,
+                            tooltip="Create a new manuscript for text chapters or scenes in your story",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                         ), 
@@ -206,14 +206,14 @@ class ContentRail(Rail):
                         tooltip="Create a new folder to organize your story",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     ), 
-                    ft.MenuItemButton(      # Documents
+                    ft.MenuItemButton(      # Manuscripts
                         content=ft.Row([
-                            ft.Text("Document"), 
+                            ft.Text("Manuscript"), 
                             ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, visible=False, 
                                     tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                         leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY),
-                        data="document", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new document for text chapters or scenes in your story",
+                        data="manuscript", on_click=self.new_item_clicked, close_on_click=True,
+                        tooltip="Create a new manuscript for text chapters or scenes in your story",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     ), 
                     ft.MenuItemButton(

@@ -96,7 +96,7 @@ class Workspace(ft.Container):
 
         # Set our icon based on what type of widget we have
         match widget.data.get('tag', ''):
-            case "document": icon = ft.Icons.DESCRIPTION_OUTLINED
+            case "manuscript": icon = ft.Icons.DESCRIPTION_OUTLINED
             case "canvas": icon = ft.Icons.BRUSH_OUTLINED
             case "canvas_board": icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
             case "note": icon = ft.Icons.LIBRARY_BOOKS_OUTLINED

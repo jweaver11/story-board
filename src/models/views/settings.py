@@ -77,7 +77,7 @@ class Settings(ft.View):
 
                 # Default settings for the newly created widgets. All have a color, but can have additional settings specific to each widget type.
                 'widget_defaults': {
-                    'document': {
+                    'manuscript': {
                         'color': "primary"
                     },
                     'canvas': {
@@ -656,13 +656,13 @@ class Settings(ft.View):
             ft.Divider(),
 
             ft.Column([
-                ft.Text("Document", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("document")),
+                ft.Text("Manuscript", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("manuscript")),
                 Dropdown(
-                    value=str(self.data.get('widget_defaults', {}).get('document', {}).get('color', "primary")).capitalize(),
-                    label="Default Document Color", 
-                    color=self.data.get('widget_defaults', {}).get('document', {}).get('color', "primary"),
+                    value=str(self.data.get('widget_defaults', {}).get('manuscript', {}).get('color', "primary")).capitalize(),
+                    label="Default Manuscript Color", 
+                    color=self.data.get('widget_defaults', {}).get('manuscript', {}).get('color', "primary"),
                     on_select=set_default_widget_color,
-                    data="document",
+                    data="manuscript",
                     options=[
                         ft.DropdownOption(
                             key=color.capitalize(),
@@ -1811,8 +1811,8 @@ class Settings(ft.View):
             ft.Column([
                 ft.Text(
                     spans=[
-                        ft.TextSpan("Document: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
-                        ft.TextSpan("The main widget for creating all novel-based stories. Similar to Microsoft Word or Google Docs, use the document widget as a fully built text editor. Add your own comments, notes, and references to the side of any document!", style=ft.TextStyle(size=16))
+                        ft.TextSpan("Manuscript: ", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("The main widget for creating all novel-based stories. Similar to Microsoft Word or Google Docs, use the manuscript widget as a fully built text editor. Add your own comments, notes, and references to the side of any Manuscript!", style=ft.TextStyle(size=16))
                     ],
                 ),
                 ft.Text(

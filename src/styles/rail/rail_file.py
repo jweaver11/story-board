@@ -26,7 +26,7 @@ class RailFile(ft.GestureDetector):
         tag = widget.data.get('tag', None)
 
         match tag:
-            case "document": self.icon = ft.Icons.DESCRIPTION_OUTLINED
+            case "manuscript": self.icon = ft.Icons.DESCRIPTION_OUTLINED
             case "canvas": self.icon = ft.Icons.BRUSH_OUTLINED
             case "canvas_board": self.icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
             case "note": self.icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
