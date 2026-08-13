@@ -214,10 +214,6 @@ class Canvas(Widget):
                 if active_tool != "erase" and active_tool != "line": # Erase or line get normal draw cursor
                     self.canvas_controller.mouse_cursor = ft.MouseCursor.CLICK     # Other tools get responsive click cursor
                     self.mouse_cursor.visible = False       # Hide the custom one
-                    print("Custom hidden")
-                else:
-                    print("Using custom")
-                
 
         # Grab out settings for paint and canvas
         paint_settings = app.settings.data.get('paint_settings', {}).copy()

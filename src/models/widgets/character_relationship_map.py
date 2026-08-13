@@ -11,6 +11,7 @@ from styles.snack_bar import SnackBar
 from styles.menu_option_style import MenuOptionStyle
 from styles.icons import connection_icons
 from styles.colors import colors
+from constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT
 
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
 class CharacterRelationshipMap(Widget):
@@ -615,7 +616,8 @@ class CharacterRelationshipMap(Widget):
                 ft.Divider(2, 2)
             ], 
             scroll=ft.ScrollMode.AUTO, 
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            expand=True
         )
         self.character_bank_container = ft.Container(
             ft.GestureDetector(
@@ -626,6 +628,7 @@ class CharacterRelationshipMap(Widget):
             border=ft.Border.only(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
             width=140,
             expand=True,
+            height=FIXED_STACK_HEIGHT,
             padding=ft.Padding.all(10),
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
         )
@@ -657,12 +660,9 @@ class CharacterRelationshipMap(Widget):
 
         # Create the stack to hold our bank, character nodes, and connections canvas
         self.connections_stack = ft.Stack([
-            ft.Container(
-                image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
-                expand=True,
-            ),
+            
             self.connections_canvas,
-            ft.Column([self.character_bank_container])
+            
             
         ], expand=True, alignment=ft.Alignment.CENTER_LEFT, on_size_change=_set_connection_stack_size) 
 
@@ -683,7 +683,7 @@ class CharacterRelationshipMap(Widget):
                 continue
             self.connections_stack.controls.append(
                 self.CharacterNode(
-                    char_id, 
+                    char_id,  
                     self, 
                     char.data.get('color'), 
                     char.data.get('title', ''), 
@@ -697,6 +697,22 @@ class CharacterRelationshipMap(Widget):
         if len(self.data.get('characters', {}).keys()) == 0:
             self.connections_stack.controls.append(self.tip_ctrl)
 
+        # Interactive viewer to hold the stack for UI manipulation
+        self.iv = ft.InteractiveViewer(
+            content=ft.Stack([      # Hold the edge canvas and node stack
+                ft.Container(
+                    image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
+                    expand=True, border_radius=4
+                ),
+                
+                self.connections_stack,
+                ft.Column([self.character_bank_container], width=140, height=FIXED_STACK_HEIGHT),
+            ], width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT),
+            expand=True, 
+            constrained=False,
+            scale_factor=800, boundary_margin=1500,
+            min_scale=0.02, max_scale=3.0,
+        )
 
-        self.content = self.connections_stack
+        self.content = self.iv
             
