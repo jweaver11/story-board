@@ -32,6 +32,8 @@ tool_icons = {
     'triangle_outlined': ft.CupertinoIcons.ARROWTRIANGLE_UP,
 }
 
+NEGATIVE_NUMBER_FILTER = ft.InputFilter(allow=True, regex_string=r"^-?[0-9]*$")
+
 # Class so we can store our all workspaces rail as an object inside of app
 class CanvasRail(ft.Container):
     
@@ -66,12 +68,12 @@ class CanvasRail(ft.Container):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.border_radius=ft.BorderRadius.all(4)
-                self.tile_padding=ft.Padding.only(left=4, right=4, )
+                self.tile_padding=ft.Padding.only(left=0, right=0)
                 self.shape = ft.RoundedRectangleBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), radius=4)
                 self.collapsed_shape = ft.RoundedRectangleBorder(radius=4)
                 self.title_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
                 self.dense=True
-                #self.margin=ft.Margin.only(left=4, right=4)
+                self.margin=ft.Margin.only(left=4, right=4, bottom=4)
                 #ft.ExpansionTile()
 
         class TextField(ft.TextField):
@@ -84,7 +86,8 @@ class CanvasRail(ft.Container):
                 #self.expand=False
                 self.multiline=False
                 self.text_size=12
-                self.input_filter=ft.NumbersOnlyInputFilter()
+                if self.input_filter is None:
+                    self.input_filter=ft.NumbersOnlyInputFilter()
                 self.margin=ft.Margin.only(top=8, left=4, right=4)
                 self.border_color=ft.Colors.OUTLINE_VARIANT
                 self.focused_border_color=ft.Colors.PRIMARY
@@ -115,7 +118,6 @@ class CanvasRail(ft.Container):
         # Updates the mouse cursor or all visible canvases based on updated tool mode
         def set_canvas_mouse_cursor():
             if self.story is None:
-                print("Story none")
                 return
             for widget in self.story.workspace.tab_view.controls:
                 if not widget.data: # Protect empty
@@ -983,18 +985,43 @@ class CanvasRail(ft.Container):
 
                 key = e.control.data
                 text_settings.update(**{key: value})
-                print("Updated key, value: ", key, value)
                 app.settings.update_data(**{"text_settings": text_settings})
 
                 update_text_preview()
                 text_preview.update()
-                
-                
                 update_canvas_tool_preview()
 
-            # Update text shadow settings
-            def update_text_shadow_setting(e: ft.Event[ft.TextField | ft.Dropdown | ft.Slider | ft.Switch]):
+            # Update text shadow settings (blur radius, blur style, offset, spread radius)
+            def update_text_shadow_setting(e: ft.Event[TextField | ft.RadioGroup]):
                 nonlocal text_settings
+                shadow = text_settings.get('shadow') or {}
+
+                if isinstance(e.control, ft.RadioGroup):
+                    value = e.control.value
+
+                elif isinstance(e.control, TextField):
+                    # If less than 0, reset to the value it was
+                    if not e.control.value.strip():
+                        e.control.value = str(shadow.get(e.control.data, 0))
+                        e.control.update()
+                        return
+
+                    # Keep offsets in the -100 to 100 range; other shadow values cannot be negative.
+                    minimum = -100 if e.control.data in ("offset_x", "offset_y") else 0
+                    value = int(max(min(int(e.control.value), 100), minimum))
+                    e.control.value = str(value)    # Reupdate clamped value
+                    e.control.update()
+
+                else:
+                    return
+
+                shadow[e.control.data] = value
+                text_settings['shadow'] = shadow
+                app.settings.update_data(**{"text_settings": text_settings})
+
+                update_text_preview()
+                text_preview.update()
+                update_canvas_tool_preview()
 
             # Update text foreground settings
             def update_text_foreground_setting(e: ft.Event[ft.TextField | ft.Dropdown | ft.Slider | ft.Switch]):
@@ -1033,7 +1060,6 @@ class CanvasRail(ft.Container):
             def save_text_decoration_color(e: ft.Event[ft.SubmenuButton]):
                 nonlocal text_decoration_color_picker, text_decoration_color_selector
                 color = text_decoration_color_picker.color
-                print("New color")
                 text_settings.update(**{"decoration_color": color})
                 app.settings.update_data(**{"text_settings": text_settings})
                 text_decoration_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
@@ -1045,6 +1071,37 @@ class CanvasRail(ft.Container):
                 update_canvas_tool_preview()
                 update_text_preview()
                 text_preview.update()
+
+            def save_text_shadow_color(e: ft.Event[ft.SubmenuButton] = None):
+                nonlocal text_shadow_color_picker, text_shadow_color_selector
+                color = text_shadow_color_picker.color
+                shadow = text_settings.get('shadow') or {}
+                shadow['color'] = color
+                text_settings['shadow'] = shadow
+                app.settings.update_data(**{"text_settings": text_settings})
+                text_shadow_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
+                if text_shadow_color_picker.color not in text_shadow_color_picker.color_history:
+                    text_shadow_color_picker.color_history.append(text_shadow_color_picker.color)
+                    if len(text_shadow_color_picker.color_history) > 6:
+                        text_shadow_color_picker.color_history.pop(0)
+                self.update()
+                update_canvas_tool_preview()
+                update_text_preview()
+                text_preview.update()
+
+            # Increase/decrease helpers for text shadow number fields
+            def increase_shadow_tf_value(e: ft.Event[TextField]):
+                current_val = int(e.control.parent.parent.value)
+                new_val = min(current_val + 1, 100)
+                e.control.parent.parent.value = str(new_val)
+                update_text_shadow_setting(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
+
+            def decrease_shadow_tf_value(e: ft.Event[TextField]):
+                current_val = int(e.control.parent.parent.value)
+                min_val = 0 if e.control.parent.parent.data != "offset_x" and e.control.parent.parent.data != "offset_y" else -100
+                new_val = max(current_val - 1, min_val)
+                e.control.parent.parent.value = str(new_val)
+                update_text_shadow_setting(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
 
             # Increase the value (clamped) and pass the event along for settings
             def increate_tf_value(e: ft.Event[TextField]):
@@ -1062,16 +1119,7 @@ class CanvasRail(ft.Container):
                 
 
             # TODO: Finish rest of this
-
-            
-            
-            # decoration options - exptile with
-                # decoration - et
-                # decoration_style - et
-                # decoration_color - color picker
-                # decoration_thickness - tf
-                
-                
+                  
             # shadow - ExpansionTile w/ lot of other options
                 # blur radius - tf
                 # blur style - et
@@ -1137,6 +1185,36 @@ class CanvasRail(ft.Container):
                 suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value)
             )
 
+            shadow_settings = text_settings.get('shadow') or {}
+
+            shadow_blur_radius_tf = TextField(
+                value=str(shadow_settings.get('blur_radius', 0)),
+                on_blur=update_text_shadow_setting, data="blur_radius", label="Shadow Blur Radius (0-100)",
+                input_filter=ft.NumbersOnlyInputFilter(),
+                suffix_icon=UpDownButtons(up_function=increase_shadow_tf_value, down_function=decrease_shadow_tf_value)
+            )
+
+            shadow_spread_radius_tf = TextField(
+                value=str(shadow_settings.get('spread_radius', 0)),
+                on_blur=update_text_shadow_setting, data="spread_radius", label="Shadow Spread Radius (0-100)",
+                input_filter=ft.NumbersOnlyInputFilter(),
+                suffix_icon=UpDownButtons(up_function=increase_shadow_tf_value, down_function=decrease_shadow_tf_value)
+            )
+
+            shadow_offset_x_tf = TextField(
+                value=str(shadow_settings.get('offset_x', 0)),
+                on_blur=update_text_shadow_setting, data="offset_x", label="Shadow Offset X (-100-100)",
+                input_filter=NEGATIVE_NUMBER_FILTER,
+                suffix_icon=UpDownButtons(up_function=increase_shadow_tf_value, down_function=decrease_shadow_tf_value)
+            )
+
+            shadow_offset_y_tf = TextField(
+                value=str(shadow_settings.get('offset_y', 0)),
+                on_blur=update_text_shadow_setting, data="offset_y", label="Shadow Offset Y (-100-100)",
+                input_filter=NEGATIVE_NUMBER_FILTER,
+                suffix_icon=UpDownButtons(up_function=increase_shadow_tf_value, down_function=decrease_shadow_tf_value)
+            )
+
             # Add baseline rg here if wanted (not wanted rn)
             font_family_rg = ft.RadioGroup(
                 content=ExpansionTile(
@@ -1148,19 +1226,6 @@ class CanvasRail(ft.Container):
                 value=text_settings.get('font_family', 'Arial'),
                 on_change=update_text_setting,
                 data="font_family"
-            )
-
-            
-            text_shadow_rg = ft.RadioGroup(
-                content=ExpansionTile(
-                    title="Text Shadow",
-                    controls=[
-                        ft.Radio(key.capitalize(), value=key) for key in ("none", "normal", "solid", "outer", "inner")
-                    ]
-                ),
-                value=text_settings.get('shadow', {}).get('blur_style', 'none') if text_settings.get('shadow', None) is not None else 'none',
-                on_change=update_text_shadow_setting,
-                data="shadow_blur_style"
             )
 
             text_foreground_rg = ft.RadioGroup(
@@ -1204,6 +1269,13 @@ class CanvasRail(ft.Container):
                 color_history=[]
             )
 
+            text_shadow_color_picker = ColorPicker(
+                color=shadow_settings.get('color', None),
+                on_color_change=set_color, 
+                picker_area_border_radius=ft.BorderRadius.all(4),
+                color_history=[]
+            )
+
             # Create our color selector button
             text_color_selector = ft.SubmenuButton(
                 ft.Icon(ft.Icons.CIRCLE, text_settings.get('color', ft.Colors.PRIMARY)), 
@@ -1231,7 +1303,7 @@ class CanvasRail(ft.Container):
                 controls=[text_bg_color_picker],
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0),),
                 menu_style=ft.MenuStyle(
-                    alignment=ft.Alignment.TOP_RIGHT,
+                    alignment=ft.Alignment.CENTER_RIGHT,
                     bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
                     shape=ft.RoundedRectangleBorder(radius=4),
                     padding=ft.Padding.all(0)
@@ -1247,7 +1319,23 @@ class CanvasRail(ft.Container):
                 controls=[text_decoration_color_picker],
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0),),
                 menu_style=ft.MenuStyle(
-                    alignment=ft.Alignment.TOP_RIGHT,
+                    alignment=ft.Alignment.CENTER_RIGHT,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                    shape=ft.RoundedRectangleBorder(radius=4),
+                    padding=ft.Padding.all(0)
+                ),
+            )
+
+            text_shadow_color_selector = ft.SubmenuButton(
+                ft.Icon(ft.Icons.CIRCLE, shadow_settings.get('color', ft.Colors.PRIMARY)),
+                tooltip="The color of your text shadow.",
+                on_close=save_text_shadow_color, #expand=True,
+                width=40,
+                height=40,
+                controls=[text_shadow_color_picker],
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0),),
+                menu_style=ft.MenuStyle(
+                    alignment=ft.Alignment.CENTER_RIGHT,
                     bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                     shape=ft.RoundedRectangleBorder(radius=4),
                     padding=ft.Padding.all(0)
@@ -1280,7 +1368,7 @@ class CanvasRail(ft.Container):
                     padding=ft.Padding.all(0),
                 ),
                 menu_style=ft.MenuStyle(
-                    alignment=ft.Alignment.TOP_RIGHT,
+                    alignment=ft.Alignment.CENTER_RIGHT,
                     bgcolor=ft.Colors.SURFACE_CONTAINER, 
                     shape=ft.RoundedRectangleBorder(radius=4),
                     padding=ft.Padding.all(0)
@@ -1297,7 +1385,7 @@ class CanvasRail(ft.Container):
                     padding=ft.Padding.all(0),
                 ),
                 menu_style=ft.MenuStyle(
-                    alignment=ft.Alignment.TOP_RIGHT,
+                    alignment=ft.Alignment.CENTER_RIGHT,
                     bgcolor=ft.Colors.SURFACE_CONTAINER, 
                     shape=ft.RoundedRectangleBorder(radius=4),
                     padding=ft.Padding.all(0)
@@ -1306,55 +1394,79 @@ class CanvasRail(ft.Container):
                 width=24,
             )
 
-            text_decoration_rg = ft.RadioGroup(
-                content=ExpansionTile(
-                    title="Text Decoration",
-                    controls=[
-                        ft.Radio(key.capitalize(), value=key) for key in ("none", "underline", "overline", "line_through")
-                    ] + [
-                        ft.Row([
-                            ft.Text("Decoration Color"),
-                            ft.MenuBar(
-                                [
-                                    ft.Container(
-                                        text_decoration_color_selector,
-                                        border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
-                                    ),
-                                    ft.Container(
-                                        text_decoration_color_options_button,    
-                                        border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
-                                        alignment=ft.Alignment.CENTER
-                                    ),  # Button to save current color to settings
-                                ],
-                                style=ft.MenuStyle(
-                                    alignment=ft.Alignment.CENTER_LEFT,
-                                    bgcolor=ft.Colors.TRANSPARENT,
-                                    shadow_color=ft.Colors.TRANSPARENT,
-                                    padding=ft.Padding.all(0)
-                                ),
-                            ),
-                        ], spacing=0, margin=ft.Margin.only(left=4),)
-                    ] + [
-                        text_decoration_thickness_tf
-                    ]
+            text_shadow_color_options_button = ft.SubmenuButton(
+                controls=get_color_options(text_shadow_color_picker, save_text_shadow_color),
+                content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
+                style=ft.ButtonStyle(
+                    shape=ft.RoundedRectangleBorder(radius=0),
+                    padding=ft.Padding.all(0),
                 ),
-                value=text_settings.get('decoration', 'none') if text_settings.get('decoration', None) is not None else 'none',
-                on_change=update_text_setting,
-                data="decoration"
+                menu_style=ft.MenuStyle(
+                    alignment=ft.Alignment.CENTER_RIGHT,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER, 
+                    shape=ft.RoundedRectangleBorder(radius=4),
+                    padding=ft.Padding.all(0)
+                ),
+                expand=True,
+                width=24,
+            )
+
+            
+
+            text_shadow_rg = ExpansionTile(
+                title="Text Shadow",
+                controls=[
+                        #ft.RadioGroup(
+                            #content=ft.Column(
+                                #[
+                                #ft.Text("Shadow Type", italic=True, margin=ft.Margin.only(left=4))
+                                #] + [
+                                #ft.Radio(key.capitalize(), value=key) for key in ("none", "normal", "solid", "outer", "inner")
+                            #], spacing=0),
+                           # value=shadow_settings.get('blur_style', 'normal') if shadow_settings.get('blur_style', None) is not None else 'normal',
+                            #on_change=update_text_shadow_setting,
+                            #data="blur_style"
+                                #)
+                            #] + [
+                        shadow_blur_radius_tf,
+                        #shadow_spread_radius_tf,
+                        shadow_offset_x_tf,
+                        shadow_offset_y_tf,
+                    ]
             )
             
 
-            # 'text_settings': {
-            #'size': 14,
-            #'weight': "normal",  # Options: None, w100, w200, w300, w400, w500, w600, w700, w800, w900, bold
-            #'italic': False,
-            #'decoration': None,  # Options: none, underline, overline, line_through
-            #'decoration_color': "#000000",
-            #'decoration_thickness': 1.0,
-            #'decoration_style': "solid",    # options: solid, wavy, double, dotted, dashed
-            #'font_family': "Arial",
-            #'color': "#FFFFFF",
-            #'bgcolor': "#00000000",  # Background color for text shapes
+            text_decoration_rg = ExpansionTile(
+                title="Text Decoration Settings",
+                controls=[
+                    ft.RadioGroup(
+                        content=ft.Column(
+                            [ft.Text("Decoration Type", italic=True, margin=ft.Margin.only(left=4))] + [
+                                ft.Radio(key.capitalize(), value=key) for key in ("none", "underline", "overline", "line_through")
+                            ],
+                            spacing=0
+                        ),
+                        value=text_settings.get('decoration', 'none') if text_settings.get('decoration', None) is not None else 'none',
+                        on_change=update_text_setting,
+                        data="decoration"
+                    ),
+                    ft.RadioGroup(
+                        content=ft.Column(
+                            [ft.Divider(leading_indent=4, trailing_indent=4), ft.Text("Decoration Style", italic=True, margin=ft.Margin.only(left=4))] + [
+                                ft.Radio(key.capitalize(), value=key) for key in ("solid", "wavy", "double", "dotted", "dashed")
+                            ],
+                            spacing=0
+                        ),
+                        value=text_settings.get('decoration_style', 'solid'),
+                        on_change=update_text_setting,
+                        data="decoration_style"
+                    )
+                ]
+            )
+            
+            
+
+            
             #'shadow': {
                 #'blur_radius': 0,
                 #'blur_style': 'normal', # Options: normal, solid, outer, inner
@@ -1374,10 +1486,7 @@ class CanvasRail(ft.Container):
                 #'blur_image': 0,        # How much blur to apply to the stroke
                 #'blend_mode': None,     # Any blend mode to apply to the stroke, or None for normal
             #},      
-            #'letter_spacing': 0,
-            #'word_spacing': 0,
-            #'baseline': "alphabetic",  # How text is rendered - Options: alphabetic or ideographic
-        #},
+            
         
 
 
@@ -1441,7 +1550,53 @@ class CanvasRail(ft.Container):
                             ),  # Button to save current color to settings
                         ],
                         style=ft.MenuStyle(
+                            alignment=ft.Alignment.CENTER_RIGHT,
+                            bgcolor=ft.Colors.TRANSPARENT,
+                            shadow_color=ft.Colors.TRANSPARENT,
+                            padding=ft.Padding.all(0)
+                        ),
+                    ),
+                ], spacing=0, margin=ft.Margin.only(left=4)),
+
+                ft.Row([
+                    ft.Text("Text Decoration Color"),
+                    ft.MenuBar(
+                        [
+                            ft.Container(
+                                text_decoration_color_selector,
+                                border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
+                            ),
+                            ft.Container(
+                                text_decoration_color_options_button,    
+                                border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
+                                alignment=ft.Alignment.CENTER
+                            ),  # Button to save current color to settings
+                        ],
+                        style=ft.MenuStyle(
                             alignment=ft.Alignment.CENTER_LEFT,
+                            bgcolor=ft.Colors.TRANSPARENT,
+                            shadow_color=ft.Colors.TRANSPARENT,
+                            padding=ft.Padding.all(0)
+                        ),
+                    ),
+                ], spacing=0, margin=ft.Margin.only(left=4)),
+
+                ft.Row([
+                    ft.Text("Text Shadow Color"),
+                    ft.MenuBar(
+                        [
+                            ft.Container(
+                                text_shadow_color_selector,
+                                border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
+                            ),
+                            ft.Container(
+                                text_shadow_color_options_button,
+                                border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
+                                alignment=ft.Alignment.CENTER
+                            ),  # Button to save current color to settings
+                        ],
+                        style=ft.MenuStyle(
+                            alignment=ft.Alignment.CENTER_RIGHT,
                             bgcolor=ft.Colors.TRANSPARENT,
                             shadow_color=ft.Colors.TRANSPARENT,
                             padding=ft.Padding.all(0)
@@ -1678,6 +1833,17 @@ class CanvasRail(ft.Container):
                 case _:
                     text_preview.style.decoration = None
 
+            text_preview.style.shadow = ft.BoxShadow(
+                blur_radius=text_settings.get('shadow', {}).get('blur_radius', 0),
+                color=text_settings.get('shadow', {}).get('color', None),
+                offset=ft.Offset(
+                    text_settings.get('shadow', {}).get('offset_x', 0),
+                    text_settings.get('shadow', {}).get('offset_y', 0)
+                ),
+                #spread_radius=text_settings.get('shadow', {}).get('spread_radius', 0),
+                #blur_style=text_settings.get('shadow', {}).get('blur_style', 'normal')
+            )
+
         update_text_preview()
 
         set_text_mode_button = ft.IconButton(
@@ -1785,11 +1951,7 @@ class CanvasRail(ft.Container):
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_tool_name', 'draw') == "triangle" and canvas_settings.get('current_control_mode', "draw") == "tool" else None,
             tooltip="Triangle Shape"
         )
-
-        #print("Starting control mode and tool:", canvas_settings.get('current_control_mode', 'none'), canvas_settings.get('current_tool_name_name', 'none'))
-
         
-
         drawing_controls = [
             ft.MenuBar(
                 [
