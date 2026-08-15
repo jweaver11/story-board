@@ -329,6 +329,26 @@ class Canvas(Widget):
 
             if self.current_tool.shape_type == "text":
                 self.current_tool.cv_shape.style = ft.TextStyle(**text_settings)
+                # Match decoration accordingly, since its str -> control doesnt work
+                decoration = text_settings.get('decoration', None)
+                match decoration:
+                    case "underline":
+                        self.current_tool.cv_shape.style.decoration = ft.TextDecoration.UNDERLINE
+                    case "overline":
+                        self.current_tool.cv_shape.style.decoration = ft.TextDecoration.OVERLINE
+                    case "line_through":
+                        self.current_tool.cv_shape.style.decoration = ft.TextDecoration.LINE_THROUGH
+                    case _:
+                        self.current_tool.cv_shape.style.decoration = None
+    
+                self.current_tool.cv_shape.style.shadow = ft.BoxShadow(
+                    blur_radius=text_settings.get('shadow', {}).get('blur_radius', 0),
+                    color=text_settings.get('shadow', {}).get('color', None),
+                    offset=ft.Offset(
+                        text_settings.get('shadow', {}).get('offset_x', 0),
+                        text_settings.get('shadow', {}).get('offset_y', 0)
+                    ),
+                )
             elif self.current_tool.shape_type == "rectangle":
                 self.current_tool.cv_shape.border_radius = ft.BorderRadius.all(canvas_settings.get('rectangle_border_radius', 0))
             else:

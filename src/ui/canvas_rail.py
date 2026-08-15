@@ -1209,6 +1209,7 @@ class CanvasRail(ft.Container):
                 input_filter=ft.NumbersOnlyInputFilter(),
                 suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value)
             )
+            text_decoration_thickness_tf.margin = ft.Margin.only(top=8, left=4, right=4, bottom=4)
 
             shadow_settings = text_settings.get('shadow') or {}
 
@@ -1428,7 +1429,7 @@ class CanvasRail(ft.Container):
             
 
             text_shadow_rg = ExpansionTile(
-                title="Text Shadow",
+                title="Text Shadow Settings",
                 controls=[
                         #ft.RadioGroup(
                             #content=ft.Column(
@@ -1456,7 +1457,7 @@ class CanvasRail(ft.Container):
                     ft.RadioGroup(
                         content=ft.Column(
                             [ft.Text("Decoration Type", italic=True, margin=ft.Margin.only(left=4))] + [
-                                ft.Radio(key.capitalize(), value=key) for key in ("none", "underline", "overline", "line_through")
+                                ft.Radio(key.capitalize().replace("_", " "), value=key) for key in ("none", "underline", "overline", "line_through")
                             ],
                             spacing=0
                         ),
@@ -1464,9 +1465,10 @@ class CanvasRail(ft.Container):
                         on_change=update_text_setting,
                         data="decoration"
                     ),
+                    text_decoration_thickness_tf,
                     ft.RadioGroup(
                         content=ft.Column(
-                            [ft.Divider(leading_indent=4, trailing_indent=4), ft.Text("Decoration Style", italic=True, margin=ft.Margin.only(left=4))] + [
+                            [ft.Text("Decoration Style", italic=True, margin=ft.Margin.only(left=4))] + [
                                 ft.Radio(key.capitalize(), value=key) for key in ("solid", "wavy", "double", "dotted", "dashed")
                             ],
                             spacing=0
