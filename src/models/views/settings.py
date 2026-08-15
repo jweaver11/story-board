@@ -172,7 +172,7 @@ class Settings(ft.View):
                     'saved_colors': list(),              # Saved colors the user has created that we can load [{'name': 'name_val', 'value': 'value']
                     'use_brush_smoothing': True,         # Uses cv.Path for constistant shapes if true, otherwise use cv.line
                     'stroke_smoothing_strength': 1,        # If stroke smoothing is enabled, how strong the smoothing is. 1 = low, 10 = high 0=off
-                    
+                    'saved_text_settings': dict(),          # Saved text settings the user has created that we can load
                     # Other shape settings
                     #'use_paint_for_shapes': True,           # If True, shapes are black/white and use default paint settings rather than live brush settings
                     'rectangle_border_radius': 0,               # Border radius for rectangle shapes
@@ -195,29 +195,12 @@ class Settings(ft.View):
                         'offset': (0, 0),
                         'spread_radius': 0,
                     },   # Boxshad values
-                    'foreground': None, #{ 
-                        #'color': "#32AA38AE",     # Hex color folowed by opacity
-                        #'stroke_width': 3,          # Size of the strokees
-                        #'style': "stroke",          # style of the strokes. Either stroke or fill
-                        #'stroke_cap': "round",      # Each end of the strokes shape
-                        #'stroke_join': "round",     # How corners between strokes are drawn
-                        #'stroke_miter_limit': 10, 
-                        #'stroke_dash_pattern': None,         # If we should use dashed lines, and the pattern for them
-                        #'anti_alias': True,     # Use anti aliasing for smoother strokes or not
-                        #'blur_image': 0,        # How much blur to apply to the stroke
-                        #'blend_mode': None,     # Any blend mode to apply to the stroke, or None for normal
-                    #},      
+                    'foreground': None, # [list of gradients/color values] (ft.PaintLinearGradient, ft.PaintRadialGradient, ft.PaintGradient ft.PaintSweepGradient)
                     'letter_spacing': 0,
                     'word_spacing': 0,
                     'baseline': "alphabetic",  # How text is rendered - Options: alphabetic or ideographic
                 },
-                'text_options': {
-                    'use_shadow': False,
-                    'shadow': dict(),  # Store shadow settings here so the on/off switch above loads last used settings into text_settings
-                    'use_foreground': False,
-                    'foreground': dict(),  # Store foreground settings here so the on/off switch above loads last used settings into text_settings
-                    'fonts': list()    # [{'font_name': 'name_of_font': 'file_name': 'file_name.ttf'}, ...]
-                },
+                
 
                 # Hold our default character templates
                 'character_templates': {    
@@ -227,6 +210,8 @@ class Settings(ft.View):
                     'Default': default_world_template_data_dict(),
                 },
             }
+            
+            
         
         
 

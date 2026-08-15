@@ -211,6 +211,35 @@ class CanvasRail(ft.Container):
                 ], brush_settings)
             ]
             return preview_canvas   # Return the canvas
+
+        def build_preview_text(ts: dict=None) -> ft.Control:
+            nonlocal text_settings
+            if not ts:
+                ts = text_settings.copy()
+
+            text_style = ft.TextStyle(**ts)
+            text_control = ft.Text("Preview Text", style=text_style)
+
+            decoration = ts.get('decoration', None)
+            match decoration:
+                case "underline":
+                    text_control.style.decoration = ft.TextDecoration.UNDERLINE
+                case "overline":
+                    text_control.style.decoration = ft.TextDecoration.OVERLINE
+                case "line_through":
+                    text_control.style.decoration = ft.TextDecoration.LINE_THROUGH
+                case _:
+                    text_control.style.decoration = None
+
+            text_control.style.shadow = ft.BoxShadow(
+                blur_radius=ts.get('shadow', {}).get('blur_radius', 0),
+                color=ts.get('shadow', {}).get('color', None),
+                offset=ft.Offset(
+                    ts.get('shadow', {}).get('offset_x', 0),
+                    ts.get('shadow', {}).get('offset_y', 0)
+                ),
+            )
+            return text_control
         
         # Sets current brush settings using passed in brush settings
         def set_active_brush(brush_settings: dict, name: str):
@@ -227,6 +256,19 @@ class CanvasRail(ft.Container):
             update_canvas_tool_preview()
             
         
+        # Sets current text settings using passed in text settings
+        def set_active_text_setting(new_text_settings: dict, name: str):
+            nonlocal text_settings
+            text_settings.clear()
+            text_settings.update(**new_text_settings)
+            app.settings.update_data(**{"text_settings": text_settings})
+
+            update_text_preview()
+            text_settings_button.controls = get_text_options()   # Update the text settings selector with the new setting
+            set_text_mode()
+            self.update()
+            update_canvas_tool_preview()
+
         # Called to save our active brush settings as a custom brush we can load later (Excludes color and opacity)
         def save_custom_brush_clicked(e=None):
             ''' Shows our existing brush options and allows us to override or save as a new brush '''
@@ -861,6 +903,14 @@ class CanvasRail(ft.Container):
                 on_change=update_paint_blend_mode,
             )
 
+            def highlight_option(e: ft.Event[ft.GestureDetector]):
+                e.control.content.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+                e.control.update()
+            def stop_highlight_option(e: ft.Event[ft.GestureDetector]):
+                e.control.content.bgcolor = ft.Colors.TRANSPARENT
+                e.control.update()
+            
+
 
             # Start by building our default brush options
             ctrls = [
@@ -904,24 +954,28 @@ class CanvasRail(ft.Container):
                 ft.Row([
                     ft.Text("Saved Brushes", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
                 ], alignment=ft.MainAxisAlignment.CENTER),  
-                ft.MenuItemButton(
-                    data=default_brush_settings,
-                    content=ft.Container(
+     
+                ft.GestureDetector(
+                    ft.Container(
                         ft.Row([ft.Text("Default", expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(default_brush_settings)], spacing=20),
-                        clip_behavior=ft.ClipBehavior.HARD_EDGE
+                        clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=4, padding=ft.Padding.only(left=10, right=10)
                     ),
-                    on_click=lambda _: set_active_brush(default_brush_settings, name="Default"),
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-                ),    
-                ft.MenuItemButton(
                     data=default_brush_settings,
-                    content=ft.Container(
+                    on_tap=lambda _: set_active_brush(default_brush_settings, name="Default"),
+                    on_enter=highlight_option,
+                    on_exit=stop_highlight_option
+                ),    
+                ft.GestureDetector(
+                    ft.Container(
                         ft.Row([ft.Text("Shadow", expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(shadow_brush_settings)], spacing=20),
-                        clip_behavior=ft.ClipBehavior.HARD_EDGE
+                        clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=4, padding=ft.Padding.only(left=10, right=10)
                     ),
-                    on_click=lambda _: set_active_brush(shadow_brush_settings, name="Shadow"),
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-                ),        
+                    data=shadow_brush_settings,
+                    on_tap=lambda _: set_active_brush(shadow_brush_settings, name="Shadow"),
+                    on_enter=highlight_option,
+                    on_exit=stop_highlight_option
+                )
+
                     
 
                 #ft.Divider(),   # Placeholder for shapes section
@@ -931,27 +985,22 @@ class CanvasRail(ft.Container):
             # Go through our saved brushes and add options to select them
             for name, brush_settings in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}).items():
                 ctrls.append(
-                    ft.MenuItemButton(
-                        data=brush_settings,
-                        content=ft.Container(
-                            ft.Row([ft.Text(name.capitalize(), expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(brush_settings)], spacing=20),
-                            clip_behavior=ft.ClipBehavior.HARD_EDGE
+                    ft.GestureDetector(
+                        ft.Container(
+                            ft.Row([ft.Text(name, expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(brush_settings)], spacing=20),
+                            clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=4, padding=ft.Padding.only(left=10, right=10)
                         ),
-                        on_click=lambda _, bs=brush_settings, n=name: set_active_brush(bs, n),
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
+                        data=brush_settings,
+                        on_tap=lambda e: set_active_brush(e.control.data, name=name),
+                        on_enter=highlight_option,
+                        on_exit=stop_highlight_option
                     )
                 )
 
-            #ctrls.append(ft.MenuItemButton(
-                #"Close Brush Settings", close_on_click=True, on_click=lambda: None,
-                #style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR, shape=ft.RoundedRectangleBorder(radius=4))))
             return ctrls
 
         def get_text_options() -> list[ft.Control]:
-
-            
-
-                
+            nonlocal text_settings
 
             # Updating standard text settings
             def update_text_setting(e: ft.Event[TextField | ft.RadioGroup | ft.Slider | Switch]):
@@ -1118,30 +1167,6 @@ class CanvasRail(ft.Container):
                 update_text_setting(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
                 
 
-            # TODO: Finish rest of this
-                  
-            # shadow - ExpansionTile w/ lot of other options
-                # blur radius - tf
-                # blur style - et
-                # color - color picker
-                # offset - x/y tfs
-                # spread radius - tf
-
-            # foregound - ExpansionTile w/ lot of other options (call outline??)
-                #'color': "white",     # Hex color folowed by opacity
-                #'stroke_width': 3,          # Size of the strokees
-                #'style': "stroke",          # style of the strokes. Either stroke or fill
-                #'stroke_cap': "round",      # Each end of the strokes shape
-                #'stroke_join': "round",     # How corners between strokes are drawn
-                #'stroke_miter_limit': 10, 
-                #'stroke_dash_pattern': None,         # If we should use dashed lines, and the pattern for them
-                #'anti_alias': True,     # Use anti aliasing for smoother strokes or not
-                #'blur_image': 0,        # How much blur to apply to the stroke
-                #'blend_mode': None,     # Any blend mode to apply to the stroke, or None for normal
-
-
-            # TODO: Have value of DD (switching to dif control) reflect the selected font
-
 
             bold_switch = Switch(   # TODO: make radio with normal, 100-1000, bold
                 True, "Bold", on_change=update_text_setting,
@@ -1228,17 +1253,6 @@ class CanvasRail(ft.Container):
                 data="font_family"
             )
 
-            text_foreground_rg = ft.RadioGroup(
-                content=ExpansionTile(
-                    title="Text Foreground",
-                    controls=[
-                        ft.Radio(key.capitalize(), value=key) for key in ("none", "stroke", "fill")
-                    ]
-                ),
-                value=text_settings.get('foreground', {}).get('style', 'none') if text_settings.get('foreground', None) is not None else 'none',
-                on_change=update_text_foreground_setting,
-                data="foreground_style"
-            )
 
 
               
@@ -1464,36 +1478,149 @@ class CanvasRail(ft.Container):
                 ]
             )
             
-            
-
-            
-            #'shadow': {
-                #'blur_radius': 0,
-                #'blur_style': 'normal', # Options: normal, solid, outer, inner
-                #'color': "black",
-                #'offset': (0, 0),
-                #'spread_radius': 0,
-            #},   # Boxshad values
-            #'foreground': {
-                #'color': "white",     # Hex color folowed by opacity
-                #'stroke_width': 3,          # Size of the strokees
-                #'style': "stroke",          # style of the strokes. Either stroke or fill
-                #'stroke_cap': "round",      # Each end of the strokes shape
-                #'stroke_join': "round",     # How corners between strokes are drawn
-                #'stroke_miter_limit': 10, 
-                #'stroke_dash_pattern': None,         # If we should use dashed lines, and the pattern for them
-                #'anti_alias': True,     # Use anti aliasing for smoother strokes or not
-                #'blur_image': 0,        # How much blur to apply to the stroke
-                #'blend_mode': None,     # Any blend mode to apply to the stroke, or None for normal
-            #},      
-            
         
+            # Called to save our active text settings as a custom named text setting we can load later
+            def save_custom_text_settings_clicked(e=None):
+                ''' Shows our existing text setting options and allows us to override or save as a new one '''
+
+                # Saves the current name and closes the dialog
+                async def _save_and_close(e=None):
+
+                    nonlocal name, text_settings
+                    safe_name = return_safe_name(name)
+
+                    # Save current text settings as a new custom text setting
+                    app.settings.data['canvas_settings']['saved_text_settings'][safe_name] = text_settings.copy()
+                    app.settings.update_data(**{"canvas_settings": {"saved_text_settings": app.settings.data['canvas_settings']['saved_text_settings']}})
+
+                    self.page.pop_dialog()
+                    text_settings_button.controls = get_text_options()   # Update the text settings selector with the new setting
+                    self.update()
+
+                # Deletes a saved text setting
+                async def _delete_custom_text_setting(e):
+                    nonlocal content
+                    name = e.control.data
+
+                    # Remove it from data
+                    if name in app.settings.data.get('canvas_settings', {}).get('saved_text_settings', {}):
+                        del app.settings.data['canvas_settings']['saved_text_settings'][name]
+                        app.settings.update_data(**{"canvas_settings": {"saved_text_settings": app.settings.data['canvas_settings']['saved_text_settings']}})
+
+                    # Remove the control from the dialog
+                    dlg.content.controls = [ctrl for ctrl in content.controls if ctrl.data != name]
+                    content.update()
+
+                    text_settings_button.controls = get_text_options()   # Update the text settings selector with the new setting
+                    self.update()
+
+                    # If we were going to override it but instead deleted it, apply that UI change
+                    if name == new_custom_text_setting_name_text_field.value:
+                        new_custom_text_setting_name_text_field.error = None
+                        new_custom_text_setting_name_text_field.update()
+                        save_button.content = "Save"
+                        save_button.update()
+                        await new_custom_text_setting_name_text_field.focus()
+
+                # Sets an existing custom text setting to be overwritten by the current settings
+                def _select_active_text_setting_override(e):
+                    nonlocal name, content
+
+                    # Show visual effects that the text setting will be overwritten
+                    name = e.control.data
+                    e.control.bgcolor = ft.Colors.OUTLINE_VARIANT
+                    e.control.update()
+                    save_button.content = "Overwrite"
+                    save_button.update()
+
+                    # Textfield UI changes
+                    new_custom_text_setting_name_text_field.value = name
+                    new_custom_text_setting_name_text_field.error = f"Saving will overwrite {name}"
+                    new_custom_text_setting_name_text_field.update()
+
+                    # Deselect any other options that are selected
+                    for ctrl in dlg.content.controls:
+                        if isinstance(ctrl, ft.Container) and ctrl != e.control:
+                            if ctrl.bgcolor == ft.Colors.OUTLINE_VARIANT:
+                                ctrl.bgcolor = ft.Colors.TRANSPARENT
+                                ctrl.update()
+
+                # If newly changed name already exists, show that it will be overwritten
+                def _check_name_change(e: ft.Event[ft.TextField]):
+                    nonlocal content, name
+                    name = e.control.value
+                    new_name = e.control.value
+
+                    for ctrl in content.controls:
+                        if isinstance(ctrl, ft.Container) and ctrl.data == new_name:
+                            ctrl.bgcolor = ft.Colors.OUTLINE_VARIANT
+                            ctrl.update()
+                            save_button.content = "Overwrite"
+                            save_button.update()
+                            e.control.error = f"Saving will overwrite {e.control.value}"
+                            e.control.update()
+                            return
+
+                    for ctrl in content.controls:
+                        if isinstance(ctrl, ft.Container):
+                            ctrl.bgcolor = ft.Colors.TRANSPARENT
+                            ctrl.update()
+                    save_button.content = "Save"
+                    save_button.update()
+                    e.control.error = None
+                    e.control.update()
+
+                # Textfield for naming custom text setting
+                new_custom_text_setting_name_text_field = ft.TextField(
+                    label="Text Setting Name", autofocus=True, on_submit=_save_and_close, dense=True,
+                    capitalization=ft.TextCapitalization.SENTENCES, #expand=True,
+                    on_change=_check_name_change,
+                )
+
+                name: str = None
+
+                # Our save button that just changes text from save to overwrite
+                save_button = ft.TextButton("Save", on_click=_save_and_close, style=ft.ButtonStyle(mouse_cursor="click"))
+
+                content = ft.Column([new_custom_text_setting_name_text_field], scroll=ft.ScrollMode.AUTO, height=self.page.height / 2)
+
+                dlg = ft.AlertDialog(
+                    title=ft.Text("Name your custom text setting"),
+                    content=content,
+                    actions=[
+                        ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                        save_button
+                    ]
+                )
+
+                for name, existing_text_setting in app.settings.data.get('canvas_settings', {}).get('saved_text_settings', {}).items():
+                    content.controls.append(
+                        ft.Container(
+                            ft.Row([
+                                ft.Text(name, theme_style=ft.TextThemeStyle.LABEL_LARGE, expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                                build_preview_text(existing_text_setting),
+                                ft.IconButton(
+                                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                                    data=name, on_click=_delete_custom_text_setting, tooltip="Delete this saved text setting",
+                                    mouse_cursor=ft.MouseCursor.CLICK
+                                ),
+                            ], spacing=20), border_radius=ft.BorderRadius.all(4), clip_behavior=ft.ClipBehavior.HARD_EDGE, padding=ft.Padding.only(left=6),
+                            on_click=_select_active_text_setting_override, 
+                            data=name,
+                        )
+                    )
+
+                self.page.show_dialog(dlg)
 
 
-
-            return [
+            ctrls = [
                 ft.Row([
                     ft.Text("Text Settings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, tooltip="Settings for text shapes used on canvases"),
+                    ft.IconButton(
+                        ft.Icons.SAVE_ROUNDED, ft.Colors.PRIMARY, on_click=save_custom_text_settings_clicked, 
+                        tooltip="Save the current text settings as a custom text setting you can load later.", 
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
+                    )
                 ], alignment=ft.MainAxisAlignment.CENTER),   
                 ft.Container(
                     ft.Row([text_preview], alignment=ft.MainAxisAlignment.CENTER), 
@@ -1607,8 +1734,41 @@ class CanvasRail(ft.Container):
                 font_family_rg,
                 text_decoration_rg,
                 text_shadow_rg,
-                text_foreground_rg,
+
+                ft.Divider(),
+                ft.Row([
+                    ft.Text("Saved Text Settings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
+                ], alignment=ft.MainAxisAlignment.CENTER),  
             ]
+
+            def highlight_option(e: ft.Event[ft.GestureDetector]):
+                e.control.content.bgcolor = ft.Colors.OUTLINE_VARIANT
+                e.control.update()
+            def stop_highlight_option(e: ft.Event[ft.GestureDetector]):
+                e.control.content.bgcolor = ft.Colors.TRANSPARENT
+                e.control.update()
+
+            # Go through our saved text options and add them to the list of controls
+            # NOTE: loop var must not be named `text_settings`, it would shadow the nonlocal current settings dict
+            for name, saved_text_setting in app.settings.data.get('canvas_settings', {}).get('saved_text_settings', {}).items():
+                ctrls.append(
+                    ft.GestureDetector(
+                        ft.Container(
+                            ft.Row([
+                                ft.Text(name.capitalize(), expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                                build_preview_text(saved_text_setting)
+                            ]),
+                            border_radius=ft.BorderRadius.all(4), padding=10
+                        ),
+                        data=saved_text_setting,
+                        on_tap=lambda _, ts=saved_text_setting, n=name: set_active_text_setting(ts, n),
+                        on_enter=highlight_option,
+                        on_exit=stop_highlight_option
+                    )
+                )
+                
+
+            return ctrls
 
         # Grab our data for easier manipulation
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
@@ -1701,7 +1861,13 @@ class CanvasRail(ft.Container):
                     )
                 )
                 
-                
+            def highlight_option(e: ft.Event[ft.GestureDetector]):
+                e.control.content.bgcolor = ft.Colors.OUTLINE_VARIANT
+                e.control.update()
+            def stop_highlight_option(e: ft.Event[ft.GestureDetector]):
+                e.control.content.bgcolor = ft.Colors.TRANSPARENT
+                e.control.update()
+
 
             ctrls = [
                 ft.Row([    # Label
@@ -1715,15 +1881,19 @@ class CanvasRail(ft.Container):
             ]
             for idx, color_data in enumerate(canvas_settings.get('saved_colors', [])):
                 ctrls.append(
-                    ft.MenuItemButton(
-                        content=ft.Row([
-                            ft.Text(color_data.get('name', 'Unnamed Color')),
-                            ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, data=idx, tooltip="Delete this saved color", on_click=delete_color),
-                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN), 
-                        close_on_click=True,
-                        leading=ft.Icon(ft.Icons.CIRCLE, color_data.get('value', "#000000")),
-                        on_click=set_saved_color,
-                        data=color_data
+                    ft.GestureDetector(
+                        ft.Container(
+                            ft.Row([
+                                ft.Icon(ft.Icons.CIRCLE, color_data.get('value', "#000000")),
+                                ft.Text(color_data.get('name', 'Unnamed Color')),
+                                ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, data=idx, tooltip="Delete this saved color", on_click=delete_color),
+                            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            border_radius=ft.BorderRadius.all(4), padding=ft.Padding.only(left=10, right=10)
+                        ),
+                        data=color_data,
+                        on_tap=set_saved_color,
+                        on_enter=highlight_option,
+                        on_exit=stop_highlight_option,
                     )
                 )
             
@@ -1813,7 +1983,7 @@ class CanvasRail(ft.Container):
         )
 
         text_preview = ft.Text(
-            "Preview text", selectable=True, 
+            "Preview Text", selectable=True, 
             #style=ft.TextStyle(**text_settings)
         )
 
@@ -1840,8 +2010,6 @@ class CanvasRail(ft.Container):
                     text_settings.get('shadow', {}).get('offset_x', 0),
                     text_settings.get('shadow', {}).get('offset_y', 0)
                 ),
-                #spread_radius=text_settings.get('shadow', {}).get('spread_radius', 0),
-                #blur_style=text_settings.get('shadow', {}).get('blur_style', 'normal')
             )
 
         update_text_preview()
