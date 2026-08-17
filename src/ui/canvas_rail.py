@@ -71,7 +71,7 @@ class CanvasRail(ft.Container):
                 self.tile_padding=ft.Padding.only(left=0, right=0)
                 self.shape = ft.RoundedRectangleBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), radius=4)
                 self.collapsed_shape = ft.RoundedRectangleBorder(radius=4)
-                self.title_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
+                #self.title_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
                 self.dense=True
                 self.margin=ft.Margin.only(left=4, right=4, bottom=4)
                 #ft.ExpansionTile()
@@ -935,11 +935,11 @@ class CanvasRail(ft.Container):
                 blur_tf,
                 #stroke_smoothing_tf,
 
-                ft.Row([
-                    brush_smoothing_switch,
-                    ft.Icon(ft.Icons.INFO_OUTLINED, ft.Colors.OUTLINE, scale=0.6, tooltip="Long brush strokes with no break will cause performance issues.")
-                ], vertical_alignment=ft.CrossAxisAlignment.CENTER, margin=ft.Margin.only(top=8), spacing=0),
-                ft.Container(height=8),  # Spacer
+                #ft.Row([
+                    #brush_smoothing_switch,
+                    #ft.Icon(ft.Icons.INFO_OUTLINED, ft.Colors.OUTLINE, scale=0.6, tooltip="Long brush strokes with no break will cause performance issues.")
+                #], vertical_alignment=ft.CrossAxisAlignment.CENTER, margin=ft.Margin.only(top=8), spacing=0),
+                #ft.Container(height=8),  # Spacer
                 fill_switch, 
                 anti_alias_switch,
                 
@@ -1244,7 +1244,7 @@ class CanvasRail(ft.Container):
             # Add baseline rg here if wanted (not wanted rn)
             font_family_rg = ft.RadioGroup(
                 content=ExpansionTile(
-                    title="Font Family",
+                    title=ft.Text("Font Family", size=14),
                     controls=[
                         ft.Radio(key, value=key) for key in self.page.fonts.keys()
                     ]
@@ -1429,7 +1429,7 @@ class CanvasRail(ft.Container):
             
 
             text_shadow_rg = ExpansionTile(
-                title="Text Shadow Settings",
+                title=ft.Text("Text Shadow Settings", size=14),
                 controls=[
                         #ft.RadioGroup(
                             #content=ft.Column(
@@ -1452,7 +1452,7 @@ class CanvasRail(ft.Container):
             
 
             text_decoration_rg = ExpansionTile(
-                title="Text Decoration Settings",
+                title=ft.Text("Text Decoration Settings", size=14),
                 controls=[
                     ft.RadioGroup(
                         content=ft.Column(
@@ -1649,6 +1649,18 @@ class CanvasRail(ft.Container):
                                 text_color_selector,
                                 border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
                             ),
+                            
+                        ],
+                        style=ft.MenuStyle(
+                            alignment=ft.Alignment.CENTER_LEFT,
+                            bgcolor=ft.Colors.TRANSPARENT,
+                            shadow_color=ft.Colors.TRANSPARENT,
+                            padding=ft.Padding.all(0)
+                        ),
+                    ),
+                    ft.MenuBar(
+                        [
+                            
                             ft.Container(
                                 text_color_options_button,    
                                 border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
@@ -1662,7 +1674,7 @@ class CanvasRail(ft.Container):
                             padding=ft.Padding.all(0)
                         ),
                     ),
-                    
+
                 ], margin=ft.Margin.only(left=4), spacing=0),
                 ft.Row([
                     ft.Text("Text Background Color"),
@@ -1672,6 +1684,18 @@ class CanvasRail(ft.Container):
                                 text_bg_color_selector,
                                 border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
                             ),
+                            
+                        ],
+                        style=ft.MenuStyle(
+                            alignment=ft.Alignment.CENTER_RIGHT,
+                            bgcolor=ft.Colors.TRANSPARENT,
+                            shadow_color=ft.Colors.TRANSPARENT,
+                            padding=ft.Padding.all(0)
+                        ),
+                    ),
+                    ft.MenuBar(
+                        [
+                            
                             ft.Container(
                                 text_bg_color_options_button,    
                                 border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
@@ -1695,11 +1719,7 @@ class CanvasRail(ft.Container):
                                 text_decoration_color_selector,
                                 border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
                             ),
-                            ft.Container(
-                                text_decoration_color_options_button,    
-                                border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
-                                alignment=ft.Alignment.CENTER
-                            ),  # Button to save current color to settings
+                            
                         ],
                         style=ft.MenuStyle(
                             alignment=ft.Alignment.CENTER_LEFT,
@@ -1708,6 +1728,22 @@ class CanvasRail(ft.Container):
                             padding=ft.Padding.all(0)
                         ),
                     ),
+                    ft.MenuBar(
+                            [
+                                
+                                ft.Container(
+                                    text_decoration_color_options_button,    
+                                    border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
+                                    alignment=ft.Alignment.CENTER
+                                ),  # Button to save current color to settings
+                            ],
+                            style=ft.MenuStyle(
+                                alignment=ft.Alignment.CENTER_LEFT,
+                                bgcolor=ft.Colors.TRANSPARENT,
+                                shadow_color=ft.Colors.TRANSPARENT,
+                                padding=ft.Padding.all(0)
+                            ),
+                        ),
                 ], spacing=0, margin=ft.Margin.only(left=4)),
 
                 ft.Row([
@@ -1718,6 +1754,18 @@ class CanvasRail(ft.Container):
                                 text_shadow_color_selector,
                                 border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
                             ),
+                            
+                        ],
+                        style=ft.MenuStyle(
+                            alignment=ft.Alignment.CENTER_RIGHT,
+                            bgcolor=ft.Colors.TRANSPARENT,
+                            shadow_color=ft.Colors.TRANSPARENT,
+                            padding=ft.Padding.all(0)
+                        ),
+                    ),
+                    ft.MenuBar(
+                        [
+                            
                             ft.Container(
                                 text_shadow_color_options_button,
                                 border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
@@ -1730,7 +1778,7 @@ class CanvasRail(ft.Container):
                             shadow_color=ft.Colors.TRANSPARENT,
                             padding=ft.Padding.all(0)
                         ),
-                    ),
+                                        ),
                 ], spacing=0, margin=ft.Margin.only(left=4)),
 
                 font_family_rg,
@@ -2123,25 +2171,39 @@ class CanvasRail(ft.Container):
         )
         
         drawing_controls = [
-            ft.MenuBar(
-                [
-                    ft.Container(
-                        color_selector,
-                        border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
+            ft.Row([
+                ft.MenuBar(
+                    [
+                        ft.Container(
+                            color_selector,
+                            border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
+                        ),
+                        
+                    ],
+                    style=ft.MenuStyle(
+                        alignment=ft.Alignment.CENTER_LEFT,
+                        bgcolor=ft.Colors.TRANSPARENT,
+                        shadow_color=ft.Colors.TRANSPARENT,
+                        padding=ft.Padding.all(0)
                     ),
-                    ft.Container(
-                        color_options_button,    
-                        border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
-                        alignment=ft.Alignment.CENTER
-                    ),  # Button to save current color to settings
-                ],
-                style=ft.MenuStyle(
-                    alignment=ft.Alignment.CENTER_LEFT,
-                    bgcolor=ft.Colors.TRANSPARENT,
-                    shadow_color=ft.Colors.TRANSPARENT,
-                    padding=ft.Padding.all(0)
                 ),
-            ),
+                ft.MenuBar(
+                    [
+                        
+                        ft.Container(
+                            color_options_button,    
+                            border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
+                            alignment=ft.Alignment.CENTER
+                        ),  # Button to save current color to settings
+                    ],
+                    style=ft.MenuStyle(
+                        alignment=ft.Alignment.CENTER_LEFT,
+                        bgcolor=ft.Colors.TRANSPARENT,
+                        shadow_color=ft.Colors.TRANSPARENT,
+                        padding=ft.Padding.all(0)
+                    ),
+                ),
+            ], spacing=0),
             
             ft.MenuBar(
                 [
