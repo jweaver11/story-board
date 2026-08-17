@@ -164,14 +164,16 @@ class Settings(ft.View):
                 # Other canvas and drawing settings outside of the brushes paint
                 'canvas_settings':{
                     # Brush vs tool mode settings
-                    'capture_ratio': 1,                       # Ratio to capture the canvas. Higher means better quality -> worse performance
+                    #'capture_ratio': 1,                       # Ratio to capture the canvas. Higher means better quality -> worse performance
                     'current_control_mode': "draw",      # Either drawing, (use brush settings), tools (use built in tools), or text
                     'current_brush_name': "stroke",      # Name of the currently selected brush, either default or custom. Just used for display purposes
                     'current_tool_name': "erase",        # Current tool or shape being used
-                    'saved_brushes': dict(),             # Saved brushes the user has created that we can load
-                    'saved_colors': list(),              # Saved colors the user has created that we can load [{'name': 'name_val', 'value': 'value']
+
+                   
                     'use_brush_smoothing': True,         # Uses cv.Path for constistant shapes if true, otherwise use cv.line
                     'stroke_smoothing_strength': 1,        # If stroke smoothing is enabled, how strong the smoothing is. 1 = low, 10 = high 0=off
+                    'saved_brushes': dict(),             # Saved brushes the user has created that we can load
+                    'saved_colors': list(),              # Saved colors the user has created that we can load [{'name': 'name_val', 'value': 'value']
                     'saved_text_settings': dict(),          # Saved text settings the user has created that we can load
                     # Other shape settings
                     #'use_paint_for_shapes': True,           # If True, shapes are black/white and use default paint settings rather than live brush settings

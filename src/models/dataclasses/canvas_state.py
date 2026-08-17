@@ -4,7 +4,6 @@ State management model for our drawings
 import flet as ft
 from dataclasses import dataclass, field
 
-@ft.observable
 @dataclass
 class State:
 

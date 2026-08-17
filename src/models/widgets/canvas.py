@@ -27,7 +27,7 @@ import os
 from PIL import Image, ImageDraw, ImageTk, ImageColor
 
 MINIMUM_SEGMENT_DISTANCE = 2
-MAX_SHAPES_BEFORE_CAPTURE = 100
+MAX_SHAPES_BEFORE_CAPTURE = 50
 MAX_UNDO_LIST_TASKS = 30
 
 
@@ -959,12 +959,13 @@ class Canvas(Widget):
 
         # Capture and get these new strokes, then restore the original shapes to the canvas
         canvas.shapes[:] = new_strokes  
-        
-        #await canvas.capture(app.settings.data.get('canvas_settings', {}).get('capture_ratio', 1))
-        await canvas.capture()
+        canvas.update()  # Push the reduced shapes list to the client before capturing, otherwise it may still capture the stale base image too
+
+        await canvas.capture(pixel_ratio=app.settings.data.get('canvas_settings', {}).get('capture_ratio', 1))
         new_bytes = await canvas.get_capture()
         await canvas.clear_capture()
         canvas.shapes[:] = shapes  # Restore the original shapes to the canvas
+        canvas.update()
 
         # Error capturing new strokes (should be impossible)
         if not new_bytes:
@@ -1005,7 +1006,7 @@ class Canvas(Widget):
        
     # Accepts the formatted undo task data, adds it to state and handles UI updates for the undo/redo buttons
     def add_undo_task(self, task_data: dict):
-        return
+        
         # Add most recent path to undo list, clear redo list, and check undo list not too long
         self.state.undo_list.append(task_data)
         self.state.redo_list.clear()    
@@ -1022,10 +1023,9 @@ class Canvas(Widget):
             self.redo_button.update()
 
     def add_redo_task(self, task_data: dict):
-        return
+        
         # Add most recent path to redo list, clear undo list, and check redo list not too long
         self.state.redo_list.append(task_data)
-        self.state.undo_list.clear()    
         if len(self.state.redo_list) > MAX_UNDO_LIST_TASKS: 
             self.state.redo_list.pop(0)
         
@@ -1040,14 +1040,10 @@ class Canvas(Widget):
         
 
     # Called when undoing a stroke on the canvas
-    def undo_task(self, e=None):
-        return
+    async def undo_task(self, e=None):
 
         # If there's nothing to undo, return early
         if len(self.state.undo_list) == 0:
-            return
-        canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
-        if not canvas.visible:  # Should be impossible
             return
                 
         # Grab the task we're going to carry out and its name and capture
@@ -1057,37 +1053,32 @@ class Canvas(Widget):
         data = task.get('data', None)
 
         layer_canvas = None
+        layer_idx = None
         for idx, layer in enumerate(self.data.get('canvas_data', {}).get('layers', [])):
             if layer.get('name', None) == layer_id:
-                layer_canvas = self.layer_stack.controls[idx]
+                layer_canvas: cv.Canvas = self.layer_stack.controls[idx]
+                layer_idx = idx
                 break
-        if layer_canvas is None:
-            self.page.show_dialog(SnackBar(f"Error finding layer {layer_id} to undo task."))
+        # Catch errors
+        if layer_canvas is None or layer_idx is None:
             return
 
-        match str(task_type):
-            case "path_stroke":
-                pass
-            case "line_strokes":
-                pass
-            case "set_layer_visibility":
-                pass
-            case _:
-                print("Unknown task type for undo: ", task_type)
+        # Simple. We just added a shape(s) to the canvas, so undoing we remove it
+        layer_canvas.shapes.pop()
+        layer_canvas.update()
+
+        # Check if we had just captured, and are a cv.Image. If so, add all the previous shapes to the canvas and
 
         self.add_redo_task(task)    # Add the task we just undid to the redo list
         
 
     # Called when redoing a stroke on the canvas after a previous undo
     def redo_task(self, e=None):
-        return
-        # Return early if nothing to redo
+        
+        # If there's nothing to redo, return early
         if len(self.state.redo_list) == 0:
             return
-        canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
-        if not canvas.visible:  # Should be impossible
-            return
-        
+
         # Grab the task we're going to carry out and its name and capture
         task = self.state.redo_list.pop()    
         task_type = task.get('task_type', None)
@@ -1095,25 +1086,25 @@ class Canvas(Widget):
         data = task.get('data', None)
 
         layer_canvas = None
+        layer_idx = None
         for idx, layer in enumerate(self.data.get('canvas_data', {}).get('layers', [])):
             if layer.get('name', None) == layer_id:
-                layer_canvas = self.layer_stack.controls[idx]
+                layer_canvas: cv.Canvas = self.layer_stack.controls[idx]
+                layer_idx = idx
                 break
-        if layer_canvas is None:
-            self.page.show_dialog(SnackBar(f"Error finding layer {layer_id} to undo task."))
+        # Catch errors
+        if layer_canvas is None or layer_idx is None:
             return
 
-        match task_type:
-            case "path_stroke":
-                pass
-            case "line_strokes":
-                pass
-            case "set_layer_visibility":
-                pass
-            case _:
-                print("Unknown task type for undo: ", task_type)
+        # Just shapes for now
+        #match str(task_type):
+        #    case _:
 
-        self.add_undo_task(task)    # Add the task we just undid to the redo list
+        # Simple. We just added a shape(s) to the canvas, so redoing we add it back
+        layer_canvas.shapes.append(data)
+        layer_canvas.update()
+
+        self.add_undo_task(task)    # Add the task we just redid to the undo list
 
     # Sets either an image or a color as the content of a layer
     async def set_layer_content(self, e: ft.Event):
@@ -1618,7 +1609,7 @@ class Canvas(Widget):
         self.update()
 
     # Toggles the visibility of a layer and updates the sidebar icon and background accordingly
-    async def toggle_layer_visibility(self, e: ft.Event=None):
+    async def toggle_layer_visibility(self, e: ft.Event=None, layer_idx: int=None):
         layer_idx = e.control.parent.data if e is not None else layer_idx
 
         old_visibility = self.layer_stack.controls[layer_idx].visible
