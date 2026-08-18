@@ -116,7 +116,7 @@ class Canvas(Widget):
                 pass    # File doesnt exist yet
         
         # Drawing stuff
-        self.current_path: cv.Path      # The current path being drawn on the canvas, if any
+        self.current_path: cv.Path = None      # The current path being drawn on the canvas, if any
         self.active_layer_idx: int = self.data.get('canvas_data', {}).get('active_layer_idx', 1)        # Which layer we are drawing on
         self.layer_stack: ft.Stack                # Stack to hold our list of layer canvases on top of each other
         self.canvas_controller: ft.GestureDetector  # Controller that sits over our layer stack and handles mouse events for drawing and tool usage 
@@ -439,6 +439,7 @@ class Canvas(Widget):
         # Add our point to the canvas and our paint settings, update, and save
         canvas.shapes.append(cv.Points(points=[(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings)))
         canvas.update()
+        self.current_path = cv.Points(points=[(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
         await self.end_stroke(canvas)   # Force a stroke end since it wont have pan end events
 
     async def fill_tool(self, e: ft.TapEvent):
@@ -928,13 +929,32 @@ class Canvas(Widget):
             canvas.shapes.append(cv.Image(self.layer_bytes.get(layer_id), 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, data=layer_id))
             canvas.update()
             self.story.unblock_page()   # Unblock page
+            self.state.undo_list.clear()
+            self.undo_button.disabled = True
+            self.undo_button.icon_color = ft.Colors.OUTLINE_VARIANT
+            self.undo_button.update()
+            self.state.redo_list.clear()
+            self.redo_button.disabled = True
+            self.redo_button.icon_color = ft.Colors.OUTLINE_VARIANT
+            self.redo_button.update()
+        else:
+            self.add_undo_task({
+                'task_type': 'path_stroke',
+                'layer_id': layer_data.get('name', ''),
+                'data': self.current_path if self.current_path else self.current_tool
+            })
 
-        # TODO: UNDO/REDO
-        #self.add_undo_task({
-            #'task_type': 'path_stroke',
-            #'layer_id': layer_data.get('name', ''),
-            #'data': self.current_path
-        #})
+        # Add stroke to undo list
+        #if self.current_path is not None:
+        
+
+        # Else add shape/text
+        #else:
+            #self.add_undo_task({
+                #'task_type': 'tool',
+                #'layer_id': layer_data.get('name', ''),
+                #'data': self.current_tool
+            #})
 
         # TODO: Erase not saving on canvases
 
@@ -1064,16 +1084,18 @@ class Canvas(Widget):
             return
 
         # Simple. We just added a shape(s) to the canvas, so undoing we remove it
-        layer_canvas.shapes.pop()
+        if task_type == 'path_stroke':
+            layer_canvas.shapes.pop()
+        else:
+            self.current_tool = data
+            await self.paint_tool_on_canvas()
         layer_canvas.update()
-
-        # Check if we had just captured, and are a cv.Image. If so, add all the previous shapes to the canvas and
 
         self.add_redo_task(task)    # Add the task we just undid to the redo list
         
 
     # Called when redoing a stroke on the canvas after a previous undo
-    def redo_task(self, e=None):
+    async def redo_task(self, e=None):
         
         # If there's nothing to redo, return early
         if len(self.state.redo_list) == 0:
@@ -1101,7 +1123,13 @@ class Canvas(Widget):
         #    case _:
 
         # Simple. We just added a shape(s) to the canvas, so redoing we add it back
-        layer_canvas.shapes.append(data)
+        if task_type == 'path_stroke':
+            layer_canvas.shapes.append(data)
+        else:
+            self.current_tool = data
+            await self.paint_tool_on_canvas()
+            
+        
         layer_canvas.update()
 
         self.add_undo_task(task)    # Add the task we just redid to the undo list
@@ -1375,7 +1403,7 @@ class Canvas(Widget):
             shapes=[
                 cv.Image(       # Sets the background image of the layer to its most recent capture
                     capture, 0, 0, 
-                    width=self.CANVAS_WIDTH,          # Ignore setting size before we know it
+                    width=self.CANVAS_WIDTH,          
                     height=self.CANVAS_HEIGHT,
                     data=canvas_data.get('id', '')
                 )    
@@ -1717,7 +1745,8 @@ class Canvas(Widget):
                     image=ft.DecorationImage("canvas_bg.png", alignment=ft.Alignment.TOP_LEFT, repeat=ft.ImageRepeat.REPEAT),
                     width=self.CANVAS_WIDTH,
                     height=self.CANVAS_HEIGHT,
-                    expand=False
+                    expand=False,
+                    #opacity=0.99
                 ),     
                 self.layer_stack, 
                 self.mouse_cursor,

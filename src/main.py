@@ -61,4 +61,4 @@ async def main(page: ft.Page):
 
 
 # Runs the app
-ft.run(main, assets_dir=str(Path(__file__).parent / "assets"))
+ft.run(main)
