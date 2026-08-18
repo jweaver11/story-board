@@ -956,9 +956,27 @@ class Canvas(Widget):
                 #'data': self.current_tool
             #})
 
-        # TODO: Erase not saving on canvases
+        # Replace clear strokes with the saved layer image so Flet cannot reuse a stale
+        # retained render for the destructive blend operation.
+        if self.current_path and str(getattr(getattr(self.current_path, 'paint', None), 'blend_mode', '')).lower().endswith('clear'):
+            self.story.block_page()
+            try:
+                saved_bytes = await self.save_canvas(canvas)
+                if not saved_bytes:
+                    return
+                canvas.shapes.clear()
+                canvas.shapes.append(cv.Image(
+                    saved_bytes,
+                    0,
+                    0,
+                    self.CANVAS_WIDTH,
+                    self.CANVAS_HEIGHT,
+                    data=layer_id,
+                ))
+                canvas.update()
+            finally:
+                self.story.unblock_page()
 
-        
     # Saves any changes to the current layer canvas to its png file, and returns the bytes if other functions need it
     async def save_canvas(self, canvas: cv.Canvas) -> bytes:
 
@@ -972,14 +990,20 @@ class Canvas(Widget):
         layer_id = layer_data.get('id', '')
         
                 
-        # Set new shapes to ignore the base image if it exists, and capture only the new strokes
+        # Clear blend strokes must be captured with the stored image so they can remove
+        # pixels from the existing layer instead of being alpha-composited on top of it.
         shapes = list(canvas.shapes)
         base_is_stored_image = shapes and isinstance(shapes[0], cv.Image) and shapes[0].data    # Marked as loaded
-        new_strokes = shapes[1:] if base_is_stored_image else shapes    # New changes to this layer
+        new_strokes = shapes[1:] if base_is_stored_image else shapes
+        has_clear_stroke = any(
+            str(getattr(getattr(shape, 'paint', None), 'blend_mode', '')).lower().endswith('clear')
+            for shape in new_strokes
+        )
+        capture_shapes = shapes if has_clear_stroke else new_strokes
 
-        # Capture and get these new strokes, then restore the original shapes to the canvas
-        canvas.shapes[:] = new_strokes  
-        canvas.update()  # Push the reduced shapes list to the client before capturing, otherwise it may still capture the stale base image too
+        # Capture the appropriate layer content, then restore the original shapes to the canvas
+        canvas.shapes[:] = capture_shapes
+        canvas.update()
 
         await canvas.capture(pixel_ratio=app.settings.data.get('canvas_settings', {}).get('capture_ratio', 1))
         new_bytes = await canvas.get_capture()
@@ -991,6 +1015,22 @@ class Canvas(Widget):
         if not new_bytes:
             self.page.show_dialog(SnackBar(f"Error capturing new strokes for layer {layer_data.get('name', '')}."))
             return
+
+        # A full capture already contains the erase result and must replace the old layer.
+        if has_clear_stroke:
+            result = Image.open(BytesIO(new_bytes)).convert("RGBA")
+            if result.size != (self.CANVAS_WIDTH, self.CANVAS_HEIGHT):
+                result = result.resize((self.CANVAS_WIDTH, self.CANVAS_HEIGHT), Image.Resampling.LANCZOS)
+            output = BytesIO()
+            result.save(output, format="PNG")
+            combined_bytes = output.getvalue()
+            self.layer_bytes[layer_id] = combined_bytes
+
+            layer_data['dirty'] = False
+            layer_data['needs_file_write'] = True
+            self.data.get('canvas_data', {}).get('layers', [])[layer_idx].update(layer_data)
+            self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
+            return combined_bytes
 
         # Load the existing layer capture
         existing_bytes = self.layer_bytes.get(layer_id, None)
@@ -1756,6 +1796,7 @@ class Canvas(Widget):
             constrained=False,
             scale_factor=800, boundary_margin=1500,
             min_scale=0.02, max_scale=3.0,
+            #opacity=0.99
         )
         self.undo_button = ft.IconButton(
             ft.Icons.UNDO, ft.Colors.OUTLINE_VARIANT, #tooltip="Undo last task (ctrl+z)", 
