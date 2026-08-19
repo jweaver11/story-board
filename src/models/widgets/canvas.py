@@ -176,8 +176,6 @@ class Canvas(Widget):
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     def set_mouse_cursor(self, update: bool=True):
 
-        
-
         # For setting the standard cursor
         def set_standard_cursor():
             # If using tool mode
@@ -245,13 +243,6 @@ class Canvas(Widget):
             self.mouse_cursor.update()
             self.canvas_controller.update()
         
-        
-
-    # Shows our sidebar and paints a tool on canvas if needed
-    async def show_sidebar(self, e: ft.Event):
-        if self.state.manipulating_shape:
-            await self.paint_tool_on_canvas()
-        await super().show_sidebar(e)
            
     # If we have an active tool/shape that we are manipulating, paint it on the canvas
     async def paint_tool_on_canvas(self):
