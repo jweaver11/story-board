@@ -25,6 +25,7 @@ import time
 import uuid
 import os
 from PIL import Image, ImageDraw, ImageTk, ImageColor
+import utils.drawing as draw
 
 MINIMUM_SEGMENT_DISTANCE = 2
 MAX_SHAPES_BEFORE_CAPTURE = 50
@@ -249,60 +250,10 @@ class Canvas(Widget):
         ''' Converts the displayed shapes rotation and size onto our active layer and paints it there '''
 
         canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
-        canvas_id = self.data.get('canvas_data', {}).get('layers', [])[self.active_layer_idx].get('id', '')
-        if not canvas.visible or self.current_tool is None:  # Catch errors
-            self.page.show_dialog(SnackBar("Error finding visible canvas or tool."))
-            return
-
         self.state.manipulating_shape = False   # Update state
-        
-        # Text can be rotated, so we can just grab it and put it in the right spot
-        if self.current_tool.shape_type == "text":
 
-            # Align our text to account for size of our layer canvas
-            text_shape: cv.Text = self.current_tool.cv_shape
-            text_shape.x += self.current_tool.left + 2
-            text_shape.y += self.current_tool.top + 2
-            
-            canvas.shapes.append(text_shape)
-            await self.end_stroke(canvas=canvas)
-            #self.current_tool.visible = False
-            #self.current_tool.rotate_handle.visible = False
-            self.canvas_controller.parent.controls.remove(self.current_tool)
-            self.canvas_controller.parent.controls.remove(self.current_tool.rotate_handle)
-            self.canvas_controller.parent.update()
-            #self.update()
-            return
+        await draw.paint_tool_on_canvas(canvas, self.current_tool)
 
-        # Capture the current tool
-        await self.current_tool.canvas.capture()
-        shape_capture = await self.current_tool.canvas.get_capture()
-
-        if not shape_capture:
-            self.page.show_dialog(SnackBar("Error capturing shape."))
-            return
-
-        # Grab the image and rotate
-        shape_img = Image.open(BytesIO(shape_capture)).convert("RGBA")
-        angle = self.current_tool.rotate.angle
-        angle_degrees = -math.degrees(angle)
-        rotated = shape_img.rotate(angle_degrees, expand=True, resample=Image.Resampling.BICUBIC)
-
-        # Set rotation (with border padding)
-        rotation_cx = self.current_tool.left + (self.current_tool.canvas.width + 4) / 2
-        rotation_cy = self.current_tool.top + (self.current_tool.canvas.height + 4) / 2
-        paste_x = int(rotation_cx - rotated.width / 2)
-        paste_y = int(rotation_cy - rotated.height / 2)
-
-
-        output = BytesIO()
-        rotated.save(output, format="PNG")
-        stamped_bytes = output.getvalue()
-
-        canvas.shapes.append(cv.Image(stamped_bytes, paste_x, paste_y))
-        await self.end_stroke(canvas=canvas)
-        canvas.update()
-            
         self.canvas_controller.parent.controls.remove(self.current_tool)
         self.canvas_controller.parent.controls.remove(self.current_tool.rotate_handle)
         self.canvas_controller.parent.update()
