@@ -25,7 +25,7 @@ import time
 import uuid
 import os
 from PIL import Image, ImageDraw, ImageTk, ImageColor
-import utils.drawing as draw
+import utils.drawing as drawing
 
 MINIMUM_SEGMENT_DISTANCE = 2
 MAX_SHAPES_BEFORE_CAPTURE = 50
@@ -252,7 +252,7 @@ class Canvas(Widget):
         canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
         self.state.manipulating_shape = False   # Update state
 
-        await draw.paint_tool_on_canvas(canvas, self.current_tool)
+        await drawing.paint_tool_on_canvas(canvas, self.current_tool, self.end_stroke)
 
         self.canvas_controller.parent.controls.remove(self.current_tool)
         self.canvas_controller.parent.controls.remove(self.current_tool.rotate_handle)
@@ -260,46 +260,8 @@ class Canvas(Widget):
 
     # Updates any live text tools if we changed a setting that would affect it
     def update_tool_preview(self):
-        canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
-        paint_settings = app.settings.data.get('paint_settings', {}).copy()
-        text_settings = app.settings.data.get('text_settings', {}).copy()
-
         if self.state.manipulating_shape:
-        
-            # Fix any paint changess
-            self.current_tool.paint = ft.Paint(**paint_settings)
-
-            if self.current_tool.shape_type == "text":
-                self.current_tool.cv_shape.style = ft.TextStyle(**text_settings)
-                # Match decoration accordingly, since its str -> control doesnt work
-                decoration = text_settings.get('decoration', None)
-                match decoration:
-                    case "underline":
-                        self.current_tool.cv_shape.style.decoration = ft.TextDecoration.UNDERLINE
-                    case "overline":
-                        self.current_tool.cv_shape.style.decoration = ft.TextDecoration.OVERLINE
-                    case "line_through":
-                        self.current_tool.cv_shape.style.decoration = ft.TextDecoration.LINE_THROUGH
-                    case _:
-                        self.current_tool.cv_shape.style.decoration = None
-    
-                self.current_tool.cv_shape.style.shadow = ft.BoxShadow(
-                    blur_radius=text_settings.get('shadow', {}).get('blur_radius', 0),
-                    color=text_settings.get('shadow', {}).get('color', None),
-                    offset=ft.Offset(
-                        text_settings.get('shadow', {}).get('offset_x', 0),
-                        text_settings.get('shadow', {}).get('offset_y', 0)
-                    ),
-                )
-            elif self.current_tool.shape_type == "rectangle":
-                self.current_tool.cv_shape.border_radius = ft.BorderRadius.all(canvas_settings.get('rectangle_border_radius', 0))
-            else:
-                for shape in self.current_tool.canvas.shapes:
-                    shape.paint = ft.Paint(**paint_settings)
-
-            self.current_tool.update()
-
-    
+            drawing.update_tool_preview(self.current_tool)
 
     # Handles all tap events on the canvas and decides how to handle them based on the current control mode
     async def handle_tap(self, e: ft.TapEvent):
@@ -365,22 +327,7 @@ class Canvas(Widget):
 
         # Grab our canvas
         canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
-        if not canvas.visible:  # Catch errors
-            return
-
-        control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
-        tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
-
-        # Adjust paint settings for erase tool to just add a point. Not compatible with blur or fill, so temp turned off
-        if control_mode == "tool":
-            if tool_name == "erase":
-                paint_settings['blend_mode'] = "clear"
-                paint_settings['blur_image'] = 0
-                paint_settings['style'] = "stroke"
-        
-        # Add our point to the canvas and our paint settings, update, and save
-        canvas.shapes.append(cv.Points(points=[(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings)))
-        canvas.update()
+        await drawing.draw_point(canvas, e.local_position)
         self.current_path = cv.Points(points=[(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
         await self.end_stroke(canvas)   # Force a stroke end since it wont have pan end events
 
@@ -731,120 +678,24 @@ class Canvas(Widget):
     # Adds our initial stroke (cv.Shape) to the canvas with correct settings
     def start_stroke(self, e: ft.DragStartEvent):
 
-        # Grab the canvas and paint settings
+        # Grab our canvas and update state
         canvas: cv.Canvas = self.layer_stack.controls[self.active_layer_idx]
-        if not canvas.visible:  # Protect when we shouldnt be drawing with it
-            self.page.show_dialog(SnackBar("Set an active layer to draw on."))
-            return
 
-        # Grab settings for ez reference
-        paint_settings = app.settings.data.get('paint_settings', {}).copy()
-        canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
-    
+        drawing.start_stroke(canvas=canvas, current_position=e.local_position, prev_position=ft.Offset(self.state.x, self.state.y))
         # Update our state x and y coordinates
         self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
-        # Check if we're in tool mode, and what tool we're using
-        if canvas_settings.get('current_control_mode', "") == "tool":
-            tool_name = canvas_settings.get('current_tool_name', "")
-
-            # Erase tool - Update the paint settings and create a normal path
-            if tool_name == "erase":
-                paint_settings['blend_mode'] = "clear"
-                paint_settings['blur_image'] = 0
-                paint_settings['style'] = "stroke"
-                self.current_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
-
-            # Line tool - Create a path using one straight line element that we'll update differently
-            elif tool_name == "line":                
-                paint_settings['style'] = "stroke"
-                self.current_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
-                line_element = cv.Path.LineTo(self.state.x, self.state.y)
-                self.current_path.elements.append(line_element)
-
-            # Add our tool path to the canvas and return
-            canvas.shapes.append(self.current_path)
-            canvas.update()
-            return
-
-        # Otherwise we're in draw mode
-        else:
-            # Brush smoothing - use a normal path
-            if canvas_settings.get('use_brush_smoothing', False) == True or paint_settings.get('style', "") == "stroke_fill":
-                self.current_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
-                canvas.shapes.append(self.current_path)
-            # No brush smoothing, just add a line element to the canvas
-            else: 
-                canvas.shapes.append(cv.Line(self.state.x, self.state.y, e.local_position.x, e.local_position.y, paint=ft.Paint(**paint_settings)))
-            canvas.update()
         
     # Updates the current stroke shape on the canvas depending on our settings
     def update_stroke(self, e: ft.DragUpdateEvent):
 
-        # TODO: Handle Stroke smoothing
-        
-        # Sampling to improve perforamance. If the line length is too small, we skip it
-        #dx = e.local_position.x - self.state.x
-        #dy = e.local_position.y - self.state.y
-        #if dx * dx + dy * dy < MINIMUM_SEGMENT_DISTANCE * MINIMUM_SEGMENT_DISTANCE:
-            #return
-
         # Grab canvas and catch errors
         canvas: cv.Canvas =  self.layer_stack.controls[self.active_layer_idx]
-        if not canvas.visible:  
-            return
-        
-        # Grab the current path and catch errors
-        self.current_path = canvas.shapes[-1] if canvas.shapes and len(canvas.shapes) > 1 else None # Trips if drawing but havnt finished capture
-        if not self.current_path:
-            return
-
-        # Paint settings
-        paint_settings = app.settings.data.get('paint_settings', {}).copy()
-        canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
 
         self.move_mouse_cursor(e.local_position)    # Make our custom mouse_cursor follow our mouse position when drawing if using it
-                
-        # Check if we're in tool mode, and what tool we're using
-        if canvas_settings.get('current_control_mode', "") == "tool":
-            tool_name = canvas_settings.get('current_tool_name', "")
-            match tool_name:
-
-                # Erase tool - Add another smooth line to the path
-                case "erase":
-                    path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
-                    self.current_path.elements.append(path_element)
-
-                # Line tool - Update our straight line element to the current mouse position
-                case "line":
-                    # Set the element and update its position
-                    line_element = self.current_path.elements[-1]
-                    line_element.x = e.local_position.x
-                    line_element.y = e.local_position.y
-
-            # Update state and return
-            self.state.x = e.local_position.x
-            self.state.y =  e.local_position.y
-            self.current_path.update()
-            return
-
-        # Otherwise we're in draw mode
-        else:
-
-            # If using path smoothing or stroke_fill, update the path with a new line element
-            if canvas_settings.get('use_brush_smoothing', False) == True or paint_settings.get('style', "") == "stroke_fill": 
-                path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
-                self.current_path.elements.append(path_element)
-                self.current_path.update()
-
-            # Non-smooth drawing, add another line
-            else: 
-                canvas.shapes.append(cv.Line(self.state.x, self.state.y, e.local_position.x, e.local_position.y, paint=self.current_path.paint))
-                canvas.update()
-                
-            # Update our state x and y positions
-            self.state.x = e.local_position.x
-            self.state.y =  e.local_position.y
+        drawing.update_stroke(canvas=canvas, current_position=e.local_position, prev_position=ft.Offset(self.state.x, self.state.y))
+        self.state.x = e.local_position.x
+        self.state.y =  e.local_position.y
         
 
     # Ends the current stroke (cv.Shape) and marks that layer as dirty for saving, and saves if we hit max shape count

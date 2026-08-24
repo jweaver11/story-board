@@ -858,7 +858,6 @@ class CanvasRail(ft.Container):
                 label="Brush Smoothing", on_change=update_paint_brush_smoothing,
                 value=canvas_settings.get('use_brush_smoothing', True),
                 tooltip="Whether to smooth brush strokes to have a uniform color and opacity.",
-                
             )
 
             # Selector for the shape of the ends of strokes
@@ -2251,13 +2250,11 @@ class CanvasRail(ft.Container):
             erase_tool_button,
             fill_tool_button,
             line_tool_button,
-            circle_tool_button,
-            oval_tool_button,
-            arc_tool_button,
-            rectangle_tool_button,
-            triangle_tool_button
-
-
+            #circle_tool_button,
+            #oval_tool_button,
+            #arc_tool_button,
+            #rectangle_tool_button,
+            #triangle_tool_button
         ]
         
         
