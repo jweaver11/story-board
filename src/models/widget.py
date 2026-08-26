@@ -388,7 +388,7 @@ class Widget(ft.Container):
             return
         
         self.update_data(**{'visible': False})
-        if self.data.get('tag', '') == "canvas" or self.data.get('tag', '') == "manuscript":    # Widgets that must be rendered to save
+        if self.data.get('tag', '') == "canvas" or self.data.get('tag', '') == "manuscript" or self.data.get('tag', '') == "map" or self.data.get('tag', '') == "canvas_board":    # Widgets that must be rendered to save
             await self.save_file() 
         await self.story.workspace.remove_widget_from_workspace(self)
         

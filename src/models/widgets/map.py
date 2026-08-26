@@ -3,29 +3,32 @@ The map class for all maps inside our story
 Maps are widgets that have their own drawing canvas, background image, information display, and locations
 '''
 
-
+from models.mini_widgets.map_location import MapLocation
+from styles.colors import colors
+from styles.text_styles import TextShadow
+from flet_color_pickers import ColorPicker
 import flet as ft
+from collections import deque
 from models.widget import Widget
 from models.views.story import Story
+from styles.snack_bar import SnackBar
 from models.dataclasses.canvas_state import State
 import flet.canvas as cv
-from models.app import app
-from styles.menu_option_style import MenuOptionStyle
-import asyncio
-from models.mini_widgets.map_location import MapLocation
-from models.dataclasses.canvas_shape import CanvasShape 
-import uuid
-from styles.colors import colors
-from styles.text_fields import TextField
-from styles.text_styles import TextShadow
-from styles.snack_bar import SnackBar
-from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont, ImageColor
 import math
-from collections import deque
+from models.app import app
 import json
 import base64
-from flet_color_pickers import ColorPicker
+from io import BytesIO
+from PIL import Image
+import asyncio
+from styles.menu_option_style import MenuOptionStyle
+from models.dataclasses.canvas_shape import CanvasShape
+from styles.text_fields import TextField
+import time
+import uuid
+import os
+from PIL import Image, ImageDraw, ImageTk, ImageColor
+import utils.drawing as drawing
 
 
 MAP_WIDTH = 2000
@@ -83,23 +86,19 @@ class Map(Widget):
                 },
 
                 # Sizing
-                "width": (data or {}).get('canvas_data', {}).get('width') or MAP_WIDTH,
-                "height": (data or {}).get('canvas_data', {}).get('height') or MAP_HEIGHT,
+                "width": (data or {}).get('width') or MAP_WIDTH,
+                "height": (data or {}).get('height') or MAP_HEIGHT,
 
                 # Canvas drawing stuff
                 'capture': str(),
-                'id': str(uuid.uuid4()),
-                'visible': True, 
-                'dirty': False,
-                'needs_file_write': False,
             
             })
 
         
         # Drawing elements
         self.state = State()
-        self.map_width = self.data.get('canvas_data', {}).get('width', 0)    # Ez size grabbing later
-        self.map_height = self.data.get('canvas_data', {}).get('height', 0)
+        self.map_width = self.data.get('width', MAP_WIDTH)
+        self.map_height = self.data.get('height', MAP_HEIGHT)
         self.manipulating_shape = False     # Whether we're currently manipulating a shape or not, so we know whether to update our active path or not when dragging
         self.current_path = cv.Path(elements=[], paint=ft.Paint(**app.settings.data.get('paint_settings', {})))
         self.active_tool: CanvasShape                    # The active shape being added if we're using a tool
@@ -130,6 +129,14 @@ class Map(Widget):
         # Sidebar controls. Undo/redo buttons
         self.undo_button: ft.IconButton
         self.redo_button: ft.IconButton
+        self.canvas_bytes: bytes    # Bytes stored of drawing in memory
+
+    
+
+    async def hide_widget(self, e=None):
+        self.story.block_page()
+        await super().hide_widget()
+        self.story.unblock_page()
 
     # Class for labels on our map, which are like locations but don't have a sidebar info to show
     class Label(ft.GestureDetector):
@@ -337,7 +344,6 @@ class Map(Widget):
         await super().hide_widget()
         self.story.unblock_page()
 
-
     # If we have an active tool/shape that we are manipulating, paint it on the canvas
     async def paint_tool_on_canvas(self):
         ''' Converts the displayed shapes rotation and size onto our active layer and paints it there '''
@@ -519,27 +525,12 @@ class Map(Widget):
 
     # Tap event for adding a circular point to the canvas using our paint settings
     async def add_point(self, e: ft.TapEvent):
-        paint_settings = app.settings.data.get('paint_settings', {}).copy()
-
-        # Grab our canvas
         canvas: cv.Canvas = self.canvas
-        if not canvas.visible:  # Catch errors
-            return
-
-        control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
-        tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
-
-        # Adjust paint settings for erase tool to just add a point. Not compatible with blur or fill, so temp turned off
-        if control_mode == "tool":
-            if tool_name == "erase":
-                paint_settings['blend_mode'] = "clear"
-                paint_settings['blur_image'] = 0
-                paint_settings['style'] = "stroke"
-        
-        # Add our point to the canvas and our paint settings, update, and save
-        canvas.shapes.append(cv.Points(points=[(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings)))
-        canvas.update()
-        self.current_path = cv.Points(points=[(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
+        await drawing.draw_point(canvas, e.local_position)
+        self.current_path = cv.Points(
+            points=[(e.local_position.x, e.local_position.y)],
+            paint=ft.Paint(**app.settings.data.get('paint_settings', {}).copy()),
+        )
         await self.end_stroke(canvas)   # Force a stroke end since it wont have pan end events
 
 
@@ -801,17 +792,14 @@ class Map(Widget):
         if not canvas.visible:
             return
 
-        #layer_idx = int(canvas.data)
-        #layer_data = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]
-        #layer_id = layer_data.get('id', '')
-
         # Ensure any pending vector strokes are merged before we sample fill boundaries.
-        if self.data.get('dirty', False):
+        if canvas.shapes:
             await self.save_canvas(canvas)
 
         self.story.block_page()
         await asyncio.sleep(0)  # Allow UI to update before potentially long operation.
-        existing_bytes = base64.b64encode(self.data.get('capture', '').encode('utf-8'))
+        capture = self.data.get('capture', '')
+        existing_bytes = base64.b64decode(capture) if capture else None
         if existing_bytes:
             image = Image.open(BytesIO(existing_bytes)).convert("RGBA")
         else:
@@ -837,14 +825,12 @@ class Map(Widget):
         filled_bytes = output.getvalue()
         image_str = base64.b64encode(filled_bytes).decode('utf-8')
 
-        # Keep layer cache, canvas state, and file-write flags in sync with draw/save flow.
+        # Replace vector shapes with the filled image and persist the map's sole capture.
         canvas.shapes.clear()
         canvas.shapes.append(cv.Image(filled_bytes, 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT))
         canvas.update()
 
-        self.data['dirty'] = False
-        self.data['needs_file_write'] = True
-        self.update_data(**{'dirty': False, 'needs_file_write': True, 'capture': image_str})
+        self.update_data(**{'capture': image_str})
         self.story.unblock_page()
 
     # Tap event for adding a tool to the canvas
@@ -893,53 +879,9 @@ class Map(Widget):
 
     # Adds our initial stroke (cv.Shape) to the canvas with correct settings
     def start_stroke(self, e: ft.DragStartEvent):
-
-        # Grab the canvas and paint settings
         canvas: cv.Canvas = self.canvas
-        if not canvas.visible:  # Protect when we shouldnt be drawing with it
-            self.page.show_dialog(SnackBar("Set an active layer to draw on."))
-            return
-
-        # Grab settings for ez reference
-        paint_settings = app.settings.data.get('paint_settings', {}).copy()
-        canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
-    
-        # Update our state x and y coordinates
+        drawing.start_stroke(canvas, e.local_position, ft.Offset(self.state.x, self.state.y))
         self.state.x, self.state.y = e.local_position.x, e.local_position.y
-
-        # Check if we're in tool mode, and what tool we're using
-        if canvas_settings.get('current_control_mode', "") == "tool":
-            tool_name = canvas_settings.get('current_tool_name', "")
-
-            # Erase tool - Update the paint settings and create a normal path
-            if tool_name == "erase":
-                paint_settings['blend_mode'] = "clear"
-                paint_settings['blur_image'] = 0
-                paint_settings['style'] = "stroke"
-                self.current_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
-
-            # Line tool - Create a path using one straight line element that we'll update differently
-            elif tool_name == "line":                
-                paint_settings['style'] = "stroke"
-                self.current_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
-                line_element = cv.Path.LineTo(self.state.x, self.state.y)
-                self.current_path.elements.append(line_element)
-
-            # Add our tool path to the canvas and return
-            canvas.shapes.append(self.current_path)
-            canvas.update()
-            return
-
-        # Otherwise we're in draw mode
-        else:
-            # Brush smoothing - use a normal path
-            if canvas_settings.get('use_brush_smoothing', False) == True or paint_settings.get('style', "") == "stroke_fill":
-                self.current_path = cv.Path(elements=[cv.Path.MoveTo(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
-                canvas.shapes.append(self.current_path)
-            # No brush smoothing, just add a line element to the canvas
-            else: 
-                canvas.shapes.append(cv.Line(self.state.x, self.state.y, e.local_position.x, e.local_position.y, paint=ft.Paint(**paint_settings)))
-            canvas.update()
 
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     def set_mouse_cursor(self, update: bool=True):
@@ -958,8 +900,7 @@ class Map(Widget):
             # Draw mode
             else:
                 standard_mouse_cursor = ft.MouseCursor.PRECISE
-            self.canvas_controller.mouse_cursor = standard_mouse_cursor     # Set the decided cursor
-            self.mouse_cursor.visible = False       # Hide the custom one
+            self.map_controller.mouse_cursor = standard_mouse_cursor
 
 
         # Grab out settings for paint and canvas
@@ -981,259 +922,86 @@ class Map(Widget):
 
     # Updates the current stroke shape on the canvas depending on our settings
     def update_stroke(self, e: ft.DragUpdateEvent):
+        drawing.update_stroke(self.canvas, e.local_position, ft.Offset(self.state.x, self.state.y))
+        self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
-        # TODO: Handle Stroke smoothing
-        
-        # Sampling to improve perforamance. If the line length is too small, we skip it
-        #dx = e.local_position.x - self.state.x
-        #dy = e.local_position.y - self.state.y
-        #if dx * dx + dy * dy < MINIMUM_SEGMENT_DISTANCE * MINIMUM_SEGMENT_DISTANCE:
-            #return
-
-        # Grab canvas and catch errors
-        canvas: cv.Canvas =  self.canvas
-        if not canvas.visible:  
-            return
-        
-        # Grab the current path and catch errors
-        self.current_path = canvas.shapes[-1] if canvas.shapes and len(canvas.shapes) > 1 else None # Trips if drawing but havnt finished capture
-        if not self.current_path:
-            return
-
-        # Paint settings
-        paint_settings = app.settings.data.get('paint_settings', {}).copy()
-        canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
-
-        #self.move_mouse_cursor(e.local_position)    # Make our custom mouse_cursor follow our mouse position when drawing if using it
-                
-        # Check if we're in tool mode, and what tool we're using
-        if canvas_settings.get('current_control_mode', "") == "tool":
-            tool_name = canvas_settings.get('current_tool_name', "")
-            match tool_name:
-
-                # Erase tool - Add another smooth line to the path
-                case "erase":
-                    path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
-                    self.current_path.elements.append(path_element)
-
-                # Line tool - Update our straight line element to the current mouse position
-                case "line":
-                    # Set the element and update its position
-                    line_element = self.current_path.elements[-1]
-                    line_element.x = e.local_position.x
-                    line_element.y = e.local_position.y
-
-            # Update state and return
-            self.state.x = e.local_position.x
-            self.state.y =  e.local_position.y
-            self.current_path.update()
-            return
-
-        # Otherwise we're in draw mode
-        else:
-
-            # If using path smoothing or stroke_fill, update the path with a new line element
-            if canvas_settings.get('use_brush_smoothing', False) == True or paint_settings.get('style', "") == "stroke_fill": 
-                path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
-                self.current_path.elements.append(path_element)
-                self.current_path.update()
-
-            # Non-smooth drawing, add another line
-            else: 
-                canvas.shapes.append(cv.Line(self.state.x, self.state.y, e.local_position.x, e.local_position.y, paint=self.current_path.paint))
-                canvas.update()
-                
-            # Update our state x and y positions
-            self.state.x = e.local_position.x
-            self.state.y =  e.local_position.y
-
-    # Ends the current stroke (cv.Shape) and marks that layer as dirty for saving, and saves if we hit max shape count
+    # Ends the current stroke and flattens it when the retained shape count is too large.
     async def end_stroke(self, e: ft.DragEndEvent=None, canvas: cv.Canvas=None):
-        """ Saves our paths to our canvas data for storage """
-
-        # Grab our canvas and protect against errors
-        canvas: cv.Canvas = self.canvas
-        if not canvas.visible:  
+        canvas = self.canvas if canvas is None else canvas
+        if not canvas.visible or not canvas.shapes:
             return
-        
-        # Grab our layer data and mark it as dirty, so we know to save it when program closes
-        layer_idx = int(canvas.data)
-        layer_data = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]
-        layer_id = layer_data.get('id', '')
-        layer_data['dirty'] = True
-        self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})   # Update our meta data for the layer
-        self.update_data(**{'dirty': True})
 
-        existing_bytes = base64.b64decode(self.data.get('capture')) 
+        committed_shape = canvas.shapes[-1]
+        self.add_undo_task({
+            'task_type': 'path_stroke',
+            'data': committed_shape,
+        })
+        saved_bytes = await self.save_canvas(canvas)
+        if not saved_bytes:
+            return
 
-        # If we have too many shapes on the canvas, flatten them into the layer's PNG file
-        if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:
-            self.story.block_page()     # Block page to prevent other events whil we do this one
-            await self.save_canvas(canvas)  # Save the current canvas added shapes to its bytes stored in memory
-            canvas.shapes.clear()
-            canvas.shapes.append(cv.Image(existing_bytes, 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, data=layer_id))
-            canvas.update()
-            self.story.unblock_page()   # Unblock page
-            self.state.undo_list.clear()
-            self.undo_button.disabled = True
-            self.undo_button.icon_color = ft.Colors.OUTLINE_VARIANT
-            self.undo_button.update()
-            self.state.redo_list.clear()
-            self.redo_button.disabled = True
-            self.redo_button.icon_color = ft.Colors.OUTLINE_VARIANT
-            self.redo_button.update()
-        else:
-            self.add_undo_task({
-                'task_type': 'path_stroke',
-                #'layer_id': layer_data.get('name', ''),
-                'data': self.current_path if self.current_path else self.current_tool
-            })
+        is_clear_stroke = str(
+            getattr(getattr(committed_shape, 'paint', None), 'blend_mode', '')
+        ).lower().endswith('clear')
+        if len(canvas.shapes) <= MAX_SHAPES_BEFORE_CAPTURE and not is_clear_stroke:
+            return
 
-        # Add stroke to undo list
-        #if self.current_path is not None:
-        
-
-        # Else add shape/text
-        #else:
-            #self.add_undo_task({
-                #'task_type': 'tool',
-                #'layer_id': layer_data.get('name', ''),
-                #'data': self.current_tool
-            #})
-
-        # Replace clear strokes with the saved layer image so Flet cannot reuse a stale
-        # retained render for the destructive blend operation.
-        if self.current_path and str(getattr(getattr(self.current_path, 'paint', None), 'blend_mode', '')).lower().endswith('clear'):
-            self.story.block_page()
-            try:
-                saved_bytes = await self.save_canvas(canvas)
-                if not saved_bytes:
-                    return
-                canvas.shapes.clear()
-                canvas.shapes.append(cv.Image(
-                    saved_bytes,
-                    0,
-                    0,
-                    self.CANVAS_WIDTH,
-                    self.CANVAS_HEIGHT,
-                    data=layer_id,
-                ))
-                canvas.update()
-            finally:
-                self.story.unblock_page()
+        canvas.shapes.clear()
+        canvas.shapes.append(cv.Image(saved_bytes, 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT))
+        canvas.update()
+        self.state.undo_list.clear()
+        self.state.redo_list.clear()
+        self.undo_button.disabled = True
+        self.undo_button.icon_color = ft.Colors.OUTLINE_VARIANT
+        self.redo_button.disabled = True
+        self.redo_button.icon_color = ft.Colors.OUTLINE_VARIANT
+        self.undo_button.update()
+        self.redo_button.update()
 
     # Saves any changes to the current layer canvas to its png file, and returns the bytes if other functions need it
     async def save_canvas(self, canvas: cv.Canvas) -> bytes:
+        if not canvas.visible:
+            return None
 
-        # Protect bad calls
-        if canvas.visible == False:  
-            return
-
-        # Grab the layer data using the index
-        layer_idx = int(canvas.data)
-        layer_data = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]
-        layer_id = layer_data.get('id', '')
-        
-                
-        # Clear blend strokes must be captured with the stored image so they can remove
-        # pixels from the existing layer instead of being alpha-composited on top of it.
-        shapes = list(canvas.shapes)
-        base_is_stored_image = shapes and isinstance(shapes[0], cv.Image) and shapes[0].data    # Marked as loaded
-        new_strokes = shapes[1:] if base_is_stored_image else shapes
-        has_clear_stroke = any(
-            str(getattr(getattr(shape, 'paint', None), 'blend_mode', '')).lower().endswith('clear')
-            for shape in new_strokes
-        )
-        capture_shapes = shapes if has_clear_stroke else new_strokes
-
-        # Capture the appropriate layer content, then restore the original shapes to the canvas
-        canvas.shapes[:] = capture_shapes
-        canvas.update()
-
-        await canvas.capture()
-        new_bytes = await canvas.get_capture()
+        await canvas.capture(pixel_ratio=app.settings.data.get('canvas_settings', {}).get('capture_ratio', 1))
+        captured_bytes = await canvas.get_capture()
         await canvas.clear_capture()
-        canvas.shapes[:] = shapes  # Restore the original shapes to the canvas
-        canvas.update()
+        if not captured_bytes:
+            self.page.show_dialog(SnackBar("Error capturing map drawing."))
+            return None
 
-        # Error capturing new strokes (should be impossible)
-        if not new_bytes:
-            self.page.show_dialog(SnackBar(f"Error capturing new strokes for layer {layer_data.get('name', '')}."))
-            return
-
-        # A full capture already contains the erase result and must replace the old layer.
-        if has_clear_stroke:
-            result = Image.open(BytesIO(new_bytes)).convert("RGBA")
-            if result.size != (self.CANVAS_WIDTH, self.CANVAS_HEIGHT):
-                result = result.resize((self.CANVAS_WIDTH, self.CANVAS_HEIGHT), Image.Resampling.LANCZOS)
-            output = BytesIO()
-            result.save(output, format="PNG")
-            combined_bytes = output.getvalue()
-            image_str = base64.b64encode(combined_bytes).decode('utf-8')
-
-            
-            self.update_data(**{'dirty': False, 'needs_file_write': True, 'capture': image_str})
-            return combined_bytes
-
-        # Load the existing layer capture
-        existing_bytes = base64.b64decode(layer_data.get('capture', '')) if layer_data.get('capture', '') else None
-
-        # If we have an existing capture, composite the new strokes onto it; otherwise, create a new base image
-        if existing_bytes:
-            base_img = Image.open(BytesIO(existing_bytes)).convert("RGBA")
-        else:
-            base_img = Image.new("RGBA", (self.CANVAS_WIDTH, self.CANVAS_HEIGHT), (0, 0, 0, 0))
-
-        # Composite the new strokes onto the existing base — base pixels are never re-rendered through Flet
-        delta_img = Image.open(BytesIO(new_bytes)).convert("RGBA")
-        if delta_img.size != base_img.size: # Handle size errors (should be impossible)
-            delta_img = delta_img.resize(base_img.size, Image.Resampling.LANCZOS)
-
-        # Merge the two images together and add them to our in memory cache for the next save
-        result = Image.alpha_composite(base_img, delta_img)
+        image = Image.open(BytesIO(captured_bytes)).convert("RGBA")
+        if image.size != (self.CANVAS_WIDTH, self.CANVAS_HEIGHT):
+            image = image.resize((self.CANVAS_WIDTH, self.CANVAS_HEIGHT), Image.Resampling.LANCZOS)
         output = BytesIO()
-        result.save(output, format="PNG")
-        combined_bytes = output.getvalue()
-        image_str = base64.b64encode(combined_bytes).decode('utf-8')
-
-        # Mark the layer as no longer dirty, but needs a file write
-        self.update_data(**{'dirty': False, 'needs_file_write': True, 'capture': image_str})
-
-        return combined_bytes   # Return our now updated bytes
+        image.save(output, format="PNG")
+        saved_bytes = output.getvalue()
+        self.update_data(**{'capture': base64.b64encode(saved_bytes).decode('utf-8')})
+        return saved_bytes
 
     # Accepts the formatted undo task data, adds it to state and handles UI updates for the undo/redo buttons
     def add_undo_task(self, task_data: dict):
-        
-        # Add most recent path to undo list, clear redo list, and check undo list not too long
         self.state.undo_list.append(task_data)
-        self.state.redo_list.clear()    
-        if len(self.state.undo_list) > MAX_UNDO_LIST_TASKS: 
+        self.state.redo_list.clear()
+        if len(self.state.undo_list) > MAX_UNDO_LIST_TASKS:
             self.state.undo_list.pop(0)
-        
-        # Handle buttons
-        self.undo_button.disabled = False
-        self.undo_button.icon_color = ft.Colors.PRIMARY
-        self.redo_button.disabled = True
-        if len(self.state.redo_list) == 0:
-            self.redo_button.icon_color = ft.Colors.OUTLINE_VARIANT
-            self.undo_button.update()
-            self.redo_button.update()
+        self._update_history_buttons()
 
     def add_redo_task(self, task_data: dict):
-        
-        # Add most recent path to redo list, clear undo list, and check redo list not too long
         self.state.redo_list.append(task_data)
-        if len(self.state.redo_list) > MAX_UNDO_LIST_TASKS: 
+        if len(self.state.redo_list) > MAX_UNDO_LIST_TASKS:
             self.state.redo_list.pop(0)
-        
-        # Handle buttons
-        self.redo_button.disabled = False
-        self.redo_button.icon_color = ft.Colors.PRIMARY
+        self._update_history_buttons()
+
+    def _update_history_buttons(self):
+        has_undo = bool(self.state.undo_list)
+        has_redo = bool(self.state.redo_list)
+        self.undo_button.disabled = not has_undo
+        self.undo_button.icon_color = ft.Colors.PRIMARY if has_undo else ft.Colors.OUTLINE_VARIANT
+        self.redo_button.disabled = not has_redo
+        self.redo_button.icon_color = ft.Colors.PRIMARY if has_redo else ft.Colors.OUTLINE_VARIANT
+        self.undo_button.update()
         self.redo_button.update()
-        if len(self.state.undo_list) == 0:
-            self.undo_button.disabled = True
-            self.undo_button.icon_color = ft.Colors.OUTLINE_VARIANT
-            self.undo_button.update()
 
     # Called when undoing a stroke on the canvas
     async def undo_task(self, e=None):
@@ -1242,22 +1010,12 @@ class Map(Widget):
         if len(self.state.undo_list) == 0:
             return
                 
-        # Grab the task we're going to carry out and its name and capture
-        task = self.state.undo_list.pop()    
-        task_type = task.get('task_type', None)
-        data = task.get('data', None)
-
-        layer_canvas = self.canvas
-
-        # Simple. We just added a shape(s) to the canvas, so undoing we remove it
-        if task_type == 'path_stroke':
-            layer_canvas.shapes.pop()
-        else:
-            self.current_tool = data
-            await self.paint_tool_on_canvas()
-        layer_canvas.update()
-
-        self.add_redo_task(task)    # Add the task we just undid to the redo list
+        task = self.state.undo_list.pop()
+        if self.canvas.shapes:
+            self.canvas.shapes.pop()
+            self.canvas.update()
+            await self.save_canvas(self.canvas)
+        self.add_redo_task(task)
         
 
     # Called when redoing a stroke on the canvas after a previous undo
@@ -1267,165 +1025,13 @@ class Map(Widget):
         if len(self.state.redo_list) == 0:
             return
 
-        # Grab the task we're going to carry out and its name and capture
-        task = self.state.redo_list.pop()    
-        task_type = task.get('task_type', None)
-        data = task.get('data', None)
+        task = self.state.redo_list.pop()
+        self.canvas.shapes.append(task['data'])
+        self.canvas.update()
+        await self.save_canvas(self.canvas)
+        self.state.undo_list.append(task)
+        self._update_history_buttons()
 
-        layer_canvas = self.canvas
-
-        # Simple. We just added a shape(s) to the canvas, so redoing we add it back
-        if task_type == 'path_stroke':
-            layer_canvas.shapes.append(data)
-        else:
-            self.current_tool = data
-            await self.paint_tool_on_canvas()
-            
-        
-        layer_canvas.update()
-
-        self.add_undo_task(task)    # Add the task we just redid to the undo list
-
-
-    # Sets either an image or a color as the content of a layer
-    async def set_layer_content(self, e: ft.Event):
-
-        await self.story.close_menu()
-
-        content_type = e.control.data
-        #layer_idx = e.control.parent.parent.parent.data
-        #layer_id = self.data.get('canvas_data', {}).get('layers', [])[layer_idx].get('name', '')
-
-        # Set a color as the background
-        if content_type == "color":
-
-            async def _color_change(e):     # Set the color to the picked one
-                color_picker.color = e.data
-
-            async def _set_color_confirmed(e=None):
-
-                canvas: cv.Canvas = self.canvas
-                canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
-                #self.layer_bytes[layer_id] = None   # Clear the current capture to ignore it when saving
-                self.data['capture'] = None
-                canvas.shapes.append(cv.Color(color_picker.color))   # Re-add empty images so it can capture
-                canvas.update()
-                self.page.pop_dialog()
-                await self.save_canvas(canvas=canvas)
-
-
-            color_picker = ColorPicker(
-                self.data.get('background', ft.Colors.PRIMARY) if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
-                on_color_change=_color_change
-            )
-            dlg = ft.AlertDialog(
-                ft.Column([color_picker], tight=True, expand=False),
-                title=f"Set Map Background as a Color",
-                actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                    ft.TextButton("Set", on_click=_set_color_confirmed, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
-                ]
-            )
-            self.page.show_dialog(dlg)
-
-        # If its not a color, its an image
-        else:
-            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
-            if files:
-
-                file_path = files[0].path
-                try:
-                    
-                    with open(file_path, "rb") as image_file:
-                        bytes = image_file.read()
-                        #encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                        canvas: cv.Canvas = self.canvas
-                        canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
-                        self.data['capture'] = None   # Clear the current capture to ignore it when saving
-                        canvas.shapes.append(cv.Image(bytes, 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT))   # Re-add empty images so it can capture
-                        canvas.update()
-                        self.page.pop_dialog()
-                        await self.save_canvas(canvas=canvas)
-                        
-                except Exception:
-                    self.page.pop_dialog()
-
-    # Sets the blur of a layers
-    async def set_layer_blur(self, e: ft.Event):
-        await self.story.close_menu()
-
-        layer_name = e.control.parent.parent.parent.parent.data
-        layer_idx = e.control.parent.parent.parent.data
-        layer_name = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]['name']
-        layer_id = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]['id']
-        capture = None
-        capture = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]['capture']
-        if not capture:
-            self.page.show_dialog(SnackBar("Layer must have existing content to set blur"))
-            return
-
-        # Updates the visual canvas with new blur amount
-        async def blur_amount_changed(e: ft.Event):
-            blur_amount = e.control.value
-            active_preview_image.paint.blur_image = blur_amount
-            active_preview_image.update()
-
-        # Apply that level of blur to the layer
-        async def apply_blur(e=None):
-            
-            blur_strength = blur_strength_slider.value
-
-            # Apply the blur to the correct canvas
-            canvas: cv.Canvas = self.canvas
-            canvas.shapes.clear()
-            canvas.shapes.append(cv.Image(capture, 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, paint=ft.Paint(blur_image=blur_strength), data=layer_id))
-            canvas.update()
-            self.page.pop_dialog()
-
-            await self.save_canvas(canvas=canvas)  # Will save new capture to the data
-            
-        
-        blur_strength_slider = ft.Slider(1, "{value}", min=0, max=50, on_change=blur_amount_changed)
-        
-        preview_canvas = ft.Container(
-            cv.Canvas(
-                #shapes=[preview_image], 
-                shapes=[],
-                expand=True,
-                width=self.page.width / 2, height=self.page.height / 2
-            ),
-            image=ft.DecorationImage("canvas_bg.png", alignment=ft.Alignment.TOP_LEFT, repeat=ft.ImageRepeat.REPEAT),
-        )
-
-        active_preview_image = None
-
-        # Add the entire canvas to the preview, but mark the active layer we will change blur of
-        active_preview_image = cv.Image(
-            self.data.get('capture'),   # Grab our capture from memory
-            0, 0, 
-            self.page.width / 2, self.page.height / 2, 
-            paint=ft.Paint(blur_image=1)
-        )
-        preview_canvas.content.shapes.append(active_preview_image)
-            
-            
-        if active_preview_image is None:
-            self.page.show_dialog(SnackBar("Error finding layer capture for blur"))
-            return
-
-        dlg = ft.AlertDialog(
-            ft.Column([
-                preview_canvas, 
-                blur_strength_slider,
-                ft.Text("Adjust Blur Strength", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
-            title=f"Set Blur for {layer_name}",
-            actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                ft.TextButton("Apply", on_click=apply_blur, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
-            ]
-        )
-        self.page.show_dialog(dlg)    
 
     # Creates our location control in data, on the location_stack, and focuses it in the sidebar
     async def create_location(self, e: ft.Event[ft.Button]=None):
@@ -1701,7 +1307,6 @@ class Map(Widget):
             self.sidebar_draw_mode_toggle_button.leading = ft.Icon(ft.Icons.EDIT_OUTLINED if new_draw_mode else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY)
             self.sidebar_draw_mode_toggle_button.update()
         self.map_controller.mouse_cursor = ft.MouseCursor.PRECISE if new_draw_mode else None
-        self.map_controller.on_tap = lambda: self.story.open_menu(self.get_new_item_options()) if not new_draw_mode else None
         self.map_controller.update()
 
     # Creates our header controls for the sidebar, including our settings button
@@ -1797,7 +1402,22 @@ class Map(Widget):
             )
             self.bg_image.update()
 
-
+        self.undo_button = ft.IconButton(
+            ft.Icons.UNDO,
+            ft.Colors.OUTLINE_VARIANT,
+            mouse_cursor=ft.MouseCursor.CLICK,
+            on_click=self.undo_task,
+            disabled=True,
+            tooltip="Undo drawing",
+        )
+        self.redo_button = ft.IconButton(
+            ft.Icons.REDO_OUTLINED,
+            ft.Colors.OUTLINE_VARIANT,
+            mouse_cursor=ft.MouseCursor.CLICK,
+            on_click=self.redo_task,
+            disabled=True,
+            tooltip="Redo drawing",
+        )
 
 
         ctrls: list = super().create_sidebar_header_ctrls()
@@ -1809,7 +1429,9 @@ class Map(Widget):
             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
         )
 
-        ctrls.append(
+        ctrls.extend([
+            self.undo_button,
+            self.redo_button,
             ft.MenuBar(
                 [
                     ft.SubmenuButton(
@@ -1883,7 +1505,7 @@ class Map(Widget):
                     padding=ft.Padding.all(0)
                 )
             )
-        )
+        ])
         return ctrls
 
 
@@ -1900,8 +1522,22 @@ class Map(Widget):
             ) 
         )
 
+        capture = self.data.get('capture', '')
+        canvas_shapes = []
+        if capture:
+            try:
+                canvas_shapes.append(cv.Image(
+                    base64.b64decode(capture),
+                    0,
+                    0,
+                    self.CANVAS_WIDTH,
+                    self.CANVAS_HEIGHT,
+                ))
+            except (TypeError, ValueError):
+                pass
+
         self.canvas= cv.Canvas(
-            shapes=[],
+            shapes=canvas_shapes,
             width=self.map_width,
             height=self.map_height,
         )  
@@ -1922,23 +1558,22 @@ class Map(Widget):
             width=self.map_width, height=self.map_height,
         )
 
-
-        drawing_mode = self.data.get('draw_mode', False)
-
         self.map_controller = ft.GestureDetector(
             mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('draw_mode', False) else None, 
             expand=True,
 
             # Drawing event handlers
-            on_tap=self.handle_tap if drawing_mode else None,
-            on_pan_start=self.handle_pan_start if drawing_mode else None,
-            on_pan_update=self.handle_pan_update if drawing_mode else None,
-            on_pan_end=self.handle_pan_end if drawing_mode else None,
+            on_tap=self.handle_tap,
+            on_pan_start=self.handle_pan_start,
+            on_pan_update=self.handle_pan_update,
+            on_pan_end=self.handle_pan_end,
             
-
             # Non-drawing event handlers
             on_secondary_tap=lambda: self.story.open_menu(self.get_new_item_options()),
             on_hover=self.set_mouse_coords,
+
+            drag_interval=5,
+            hover_interval=5
         )
                 
         interactive_viewer = ft.InteractiveViewer(
