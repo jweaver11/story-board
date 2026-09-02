@@ -28,6 +28,7 @@ def default_character_template_data_dict() -> dict:
             'Eye Color': "",    
             'Height': "",   
             'Weight': "",   
+            'Voice': "",
             'Distinguishing Features': "",  
         },
         'Family':  {
