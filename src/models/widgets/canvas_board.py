@@ -15,6 +15,12 @@ import base64
 from io import BytesIO
 from PIL import Image
 from styles.text_fields import TextField
+import utils.drawing as drawing
+import os
+
+MINIMUM_SEGMENT_DISTANCE = 2
+MAX_SHAPES_BEFORE_CAPTURE = 50
+MAX_UNDO_LIST_TASKS = 30
 
 
 class CanvasBoard(Widget):
@@ -55,153 +61,204 @@ class CanvasBoard(Widget):
 
         self.state: State = State()     # State model from tracking our drawing state
         self.active_path: cv.Path
-        
 
+    # Overwrite our standard save_file call since we have multiple files
+    async def save_file(self):
+        if not self.content:
+            return
+
+        rows_column = self.content.controls[2]
+
+        for i, row_data in enumerate(self.data.get('rows', [])):
+            # If a change has been made to the row, save that change.
+            if row_data.get('dirty', False) == True:
+                canvas: cv.Canvas = rows_column.controls[i].content.controls[1].content.controls[1].content
+                try:
+                    await self.save_canvas(canvas)
+                except RuntimeError as e:
+                    print(f"Error saving row {i}: {e}")
+                    return
+                self.needs_file_write = True    # Mark our widget as dirty if we saved anything
+
+        await super().save_file()   
     
-
-
-    # Called when we click the canvas and don't initiate a drag
-    async def add_shape(self, e: ft.TapEvent):
-        ''' Adds a point to the canvas if we just clicked and didn't initiate a drag '''
-
-        # Set our paint settings in case we need to change them
-        paint_settings = app.settings.data.get('paint_settings', {}).copy()
-
-        # Check if we're in tool mode, and what tool we're using
-        if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") != "draw":
-
-            tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
-            match tool_name:
-
-                # Erase tool - make sure our paint settings don't break the drawing
-                case "erase":
-                    paint_settings['blend_mode'] = "clear"
-                    paint_settings['blur_image'] = 0
-                    paint_settings['style'] = "stroke"
-        
-
-        canvas: cv.Canvas = e.control.parent
-
-        # Create the point using our paint settings and point mode
-        point = cv.Points(
-            points=[(e.local_position.x, e.local_position.y)],
-            paint=ft.Paint(**paint_settings),
-        )
-        
-        # Add point to the canvas and our state data
-        canvas.shapes.append(point)
-            
-        # Need to save, as this function stands alone and no others will run after it
-        await self.save_canvas(e)
-        
-    # Called when we start drawing on the canvas
-    async def start_new_stroke(self, e: ft.DragStartEvent):
-        ''' Set our initial starting x and y coordinates for the element we're drawing '''
-
-        # Grab the canvas and paint settings
-        canvas: cv.Canvas = e.control.parent
-        paint_settings = app.settings.data.get('paint_settings', {}).copy()
-        #paint_settings.style = ft.PaintingStyle.STROKE
-
-        # Update state x and y coordinates
-        self.state.x, self.state.y = e.local_position.x, e.local_position.y
-
-        # Clear and set our current path and state to match it
-        self.active_path = cv.Path(elements=[], paint=ft.Paint(**paint_settings))
-
-        # Check if we're in tool mode, and what tool we're using
-        if app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") != "draw":
-
-            tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
-            match tool_name:
-
-                # Erase tool - make sure our paint settings don't break the drawing
-                case "erase":
-                    paint_settings['blend_mode'] = "clear"
-                    paint_settings['blur_image'] = 0
-                    paint_settings['style'] = "stroke"
-                    self.active_path.paint = ft.Paint(**paint_settings) # Make the active path match the paint
-
-        # Move to our starting position for this element
-        move_to_element = cv.Path.MoveTo(e.local_position.x, e.local_position.y)
-        self.active_path.elements.append(move_to_element)
-
-        # Add the path to the canvas so we can see it
-        canvas.shapes.append(self.active_path)
-        canvas.update()
-
-
-        
-    # Called when actively drawing on the canvas
-    async def update_stroke(self, e: ft.DragUpdateEvent):
-        ''' Creates our line to add to the canvas as we draw, and saves that paths data to self.state '''
-        path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
-        path_element = cv.Path.LineTo(e.local_position.x, e.local_position.y)
-        self.active_path.elements.append(path_element)
-        self.active_path.update()
-
-        self.state.x = e.local_position.x
-        self.state.y = e.local_position.y
 
     # Called when we release the mouse to stop drawing a line
-    async def save_canvas(self, e: ft.DragEndEvent):
+    async def save_canvas(self, canvas: cv.Canvas):
         """ Saves our paths to our canvas data for storage """
         
-        #print(e.control.parent.parent.parent.parent)
-        row_idx = e.control.parent.parent.parent.parent.data
-        cell_idx = 0
+        # Protect bad calls
+        if canvas.visible == False:  
+            return
+
+        row_idx = canvas.parent.parent.parent.parent.parent.data
+        row_data = self.data.get('rows', [])[row_idx]
+        
+                
+        # Clear blend strokes must be captured with the stored image so they can remove
+        # pixels from the existing layer instead of being alpha-composited on top of it.
+        shapes = list(canvas.shapes)
+        base_is_stored_image = shapes and isinstance(shapes[0], cv.Image) and shapes[0].data    # Marked as loaded
+        new_strokes = shapes[1:] if base_is_stored_image else shapes
+        has_clear_stroke = any(
+            str(getattr(getattr(shape, 'paint', None), 'blend_mode', '')).lower().endswith('clear')
+            for shape in new_strokes
+        )
+        capture_shapes = shapes if has_clear_stroke else new_strokes
+
+        # Capture the appropriate layer content, then restore the original shapes to the canvas
+        canvas.shapes[:] = capture_shapes
+        canvas.update()
+
+        await canvas.capture()
+        new_bytes = await canvas.get_capture()
+        await canvas.clear_capture()
+        canvas.shapes[:] = shapes  # Restore the original shapes to the canvas
+        canvas.update()
+
+        # Error capturing new strokes (should be impossible)
+        if not new_bytes:
+            self.page.show_dialog(SnackBar(f"Error capturing new strokes for sketch."))
+            return
+
+        # A full capture already contains the erase result and must replace the old layer.
+        if has_clear_stroke:
+            result = Image.open(BytesIO(new_bytes)).convert("RGBA")
+            if result.size != (row_data.get('width'), row_data.get('height')):
+                result = result.resize((row_data.get('width'), row_data.get('height')), Image.Resampling.LANCZOS)
+            output = BytesIO()
+            result.save(output, format="PNG")
+            combined_bytes = output.getvalue()
+            
+
+            row_data['dirty'] = False
+            self.data.get('canvas_data', {}).get('layers', [])[row_idx].update(row_data)
+            self.update_data(**{'rows': self.data.get('rows', [])})
+            return combined_bytes
+
+        # Load the existing layer capture
+        str_bytes = row_data.get('sketch_capture', None)
+        existing_bytes = base64.b64decode(str_bytes.split(",")[1]) if str_bytes else None
+        
+
+        # If we have an existing capture, composite the new strokes onto it; otherwise, create a new base image
+        if existing_bytes:
+            base_img = Image.open(BytesIO(existing_bytes)).convert("RGBA")
+        else:
+            base_img = Image.new("RGBA", (row_data.get('width'), row_data.get('height')), (0, 0, 0, 0))
+
+        # Composite the new strokes onto the existing base — base pixels are never re-rendered through Flet
+        delta_img = Image.open(BytesIO(new_bytes)).convert("RGBA")
+        if delta_img.size != base_img.size: # Handle size errors (should be impossible)
+            delta_img = delta_img.resize(base_img.size, Image.Resampling.LANCZOS)
+
+        # Merge the two images together and add them to our in memory cache for the next save
+        result = Image.alpha_composite(base_img, delta_img)
+        output = BytesIO()
+        result.save(output, format="PNG")
+        combined_bytes = output.getvalue()
+        str_img = f"data:image/png;base64,{base64.b64encode(combined_bytes).decode('utf-8')}"
+
+        row_data['sketch_capture'] = str_img
+        row_data['dirty'] = False
+        self.data.get('rows', [])[row_idx] = row_data
+        self.update_data(**{'rows': self.data.get('rows', [])})  # Update our data so it saves the new row
+
+        return combined_bytes   # Return our now updated bytes
+
+
+    async def add_point(self, e: ft.TapEvent):
+        paint_settings = app.settings.data.get('paint_settings', {}).copy()
+        
+        # Grab our canvas
+        canvas: cv.Canvas = e.control.parent
+        await drawing.draw_point(canvas, e.local_position)
+        self.current_path = cv.Points(points=[(e.local_position.x, e.local_position.y)], paint=ft.Paint(**paint_settings))
+        await self.end_stroke(e)   # Force a stroke end since it wont have pan end events
+
+    # Adds our initial stroke (cv.Shape) to the canvas with correct settings
+    def start_stroke(self, e: ft.DragStartEvent):
+
+        # Grab our canvas and update state
         canvas: cv.Canvas = e.control.parent
 
-        # Grab old capture and add it to the undo list
-        old_capture = self.data['rows'][row_idx][cell_idx].get('capture', "")
-        if old_capture:
-            self.data['rows'][row_idx][cell_idx]['undo_list'].append(old_capture)   
-            self.data['rows'][row_idx][cell_idx]['redo_list'].clear()
+        drawing.start_stroke(canvas=canvas, current_position=e.local_position, prev_position=ft.Offset(self.state.x, self.state.y))
+        # Update our state x and y coordinates
+        self.state.x, self.state.y = e.local_position.x, e.local_position.y
 
-        if len(self.data['rows'][row_idx][cell_idx]['undo_list']) > 30:   # Limit our undo/redo list to 30 items to save memory
-            self.data['rows'][row_idx][cell_idx]['undo_list'].pop(0)
+    # Updates the current stroke shape on the canvas depending on our settings
+    def update_stroke(self, e: ft.DragUpdateEvent):
+
+        # Grab canvas and catch errors
+        canvas: cv.Canvas =  e.control.parent
+
+        drawing.update_stroke(canvas=canvas, current_position=e.local_position, prev_position=ft.Offset(self.state.x, self.state.y))
+        self.state.x = e.local_position.x
+        self.state.y =  e.local_position.y
+
+
+    async def handle_tap(self, e: ft.TapEvent):
+        await self.add_point(e)
         
-        try:
-            await canvas.capture()
-    
-            capture = await canvas.get_capture()
-            encoded_capture = base64.b64encode(capture).decode('utf-8')      # Requires encoding to save json
+    async def handle_pan_start(self, e: ft.DragStartEvent):
+        self.start_stroke(e)
 
-            # If capture failed, return
-            if not encoded_capture:
-                await canvas.clear_capture()
-                return
+    async def handle_pan_update(self, e: ft.DragUpdateEvent):
+        self.update_stroke(e)
 
-            if encoded_capture:
+    async def handle_pan_end(self, e: ft.DragEndEvent):
+        await self.end_stroke(e)
 
-                # Save the capture
-                self.data['rows'][row_idx][cell_idx]['sketch_capture'] = encoded_capture
-                self.update_data(**{'rows': self.data['rows']}) 
+    # Ends the current stroke (cv.Shape) and marks that layer as dirty for saving, and saves if we hit max shape count
+    async def end_stroke(self, e: ft.DragEndEvent):
+        """ Saves our paths to our canvas data for storage """
+        canvas: cv.Canvas = e.control.parent
+        if not canvas.visible:  
+            return
 
-            # Must clear the capture or weird UI bugs
-            await canvas.clear_capture()
+        # Flag this row as dirty so we know to save it later
+        row_idx = e.control.parent.parent.parent.parent.parent.parent.data
+        self.data.get('rows', [])[row_idx]['dirty'] = True
+        self.needs_file_write = True
+        #self.update_data(**{'rows': self.data['rows']})  # Update our data so it saves the new row
+        
+        
+        # If we have too many shapes on the canvas, flatten them into the layer's PNG file
+        if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:
+            self.story.block_page()     # Block page to prevent other events whil we do this one
+            row_data = self.data['rows'][row_idx]
+            await self.save_canvas(canvas)  # Save the current canvas added shapes to its bytes stored in memory
+            canvas.shapes.clear()
+            #canvas.shapes.append(cv.Image(self.layer_bytes.get(layer_id), 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, data=layer_id))
+            canvas.update()
+            self.story.unblock_page()   # Unblock page
+            self.state.undo_list.clear()
+            #self.undo_button.disabled = True
+            #self.undo_button.icon_color = ft.Colors.OUTLINE_VARIANT
+            #self.undo_button.update()
+            self.state.redo_list.clear()
+            #self.redo_button.disabled = True
+            #self.redo_button.icon_color = ft.Colors.OUTLINE_VARIANT
+            #self.redo_button.update()
+        else:
+            pass
+            #self.add_undo_task({
+                #'task_type': 'path_stroke',
+                #'layer_id': layer_data.get('name', ''),
+                #'data': self.current_path if self.current_path else self.current_tool
+            #})
 
-            if len(canvas.shapes) > 20:   # Limit our canvas to 30 shapes to save memory, and clear the canvas if we exceed that
-                canvas.shapes.clear()
-                canvas.shapes.append(cv.Image(encoded_capture, 0, 0, 300, 300))   # Re-add most reccent capture as the only shape on the canvas after clearing
-                canvas.update()
+        # Add stroke to undo list
+        #if self.current_path is not None:
+        
 
-            # Always re-render end of erase strokes, or they will appear broken. TEMPORARY FIX
-            elif app.settings.data.get('canvas_settings', {}).get('current_control_mode', "") == "tool" and app.settings.data.get('canvas_settings', {}).get('current_tool_name', "") == "erase":   
-                canvas.shapes.clear()
-                canvas.shapes.append(cv.Image(encoded_capture, 0, 0, 300, 300))
-                canvas.update()
-
-            # Always re-render end of non-none blend mode strokes, or they will appear broken. TEMPORARY FIX
-            elif app.settings.data.get('paint_settings', {}).get('blend_mode', "") is not None:   
-                canvas.shapes.clear()
-                canvas.shapes.append(cv.Image(encoded_capture, 0, 0, 300, 300))
-                canvas.update()
-
-        except Exception as e:
-            print("failed to save canvas", e)
-
-
+        # Else add shape/text
+        #else:
+            #self.add_undo_task({
+                #'task_type': 'tool',
+                #'layer_id': layer_data.get('name', ''),
+                #'data': self.current_tool
+            #})
 
     
     def build(self):
@@ -505,10 +562,10 @@ class CanvasBoard(Widget):
                                 sketch_canvas := cv.Canvas(      # Canvas for drawing on
                                     content=ft.GestureDetector(
                                         mouse_cursor=ft.MouseCursor.PRECISE,
-                                        on_pan_start=self.start_new_stroke,
-                                        on_pan_update=self.update_stroke,
-                                        on_pan_end=self.save_canvas,
-                                        on_tap_up=self.add_shape,      # Handles so we can add points
+                                        on_pan_start=self.handle_pan_start,
+                                        on_pan_update=self.handle_pan_update,
+                                        on_pan_end=self.handle_pan_end,
+                                        on_tap_up=self.handle_tap,      # Handles so we can add points
                                         data=row_idx,
                                         drag_interval=10,
                                     ),
