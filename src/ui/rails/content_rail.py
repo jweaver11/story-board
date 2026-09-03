@@ -325,7 +325,7 @@ class ContentRail(Rail):
                         tooltip="Import all files within a folder to create new widgets.", 
                     ),  
                     ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Import File(s)", 
+                        leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Import Widget(s)", 
                         on_click=self.story.import_files_clicked, close_on_click=True,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         tooltip="Import file(s) to create new widgets.", 

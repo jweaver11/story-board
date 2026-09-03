@@ -543,6 +543,27 @@ class Widget(ft.Container):
         # Return the title
         return [self.sidebar_title]
 
+    async def handle_export(self) -> bytes:
+        ''' Returns a screenshot of the widget as bytes. Only widgets that have a canvas or image can return a screenshot '''
+        await self.story.close_menu()
+
+        # Build a copy of us to show in the dialog, since we may be hidden
+        copy_widget = self.story.rebuild_widget(self)
+        copy_widget.visible = True
+        copy_widget.width = self.w if self.w > 0 else ft.context.page.width
+        copy_widget.height = self.h if self.h > 0 else ft.context.page.height
+
+        dlg = ft.AlertDialog(
+            title=ft.Text("Export Screenshot", weight=ft.FontWeight.BOLD),
+            content=ft.InteractiveViewer(ft.Container(copy_widget, ignore_interactions=True), expand=True, constrained=False),
+            actions=[
+                ft.TextButton("Close", on_click=lambda: ft.context.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
+                ft.TextButton("Export", style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
+            ]
+        )
+
+        ft.context.page.show_dialog(dlg)
+
     # Called in constructor to build our sidebar controls
     def build_sidebar(self):
 
