@@ -318,6 +318,7 @@ class Widget(ft.Container):
                             label=widget.data.get('title', 'Untitled'),
                             value=id, mouse_cursor=ft.MouseCursor.CLICK,
                         ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"],
+                        tight=True
                     ),
                     on_change=select_canvas
                 ),

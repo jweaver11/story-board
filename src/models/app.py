@@ -107,8 +107,8 @@ class App:
                 if app.settings.story:
                     app.settings.story.block_page()
                     await app.settings.save_story()
-                    page.window.prevent_close = False
-                    await page.window.destroy()
+                page.window.prevent_close = False
+                await page.window.destroy()
 
         # Set size and route change events
         page.window.on_event = _on_window_event
