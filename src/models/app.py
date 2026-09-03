@@ -104,9 +104,11 @@ class App:
         # Intercept the close event BEFORE the window tears down so canvas.capture() still works.
         async def _on_window_event(e: ft.WindowEvent):
             if e.type == ft.WindowEventType.CLOSE:
-                await app.settings.save_story()
-                page.window.prevent_close = False
-                await page.window.destroy()
+                if app.settings.story:
+                    app.settings.story.block_page()
+                    await app.settings.save_story()
+                    page.window.prevent_close = False
+                    await page.window.destroy()
 
         # Set size and route change events
         page.window.on_event = _on_window_event
