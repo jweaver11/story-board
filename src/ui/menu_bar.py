@@ -47,15 +47,10 @@ class MenuBar(ft.Container):
                 self.label_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
                 #self.margin=ft.Margin.only(top=8, left=4, right=4)
                 
-
-
-        def _rename_clicked(e):
-            # Should pop open dialog to rename current story
-            pass
     
     
         # Called when file -> new is clicked
-        def _create_new_story_clicked(e):
+        def handle_create_story(e):
             ''' Opens a dialog to create a new story. Checks story is unique or not '''
     
     
@@ -136,10 +131,12 @@ class MenuBar(ft.Container):
     
             # Open our dialog in the overlay
             self.page.show_dialog(dlg)
+
+        
     
     
         # Called when file -> open is clicked
-        async def _open_clicked(e=None):
+        async def handle_open_story(e=None):
             ''' Opens a dialog to open an existing story '''
     
             #print("Open Story Clicked")
@@ -173,7 +170,7 @@ class MenuBar(ft.Container):
                 # Use something better than radio in future, but for now this works
                 for story in app.stories.values():
                     stories.append(
-                        ft.Radio(expand=False, value=story.data.get('title'), label=story.data.get('title'), label_style=style, mouse_cursor=ft.MouseCursor.CLICK)
+                        ft.Radio(expand=False, value=story.data.get('id'), label=story.data.get('title'), label_style=style, mouse_cursor=ft.MouseCursor.CLICK)
                     )
     
                 # Return our list of stories
@@ -220,17 +217,50 @@ class MenuBar(ft.Container):
     
             # Opens our dialog
             self.page.show_dialog(dlg)
+
+        def handle_rename_story(e: ft.Event=None):
+
+
+            async def rename_story(e=None):
+                self.story.rename(title_tf.value)
+                
+                
+
+            title_tf = ft.TextField(
+                value=self.story.data.get('title', ''),
+                autofocus=True, capitalization=ft.TextCapitalization.WORDS,
+                on_submit=rename_story,
+            )
+
+            dlg = ft.AlertDialog(
+                
+                # Title of our dialog
+                title=ft.Text(
+                    f"Rename {self.story.data.get('title', '')}", 
+                    color=ft.Colors.ON_SURFACE,
+                    weight=ft.FontWeight.BOLD,
+                ),
     
-        async def _settings_clicked(e=None):
-            ''' Goes to the settings page '''
-            if self.page.route != "/settings":
-                await self.page.push_route("/settings")
-            else:
-                # Get the active story title and find its route
-                if self.story is not None:
-                    await self.page.push_route(self.story.route)
-                else:
-                    await self.page.push_route("/")
+                # Main content is text box for user to input story title
+                content=title_tf,
+    
+                # Our two action buttons at the bottom of the dialog
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                    ft.TextButton("Rename", on_click=rename_story,style=ft.ButtonStyle(mouse_cursor="click")),
+                ],
+            )
+    
+            # Open our dialog in the overlay
+            self.page.show_dialog(dlg)
+
+        async def handle_import_story(e=None):
+            pass
+
+        async def handle_export_story(e=None):
+            pass
+    
+        
 
         def toggle_show_canvas_rail(e: ft.Event[ft.MenuItemButton]):
             ''' Toggles the visibility of the canvas rail on the left side of the page '''
@@ -247,6 +277,20 @@ class MenuBar(ft.Container):
                     self.story.canvas_rail.width = 0
                 self.story.canvas_rail.update()
             e.control.update()
+
+        async def handle_settings_clicked(e=None):
+            ''' Goes to the settings page '''
+            if self.page.route != "/settings":
+                await self.page.push_route("/settings")
+            else:
+                # Get the active story title and find its route
+                if self.story is not None:
+                    await self.page.push_route(self.story.route)
+                else:
+                    await self.page.push_route("/")
+
+        async def handle_delete_story(e=None):
+            pass
     
         # Create our menu bar with submenu items
         file_options = ft.MenuBar(
@@ -272,21 +316,21 @@ class MenuBar(ft.Container):
                             leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, ft.Colors.PRIMARY),
                             close_on_click=True,
                             style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=_create_new_story_clicked,
+                            on_click=handle_create_story,
                         ),
                         ft.MenuItemButton(
                             content=ft.Text("Open Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                             leading=ft.Icon(ft.CupertinoIcons.BOOK, ft.Colors.PRIMARY),
                             close_on_click=True,
                             style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=_open_clicked,
+                            on_click=handle_open_story,
                         ),
                         ft.MenuItemButton(
                             content=ft.Text("Rename Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                             leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY),
-                            close_on_click=True,
+                            close_on_click=True, disabled=self.story is None,
                             style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=_rename_clicked,
+                            on_click=handle_rename_story,
                         ),
                         ft.MenuItemButton(
                             content=ft.Text("Import Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
@@ -294,7 +338,7 @@ class MenuBar(ft.Container):
                             leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
                             close_on_click=True,
                             style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            #on_click=_open_clicked,
+                            #on_click=handle_open_story,
                         ),
                         ft.MenuItemButton(
                             content=ft.Text("Export Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
@@ -302,7 +346,7 @@ class MenuBar(ft.Container):
                             close_on_click=True,
                             tooltip="Export's your story to a folder on your device. Allows for easy import to Story Board on another device.",
                             style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            #on_click=_open_clicked,
+                            #on_click=handle_open_story,
                         ),
                         
                         ft.MenuItemButton(
@@ -321,7 +365,7 @@ class MenuBar(ft.Container):
                             leading=ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
                             close_on_click=True, 
                             style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=_settings_clicked,
+                            on_click=handle_settings_clicked,
                         ),
                         ft.MenuItemButton(
                             content=ft.Text("Delete Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
@@ -1495,7 +1539,7 @@ class MenuBar(ft.Container):
                         ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, 
                         tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nJoin the Discord (Settings -> Resources) to suggest your features and report bugs"
                     ),
-                    ft.IconButton(ft.Icons.SETTINGS_OUTLINED, "primary", on_click=_settings_clicked, mouse_cursor=ft.MouseCursor.CLICK),   # Settings button
+                    ft.IconButton(ft.Icons.SETTINGS_OUTLINED, "primary", on_click=handle_settings_clicked, mouse_cursor=ft.MouseCursor.CLICK),   # Settings button
                 ], tight=True, spacing=0)
             ]
         )

@@ -29,7 +29,7 @@ class Story(ft.View):
         
         # Parent constructor
         super().__init__(
-            route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
+            #route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
             padding=ft.Padding.all(0),      # No padding for the page
             spacing=0,                                                      # No spacing between menubar and rest of page
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
@@ -75,6 +75,9 @@ class Story(ft.View):
                     }
                 },        
             }
+
+        # Set our route after we have generated an id if we are a new Story
+        self.route = return_safe_name(f"/{self.data.get('id', '')}")
         
 
         # State for storying mouse coords
@@ -252,6 +255,16 @@ class Story(ft.View):
         # Handle errors
         except Exception as e:
             print(f"Error changing folder data: {e}")
+
+    def rename(self, new_title: str):
+        ''' Renames the story '''
+        self.update_data(**{'title': new_title})
+        self.page.title = f"Story Board (alpha) - {new_title}"
+        self.route=return_safe_name(f"/{new_title}_story")
+        self.page.pop_dialog()
+        self.page.update()
+
+        # Settings route is wrong.
 
     def rename_folder(self, old_path: str, new_path: str):
         ''' Renames the folder in our story structure '''
