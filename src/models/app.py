@@ -8,7 +8,7 @@ import os
 import json
 import asyncio
 from utils.route_change import route_change
-from constants import SETTINGS_FILE_PATH, STORIES_DIRECTOR_PATH
+from constants import SETTINGS_FILE_PATH, STORIES_DIRECTORY_PATH
 
 
 class App:
@@ -139,12 +139,12 @@ class App:
         from models.app import app
         
         # Create the stories directory if it doesnt exist already
-        os.makedirs(STORIES_DIRECTOR_PATH, exist_ok=True)
+        os.makedirs(STORIES_DIRECTORY_PATH, exist_ok=True)
             
         # Iterate through all items in the stories directory
-        for story_folder in os.listdir(STORIES_DIRECTOR_PATH):
+        for story_folder in os.listdir(STORIES_DIRECTORY_PATH):
 
-            story_directory = os.path.join(STORIES_DIRECTOR_PATH, story_folder)
+            story_directory = os.path.join(STORIES_DIRECTORY_PATH, story_folder)
                 
             # Look for JSON files within this story folder (ignore subdirectories)
             try:

@@ -12,6 +12,11 @@ from flet_color_pickers import ColorPicker
 import math
 import flet.canvas as cv
 from utils.safe_string_checker import return_safe_name
+import os
+import json
+import asyncio
+import shutil
+from constants import STORIES_DIRECTORY_PATH
 
 
 
@@ -255,7 +260,116 @@ class MenuBar(ft.Container):
             self.page.show_dialog(dlg)
 
         async def handle_import_story(e=None):
-            pass
+            """Import a complete story export into the app's story directory."""
+            destination_path = None
+
+            try:
+                folder_path = await ft.FilePicker().get_directory_path()
+                if not folder_path:
+                    return
+
+                folder_path = os.path.normpath(folder_path)
+                content_source_path = os.path.join(folder_path, "content")
+                story_files = [
+                    item for item in os.listdir(folder_path)
+                    if item.lower().endswith(".json")
+                    and os.path.isfile(os.path.join(folder_path, item))
+                ]
+
+                if not os.path.isdir(content_source_path) or len(story_files) != 1:
+                    raise ValueError(
+                        "The selected folder must contain a content folder and one story JSON file."
+                    )
+
+                story_file_name = story_files[0]
+                story_file_path = os.path.join(folder_path, story_file_name)
+                with open(story_file_path, "r", encoding="utf-8") as story_file:
+                    story_data = json.load(story_file)
+
+                story_id = story_data.get("id")
+                if not story_id or story_file_name != f"{story_id}.json":
+                    raise ValueError("The story JSON file name must match the story id.")
+                if os.path.basename(story_id) != story_id or os.path.normpath(story_id) != story_id:
+                    raise ValueError("The story id must be a simple folder name.")
+
+                os.makedirs(STORIES_DIRECTORY_PATH, exist_ok=True)
+                candidate_destination_path = os.path.join(STORIES_DIRECTORY_PATH, story_id)
+                if os.path.exists(candidate_destination_path):
+                    raise FileExistsError(
+                        f"A story with id '{story_id}' already exists."
+                    )
+                destination_path = candidate_destination_path
+
+                old_content_path = os.path.normpath(
+                    story_data.get("content_directory_path", content_source_path)
+                )
+                new_content_path = os.path.join(destination_path, "content")
+
+                story_data.update({
+                    "directory_path": destination_path,
+                    "content_directory_path": new_content_path,
+                    "canvas_directory_path": os.path.join(destination_path, "canvas"),
+                    "file_path": os.path.join(destination_path, f"{story_id}.json"),
+                })
+
+                rebased_folders = {}
+                for old_path, folder_data in story_data.get("folders", {}).items():
+                    old_path = os.path.normpath(old_path)
+                    try:
+                        relative_path = os.path.relpath(old_path, old_content_path)
+                    except ValueError:
+                        continue
+                    if relative_path == os.pardir or relative_path.startswith(os.pardir + os.sep):
+                        continue
+                    new_path = os.path.normpath(os.path.join(new_content_path, relative_path))
+                    rebased_folders[new_path] = folder_data.copy()
+                story_data["folders"] = rebased_folders
+
+                shutil.copytree(folder_path, destination_path)
+
+                imported_story = Story(story_data.get("title", story_id), story_data)
+
+                for dirpath, _, _ in os.walk(new_content_path):
+                    if os.path.normpath(dirpath) == os.path.normpath(new_content_path):
+                        continue
+                    await imported_story.create_folder(
+                        name=os.path.basename(dirpath),
+                        update=False,
+                        full_path=dirpath,
+                    )
+
+                for dirpath, _, filenames in os.walk(new_content_path):
+                    for filename in filenames:
+                        if not filename.lower().endswith(".json"):
+                            continue
+
+                        widget_path = os.path.join(dirpath, filename)
+                        try:
+                            with open(widget_path, "r", encoding="utf-8") as widget_file:
+                                widget_data = json.load(widget_file)
+                        except (json.JSONDecodeError, OSError):
+                            continue
+
+                        if "tag" not in widget_data or "id" not in widget_data:
+                            continue
+
+                        widget_data["directory_path"] = dirpath
+                        with open(widget_path, "w", encoding="utf-8") as widget_file:
+                            json.dump(widget_data, widget_file, indent=4)
+
+                await imported_story.save_file()
+                app.stories[story_id] = imported_story
+                app.settings.story = imported_story
+                await self.page.push_route(imported_story.route)
+                self.page.update()
+
+            except OSError as error:
+                self.page.show_dialog(SnackBar(f"Error importing story: {error}"))
+            except (TypeError, ValueError, json.JSONDecodeError) as error:
+                if destination_path and os.path.isdir(destination_path):
+                    shutil.rmtree(destination_path, ignore_errors=True)
+                self.page.show_dialog(SnackBar(f"Error importing story: {error}"))
+            
 
         async def handle_export_story(e=None):
             pass
@@ -338,7 +452,7 @@ class MenuBar(ft.Container):
                             leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
                             close_on_click=True,
                             style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            #on_click=handle_open_story,
+                            on_click=handle_import_story,
                         ),
                         ft.MenuItemButton(
                             content=ft.Text("Export Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),

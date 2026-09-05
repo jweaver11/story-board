@@ -46,10 +46,10 @@ class Story(ft.View):
                 'id': id,
 
                 # Directory paths and file paths
-                'directory_path': os.path.join(constants.STORIES_DIRECTOR_PATH, id),
-                'content_directory_path': os.path.join(constants.STORIES_DIRECTOR_PATH, id, "content"),   # Path to store widget json files
-                'canvas_directory_path': os.path.join(constants.STORIES_DIRECTOR_PATH, id, "canvas"),     # Path to store canvas png captures
-                'file_path': os.path.join(constants.STORIES_DIRECTOR_PATH, id, f"{id}.json"),   # Path to story's json file
+                'directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id),
+                'content_directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, "content"),   # Path to store widget json files
+                'canvas_directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, "canvas"),     # Path to store canvas png captures
+                'file_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, f"{id}.json"),   # Path to story's json file
                 
 
                 'selected_rail': "content",
