@@ -50,7 +50,7 @@ class Widget(ft.Container):
                 'directory_path': directory_path,          # Directory path to the file this widget's data is stored in
                 'tag': str(),                              # Tag to identify what type of widget this is
                 'index': 999,                  # Index of this widget in the workspace (start at end)
-                'rail_index': 999,                 # Index of this widget in the rail for sorting (start at end)
+                #'rail_index': 999,                 # Index of this widget in the rail for sorting (start at end)
                 'visible': True,                  # Whether this widget is visible in the workspace or not
                 'color': "primary",                   # Color of this widget's tab and icon in workspace and on rail
                 'image_base64': str(),                 # Base64 string of the image for this widget, if it has one

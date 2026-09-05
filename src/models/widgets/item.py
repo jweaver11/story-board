@@ -160,7 +160,7 @@ class Item(Widget):
             ], spacing=0),
             self.description_tf
             
-        ], expand=True, spacing=0, alignment=ft.MainAxisAlignment.CENTER)
+        ], expand=True, spacing=0, alignment=ft.MainAxisAlignment.CENTER,)
         
         self.description_tf.label = ""
         self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST

@@ -147,7 +147,7 @@ class Story(ft.View):
         return self.widgets.get(id, None)
 
     # Called when a new folder is created.
-    async def create_folder(self, name: str, directory_path: str=None):
+    async def create_folder(self, name: str, directory_path: str=None, update: bool=True, full_path: str=None):
         ''' Creates a new folderinside of our story structure for content organization '''
         from models.app import app
 
@@ -156,20 +156,29 @@ class Story(ft.View):
 
         try:
 
-            # Clean up name
-            name = name.capitalize()    # Capitalize first letter
-            name = name.rstrip()        # Remove trailing spaces
-            name = return_safe_name(name)
-
-            # Create the full folder path
-            folder_path = os.path.join(directory_path, name)
+            if full_path is None:
+                # Clean up names for folders created through the UI.
+                name = name.capitalize()
+                name = name.rstrip()
+                name = return_safe_name(name)
+                folder_path = os.path.join(directory_path, name)
+            else:
+                folder_path = os.path.normpath(full_path)
+                name = os.path.basename(folder_path)
 
             # Make the folder in our storage if it doesn't already exist
             os.makedirs(folder_path, exist_ok=True) 
 
-            # Update data and refresh
-            self.update_data(**{'folders': {folder_path: {'name': name, 'is_expanded': True, 'color': app.settings.data.get('story', {}).get('default_folder_color', "primary")}}})
-            self.active_rail.reload_rail()
+            # Preserve existing folder settings when the folder is encountered again.
+            folders = self.data.setdefault('folders', {})
+            folders.setdefault(folder_path, {
+                'name': name,
+                'is_expanded': True,
+                'color': app.settings.data.get('story', {}).get('default_folder_color', "primary"),
+            })
+            self.update_data(**{'folders': folders})
+            if update:
+                self.active_rail.reload_rail()
 
         # Handle errors
         except Exception as e:
@@ -222,10 +231,20 @@ class Story(ft.View):
         #print("Changing folder data:", full_path, key, value)
 
         try:
-            # Check if the folder exists in our data
-            if full_path in self.data.get('folders', {}):
-                self.data['folders'][full_path][key] = value
+            folders = self.data.get('folders', {})
+            requested_path = os.path.normcase(os.path.normpath(full_path))
+            stored_path = next(
+                (
+                    path for path in folders
+                    if os.path.normcase(os.path.normpath(path)) == requested_path
+                ),
+                None,
+            )
+
+            if stored_path is not None:
+                folders[stored_path][key] = value
                 self.update_data(**{'folders': self.data['folders']})
+                await self.save_file()
                 #print("Changed folder data:", full_path, key, value)
             else:
                 print(f"Folder {full_path} not found in story data.")
@@ -449,12 +468,60 @@ class Story(ft.View):
                         print(f"Error loading content from {filename}: {e}")
 
     async def import_folder_clicked(self, e: ft.Event):
-        dir_path = e.control.data or self.data.get('content_directory_path',  '')
+        self.block_page()
+        directory_path = e.control.data or self.data.get('content_directory_path', '')
 
-        folder_path = await ft.FilePicker().get_directory_path()
-        if not folder_path:
-            self.page.show_dialog(SnackBar("No folder selected."))
-            return  
+        try:
+            folder_path = await ft.FilePicker().get_directory_path()
+            if not folder_path:
+                return
+
+            folder_name = os.path.basename(os.path.normpath(folder_path))
+            uploaded_path = os.path.join(directory_path, folder_name)
+
+            # Copy the selected folder into the story's target directory.
+            os.makedirs(directory_path, exist_ok=True)
+            shutil.copytree(folder_path, uploaded_path, dirs_exist_ok=True)
+
+            # Store every copied folder so its metadata can be edited from the rail.
+            for dirpath, _, _ in os.walk(uploaded_path):
+                await self.create_folder(
+                    name=os.path.basename(os.path.normpath(dirpath)),
+                    directory_path=os.path.dirname(dirpath),
+                    update=False,
+                    full_path=dirpath,
+                )
+
+            await self.save_file()
+
+            # Point imported widgets at their copied locations before loading them.
+            for dirpath, _, filenames in os.walk(uploaded_path):
+                for filename in filenames:
+                    if not filename.lower().endswith('.json'):
+                        continue
+
+                    file_path = os.path.join(dirpath, filename)
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            widget_data = json.load(f)
+
+                        if 'tag' not in widget_data or 'id' not in widget_data:
+                            continue
+
+                        widget_data['directory_path'] = dirpath
+                        widget_data['visible'] = False      # Hide all the widgets so they don't flood the workspace
+                        with open(file_path, 'w', encoding='utf-8') as f:
+                            json.dump(widget_data, f, indent=4)
+                    except (json.JSONDecodeError, OSError, TypeError) as error:
+                        print(f"Error importing content from {file_path}: {error}")
+
+            self.load_widgets()
+            self.active_rail.reload_rail()
+        except OSError as error:
+            self.page.show_dialog(SnackBar(f"Error importing folder: {error}"))
+        finally:
+            self.unblock_page()
+
         
 
 
@@ -486,7 +553,7 @@ class Story(ft.View):
         self.page.show_dialog(dlg)
         
     # Called to create a new widget based on tag (document, note, character, etc)
-    async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict=None, chart_type: str="bar"):
+    async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict=None, chart_type: str="bar", update: bool=True):
         ''' Creates our new widget based on the tag passed in and directory_path passed in'''
         from models.widgets.manuscript import Manuscript
         from models.widgets.note import Note
@@ -504,7 +571,6 @@ class Story(ft.View):
         from models.app import app
 
         
-
         if directory_path is None:
             directory_path = self.data.get('content_directory_path',  '')
 
@@ -556,11 +622,12 @@ class Story(ft.View):
         # Save our widget to our widgets list
         self.widgets[widget.data['id']] = widget        
 
-        # Finish tasks creating widget to make sure the file has enough time to save
-        await self.workspace.add_widget_to_workspace(widget)  # Add the new widget to the workspace and select it
+        if update:
+            # Finish tasks creating widget to make sure the file has enough time to save
+            await self.workspace.add_widget_to_workspace(widget)  # Add the new widget to the workspace and select it
 
-        # Apply the UI changes
-        if self.data.get('selected_rail', "content") != "canvas":
+            # Apply the UI changes
+            #if self.data.get('selected_rail', "content") != "canvas":
             self.active_rail.reload_rail()
     
        
