@@ -255,12 +255,21 @@ class Workspace(ft.Container):
         tab_title.value = title
 
         self.tab_bar.update()
+
+    # Handles a click event on a tab in the workspace
+    async def tab_click(self, e: ft.Event):
+        """Save the active widget before Flet switches to another tab."""
+        selected_index = self.tabs.selected_index
+        if 0 <= selected_index < len(self.tab_view.controls):
+            selected_widget = self.tab_view.controls[selected_index]
+            if hasattr(selected_widget, 'save_file'):
+                await selected_widget.save_file()
     
     # Sets our new selected index when we change tabs and updates the tab bar indicator color to match the new selected tab
     async def tab_change(self, e: ft.Event):
 
         # Save new selected index
-        new_selected_index = e.data
+        new_selected_index = int(e.data)
         self.story.update_data(**{'workspace_selected_index': new_selected_index})
 
         # Set the new selected index and indicator color, then update
@@ -299,6 +308,7 @@ class Workspace(ft.Container):
             tabs=[self.create_widget_tab_ctrl(widget) for widget in sorted_visible_widgets],    # Gives a tab for each widget
             scrollable=True, indicator_color=indicator_color, divider_height=2,
             enable_feedback=False, 
+            on_click=self.tab_click,
             label_padding=ft.Padding.only(left=6), #padding=ft.Padding.all(20)
         )
 
