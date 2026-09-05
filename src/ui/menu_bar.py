@@ -1489,11 +1489,11 @@ class MenuBar(ft.Container):
                 ft.Row([        # Row that has alpha text, info button, and settings button
                     ft.Text(
                         "Alpha", color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD, 
-                        tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nCheck out Settings -> Resources for a list of planned features and known issues. \nJoin the Discord to suggest your features and report bugs."
+                        tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nJoin the Discord (Settings -> Resources) to suggest your features and report bugs"
                     ),  # Feedback button
                     ft.Icon(
                         ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, 
-                        tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nCheck out Settings -> Resources for a list of planned features and known issues. \nJoin the Discord to suggest your features and report bugs."
+                        tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nJoin the Discord (Settings -> Resources) to suggest your features and report bugs"
                     ),
                     ft.IconButton(ft.Icons.SETTINGS_OUTLINED, "primary", on_click=_settings_clicked, mouse_cursor=ft.MouseCursor.CLICK),   # Settings button
                 ], tight=True, spacing=0)

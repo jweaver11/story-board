@@ -1758,7 +1758,7 @@ class Settings(ft.View):
 
         async def _discord_clicked(e=None):
             import webbrowser
-            webbrowser.open("https://discord.gg/mGn6zXrJJV")
+            webbrowser.open("https://discord.gg/FMXPwxB5G3")
 
         
         content=ft.Column([
