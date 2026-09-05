@@ -526,21 +526,48 @@ class Story(ft.View):
 
 
     async def import_files_clicked(self, e: ft.Event):
-        from models.widget import Widget
-        #from utils.import_util import import_widgets
+        self.block_page()
+        directory_path = e.control.data or self.data.get('content_directory_path', '')
 
-        # TODO
-        # Otherwise, figure out what type of widget it should be and add it to story
+        try:
+            files = await ft.FilePicker().pick_files(
+                allow_multiple=True,
+                allowed_extensions=["json"],
+            )
+            if not files:
+                return
 
-        dir_path = e.control.data or self.data.get('content_directory_path',  '')
+            os.makedirs(directory_path, exist_ok=True)
 
-        files = await ft.FilePicker().pick_files(allow_multiple=True, allowed_extensions=["jpg", "jpeg", "png", "webp", "json", "txt", "pdf", "docx", "md"])
-        #if files:
-            #widgets: list[Widget] = import_widgets([file.path for file in files], dir_path)
+            for selected_file in files:
+                destination_path = os.path.join(
+                    directory_path,
+                    os.path.basename(selected_file.path),
+                )
 
-            # Check if widget exists already in story
-            
-            
+                try:
+                    shutil.copy2(selected_file.path, destination_path)
+
+                    with open(destination_path, 'r', encoding='utf-8') as f:
+                        widget_data = json.load(f)
+
+                    if 'tag' not in widget_data or 'id' not in widget_data:
+                        os.remove(destination_path)
+                        continue
+
+                    widget_data['directory_path'] = directory_path
+                    widget_data['visible'] = False
+                    with open(destination_path, 'w', encoding='utf-8') as f:
+                        json.dump(widget_data, f, indent=4)
+                except (json.JSONDecodeError, OSError, TypeError) as error:
+                    print(f"Error importing widget file {selected_file.path}: {error}")
+
+            self.load_widgets()
+            self.active_rail.reload_rail()
+        except OSError as error:
+            self.page.show_dialog(SnackBar(f"Error importing files: {error}"))
+        finally:
+            self.unblock_page()
 
     # Opens the dialog to export
     async def export_clicked(self, e=ft.Event):
