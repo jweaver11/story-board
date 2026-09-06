@@ -16,7 +16,9 @@ import os
 import json
 import asyncio
 import shutil
+import stat
 from constants import STORIES_DIRECTORY_PATH
+from styles.snack_bar import SnackBar
 
 
 
@@ -423,7 +425,44 @@ class MenuBar(ft.Container):
                     await self.page.push_route("/")
 
         async def handle_delete_story(e=None):
-            pass
+
+            async def confirm_delete(e=None):
+                try:
+
+                    story_id = self.story.data.get('id')
+                    deleted_id = app.stories.pop(story_id)
+                    app.settings.story = None                    
+
+                    story_dir_path = self.story.data.get('directory_path')
+                    full_norm = os.path.normcase(os.path.normpath(story_dir_path))
+                    
+                    # Delete the folder from storage
+                    shutil.rmtree(full_norm)
+
+                    ft.context.page.pop_dialog()
+                    await ft.context.page.push_route("/")
+                    ft.context.page.show_dialog(SnackBar(f"{self.story.data.get('title', 'Story')} deleted successfully."))
+
+                    ft.context.page.title = "Story Board (alpha)"
+                    ft.context.page.update()
+
+                except Exception as e:
+                    ft.context.page.show_dialog(SnackBar(f"Error deleting story: {e}"))
+                
+
+
+            dlg = ft.AlertDialog(
+                title=ft.Text(f"Delete {self.story.data.get('title', 'Story')}?", weight=ft.FontWeight.BOLD),
+                content=ft.Text("Are you sure you want to delete this story? This action cannot be undone!"),
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                    ft.TextButton("DELETE FOREVER", on_click=confirm_delete,style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.RED)),
+                ],
+                actions_alignment=ft.MainAxisAlignment.END,
+            )
+            ft.context.page.show_dialog(dlg)
+
+            
     
         # Create our menu bar with submenu items
         file_options = ft.MenuBar(
@@ -502,10 +541,10 @@ class MenuBar(ft.Container):
                         ),
                         ft.MenuItemButton(
                             content=ft.Text("Delete Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.Icons.DELETE_FOREVER_ROUNDED, ft.Colors.ERROR),
-                            close_on_click=True,
+                            leading=ft.Icon(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR),
+                            close_on_click=True, disabled=self.story is None,
                             style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            #on_click=_delete_clicked,
+                            on_click=handle_delete_story,
                         ),
                     ],
                 ),

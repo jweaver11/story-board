@@ -14,10 +14,20 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
     # Grabs our page from the event for easier reference
     page: ft.Page = e.page
 
+    current_story = next(
+        (view for view in page.views if isinstance(view, Story)),
+        None,
+    )
+    if current_story is not None:
+        story_id = current_story.data.get("id")
+        if app.stories.get(story_id) is current_story:
+            print(f"Saving widgets for story with id: {story_id}")
+            await current_story.save_widgets_to_file()
+
     # If we have a story loaded with unsaved changes, save them first
-    if len(page.views) > 0:
-        if isinstance(page.views[0], Story):
-            await page.views[0].save_widgets_to_file()
+    #if len(page.views) > 0:
+        #if isinstance(page.views[0], Story):
+            #await page.views[0].save_widgets_to_file()
 
     # Clear our views and any existing overlay controls
     page.views.clear()
