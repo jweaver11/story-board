@@ -372,7 +372,26 @@ class MenuBar(ft.Container):
             
 
         async def handle_export_story(e=None):
-            pass
+            """Export the story directory contents into a selected folder."""
+            folder_path = await ft.FilePicker().get_directory_path()
+            story_dir_path = self.story.data.get("directory_path")
+
+            if not folder_path or not story_dir_path:
+                return
+
+            source_path = os.path.abspath(os.path.normpath(story_dir_path))
+            destination_path = os.path.abspath(os.path.normpath(folder_path))
+            if source_path == destination_path:
+                return
+
+            try:
+                shutil.copytree(
+                    source_path,
+                    destination_path,
+                    dirs_exist_ok=True,
+                )
+            except OSError as error:
+                self.page.show_dialog(SnackBar(f"Error exporting story: {error}"))
     
         
 
@@ -457,10 +476,10 @@ class MenuBar(ft.Container):
                         ft.MenuItemButton(
                             content=ft.Text("Export Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                             leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
-                            close_on_click=True,
+                            close_on_click=True, disabled=self.story is None,
                             tooltip="Export's your story to a folder on your device. Allows for easy import to Story Board on another device.",
                             style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            #on_click=handle_open_story,
+                            on_click=handle_export_story,
                         ),
                         
                         ft.MenuItemButton(
