@@ -4,6 +4,7 @@ from models.widget import Widget
 from flet_quill import FletQuill, FletQuillEditor, FletQuillToolbar
 from models.app import app
 import math
+import os
 from utils.safe_string_checker import return_safe_name
 import asyncio
 import uuid
@@ -186,7 +187,143 @@ class Manuscript(Widget):
         await super().save_file()
 
     async def export(self, file_type: str="docx"):
-        pass
+        manuscript_data = self.data.get('manuscript_data', [])
+        paragraphs = self._parse_manuscript_ops(manuscript_data)
+
+        if file_type == "docx":
+            return self._export_docx(paragraphs)
+        elif file_type == "pdf":
+            return self._export_pdf(paragraphs)
+        elif file_type == "txt":
+            return self._export_txt(paragraphs)
+
+        return None
+
+    # Splits our quill delta ops (list of {'insert': str, 'attributes': dict}) into paragraphs of styled runs
+    def _parse_manuscript_ops(self, ops: list) -> list:
+        paragraphs = [[]]
+        for op in ops:
+            text = op.get('insert', "")
+            attributes = op.get('attributes', {}) or {}
+            if not isinstance(text, str):
+                continue
+            segments = text.split('\n')
+            for idx, segment in enumerate(segments):
+                if segment:
+                    paragraphs[-1].append({'text': segment, **attributes})
+                if idx < len(segments) - 1:
+                    paragraphs.append([])
+        if paragraphs and not paragraphs[-1]:
+            paragraphs.pop()
+        return paragraphs
+
+    # Converts a '#RRGGBB'/'#AARRGGBB' hex color string into an (r, g, b) tuple
+    def _hex_to_rgb(self, color: str):
+        if not isinstance(color, str) or not color.startswith("#"):
+            return None
+        hex_value = color.lstrip("#")
+        if len(hex_value) == 8:
+            hex_value = hex_value[-6:]
+        if len(hex_value) != 6:
+            return None
+        try:
+            return tuple(int(hex_value[i:i + 2], 16) for i in (0, 2, 4))
+        except ValueError:
+            return None
+
+    # Builds a .docx file from our paragraphs, returning the raw file bytes
+    def _export_docx(self, paragraphs: list) -> bytes:
+        from docx import Document
+        from docx.shared import Pt, RGBColor
+        from io import BytesIO
+
+        document = Document()
+        for runs in paragraphs:
+            paragraph = document.add_paragraph()
+            for run_data in runs:
+                run = paragraph.add_run(run_data.get('text', ""))
+                run.bold = bool(run_data.get('bold', False))
+                run.italic = bool(run_data.get('italic', False))
+                run.underline = bool(run_data.get('underline', False))
+
+                font_size = run_data.get('size')
+                if font_size:
+                    try:
+                        run.font.size = Pt(float(font_size))
+                    except (TypeError, ValueError):
+                        pass
+
+                font_family = run_data.get('font')
+                if font_family:
+                    run.font.name = font_family
+
+                rgb = self._hex_to_rgb(run_data.get('color'))
+                if rgb:
+                    run.font.color.rgb = RGBColor(*rgb)
+
+        buffer = BytesIO()
+        document.save(buffer)
+        return buffer.getvalue()
+
+    # Joins our paragraphs into plain text, ready to be written to a .txt file
+    def _export_txt(self, paragraphs: list) -> str:
+        return "\n".join("".join(run.get('text', "") for run in runs) for runs in paragraphs)
+
+    # Rasterizes our paragraphs onto paginated images and packs them into a multi-page .pdf file
+    def _export_pdf(self, paragraphs: list) -> bytes:
+        from PIL import Image, ImageDraw, ImageFont
+        from io import BytesIO
+
+        font_size = 14
+        line_height = int(font_size * 1.5)
+        usable_width = MANUSCRIPT_WIDTH - MANUSCRIPT_PADDING * 2
+        bottom_limit = MANUSCRIPT_HEIGHT - MANUSCRIPT_PADDING
+
+        font_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "fonts", "OpenSans-VariableFont_wdth,wght.ttf")
+        try:
+            font = ImageFont.truetype(os.path.normpath(font_path), font_size)
+        except OSError:
+            font = ImageFont.load_default()
+
+        def new_page():
+            page = Image.new("RGB", (MANUSCRIPT_WIDTH, MANUSCRIPT_HEIGHT), "white")
+            return page, ImageDraw.Draw(page)
+
+        pages = []
+        page, draw = new_page()
+        cursor_y = MANUSCRIPT_PADDING
+
+        for runs in paragraphs:
+            paragraph_text = "".join(run.get('text', "") for run in runs)
+            words = paragraph_text.split(" ") if paragraph_text else [""]
+            line = ""
+            for word in words:
+                candidate = f"{line} {word}".strip()
+                if line and draw.textlength(candidate, font=font) > usable_width:
+                    if cursor_y + line_height > bottom_limit:
+                        pages.append(page)
+                        page, draw = new_page()
+                        cursor_y = MANUSCRIPT_PADDING
+                    draw.text((MANUSCRIPT_PADDING, cursor_y), line, font=font, fill="black")
+                    cursor_y += line_height
+                    line = word
+                else:
+                    line = candidate
+
+            if cursor_y + line_height > bottom_limit:
+                pages.append(page)
+                page, draw = new_page()
+                cursor_y = MANUSCRIPT_PADDING
+            draw.text((MANUSCRIPT_PADDING, cursor_y), line, font=font, fill="black")
+            cursor_y += line_height
+
+        pages.append(page)
+
+        buffer = BytesIO()
+        pages[0].save(buffer, format="PDF", save_all=True, append_images=pages[1:])
+        return buffer.getvalue()
+        
+        
 
     def build(self):
 

@@ -627,7 +627,7 @@ class Story(ft.View):
                         json.dump(file_data, destination_file, indent=4)
 
                 elif export_file_type == ".png":
-                    
+
                     if widget_id:
                         widget = self.get_widget_by_id(widget_id)
                         if not widget:
@@ -646,12 +646,18 @@ class Story(ft.View):
                             pass
 
 
-                elif export_file_type == ".docx":
-                    pass
-                elif export_file_type == ".pdf":
-                    pass
-                elif export_file_type == ".txt":
-                    pass
+                elif export_file_type == ".docx" or export_file_type == ".pdf" or export_file_type == ".txt":
+                    widget = self.get_widget_by_id(widget_id)
+                    if not widget:
+                        continue
+                    if hasattr(widget, "export"):
+                        data = await widget.export(export_file_type.lstrip("."))
+                        if data is None:
+                            continue
+                        mode, encoding = ("w", "utf-8") if isinstance(data, str) else ("wb", None)
+                        with open(destination_path, mode, encoding=encoding) as destination_file:
+                            destination_file.write(data)
+                
 
             self.page.pop_dialog()
 
