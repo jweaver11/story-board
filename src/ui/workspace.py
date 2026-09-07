@@ -17,6 +17,7 @@ from models.isolated_controls.column import IsolatedColumn
 from models.isolated_controls.tab_bar_view import IsolatedTabBarView
 import asyncio
 from styles.menu_option_style import MenuOptionStyle
+import os
 
 
 # Our workspace object that is stored in our story object
@@ -146,6 +147,11 @@ class Workspace(ft.Container):
             mouse_cursor=ft.MouseCursor.CLICK,
         )
 
+        file_path = os.path.join(
+            widget.data.get('directory_path', ''),
+            f"{widget.data.get('id', '')}.json",
+        )
+
         menu_options = [
             MenuOptionStyle(
                 on_click=handle_rename,
@@ -156,6 +162,12 @@ class Workspace(ft.Container):
                         weight=ft.FontWeight.BOLD, 
                     ), 
                 ]),
+            ),
+            ft.MenuItemButton(
+                leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), content="Export Widget", 
+                on_click=widget.story.handle_export, close_on_click=True,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                tooltip="Export this part of your story.", data=file_path
             ),
         ] + widget.get_menu_options()  
 

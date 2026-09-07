@@ -115,16 +115,27 @@ class RailFile(ft.GestureDetector):
             self.page.show_dialog(dlg)
             await self.widget.story.close_menu()
 
+        file_path = os.path.join(
+            self.widget.data.get('directory_path', ''),
+            f"{self.widget.data.get('id', '')}.json",
+        )
+
         return [
             MenuOptionStyle(
                 on_click=handle_rename,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.widget.data.get('color', 'primary'),),
                     ft.Text(
-                        f"Rename {self.widget.data.get('title')}", 
+                        f"Rename {self.widget.data.get('title')}",
                         weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS, expand=True
                     ), 
                 ]),
+            ),
+            ft.MenuItemButton(
+                leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), content="Export Widget",
+                on_click=self.widget.story.handle_export, close_on_click=True,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                tooltip="Export this part of your story.", data=file_path
             ),
             MenuOptionStyle(
                 ft.SubmenuButton(

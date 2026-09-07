@@ -233,19 +233,39 @@ class RailFolder(ft.GestureDetector):
                 content=ft.SubmenuButton(
                     ft.Container(
                         ft.Row([
-                            ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY), 
-                            ft.Text("Upload", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
+                            ft.Icon(ft.Icons.IMPORT_EXPORT_OUTLINED, ft.Colors.PRIMARY), 
+                            ft.Text("Import", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
                             ft.Icon(ft.Icons.ARROW_RIGHT),
                         ], expand=True),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(4), shape=ft.RoundedRectangleBorder(radius=4),
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=4),
                     ),
                     [
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, ft.Colors.PRIMARY), content="Folder", 
+                            on_click=self.story.import_folder_clicked, close_on_click=True, data=self.full_path,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                            tooltip="Import a Folder into the Story's root directory",
+                        ),
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Widget(s)", 
+                            on_click=self.story.import_files_clicked, close_on_click=True, data=self.full_path,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                            tooltip="Import Widget files into the Story's root directory",
+                        ),
                         
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
                     style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
                 no_padding=True, no_effects=True, 
+            ),
+            MenuOptionStyle(
+                on_click=self.story.handle_export,
+                data=self.full_path,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
+                    ft.Text("Export Folder", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
+                ]),
             ),
         
             # Delete button

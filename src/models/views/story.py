@@ -587,22 +587,156 @@ class Story(ft.View):
     async def handle_export(self, e=ft.Event):
         from models.app import app
 
-        # TODO: Save an export path to auto open with save files. Users cannot name their files
-        # Export file types for canvas and document have dif settings
-
-
-        # Disclaimers:
-        # -- canvas will only 
-        # -- Exports all the widgets in the folder, not the folder itself.
         async def export_confirmed(e=None):
             folder_path = await ft.FilePicker().get_directory_path()
+            if not folder_path:
+                return
+
+            selected_files = [
+                path for path, checkbox in item_checkboxes.items()
+                if os.path.isfile(path) and checkbox.value
+            ]
+
+            for source_path in selected_files:
+                try:
+                    with open(source_path, "r", encoding="utf-8") as source_file:
+                        file_data = json.load(source_file)
+                except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+                    continue
+
+                widget_type = file_data.get("tag", "")
+                export_file_type = wd_data.get(widget_type, {}).get("export_file_type", ".json")
+                relative_directory = os.path.relpath(os.path.dirname(source_path), source_path_root)
+                destination_directory = os.path.join(
+                    folder_path,
+                    "" if relative_directory == "." else relative_directory,
+                )
+                os.makedirs(destination_directory, exist_ok=True)
+
+                destination_name = os.path.splitext(os.path.basename(source_path))[0]
+                destination_path = os.path.join(
+                    destination_directory,
+                    f"{destination_name}{export_file_type}",
+                )
+
+                if export_file_type == ".json":
+                    with open(destination_path, "w", encoding="utf-8") as destination_file:
+                        json.dump(file_data, destination_file, indent=4)
+                elif export_file_type == ".png":
+                    pass
+                elif export_file_type == ".docx":
+                    pass
+                elif export_file_type == ".pdf":
+                    pass
+                elif export_file_type == ".txt":
+                    pass
+
+            self.page.pop_dialog()
 
         def load_directory_controls() -> list[ft.Control]:
             story_dir_path = self.data.get("directory_path")
-            source_path = os.path.abspath(os.path.normpath(story_dir_path))
-            controls: list[ft.Control] = []
-            # Logic to populate controls based on the directory structure
-            return controls
+            nonlocal source_path_root, item_checkboxes
+            source_path_root = os.path.abspath(
+                os.path.normpath(self.data.get("content_directory_path", story_dir_path))
+            )
+            requested_path = os.path.normcase(os.path.normpath(initial_path)) if initial_path else ""
+            item_checkboxes.clear()
+
+            def normalize(path: str) -> str:
+                return os.path.normcase(os.path.normpath(path))
+
+            def is_initially_selected(path: str) -> bool:
+                normalized_path = normalize(path)
+                return bool(requested_path) and (
+                    normalized_path == requested_path
+                    or normalized_path.startswith(requested_path + os.sep)
+                )
+
+            def set_branch_value(path: str, value: bool):
+                normalized_path = normalize(path)
+                for item_path, checkbox in item_checkboxes.items():
+                    if item_path == normalized_path or item_path.startswith(normalized_path + os.sep):
+                        checkbox.value = value
+                        checkbox.update()
+
+            def on_item_change(e: ft.Event[ft.Checkbox]):
+                item_path = normalize(e.control.data)
+                set_branch_value(item_path, bool(e.control.value))
+
+            def build_directory_controls(directory_path: str) -> list[ft.Control]:
+                controls: list[ft.Control] = []
+                try:
+                    entries = sorted(
+                        os.scandir(directory_path),
+                        key=lambda entry: (not entry.is_dir(), entry.name.casefold()),
+                    )
+                except OSError:
+                    return controls
+
+                for entry in entries:
+                    entry_path = normalize(entry.path)
+                    selected = is_initially_selected(entry.path)
+                    entry_title = entry.name
+                    if entry.is_file():
+                        try:
+                            with open(entry.path, "r", encoding="utf-8") as source_file:
+                                file_data = json.load(source_file)
+                            entry_title = file_data.get("title") or entry.name
+                        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+                            pass
+                        if not isinstance(entry_title, str):
+                            entry_title = str(entry_title)
+
+                    checkbox = ft.Checkbox(
+                        value=selected,
+                        data=entry.path,
+                        on_change=on_item_change,
+                    )
+                    item_checkboxes[entry_path] = checkbox
+
+                    if entry.is_dir():
+                        controls.append(
+                            ft.ExpansionTile(
+                                title=ft.Row([
+                                    checkbox,
+                                    ft.Text(entry.name, overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                                ], spacing=4),
+                                expanded=True,
+                                dense=True,
+                                tile_padding=ft.Padding.only(left=0, right=0),
+                                controls_padding=ft.Padding.only(left=20, right=0),
+                                controls=build_directory_controls(entry.path),
+                            )
+                        )
+                    else:
+                        controls.append(
+                            ft.Row([
+                                checkbox,
+                                ft.Text(entry_title, overflow=ft.TextOverflow.ELLIPSIS, expand=True),
+                            ], spacing=4)
+                        )
+
+                return controls
+
+            root_checkbox = ft.Checkbox(
+                value=is_initially_selected(source_path_root),
+                data=source_path_root,
+                on_change=on_item_change,
+            )
+            item_checkboxes[normalize(source_path_root)] = root_checkbox
+            return [
+                ft.ExpansionTile(
+                    title=ft.Row([
+                        root_checkbox,
+                        ft.Text(os.path.basename(source_path_root), expand=True),
+                    ], spacing=4),
+                    expanded=True,
+                    dense=True,
+                    tile_padding=ft.Padding.only(left=0, right=0),
+                    controls_padding=ft.Padding.only(left=20, right=0),
+                    controls=build_directory_controls(source_path_root),
+                )
+            ]
 
         def set_widget_default_type(e: ft.Event[ft.Dropdown]):
             widget_type = e.control.data
@@ -611,16 +745,17 @@ class Story(ft.View):
             if not widget_type or not new_export_file_type:
                 return
             # Update the default
-            wd_data[widget_type]['export_file_type'] = new_export_file_type
+            wd_data.setdefault(widget_type, {})['export_file_type'] = new_export_file_type
             app.settings.update_data(**{'widget_defaults': wd_data})        
             
 
         # Path to folder or widget if we right clicked an item to export
         initial_path = os.path.abspath(os.path.normpath(e.control.data)) if e.control.data else ""
+        await self.close_menu()
         
-
-        column = ft.Column(load_directory_controls(), tight=True, scroll=ft.ScrollMode.AUTO)
-        
+        source_path_root = ""
+        item_checkboxes: dict[str, ft.Checkbox] = {}
+        column = ft.Column(load_directory_controls(), tight=True)
 
         wd_data = app.settings.data.get('widget_defaults', {})
 
@@ -719,7 +854,7 @@ class Story(ft.View):
             content=ft.Column([
                 row,
                 ft.Divider(),
-            ] + [column], tight=True),
+            ] + [column], tight=True, scroll=ft.ScrollMode.AUTO),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
                 ft.TextButton("Export", on_click=export_confirmed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY))
