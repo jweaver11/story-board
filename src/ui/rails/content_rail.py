@@ -179,6 +179,19 @@ class ContentRail(Rail):
                         padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=4),
                     ),
                     [
+                        #TODO: Upload Folder, Upload Files
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, ft.Colors.PRIMARY), content="Folder", 
+                            data="comic_preview", on_click=self.story.import_folder_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                            tooltip="Import a Folder into the Story's root directory",
+                        ),
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Widget(s)", 
+                            data="comic_preview", on_click=self.story.import_files_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                            tooltip="Import Widget files into the Story's root directory",
+                        ),
                         
                     ],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
@@ -319,22 +332,22 @@ class ContentRail(Rail):
                 ),
                 [
                     ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.DRIVE_FOLDER_UPLOAD_OUTLINED, ft.Colors.PRIMARY), content="Import Folder", 
+                        leading=ft.Icon(ft.Icons.DRIVE_FOLDER_UPLOAD_OUTLINED, ft.Colors.PRIMARY), content="Upload Folder", 
                         on_click=self.story.import_folder_clicked, close_on_click=True,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         tooltip="Import all files within a folder to create new widgets.", 
                     ),  
                     ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Import Widget(s)", 
+                        leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Upload Widget(s)", 
                         on_click=self.story.import_files_clicked, close_on_click=True,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                         tooltip="Import file(s) to create new widgets.", 
                     ),  
                     ft.MenuItemButton(
                         leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), content="Export Widget(s)", 
-                        on_click=self.story.export_clicked, close_on_click=True,
+                        on_click=self.story.handle_export, close_on_click=True,
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
-                        tooltip="Export parts of your story.", disabled=True
+                        tooltip="Export parts of your story.",
                     ),
                 ],
                 menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),

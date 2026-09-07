@@ -79,12 +79,12 @@ class Settings(ft.View):
                 'widget_defaults': {
                     'manuscript': {
                         'color': "primary",
-                        'export_file_type': "json"   # Default export file type for plotlines
+                        'export_file_type': ".docx"   # Default export file type for plotlines
                     },
                     'canvas': {
                         'color': "primary",
                         'use_standard_cursor': True,     # if the mouse cursor will reflect the current paint settings or not. False=standard cursor
-                        'export_file_type': "png"   # Default export file type for plotlines
+                        'export_file_type': ".png"   # Default export file type for plotlines
                     },
                     'note': {
                         'color': "primary"
@@ -97,7 +97,7 @@ class Settings(ft.View):
                         'show_division_labels': True,  # Whether to show each divisions label or not
                         'starting_division_count': 9,    # Default number of divisions for new plotlines
                         'plot_point_color': "white",   # Default color for new plot points
-                        'export_file_type': "json"   # Default export file type for plotlines
+                        'export_file_type': ".json"   # Default export file type for plotlines
                     },
                     'canvas_board': {
                         'color': "primary",
@@ -108,7 +108,7 @@ class Settings(ft.View):
                         'color': "primary",
                         'draw_mode': False,   # If the map is in draw mode or not
                         'background_image': "map_bg_fantasy_dark.png",   # Default background image for new maps
-                        'export_file_type': "json"   # Default export file type for maps
+                        'export_file_type': ".json"   # Default export file type for maps
                     },
                     'world': {
                         'color': "primary"
@@ -120,7 +120,7 @@ class Settings(ft.View):
                         'color': "primary",
                         'node_color': "white",
                         'spider_web_view': False,   # If the plot chart is in spider web view or not
-                        'export_file_type': "json"   # Default export file type for plotlines
+                        'export_file_type': ".json"   # Default export file type for plotlines
                     },
                     'comic_preview': {
                         'color': "primary",
@@ -149,7 +149,7 @@ class Settings(ft.View):
                     },
                     'character_relationship_map': {
                         'color': "primary",
-                        'export_file_type': "json"   # Default export file type for plotlines
+                        'export_file_type': ".json"   # Default export file type for plotlines
                     }
                 },
 

@@ -1422,7 +1422,7 @@ class Canvas(Widget):
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             ),
                             ft.MenuItemButton(      # Set layer as an image button
-                                "Set Image", leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY), 
+                                "Upload Image", leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY), 
                                 on_click=self.set_layer_content, 
                                 tooltip="Upload an image for this layer. This will overwrite any drawings on the layer currently." if visible else
                                 "Layer must be visible to set image", 

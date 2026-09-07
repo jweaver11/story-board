@@ -584,7 +584,9 @@ class Story(ft.View):
             self.unblock_page()
 
     # Opens the dialog to export
-    async def export_clicked(self, e=ft.Event):
+    async def handle_export(self, e=ft.Event):
+        from models.app import app
+
         # TODO: Save an export path to auto open with save files. Users cannot name their files
         # Export file types for canvas and document have dif settings
 
@@ -592,21 +594,136 @@ class Story(ft.View):
         # Disclaimers:
         # -- canvas will only 
         # -- Exports all the widgets in the folder, not the folder itself.
+        async def export_confirmed(e=None):
+            folder_path = await ft.FilePicker().get_directory_path()
 
-        folder_path = await ft.FilePicker().get_directory_path()
-        story_dir_path = self.data.get("directory_path")
+        def load_directory_controls() -> list[ft.Control]:
+            story_dir_path = self.data.get("directory_path")
+            source_path = os.path.abspath(os.path.normpath(story_dir_path))
+            controls: list[ft.Control] = []
+            # Logic to populate controls based on the directory structure
+            return controls
 
-        if not folder_path or not story_dir_path:
-            return
+        def set_widget_default_type(e: ft.Event[ft.Dropdown]):
+            widget_type = e.control.data
+            new_export_file_type = e.data
+            
+            if not widget_type or not new_export_file_type:
+                return
+            # Update the default
+            wd_data[widget_type]['export_file_type'] = new_export_file_type
+            app.settings.update_data(**{'widget_defaults': wd_data})        
+            
 
-        source_path = os.path.abspath(os.path.normpath(story_dir_path))
-        destination_path = os.path.abspath(os.path.normpath(folder_path))
+        # Path to folder or widget if we right clicked an item to export
+        initial_path = os.path.abspath(os.path.normpath(e.control.data)) if e.control.data else ""
+        
 
-        if source_path == destination_path:
-            return
+        column = ft.Column(load_directory_controls(), tight=True, scroll=ft.ScrollMode.AUTO)
+        
+
+        wd_data = app.settings.data.get('widget_defaults', {})
+
+        manuscript_default_dd = ft.Dropdown(
+            value=wd_data.get('manuscript', {}).get('export_file_type'),
+            text=wd_data.get('manuscript', {}).get('export_file_type'),
+            label="Manuscript Export File Type", data="manuscript", 
+            dense=True, width=300, on_select=set_widget_default_type,
+            options=[
+                ft.DropdownOption(".docx"),
+                ft.DropdownOption(".pdf"),
+                ft.DropdownOption(".txt"),
+                ft.DropdownOption(".json"),
+            ]
+        )
+        canvas_default_dd = ft.Dropdown(
+            value=wd_data.get('canvas', {}).get('export_file_type'),
+            text=wd_data.get('canvas', {}).get('export_file_type'),
+            label="Canvas Export File Type", data="canvas",
+            dense=True, width=300, on_select=set_widget_default_type,
+            options=[
+                ft.DropdownOption(".png"),
+                ft.DropdownOption(".json"),
+            ]
+        )
+        map_default_dd = ft.Dropdown(
+            value=wd_data.get('map', {}).get('export_file_type'),
+            text=wd_data.get('map', {}).get('export_file_type'),
+            label="Map Export File Type", data="map",
+            dense=True, width=300, on_select=set_widget_default_type,
+            options=[
+                ft.DropdownOption(".png"),
+                ft.DropdownOption(".json"),
+            ]
+        )
+        plotline_default_dd = ft.Dropdown(
+            value=wd_data.get('plotline', {}).get('export_file_type'),
+            text=wd_data.get('plotline', {}).get('export_file_type'),
+            label="Plotline Export File Type", data="plotline",
+            dense=True, width=300, on_select=set_widget_default_type,
+            options=[
+                ft.DropdownOption(".png"),
+                ft.DropdownOption(".json"),
+            ]
+        )
+        plot_chart_default_dd = ft.Dropdown(
+            value=wd_data.get('plot_chart', {}).get('export_file_type'),
+            text=wd_data.get('plot_chart', {}).get('export_file_type'),
+            label="Plot Chart Export File Type", data="plot_chart",
+            dense=True, width=300, on_select=set_widget_default_type,
+            options=[
+                ft.DropdownOption(".png"),
+                ft.DropdownOption(".json"),
+            ]
+        )
+        crm_default_dd = ft.Dropdown(
+            value=wd_data.get('character_relationship_map', {}).get('export_file_type'),
+            text=wd_data.get('character_relationship_map', {}).get('export_file_type'),
+            label="Character Relationship Map Export File Type", data="character_relationship_map", 
+            dense=True, width=300, on_select=set_widget_default_type,
+            options=[
+                ft.DropdownOption(".png"),
+                ft.DropdownOption(".json"),
+            ]
+        )
+        
+
+        row = ft.Row([
+            ft.Column([
+                manuscript_default_dd,
+                canvas_default_dd,
+                map_default_dd,
+                plotline_default_dd,
+                plot_chart_default_dd,
+                crm_default_dd,
+            ], width=300),
+            ft.Column([
+                ft.Text("Export Information", theme_style=ft.TextThemeStyle.TITLE_LARGE),
+                ft.Row([
+                    ft.Text(".json   -", weight=ft.FontWeight.BOLD),
+                    ft.Text("Used for importing widgets back into Story Board. All widgets export as .json if they have no other option", italic=True)
+                ]),
+                ft.Row([
+                    ft.Text(".png   -", weight=ft.FontWeight.BOLD),
+                    ft.Text("Used for exporting widgets as images.", italic=True)
+                ]),
+                ft.Row([
+                    ft.Text(".docx | .txt | .pdf   -", weight=ft.FontWeight.BOLD),
+                    ft.Text("Used for exporting Manuscript widgets as documents for other text editors.", italic=True)
+                ]),
+            ], tight=True, expand=True, horizontal_alignment=ft.MainAxisAlignment.CENTER)
+        ], vertical_alignment=ft.CrossAxisAlignment.START, spacing=30)
          
         dlg = ft.AlertDialog(
-            title="Export"
+            title="Export Manager",
+            content=ft.Column([
+                row,
+                ft.Divider(),
+            ] + [column], tight=True),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
+                ft.TextButton("Export", on_click=export_confirmed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY))
+            ]
         )
 
         self.page.show_dialog(dlg)
