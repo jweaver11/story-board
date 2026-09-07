@@ -605,8 +605,10 @@ class Story(ft.View):
                     continue
 
                 widget_type = file_data.get("tag", "")
+                widget_id = file_data.get("id", "")
                 export_file_type = wd_data.get(widget_type, {}).get("export_file_type", ".json")
                 relative_directory = os.path.relpath(os.path.dirname(source_path), source_path_root)
+
                 destination_directory = os.path.join(
                     folder_path,
                     "" if relative_directory == "." else relative_directory,
@@ -619,11 +621,23 @@ class Story(ft.View):
                     f"{destination_name}{export_file_type}",
                 )
 
+                # Standard json export
                 if export_file_type == ".json":
                     with open(destination_path, "w", encoding="utf-8") as destination_file:
                         json.dump(file_data, destination_file, indent=4)
+
                 elif export_file_type == ".png":
-                    pass
+                    if widget_id:
+                        widget = self.get_widget_by_id(widget_id)
+                        if not widget:
+                            continue
+                        if hasattr(widget, "get_snapshot_bytes"):
+                            snapshot_bytes = widget.get_snapshot_bytes()
+                            if snapshot_bytes:
+                                with open(destination_path, "wb") as destination_file:
+                                    destination_file.write(snapshot_bytes)
+
+
                 elif export_file_type == ".docx":
                     pass
                 elif export_file_type == ".pdf":
@@ -752,6 +766,10 @@ class Story(ft.View):
         # Path to folder or widget if we right clicked an item to export
         initial_path = os.path.abspath(os.path.normpath(e.control.data)) if e.control.data else ""
         await self.close_menu()
+
+        active_widget = self.workspace.get_active_widget()
+        if active_widget:
+            await active_widget.save_file() # Make sure widget is saved
         
         source_path_root = ""
         item_checkboxes: dict[str, ft.Checkbox] = {}

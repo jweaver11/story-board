@@ -121,7 +121,12 @@ class Canvas(Widget):
 
         self.layer_bytes.clear()
         for layer_data in self.data.get('canvas_data', {}).get('layers', []):
-            self.layer_bytes.update(**{layer_data.get('id'): layer_data.get('capture', b'')})
+            capture = layer_data.get('capture')
+            if isinstance(capture, str):
+                capture = base64.b64decode(capture)
+            elif not isinstance(capture, bytes):
+                capture = b''
+            self.layer_bytes.update(**{layer_data.get('id'): capture})
 
         
         # Drawing stuff
@@ -1188,15 +1193,15 @@ class Canvas(Widget):
         # Load our layer bytes from disk if the canvas is not visible
         if self.data.get('visible', False) == False:
             for layer_data in self.data.get('canvas_data', {}).get('layers', []):
-                try:
-                    os.makedirs(os.path.dirname(layer_data.get('file_path', '')), exist_ok=True)
-                    with open(layer_data.get('file_path', ''), 'rb') as f:
-                        self.layer_bytes.update(**{layer_data.get('id'): f.read()})   # Add the bytes to live cache list
-                except OSError:
-                    pass    # File doesnt exist yet
+                capture = layer_data.get('capture')
+                if isinstance(capture, str):
+                    capture = base64.b64decode(capture)
+                elif not isinstance(capture, bytes):
+                    capture = b''
+                self.layer_bytes.update(**{layer_data.get('id'): capture})   # Add the bytes to live cache list
 
         # Grab them all 
-        captures_list = [capture for capture in self.layer_bytes.values() if capture is not None]
+        captures_list = [capture for capture in self.layer_bytes.values() if capture]
 
         # Our exportable image bytes from merging all our layers captures together
         return _merge_captures(captures_list)

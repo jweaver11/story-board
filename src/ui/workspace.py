@@ -38,6 +38,11 @@ class Workspace(ft.Container):
         # State variables
         self.placeholder_visible: bool = False  # True if we have no widgets in the workspace and are showing a placeholder tab to prevent errors
 
+    def get_active_widget(self) -> Widget:
+        if not self.tab_view.controls or self.tabs.selected_index is None or self.tabs.selected_index >= len(self.tab_view.controls):
+            return None
+        return self.tab_view.controls[self.tabs.selected_index]
+
     # Adds a new widget to the workspace
     async def add_widget_to_workspace(self, widget: Widget):
 
@@ -75,6 +80,8 @@ class Workspace(ft.Container):
         # Now swap the placeholder for the real widget - this is the costly update
         self.tab_view.controls[-1] = new_widget
         self.tab_view.update()
+
+    
 
     # Creates a new tab control for the given widget
     def create_widget_tab_ctrl(self, widget: Widget) -> ft.Tab:
