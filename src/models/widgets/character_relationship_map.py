@@ -723,7 +723,6 @@ class CharacterRelationshipMap(Widget):
         # Have a new 'edge' drawn for each connection
         for connection in self.data['connections'][::-1]:
 
-            print(connection)
             char1 = self.story.get_widget_by_id(connection.get('char1_id'))
             char2 = self.story.get_widget_by_id(connection.get('char2_id'))
             if not char1 or not char2:

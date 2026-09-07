@@ -16,6 +16,7 @@ import asyncio
 from utils.tutorial import run_tutorial
 import uuid
 from styles.colors import dark_gradient
+from concurrent.futures import ThreadPoolExecutor
 
  
 class Story(ft.View):
@@ -586,6 +587,24 @@ class Story(ft.View):
     async def export_clicked(self, e=ft.Event):
         # TODO: Save an export path to auto open with save files. Users cannot name their files
         # Export file types for canvas and document have dif settings
+
+
+        # Disclaimers:
+        # -- canvas will only 
+        # -- Exports all the widgets in the folder, not the folder itself.
+
+        folder_path = await ft.FilePicker().get_directory_path()
+        story_dir_path = self.data.get("directory_path")
+
+        if not folder_path or not story_dir_path:
+            return
+
+        source_path = os.path.abspath(os.path.normpath(story_dir_path))
+        destination_path = os.path.abspath(os.path.normpath(folder_path))
+
+        if source_path == destination_path:
+            return
+         
         dlg = ft.AlertDialog(
             title="Export"
         )

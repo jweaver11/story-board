@@ -81,6 +81,7 @@ class Canvas(Widget):
                             'name': "Background",       # Name of that layer
                             'visible': True,            # Whether this layer is currently visible or not
                             'dirty': False,             # Whether this layer has been changed and needs to be saved
+                            'capture': None,
                             'needs_file_write': False,   # Whether this layer needs to be written to disk or not
                             'file_path': os.path.join(self.story.data.get('canvas_directory_path'), self.data.get('id'), f"{layer_1_id}.png"),  # Path to the capture for this layer
                         },
@@ -89,6 +90,7 @@ class Canvas(Widget):
                             'name': "Layer 1", 
                             'visible': True, 
                             'dirty': False,
+                            'capture': None,
                             'needs_file_write': False,
                             'file_path': os.path.join(self.story.data.get('canvas_directory_path'), self.data.get('id'), f"{layer_2_id}.png"),  # Path to the capture for this layer
                         }
@@ -108,6 +110,7 @@ class Canvas(Widget):
         self.layer_bytes: dict[str, bytes] = {}
 
         # Load our layer captures into memory for better performance
+        # OLD
         for layer_data in self.data.get('canvas_data', {}).get('layers', []):
             try:
                 os.makedirs(os.path.dirname(layer_data.get('file_path', '')), exist_ok=True)
@@ -115,6 +118,11 @@ class Canvas(Widget):
                     self.layer_bytes.update(**{layer_data.get('id'): f.read()})   # Add the bytes to live cache list
             except OSError:
                 pass    # File doesnt exist yet
+
+        self.layer_bytes.clear()
+        for layer_data in self.data.get('canvas_data', {}).get('layers', []):
+            self.layer_bytes.update(**{layer_data.get('id'): layer_data.get('capture', b'')})
+
         
         # Drawing stuff
         self.current_path: cv.Path = None      # The current path being drawn on the canvas, if any
@@ -134,7 +142,7 @@ class Canvas(Widget):
 
 
     # Overwrite our standard save_file call since we have multiple files
-    async def save_file(self):
+    async def save_file_old(self):
 
         # Go through our layer data
         for i, layer in enumerate(self.data.get('canvas_data', {}).get('layers', [])):
@@ -160,6 +168,21 @@ class Canvas(Widget):
                 self.needs_file_write = True    # Mark our widget as dirty so we save to file
                 layer['needs_file_write'] = False  # Mark the layer as no longer needing a file write
         await super().save_file()   
+
+    async def save_file(self):
+        # Go through our layer data
+        for i, layer in enumerate(self.data.get('canvas_data', {}).get('layers', [])):
+            # If a change has been made to the layer, save that change.
+            if layer.get('dirty', False) == True:
+                canvas: cv.Canvas = self.layer_stack.controls[i]
+                try:
+                    await self.save_canvas(canvas)
+                except RuntimeError as e:
+                    print(f"Error saving layer {layer.get('name', '')}: {e}")
+                    return
+                self.needs_file_write = True    # Mark our widget as dirty if we saved anything
+        await super().save_file()   
+
 
     async def hide_widget(self, e=None):
         self.story.block_page()
@@ -817,10 +840,13 @@ class Canvas(Widget):
             output = BytesIO()
             result.save(output, format="PNG")
             combined_bytes = output.getvalue()
+            combined_str = base64.b64encode(combined_bytes).decode("utf-8")
+            
             self.layer_bytes[layer_id] = combined_bytes
 
             layer_data['dirty'] = False
             layer_data['needs_file_write'] = True
+            layer_data['capture'] = combined_str
             self.data.get('canvas_data', {}).get('layers', [])[layer_idx].update(layer_data)
             self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
             return combined_bytes
@@ -844,6 +870,7 @@ class Canvas(Widget):
         output = BytesIO()
         result.save(output, format="PNG")
         combined_bytes = output.getvalue()
+        combined_str = base64.b64encode(combined_bytes).decode("utf-8")
 
         # Update the in-memory cache, and mark the layer as dirty for saving
         self.layer_bytes[layer_id] = combined_bytes
@@ -851,6 +878,7 @@ class Canvas(Widget):
         # Mark the layer as no longer dirty, but needs a file write
         layer_data['dirty'] = False
         layer_data['needs_file_write'] = True
+        layer_data['capture'] = combined_str
         self.data.get('canvas_data', {}).get('layers', [])[layer_idx].update(layer_data)
         self.update_data(**{'canvas_data': self.data.get('canvas_data', {})})
 
@@ -1157,7 +1185,17 @@ class Canvas(Widget):
             merged.save(output, format="PNG")
             return output.getvalue()
 
-        # List to store our captures for each layer of our canvas (skip empty captures)
+        # Load our layer bytes from disk if the canvas is not visible
+        if self.data.get('visible', False) == False:
+            for layer_data in self.data.get('canvas_data', {}).get('layers', []):
+                try:
+                    os.makedirs(os.path.dirname(layer_data.get('file_path', '')), exist_ok=True)
+                    with open(layer_data.get('file_path', ''), 'rb') as f:
+                        self.layer_bytes.update(**{layer_data.get('id'): f.read()})   # Add the bytes to live cache list
+                except OSError:
+                    pass    # File doesnt exist yet
+
+        # Grab them all 
         captures_list = [capture for capture in self.layer_bytes.values() if capture is not None]
 
         # Our exportable image bytes from merging all our layers captures together
@@ -1193,6 +1231,7 @@ class Canvas(Widget):
             'id': new_id,
             'name': f"Layer {len(self.data.get('canvas_data', {}).get('layers', [])) + 1}" ,
             'visible': True,
+            'capture': None,
             'dirty': False,
             'file_path': os.path.join(self.data.get('layer_directory_path'), f"{new_id}.png")
         })
