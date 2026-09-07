@@ -32,7 +32,7 @@ class Note(Widget):
 
                 # Note card data. Stored as list so we can duplicate labels
                 'card_data': [ 
-                    {"label": "", "value": "", 'color': 'onsurface'},
+                    {"label": "", "value": "", 'color': 'onsurface', 'strikethrough': False},
                 ]
             })
 
@@ -94,6 +94,13 @@ class Note(Widget):
                     card_row.controls[idx].content.update()
                     await self.story.close_menu()
 
+            async def handle_strikethrough(e: ft.Event[ft.Control]):
+                if len(self.data['card_data']) > idx:
+                    self.data['card_data'][idx]['strikethrough'] = not self.data['card_data'][idx].get('strikethrough', False)
+                    self.update_data(**{'card_data': self.data['card_data']})
+                    card_row.controls[idx].content.update()
+                    await self.story.close_menu()
+
 
             return [
                 MenuOptionStyle(
@@ -110,6 +117,13 @@ class Note(Widget):
                     ),
                     no_padding=True, no_effects=True
                 ),
+                #MenuOptionStyle(
+                    #on_click=handle_strikethrough,
+                    #content=ft.Row([
+                        #ft.Icon(ft.Icons.FORMAT_STRIKETHROUGH_OUTLINED, size=20, color=ft.Colors.PRIMARY),
+                        #ft.Text("Mark Done", weight=ft.FontWeight.BOLD)
+                    #], alignment=ft.MainAxisAlignment.START, spacing=10),
+                #),
                 MenuOptionStyle(
                     on_click=handle_delete,
                     content=ft.Row([
@@ -124,15 +138,15 @@ class Note(Widget):
             label = data.get('label', '')
             value = data.get('value', '')
             color = data.get('color', 'onsurface')
+            strikethrough = data.get('strikethrough', False)
 
-            #ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, on_click=delete_card, tooltip="Delete this card"),
             # Top textfield for the label
             label_tf = ft.TextField(
                 value=label,
                 dense=True, multiline=True, width=400,
                 border_color=ft.Colors.TRANSPARENT,
                 capitalization=ft.TextCapitalization.SENTENCES,
-                text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
+                text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE),
                 suffix_icon=ft.GestureDetector(
                     ft.IconButton(
                         ft.Icons.MORE_VERT, ft.Colors.ON_SURFACE_VARIANT, 
@@ -149,7 +163,7 @@ class Note(Widget):
             body_tf = ft.TextField(
                 dense=True,
                 border_color=ft.Colors.TRANSPARENT,
-                text_style=ft.TextStyle(size=14),
+                text_style=ft.TextStyle(size=14, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE),
                 multiline=True,
                 capitalization=ft.TextCapitalization.SENTENCES,
                 value=value, expand=True, on_blur=save_card_value,
