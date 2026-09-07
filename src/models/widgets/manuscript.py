@@ -185,6 +185,9 @@ class Manuscript(Widget):
             self.update_data(**{'manuscript_data': await self.quill_editor.save()})
         await super().save_file()
 
+    async def export(self, file_type: str="docx"):
+        pass
+
     def build(self):
 
 

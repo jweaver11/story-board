@@ -627,15 +627,23 @@ class Story(ft.View):
                         json.dump(file_data, destination_file, indent=4)
 
                 elif export_file_type == ".png":
+                    
                     if widget_id:
                         widget = self.get_widget_by_id(widget_id)
                         if not widget:
                             continue
-                        if hasattr(widget, "get_snapshot_bytes"):
-                            snapshot_bytes = widget.get_snapshot_bytes()
-                            if snapshot_bytes:
-                                with open(destination_path, "wb") as destination_file:
-                                    destination_file.write(snapshot_bytes)
+
+                        # Canvas gets it own image from its layers 
+                        if widget_type == "canvas":
+                            if hasattr(widget, "get_snapshot_bytes"):
+                                snapshot_bytes = widget.get_snapshot_bytes()
+                                if snapshot_bytes:
+                                    with open(destination_path, "wb") as destination_file:
+                                        destination_file.write(snapshot_bytes)
+
+                        # Other widgets have to screenshot for export
+                        else:
+                            pass
 
 
                 elif export_file_type == ".docx":
