@@ -1053,8 +1053,8 @@ class Canvas(Widget):
                         #encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                         canvas: cv.Canvas = self.layer_stack.controls[layer_idx]
                         canvas.shapes.clear()   # Clear the current shapes so we can redraw with the new capture
-                        self.layer_bytes[layer_id] = None   # Clear the current capture to ignore it when saving
-                        canvas.shapes.append(cv.Image(bytes, 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, data=layer_id))   # Re-add empty images so it can capture
+                        self.layer_bytes[layer_id] = bytes   # Clear the current capture to ignore it when saving
+                        canvas.shapes.append(cv.Image(bytes, 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT))   # No data marker so save_canvas captures this as new content
                         canvas.update()
                         self.page.pop_dialog()
                         await self.save_canvas(canvas=canvas)
@@ -1090,7 +1090,7 @@ class Canvas(Widget):
             # Apply the blur to the correct canvas
             canvas: cv.Canvas = self.layer_stack.controls[layer_idx]
             canvas.shapes.clear()
-            canvas.shapes.append(cv.Image(capture, 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, paint=ft.Paint(blur_image=blur_strength), data=layer_id))
+            canvas.shapes.append(cv.Image(capture, 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, paint=ft.Paint(blur_image=blur_strength)))   # No data marker so save_canvas captures this as new content
             canvas.update()
             self.page.pop_dialog()
 

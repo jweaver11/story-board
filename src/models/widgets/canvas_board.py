@@ -64,14 +64,16 @@ class CanvasBoard(Widget):
 
     # Overwrite our standard save_file call since we have multiple files
     async def save_file(self):
-        if not self.content:
-            return
+        # Protect on creation
+        #if not self.content:
+            #return
 
-        rows_column = self.content.controls[2]
+        
 
         for i, row_data in enumerate(self.data.get('rows', [])):
             # If a change has been made to the row, save that change.
             if row_data.get('dirty', False) == True:
+                rows_column = self.content.controls[2]
                 canvas: cv.Canvas = rows_column.controls[i].content.controls[1].content.controls[1].content
                 try:
                     await self.save_canvas(canvas)
