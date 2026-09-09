@@ -858,11 +858,6 @@ class Settings(ft.View):
 
                 ),
 
-                # TODO: Map settings -- 
-                # Default label color, label outline size, 
-                # Default location label color, location label outline size, icon, icon color, icon size
-                # label size, 
-
                 ft.Divider(),
 
                 

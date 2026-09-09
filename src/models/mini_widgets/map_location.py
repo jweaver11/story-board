@@ -313,7 +313,7 @@ class MapLocation(MiniWidget):
         ctrls: list = super().create_sidebar_header_ctrls()
         return ctrls
 
-        # TODO: Figure out map_id if needed and how to impliment
+        # TODO: Figure out map_id if needed and how to impliment if connection to a different map
         # Set preview to read the description of the location right below the image
         
 
@@ -502,6 +502,13 @@ class MapLocation(MiniWidget):
                     ft.Text("Set Canvas", weight=ft.FontWeight.BOLD), 
                 ], tooltip="Set a canvas as the image for this widget"),
             ),
+            #MenuOptionStyle(
+                #on_click=set_canvas_as_image,
+                #content=ft.Row([
+                    #ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY),
+                    #ft.Text("Set Map", weight=ft.FontWeight.BOLD), 
+                #], tooltip="Set a different as this location."),
+            #),
             MenuOptionStyle(
                 on_click=upload_image,
                 content=ft.Row([
