@@ -50,7 +50,6 @@ class ComicPreview(Widget):
                 'featured_panels': [              
                     #{
                         #'id': "canvas_id or None" is None if its an uploaded image
-                        #'title': "title of the panel, either canvas name or file name",
                         #'image': "base64 string of the image"
                     #}
                 ],                      
@@ -62,72 +61,68 @@ class ComicPreview(Widget):
         ''' Reloads/Rebuilds our widget based on current data '''
 
         super().build()
-
-        # Called to find a canvas and load a rendered image string given all its layers
-        def refresh_canvas_panel(canvas_id: str) -> str:
-
-            # Gives a blank image to start
-            def _blank_png() -> str:
-                blank = Image.new("RGBA", (1, 1), (0, 0, 0, 0))
-                output = BytesIO()
-                blank.save(output, format="PNG")
-                return base64.b64encode(output.getvalue()).decode("utf-8")
-
-            capture_list = []
-            widget = self.story.get_widget_by_id(canvas_id)
-            if not widget:
-                return _blank_png()
-            
-            for layer in widget.data.get('canvas_data', {}).get('Layers', []):
-                if layer.get('capture', ""):
-                    capture_list.append(layer['capture'])
-                   
-
-            if not capture_list:
-                return _blank_png()
-
-            images = []
-            for capture in capture_list:
-                try:
-                    image_bytes = base64.b64decode(capture)
-                    image = Image.open(BytesIO(image_bytes)).convert("RGBA")
-                    images.append(image)
-                except Exception:
-                    continue
-
-            if not images:
-                return _blank_png()
-
-            width, height = images[0].size
-            merged = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-
-            for image in images:
-                if image.size != (width, height):
-                    image = image.resize((width, height), Image.Resampling.LANCZOS)
-                merged = Image.alpha_composite(merged, image)
-
-            output = BytesIO()
-            merged.save(output, format="PNG")
-            return base64.b64encode(output.getvalue()).decode("utf-8")
-
-
         
         # Adds canvases to the preview
         async def handle_add_canvas_panel(e):
 
-            async def save_canvas(_):
+            async def save_selections(_):
+
+                self.story.block_page()
             
-                await asyncio.sleep(0)
-                id = e.control.data
+                # Go through each included canvas and add it to the featured panels
+                for control in canvas_options:
+                    id = control.data
+                    checkbox = control.controls[0]  # Check if the checkbox is ticked
+                    if not checkbox.value:
+                        continue
                 
-                widget = self.story.get_widget_by_id(id)
-                
-                self.data['featured_panels'].append({
-                    'id': id,
-                    'title': widget.data.get('title', ''),
-                    'image': self._set_canvas_panel(id)
-                })
+                    widget = self.story.get_widget_by_id(id)
+
+                    if not widget:
+                        self.page.pop_dialog()
+                        self.page.show_dialog(SnackBar("Widget not found"))
+                        self.story.unblock_page()
+                        return
+
+                    encoded_string = widget.get_snapshot_string()
+
+                    self.data['featured_panels'].append({
+                        'id': id,
+                        #'title': file_path.split("\\")[-1],
+                        'image': encoded_string
+                    })
+                    preview_panel_controls.append(build_preview_panel(len(self.data['featured_panels']) - 1, encoded_string))
+                    panel_minimap.controls.append(build_minimap_panel(len(self.data['featured_panels']) - 1, encoded_string))
+
                 self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
+                self.update()
+
+                self.story.unblock_page()
+                self.page.pop_dialog()
+                
+                
+
+            canvas_options = [
+                ft.Row([
+                    ft.Checkbox(label=widget.data.get('title'), value=False),
+                    ft.Image(src=widget.get_snapshot_bytes("low"), width=192, height=108)
+                ], data=widget_id)
+                for widget_id, widget in self.story.widgets.items() if widget.data.get('tag') == 'canvas'
+            ]
+
+            dlg = ft.AlertDialog(
+                title=ft.Text("Select Included Canvases"),
+                content=ft.Column(
+                    canvas_options,
+                    tight=True,
+                    scroll=ft.ScrollMode.AUTO
+                ),
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
+                    ft.TextButton("Add Selected", on_click=save_selections, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
+                ]
+            )
+            self.story.page.show_dialog(dlg)
 
         # Called to refresh any connected canvases featured_panels that might be outdated
         async def handle_refresh_panels():
@@ -135,7 +130,11 @@ class ComicPreview(Widget):
             # Go through panels. If they are connected to a canvas, refresh the image from the canvas
             for idx, panel in enumerate(self.data.get('featured_panels', [])):
                 if panel.get('id'):
-                    panel['image'] = refresh_canvas_panel(panel['id'])
+                    widget = self.story.get_widget_by_id(panel['id'])
+                    if not widget:
+                        continue
+                    image_str = widget.get_snapshot_string("max")
+                    panel['image'] = image_str
                     preview_panel_controls[idx] = build_preview_panel(idx, panel.get('image'))
                     panel_minimap.controls[idx] = build_minimap_panel(idx, panel.get('image'))
 
@@ -162,7 +161,7 @@ class ComicPreview(Widget):
         # Handles uploading new panel(s) from external files
         async def handle_upload_panel(e: ft.Event):
             files = await ft.FilePicker().pick_files(allow_multiple=True, allowed_extensions=["jpg", "jpeg", "png", "webp"])
-            await self.story.block_page()
+            self.story.block_page()
             if files:
                 for file in files:
                     file_path = file.path
@@ -174,7 +173,7 @@ class ComicPreview(Widget):
                             # Save to our data
                             self.data['featured_panels'].append({
                                 'id': None,
-                                'title': file_path.split("\\")[-1],
+                                #'title': file_path.split("\\")[-1],
                                 'image': encoded_string
                             })
                             
@@ -185,14 +184,8 @@ class ComicPreview(Widget):
                         pass
                 self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
                 self.update()
-            await self.story.unblock_page()
-                
-        
-
-
-        # TODO:
-        # Upload canvases
-        # Refresh canvas panels
+            self.story.unblock_page()
+            
 
         # Returns the image control from the given string
         def build_preview_panel(idx: int, image_str: str) -> ft.Image:
@@ -437,7 +430,7 @@ class ComicPreview(Widget):
                                 ] + [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_preview_background_color,)],
                                 tooltip="Adjust the scale of the preview display.",
                                 leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                                 style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                             ),
                             ft.SubmenuButton(
@@ -450,7 +443,7 @@ class ComicPreview(Widget):
                                 ],
                                 tooltip="Adjust the spacing between panels in the preview display.",
                                 leading=ft.Icon(ft.Icons.SPACE_BAR_OUTLINED, ft.Colors.PRIMARY),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                                 style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                             ),
                             
@@ -464,7 +457,7 @@ class ComicPreview(Widget):
                                 ],
                                 tooltip="Adjust the scale of the preview display.",
                                 leading=ft.Icon(ft.Icons.CROP_FREE_OUTLINED, ft.Colors.PRIMARY),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                                 style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                             ),
                             
@@ -477,7 +470,7 @@ class ComicPreview(Widget):
                                 ],
                                 tooltip="Adjust the filter quality of the preview display. This will affect performance and image quality",
                                 leading=ft.Icon(ft.Icons.PHOTO_FILTER_OUTLINED, ft.Colors.PRIMARY),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                                menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                                 style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                             ),
                             

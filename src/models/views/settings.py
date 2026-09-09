@@ -125,7 +125,7 @@ class Settings(ft.View):
                     'comic_preview': {
                         'color': "primary",
                         'preview_direction': "vertical",            # Default direction for comic preview, can be vertical or horizontal
-                        'preview_background_color': "#00000000",  # Background color behind images
+                        'preview_background_color': "#000000",  # Background color behind images
                         'preview_spacing': 0,                       # Spacing between images
                         'preview_scale': 2,                         # Scale of the images in the preview, 1 = 1:1, 2 = 2:1, etc. 
                         'filter_quality': "medium",                 # Filter quality for the images in the preview, can be low, medium, or high
