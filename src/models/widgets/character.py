@@ -48,13 +48,7 @@ class Character(Widget):
                 if data is None or 'character_data' not in data else data['character_data'],
 
                 'charts': {}
-            }) 
-
-        
-
-
-    # TODO: RENAME AND DELETE Will need to be unique here, to alter ccm and connections that used our old name and key
-        
+            })         
 
     # Called after any changes happen to the data that need to be reflected in the UI
     def build(self): #this is the edit view currently

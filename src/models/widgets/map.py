@@ -907,8 +907,6 @@ class Map(Widget):
         control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
         active_tool = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
 
-        # TODO: Only use custom on drawing tools and erase. Tools and text should use standard even if the option is set      
-
         # Sets our mouse cursor as the standard one or custom one depending on setting
         if self.data.get('draw_mode'):
             set_standard_cursor()
@@ -1606,6 +1604,3 @@ class Map(Widget):
                 vertical_alignment=ft.CrossAxisAlignment.CENTER
             )
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
-
-
-# TODO Label and Location label size adjustments

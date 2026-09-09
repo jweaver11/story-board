@@ -63,59 +63,24 @@ class MenuBar(ft.Container):
     
             
     
-            async def submit_new_story(e):
+            async def submit_new_story(e=None):
                 ''' Creates a new story with the given title '''
-    
-                # Import our variable if it is unique or nah
-                is_unique = not create_button.disabled
-                if not is_unique:
-                    await story_title_field.focus()   # refocus the text field since the title was not unique
-                    story_title_field.update()
-                    return
     
                 title = story_title_field.value.strip()
     
-                # Check if the title is unique
-                if is_unique:
-                    #print("title is unique, story being created: ", title)
-                    app.create_new_story(title, self.page) # Needs the story object
-                    self.page.pop_dialog()
-                else:
-                    story_title_field.error = "Story Title must be unique"
-                    await story_title_field.focus()   # refocus the text field since the title was not unique
-                    story_title_field.update()
+                app.create_new_story(title, self.page) # Needs the story object
+                self.page.pop_dialog()
     
     
-            # Called everytime the user enters a new letter in the text box
-            async def textbox_value_changed(e):
-                ''' Called when the text in the text box changes '''
-    
-                is_unique = story_is_unique(story_title_field.value)
-    
-                if story_title_field.value.strip() == "":   # Disable the button if the text box is empty
-                    is_unique = False
-    
-                create_button.disabled = not is_unique
-                story_title_field.error = None if is_unique else "Story Title must be unique"
-                
-                    
-                create_button.update()
-                await story_title_field.focus()   # refocus the text field so user can keep typing without clicking back in
-                story_title_field.update()
-    
+            
     
             # Create a reference to the text field so we can access its value
             story_title_field = ft.TextField(
                 label="Story Title",
                 autofocus=True, capitalization=ft.TextCapitalization.WORDS,
                 on_submit=submit_new_story,
-                on_change=textbox_value_changed,
             )
-    
-            create_button = ft.TextButton(
-                "Create", on_click=submit_new_story, disabled=True, style=ft.ButtonStyle(mouse_cursor="click")
-            )
-    
+        
             # The dialog that will pop up whenever the new story button is clicked
             dlg = ft.AlertDialog(
     
@@ -131,8 +96,10 @@ class MenuBar(ft.Container):
     
                 # Our two action buttons at the bottom of the dialog
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                    create_button,
+                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                    ft.TextButton(
+                        "Create Story", on_click=submit_new_story, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)
+                    )
                 ],
             )
     

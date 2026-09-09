@@ -1174,9 +1174,3 @@ class Chart(Widget):
             self.bar_chart_view()
         else:
             self.radar_chart_view()
-
-        
-# TODO: Don't hold the placeholder dataset in chart data. Just render and alter it live
-# Add dragging to manipulate radar chart entries real time
-# Determine positive angles by 360/ node count, and if closer to 90 or 270, use that contoller
-# ADD NOTES so people can use this to flesh out power systems if wanted

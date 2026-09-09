@@ -252,8 +252,6 @@ class Canvas(Widget):
             self.active_layer_idx = len(self.data.get('canvas_data', {}).get('layers', [])) - 1
             return  
 
-        # TODO: Only use custom on drawing tools and erase. Tools and text should use standard even if the option is set      
-
         # Sets our mouse cursor as the standard one or custom one depending on setting
         if self.use_standard_cursor:
             set_standard_cursor()
