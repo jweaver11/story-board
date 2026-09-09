@@ -5,6 +5,9 @@ from styles.snack_bar import SnackBar
 
 import shutil
 import os
+import math
+
+LAST_TUTORIAL_STEP = 21
 
 
 def run_tutorial(story) -> list[ft.Control]:
@@ -14,6 +17,28 @@ def run_tutorial(story) -> list[ft.Control]:
         ''' Ends the tutorial and routes to the home page '''
 
         async def _confirm_exit(e: ft.Event):
+            # Delete the story from the app's storage and remove its directory from the filesystem. 
+            # Otherwise this creates a new story everytime the tutorial is run
+            try:
+                
+                story_id = story.data.get('id')
+                app.settings.story = None                    
+
+                story_dir_path = story.data.get('directory_path')
+                full_norm = os.path.normcase(os.path.normpath(story_dir_path))
+                
+                # Delete the folder from storage
+                shutil.rmtree(full_norm)
+
+                ft.context.page.pop_dialog()
+                await ft.context.page.push_route("/")
+                ft.context.page.show_dialog(SnackBar(f"{story.data.get('title', 'Story')} deleted successfully."))
+
+                ft.context.page.title = "Story Board (alpha)"
+                ft.context.page.update()
+
+            except Exception as e:
+                ft.context.page.show_dialog(SnackBar(f"Error deleting story: {e}"))
             await app.load_previous_story(page) # Loads last story if there is one
             page.show_dialog(SnackBar("You can access the tutorial anytime in Settings -> Resources", duration=7000))
 
@@ -35,7 +60,8 @@ def run_tutorial(story) -> list[ft.Control]:
     # Load the next tutorial step
     async def _next_tutorial_step(e: ft.Event=None):
         nonlocal tutorial_step
-        tutorial_step += 1
+        if tutorial_step < LAST_TUTORIAL_STEP:
+            tutorial_step += 1
         await load_tutorial_step()
 
     # Clears out any content at the start of the tutorial so we can creat
@@ -290,12 +316,25 @@ def run_tutorial(story) -> list[ft.Control]:
                 ]
                 await show_widget("plot_chart")
             case 20:
-                
+                tutorial_arrow.top = page.height - 400
+                tutorial_tip_container.top = page.height - 360
+                tutorial_tip_container.left = 80
+                tutorial_arrow.left = 250
                 tutorial_tip.spans=[
                     ft.TextSpan("Canvas Board:\n", style=ft.TextStyle(size=16, weight=ft.FontWeight.BOLD)),
                     ft.TextSpan("A widget for planning out comic-based chapters for your story. Describe and sketch out your ideas for all you panels ahead of time. Connect them to an existing canvas in your story to see how progress is coming along!", style=ft.TextStyle(size=16))
                 ]
                 await show_widget("canvas_board")
+                tutorial_arrow.rotate = None
+
+            case 21:
+                tutorial_tip.spans = [ft.TextSpan("Tutorial Complete!\nGet out there and create your masterpiece!", style=ft.TextStyle(size=26, weight=ft.FontWeight.BOLD))]
+                tutorial_tip_container.left = page.width / 2 - 150
+                tutorial_tip_container.top = page.height / 2 - 150
+                tutorial_arrow.top = page.height - 100
+                tutorial_arrow.left = page.width / 2
+                tutorial_arrow.rotate = ft.Rotate(math.pi / 2 * 3)
+                
             
             
         tutorial_tip_container.update()

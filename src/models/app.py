@@ -205,8 +205,6 @@ class App:
         # Create a new story object and add it to our stories dict
         self.stories[story.data.get('id')] = story
 
-        #print("new story route:", story.route)
-
         # Opens this new story as the active one on screen
         asyncio.create_task(page.push_route(story.route))
         self.settings.update_data(**{'page': {'route': story.route}})

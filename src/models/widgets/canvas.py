@@ -1398,7 +1398,6 @@ class Canvas(Widget):
                         bgcolor=ft.Colors.TRANSPARENT,
                         capitalization=ft.TextCapitalization.WORDS,
                     ),
-                    # TODO: Preview img here
                 ], expand=True),
                 leading=ft.IconButton(   # Toggle visibility button
                     ft.Icons.VISIBILITY if visible else ft.Icons.VISIBILITY_OFF, 

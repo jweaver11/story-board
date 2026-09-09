@@ -758,15 +758,7 @@ class PlotChart(Widget):
             visible=not self.data.get('show_sidebar', False),
             bottom=10, right=0,
         )
-        
-
-        viewer_stack = ft.Stack([
-            
-            self.iv,
-            #self.add_node_button
-        ], expand=3)
-
-        
+         
 
         # Set up our main conent
         self.content = ft.Stack([
@@ -779,6 +771,4 @@ class PlotChart(Widget):
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
 
         #self.page.run_task(self.iv.pan, -FIXED_STACK_WIDTH / 4, -FIXED_STACK_HEIGHT / 4, 0)  # Center the view on the stack
-
-        # TODO: 
-        # In sidebar, show sequence of events like plotline
+    

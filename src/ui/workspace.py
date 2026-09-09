@@ -360,11 +360,6 @@ class Workspace(ft.Container):
             self.tabs.length = len(self.tab_bar.tabs)
             self.tabs.selected_index = 0
             return
-        
-# TODO: 
-# plot chart need right click to add nodes
-        
-
 
 '''
     # OLD --------------------------------------------------------------

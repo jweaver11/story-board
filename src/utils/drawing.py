@@ -171,7 +171,7 @@ def update_stroke(canvas: cv.Canvas, current_position: ft.Offset, prev_position:
         return
 
     # Grab current path
-    current_path = canvas.shapes[-1] if canvas.shapes and len(canvas.shapes) > 1 else None # Trips if drawing but havnt finished capture
+    current_path = canvas.shapes[-1] if canvas.shapes and len(canvas.shapes) > 1 else None # Trips if drawing but havnt finished previous capture
     if not current_path:
         return
 
