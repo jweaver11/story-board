@@ -384,14 +384,12 @@ class CanvasBoard(Widget):
                         self.page.pop_dialog()
                         self.page.show_dialog(SnackBar("Canvas not found. Please try again."))
                         return
-    
                     snapshot_str = widget.get_snapshot_string(quality="medium")
                     title = widget.data.get('title', 'Untitled')
                     if not snapshot_str:
-                        self.page.show_dialog(SnackBar("Empty Canvas cannot be made as the image"))
                         self.page.pop_dialog()
+                        self.page.show_dialog(SnackBar("Empty Canvas cannot be made as the image"))
                         return
-
                     self.data['rows'][row_idx]['canvas_id'] = canvas_id
                     self.data['rows'][row_idx]['preview_capture'] = ""
                     self.update_data(**{'rows': self.data['rows']})  # Update our data
@@ -413,13 +411,17 @@ class CanvasBoard(Widget):
                             ft.Radio(
                                 label=widget.data.get('title', 'Untitled'),
                                 value=id, mouse_cursor=ft.MouseCursor.CLICK,
-                            ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"],
+                            ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"
+                            ],
+                            tight=True,
+                            scroll=ft.ScrollMode.AUTO,
                         ),
                         on_change=select_canvas
                     ),
                     actions=[
                         ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                        ft.TextButton("Select", on_click=set_canvas_image, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),]
+                        ft.TextButton("Select", on_click=set_canvas_image, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),
+                    ]
                 )
                 self.page.show_dialog(dlg)
 
