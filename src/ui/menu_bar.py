@@ -213,7 +213,7 @@ class MenuBar(ft.Container):
                 alignment=ft.Alignment.CENTER,
                 title_padding=ft.Padding.all(25),
                 content=ft.RadioGroup(
-                    content=ft.Column(scroll=ft.ScrollMode.AUTO, expand=False, controls=get_stories_list()),
+                    content=ft.Column(scroll=ft.ScrollMode.AUTO, expand=False, tight=True, controls=get_stories_list()),
                     on_change=change_selected_story
                 ),
                 actions=[

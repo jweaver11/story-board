@@ -371,6 +371,9 @@ class Widget(ft.Container):
 
         # If we're already visible, focus our tab
         if self.data.get('visible', False) == True:
+            if self.data.get('index', 999) >= len(self.story.workspace.tab_view.controls):
+                self.data['index'] = len(self.story.workspace.tab_view.controls) - 1
+                self.update_data(**{'index': self.data['index']})
             await self.story.workspace.tabs.move_to(self.data.get('index', 0), animation_duration=100)  # Select the new widget tab
             self.story.update_data(**{'workspace_selected_index': self.data.get('index', 0)})
             return
