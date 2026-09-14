@@ -369,6 +369,9 @@ class Widget(ft.Container):
     async def show_widget(self, e=None):
         ''' Shows this widget in the workspace if it is hidden '''
 
+        # Saves any widget on screen that requires to be on page for saving
+        await self.story.workspace.save_active_widget()
+
         # If we're already visible, focus our tab
         if self.data.get('visible', False) == True:
             if self.data.get('index', 999) >= len(self.story.workspace.tab_view.controls):

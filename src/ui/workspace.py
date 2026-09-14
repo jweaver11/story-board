@@ -38,9 +38,12 @@ class Workspace(ft.Container):
         # State variables
         self.placeholder_visible: bool = False  # True if we have no widgets in the workspace and are showing a placeholder tab to prevent errors
 
+    # Returns the active widget in the workspace as a reference
     def get_active_widget(self) -> Widget:
         if not self.tab_view.controls or self.tabs.selected_index is None or self.tabs.selected_index >= len(self.tab_view.controls):
-            return None
+            # Bandaid fix that returns the last widget. It fixes a selected_index bug I can't figure out, 
+            # but it only happens when the last widget is the active widget, so this works
+            return self.tab_view.controls[len(self.tab_bar.tabs) - 1]  
         return self.tab_view.controls[self.tabs.selected_index]
 
     # Adds a new widget to the workspace
@@ -205,7 +208,7 @@ class Workspace(ft.Container):
         self.tabs.length = len(self.tab_bar.tabs)
 
         # Check selected index is still in range. If not, adjust it
-        if self.tabs.selected_index >= len(self.tab_bar.tabs):
+        if self.tabs.selected_index >= len(self.tab_bar.tabs) - 1:
             self.tabs.selected_index = len(self.tab_bar.tabs) - 1
             self.story.update_data(**{'workspace_selected_index': self.tabs.selected_index})                
 
@@ -295,6 +298,18 @@ class Workspace(ft.Container):
         self.tabs.selected_index = new_selected_index
         self.tab_bar.indicator_color = self.tab_view.controls[new_selected_index].data.get('color', ft.Colors.ON_SURFACE_VARIANT)
         self.update()
+
+    # Saves the active widget on certain calls
+    async def save_active_widget(self):
+        widget = self.get_active_widget()
+       
+
+        print("Saving active widget:", widget.data.get('title'))
+        if widget and hasattr(widget, 'save_file'):
+            await widget.save_file()
+
+        # TODO: Index wrong someone when hiding
+
 
     # Reloads the workspace
     def build(self):
