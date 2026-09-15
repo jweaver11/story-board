@@ -20,6 +20,14 @@ Also useful for D&D Campaign tracking.
 - Radar and bar charts for power scaling and changes in physical growth throughout a story's progression
 - Tab system workspace for all widgets in your story
 
+<p align="center">
+  <img src="images/Screenshot%201.png" alt="Screenshot 1 of the StoryBoard app" width="700">
+  <img src="images/Screenshot%202.png" alt="Screenshot 2 of the StoryBoard app" width="700">
+  <img src="images/Screenshot%203.png" alt="Screenshot 3 of the StoryBoard app" width="700">
+  <img src="images/Screenshot%204.png" alt="Screenshot 4 of the StoryBoard app" width="700">
+  <img src="images/Screenshot%205.png" alt="Screenshot 5 of the StoryBoard app" width="700">
+</p>
+
 # For Devs
 
 ## Run the app
