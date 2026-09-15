@@ -11,7 +11,7 @@ authors = [
 dependencies = [
   "flet-quill @ git+https://github.com/jweaver11/Flet-Quill",
   "flet-color-pickers",
-  "flet>=0.86.5",
+  "flet>=1.0.0",
   "flet-charts",
   "Pillow"
 ]
@@ -36,11 +36,11 @@ path = "src"
 
 [tool.uv]
 dev-dependencies = [
-    "flet[all]==0.81.0",
+    "flet[all]==1.0.0",
 ]
 
 [tool.poetry]
 package-mode = false
 
 [tool.poetry.group.dev.dependencies]
-flet = {extras = ["all"], version = "0.28.3"}
+flet = {extras = ["all"], version = "1.0.0"}
