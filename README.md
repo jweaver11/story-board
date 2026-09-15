@@ -1,5 +1,25 @@
 # StoryBoard app
 
+StoryBoard is a passion project for authors and illustrators to visualize, organize, and create their novels or comics. Built entirely in Python using the Flet framework.
+Also useful for D&D Campaign tracking.
+
+## Features & Tech
+- Folder Organization System (Binder/Tree View)
+- Manuscript Text Editor (Flutter Quill extension)
+- Canvas Drawing capabilities
+- Notecard widget for ideas, themes, etc.
+- Plotline & Timeline visualization
+- Canvas Boards for sketches and live updates on progress for illustrations
+- Map and location creation
+- Item, weapon, and armor creation
+- Plot Chart with node system for alternate plot visualization
+- Character Relationship Map for visualizing how characters are connected to other characters in your story
+- Character (and template) creation
+- World (and template) creation
+- Radar and bar charts for power scaling and changes in physical growth throughout a story's progression
+
+# For Devs
+
 ## Run the app
 
 ### uv
