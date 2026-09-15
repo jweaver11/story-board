@@ -13,10 +13,12 @@ Also useful for D&D Campaign tracking.
 - Map and location creation
 - Item, weapon, and armor creation
 - Plot Chart with node system for alternate plot visualization
+- Comic Preview to see your illustrations stitched together as a finished product
 - Character Relationship Map for visualizing how characters are connected to other characters in your story
 - Character (and template) creation
 - World (and template) creation
 - Radar and bar charts for power scaling and changes in physical growth throughout a story's progression
+- Tab system workspace for all widgets in your story
 
 # For Devs
 

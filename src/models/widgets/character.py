@@ -220,7 +220,7 @@ class Character(Widget):
 
             # Add text label for the field name
             row_ctrl.controls.append(
-                ft.Text(f"{field_name}:\t", size=16, selectable=True, weight=ft.FontWeight.BOLD)
+                ft.Text(f"{field_name}:", size=14, selectable=True, weight=ft.FontWeight.BOLD)
             )
             # Add textfield we can change
             row_ctrl.controls.append(
@@ -332,7 +332,7 @@ class Character(Widget):
                     if isinstance(value, str):
                         # Add text label for the field name
                         row_ctrl.controls.append(
-                            ft.Text(f"{key}:\t", size=16, selectable=True, weight=ft.FontWeight.BOLD,)
+                            ft.Text(f"{key}:", size=14, selectable=True, weight=ft.FontWeight.BOLD,)
                         )
                         # Add textfield we can change
                         row_ctrl.controls.append(
