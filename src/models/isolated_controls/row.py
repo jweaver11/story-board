@@ -2,6 +2,7 @@
 
 import flet as ft
 
+@ft.component
 class IsolatedRow(ft.Row):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

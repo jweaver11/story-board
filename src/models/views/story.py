@@ -1180,130 +1180,132 @@ class Story(ft.View):
         self.blocker.visible = False
         self.blocker.update()
 
-    # Builds our view
-    def build(self) -> list[ft.Control]:
-        ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
-        from ui.menu_bar import MenuBar
-        from ui.workspaces_rail import WorkspacesRail
-        from ui.canvas_rail import CanvasRail
-        from ui.active_rail import ActiveRail
-        from ui.workspace import Workspace
-        from models.app import app
-        from models.isolated_controls.row import IsolatedRow
+# Builds our view
+def StoryView(app, story: 'Story') -> list[ft.Control]:
+    ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
+    from ui.menu_bar import MenuBar, MenuBarView
+    from ui.workspaces_rail import WorkspacesRail
+    from ui.canvas_rail import DrawingControlsRail
+    from ui.active_rail import ActiveRail
+    from ui.workspace import Workspace
+    from models.app import app
+    from models.isolated_controls.row import IsolatedRow
 
-        # Called when resizing the active rail by dragging the resizer
-        def resize_active_rail(e: ft.DragUpdateEvent):
-            ''' Responsible for altering the width of the active rail '''
+    # Called when resizing the active rail by dragging the resizer
+    def resize_active_rail(e: ft.DragUpdateEvent):
+        ''' Responsible for altering the width of the active rail '''
+        
+        story.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
+
+        # Clamp rail
+        if story.active_rail.width <= 120:
+            story.active_rail.width = 120
+        elif story.active_rail.width > 600:
+            story.active_rail.width = 600
+        story.active_rail.update()     
+
+    # Handles keyboard events for the story
+    async def handle_keyboard_event(e: ft.KeyboardEvent):
+        ''' Handles keyboard events for the story '''
+        # Calls undo on our active widget
+        async def undo():
+            widget = story.workspace.tab_view.controls[story.workspace.tabs.selected_index]
+            await widget.undo_task()
             
-            self.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
-
-            # Clamp rail
-            if self.active_rail.width <= 120:
-                self.active_rail.width = 120
-            elif self.active_rail.width > 600:
-                self.active_rail.width = 600
-            self.active_rail.update()     
-
-        # Handles keyboard events for the story
-        async def handle_keyboard_event(e: ft.KeyboardEvent):
-            ''' Handles keyboard events for the story '''
-            # Calls undo on our active widget
-            async def undo():
-                widget = self.workspace.tab_view.controls[self.workspace.tabs.selected_index]
-                await widget.undo_task()
-                
-            # Calls redo on our active widget
-            async def redo():
-                widget = self.workspace.tab_view.controls[self.workspace.tabs.selected_index]
-                await widget.redo_task()
-                
-            # Find out what keyboard shortcut was pressed and call the appropriate function
-            match e.key:
-                case 'Z':
-                    if e.ctrl == True:
-                        if e.shift == True:
-                            await redo()
-                        else:
-                            await undo()
-                case 'Y':
-                    if e.ctrl == True:
+        # Calls redo on our active widget
+        async def redo():
+            widget = story.workspace.tab_view.controls[story.workspace.tabs.selected_index]
+            await widget.redo_task()
+            
+        # Find out what keyboard shortcut was pressed and call the appropriate function
+        match e.key:
+            case 'Z':
+                if e.ctrl == True:
+                    if e.shift == True:
                         await redo()
-           
+                    else:
+                        await undo()
+            case 'Y':
+                if e.ctrl == True:
+                    await redo()
 
-        # Set our specific event to detect keyboard events for the story
-        self.page.on_keyboard_event = handle_keyboard_event 
-        self.page.title = f"Story Board (alpha) - {self.data.get('title', 'Untitled')}"   # Set our page title
-
-        # Load our widgets
-        self.load_widgets() 
-
-        # Create our menubar, workspaces rail, active rail, and workspace objects
-        self.menubar = MenuBar(self)
-        #self.workspaces_rail = WorkspacesRail(self) 
-        self.canvas_rail = CanvasRail(self)
-        self.active_rail = ActiveRail(self) 
-        self.workspace = Workspace(self)  
+    page = ft.context.page
         
 
+    # Set our specific event to detect keyboard events for the story
+    page.on_keyboard_event = handle_keyboard_event 
+    page.title = f"Story Board (alpha) - {story.data.get('title', 'Untitled')}"   # Set our page title
 
-        # The actual resizer for the active rail (gesture detector)
-        self.active_rail_resizer = ft.GestureDetector(
-            content=ft.Container(
-                width=10,   # Total width of the GD, so its easier to find with mouse
-                content=ft.VerticalDivider(2, 2),     # Original
-                padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
-            ),
-            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
-            on_pan_update=resize_active_rail, # Resize the active rail as app is dragging
-            on_pan_end=lambda: app.settings.update_data(**{'story': {'active_rail_width': self.active_rail.width}}),  # Save the resize when app is done dragging
-            drag_interval=20,
-        )
+    # Load our widgets
+    story.load_widgets() 
 
-        
+    # Create our menubar, workspaces rail, active rail, and workspace objects
+    #self.menubar = MenuBar(self)
+    #menu_bar, _ = ft.use_state(MenuBar)
+    #story.workspaces_rail = WorkspacesRail(self) 
+    #story.canvas_rail = CanvasRail(self)
+    #story.active_rail = ActiveRail(self) 
+    #story.workspace = Workspace(self)  
+    
 
-        # Views render like columns, so we add elements top-down
-        self.controls = [
-            self.menubar,
+
+    # The actual resizer for the active rail (gesture detector)
+    story.active_rail_resizer = ft.GestureDetector(
+        content=ft.Container(
+            width=10,   # Total width of the GD, so its easier to find with mouse
+            content=ft.VerticalDivider(2, 2),     # Original
+            padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+        ),
+        mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
+        on_pan_update=resize_active_rail, # Resize the active rail as app is dragging
+        on_pan_end=lambda: app.settings.update_data(**{'story': {'active_rail_width': story.active_rail.width}}),  # Save the resize when app is done dragging
+        drag_interval=20,
+    )
+
+
+    return [
+        ft.Column([
+            MenuBarView(app, story),
             IsolatedRow([
                 
-                #self.workspaces_rail,
-                self.canvas_rail,
-                self.active_rail,
-                self.active_rail_resizer,
-                self.workspace,
-                #ft.Container(self.workspace, expand=True, gradient=dark_gradient)
+                #story.workspaces_rail,
+                DrawingControlsRail(app, story),
+                #story.active_rail,
+                #story.active_rail_resizer,
+                #story.workspace,
+                #ft.Container(story.workspace, expand=True, gradient=dark_gradient)
             ], spacing=0, expand=True)
-        ]
+        ], expand=True, spacing=0)
+    ]
 
 
-        # Our container that sits on top of the self.page overlay when right clicking options. Starts invisible
-        self.menu = ft.Container(
-            left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
-            border_radius=4, visible=False,
-            bgcolor=ft.Colors.SURFACE_CONTAINER,
-            width=200, #border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-            shadow=ft.BoxShadow(0, 1, offset=ft.Offset(0, 1), ),
-            content=ft.Column(
-                spacing=0,
-                controls=[]
-            ),
-        )
+    # Our container that sits on top of the story.page overlay when right clicking options. Starts invisible
+    story.menu = ft.Container(
+        left=story.mouse_x, top=story.mouse_y,   # Positions the menu at the mouse location
+        border_radius=4, visible=False,
+        bgcolor=ft.Colors.SURFACE_CONTAINER,
+        width=200, #border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
+        shadow=ft.BoxShadow(0, 1, offset=ft.Offset(0, 1), ),
+        content=ft.Column(
+            spacing=0,
+            controls=[]
+        ),
+    )
 
-        # Outside gesture detector to close the menu when clicking outside the menu container
-        self.close_menu_detector = ft.GestureDetector(
-            expand=True, visible=False,
-            on_tap_down=self.close_menu,
-            on_secondary_tap_down=self.close_menu,
-        )
-        
-
-        # Overlay is a stack, so add the detector, then the menu container
-        self.page.overlay.extend([
-            self.close_menu_detector,
-            self.menu,
-            self.blocker
-        ])
-
-        self.page.update()
+    # Outside gesture detector to close the menu when clicking outside the menu container
+    #story.close_menu_detector = ft.GestureDetector(
+       # expand=True, visible=False,
+        #on_tap_down=story.close_menu,
+        #on_secondary_tap_down=story.close_menu,
+    #)
     
+
+    # Overlay is a stack, so add the detector, then the menu container
+    #story.page.overlay.extend([
+        #story.close_menu_detector,
+        #story.menu,
+        #story.blocker
+    #])
+
+    #story.page.update()

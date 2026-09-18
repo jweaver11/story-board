@@ -2,7 +2,7 @@
 Our model for our app. Contains settings and stories, as well as methods to load them from files on startup (called in main)
 '''
 
-from models.views.story import Story
+from models.views.story import Story, StoryView
 import flet as ft
 import os
 import json
@@ -29,13 +29,19 @@ class App:
         self.ignore_settings_change = True # Ignore settings changes when page is loading itself and saving incorrect changes
 
         self.load_settings()
+        #self.configure_page()
+
+    def __post_init__(self):
+        return
+        #self.load_settings()
 
     # Called on app startup in main
     def load_settings(self):
         ''' Loads our settings from a JSON file into our rendered settings control. If none exist, creates default settings '''
         from models.views.settings import Settings
-        from models.app import app
+        #from models.app import app
         import constants
+        print("Settings loaded")
 
         # Should just look for our settings file to load our data from. Settings should do all other logic
 
@@ -65,32 +71,36 @@ class App:
             settings_data = None  # If there's an error, we will create default settings
 
         # Sets our app settings to our loaded settings. If none were loaded (I.E. first launch), Settings with create its own defaults
-        app.settings = Settings(data=settings_data)
+        self.settings = Settings(data=settings_data)
 
+    # Called once from AppView, after a page exists (ft.context.page is only valid inside a Flet callback/render)
+    def configure_page(self, page: ft.Page):
+        ''' Applies our loaded settings to the current page (title, theme, window size, fonts, event handlers) '''
+        print("Page configured")
 
         ''' Page styling '''
-        page = ft.context.page
-
+        #page = ft.context.page
+        
         # Sets our app title
         page.title = "StoryBoard (alpha)"
 
         # Sets our themes and which one we use. Default to dark mode with blue
-        page.theme = ft.Theme(color_scheme_seed=app.settings.data.get('page', {}).get('theme_color', "blue"))  
-        page.dark_theme = ft.Theme(color_scheme_seed=app.settings.data.get('page', {}).get('theme_color', "blue")) 
-        page.theme_mode = app.settings.data.get('page', {}).get('theme_mode', "dark")  # Default to dark mode
+        page.theme = ft.Theme(color_scheme_seed=self.settings.data.get('page', {}).get('theme_color', "blue"))  
+        page.dark_theme = ft.Theme(color_scheme_seed=self.settings.data.get('page', {}).get('theme_color', "blue")) 
+        page.theme_mode = self.settings.data.get('page', {}).get('theme_mode', "dark")  # Default to dark mode
     
         # Sets the title of our app, padding, and maximizes the window
         page.padding = ft.Padding.only(top=0, left=0, right=0, bottom=0)    
 
         # Set the window size as maximized or not
-        if app.settings.data.get('page', {}).get('is_maximized', False):
+        if self.settings.data.get('page', {}).get('is_maximized', False):
             page.window.maximized = True
         else:
 
-            width = app.settings.data.get('page', {}).get('width', 1920)
-            height = app.settings.data.get('page', {}).get('height', 1080)
-            left = app.settings.data.get('page', {}).get('left', 0)
-            top = app.settings.data.get('page', {}).get('top', 0)
+            width = self.settings.data.get('page', {}).get('width', 1920)
+            height = self.settings.data.get('page', {}).get('height', 1080)
+            left = self.settings.data.get('page', {}).get('left', 0)
+            top = self.settings.data.get('page', {}).get('top', 0)
             if width is not None:
                 page.window.width = width
             if height is not None:
@@ -102,7 +112,7 @@ class App:
 
 
         # Set our logic when page window is resized
-        page.on_resize = app.settings.page_resized
+        page.on_resize = self.settings.page_resized
 
         # Intercept the close event BEFORE the window tears down so canvas.capture() still works.
         # prevent_close stops the OS from closing the window immediately; we close manually after saving.
@@ -111,9 +121,9 @@ class App:
         # Intercept the close event BEFORE the window tears down so canvas.capture() still works.
         async def _on_window_event(e: ft.WindowEvent):
             if e.type == ft.WindowEventType.CLOSE:
-                if app.settings.story:
-                    app.settings.story.block_page()
-                    await app.settings.save_story()
+                if self.settings.story:
+                    self.settings.story.block_page()
+                    await self.settings.save_story()
                 page.window.prevent_close = False
                 await page.window.destroy()
 
@@ -132,7 +142,7 @@ class App:
         }       
 
         # Load our custom fonts
-        for saved_font in app.settings.data.get('text_options', {}).get('fonts', []):
+        for saved_font in self.settings.data.get('text_options', {}).get('fonts', []):
             font_name = saved_font.get('font_name')
             file_name = saved_font.get('file_name')
             if font_name and file_name:
@@ -143,8 +153,6 @@ class App:
     @ft.component
     def load_story(self):
         ''' Loads our saved stories from the json files in story folders within the stories directory. If none exist, do nothing '''
-        
-        from models.app import app
         
         # Create the stories directory if it doesnt exist already
         os.makedirs(STORIES_DIRECTORY_PATH, exist_ok=True)
@@ -175,7 +183,7 @@ class App:
                         story_title = story_data.get("title", file_path.replace(".json", ""))
                         story_id = story_data.get("id", file_path.replace(".json", ""))
                             
-                        app.stories[story_id] = Story(story_title, story_data)
+                        self.stories[story_id] = Story(story_title, story_data)
 
                         break
                     # Else, continue through the next story folder
@@ -187,11 +195,11 @@ class App:
             
 
         # Initialize and load all our stories data and UI elements
-        for story in app.stories.values():
+        for story in self.stories.values():
             # Sets our active story to the page route. The route change function will load the stories data and UI
-            if story.route == app.settings.data.get('page', {}).get('route', None):
-                app.settings.story = story  # Gives our settings widget the story reference it needs
-                return story
+            if story.route == self.settings.data.get('page', {}).get('route', None):
+                self.settings.story = story  # Gives our settings widget the story reference it needs
+                return StoryView(self, story)
                 #await page.push_route(story.route)
                 return
                 
@@ -221,9 +229,13 @@ class App:
 
 
 @ft.component
-def AppView():
-    app, _ = ft.use_state(App)
-    
+def AppView() -> list[ft.Control]:
+    app, _ = ft.use_state(App())
+
+    page = ft.context.page
+
+    app.configure_page(page)
+
     return app.load_story()
     
 # Sets our global app object that main uses and some functions call
