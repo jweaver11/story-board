@@ -304,7 +304,7 @@ class Workspace(ft.Container):
         widget = self.get_active_widget()
        
 
-        print("Saving active widget:", widget.data.get('title'))
+        #print("Saving active widget:", widget.data.get('title'))
         if widget and hasattr(widget, 'save_file'):
             await widget.save_file()
 

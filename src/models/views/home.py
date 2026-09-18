@@ -15,24 +15,16 @@ def create_home_view(page: ft.Page) -> ft.View:
     # Called when giant new story button is clicked
     async def create_new_story_button_clicked(e):
         ''' Opens a dialog to create a new story. Checks story is unique or not '''
-        #print("New Story Clicked")
-
-        # Variable to track if the title is unique
-        is_unique = True
-
 
         def submit_new_story(e=None):
             ''' Creates a new story with the given title '''
-
-            # Import our variable if it is unique or nah
-            nonlocal is_unique, story_title_field
 
             title = story_title_field.value.strip()  # Get the title from the text field and strip whitespace
 
             # Check if the title is unique
                 #print("title is unique, story being created: ", title)
             app.create_new_story(title, page) # Needs the story object
-            dlg.open = False
+            page.pop_dialog()
             page.update()
             
         # Create a reference to the text field so we can access its value
@@ -43,10 +35,6 @@ def create_home_view(page: ft.Page) -> ft.View:
             on_submit=submit_new_story,
         )
 
-        create_button = ft.Button(
-            "Create", on_click=submit_new_story, 
-            disabled=True, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor=ft.MouseCursor.CLICK)
-        )
             
         # The dialog that will pop up whenever the new story button is clicked
         dlg = ft.AlertDialog(
@@ -59,14 +47,16 @@ def create_home_view(page: ft.Page) -> ft.View:
 
             # Our two action buttons at the bottom of the dialog
             actions=[
-                ft.Button("Cancel", on_click=lambda _: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK)),
-                create_button,
+                ft.TextButton("Cancel", on_click=lambda _: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK)),
+                ft.TextButton(
+                    "Create", on_click=submit_new_story, 
+                    style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor=ft.MouseCursor.CLICK)
+                ),
             ],
         )
 
         # Open our dialog in the overlay
-        dlg.open = True
-        page.overlay.append(dlg)
+        page.show_dialog(dlg)
         page.update()
 
 
