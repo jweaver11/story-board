@@ -5,10 +5,10 @@ And gives us the correct rail on startup based on selected workspace
 '''
 
 import flet as ft
-from models.app import app
+#from models.app import app
 from models.views.story import Story
 from ui.rails.characters_rail import CharactersRail  
-from ui.rails.content_rail import ContentRail
+from ui.binder_view_rail import ContentRail
 from ui.rails.plotlines_rail import PlotlinesRail
 from ui.rails.world_building import WorldBuildingRail
 from ui.rails.canvas_rail import CanvasRail
@@ -27,7 +27,7 @@ class ActiveRail(ft.Container):
         super().__init__(
             alignment=ft.Alignment.TOP_CENTER,
             padding=ft.Padding.only(top=10, bottom=10),
-            width=app.settings.data.get('story', {}).get('active_rail_width', 250),
+            #width=app.settings.data.get('story', {}).get('active_rail_width', 250),
             animate_size=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,

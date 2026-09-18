@@ -10,7 +10,7 @@ from models.widgets.plotline import Plotline
 from styles.rail.rail_folder import RailFolder
 from utils.new_canvas import new_canvas_alert_dlg
 import asyncio
-from models.app import app
+#from models.app import app
 from styles.snack_bar import SnackBar
 
 
@@ -66,6 +66,7 @@ class Rail(ft.Column):
         template_options = []
 
         if widget_type == "character":
+            return []
             
             for name, template in app.settings.data.get('character_templates', {}).items():
                 template_options.append(
@@ -81,6 +82,7 @@ class Rail(ft.Column):
         # Add templates label at the top that is disabled
 
         elif widget_type == "world":
+            return []
             for name, template in app.settings.data.get('world_templates', {}).items():
                 template_options.append(
                     ft.MenuItemButton(

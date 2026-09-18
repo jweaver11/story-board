@@ -4,7 +4,7 @@ import flet as ft
 from models.views.story import Story
 from models.widget import Widget
 from styles.menu_option_style import MenuOptionStyle
-from models.app import app
+#from models.app import app
 from styles.text_fields import SmallTextField, TextField
 import flet.canvas as cv
 from styles.snack_bar import SnackBar
@@ -33,9 +33,9 @@ class PlotChart(Widget):
             self.data.update({
                 # Widget data
                 'tag': "plot_chart",             # Tag to identify what type of object this is
-                'color': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('color'),
+                #'color': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('color'),
 
-                'spider_web_view': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('spider_web_view', False),   # If the plot chart is in spider web view or not
+                #'spider_web_view': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('spider_web_view', False),   # If the plot chart is in spider web view or not
 
                 'nodes': [],
                   # List of all our Nodes/events
@@ -582,7 +582,7 @@ class PlotChart(Widget):
             'id': str(uuid.uuid4()),
             'label': node_label, 
             'position': self.new_node_position, 
-            'color': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('node_color'), 
+            #'color': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('node_color'), 
             'description': ""
         })
         self.update_data(**{'nodes': self.data['nodes']})

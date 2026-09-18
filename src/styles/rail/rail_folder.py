@@ -6,7 +6,7 @@ from styles.menu_option_style import MenuOptionStyle
 from styles.colors import colors
 from styles.snack_bar import SnackBar
 from utils.new_canvas import new_canvas_alert_dlg
-from models.app import app
+#from models.app import app
 from models.isolated_controls.expansion_tile import IsolatedExpansionTile
 import asyncio
 
@@ -320,6 +320,7 @@ class RailFolder(ft.GestureDetector):
         template_options = []
 
         if widget_type == "character":
+            return []
             
             for name, template in app.settings.data.get('character_templates', {}).items():
                 template_options.append(
@@ -333,6 +334,7 @@ class RailFolder(ft.GestureDetector):
         # Add templates label at the top that is disabled
 
         elif widget_type == "world":
+            return []
             for name, template in app.settings.data.get('world_templates', {}).items():
                 template_options.append(
                     ft.MenuItemButton(

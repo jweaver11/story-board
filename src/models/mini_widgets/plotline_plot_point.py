@@ -9,7 +9,7 @@ from styles.text_fields import TextField
 from constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
 from styles.icons import icons
 from styles.menu_option_style import MenuOptionStyle
-from models.app import app
+#from models.app import app
 from styles.colors import colors
 
 # Plotpoint mini widget object that appear on plotlines and arcs
@@ -31,7 +31,7 @@ class PlotlinePlotPoint(MiniWidget):
                 'tag': "plot_point",            # Tag to identify what type of object this is
                 'relevant_characters': dict(),  # ids and name to relevant characters. {'id': {'id': "id_val", 'name': "name_val"}...}
                 'icon': "circle",
-                'color': app.settings.data.get('widget_defaults', {}).get('plotline', {}).get('plot_point_color', "white"),
+                #'color': app.settings.data.get('widget_defaults', {}).get('plotline', {}).get('plot_point_color', "white"),
 
                 # Information for our information display
                 'info': [

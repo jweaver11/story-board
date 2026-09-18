@@ -8,7 +8,7 @@ import flet as ft
 import os
 from models.widget import Widget
 from models.views.story import Story
-from models.app import app
+#from models.app import app
 from utils.safe_string_checker import return_safe_name
 from models.dataclasses.character_template import default_character_template_data_dict
 import flet.canvas as cv
@@ -36,7 +36,7 @@ class Character(Widget):
             self.data.update({
                 # Widget data
                 'tag': "character",
-                'color': app.settings.data.get('widget_defaults', {}).get('character', {}).get('color'),
+                #'color': app.settings.data.get('widget_defaults', {}).get('character', {}).get('color'),
  
                 # State and view data
                 'image_base64': str(),    # Saves our icon as img64 string 
@@ -44,8 +44,8 @@ class Character(Widget):
                 # Character data
                 'about': "",
                 # If this dict doesn't exist, we create it with our active template data. If we fail to pull that, we use a default template (which has quite a lot)
-                'character_data': app.settings.data.get('character_templates', {}).get(app.settings.data.get('active_character_template', ""), default_character_template_data_dict()) 
-                if data is None or 'character_data' not in data else data['character_data'],
+                #'character_data': app.settings.data.get('character_templates', {}).get(app.settings.data.get('active_character_template', ""), default_character_template_data_dict()) 
+                #if data is None or 'character_data' not in data else data['character_data'],
 
                 'charts': {}
             })         

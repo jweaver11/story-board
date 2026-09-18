@@ -11,7 +11,7 @@ from models.views.story import Story
 from models.widget import Widget
 from models.mini_widgets.plotline_plot_point import PlotlinePlotPoint
 import flet.canvas as cv
-from models.app import app
+#from models.app import app
 import asyncio 
 import uuid
 from constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
@@ -40,7 +40,7 @@ class Plotline(Widget):
             self.data.update({
                 # Widget Data
                 'tag': "plotline",
-                'color': app.settings.data.get('widget_defaults', {}).get('plotline', {}).get('color'),
+                #'color': app.settings.data.get('widget_defaults', {}).get('plotline', {}).get('color'),
                 
                 'show_sidebar': True,   # Whether to show the info column on the side of our plotline 
 
@@ -50,8 +50,8 @@ class Plotline(Widget):
                 'end_label': "10",                            # Start and end date of the branch, for plotline view
 
                 # List of divisions for our plotline. Default to 4 divisions
-                'show_division_labels': app.settings.data.get('widget_defaults', {}).get('plotline', {}).get('show_division_labels', True),  # Whether to hide the labels for our divisions
-                'divisions': [str(i) for i in range(1, app.settings.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 9) + 1)],   
+                #'show_division_labels': app.settings.data.get('widget_defaults', {}).get('plotline', {}).get('show_division_labels', True),  # Whether to hide the labels for our divisions
+                #'divisions': [str(i) for i in range(1, app.settings.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 9) + 1)],   
               
                 'relevant_characters': dict(),  # keys and name to relevant characters. {'id': {'id': "id_val", 'name': "name_val"}...}
                 'markers': dict(),  # 'id': {data}

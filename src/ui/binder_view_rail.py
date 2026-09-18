@@ -200,226 +200,240 @@ class ContentRail(Rail):
             )
         ]
 
-    # Reload the rail whenever we need
-    def build(self) -> ft.Control:
-        ''' Reloads the content rail '''
+# Reload the rail whenever we need
+@ft.component
+def BinderViewRail(app, settings, story) -> ft.Control:
+    ''' Reloads the content rail. `settings` is passed explicitly (not just read off `app`) so this
+    component subscribes to the Settings observable itself and re-renders when binder_rail_width changes '''
 
-        top_row_buttons = [
-            ft.SubmenuButton(
-                ft.Container(
-                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
-                    padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
-                    width=40, height=40, alignment=ft.Alignment.CENTER
+    top_row_buttons = [
+        ft.SubmenuButton(
+            ft.Container(
+                ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
+                padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
+                width=40, height=40, alignment=ft.Alignment.CENTER
+            ),
+            [
+                ft.MenuItemButton(      # Folders
+                    leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, ft.Colors.PRIMARY), content="Folder", 
+                    data="folder", #on_click=self.new_item_clicked, close_on_click=True,
+                    tooltip="Create a new folder to organize your story",
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                ), 
+                ft.MenuItemButton(      # Manuscripts
+                    content=ft.Row([
+                        ft.Text("Manuscript"), 
+                        ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, visible=False, 
+                                tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                    leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY),
+                    data="manuscript", #on_click=self.new_item_clicked, close_on_click=True,
+                    tooltip="Create a new manuscript for text chapters or scenes in your story",
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                ), 
+                ft.MenuItemButton(
+                    content=ft.Row([
+                        ft.Text("Canvas"), 
+                        ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                    leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
+                    data="canvas", #on_click=self.new_item_clicked, close_on_click=True,
+                    tooltip="Create a new Canvas for sketching drawing, or visual note taking",
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
-                [
-                    ft.MenuItemButton(      # Folders
-                        leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, ft.Colors.PRIMARY), content="Folder", 
-                        data="folder", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new folder to organize your story",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    ), 
-                    ft.MenuItemButton(      # Manuscripts
-                        content=ft.Row([
-                            ft.Text("Manuscript"), 
-                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, visible=False, 
-                                    tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
-                        leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY),
-                        data="manuscript", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new manuscript for text chapters or scenes in your story",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    ), 
-                    ft.MenuItemButton(
-                        content=ft.Row([
-                            ft.Text("Canvas"), 
-                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
-                                    tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
-                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
-                        data="canvas", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new Canvas for sketching drawing, or visual note taking",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    ),
-                    
-                    ft.MenuItemButton(      
-                        leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY), content="Note", 
-                        data="note", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    ), 
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
-                        data="plotline", on_click=self.new_item_clicked, close_on_click=True, 
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
-                        tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
-                    ),
-                    ft.MenuItemButton(
-                        content=ft.Row([
-                            ft.Text("Canvas Board"), 
-                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
-                                    tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
-                        leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), 
-                        data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    ),
-                    ft.MenuItemButton(
-                        content=ft.Row([
-                            ft.Text("Map"), 
-                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
-                                    tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
-                        leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
-                        data="map", on_click=self.new_item_clicked, close_on_click=True,
-                        tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    ),
-                    
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
-                        data="item", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="New Items and Equipment for your story"
-                    ),  
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED, ft.Colors.PRIMARY), content="Plot Chart", 
-                        data="plot_chart", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="New Items and Equipment for your story", 
-                    ),  
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, ft.Colors.PRIMARY), content="Comic Preview", 
-                        data="comic_preview", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
-                        tooltip="Preview the canvases in your story as a comic strip",
-                    ),
-                    
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Relationship Map", 
-                        data="character_relationship_map", on_click=self.new_item_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="Visualize the connections between the characters in your story"
-                    ),  
-                    ft.SubmenuButton(
-                        ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
-                        self.get_template_options("character"), 
-                        expand=True,
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="Create a new character for your story. Choose from templates or create a default character."
-                    ),
-                    ft.SubmenuButton(
-                        ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
-                        self.get_template_options("world"), 
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="Create a new world for your story. Choose from templates or create a default world."
-                    ),
-                    ft.SubmenuButton(
-                        ft.Row([ft.Icon(ft.Icons.INSERT_CHART_OUTLINED, ft.Colors.PRIMARY), ft.Text("Chart", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
-                        self.get_template_options("chart"), 
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="New Charts for your story"
-                    ), 
-                ],
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-            ),
-            ft.SubmenuButton(
-                ft.Container(
-                    ft.Icon(ft.Icons.IMPORT_EXPORT_OUTLINED, ft.Colors.PRIMARY),
-                    padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
-                    width=40, height=40, alignment=ft.Alignment.CENTER
+                
+                ft.MenuItemButton(      
+                    leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY), content="Note", 
+                    data="note", #on_click=self.new_item_clicked, close_on_click=True,
+                    tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                ), 
+                ft.MenuItemButton(
+                    leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
+                    data="plotline", #on_click=self.new_item_clicked, close_on_click=True, 
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                    tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
                 ),
-                [
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.DRIVE_FOLDER_UPLOAD_OUTLINED, ft.Colors.PRIMARY), content="Import Folder", 
-                        on_click=self.story.import_folder_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="Import all files within a folder to create new widgets.", 
-                    ),  
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Import Widget(s)", 
-                        on_click=self.story.import_files_clicked, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="Import file(s) to create new widgets.", 
-                    ),  
-                    ft.MenuItemButton(
-                        leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), content="Export Widget(s)", 
-                        on_click=self.story.handle_export, close_on_click=True,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
-                        tooltip="Export parts of your story.",
-                    ),
-                ],
-                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                tooltip="Import or Export",
-            ),
-        ]
-
-        menubar = ft.MenuBar(
-            top_row_buttons,
-            #expand=True,
-            style=ft.MenuStyle(
-                bgcolor="transparent", shadow_color="transparent",
-                shape=ft.RoundedRectangleBorder(radius=4),
-                padding=ft.Padding.all(0)
-            ),
-        )
-
-        header = ft.Row(
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.CENTER,
-            controls=[menubar]
-        )
-                 
-
-        # Build the content of our rail
-        content = IsolatedListView(
-            scroll=ft.ScrollMode.AUTO,
-            spacing=0,
-            expand=True,
-            controls=[
-                ft.Container(self.new_item_textfield, margin=ft.Margin.only(left=10, right=10, top=6))
+                ft.MenuItemButton(
+                    content=ft.Row([
+                        ft.Text("Canvas Board"), 
+                        ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                    leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), 
+                    data="canvas_board", #on_click=self.new_item_clicked, close_on_click=True,
+                    tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                ),
+                ft.MenuItemButton(
+                    content=ft.Row([
+                        ft.Text("Map"), 
+                        ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                    leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                    data="map", #on_click=self.new_item_clicked, close_on_click=True,
+                    tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                ),
+                
+                ft.MenuItemButton(
+                    leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
+                    data="item", #on_click=self.new_item_clicked, close_on_click=True,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="New Items and Equipment for your story"
+                ),  
+                ft.MenuItemButton(
+                    leading=ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED, ft.Colors.PRIMARY), content="Plot Chart", 
+                    data="plot_chart", #on_click=self.new_item_clicked, close_on_click=True,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="New Items and Equipment for your story", 
+                ),  
+                ft.MenuItemButton(
+                    leading=ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, ft.Colors.PRIMARY), content="Comic Preview", 
+                    data="comic_preview", #on_click=self.new_item_clicked, close_on_click=True,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                    tooltip="Preview the canvases in your story as a comic strip",
+                ),
+                
+                ft.MenuItemButton(
+                    leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Relationship Map", 
+                    data="character_relationship_map", #on_click=self.new_item_clicked, close_on_click=True,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="Visualize the connections between the characters in your story"
+                ),  
+                ft.SubmenuButton(
+                    ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
+                    #self.get_template_options("character"), 
+                    expand=True,
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="Create a new character for your story. Choose from templates or create a default character."
+                ),
+                ft.SubmenuButton(
+                    ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
+                    #self.get_template_options("world"), 
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="Create a new world for your story. Choose from templates or create a default world."
+                ),
+                ft.SubmenuButton(
+                    ft.Row([ft.Icon(ft.Icons.INSERT_CHART_OUTLINED, ft.Colors.PRIMARY), ft.Text("Chart", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
+                    #self.get_template_options("chart"), 
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="New Charts for your story"
+                ), 
             ],
-        )
+            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+            style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+        ),
+        ft.SubmenuButton(
+            ft.Container(
+                ft.Icon(ft.Icons.IMPORT_EXPORT_OUTLINED, ft.Colors.PRIMARY),
+                padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
+                width=40, height=40, alignment=ft.Alignment.CENTER
+            ),
+            [
+                ft.MenuItemButton(
+                    leading=ft.Icon(ft.Icons.DRIVE_FOLDER_UPLOAD_OUTLINED, ft.Colors.PRIMARY), content="Import Folder", 
+                    #on_click=self.story.import_folder_clicked, close_on_click=True,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="Import all files within a folder to create new widgets.", 
+                ),  
+                ft.MenuItemButton(
+                    leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Import Widget(s)", 
+                    #on_click=self.story.import_files_clicked, close_on_click=True,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="Import file(s) to create new widgets.", 
+                ),  
+                ft.MenuItemButton(
+                    leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), content="Export Widget(s)", 
+                    #on_click=self.story.handle_export, close_on_click=True,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                    tooltip="Export parts of your story.",
+                ),
+            ],
+            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+            style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+            tooltip="Import or Export",
+        ),
+    ]
+
+    menubar = ft.MenuBar(
+        top_row_buttons,
+        #expand=True,
+        style=ft.MenuStyle(
+            bgcolor="transparent", shadow_color="transparent",
+            shape=ft.RoundedRectangleBorder(radius=4),
+            padding=ft.Padding.all(0)
+        ),
+    )
+
+    header = ft.Row(
+        vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        alignment=ft.MainAxisAlignment.CENTER,
+        controls=[menubar]
+    )
+                
+
+    # Build the content of our rail
+    content = IsolatedListView(
+        scroll=ft.ScrollMode.AUTO,
+        spacing=0,
+        expand=True,
+        controls=[
+            #ft.Container(self.new_item_textfield, margin=ft.Margin.only(left=10, right=10, top=6))
+        ],
+    )
 
 
-        # Load our content directory data into the rail
-        load_directory_data(
-            story=self.story,
-            directory=self.story.data.get('content_directory_path'),
-            rail=self,
-            column=content,
-        )
+    # Load our content directory data into the rail
+    #load_directory_data(
+        #story=self.story,
+        #directory=self.story.data.get('content_directory_path'),
+        #rail=self,
+        #column=content,
+    #)
 
-        
-        # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space
-        content.controls.append(ft.Container(expand=True))
+    
+    # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space
+    content.controls.append(ft.Container(expand=True))
 
 
-        # Wrap the gd in a drag target so we can move characters here
-        dt = ft.DragTarget(
-            group="widgets", on_will_accept=self._highlight_rail, on_leave=self._stop_highlight_rail,
-            content=content,     # Our content is the content we built above
-            on_accept=lambda e: self.move_widget_file(e, self.story.data.get('content_directory_path'))
-        )
-        
+    # Wrap the gd in a drag target so we can move characters here
+    dt = ft.DragTarget(
+        group="widgets", #on_will_accept=self._highlight_rail, on_leave=self._stop_highlight_rail,
+        content=content,     # Our content is the content we built above
+        #on_accept=lambda e: self.move_widget_file(e, self.story.data.get('content_directory_path'))
+    )
+    
 
-        # Gesture detector to put on top of stack on the rail to pop open menus on right click
-        menu_gesture_detector = ft.GestureDetector(
-            content=dt,
-            expand=True,
-            on_hover=self._set_menu_coords,
-            on_secondary_tap=lambda: self.story.open_menu(self.get_new_item_menu_options()),  
-            hover_interval=20,
-        )
+    # Gesture detector to put on top of stack on the rail to pop open menus on right click
+    menu_gesture_detector = ft.GestureDetector(
+        content=dt,
+        expand=True,
+        #on_hover=self._set_menu_coords,
+        #on_secondary_tap=lambda: self.story.open_menu(self.get_new_item_menu_options()),  
+        hover_interval=20,
+    )
 
-        self.controls = [
+    return ft.Container(
+        ft.Column([
             header,
             ft.Divider(thickness=2, leading_indent=8),
             menu_gesture_detector
-        ]
-        
-        
-        
-        
+        ], expand=True, spacing=0),
+        alignment=ft.Alignment.TOP_CENTER,
+        padding=ft.Padding.only(top=10, bottom=10, left=8),
+        #width=app.settings.data.get('story', {}).get('active_rail_width', 250),
+        width=settings.binder_rail_width,
+        animate_size=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+        animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+        bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+        clip_behavior=ft.ClipBehavior.HARD_EDGE,
+    )
+
+    
+    
+    
+    
+    
 

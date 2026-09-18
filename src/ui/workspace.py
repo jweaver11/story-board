@@ -6,7 +6,7 @@ Overtop that, we append our drag targets when we start dragging a widget (tab). 
 '''
 
 import flet as ft
-from models.app import app
+#from models.app import app
 from models.views.story import Story
 from models.widget import Widget
 import json

@@ -2,7 +2,7 @@ import flet as ft
 from models.views.story import Story
 from models.widget import Widget
 from flet_quill import FletQuill, FletQuillEditor, FletQuillToolbar
-from models.app import app
+#from models.app import app
 import math
 import os
 from utils.safe_string_checker import return_safe_name
@@ -39,7 +39,7 @@ class Manuscript(Widget):
             self.data.update({
                 # Widget data
                 'tag': "manuscript",
-                'color': app.settings.data.get('widget_defaults', {}).get('manuscript', {}).get('color'),
+                #'color': app.settings.data.get('widget_defaults', {}).get('manuscript', {}).get('color'),
                 'show_sidebar': True,
 
 

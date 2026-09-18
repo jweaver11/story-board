@@ -5,7 +5,7 @@ Class for showing all our characters laid out in a family tree view.
 import flet as ft
 from models.widget import Widget
 from models.views.story import Story
-from models.app import app
+#from models.app import app
 import flet.canvas as cv
 from styles.snack_bar import SnackBar
 from styles.menu_option_style import MenuOptionStyle
@@ -32,7 +32,7 @@ class CharacterRelationshipMap(Widget):
             self.data.update({
                 # Widget data
                 'tag': "character_relationship_map",
-                'color': app.settings.data.get('widget_defaults', {}).get('character_relationship_map', {}).get('color'),
+                #'color': app.settings.data.get('widget_defaults', {}).get('character_relationship_map', {}).get('color'),
                 'spider_web_view': False, # Whether lines/edges between characters are straight or have 3 segments
                 'characters': {
                     #'id': (position) # position of the character on the map

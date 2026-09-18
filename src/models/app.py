@@ -3,6 +3,7 @@ Our model for our app. Contains settings and stories, as well as methods to load
 '''
 
 from models.views.story import Story, StoryView
+from models.views.settings import Settings
 import flet as ft
 import os
 import json
@@ -199,7 +200,7 @@ class App:
             # Sets our active story to the page route. The route change function will load the stories data and UI
             if story.route == self.settings.data.get('page', {}).get('route', None):
                 self.settings.story = story  # Gives our settings widget the story reference it needs
-                return StoryView(self, story)
+                return StoryView(self, self.settings, story)
                 #await page.push_route(story.route)
                 return
                 
@@ -237,7 +238,7 @@ def AppView() -> list[ft.Control]:
     app.configure_page(page)
 
     return app.load_story()
-    
-# Sets our global app object that main uses and some functions call
+
 app = App()
+
 

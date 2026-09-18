@@ -6,11 +6,12 @@ after editing is done, and the shape is then painted onto the canvas
 import flet as ft
 import flet.canvas as cv
 import math
-from models.app import app
 
 class CanvasShape(ft.Container):
 
     def __init__(self, shape_type: str, left=0, top=0):
+        from models.app import app
+
         super().__init__(
             left=left,
             top=top,
@@ -366,6 +367,7 @@ class CanvasShape(ft.Container):
                 self.update()
     
     def build(self):
+        from models.app import app
 
         match self.shape_type:
             case "rectangle":

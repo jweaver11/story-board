@@ -5,7 +5,7 @@ Base class for all canvas shapes
 import flet as ft
 import flet.canvas as cv
 import math
-from models.app import app
+#from models.app import app
 
 class CanvasShape(cv.Shape):
     def __init__(self, shape_type: str, left=0, top=0):
@@ -19,7 +19,7 @@ class CanvasShape(cv.Shape):
         )
 
         self.shape_type = shape_type
-        self.paint = ft.Paint(**app.settings.data.get('paint_settings', {}))
+        self.paint: ft.Paint# = ft.Paint(**app.settings.data.get('paint_settings', {}))
         
         self.width = 100
         self.height = 100
@@ -369,124 +369,125 @@ class CanvasShape(cv.Shape):
                 self.rotate_handle.update()
                 self.update()
     
-    def build(self):
+def build(self):
+    return
 
-        match self.shape_type:
-            case "rectangle":
-                self.cv_shape = cv.Rect(
-                    10, 10, 180, 180, paint=self.paint, 
-                    border_radius=ft.BorderRadius.all(app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0))
-                )
-            case "triangle":
-                self.cv_shape = cv.Path(
-                    elements=[
-                        cv.Path.MoveTo(100, 10),
-                        cv.Path.LineTo(180, 180),
-                        cv.Path.LineTo(0, 180),
-                        cv.Path.Close()
-                    ], 
-                    paint=self.paint
-                )
-            case "circle":
-                self.cv_shape = cv.Circle(100, 100, 90, paint=self.paint)
-            case "oval":
-                self.cv_shape = cv.Oval(10, 10, 180, 180, paint=self.paint)
-            case "text":
-                match app.settings.data.get('canvas_settings', {}).get('text_shape_decoration', "None"):
-                    case "Underline": decoration = ft.TextDecoration.UNDERLINE
-                    case "Overline": decoration = ft.TextDecoration.OVERLINE
-                    case "Line Through": decoration = ft.TextDecoration.LINE_THROUGH
-                    case _: decoration = ft.TextDecoration.NONE
-                self.cv_shape = cv.Text(
-                    100, 100, "Text", 
-                    max_width=180, 
-                    rotate=0,
-                    alignment=ft.Alignment.CENTER,
-                    text_align=ft.TextAlign.CENTER,
-                    style=ft.TextStyle(
-                        color=app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE), 
-                        size=app.settings.data.get('canvas_settings', {}).get('text_shape_size', 16),
-                        weight=ft.FontWeight.BOLD if app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False) else None,
-                        italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
-                        decoration=decoration,
-                        #shadow=ft.BoxShadow(app.settings.data.get('canvas_settings', {}).get('text_shadow_color', "#00000000"), blur_radius=4, offset=ft.Offset(2, 2)),
-                        letter_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0),
-                        word_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0),
-                    ),
-                )
+    match self.shape_type:
+        case "rectangle":
+            self.cv_shape = cv.Rect(
+                10, 10, 180, 180, paint=self.paint, 
+                border_radius=ft.BorderRadius.all(app.settings.data.get('canvas_settings', {}).get('rectangle_border_radius', 0))
+            )
+        case "triangle":
+            self.cv_shape = cv.Path(
+                elements=[
+                    cv.Path.MoveTo(100, 10),
+                    cv.Path.LineTo(180, 180),
+                    cv.Path.LineTo(0, 180),
+                    cv.Path.Close()
+                ], 
+                paint=self.paint
+            )
+        case "circle":
+            self.cv_shape = cv.Circle(100, 100, 90, paint=self.paint)
+        case "oval":
+            self.cv_shape = cv.Oval(10, 10, 180, 180, paint=self.paint)
+        case "text":
+            match app.settings.data.get('canvas_settings', {}).get('text_shape_decoration', "None"):
+                case "Underline": decoration = ft.TextDecoration.UNDERLINE
+                case "Overline": decoration = ft.TextDecoration.OVERLINE
+                case "Line Through": decoration = ft.TextDecoration.LINE_THROUGH
+                case _: decoration = ft.TextDecoration.NONE
+            self.cv_shape = cv.Text(
+                100, 100, "Text", 
+                max_width=180, 
+                rotate=0,
+                alignment=ft.Alignment.CENTER,
+                text_align=ft.TextAlign.CENTER,
+                style=ft.TextStyle(
+                    color=app.settings.data.get('canvas_settings', {}).get('text_shape_color', ft.Colors.ON_SURFACE), 
+                    size=app.settings.data.get('canvas_settings', {}).get('text_shape_size', 16),
+                    weight=ft.FontWeight.BOLD if app.settings.data.get('canvas_settings', {}).get('text_shape_bold', False) else None,
+                    italic=app.settings.data.get('canvas_settings', {}).get('text_shape_italic', False),
+                    decoration=decoration,
+                    #shadow=ft.BoxShadow(app.settings.data.get('canvas_settings', {}).get('text_shadow_color', "#00000000"), blur_radius=4, offset=ft.Offset(2, 2)),
+                    letter_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_letter_spacing', 0),
+                    word_spacing=app.settings.data.get('canvas_settings', {}).get('text_shape_word_spacing', 0),
+                ),
+            )
 
-            case "arc":
-                self.cv_shape = cv.Arc(10, 10, 180, 360, math.pi, math.pi, paint=self.paint)
-            case "dialogue_box":
-                self.cv_shape = cv.Path(
-                    [
-                        cv.Path.MoveTo(x=75, y=25),
-                        cv.Path.QuadraticTo(cp1x=25, cp1y=25, x=25, y=62.5),
-                        cv.Path.QuadraticTo(cp1x=25, cp1y=100, x=50, y=100),
-                        cv.Path.QuadraticTo(cp1x=50, cp1y=120, x=30, y=125),
-                        cv.Path.QuadraticTo(cp1x=60, cp1y=120, x=65, y=100),
-                        cv.Path.QuadraticTo(cp1x=125, cp1y=100, x=125, y=62.5),
-                        cv.Path.QuadraticTo(cp1x=125, cp1y=25, x=75, y=25),
-                    ],
-                    self.paint
-                )
+        case "arc":
+            self.cv_shape = cv.Arc(10, 10, 180, 360, math.pi, math.pi, paint=self.paint)
+        case "dialogue_box":
+            self.cv_shape = cv.Path(
+                [
+                    cv.Path.MoveTo(x=75, y=25),
+                    cv.Path.QuadraticTo(cp1x=25, cp1y=25, x=25, y=62.5),
+                    cv.Path.QuadraticTo(cp1x=25, cp1y=100, x=50, y=100),
+                    cv.Path.QuadraticTo(cp1x=50, cp1y=120, x=30, y=125),
+                    cv.Path.QuadraticTo(cp1x=60, cp1y=120, x=65, y=100),
+                    cv.Path.QuadraticTo(cp1x=125, cp1y=100, x=125, y=62.5),
+                    cv.Path.QuadraticTo(cp1x=125, cp1y=25, x=75, y=25),
+                ],
+                self.paint
+            )
 
-        # If we're text or not, we'll add a text_editor below the canvas to edit the text
-        is_text = self.shape_type == "text"
+    # If we're text or not, we'll add a text_editor below the canvas to edit the text
+    is_text = self.shape_type == "text"
 
-        self.canvas = cv.Canvas(
-            shapes=[self.cv_shape if self.cv_shape else cv.Text(0, 0, "Error getting shape", style=ft.TextStyle(color=ft.Colors.BLACK, size=16))],      # Shape we built depending on the tool being used
-            content=ft.GestureDetector(
-                on_pan_update=self._manipulate,     # Handles resizing and dragging
-                on_hover=self._set_manipulation_action,
-                expand=True, mouse_cursor=ft.MouseCursor.MOVE,
-                drag_interval=20, hover_interval=50,
+    self.canvas = cv.Canvas(
+        shapes=[self.cv_shape if self.cv_shape else cv.Text(0, 0, "Error getting shape", style=ft.TextStyle(color=ft.Colors.BLACK, size=16))],      # Shape we built depending on the tool being used
+        content=ft.GestureDetector(
+            on_pan_update=self._manipulate,     # Handles resizing and dragging
+            on_hover=self._set_manipulation_action,
+            expand=True, mouse_cursor=ft.MouseCursor.MOVE,
+            drag_interval=20, hover_interval=50,
+        ),
+        width=200, height=200,
+        animate_rotation=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+        animate_size=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+    )
+
+    # How we will rotate the shape. This is added from the canvas to the overlay
+    self.rotate_handle = ft.GestureDetector(
+        ft.Icon(ft.Icons.ROTATE_RIGHT_OUTLINED, ft.Colors.PRIMARY), 
+        mouse_cursor=ft.MouseCursor.CLICK if self.page.platform == ft.PagePlatform.WINDOWS else ft.MouseCursor.GRAB,
+        on_pan_start=self._rotate_start,
+        on_pan_update=self._rotate, 
+        drag_interval=20,
+        expand=True,
+        height=50,
+        left=self.left + 100,
+        offset=ft.Offset(-0.5, 0),
+        top=self.top - 50,
+        animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+    )
+
+    text_width_adjustor = ft.GestureDetector(
+        ft.Icon(ft.CupertinoIcons.RESIZE_H, ft.Colors.PRIMARY), 
+        tooltip="Drag to adjust text width based on its right side up layout",
+        mouse_cursor=ft.MouseCursor.CLICK if self.page.platform == ft.PagePlatform.WINDOWS else ft.MouseCursor.GRAB,
+        on_pan_update=self._resize_text_width, 
+        drag_interval=20,
+        visible=self.shape_type == "text"
+    )
+    
+    
+    
+    self.content = ft.Column(
+        [
+            ft.Container(
+                self.canvas, 
+                expand=True, 
+                border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
             ),
-            width=200, height=200,
-            animate_rotation=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            animate_size=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-        )
-
-        # How we will rotate the shape. This is added from the canvas to the overlay
-        self.rotate_handle = ft.GestureDetector(
-            ft.Icon(ft.Icons.ROTATE_RIGHT_OUTLINED, ft.Colors.PRIMARY), 
-            mouse_cursor=ft.MouseCursor.CLICK if self.page.platform == ft.PagePlatform.WINDOWS else ft.MouseCursor.GRAB,
-            on_pan_start=self._rotate_start,
-            on_pan_update=self._rotate, 
-            drag_interval=20,
-            expand=True,
-            height=50,
-            left=self.left + 100,
-            offset=ft.Offset(-0.5, 0),
-            top=self.top - 50,
-            animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-        )
-
-        text_width_adjustor = ft.GestureDetector(
-            ft.Icon(ft.CupertinoIcons.RESIZE_H, ft.Colors.PRIMARY), 
-            tooltip="Drag to adjust text width based on its right side up layout",
-            mouse_cursor=ft.MouseCursor.CLICK if self.page.platform == ft.PagePlatform.WINDOWS else ft.MouseCursor.GRAB,
-            on_pan_update=self._resize_text_width, 
-            drag_interval=20,
-            visible=self.shape_type == "text"
-        )
-        
-        
-        
-        self.content = ft.Column(
-            [
-                ft.Container(
-                    self.canvas, 
-                    expand=True, 
-                    border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
-                ),
-                ft.TextField(
-                    hint_text="Enter your text here", multiline=True, dense=True, visible=is_text,
-                    on_change=self._change_text, width=200, 
-                ),
-                text_width_adjustor
-            ], 
-            tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0
-        )
+            ft.TextField(
+                hint_text="Enter your text here", multiline=True, dense=True, visible=is_text,
+                on_change=self._change_text, width=200, 
+            ),
+            text_width_adjustor
+        ], 
+        tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0
+    )
 
 

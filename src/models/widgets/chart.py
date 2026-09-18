@@ -6,7 +6,7 @@ import flet as ft
 from models.views.story import Story
 from models.widget import Widget
 from styles.menu_option_style import MenuOptionStyle
-from models.app import app
+#from models.app import app
 from utils.safe_string_checker import return_safe_name
 from styles.text_fields import TextField
 import flet_charts as fch
@@ -40,6 +40,7 @@ class Chart(Widget):
 
         # If we're new, give default values for our data 
         if self.is_new == True:
+            return
             self.data.update({
                 # Widget data
                 'tag': "chart",             # Tag to identify what type of object this is

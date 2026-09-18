@@ -5,7 +5,7 @@ Class for showing all our characters laidd out in a family tree view.
 import flet as ft
 from models.widget import Widget
 from models.views.story import Story
-from models.app import app
+#from models.app import app
 import flet.canvas as cv
 from models.dataclasses.canvas_state import State
 import math
@@ -40,7 +40,7 @@ class CanvasBoard(Widget):
         if self.is_new == True:
             self.data.update({
                 'tag': "canvas_board",
-                'color': app.settings.data.get('widget_defaults', {}).get('canvas_board', {}).get('color'),
+                #'color': app.settings.data.get('widget_defaults', {}).get('canvas_board', {}).get('color'),
 
                 # Our row data 
                 'rows': [
@@ -170,6 +170,7 @@ class CanvasBoard(Widget):
 
 
     async def add_point(self, e: ft.TapEvent):
+        return
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
         
         # Grab our canvas
@@ -278,8 +279,8 @@ class CanvasBoard(Widget):
                 'preview_capture': "",    # Base64 string of the preview capture
                 'sketch_capture': "",    # Base64 string of the sketch capture
                 'description': "",    # Description of the sketch
-                'height': app.settings.data.get('widget_defaults', {}).get('canvas_board', {}).get('sketch_width'),      # Height of the canvas
-                'width': app.settings.data.get('widget_defaults', {}).get('canvas_board', {}).get('sketch_height'),       # Width of the canvas
+                #'height': app.settings.data.get('widget_defaults', {}).get('canvas_board', {}).get('sketch_width'),      # Height of the canvas
+                #'width': app.settings.data.get('widget_defaults', {}).get('canvas_board', {}).get('sketch_height'),       # Width of the canvas
                 'dirty': False,      # State tracking - Whether this row's sketch has unsaved changes
             }
             

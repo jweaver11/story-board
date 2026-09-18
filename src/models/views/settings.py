@@ -16,9 +16,11 @@ from styles.text_fields import TextField
 from models.dataclasses.world_template import default_world_template_data_dict
 import asyncio
 from styles.text_fields import SettingsTextField
+from dataclasses import dataclass
 import base64
 
- 
+@ft.observable
+@dataclass
 class Settings(ft.View):
 
     # Constructor
@@ -30,12 +32,12 @@ class Settings(ft.View):
     ):
         
         # Constructor the parent widget class
-        super().__init__(
-            route=f"/settings",                                      # Sets our route for our new story
-            padding=ft.Padding.all(0),      # No padding for the page
-            spacing=0,                                                   # No spacing between menubar and rest of page
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
-        )
+        #super().__init__(
+           # route=f"/settings",                                      # Sets our route for our new story
+            #padding=ft.Padding.all(0),      # No padding for the page
+            #spacing=0,                                                   # No spacing between menubar and rest of page
+            #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
+        #)
 
         # Set attributes
         self.route = "/settings"   # Sets our route for our settings view
@@ -64,6 +66,7 @@ class Settings(ft.View):
                 'story': {
                     'workspaces_rail_is_collapsed': False,
                     'active_rail_width': 250,  
+                    'binder_rail_width': 250,
                     'default_folder_color': "primary",    # Categories thrown in here
                     'show_canvas_rail': True,   # If the canvas rail is hidden or not
                     'workspaces_rail_order': [      # Order of the workspace rail 
@@ -218,7 +221,8 @@ class Settings(ft.View):
                     'Default': default_world_template_data_dict(),
                 },
             }
-            
+
+        self.binder_rail_width: int = self.data.get('story', {}).get('binder_rail_width', 250)
             
         
         

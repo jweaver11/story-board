@@ -12,7 +12,7 @@ from styles.snack_bar import SnackBar
 from models.dataclasses.canvas_state import State
 import flet.canvas as cv
 import math
-from models.app import app
+#from models.app import app
 import json
 import base64
 from io import BytesIO
@@ -62,7 +62,7 @@ class Canvas(Widget):
                 "tag": "canvas",
                 'layer_directory_path': os.path.join(self.story.data.get('canvas_directory_path'), self.data.get('id')),  # Path to the canvas folder for this story
 
-                'color': app.settings.data.get('widget_defaults', {}).get('canvas', {}).get('color'),
+                #'color': app.settings.data.get('widget_defaults', {}).get('canvas', {}).get('color'),
                 'show_sidebar': True,   # Whether to show the info column on the side of our charts or not.
 
                 # Info about the canvas
@@ -135,7 +135,7 @@ class Canvas(Widget):
         self.layer_stack: ft.Stack                # Stack to hold our list of layer canvases on top of each other
         self.canvas_controller: ft.GestureDetector  # Controller that sits over our layer stack and handles mouse events for drawing and tool usage 
         self.mouse_cursor: ft.Icon  # Our 'mouse cursor' that sits overtop the canvas_controller
-        self.use_standard_cursor: bool = app.settings.data.get('widget_defaults', {}).get('canvas', {}).get('use_standard_cursor', True)  # Whether to use a standard cursor or one that reflects our paint settings
+        self.use_standard_cursor: bool #= app.settings.data.get('widget_defaults', {}).get('canvas', {}).get('use_standard_cursor', True)  # Whether to use a standard cursor or one that reflects our paint settings
         
         # Tool and shape stuff
         self.current_tool: CanvasShape = None                     # The active shape being added if we're using a tool
@@ -204,6 +204,7 @@ class Canvas(Widget):
    
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     def set_mouse_cursor(self, update: bool=True):
+        return
 
         # For setting the standard cursor
         def set_standard_cursor():
@@ -291,6 +292,7 @@ class Canvas(Widget):
 
     # Handles all tap events on the canvas and decides how to handle them based on the current control mode
     async def handle_tap(self, e: ft.TapEvent):
+        return
         control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
         # Add a point if in draw mode
         if control_mode == "draw":
@@ -310,6 +312,7 @@ class Canvas(Widget):
 
     # Handles all pan start events
     async def handle_pan_start(self, e: ft.DragStartEvent):
+        return
         control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
         # Draw mode, so we start our stroke
         if control_mode == "draw":
@@ -323,6 +326,7 @@ class Canvas(Widget):
 
     # Handles all pan update events
     async def handle_pan_update(self, e: ft.DragUpdateEvent):
+        return
         control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
         # Draw mode, so we update our stroke
         if control_mode == "draw": 
@@ -336,6 +340,7 @@ class Canvas(Widget):
 
     # Handles all pan end events
     async def handle_pan_end(self, e: ft.DragEndEvent):
+        return
         control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
         # Draw mode, so we end our stroke
         if control_mode == "draw":  
@@ -349,6 +354,7 @@ class Canvas(Widget):
 
     # Tap event for adding a circular point to the canvas using our paint settings
     async def add_point(self, e: ft.TapEvent):
+        return
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
 
         # Grab our canvas
@@ -632,6 +638,7 @@ class Canvas(Widget):
         x = max(0, min(int(e.local_position.x), image.width - 1))
         y = max(0, min(int(e.local_position.y), image.height - 1))
 
+        return
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
         canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
 
@@ -662,6 +669,7 @@ class Canvas(Widget):
 
     # Tap event for adding a tool to the canvas
     async def add_shape(self, e: ft.TapEvent):
+        return
         
         # Check if we're in tool mode, and what tool we're using
         tool_name = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
@@ -798,6 +806,7 @@ class Canvas(Widget):
 
     # Saves any changes to the current layer canvas to its png file, and returns the bytes if other functions need it
     async def save_canvas(self, canvas: cv.Canvas) -> bytes:
+        return
 
         # Protect bad calls
         if canvas.visible == False:  

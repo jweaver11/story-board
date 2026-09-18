@@ -1181,28 +1181,31 @@ class Story(ft.View):
         self.blocker.update()
 
 # Builds our view
-def StoryView(app, story: 'Story') -> list[ft.Control]:
+def StoryView(app, settings, story: 'Story') -> list[ft.Control]:
     ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
     from ui.menu_bar import MenuBar, MenuBarView
     from ui.workspaces_rail import WorkspacesRail
     from ui.canvas_rail import DrawingControlsRail
-    from ui.active_rail import ActiveRail
+    from ui.binder_view_rail import BinderViewRail
     from ui.workspace import Workspace
-    from models.app import app
+    #from models.app import app
     from models.isolated_controls.row import IsolatedRow
 
     # Called when resizing the active rail by dragging the resizer
-    def resize_active_rail(e: ft.DragUpdateEvent):
+    def resize_binder_rail(e: ft.DragUpdateEvent):
         ''' Responsible for altering the width of the active rail '''
         
-        story.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
+        #story.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
 
-        # Clamp rail
-        if story.active_rail.width <= 120:
-            story.active_rail.width = 120
-        elif story.active_rail.width > 600:
-            story.active_rail.width = 600
-        story.active_rail.update()     
+        #print(app.settings.binder_rail_width)
+
+        old_width = app.settings.binder_rail_width
+        new_width = old_width + int(e.local_delta.x)    # Apply the change to our rail
+        new_width = max(0, min(new_width, 600))     # Clamp the width between 0 and 600
+        app.settings.binder_rail_width = new_width
+
+        
+   
 
     # Handles keyboard events for the story
     async def handle_keyboard_event(e: ft.KeyboardEvent):
@@ -1246,22 +1249,26 @@ def StoryView(app, story: 'Story') -> list[ft.Control]:
     #story.canvas_rail = CanvasRail(self)
     #story.active_rail = ActiveRail(self) 
     #story.workspace = Workspace(self)  
+
+    @ft.component
+    def ActiveRailResizer() -> ft.GestureDetector:
+        return ft.GestureDetector(
+            content=ft.Container(
+                width=10,   # Total width of the GD, so its easier to find with mouse
+                content=ft.VerticalDivider(2, 2),     # Original
+                padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+            ),
+            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
+            on_pan_update=resize_binder_rail, # Resize the active rail as app is dragging
+            #on_pan_end=lambda: app.settings.update_data(**{'story': {'active_rail_width': story.active_rail.width}}),  # Save the resize when app is done dragging
+            drag_interval=20,
+        )
     
 
 
     # The actual resizer for the active rail (gesture detector)
-    story.active_rail_resizer = ft.GestureDetector(
-        content=ft.Container(
-            width=10,   # Total width of the GD, so its easier to find with mouse
-            content=ft.VerticalDivider(2, 2),     # Original
-            padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
-        ),
-        mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
-        on_pan_update=resize_active_rail, # Resize the active rail as app is dragging
-        on_pan_end=lambda: app.settings.update_data(**{'story': {'active_rail_width': story.active_rail.width}}),  # Save the resize when app is done dragging
-        drag_interval=20,
-    )
+    
 
 
     return [
@@ -1271,8 +1278,8 @@ def StoryView(app, story: 'Story') -> list[ft.Control]:
                 
                 #story.workspaces_rail,
                 DrawingControlsRail(app, story),
-                #story.active_rail,
-                #story.active_rail_resizer,
+                BinderViewRail(app, app.settings, story),
+                ActiveRailResizer(),
                 #story.workspace,
                 #ft.Container(story.workspace, expand=True, gradient=dark_gradient)
             ], spacing=0, expand=True)

@@ -7,7 +7,7 @@ import os
 import flet as ft
 from models.widget import Widget
 from models.views.story import Story
-from models.app import app
+#from models.app import app
 from utils.safe_string_checker import return_safe_name
 from PIL import Image
 from io import BytesIO
@@ -38,7 +38,7 @@ class World(Widget):
             self.data.update({
                 # Widget data
                 'tag': "world",     
-                'color': app.settings.data.get('widget_defaults', {}).get('world', {}).get('color'),   
+                #'color': app.settings.data.get('widget_defaults', {}).get('world', {}).get('color'),   
 
                 # State and view data
                 'image_base64': str(),            # Saves our image as img64 string
@@ -46,8 +46,8 @@ class World(Widget):
                 'about': str(),
 
                 # World data
-                'world_data': app.settings.data.get('world_templates', {}).get(app.settings.data.get('active_world_template', ""), default_world_template_data_dict()) 
-                if data is None or 'world_data' not in data else data['world_data'],
+                #'world_data': app.settings.data.get('world_templates', {}).get(app.settings.data.get('active_world_template', ""), default_world_template_data_dict()) 
+                #if data is None or 'world_data' not in data else data['world_data'],
             }
         )
  

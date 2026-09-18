@@ -2,7 +2,7 @@ import flet as ft
 from models.widget import Widget
 from styles.menu_option_style import MenuOptionStyle
 from styles.rail.rail_folder import RailFolder
-from models.app import app
+#from models.app import app
 from styles.colors import colors
 from styles.text_fields import TextField
 import os

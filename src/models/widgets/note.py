@@ -3,7 +3,7 @@
 import flet as ft
 from models.views.story import Story
 from models.widget import Widget
-from models.app import app
+#from models.app import app
 from styles.text_fields import TextField, UnderlinedTextField, NoLabelTextField
 from styles.menu_option_style import MenuOptionStyle
 import asyncio
@@ -28,7 +28,7 @@ class Note(Widget):
         if self.is_new == True:
             self.data.update({ 
                 'tag': "note", 
-                'color': app.settings.data.get('widget_defaults', {}).get('note', {}).get('color'),
+                #'color': app.settings.data.get('widget_defaults', {}).get('note', {}).get('color'),
 
                 # Note card data. Stored as list so we can duplicate labels
                 'card_data': [ 

@@ -4,7 +4,7 @@ import flet as ft
 from models.views.story import Story
 from models.widget import Widget
 from styles.menu_option_style import MenuOptionStyle
-from models.app import app
+#from models.app import app
 from styles.text_fields import TextField
 import asyncio
     
@@ -28,7 +28,7 @@ class Item(Widget):
             self.data.update({
                 # Widget data
                 'tag': "item",             # Tag to identify what type of object this is
-                'color': app.settings.data.get('widget_defaults', {}).get('item', {}).get('color'),
+                #'color': app.settings.data.get('widget_defaults', {}).get('item', {}).get('color'),
 
                 'image_base64': str(), 
 
