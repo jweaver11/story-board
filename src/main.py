@@ -5,7 +5,7 @@ Initializes the app, settings, page data, and renders our UI onto the page
 
 import flet as ft
 from pathlib import Path
-from models.app import app
+from models.app import app, App, AppView
 
 from models.views.home import create_home_view
 from models.views.loading import create_loading_view
@@ -13,10 +13,10 @@ from models.views.welcome import create_welcome_view, animate_welcome_text
 import asyncio
 
 # Remove auto updates so we can improve performance
-ft.context.disable_auto_update()
+#ft.context.disable_auto_update()
 
 # Main function
-async def main(page: ft.Page):
+async def main_old(page: ft.Page):
      
     # Load settings and previous story (if one exists)
     app.load_settings(page) 
@@ -60,6 +60,13 @@ async def main(page: ft.Page):
         page.update()
 
 
+
+
+def main(page: ft.Page):
+    page.render(AppView)
+    
+
+
 # Runs the app
-ft.run(main)
-#ft.run(main, assets_dir=str(Path(__file__).parent / "assets"))
+if __name__ == "__main__":
+    ft.run(main)

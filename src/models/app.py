@@ -9,8 +9,11 @@ import json
 import asyncio
 from utils.route_change import route_change
 from constants import SETTINGS_FILE_PATH, STORIES_DIRECTORY_PATH
+from dataclasses import dataclass
 
 
+@ft.observable
+@dataclass
 class App:
 
     # Constructor
@@ -25,8 +28,10 @@ class App:
         # State management
         self.ignore_settings_change = True # Ignore settings changes when page is loading itself and saving incorrect changes
 
+        self.load_settings()
+
     # Called on app startup in main
-    def load_settings(self, page: ft.Page):
+    def load_settings(self):
         ''' Loads our settings from a JSON file into our rendered settings control. If none exist, creates default settings '''
         from models.views.settings import Settings
         from models.app import app
@@ -35,6 +40,7 @@ class App:
         # Should just look for our settings file to load our data from. Settings should do all other logic
 
         # Path to our settings file
+
         
 
         # Create settings.json with empty dict if it doesn't exist
@@ -63,6 +69,7 @@ class App:
 
 
         ''' Page styling '''
+        page = ft.context.page
 
         # Sets our app title
         page.title = "StoryBoard (alpha)"
@@ -132,8 +139,9 @@ class App:
                 page.fonts[font_name] = f"/fonts/{file_name}"
 
 
-      # Called on app startup in main
-    async def load_previous_story(self, page: ft.Page):
+    # Called on app startup in main
+    @ft.component
+    def load_story(self):
         ''' Loads our saved stories from the json files in story folders within the stories directory. If none exist, do nothing '''
         
         from models.app import app
@@ -183,13 +191,14 @@ class App:
             # Sets our active story to the page route. The route change function will load the stories data and UI
             if story.route == app.settings.data.get('page', {}).get('route', None):
                 app.settings.story = story  # Gives our settings widget the story reference it needs
-                await page.push_route(story.route)
+                return story
+                #await page.push_route(story.route)
                 return
                 
             
         # Give us home view if no stories were active
         #print("Page route is: ", page.route)
-        await page.push_route("/")
+        #await page.push_route("/")
 
         self.ignore_settings_change = False
 
@@ -209,7 +218,13 @@ class App:
         asyncio.create_task(page.push_route(story.route))
         self.settings.update_data(**{'page': {'route': story.route}})
         self.settings.story = story
-        
+
+
+@ft.component
+def AppView():
+    app, _ = ft.use_state(App)
+    
+    return app.load_story()
     
 # Sets our global app object that main uses and some functions call
 app = App()
