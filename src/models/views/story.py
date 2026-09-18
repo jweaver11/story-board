@@ -16,9 +16,11 @@ import asyncio
 from utils.tutorial import run_tutorial
 import uuid
 from styles.colors import dark_gradient
+from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor
 
- 
+@ft.observable
+@dataclass 
 class Story(ft.View):
 
     # Constructor.
@@ -29,12 +31,12 @@ class Story(ft.View):
     ):
         
         # Parent constructor
-        super().__init__(
+        #super().__init__(
             #route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
-            padding=ft.Padding.all(0),      # No padding for the page
-            spacing=0,                                                      # No spacing between menubar and rest of page
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
-        )  
+            #padding=ft.Padding.all(0),      # No padding for the page
+            #spacing=0,                                                      # No spacing between menubar and rest of page
+            #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
+        #)  
 
         self.data = data                # Sets our data (if any) passed in. New stories just have none
 
@@ -107,6 +109,34 @@ class Story(ft.View):
 
         # Controller for text shapes (canvas), labels and location labels (maps)
         # Canvas shapes get updated with this in real time if they are being edited
+
+        # Our container that sits on top of the story.page overlay when right clicking options. Starts invisible
+        self.menu = ft.Container(
+            left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
+            border_radius=4, visible=False,
+            bgcolor=ft.Colors.SURFACE_CONTAINER,
+            width=200, #border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
+            shadow=ft.BoxShadow(0, 1, offset=ft.Offset(0, 1), ),
+            content=ft.Column(
+                spacing=0,
+                controls=[]
+            ),
+        )
+    
+        # Outside gesture detector to close the menu when clicking outside the menu container
+        self.close_menu_detector = ft.GestureDetector(
+            expand=True, visible=False,
+            on_tap_down=self.close_menu,
+            on_secondary_tap_down=self.close_menu,
+        )
+        
+    
+        # Overlay is a stack, so add the detector, then the menu container
+        ft.context.page.overlay.extend([
+            self.close_menu_detector,
+            self.menu,
+            self.blocker
+        ])
 
           
     # Isolates stories from page.update calls. Needed for keeping performance when opening menus

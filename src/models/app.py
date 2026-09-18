@@ -21,7 +21,7 @@ class App:
     def __init__(self):
 
         # Declares settings and workspace rail here, but we create/load them later in main
-        self.settings: ft.View = ft.Container()
+        self.settings: ft.View = self.load_settings()
         
         # Dict of all our stories.
         self.stories = {}
@@ -29,8 +29,6 @@ class App:
         # State management
         self.ignore_settings_change = True # Ignore settings changes when page is loading itself and saving incorrect changes
 
-        self.load_settings()
-        #self.configure_page()
 
     def __post_init__(self):
         return
@@ -40,9 +38,7 @@ class App:
     def load_settings(self):
         ''' Loads our settings from a JSON file into our rendered settings control. If none exist, creates default settings '''
         from models.views.settings import Settings
-        #from models.app import app
         import constants
-        print("Settings loaded")
 
         # Should just look for our settings file to load our data from. Settings should do all other logic
 
@@ -72,16 +68,12 @@ class App:
             settings_data = None  # If there's an error, we will create default settings
 
         # Sets our app settings to our loaded settings. If none were loaded (I.E. first launch), Settings with create its own defaults
-        self.settings = Settings(data=settings_data)
+        return Settings(data=settings_data)
 
     # Called once from AppView, after a page exists (ft.context.page is only valid inside a Flet callback/render)
     def configure_page(self, page: ft.Page):
         ''' Applies our loaded settings to the current page (title, theme, window size, fonts, event handlers) '''
-        print("Page configured")
 
-        ''' Page styling '''
-        #page = ft.context.page
-        
         # Sets our app title
         page.title = "StoryBoard (alpha)"
 
@@ -233,7 +225,7 @@ class App:
 def AppView() -> list[ft.Control]:
     app, _ = ft.use_state(App())
 
-    page = ft.context.page
+    page = ft.context.page  # Grab the page so we can configure it
 
     app.configure_page(page)
 
