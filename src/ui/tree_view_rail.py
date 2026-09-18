@@ -202,7 +202,7 @@ class ContentRail(Rail):
 
 # Reload the rail whenever we need
 @ft.component
-def BinderViewRail(app, settings, story) -> ft.Control:
+def TreeViewRail(app, settings, story) -> ft.Control:
     ''' Reloads the content rail. `settings` is passed explicitly (not just read off `app`) so this
     component subscribes to the Settings observable itself and re-renders when binder_rail_width changes '''
 

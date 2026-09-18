@@ -66,7 +66,7 @@ class Settings(ft.View):
                 'story': {
                     'workspaces_rail_is_collapsed': False,
                     'active_rail_width': 250,  
-                    'binder_rail_width': 250,
+                    'tree_view_rail_width': 250,
                     'default_folder_color': "primary",    # Categories thrown in here
                     'show_canvas_rail': True,   # If the canvas rail is hidden or not
                     'workspaces_rail_order': [      # Order of the workspace rail 
@@ -222,7 +222,7 @@ class Settings(ft.View):
                 },
             }
 
-        self.binder_rail_width: int = self.data.get('story', {}).get('binder_rail_width', 250)
+        self.tree_view_rail_width: int = self.data.get('story', {}).get('tree_view_rail_width', 250)
             
         
         

@@ -23,15 +23,15 @@ from dataclasses import dataclass
 
 
 
-@ft.observable
-@dataclass
-class MenuBar:
-    app: any = None
-    story: Story = None
+#@ft.observable
+#@dataclass
+#class MenuBar:
+    #app: any = None
+    #story: Story = None
     
 
 @ft.component
-def MenuBarView(app, story: Story):
+def MenuBar(app, story: Story):
 
     page = ft.context.page
 

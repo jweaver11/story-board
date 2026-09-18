@@ -3,6 +3,7 @@ Our model for our app. Contains settings and stories, as well as methods to load
 '''
 
 from models.views.story import Story, StoryView
+from models.views.home import HomeView
 from models.views.settings import Settings
 import flet as ft
 import os
@@ -83,7 +84,7 @@ class App:
         page.theme_mode = self.settings.data.get('page', {}).get('theme_mode', "dark")  # Default to dark mode
     
         # Sets the title of our app, padding, and maximizes the window
-        page.padding = ft.Padding.only(top=0, left=0, right=0, bottom=0)    
+        #page.padding = ft.Padding.only(top=0, left=0, right=0, bottom=0)    
 
         # Set the window size as maximized or not
         if self.settings.data.get('page', {}).get('is_maximized', False):
@@ -202,6 +203,7 @@ class App:
         #await page.push_route("/")
 
         self.ignore_settings_change = False
+        return HomeView(app, None)
 
     
     

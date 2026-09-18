@@ -1213,26 +1213,26 @@ class Story(ft.View):
 # Builds our view
 def StoryView(app, settings, story: 'Story') -> list[ft.Control]:
     ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
-    from ui.menu_bar import MenuBar, MenuBarView
+    from ui.menu_bar import MenuBar
     from ui.workspaces_rail import WorkspacesRail
     from ui.canvas_rail import DrawingControlsRail
-    from ui.binder_view_rail import BinderViewRail
+    from ui.tree_view_rail import TreeViewRail
     from ui.workspace import Workspace
     #from models.app import app
     from models.isolated_controls.row import IsolatedRow
 
     # Called when resizing the active rail by dragging the resizer
-    def resize_binder_rail(e: ft.DragUpdateEvent):
+    def resize_tree_view_rail(e: ft.DragUpdateEvent):
         ''' Responsible for altering the width of the active rail '''
         
         #story.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
 
-        #print(app.settings.binder_rail_width)
+        #print(app.settings.tree_view_rail_width)
 
-        old_width = app.settings.binder_rail_width
+        old_width = app.settings.tree_view_rail_width
         new_width = old_width + int(e.local_delta.x)    # Apply the change to our rail
         new_width = max(0, min(new_width, 600))     # Clamp the width between 0 and 600
-        app.settings.binder_rail_width = new_width
+        app.settings.tree_view_rail_width = new_width
 
         
    
@@ -1290,7 +1290,7 @@ def StoryView(app, settings, story: 'Story') -> list[ft.Control]:
                 bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
             ),
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
-            on_pan_update=resize_binder_rail, # Resize the active rail as app is dragging
+            on_pan_update=resize_tree_view_rail, # Resize the active rail as app is dragging
             #on_pan_end=lambda: app.settings.update_data(**{'story': {'active_rail_width': story.active_rail.width}}),  # Save the resize when app is done dragging
             drag_interval=20,
         )
@@ -1300,15 +1300,15 @@ def StoryView(app, settings, story: 'Story') -> list[ft.Control]:
     # The actual resizer for the active rail (gesture detector)
     
 
-
+    
     return [
         ft.Column([
-            MenuBarView(app, story),
+            MenuBar(app, story),
             IsolatedRow([
                 
                 #story.workspaces_rail,
                 DrawingControlsRail(app, story),
-                BinderViewRail(app, app.settings, story),
+                TreeViewRail(app, app.settings, story),
                 ActiveRailResizer(),
                 #story.workspace,
                 #ft.Container(story.workspace, expand=True, gradient=dark_gradient)

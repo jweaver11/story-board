@@ -7,7 +7,7 @@ import flet as ft
 from pathlib import Path
 from models.app import App, AppView
 
-from models.views.home import create_home_view
+#from models.views.home import create_home_view
 from models.views.loading import create_loading_view
 from models.views.welcome import create_welcome_view, animate_welcome_text
 import asyncio
@@ -55,15 +55,16 @@ async def main_old(page: ft.Page):
         #await app.load_previous_story(page)     
 
     # If no story was loaded, Give us a basic home view
-    if page.route == "/":
-        page.views.append(create_home_view(page))   # Simple view so we just use a function, not a class
-        page.update()
+    #if page.route == "/":
+        #page.views.append(create_home_view(page))   # Simple view so we just use a function, not a class
+        #page.update()
 
 
 
 
 def main(page: ft.Page):
-    page.render(AppView)
+    page.render_views(AppView)
+    #page.render(AppView)
     
 
 
