@@ -21,17 +21,10 @@ from constants import STORIES_DIRECTORY_PATH
 from styles.snack_bar import SnackBar
 from dataclasses import dataclass
 
-
-
-#@ft.observable
-#@dataclass
-#class MenuBar:
-    #app: any = None
-    #story: Story = None
     
 
 @ft.component
-def MenuBar(app, story: Story):
+def MenuBar(app, settings, story: Story=None):
 
     page = ft.context.page
 
@@ -377,14 +370,18 @@ def MenuBar(app, story: Story):
 
     async def handle_settings_clicked(e=None):
         ''' Goes to the settings page '''
+        
         if page.route != "/settings":
-            await page.push_route("/settings")
+            page.navigate("/settings")
         else:
             # Get the active story title and find its route
             if story is not None:
-                await page.push_route(story.route)
+                page.navigate(story.route)
             else:
-                await page.push_route("/")
+                page.navigate("/")
+
+        print("Change route to: ", page.route)
+
 
     async def handle_delete_story(e=None):
 
@@ -560,6 +557,7 @@ def MenuBar(app, story: Story):
                         tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nJoin the Discord (Settings -> Resources) to suggest your features and report bugs"
                     ),
                     ft.IconButton(ft.Icons.SETTINGS_OUTLINED, "primary", on_click=handle_settings_clicked, mouse_cursor=ft.MouseCursor.CLICK),   # Settings button
+                
                 ], tight=True, spacing=0)
             ]
         ),

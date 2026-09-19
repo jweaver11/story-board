@@ -63,8 +63,7 @@ def HomeView(app, story) -> ft.View:
     
 
 
-    return [
-        ft.View(
+    return ft.View(
             route="/",
             controls=[
                 menubar,
@@ -88,4 +87,4 @@ def HomeView(app, story) -> ft.View:
             padding=ft.Padding.all(0), 
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
         )
-    ]
+    

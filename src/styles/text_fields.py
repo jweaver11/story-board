@@ -51,9 +51,9 @@ class SettingsTextField(ft.TextField):
         self.multiline=False
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
-        self.border_radius=4
-        self.border_color=ft.Colors.TRANSPARENT
-        self.focused_border_color=ft.Colors.PRIMARY
+        #self.border_radius=4
+        #self.border_color=ft.Colors.TRANSPARENT
+        #self.focused_border_color=ft.Colors.PRIMARY
         self.margin=ft.Margin.only(left=20)
         self.width=200
 

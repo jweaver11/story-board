@@ -4,7 +4,8 @@ Our model for our app. Contains settings and stories, as well as methods to load
 
 from models.views.story import Story, StoryView
 from models.views.home import HomeView
-from models.views.settings import Settings
+from models.views.settings import SettingsView
+from models.views.loading import LoadingView
 import flet as ft
 import os
 import json
@@ -22,7 +23,7 @@ class App:
     def __init__(self):
 
         # Declares settings and workspace rail here, but we create/load them later in main
-        self.settings: ft.View = self.load_settings()
+        self.settings = self.load_settings()
         
         # Dict of all our stories.
         self.stories = {}
@@ -39,7 +40,6 @@ class App:
     def load_settings(self):
         ''' Loads our settings from a JSON file into our rendered settings control. If none exist, creates default settings '''
         from models.views.settings import Settings
-        import constants
 
         # Should just look for our settings file to load our data from. Settings should do all other logic
 
@@ -123,7 +123,9 @@ class App:
 
         # Set size and route change events
         page.window.on_event = _on_window_event
-        page.on_route_change = route_change 
+        #page.on_route_change = route_change 
+
+        #print("Page route set to: ", page.route)
 
         #print("Settings loaded with data: ", app.settings.data)
         page.fonts = {
@@ -224,12 +226,31 @@ class App:
 
 
 @ft.component
+def ErrorView() -> ft.Control:
+    return ft.View(
+        [ft.Text("An error has occurred.")]
+    )
+
+@ft.component
 def AppView() -> list[ft.Control]:
     app, _ = ft.use_state(App())
+    story, _ = ft.use_state(app.load_story)
 
     page = ft.context.page  # Grab the page so we can configure it
 
     app.configure_page(page)
+
+    return ft.Router(
+        [
+            ft.Route(index=True, component=lambda: HomeView(app, None)),
+            ft.Route("loading", component=LoadingView),
+            ft.Route("settings", component=lambda: SettingsView(app, app.settings, None)),
+            #ft.Route(path="tutorial", component=lambda: TutorialView()),
+            ft.Route("stories/:story_id", component=lambda: StoryView(app, app.settings, None))
+        ],
+        not_found=ErrorView(),
+        manage_views=True
+    )
 
     return app.load_story()
 

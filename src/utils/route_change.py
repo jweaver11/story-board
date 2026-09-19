@@ -8,8 +8,10 @@ from utils.tutorial import run_tutorial
 async def route_change(e: ft.RouteChangeEvent) -> Story:
     ''' Handles changing our page view based on the new route '''
     from models.app import app
-    from models.views.home import create_home_view
-    from models.views.loading import create_loading_view
+    from models.views.home import HomeView
+    from models.views.loading import LoadingView
+
+    print("New page route: ", page.route)
 
     # Grabs our page from the event for easier reference
     page: ft.Page = e.page
@@ -18,6 +20,7 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
         (view for view in page.views if isinstance(view, Story)),
         None,
     )
+
     if current_story is not None:
         story_id = current_story.data.get("id")
         if app.stories.get(story_id) is current_story:
@@ -31,19 +34,21 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
             #await page.views[0].save_widgets_to_file()
 
     # Clear our views and any existing overlay controls
-    page.views.clear()
-    page.overlay.clear()
+    #page.views.clear()
+   # page.overlay.clear()
+
+    
 
     
     match page.route:
         case "/":
             # Append the view manually since its just a function to return the view
-            page.views.append(create_home_view(page))
+            page.views.append(HomeView(app, app.settings))
             page.update()
             return
         case "/home":
             # Append the view manually since its just a function to return the view
-            page.views.append(create_home_view(page))
+            page.views.append(HomeView(app, app.settings))
             page.update()
             return
         case "/settings":
@@ -51,7 +56,7 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
             page.update()
             return
         case "/loading":
-            page.views.append(create_loading_view(page))
+            page.views.append(LoadingView())
             page.update()
             return
         case "/tutorial":
@@ -78,7 +83,7 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
                 
             
             # If theres an error loading the story, go to home view
-            page.views.append(create_home_view(page))
+            page.views.append(HomeView(app, app.settings))
             page.update()
             page.show_dialog(SnackBar(f"Error loading story for route: {page.route}"))     
             return

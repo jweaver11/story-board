@@ -1,0 +1,26 @@
+{
+    "title": "Test Story",
+    "tag": "story",
+    "id": "a6faa15d-471e-4402-bd3f-c6231f13b050",
+    "directory_path": "C:\\Projects\\Story Board Temp\\story-board\\src\\_tmp_data\\stories\\a6faa15d-471e-4402-bd3f-c6231f13b050",
+    "content_directory_path": "C:\\Projects\\Story Board Temp\\story-board\\src\\_tmp_data\\stories\\a6faa15d-471e-4402-bd3f-c6231f13b050\\content",
+    "canvas_directory_path": "C:\\Projects\\Story Board Temp\\story-board\\src\\_tmp_data\\stories\\a6faa15d-471e-4402-bd3f-c6231f13b050\\canvas",
+    "file_path": "C:\\Projects\\Story Board Temp\\story-board\\src\\_tmp_data\\stories\\a6faa15d-471e-4402-bd3f-c6231f13b050\\a6faa15d-471e-4402-bd3f-c6231f13b050.json",
+    "selected_rail": "content",
+    "workspace_selected_index": 0,
+    "created_at": "",
+    "last_modified": "",
+    "character_rail_sort_method": "Index",
+    "character_rail_sort_direction": "Ascending",
+    "plotline_rail_sort_method": "Index",
+    "plotline_rail_sort_direction": "Ascending",
+    "world_building_rail_sort_method": "Index",
+    "world_building_rail_sort_direction": "Ascending",
+    "folders": {
+        "path": {
+            "name": "",
+            "color": "",
+            "is_expanded": true
+        }
+    }
+}
