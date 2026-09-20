@@ -6,7 +6,7 @@ from utils.check_story_unique import story_is_unique
 
 # Called when creating our home view (No stories exist or none active)
 @ft.component
-def HomeView(app, story) -> ft.View: 
+def HomeView(app, settings) -> ft.View: 
     ''' Creates a custom menu bar with new, open, and import new story buttons, and a create new story button in the middle'''
     #from models.app import app
     
@@ -22,7 +22,7 @@ def HomeView(app, story) -> ft.View:
 
     page = ft.context.page
 
-    menubar = MenuBar(app, story)
+    menubar = MenuBar(app, settings)
 
     story_title_field = ft.TextField(
         label="Story Title",

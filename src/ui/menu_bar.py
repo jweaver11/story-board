@@ -147,7 +147,7 @@ def MenuBar(app, settings, story: Story=None):
 
             if selected_story is not None:
                 await page.push_route(app.stories[selected_story].route)
-                app.settings.story = app.stories[selected_story]  # Gives our settings widget the story reference it needs
+                settings.story = app.stories[selected_story]  # Gives our settings widget the story reference it needs
                 page.pop_dialog()
                 page.update()
             else:
@@ -316,7 +316,7 @@ def MenuBar(app, settings, story: Story=None):
 
             await imported_story.save_file()
             app.stories[story_id] = imported_story
-            app.settings.story = imported_story
+            settings.story = imported_story
             await page.push_route(imported_story.route)
             page.update()
 
@@ -354,8 +354,8 @@ def MenuBar(app, settings, story: Story=None):
 
     def toggle_show_canvas_rail(e: ft.Event[ft.MenuItemButton]):
         ''' Toggles the visibility of the canvas rail on the left side of the page '''
-        new_value = not app.settings.data.get('story', {}).get('show_canvas_rail', False)
-        app.settings.update_data(**{'story': {'show_canvas_rail': new_value}})
+        new_value = not settings.data.get('story', {}).get('show_canvas_rail', False)
+        settings.update_data(**{'story': {'show_canvas_rail': new_value}})
         if new_value:
             e.control.leading.icon = ft.Icons.VISIBILITY_OUTLINED
         else:
@@ -390,7 +390,7 @@ def MenuBar(app, settings, story: Story=None):
 
                 story_id = story.data.get('id')
                 deleted_id = app.stories.pop(story_id)
-                app.settings.story = None                    
+                settings.story = None                    
 
                 story_dir_path = story.data.get('directory_path')
                 full_norm = os.path.normcase(os.path.normpath(story_dir_path))
@@ -483,7 +483,7 @@ def MenuBar(app, settings, story: Story=None):
                     ft.MenuItemButton(
                         content=ft.Text("Toggle Canvas Rail", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(
-                            ft.Icons.VISIBILITY_OUTLINED if app.settings.data.get('story', {}).get('show_canvas_rail', False) else ft.Icons.VISIBILITY_OFF_OUTLINED,
+                            ft.Icons.VISIBILITY_OUTLINED if settings.data.get('story', {}).get('show_canvas_rail', False) else ft.Icons.VISIBILITY_OFF_OUTLINED,
                             ft.Colors.PRIMARY
                         ),
                         close_on_click=True, 

@@ -1,5 +1,6 @@
 import flet as ft
 
+# Creates a loading view to be shown while the app is initializing
 @ft.component
 def LoadingView() -> ft.View:
     ''' Creates a loading view to be shown while the app is initializing '''

@@ -1896,6 +1896,7 @@ def load_resources_settings(self):
 def SettingsView(app, settings, story=None):
     ''' Reloads our settings view with updated data '''
 
+
     # Clear any current controls we have
     #settings.controls.clear()
 
@@ -1947,7 +1948,7 @@ def SettingsView(app, settings, story=None):
         )
 
     # TODO:
-    # Switching categories in settintgs works correctly, just the functions themselves are broken
+    # Switching categories in settintgs works correctly, just the functions themselves are broken / break things
 
 
     # View is like a column, so top down layout

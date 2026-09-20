@@ -7,11 +7,11 @@ from utils.tutorial import run_tutorial
 # Called whenever a new story is laoded
 async def route_change(e: ft.RouteChangeEvent) -> Story:
     ''' Handles changing our page view based on the new route '''
+    return
     from models.app import app
     from models.views.home import HomeView
     from models.views.loading import LoadingView
-
-    print("New page route: ", page.route)
+    
 
     # Grabs our page from the event for easier reference
     page: ft.Page = e.page

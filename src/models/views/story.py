@@ -21,7 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 @ft.observable
 @dataclass 
-class Story(ft.View):
+class Story:
 
     # Constructor.
     def __init__(
@@ -29,14 +29,6 @@ class Story(ft.View):
         title: str,             # Title of our story
         data: dict=None,        # Data to load our story with (if any)
     ):
-        
-        # Parent constructor
-        #super().__init__(
-            #route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
-            #padding=ft.Padding.all(0),      # No padding for the page
-            #spacing=0,                                                      # No spacing between menubar and rest of page
-            #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
-        #)  
 
         self.data = data                # Sets our data (if any) passed in. New stories just have none
 
@@ -51,11 +43,10 @@ class Story(ft.View):
                 # Directory paths and file paths
                 'directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id),
                 'content_directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, "content"),   # Path to store widget json files
-                'canvas_directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, "canvas"),     # Path to store canvas png captures
+                #'canvas_directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, "canvas"),     # Path to store canvas png captures
                 'file_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, f"{id}.json"),   # Path to story's json file
-                
 
-                'selected_rail': "content",
+                #'selected_rail': "content",
                 'workspace_selected_index': 0,   # Index of the selected widget in the main pin, used for switching between tabs in the main pin
 
                 'created_at': str(),
@@ -1211,35 +1202,44 @@ class Story(ft.View):
         self.blocker.update()
 
 # Builds our view
-def StoryView(app, settings, story: 'Story') -> list[ft.Control]:
+@ft.component
+def StoryView(app, settings, story: 'Story') -> ft.View:
     ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
     from ui.menu_bar import MenuBar
     from ui.workspaces_rail import WorkspacesRail
-    from ui.canvas_rail import DrawingControlsRail
+    from ui.drawing_controls_rail import DrawingControlsRail
     from ui.tree_view_rail import TreeViewRail
     from ui.workspace import Workspace
-    #from models.app import app
     from models.isolated_controls.row import IsolatedRow
 
     # Called when resizing the active rail by dragging the resizer
+    # Track the live width in a ref (doesn't trigger re-renders) so dragging only
+    # touches the rail control directly. Writing to `settings` on every pixel notifies every
+    # subscriber (StoryRoute, StoryView, AppView, etc.), tearing down and rebuilding the whole
+    # view - including the GestureDetector being dragged - which kills the drag mid-gesture.
+    tree_view_rail_width_ref = ft.use_ref(settings.data.get('tree_view_rail_width', 250))
+
     def resize_tree_view_rail(e: ft.DragUpdateEvent):
         ''' Responsible for altering the width of the active rail '''
-        
-        #story.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
 
-        #print(app.settings.tree_view_rail_width)
-
-        old_width = app.settings.tree_view_rail_width
-        new_width = old_width + int(e.local_delta.x)    # Apply the change to our rail
+        new_width = tree_view_rail_width_ref.current + int(e.local_delta.x)
         new_width = max(0, min(new_width, 600))     # Clamp the width between 0 and 600
-        app.settings.tree_view_rail_width = new_width
+        tree_view_rail_width_ref.current = new_width
+        print("new_width:", new_width)
 
-        
-   
+        #if story.active_rail:
+            #story.active_rail.width = new_width
+            #story.active_rail.update()
+
+    def save_tree_view_rail_width(e: ft.DragEndEvent = None):
+        ''' Persists the final width once the drag finishes '''
+        settings.update_data(**{'tree_view_rail_width': tree_view_rail_width_ref.current})
+
 
     # Handles keyboard events for the story
     async def handle_keyboard_event(e: ft.KeyboardEvent):
         ''' Handles keyboard events for the story '''
+        return
         # Calls undo on our active widget
         async def undo():
             widget = story.workspace.tab_view.controls[story.workspace.tabs.selected_index]
@@ -1269,16 +1269,13 @@ def StoryView(app, settings, story: 'Story') -> list[ft.Control]:
     page.on_keyboard_event = handle_keyboard_event 
     page.title = f"Story Board (alpha) - {story.data.get('title', 'Untitled')}"   # Set our page title
 
-    # Load our widgets
-    story.load_widgets() 
+    # story/settings are @ft.observable and passed as args, so StoryView's whole body re-runs on
+    # every mutation to either (e.g. every pixel of the resizer drag). load_widgets() walks the
+    # story's content folder and re-reads/re-parses every widget JSON from disk - that disk I/O
+    # running dozens of times per second during a drag is what freezes the UI, regardless of what
+    # controls are actually returned below. Only reload widgets from disk once per story.
+    ft.use_effect(story.load_widgets, dependencies=[story.data.get('id')])
 
-    # Create our menubar, workspaces rail, active rail, and workspace objects
-    #self.menubar = MenuBar(self)
-    #menu_bar, _ = ft.use_state(MenuBar)
-    #story.workspaces_rail = WorkspacesRail(self) 
-    #story.canvas_rail = CanvasRail(self)
-    #story.active_rail = ActiveRail(self) 
-    #story.workspace = Workspace(self)  
 
     @ft.component
     def ActiveRailResizer() -> ft.GestureDetector:
@@ -1291,30 +1288,29 @@ def StoryView(app, settings, story: 'Story') -> list[ft.Control]:
             ),
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=resize_tree_view_rail, # Resize the active rail as app is dragging
-            #on_pan_end=lambda: app.settings.update_data(**{'story': {'active_rail_width': story.active_rail.width}}),  # Save the resize when app is done dragging
+            on_pan_end=save_tree_view_rail_width,  # Save the resize when app is done dragging
             drag_interval=20,
         )
-    
-
-
-    # The actual resizer for the active rail (gesture detector)
-    
+        
 
     
-    return [
-        ft.Column([
-            MenuBar(app, story),
-            IsolatedRow([
-                
-                #story.workspaces_rail,
-                DrawingControlsRail(app, story),
-                TreeViewRail(app, app.settings, story),
+    return ft.View(
+        [
+            MenuBar(app, settings, story),
+            IsolatedRow([       # Keep the majority of the page out up updates
+                DrawingControlsRail(settings, story),
+                #TreeViewRail(app, settings, story),
                 ActiveRailResizer(),
                 #story.workspace,
                 #ft.Container(story.workspace, expand=True, gradient=dark_gradient)
-            ], spacing=0, expand=True)
-        ], expand=True, spacing=0)
-    ]
+            ], spacing=0, expand=True),
+            ft.Button("Click Me", on_click=lambda e: print("Button clicked!")),
+            
+        ],
+        padding=ft.Padding.all(0),      # No padding for the page
+        spacing=0,                                                      # No spacing between menubar and rest of page
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
+    )
 
 
     # Our container that sits on top of the story.page overlay when right clicking options. Starts invisible

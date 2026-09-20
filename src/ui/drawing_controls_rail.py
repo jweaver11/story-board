@@ -38,7 +38,7 @@ NEGATIVE_NUMBER_FILTER = ft.InputFilter(allow=True, regex_string=r"^-?[0-9]*$")
 
 # Called mostly when re-ordering or collapsing the rail. Also called on start
 @ft.component
-def DrawingControlsRail(app, story: Story) -> ft.Control:
+def DrawingControlsRail(settings, story: Story) -> ft.Control:
     page = ft.context.page
 
 
@@ -132,7 +132,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
     # Saves our color to data and updates the brush selector
     def save_color(e=None):
         paint_settings.update({"color": color_picker.color})
-        app.settings.update_data(**{"paint_settings": paint_settings})
+        settings.update_data(**{"paint_settings": paint_settings})
         brush_preview.content = build_preview_brush()   # Update the brush selector with the new brush
         set_tool_mode_button.icon = update_tool_icon()
         color_selector.content.color = color_picker.color
@@ -149,9 +149,9 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
     def set_draw_mode(e=None):
         nonlocal canvas_settings, paint_settings, brush_selector, set_draw_mode_button
         canvas_settings['current_control_mode'] = "draw"
-        if app.settings.data.get('paint_settings', {}).get('blend_mode', "") == "clear":
+        if settings.data.get('paint_settings', {}).get('blend_mode', "") == "clear":
             paint_settings['blend_mode'] = "src_over"
-        app.settings.update_data(**{'paint_settings': paint_settings, 'canvas_settings': canvas_settings})
+        settings.update_data(**{'paint_settings': paint_settings, 'canvas_settings': canvas_settings})
         # Update UI
         
         brush_preview.content = build_preview_brush()
@@ -231,7 +231,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
         nonlocal canvas_settings, paint_settings
         canvas_settings.update({"current_control_mode": {'current_control_mode': "draw", 'current_brush_name': name}})
         paint_settings.update(**brush_settings)
-        app.settings.update_data(**{"canvas_settings": canvas_settings, "paint_settings": brush_settings})
+        settings.update_data(**{"canvas_settings": canvas_settings, "paint_settings": brush_settings})
         
         brush_preview.content = build_preview_brush()
         brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
@@ -246,7 +246,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
         nonlocal text_settings
         text_settings.clear()
         text_settings.update(**new_text_settings)
-        app.settings.update_data(**{"text_settings": text_settings})
+        settings.update_data(**{"text_settings": text_settings})
 
         update_text_preview()
         text_settings_button.controls = get_text_options()   # Update the text settings selector with the new setting
@@ -265,8 +265,8 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
             safe_name = return_safe_name(name)
 
             # Save current brush settings as a new custom brush
-            app.settings.data['canvas_settings']['saved_brushes'][safe_name] = paint_settings.copy()
-            app.settings.update_data(**{"canvas_settings": {"saved_brushes": app.settings.data['canvas_settings']['saved_brushes']}})
+            settings.data['canvas_settings']['saved_brushes'][safe_name] = paint_settings.copy()
+            settings.update_data(**{"canvas_settings": {"saved_brushes": settings.data['canvas_settings']['saved_brushes']}})
 
             page.pop_dialog()
             brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
@@ -279,9 +279,9 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
             name = e.control.data
 
             # Remove it from data
-            if name in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}):
-                del app.settings.data['canvas_settings']['saved_brushes'][name]
-                app.settings.update_data(**{"canvas_settings": {"saved_brushes": app.settings.data['canvas_settings']['saved_brushes']}})
+            if name in settings.data.get('canvas_settings', {}).get('saved_brushes', {}):
+                del settings.data['canvas_settings']['saved_brushes'][name]
+                settings.update_data(**{"canvas_settings": {"saved_brushes": settings.data['canvas_settings']['saved_brushes']}})
 
             # Remove the control from the dialog
             dlg.content.controls = [ctrl for ctrl in content.controls if ctrl.data != name]   
@@ -370,7 +370,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
             ]
         )
 
-        for name, existing_brush in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}).items():
+        for name, existing_brush in settings.data.get('canvas_settings', {}).get('saved_brushes', {}).items():
             content.controls.append(
                 ft.Container(
                     ft.Row([
@@ -418,7 +418,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
         nonlocal canvas_settings, paint_settings, brush_selector, tool_selector
         canvas_settings['current_control_mode'] = "tool"
         canvas_settings['current_tool_name'] = e.control.data
-        app.settings.update_data(**{'canvas_settings': canvas_settings})
+        settings.update_data(**{'canvas_settings': canvas_settings})
         set_canvas_mouse_cursor()
         
         reset_button_bgcolors()
@@ -454,7 +454,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
     def set_text_mode(e=None):
         nonlocal canvas_settings, paint_settings, brush_selector, set_tool_mode_button
         canvas_settings['current_control_mode'] = "text"
-        app.settings.update_data(**{'canvas_settings': canvas_settings})
+        settings.update_data(**{'canvas_settings': canvas_settings})
         set_text_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
         text_settings_button.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
         
@@ -584,7 +584,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
         nonlocal canvas_settings, paint_settings
         tool_name = e.control.data
         canvas_settings.update({"current_tool_name": tool_name})
-        app.settings.update_data(**{"canvas_settings": canvas_settings})
+        settings.update_data(**{"canvas_settings": canvas_settings})
         set_tool_mode(e.control)
         #.update()
 
@@ -598,7 +598,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
             paint_settings.update({"style": paint_settings['style'] + "_fill"})
         else:
             paint_settings.update({"style": paint_settings['style'].replace("_fill", "")})
-        app.settings.update_data(**{"paint_settings": paint_settings})
+        settings.update_data(**{"paint_settings": paint_settings})
         
         brush_preview.content = build_preview_brush()
         #.update()
@@ -608,7 +608,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
     def update_paint_anti_alias(e: ft.Event[ft.Switch]):
         nonlocal paint_settings
         paint_settings.update({"anti_alias": e.control.value})
-        app.settings.update_data(**{"paint_settings": paint_settings})
+        settings.update_data(**{"paint_settings": paint_settings})
         
         brush_preview.content = build_preview_brush()
         #.update()
@@ -618,13 +618,13 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
     def update_paint_brush_smoothing(e: ft.Event[ft.Switch]):
         nonlocal canvas_settings
         canvas_settings.update(**{"use_brush_smoothing": e.control.value})
-        app.settings.update_data(**{"canvas_settings": canvas_settings})
+        settings.update_data(**{"canvas_settings": canvas_settings})
 
     # Updates the strength of the smooth stroke effect
     def update_paint_stroke_smoothing_strength(e: ft.Event[ft.Slider]):
         nonlocal canvas_settings
         canvas_settings.update(**{"stroke_smoothing_strength": e.control.value})
-        app.settings.update_data(**{"canvas_settings": canvas_settings})
+        settings.update_data(**{"canvas_settings": canvas_settings})
 
     # Returns the correct icon for the current stroke cap setting based on current paint settings
     def get_stroke_cap_icon() -> ft.Icon:
@@ -639,7 +639,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
         nonlocal paint_settings
         new_stroke_cap = e.control.value.lower()
         paint_settings['stroke_cap'] = new_stroke_cap
-        app.settings.update_data(**{"paint_settings": {"stroke_cap": new_stroke_cap}})
+        settings.update_data(**{"paint_settings": {"stroke_cap": new_stroke_cap}})
         e.control.content.leading = get_stroke_cap_icon()
         brush_preview.content = build_preview_brush()
         #.update()
@@ -660,7 +660,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
         nonlocal paint_settings
         new_stroke_join = e.control.value.lower()
         paint_settings['stroke_join'] = new_stroke_join
-        app.settings.update_data(**{"paint_settings": {"stroke_join": new_stroke_join}})
+        settings.update_data(**{"paint_settings": {"stroke_join": new_stroke_join}})
         e.control.content.leading = get_stroke_join_icon()
         brush_preview.content = build_preview_brush()
         #.update()
@@ -713,7 +713,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
         nonlocal paint_settings
         mode = e.control.value
         paint_settings.update(**{"blend_mode": mode})
-        app.settings.update_data(**{"paint_settings": paint_settings})
+        settings.update_data(**{"paint_settings": paint_settings})
         #.update()
         update_canvas_tool_preview()
 
@@ -775,10 +775,10 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
             key = e.control.data
             paint_settings.update({key: value})
             if e.control.data != "stroke_smoothing_strength":
-                app.settings.update_data(**{"paint_settings": paint_settings})
+                settings.update_data(**{"paint_settings": paint_settings})
             else:
                 canvas_settings.update(**{"stroke_smoothing_strength": value})
-                app.settings.update_data(**{"canvas_settings": canvas_settings})
+                settings.update_data(**{"canvas_settings": canvas_settings})
 
             brush_preview.content = build_preview_brush()
 
@@ -967,7 +967,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
         ]
 
         # Go through our saved brushes and add options to select them
-        for name, brush_settings in app.settings.data.get('canvas_settings', {}).get('saved_brushes', {}).items():
+        for name, brush_settings in settings.data.get('canvas_settings', {}).get('saved_brushes', {}).items():
             ctrls.append(
                 ft.GestureDetector(
                     ft.Container(
@@ -1018,7 +1018,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
 
             key = e.control.data
             text_settings.update(**{key: value})
-            app.settings.update_data(**{"text_settings": text_settings})
+            settings.update_data(**{"text_settings": text_settings})
 
             update_text_preview()
             text_preview.update()
@@ -1050,7 +1050,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
 
             shadow[e.control.data] = value
             text_settings['shadow'] = shadow
-            app.settings.update_data(**{"text_settings": text_settings})
+            settings.update_data(**{"text_settings": text_settings})
 
             update_text_preview()
             text_preview.update()
@@ -1064,7 +1064,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
             nonlocal text_color_picker, text_color_selector
             color = text_color_picker.color
             text_settings.update({"color": color})
-            app.settings.update_data(**{"text_settings": text_settings})
+            settings.update_data(**{"text_settings": text_settings})
             text_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
             if text_color_picker.color not in text_color_picker.color_history:
                 text_color_picker.color_history.append(text_color_picker.color)
@@ -1079,7 +1079,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
             nonlocal text_bg_color_picker, text_bg_color_selector
             color = text_bg_color_picker.color
             text_settings.update({"bgcolor": color})
-            app.settings.update_data(**{"text_settings": text_settings})
+            settings.update_data(**{"text_settings": text_settings})
             text_bg_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
             if text_bg_color_picker.color not in text_bg_color_picker.color_history:
                 text_bg_color_picker.color_history.append(text_bg_color_picker.color)
@@ -1094,7 +1094,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
             nonlocal text_decoration_color_picker, text_decoration_color_selector
             color = text_decoration_color_picker.color
             text_settings.update(**{"decoration_color": color})
-            app.settings.update_data(**{"text_settings": text_settings})
+            settings.update_data(**{"text_settings": text_settings})
             text_decoration_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
             if text_decoration_color_picker.color not in text_decoration_color_picker.color_history:
                 text_decoration_color_picker.color_history.append(text_decoration_color_picker.color)
@@ -1111,7 +1111,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
             shadow = text_settings.get('shadow') or {}
             shadow['color'] = color
             text_settings['shadow'] = shadow
-            app.settings.update_data(**{"text_settings": text_settings})
+            settings.update_data(**{"text_settings": text_settings})
             text_shadow_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
             if text_shadow_color_picker.color not in text_shadow_color_picker.color_history:
                 text_shadow_color_picker.color_history.append(text_shadow_color_picker.color)
@@ -1476,8 +1476,8 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
                 safe_name = return_safe_name(name)
 
                 # Save current text settings as a new custom text setting
-                app.settings.data['canvas_settings']['saved_text_settings'][safe_name] = text_settings.copy()
-                app.settings.update_data(**{"canvas_settings": {"saved_text_settings": app.settings.data['canvas_settings']['saved_text_settings']}})
+                settings.data['canvas_settings']['saved_text_settings'][safe_name] = text_settings.copy()
+                settings.update_data(**{"canvas_settings": {"saved_text_settings": settings.data['canvas_settings']['saved_text_settings']}})
 
                 page.pop_dialog()
                 text_settings_button.controls = get_text_options()   # Update the text settings selector with the new setting
@@ -1489,9 +1489,9 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
                 name = e.control.data
 
                 # Remove it from data
-                if name in app.settings.data.get('canvas_settings', {}).get('saved_text_settings', {}):
-                    del app.settings.data['canvas_settings']['saved_text_settings'][name]
-                    app.settings.update_data(**{"canvas_settings": {"saved_text_settings": app.settings.data['canvas_settings']['saved_text_settings']}})
+                if name in settings.data.get('canvas_settings', {}).get('saved_text_settings', {}):
+                    del settings.data['canvas_settings']['saved_text_settings'][name]
+                    settings.update_data(**{"canvas_settings": {"saved_text_settings": settings.data['canvas_settings']['saved_text_settings']}})
 
                 # Remove the control from the dialog
                 dlg.content.controls = [ctrl for ctrl in content.controls if ctrl.data != name]
@@ -1579,7 +1579,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
                 ]
             )
 
-            for name, existing_text_setting in app.settings.data.get('canvas_settings', {}).get('saved_text_settings', {}).items():
+            for name, existing_text_setting in settings.data.get('canvas_settings', {}).get('saved_text_settings', {}).items():
                 content.controls.append(
                     ft.Container(
                         ft.Row([
@@ -1784,7 +1784,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
 
         # Go through our saved text options and add them to the list of controls
         # NOTE: loop var must not be named `text_settings`, it would shadow the nonlocal current settings dict
-        for name, saved_text_setting in app.settings.data.get('canvas_settings', {}).get('saved_text_settings', {}).items():
+        for name, saved_text_setting in settings.data.get('canvas_settings', {}).get('saved_text_settings', {}).items():
             ctrls.append(
                 ft.GestureDetector(
                     ft.Container(
@@ -1805,9 +1805,9 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
         return ctrls
 
     # Grab our data for easier manipulation
-    paint_settings = app.settings.data.get('paint_settings', {}).copy()
-    canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
-    text_settings = app.settings.data.get('text_settings', {}).copy()
+    paint_settings = settings.data.get('paint_settings', {}).copy()
+    canvas_settings = settings.data.get('canvas_settings', {}).copy()
+    text_settings = settings.data.get('text_settings', {}).copy()
 
     # Color picker for changing brush color
     color_picker = ColorPicker(
@@ -1860,7 +1860,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
             nonlocal canvas_settings
             idx = e.control.data
             canvas_settings['saved_colors'].pop(idx)
-            app.settings.update_data(**{"canvas_settings": {"saved_colors": canvas_settings['saved_colors']}})
+            settings.update_data(**{"canvas_settings": {"saved_colors": canvas_settings['saved_colors']}})
             color_options_button.controls = get_color_options(color_picker, save_color)
             text_settings_button.controls = get_text_options()
             #.update()
@@ -1874,7 +1874,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
                 # Always pull from the picker that triggered this save, not the paint picker
                 current_color = target_color_picker.color
                 canvas_settings['saved_colors'].append({'name': color_name, 'value': current_color})
-                app.settings.update_data(**{"canvas_settings": {"saved_colors": canvas_settings['saved_colors']}})
+                settings.update_data(**{"canvas_settings": {"saved_colors": canvas_settings['saved_colors']}})
                 color_options_button.controls = get_color_options(color_picker, save_color)
                 text_settings_button.controls = get_text_options()
                 #.update()
@@ -1953,9 +1953,9 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
 
     # Button to set the control mode to draw mode
     set_draw_mode_button = ft.IconButton(
-        ft.Icons.BRUSH_ROUNDED if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "draw" else ft.Icons.BRUSH_OUTLINED,
+        ft.Icons.BRUSH_ROUNDED if settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "draw" else ft.Icons.BRUSH_OUTLINED,
         ft.Colors.PRIMARY,
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "draw" else None,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "draw" else None,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0)),
         tooltip="Set the active control to the last used brush",
         data="draw", on_click=set_draw_mode
@@ -1970,7 +1970,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
         content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
         style=ft.ButtonStyle(
             #mouse_cursor=ft.MouseCursor.CLICK,  
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if app.settings.data.get('canvas_settings', {}).get('current_control_mode', '') == "draw" else None,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if settings.data.get('canvas_settings', {}).get('current_control_mode', '') == "draw" else None,
             shape=ft.RoundedRectangleBorder(radius=0),
             padding=ft.Padding.all(0),
         ),
@@ -1990,7 +1990,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
     set_tool_mode_button = ft.IconButton(
         update_tool_icon(),
         ft.Colors.PRIMARY,
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "tool" else None,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "tool" else None,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0)),
         tooltip="Set the active control to the last used tool",
         data="tool", on_click=set_tool_mode
@@ -2002,7 +2002,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
         content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
         style=ft.ButtonStyle(
             #mouse_cursor=ft.MouseCursor.CLICK,  
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if app.settings.data.get('canvas_settings', {}).get('current_control_mode', '') == "tool" else None,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if settings.data.get('canvas_settings', {}).get('current_control_mode', '') == "tool" else None,
             shape=ft.RoundedRectangleBorder(radius=0),
             padding=ft.Padding.all(0),
         ),
@@ -2049,7 +2049,7 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
     update_text_preview()
 
     set_text_mode_button = ft.IconButton(
-        ft.Icons.TEXT_FIELDS if app.settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "text" else ft.Icons.TEXT_FIELDS_OUTLINED,
+        ft.Icons.TEXT_FIELDS if settings.data.get('canvas_settings', {}).get('current_control_mode', 'draw') == "text" else ft.Icons.TEXT_FIELDS_OUTLINED,
         ft.Colors.PRIMARY,
         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if canvas_settings.get('current_control_mode', '') == "text" else None,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0)),
@@ -2256,8 +2256,8 @@ def DrawingControlsRail(app, story: Story) -> ft.Control:
         animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
         bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-        width=78 if app.settings.data.get('story', {}).get('show_canvas_rail', False) == True else 0,
-        visible=app.settings.data.get('story', {}).get('show_canvas_rail', False) == True and not page.platform.is_mobile()
+        width=78 if settings.data.get('story', {}).get('show_canvas_rail', False) == True else 0,
+        visible=settings.data.get('story', {}).get('show_canvas_rail', False) == True and not page.platform.is_mobile()
     )
 
 
