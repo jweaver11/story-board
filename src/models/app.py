@@ -70,9 +70,18 @@ class App:
         # Intercept the close event BEFORE the window tears down so canvas.capture() still works.
         async def _on_window_event(e: ft.WindowEvent):
             if e.type == ft.WindowEventType.CLOSE:
-                if settings.story:
-                    settings.story.block_page()
-                    await settings.save_story()
+                # Save the settings upon close if they have changed between last auto save and close
+                if settings:
+                    await settings.save_file()  
+
+                # Save the story if it has unsaved widgets between last auto save and close
+                if page.route.startswith("stories"):
+                    story_id = page.route.split("/")[-1]
+                    story = self.stories.get(story_id)
+                    if story:
+                        #settings.story.block_page()    # Block the page so we are loading
+                        await settings.save_story()
+                    
                 page.window.prevent_close = False
                 await page.window.destroy()
 
@@ -138,7 +147,7 @@ class App:
                         story_id = story_data.get("id", file_path.replace(".json", ""))
                             
                         self.stories[story_id] = Story(story_title, story_data)
-                        
+                        print("Loaded story:", story_id)
 
                         break
                     # Else, continue through the next story folder
