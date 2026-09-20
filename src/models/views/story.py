@@ -98,36 +98,14 @@ class Story:
         # Store all our widgets above in a master list for easier rendering in the UI
         self.widgets: dict = {} 
 
+        self.load_widgets()
+
         # Controller for text shapes (canvas), labels and location labels (maps)
         # Canvas shapes get updated with this in real time if they are being edited
 
-        # Our container that sits on top of the story.page overlay when right clicking options. Starts invisible
-        self.menu = ft.Container(
-            left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
-            border_radius=4, visible=False,
-            bgcolor=ft.Colors.SURFACE_CONTAINER,
-            width=200, #border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-            shadow=ft.BoxShadow(0, 1, offset=ft.Offset(0, 1), ),
-            content=ft.Column(
-                spacing=0,
-                controls=[]
-            ),
-        )
-    
-        # Outside gesture detector to close the menu when clicking outside the menu container
-        self.close_menu_detector = ft.GestureDetector(
-            expand=True, visible=False,
-            on_tap_down=self.close_menu,
-            on_secondary_tap_down=self.close_menu,
-        )
         
-    
-        # Overlay is a stack, so add the detector, then the menu container
-        ft.context.page.overlay.extend([
-            self.close_menu_detector,
-            self.menu,
-            self.blocker
-        ])
+
+
 
           
     # Isolates stories from page.update calls. Needed for keeping performance when opening menus
@@ -1219,6 +1197,10 @@ def StoryView(app, settings, story: 'Story') -> ft.View:
     # view - including the GestureDetector being dragged - which kills the drag mid-gesture.
     tree_view_rail_width_ref = ft.use_ref(settings.data.get('tree_view_rail_width', 250))
 
+    # TODO: Fix two rails before workspace. tree view first
+    # REMINDER: ft.use_ref holds values that can be changed WITHOUT causing re-render
+    # ESSENTIALLY, use_state for values on UI, use_ref for values that don't need to trigger re-render
+
     def resize_tree_view_rail(e: ft.DragUpdateEvent):
         ''' Responsible for altering the width of the active rail '''
 
@@ -1274,7 +1256,7 @@ def StoryView(app, settings, story: 'Story') -> ft.View:
     # story's content folder and re-reads/re-parses every widget JSON from disk - that disk I/O
     # running dozens of times per second during a drag is what freezes the UI, regardless of what
     # controls are actually returned below. Only reload widgets from disk once per story.
-    ft.use_effect(story.load_widgets, dependencies=[story.data.get('id')])
+    #ft.use_effect(story.load_widgets, dependencies=[story.data.get('id')])
 
 
     @ft.component
@@ -1311,6 +1293,34 @@ def StoryView(app, settings, story: 'Story') -> ft.View:
         spacing=0,                                                      # No spacing between menubar and rest of page
         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
     )
+
+    # Our container that sits on top of the story.page overlay when right clicking options. Starts invisible
+    self.menu = ft.Container(
+        left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
+        border_radius=4, visible=False,
+        bgcolor=ft.Colors.SURFACE_CONTAINER,
+        width=200, #border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
+        shadow=ft.BoxShadow(0, 1, offset=ft.Offset(0, 1), ),
+        content=ft.Column(
+            spacing=0,
+            controls=[]
+        ),
+    )
+
+    # Outside gesture detector to close the menu when clicking outside the menu container
+    self.close_menu_detector = ft.GestureDetector(
+        expand=True, visible=False,
+        on_tap_down=self.close_menu,
+        on_secondary_tap_down=self.close_menu,
+    )
+    
+
+    # Overlay is a stack, so add the detector, then the menu container
+    ft.context.page.overlay.extend([
+        self.close_menu_detector,
+        self.menu,
+        self.blocker
+    ])
 
 
     # Our container that sits on top of the story.page overlay when right clicking options. Starts invisible
