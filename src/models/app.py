@@ -217,11 +217,12 @@ def StoryRoute(app, settings) -> ft.View:
     current_route = ft.context.page.route
     story_id = current_route.split("/")[-1]  
 
-    print("Current route:", current_route)
+    print("Story Route called:", current_route)
 
     # See where the story exists in the apps dictionary, and return its view
     if story_id in app.stories:
         story = app.stories[story_id]
+        #ft.context.page.overlay = []
         return StoryView(app, settings, story)
     
     # Return errors

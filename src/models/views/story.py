@@ -1190,32 +1190,14 @@ def StoryView(app, settings, story: 'Story') -> ft.View:
     from ui.workspace import Workspace
     from models.isolated_controls.row import IsolatedRow
 
-    # Called when resizing the active rail by dragging the resizer
-    # Track the live width in a ref (doesn't trigger re-renders) so dragging only
-    # touches the rail control directly. Writing to `settings` on every pixel notifies every
-    # subscriber (StoryRoute, StoryView, AppView, etc.), tearing down and rebuilding the whole
-    # view - including the GestureDetector being dragged - which kills the drag mid-gesture.
-    tree_view_rail_width_ref = ft.use_ref(settings.data.get('tree_view_rail_width', 250))
+    
 
+    
     # TODO: Fix two rails before workspace. tree view first
     # REMINDER: ft.use_ref holds values that can be changed WITHOUT causing re-render
     # ESSENTIALLY, use_state for values on UI, use_ref for values that don't need to trigger re-render
 
-    def resize_tree_view_rail(e: ft.DragUpdateEvent):
-        ''' Responsible for altering the width of the active rail '''
-
-        new_width = tree_view_rail_width_ref.current + int(e.local_delta.x)
-        new_width = max(0, min(new_width, 600))     # Clamp the width between 0 and 600
-        tree_view_rail_width_ref.current = new_width
-        print("new_width:", new_width)
-
-        #if story.active_rail:
-            #story.active_rail.width = new_width
-            #story.active_rail.update()
-
-    def save_tree_view_rail_width(e: ft.DragEndEvent = None):
-        ''' Persists the final width once the drag finishes '''
-        settings.update_data(**{'tree_view_rail_width': tree_view_rail_width_ref.current})
+    
 
 
     # Handles keyboard events for the story
@@ -1259,34 +1241,18 @@ def StoryView(app, settings, story: 'Story') -> ft.View:
     #ft.use_effect(story.load_widgets, dependencies=[story.data.get('id')])
 
 
-    @ft.component
-    def ActiveRailResizer() -> ft.GestureDetector:
-        return ft.GestureDetector(
-            content=ft.Container(
-                width=10,   # Total width of the GD, so its easier to find with mouse
-                content=ft.VerticalDivider(2, 2),     # Original
-                padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
-            ),
-            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
-            on_pan_update=resize_tree_view_rail, # Resize the active rail as app is dragging
-            on_pan_end=save_tree_view_rail_width,  # Save the resize when app is done dragging
-            drag_interval=20,
-        )
+    
         
 
     
     return ft.View(
         [
             MenuBar(app, settings, story),
-            IsolatedRow([       # Keep the majority of the page out up updates
-                DrawingControlsRail(settings, story),
-                #TreeViewRail(app, settings, story),
-                ActiveRailResizer(),
+            ft.Row([       # Keep the majority of the page out up updates
+                #DrawingControlsRail(settings, story),
+                TreeViewRail(settings, story),
                 #story.workspace,
-                #ft.Container(story.workspace, expand=True, gradient=dark_gradient)
             ], spacing=0, expand=True),
-            ft.Button("Click Me", on_click=lambda e: print("Button clicked!")),
             
         ],
         padding=ft.Padding.all(0),      # No padding for the page

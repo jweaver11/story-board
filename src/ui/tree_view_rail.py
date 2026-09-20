@@ -202,9 +202,14 @@ class ContentRail(Rail):
 
 # Reload the rail whenever we need
 @ft.component
-def TreeViewRail(app, settings, story) -> ft.Control:
+def TreeViewRail(settings, story) -> ft.Control:
     ''' Reloads the content rail. `settings` is passed explicitly (not just read off `app`) so this
     component subscribes to the Settings observable itself and re-renders when binder_rail_width changes '''
+
+    rail_width, _ = ft.use_state(250)
+
+
+
 
     top_row_buttons = [
         ft.SubmenuButton(
@@ -415,16 +420,57 @@ def TreeViewRail(app, settings, story) -> ft.Control:
         hover_interval=20,
     )
 
+    # Called when resizing the active rail by dragging the resizer
+    # Live width lives in this component's own state, so updating it during drag only
+    # re-renders this TreeViewRail component - not settings.update_data(), which notifies
+    # every subscriber (StoryRoute, StoryView, AppView, etc.) and would tear down/rebuild
+    # the whole view - including the GestureDetector being dragged - killing the drag mid-gesture.
+    tree_view_rail_width, set_tree_view_rail_width = ft.use_state(settings.data.get('tree_view_rail_width', 250))
+
+    def resize_tree_view_rail(e: ft.DragUpdateEvent):
+        ''' Responsible for altering the width of the active rail '''
+
+        new_width = max(10, min(tree_view_rail_width + int(e.local_delta.x), 600))     # Clamp the width between 0 and 600
+        set_tree_view_rail_width(new_width)
+
+    def save_tree_view_rail_width(e: ft.DragEndEvent = None):
+        ''' Persists the final width once the drag finishes '''
+        settings.update_data(**{'tree_view_rail_width': tree_view_rail_width})
+
+    @ft.component
+    def ActiveRailResizer() -> ft.GestureDetector:
+        return ft.GestureDetector(
+            content=ft.Container(
+                width=10,   # Total width of the GD, so its easier to find with mouse
+                content=ft.VerticalDivider(2, 2),     # Original
+                padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+            ),
+            # Stable key so re-renders (triggered while dragging) patch this control in place
+            # instead of remounting it, which would drop the in-progress pan gesture.
+            key="tree_view_rail_resizer",
+            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
+            on_pan_update=resize_tree_view_rail, # Resize the active rail as app is dragging
+            on_pan_end=save_tree_view_rail_width,  # Save the resize when app is done dragging
+            drag_interval=20,
+        )
+
+    
+
     return ft.Container(
-        ft.Column([
-            header,
-            ft.Divider(thickness=2, leading_indent=8),
-            menu_gesture_detector
-        ], expand=True, spacing=0),
+        ft.Row([
+            ft.Column([
+                #header,
+                ft.Divider(thickness=2, leading_indent=8),
+                #menu_gesture_detector
+            ], expand=True, spacing=0, margin=ft.Margin.only(top=10, bottom=10)),
+            ActiveRailResizer(),
+        ], spacing=0),
+        key="tree_view_rail_container",
         alignment=ft.Alignment.TOP_CENTER,
-        padding=ft.Padding.only(top=10, bottom=10, left=8),
-        #width=app.settings.data.get('story', {}).get('active_rail_width', 250),
-        width=settings.binder_rail_width,
+        padding=ft.Padding.only(left=8),
+        #width=settings.data.get('story', {}).get('active_rail_width', 250),
+        width=tree_view_rail_width,
         animate_size=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
