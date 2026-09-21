@@ -79,7 +79,7 @@ class App:
                     story_id = page.route.split("/")[-1]
                     story = self.stories.get(story_id)
                     if story:
-                        #settings.story.block_page()    # Block the page so we are loading
+                        #settings.story.block_page()    # Block the page to show us loading the saves
                         await settings.save_story()
                     
                 page.window.prevent_close = False

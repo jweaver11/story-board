@@ -36,12 +36,30 @@ NEGATIVE_NUMBER_FILTER = ft.InputFilter(allow=True, regex_string=r"^-?[0-9]*$")
 
 
 
-# Called mostly when re-ordering or collapsing the rail. Also called on start
+# Rail container on desktop to hold the drawing controls
 @ft.component
 def DrawingControlsRail(settings, story: Story) -> ft.Control:
+    
     page = ft.context.page
+    return ft.Container(
+        ft.Column(DrawingControls(settings, story)),
+        alignment=ft.Alignment.CENTER,  # Aligns content to the 
+        padding=ft.Padding.only(bottom=10, right=6, left=6, top=10),
+        animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+        border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
+        bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+        width=78 if settings.data.get('story', {}).get('show_canvas_rail', False) == True else 0,
+        visible=settings.data.get('story', {}).get('show_canvas_rail', False) == True and not page.platform.is_mobile()
+        #visible=settings.show_canvas_rail == True and not page.platform.is_mobile()
+    )
 
 
+# Returns the buttons for our drawing controls so it can be added to a column or row
+@ft.component
+def DrawingControls(settings, story) -> list[ft.control]:
+    page = ft.context.page
+    
+    
     class Switch(ft.Switch):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -2154,7 +2172,7 @@ def DrawingControlsRail(settings, story: Story) -> ft.Control:
         tooltip="Triangle Shape"
     )
     
-    drawing_controls = [
+    return [
         ft.Row([
             ft.MenuBar(
                 [
@@ -2241,23 +2259,3 @@ def DrawingControlsRail(settings, story: Story) -> ft.Control:
         #rectangle_tool_button,
         #triangle_tool_button
     ]
-    
-    
-
-    
-
-    # If mobile, this will be shown on menubar instead
-    #self.visible = not self.page.platform.is_mobile()
-
-    return ft.Container(
-        ft.Column(drawing_controls),
-        alignment=ft.Alignment.CENTER,  # Aligns content to the 
-        padding=ft.Padding.only(bottom=10, right=6, left=6, top=10),
-        animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-        border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
-        bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-        width=78 if settings.data.get('story', {}).get('show_canvas_rail', False) == True else 0,
-        visible=settings.data.get('story', {}).get('show_canvas_rail', False) == True and not page.platform.is_mobile()
-    )
-
-

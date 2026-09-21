@@ -354,19 +354,14 @@ def MenuBar(app, settings, story: Story=None):
 
     def toggle_show_canvas_rail(e: ft.Event[ft.MenuItemButton]):
         ''' Toggles the visibility of the canvas rail on the left side of the page '''
-        new_value = not settings.data.get('story', {}).get('show_canvas_rail', False)
+       
+        new_value = not show_canvas_rail
+        set_show_canvas_rail(new_value)
+        #settings.data['story']['show_canvas_rail'] = new_value
         settings.update_data(**{'story': {'show_canvas_rail': new_value}})
-        if new_value:
-            e.control.leading.icon = ft.Icons.VISIBILITY_OUTLINED
-        else:
-            e.control.leading.icon = ft.Icons.VISIBILITY_OFF_OUTLINED
-        if story is not None:
-            if new_value:
-                story.canvas_rail.width = 78
-            else:
-                story.canvas_rail.width = 0
-            story.canvas_rail.update()
-        e.control.update()
+        settings.show_canvas_rail = new_value
+        
+       
 
     async def handle_settings_clicked(e=None):
         ''' Goes to the settings page '''
@@ -420,6 +415,9 @@ def MenuBar(app, settings, story: Story=None):
             actions_alignment=ft.MainAxisAlignment.END,
         )
         ft.context.page.show_dialog(dlg)
+
+    show_canvas_rail, set_show_canvas_rail = ft.use_state(settings.data.get('story', {}).get('show_canvas_rail', False))
+        
 
         
 
@@ -483,7 +481,7 @@ def MenuBar(app, settings, story: Story=None):
                     ft.MenuItemButton(
                         content=ft.Text("Toggle Canvas Rail", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(
-                            ft.Icons.VISIBILITY_OUTLINED if settings.data.get('story', {}).get('show_canvas_rail', False) else ft.Icons.VISIBILITY_OFF_OUTLINED,
+                            ft.Icons.VISIBILITY_OUTLINED if show_canvas_rail else ft.Icons.VISIBILITY_OFF_OUTLINED,
                             ft.Colors.PRIMARY
                         ),
                         close_on_click=True, 
@@ -520,7 +518,6 @@ def MenuBar(app, settings, story: Story=None):
 
 
 
-    
     
 
     # Create our menu bar with submenu items

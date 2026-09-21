@@ -223,6 +223,8 @@ class Settings:
             }
 
         self.tree_view_rail_width: int = self.data.get('story', {}).get('tree_view_rail_width', 250)
+
+        self.show_canvas_rail: bool = self.data.get('story', {}).get('show_canvas_rail', False)
             
         
         
@@ -242,6 +244,8 @@ class Settings:
                     target[key] = value
 
         _merge_data(self.data, kwargs)  # Merge the new data into the existing data
+
+        self.data = {**self.data}
 
     
     # Called whenever there are changes in our data

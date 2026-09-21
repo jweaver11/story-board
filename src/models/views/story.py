@@ -1249,7 +1249,7 @@ def StoryView(app, settings, story: 'Story') -> ft.View:
         [
             MenuBar(app, settings, story),
             ft.Row([       # Keep the majority of the page out up updates
-                #DrawingControlsRail(settings, story),
+                DrawingControlsRail(settings, story),
                 TreeViewRail(settings, story),
                 #story.workspace,
             ], spacing=0, expand=True),

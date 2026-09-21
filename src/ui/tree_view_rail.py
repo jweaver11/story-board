@@ -373,6 +373,8 @@ def TreeViewRail(settings, story) -> ft.Control:
         alignment=ft.MainAxisAlignment.CENTER,
         controls=[menubar]
     )
+
+    #new_item_textfield
                 
 
     # Build the content of our rail
@@ -388,8 +390,8 @@ def TreeViewRail(settings, story) -> ft.Control:
 
     # Load our content directory data into the rail
     #load_directory_data(
-        #story=self.story,
-        #directory=self.story.data.get('content_directory_path'),
+        #story=story,
+        #directory=story.data.get('content_directory_path'),
         #rail=self,
         #column=content,
     #)
