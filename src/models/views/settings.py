@@ -18,18 +18,14 @@ import asyncio
 from styles.text_fields import SettingsTextField
 from dataclasses import dataclass
 import base64
+from contexts import app_context, settings_context
 
 @ft.observable
 @dataclass
 class Settings:
 
     # Constructor
-    def __init__(
-        self, 
-        story: Story = None, 
-        data: dict = None,
-        selected_index: int = 0,   # Which folder to show when opening settings. 0 = Appearance, 1 = Widgets, 2 = Templates, 3 = Resources
-    ):
+    def __init__(self, data: dict = None):
         
         # Constructor the parent widget class
         #super().__init__(
@@ -40,10 +36,7 @@ class Settings:
         #)
 
         # Set attributes
-        #self.route = "/settings"   # Sets our route for our settings view
-        self.story = story
         self.data = data
-        self.selected_index = selected_index
 
         # If we're new, give default values for our data 
         if data is None or data == {}:
@@ -264,10 +257,12 @@ class Settings:
     async def close_settings(self, e=None):
         ''' Closes the settings view and returns to the story or home view '''
         await self.save_file()
-        await self.page.push_route(self.story.route if self.story is not None else "/")
+        #await self.page.push_route(self.story.route if self.story is not None else "/")
 
     async def save_story(self, e=None):
         ''' Called when the page is closed. Saves any dirty changes '''
+        await self.save_file()
+        return
         if self.story is not None:
             for widget in self.story.widgets.values():
                 await widget.save_file()
@@ -1897,7 +1892,7 @@ def load_resources_settings(self):
     
 # Called when someone expands the drop down holding the color scheme options
 @ft.component
-def SettingsView(app, settings, story=None):
+def SettingsView(story=None):
     ''' Reloads our settings view with updated data '''
 
 
@@ -1908,6 +1903,9 @@ def SettingsView(app, settings, story=None):
         idx = e.control.selected_index 
         set_settings_idx(idx)
         print("Set settings index to", idx)
+
+    app = ft.use_context(app_context)
+    settings = ft.use_context(settings_context)
 
     settings_idx, set_settings_idx = ft.use_state(0)
 
@@ -1992,6 +1990,5 @@ def SettingsView(app, settings, story=None):
     )
 
         
-
 
 

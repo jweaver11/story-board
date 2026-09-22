@@ -1,12 +1,11 @@
 import flet as ft
 from ui.menu_bar import MenuBar
-from styles.colors import dark_gradient
-from utils.check_story_unique import story_is_unique
+from contexts import app_context, settings_context
 
 
 # Called when creating our home view (No stories exist or none active)
 @ft.component
-def HomeView(app, settings) -> ft.View: 
+def HomeView() -> ft.View: 
     ''' Creates a custom menu bar with new, open, and import new story buttons, and a create new story button in the middle'''
     #from models.app import app
     
@@ -17,10 +16,12 @@ def HomeView(app, settings) -> ft.View:
 
         # Check if the title is unique
             #print("title is unique, story being created: ", title)
-        app.create_new_story(title, page) # Needs the story object
+        app.create_story(title, page) # Needs the story object
         set_show_dlg(False)
 
     page = ft.context.page
+    app = ft.use_context(app_context)
+    settings = ft.use_context(settings_context)
 
     menubar = MenuBar(app, settings)
 

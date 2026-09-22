@@ -20,6 +20,7 @@ import stat
 from constants import STORIES_DIRECTORY_PATH
 from styles.snack_bar import SnackBar
 from dataclasses import dataclass
+from ui.drawing_controls_rail import DrawingControls
 
     
 
@@ -433,12 +434,13 @@ def MenuBar(app, settings, story: Story=None):
         controls=[  # The controls shown in our menu bar from left to right
             ft.SubmenuButton(   # Button that opens a subment
                 content=ft.Container(
-                    content=ft.Text("File", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),     # Content of subment button
+                    #content=ft.Text("File", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),     # Content of subment button
+                    content=ft.Icon(ft.Icons.MENU, ft.Colors.PRIMARY),
                     alignment=ft.Alignment.CENTER
                 ), 
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 menu_style=ft.MenuStyle(padding=ft.Padding.all(0)),
-                
+                #width=40,
                 controls=[      # The options shown inside of our button
                     ft.MenuItemButton(
                         content=ft.Text("New Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
@@ -520,20 +522,7 @@ def MenuBar(app, settings, story: Story=None):
 
     
 
-    # Create our menu bar with submenu items
-    drawing_controls = ft.MenuBar(
-        #expand=True,
-        visible=page.platform.is_mobile(),
-        style=ft.MenuStyle(     # Styling our menubar
-            alignment=ft.Alignment.CENTER,
-            bgcolor=ft.Colors.TRANSPARENT,
-            shadow_color=ft.Colors.TRANSPARENT,
-        ),
-        controls=[  # Segment button of draw mode, brush options, and dropdown of saved brushes with option to save current
-            
-            ft.Container()
-        ], 
-    )
+    
 
     return ft.Container(
         ft.Row(
@@ -542,7 +531,8 @@ def MenuBar(app, settings, story: Story=None):
             controls=[
                 file_options,    # File options button
 
-                drawing_controls,   # Main drawing controls
+                ft.Row(controls=DrawingControls(settings, story), alignment=ft.MainAxisAlignment.CENTER),
+
 
                 ft.Row([        # Row that has alpha text, info button, and settings button
                     ft.Text(
@@ -560,4 +550,5 @@ def MenuBar(app, settings, story: Story=None):
         ),
         border = ft.Border.only(bottom=ft.BorderSide(width=1, color=ft.Colors.OUTLINE_VARIANT)),
         bgcolor = ft.Colors.SURFACE_CONTAINER_LOWEST,
+        #padding=ft.Padding.only(left=10)
     )

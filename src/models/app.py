@@ -14,6 +14,7 @@ from utils.route_change import route_change
 from constants import SETTINGS_FILE_PATH, STORIES_DIRECTORY_PATH
 from dataclasses import dataclass
 from models.views.settings import Settings
+from contexts import app_context, settings_context
 
 @ft.observable
 @dataclass
@@ -27,8 +28,10 @@ class App:
         self.ignore_settings_change = True  # Ignore settings changes when page is loading itself and saving incorrect changes
 
     # Called once from AppView, after a page exists (ft.context.page is only valid inside a Flet callback/render)
-    def configure_page(self, settings, page: ft.Page):
+    def configure_page(self, settings: Settings, page: ft.Page):
         ''' Applies our loaded settings to the current page (title, theme, window size, fonts, event handlers) '''
+
+        #settings = ft.use_context(settings_context)
 
         # Sets our app title
         page.title = "StoryBoard (alpha)"
@@ -147,7 +150,7 @@ class App:
                         story_id = story_data.get("id", file_path.replace(".json", ""))
                             
                         self.stories[story_id] = Story(story_title, story_data)
-                        print("Loaded story:", story_id)
+                        #print("Loaded story:", story_id)
 
                         break
                     # Else, continue through the next story folder
@@ -158,34 +161,30 @@ class App:
                 print(f"Error loading story {story_title}: {e}. May not be a directory")
 
         self.ignore_settings_change = False
-
-    
     
     # Called when app creates a new story. Accepts our title, page reference, a template, and a type
-    def create_new_story(self, title: str, page: ft.Page) -> Story:
+    def create_story(self, title: str) -> Story:
         ''' Creates the new story object and has it run its 'startup' method. Changes route so our view displays the new story '''
         
         story = Story(title)
-        page.run_task(story.save_file)  # Save it to data
+        ft.context.page.run_task(story.save_file)  # Save it to data
+
+        settings = ft.use_context(settings)
         
         # Create a new story object and add it to our stories dict
         self.stories[story.data.get('id')] = story
 
         # Opens this new story as the active one on screen
-        asyncio.create_task(page.push_route(story.route))
-        self.settings.update_data(**{'page': {'route': story.route}})
-        self.settings.story = story
+        ft.context.page.navigate.push_route(story.route)
+        settings.update_data(**{'page': {'route': story.route}})
+        settings.story = story
 
-# Called on app startup in main
+# Load settings from the JSON file or create default settings if none exist
 def load_settings():
     ''' Loads our settings from a JSON file into our rendered settings control. If none exist, creates default settings '''
+    from constants import SETTINGS_FILE_PATH, APP_DATA_PATH
+    from models.views.settings import Settings
     
-
-    # Should just look for our settings file to load our data from. Settings should do all other logic
-
-    # Path to our settings file
-    
-
     # Create settings.json with empty dict if it doesn't exist
     if not os.path.exists(SETTINGS_FILE_PATH):
         os.makedirs(os.path.dirname(SETTINGS_FILE_PATH), exist_ok=True)  # Ensure directory exists
@@ -220,19 +219,18 @@ def ErrorView() -> ft.View:
 # Handles a view for a story, and loads that story and returns its view
 # Only called when route starts with 'stories/'
 @ft.component
-def StoryRoute(app, settings) -> ft.View:
+def StoryRoute() -> ft.View:
 
     # Grab current route and extract the story ID from it
     current_route = ft.context.page.route
+    app = ft.use_context(app_context)
     story_id = current_route.split("/")[-1]  
-
-    print("Story Route called:", current_route)
 
     # See where the story exists in the apps dictionary, and return its view
     if story_id in app.stories:
         story = app.stories[story_id]
         #ft.context.page.overlay = []
-        return StoryView(app, settings, story)
+        return StoryView(story)
     
     # Return errors
     return ft.View(
@@ -242,10 +240,11 @@ def StoryRoute(app, settings) -> ft.View:
 @ft.component
 def AppView() -> list[ft.Control]:
 
-    # Give us an app and settings object globally
+    # Give us an app and settings state objects that we will attach to our context.
     app, _ = ft.use_state(App())
     settings, _ = ft.use_state(load_settings())
-    page = ft.context.page  # Grab the page so we can configure it
+    
+    page = ft.context.page  # Grab the page so we can configure it easier
 
     # use_state subscribes AppView to every change on app/settings (both @ft.observable), so
     # running these directly in the render body re-navigates and re-scans stories on EVERY
@@ -256,18 +255,30 @@ def AppView() -> list[ft.Control]:
 
     ft.use_effect(_initialize, dependencies=[])
 
-    # Set thr router to handle routing for the app
-    return ft.Router(
-        [
-            ft.Route(index=True, component=lambda: HomeView(app, settings)),
-            ft.Route("loading", component=LoadingView),
-            ft.Route("settings", component=lambda: SettingsView(app, settings, None)),
-            #ft.Route(path="tutorial", component=lambda: TutorialView()),
-            ft.Route("stories/:story_id", component=lambda: StoryRoute(app, settings))
-        ],
-        not_found=ErrorView(),
-        manage_views=True
+    # Build the router that will handle which view to display based on the current route
+    @ft.component
+    def build_router():
+        return ft.Router(
+            [
+                ft.Route(index=True, component=HomeView),
+                ft.Route("loading", component=LoadingView),
+                ft.Route("settings", component=SettingsView),
+                #ft.Route(path="tutorial", component=lambda: TutorialView()),
+                ft.Route("stories/:story_id", component=StoryRoute)
+            ],
+            not_found=ErrorView(),
+            manage_views=True
+        )
+
+    # Set the context available fore each component
+    return app_context(
+        app,
+        lambda: settings_context(
+            settings, 
+            build_router
+        )
     )
+    
 
 # OLD -- PHASE OUT
 app = App()

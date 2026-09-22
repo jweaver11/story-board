@@ -18,6 +18,7 @@ import uuid
 from styles.colors import dark_gradient
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor
+from contexts import app_context, settings_context
 
 @ft.observable
 @dataclass 
@@ -1181,7 +1182,7 @@ class Story:
 
 # Builds our view
 @ft.component
-def StoryView(app, settings, story: 'Story') -> ft.View:
+def StoryView(story: 'Story') -> ft.View:
     ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
     from ui.menu_bar import MenuBar
     from ui.workspaces_rail import WorkspacesRail
@@ -1227,6 +1228,9 @@ def StoryView(app, settings, story: 'Story') -> ft.View:
                     await redo()
 
     page = ft.context.page
+    app = ft.use_context(app_context)
+    settings = ft.use_context(settings_context)
+    print("StoryView called with story:", story)
         
 
     # Set our specific event to detect keyboard events for the story

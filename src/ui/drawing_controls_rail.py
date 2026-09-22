@@ -45,7 +45,7 @@ def DrawingControlsRail(settings, story: Story) -> ft.Control:
         ft.Column(DrawingControls(settings, story)),
         alignment=ft.Alignment.CENTER,  # Aligns content to the 
         padding=ft.Padding.only(bottom=10, right=6, left=6, top=10),
-        animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+        #animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
         bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
         width=78 if settings.data.get('story', {}).get('show_canvas_rail', False) == True else 0,
@@ -1248,7 +1248,7 @@ def DrawingControls(settings, story) -> list[ft.control]:
             content=ExpansionTile(
                 title=ft.Text("Font Family", size=14),
                 controls=[
-                    ft.Radio(key, value=key) for key in page.fonts.keys()
+                    #ft.Radio(key, value=key) for key in page.fonts.keys()
                 ]
             ),
             value=text_settings.get('font_family', 'Arial'),
