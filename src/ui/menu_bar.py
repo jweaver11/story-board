@@ -21,13 +21,16 @@ from constants import STORIES_DIRECTORY_PATH
 from styles.snack_bar import SnackBar
 from dataclasses import dataclass
 from ui.drawing_controls_rail import DrawingControls
+from contexts.contexts import AppContext, AppSettingsContext
 
     
 
 @ft.component
-def MenuBar(app, settings, story: Story=None):
+def MenuBar(story: Story=None):
 
     page = ft.context.page
+    app_settings = ft.use_context(AppSettingsContext)
+    app = ft.use_context(AppContext)
 
     class Dropdown(ft.Dropdown):
         def __init__(self, *args, **kwargs):
@@ -148,7 +151,7 @@ def MenuBar(app, settings, story: Story=None):
 
             if selected_story is not None:
                 await page.push_route(app.stories[selected_story].route)
-                settings.story = app.stories[selected_story]  # Gives our settings widget the story reference it needs
+                app_settings.story = app.stories[selected_story]  # Gives our settings widget the story reference it needs
                 page.pop_dialog()
                 page.update()
             else:
@@ -317,7 +320,7 @@ def MenuBar(app, settings, story: Story=None):
 
             await imported_story.save_file()
             app.stories[story_id] = imported_story
-            settings.story = imported_story
+            app_settings.story = imported_story
             await page.push_route(imported_story.route)
             page.update()
 
@@ -359,8 +362,7 @@ def MenuBar(app, settings, story: Story=None):
         new_value = not show_canvas_rail
         set_show_canvas_rail(new_value)
         #settings.data['story']['show_canvas_rail'] = new_value
-        settings.update_data(**{'story': {'show_canvas_rail': new_value}})
-        settings.show_canvas_rail = new_value
+        app_settings.show_drawing_controls = new_value
         
        
 
@@ -386,7 +388,7 @@ def MenuBar(app, settings, story: Story=None):
 
                 story_id = story.data.get('id')
                 deleted_id = app.stories.pop(story_id)
-                settings.story = None                    
+                app_settings.story = None                    
 
                 story_dir_path = story.data.get('directory_path')
                 full_norm = os.path.normcase(os.path.normpath(story_dir_path))
@@ -417,7 +419,7 @@ def MenuBar(app, settings, story: Story=None):
         )
         ft.context.page.show_dialog(dlg)
 
-    show_canvas_rail, set_show_canvas_rail = ft.use_state(settings.data.get('story', {}).get('show_canvas_rail', False))
+    show_canvas_rail, set_show_canvas_rail = ft.use_state(app_settings.show_drawing_controls)
         
 
         
@@ -531,7 +533,7 @@ def MenuBar(app, settings, story: Story=None):
             controls=[
                 file_options,    # File options button
 
-                ft.Row(controls=DrawingControls(settings, story), alignment=ft.MainAxisAlignment.CENTER),
+                ft.Row(controls=DrawingControls(app_settings, story), alignment=ft.MainAxisAlignment.CENTER),
 
 
                 ft.Row([        # Row that has alpha text, info button, and settings button

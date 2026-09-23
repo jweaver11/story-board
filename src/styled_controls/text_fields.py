@@ -14,9 +14,9 @@ class TextField(ft.TextField):
         self.multiline=True
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
-        self.border_radius=4
-        self.border_color=ft.Colors.TRANSPARENT
-        self.focused_border_color=ft.Colors.PRIMARY
+        #self.border_radius=4
+        #self.border_color=ft.Colors.TRANSPARENT
+        #self.focused_border_color=ft.Colors.PRIMARY
 
 
 # Standard styling for most text fields we use
@@ -33,9 +33,9 @@ class SingleLineTextField(ft.TextField):
         self.multiline=False
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
-        self.border_radius=4
-        self.border_color=ft.Colors.TRANSPARENT
-        self.focused_border_color=ft.Colors.PRIMARY
+        #self.border_radius=4
+        #self.border_color=ft.Colors.TRANSPARENT
+        #self.focused_border_color=ft.Colors.PRIMARY
 
 # Standard styling for most text fields we use
 class SettingsTextField(ft.TextField):
@@ -68,8 +68,8 @@ class SidebarTitleTextField(ft.TextField):
         self.content_padding=ft.Padding.only(top=2, bottom=2)
         self.capitalization=ft.TextCapitalization.WORDS
         self.bgcolor=ft.Colors.TRANSPARENT
-        self.border_color=ft.Colors.TRANSPARENT
-        self.focused_border_color=ft.Colors.TRANSPARENT
+        #self.border_color=ft.Colors.TRANSPARENT
+        #self.focused_border_color=ft.Colors.TRANSPARENT
         self.expand=True
         
         
@@ -82,7 +82,7 @@ class NoLabelTextField(TextField):
         super().__init__(*args, **kwargs)
 
         self.dense = True
-        self.border=ft.InputBorder.NONE
+        #self.border=ft.InputBorder.NONE
         self.text_style=ft.TextStyle(size=14)
         self.multiline=True
         self.content_padding=ft.Padding.all(0)
@@ -96,9 +96,9 @@ class UnderlinedTextField(TextField):
 
         super().__init__(*args, **kwargs)
 
-        self.border=ft.InputBorder.UNDERLINE
-        self.border_color=ft.Colors.BLACK
-        self.border_width=1
+        #self.border=ft.InputBorder.UNDERLINE
+        #self.border_color=ft.Colors.BLACK
+        #self.border_width=1
         self.label_style = ft.TextStyle(weight=ft.FontWeight.W_500, size=16)
         self.dense = True
         
@@ -119,7 +119,7 @@ class SmallTextField(TextField):
         self.text_style=ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=12)
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.multiline=True
-        self.border=ft.InputBorder.NONE
+        #self.border=ft.InputBorder.NONE
         self.text_align=ft.TextAlign.CENTER
         self.bgcolor=ft.Colors.TRANSPARENT
-        self.focused_bgcolor=ft.Colors.TRANSPARENT
+        #self.focused_bgcolor=ft.Colors.TRANSPARENT

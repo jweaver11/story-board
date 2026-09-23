@@ -9,6 +9,7 @@ from styles.menu_option_style import MenuOptionStyle
 from models.isolated_controls.column import IsolatedColumn
 from models.isolated_controls.list_view import IsolatedListView
 import math
+from contexts.app_settings import AppSettingsContext
 
 
 
@@ -202,10 +203,11 @@ class ContentRail(Rail):
 
 # Reload the rail whenever we need
 @ft.component
-def TreeViewRail(settings, story) -> ft.Control:
+def TreeViewRail(story) -> ft.Control:
     ''' Reloads the content rail. `settings` is passed explicitly (not just read off `app`) so this
     component subscribes to the Settings observable itself and re-renders when binder_rail_width changes '''
 
+    app_settings = ft.use_context(AppSettingsContext)
 
     top_row_buttons = [
         ft.SubmenuButton(
@@ -419,16 +421,16 @@ def TreeViewRail(settings, story) -> ft.Control:
     )
 
     # Use state to manage the width of the tree view rail during drag operations
-    tree_view_rail_width, set_tree_view_rail_width = ft.use_state(settings.data.get('tree_view_rail_width', 250))
+    tree_view_rail_width, set_tree_view_rail_width = ft.use_state(app_settings.tree_view_rail_width)
 
     # Update the width of the tree view rail when dragging left and right
     def resize_tree_view_rail(e: ft.DragUpdateEvent):
-        new_width = max(10, min(tree_view_rail_width + int(e.local_delta.x), 600))     # Clamp the width between 0 and 600
+        new_width = max(100, min(tree_view_rail_width + int(e.local_delta.x), 600))     # Clamp the width between 0 and 600
         set_tree_view_rail_width(new_width)
 
     # Save the final width to data when done dragging. If we do this while dragging, we update an ft.observable too much and trigger re-renders
     def save_tree_view_rail_width(e: ft.DragEndEvent = None):
-        settings.update_data(**{'tree_view_rail_width': tree_view_rail_width})
+        app_settings.tree_view_rail_width = tree_view_rail_width
         print("New width: ", tree_view_rail_width)
 
     # Resizer/right boarder for the tree rail. Dragging resizes the tree view rail

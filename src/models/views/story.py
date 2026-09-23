@@ -18,7 +18,7 @@ import uuid
 from styles.colors import dark_gradient
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor
-from contexts import app_context, settings_context
+from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext
 
 @ft.observable
 @dataclass 
@@ -1228,8 +1228,8 @@ def StoryView(story: 'Story') -> ft.View:
                     await redo()
 
     page = ft.context.page
-    app = ft.use_context(app_context)
-    settings = ft.use_context(settings_context)
+    app = ft.use_context(AppContext)
+    settings = ft.use_context(AppSettingsContext)
     print("StoryView called with story:", story)
         
 
@@ -1251,10 +1251,10 @@ def StoryView(story: 'Story') -> ft.View:
     
     return ft.View(
         [
-            MenuBar(app, settings, story),
+            MenuBar(story),
             ft.Row([       # Keep the majority of the page out up updates
-                DrawingControlsRail(settings, story),
-                TreeViewRail(settings, story),
+                #DrawingControlsRail(settings, story),
+                TreeViewRail(story),
                 #story.workspace,
             ], spacing=0, expand=True),
             

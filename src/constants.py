@@ -4,7 +4,13 @@ import os
 APP_DATA_PATH = os.getenv("FLET_APP_STORAGE_DATA")
 
 # Set our path for all stories, and our active story
-SETTINGS_FILE_PATH = os.path.join(APP_DATA_PATH, "settings.json")
+SETTINGS_FILE_PATH = os.path.join(APP_DATA_PATH, "app_settings.json")
+PAINT_SETTINGS_FILE_PATH = os.path.join(APP_DATA_PATH, "paint_settings.json")
+DRAWING_SETTINGS_FILE_PATH = os.path.join(APP_DATA_PATH, "drawings_settings.json")
+TEXT_SETTINGS_FILE_PATH = os.path.join(APP_DATA_PATH, "text_settings.json")
+
+
+
 STORIES_DIRECTORY_PATH = os.path.join(APP_DATA_PATH, "stories")
 FONTS_DIRECTORY_PATH = os.path.join(APP_DATA_PATH, "fonts")
 

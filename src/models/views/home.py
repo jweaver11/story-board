@@ -1,6 +1,6 @@
 import flet as ft
 from ui.menu_bar import MenuBar
-from contexts import app_context, settings_context
+from contexts.contexts import AppContext, AppSettingsContext
 
 
 # Called when creating our home view (No stories exist or none active)
@@ -20,10 +20,8 @@ def HomeView() -> ft.View:
         set_show_dlg(False)
 
     page = ft.context.page
-    app = ft.use_context(app_context)
-    settings = ft.use_context(settings_context)
-
-    menubar = MenuBar(app, settings)
+    app = ft.use_context(AppContext)
+    settings = ft.use_context(AppSettingsContext)
 
     story_title_field = ft.TextField(
         label="Story Title",
@@ -67,7 +65,7 @@ def HomeView() -> ft.View:
     return ft.View(
             route="/",
             controls=[
-                menubar,
+                MenuBar(),
 
                 # Row of workspaces rail to the left (None selected)
                 ft.Container(

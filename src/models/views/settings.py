@@ -16,196 +16,92 @@ from styles.text_fields import TextField
 from models.dataclasses.world_template import default_world_template_data_dict
 import asyncio
 from styles.text_fields import SettingsTextField
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import base64
-from contexts import app_context, settings_context
+from contexts.contexts import AppContext, AppSettingsContext
 
 @ft.observable
 @dataclass
-class Settings:
+class AppSettings:
+
+    is_first_launch: bool = True
+
+    # Page settings
+    route: str = "/"
+    window_maximized: bool = True
+    window_width: int = 0
+    window_height: int = 0
+    theme_mode: str = "dark"
+    theme_color: str = "#A0CAFD"
+
+    # Story settings
+    show_drawing_controls: bool = True
+    tree_view_rail_width: int = 250
+
+    # Widget and folder Colors
+    new_folder_color: str = "primary"
+    new_manuscript_color: str = "primary"
+    new_canvas_color: str = "primary"
+    new_note_color: str = "primary"
+    new_character_color: str = "primary"
+    new_plotline_color: str = "primary"
+    new_canvas_board_color: str = "primary"
+    new_map_color: str = "primary"
+    new_world_color: str = "primary"
+    new_item_color: str = "primary"
+    new_plot_chart_color: str = "primary"
+    new_comic_preview_color: str = "primary"
+    new_chart_color: str = "primary"
+    new_character_relationship_map_color: str = "primary"
+
+    # Widget export settings
+    manuscript_export_file_type: str = ".docx"
+    canvas_export_file_type: str = ".png"
+    plotline_export_file_type: str = ".json"
+    map_export_file_type: str = ".json"
+    plot_chart_export_file_type: str = ".json"
+
+    # Other widget settings
+    canvas_use_custom_cursor: bool = False  # If the canvas uses a standard 
+    plotline_starting_division_count: int = 9
+    plotline_plot_point_color: str = "white"
+    canvas_board_sketch_width: int = 300
+    canvas_board_sketch_height: int = 300
+    map_draw_mode: bool = False
+    map_background_image: str = "map_bg_fantasy_dark.png"
+    plot_chart_node_color: str = "white"
+    plot_chart_spider_web_view: bool = False
+    comic_preview_direction: str = "vertical"
+    comic_preview_background_color: str = "#000000"
+    comic_preview_spacing: int = 0
+    comic_preview_scale: int = 2
+    comic_preview_filter_quality: str = "medium"
+    comic_preview_anti_aliasing: bool = True
+    # Bar chart settings
+    chart_show_labels: bool = True
+    chart_rod_shape: str = "rounded"
+    chart_rod_width: int = 30
+    chart_rod_spacing: int = 4
+    chart_stack_rods: bool = False
+    chart_show_horizontal_grid_lines: bool = True
+    chart_show_vertical_grid_lines: bool = False
+    # Radar chart settings
+    chart_make_chart_round: bool = True
+    chart_tick_count: int = 2
+    chart_show_tick_labels: bool = False
+    chart_rotate_node_titles: bool = True
+
+    # TODO: Finish rest of dict to dataclass
+    # Create dataclass for contexts
+    # Make contexts folder to store the dif contexts
 
     # Constructor
     def __init__(self, data: dict = None):
-        
-        # Constructor the parent widget class
-        #super().__init__(
-           # route=f"/settings",                                      # Sets our route for our new story
-            #padding=ft.Padding.all(0),      # No padding for the page
-            #spacing=0,                                                   # No spacing between menubar and rest of page
-            #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
-        #)
-
-        # Set attributes
         self.data = data
-
         # If we're new, give default values for our data 
         if data is None or data == {}:
             self.data = {
-                
-                
-                'is_first_launch': True,    # If this is the first time the app has been launched or not
-
-                # Settings about the page
-                'page': {
-                    'route': "/",           # Route to our active story
-                    'is_maximized': True,   # If the page is maximized or not
-                    'width': int(),          # Last known page width
-                    'height': int(),          # Last known page height
-                    'theme_mode': "dark",       # the apps theme mode, dark or light
-                    'theme_color': "#A0CAFD",   # the color scheme of the app. Defaults to blue
-                },
-
-                # Settings about story details
-                'story': {
-                    'workspaces_rail_is_collapsed': False,
-                    'active_rail_width': 250,  
-                    'tree_view_rail_width': 250,
-                    'default_folder_color': "primary",    # Categories thrown in here
-                    'show_canvas_rail': True,   # If the canvas rail is hidden or not
-                    'workspaces_rail_order': [      # Order of the workspace rail 
-                        "content",
-                        "canvas",
-                        "plot",
-                        "characters",
-                        "world_building",
-                    ],
-                },
-
-                # Default settings for the newly created widgets. All have a color, but can have additional settings specific to each widget type.
-                'widget_defaults': {
-                    'manuscript': {
-                        'color': "primary",
-                        'export_file_type': ".docx"   # Default export file type for plotlines
-                    },
-                    'canvas': {
-                        'color': "primary",
-                        'use_standard_cursor': True,     # if the mouse cursor will reflect the current paint settings or not. False=standard cursor
-                        'export_file_type': ".png"   # Default export file type for plotlines
-                    },
-                    'note': {
-                        'color': "primary"
-                    },
-                    'character': {
-                        'color': "primary"
-                    },
-                    'plotline': {
-                        'color': "primary",
-                        'show_division_labels': True,  # Whether to show each divisions label or not
-                        'starting_division_count': 9,    # Default number of divisions for new plotlines
-                        'plot_point_color': "white",   # Default color for new plot points
-                        'export_file_type': ".json"   # Default export file type for plotlines
-                    },
-                    'canvas_board': {
-                        'color': "primary",
-                        'sketch_width': 300,    # Default width for preview and sketches for new canvas boards
-                        'sketch_height': 300,   # Default height for preview and sketches for new canvas boards
-                    },
-                    'map': {
-                        'color': "primary",
-                        'draw_mode': False,   # If the map is in draw mode or not
-                        'background_image': "map_bg_fantasy_dark.png",   # Default background image for new maps
-                        'export_file_type': ".json"   # Default export file type for maps
-                    },
-                    'world': {
-                        'color': "primary"
-                    },
-                    'item': {
-                        'color': "primary"
-                    },
-                    'plot_chart': {
-                        'color': "primary",
-                        'node_color': "white",
-                        'spider_web_view': False,   # If the plot chart is in spider web view or not
-                        'export_file_type': ".json"   # Default export file type for plotlines
-                    },
-                    'comic_preview': {
-                        'color': "primary",
-                        'preview_direction': "vertical",            # Default direction for comic preview, can be vertical or horizontal
-                        'preview_background_color': "#000000",  # Background color behind images
-                        'preview_spacing': 0,                       # Spacing between images
-                        'preview_scale': 2,                         # Scale of the images in the preview, 1 = 1:1, 2 = 2:1, etc. 
-                        'filter_quality': "medium",                 # Filter quality for the images in the preview, can be low, medium, or high
-                        'anti_aliasing': True,                  # Whether to use anti-aliasing when rendering the images in the preview
-                    },
-                    'chart': {
-                        'color': "primary",
-                        # Bar chart settings
-                        'show_labels': True,           
-                        'rod_shape': "rounded",          
-                        'rod_width': 30,     
-                        'rod_spacing': 4,    
-                        'stack_rods': False,      
-                        'show_horizontal_grid_lines': True,
-                        'show_vertical_grid_lines': False,
-                        # Radar chart settings
-                        'make_chart_round': True,   # If chart is round or polygon based on nodes
-                        'tick_count': 2,    # Number of lines between the center and outer edge of the chart
-                        'show_tick_labels': False,      # Whether to show the labels for each tick line or not
-                        'rotate_node_titles': True,    # Whether to keep our titles flat and not rotate them with the chart or not
-                    },
-                    'character_relationship_map': {
-                        'color': "primary",
-                        'export_file_type': ".json"   # Default export file type for plotlines
-                    }
-                },
-
-                # Paint settings for our canvas drawings to use as default that users can change
-                'paint_settings': {
-                    'color': "#FFFFFF",     # Hex color folowed by opacity
-                    'stroke_width': 3,          # Size of the strokees
-                    'style': "stroke",          # style of the strokes. Either stroke or fill
-                    'stroke_cap': "round",      # Each end of the strokes shape
-                    'stroke_join': "round",     # How corners between strokes are drawn
-                    'stroke_miter_limit': 10, 
-                    'stroke_dash_pattern': None,         # If we should use dashed lines, and the pattern for them
-                    'anti_alias': True,     # Use anti aliasing for smoother strokes or not
-                    'blur_image': 0,        # How much blur to apply to the stroke
-                    'blend_mode': None,     # Any blend mode to apply to the stroke, or None for normal
-                },               
-
-                # Other canvas and drawing settings outside of the brushes paint
-                'canvas_settings':{
-                    # Brush vs tool mode settings
-                    #'capture_ratio': 1,                       # Ratio to capture the canvas. Higher means better quality -> worse performance
-                    'current_control_mode': "draw",      # Either drawing, (use brush settings), tools (use built in tools), or text
-                    'current_brush_name': "stroke",      # Name of the currently selected brush, either default or custom. Just used for display purposes
-                    'current_tool_name': "erase",        # Current tool or shape being used
-
-                   
-                    'use_brush_smoothing': True,         # Uses cv.Path for constistant shapes if true, otherwise use cv.line
-                    'stroke_smoothing_strength': 1,        # If stroke smoothing is enabled, how strong the smoothing is. 1 = low, 10 = high 0=off
-                    'saved_brushes': dict(),             # Saved brushes the user has created that we can load
-                    'saved_colors': list(),              # Saved colors the user has created that we can load [{'name': 'name_val', 'value': 'value']
-                    'saved_text_settings': dict(),          # Saved text settings the user has created that we can load
-                    # Other shape settings
-                    #'use_paint_for_shapes': True,           # If True, shapes are black/white and use default paint settings rather than live brush settings
-                    'rectangle_border_radius': 0,               # Border radius for rectangle shapes
-                },
-                'text_settings': {
-                    'size': 14,
-                    'weight': "normal",  # Options: None, w100, w200, w300, w400, w500, w600, w700, w800, w900, bold
-                    'italic': False,
-                    'decoration': None,  # Options: none, underline, overline, line_through
-                    'decoration_color': None,
-                    'decoration_thickness': 1,
-                    'decoration_style': "solid",    # options: solid, wavy, double, dotted, dashed
-                    'font_family': None,
-                    'color': "#FFFFFF",  # Hex color folowed by opacity
-                    'bgcolor': "#00000000",  # Background color for text shapes
-                    'shadow': {
-                        'blur_radius': 0,
-                        'blur_style': 'normal', # Options: normal, solid, outer, inner
-                        'color': "#00000000",
-                        'offset': (0, 0),
-                        'spread_radius': 0,
-                    },   # Boxshad values
-                    'foreground': None, # [list of gradients/color values] (ft.PaintLinearGradient, ft.PaintRadialGradient, ft.PaintGradient ft.PaintSweepGradient)
-                    'letter_spacing': 0,
-                    'word_spacing': 0,
-                    'baseline': "alphabetic",  # How text is rendered - Options: alphabetic or ideographic
-                },
-                
-
+        
                 # Hold our default character templates
                 'character_templates': {    
                     'Default': default_character_template_data_dict(),
@@ -1904,8 +1800,8 @@ def SettingsView(story=None):
         set_settings_idx(idx)
         print("Set settings index to", idx)
 
-    app = ft.use_context(app_context)
-    settings = ft.use_context(settings_context)
+    app = ft.use_context(AppContext)
+    settings = ft.use_context(AppSettingsContext)
 
     settings_idx, set_settings_idx = ft.use_state(0)
 
