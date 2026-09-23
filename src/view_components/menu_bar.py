@@ -29,10 +29,16 @@ def MenuBar(story: Story=None):
 
     # Grab our contexts
     page = ft.context.page
-    app_settings = ft.use_context(AppSettingsContext)
     app = ft.use_context(AppContext)
+    app_settings = ft.use_context(AppSettingsContext)
+    
 
+    # Declare our state variables for our dialogs
     show_new_story_dlg, set_show_new_story_dialog = ft.use_state(False)
+    show_open_story_dlg, set_show_open_story_dialog = ft.use_state(False)
+
+    selected_story_id, set_selected_story_id = ft.use_state("")   # Selected radio value for opening stories
+
 
     # State for showing or hiding the drawing controls rail
     show_drawing_controls, set_show_drawing_controls = ft.use_state(app_settings.show_drawing_controls)
@@ -42,14 +48,17 @@ def MenuBar(story: Story=None):
     def build_new_story_dlg() -> ft.AlertDialog:
         ''' Opens a dialog to create a new story. Checks story is unique or not '''
 
+        # Creates the new story with the given title
         async def submit_new_story(_):
-            ''' Creates a new story with the given title '''
-
             title = new_story_title.value.strip()
+            if not title:
+                set_show_new_story_dialog(False)
+                return
             page.pop_dialog()   # Force the dialog close before re-routing
             set_show_new_story_dialog(False)    # I dunno, i just like the state being accurate, but this does nothing
             app.create_story(title, app_settings)
-            
+
+        # Set the title for the new story
         new_story_title = ft.TextField(label="Story Title", autofocus=True, capitalization=ft.TextCapitalization.WORDS,on_submit=submit_new_story)
 
         # Return the dialog
@@ -67,30 +76,12 @@ def MenuBar(story: Story=None):
             on_dismiss=lambda _: set_show_new_story_dialog(False),  
         )
             
-    # Create dialogs for stories
-    ft.use_dialog(build_new_story_dlg() if show_new_story_dlg else None)
-        
-
-
+    
 
     # Called when file -> open is clicked
-    async def handle_open_story(e=None):
+    def build_open_story_dlg() -> ft.AlertDialog:
         ''' Opens a dialog to open an existing story '''
-
-        #print("Open Story Clicked")
-
-        selected_story = None
-
-        # Called when a new story text button is clicked
-        def change_selected_story(e):
-            ''' Changes our selected story variable '''
-
-            nonlocal selected_story
-            selected_story = e.control.value
-            open_button.disabled = False
-            open_button.style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")
-            open_button.update()
-
+        
         # Returns a list of all story titles available to open
         def get_stories_list() -> ft.Control:
             ''' Returns a list of all story titles available to open '''
@@ -107,33 +98,27 @@ def MenuBar(story: Story=None):
 
             # Use something better than radio in future, but for now this works
             for story in app.stories.values():
-                stories.append(ft.Radio(expand=False, value=story.data.get('id'), label=story.data.get('title'), label_style=style, mouse_cursor=ft.MouseCursor.CLICK))
+                stories.append(ft.Radio(expand=False, value=story.id, label=story.title, label_style=style, mouse_cursor=ft.MouseCursor.CLICK))
 
             # Return our list of stories
             return stories
 
 
         # Called when the 'open' button is clicked in the bottom right of the dialog
-        async def open_selected_story(e=None):
+        def open_selected_story(_):
             ''' Changes the route to the selected story '''
 
-            #print("Open button clicked, selected story is: ", selected_story)
-
-            if selected_story is not None:
-                await page.push_route(app.stories[selected_story].route)
-                app_settings.story = app.stories[selected_story]  # Gives our settings widget the story reference it needs
-                page.pop_dialog()
-                page.update()
-            else:
-                print("No story selected")
-
             page.pop_dialog()
-            page.update()
+            set_show_open_story_dialog(False)
 
-        open_button = ft.TextButton("Open", on_click=open_selected_story, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
+            # If we have a selected story, navigate to it, and set our settings context to match
+            if selected_story_id:
+                story = app.stories[selected_story_id]
+                page.navigate(story.route)
+                app_settings.route = story.route
 
         # Our alert dialog that pops up when file -> open is clicked
-        dlg = ft.AlertDialog(
+        return ft.AlertDialog(
             title=ft.Text(
                 "What story would you like to open?",
                 color=ft.Colors.ON_SURFACE,
@@ -142,17 +127,30 @@ def MenuBar(story: Story=None):
             alignment=ft.Alignment.CENTER,
             title_padding=ft.Padding.all(25),
             content=ft.RadioGroup(
+                value=selected_story_id,
                 content=ft.Column(scroll=ft.ScrollMode.AUTO, expand=False, tight=True, controls=get_stories_list()),
-                on_change=change_selected_story
+                on_change=lambda e: set_selected_story_id(e.control.value),
             ),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                open_button,
-            ]
+                ft.TextButton("Cancel", on_click=lambda: set_show_open_story_dialog(False), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton(
+                    "Open", on_click=open_selected_story, disabled=not selected_story_id, 
+                    style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")
+                    if selected_story_id 
+                    else 
+                    ft.ButtonStyle(mouse_cursor="click"),
+                )
+            ],
+            on_dismiss=lambda: set_show_open_story_dialog(False),
         )
 
-        # Opens our dialog
-        page.show_dialog(dlg)
+        
+
+
+    # Create dialogs for stories. Could be all one line, but this looks nicer
+    ft.use_dialog(build_new_story_dlg() if show_new_story_dlg else None)
+    ft.use_dialog(build_open_story_dlg() if show_open_story_dlg else None)
+    
 
     def handle_rename_story(e: ft.Event=None):
 
@@ -424,12 +422,12 @@ def MenuBar(story: Story=None):
                         leading=ft.Icon(ft.CupertinoIcons.BOOK, ft.Colors.PRIMARY),
                         close_on_click=True,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                        on_click=handle_open_story,
+                        on_click=lambda: set_show_open_story_dialog(True),
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Rename Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY),
-                        close_on_click=True, disabled=story is None,
+                        close_on_click=True, disabled=not story,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
                         on_click=handle_rename_story,
                     ),
@@ -480,18 +478,6 @@ def MenuBar(story: Story=None):
     )
 
 
-
-
-
-
-
-    # DRAW MODE STUFFF -----------------------------------------------------
-
-
-
-    
-
-    
 
     return ft.Container(
         ft.Row(
