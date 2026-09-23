@@ -1,6 +1,7 @@
 import flet as ft
 
 # Standard styling for most text fields we use
+@ft.control
 class TextField(ft.TextField):
     
     def __init__(self, *args, **kwargs):
@@ -20,6 +21,7 @@ class TextField(ft.TextField):
 
 
 # Standard styling for most text fields we use
+@ft.control
 class SingleLineTextField(ft.TextField):
     
     def __init__(self, *args, **kwargs):
@@ -38,6 +40,7 @@ class SingleLineTextField(ft.TextField):
         #self.focused_border_color=ft.Colors.PRIMARY
 
 # Standard styling for most text fields we use
+@ft.control
 class SettingsTextField(ft.TextField):
     
     def __init__(self, *args, **kwargs):
@@ -58,6 +61,7 @@ class SettingsTextField(ft.TextField):
         self.width=200
 
 # Styling for title in the sidebar
+@ft.control
 class SidebarTitleTextField(ft.TextField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -75,6 +79,7 @@ class SidebarTitleTextField(ft.TextField):
         
 
 # Meant to be used with no label
+@ft.control
 class NoLabelTextField(TextField):
     
     def __init__(self, *args, **kwargs):
@@ -90,6 +95,7 @@ class NoLabelTextField(TextField):
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
         
 # Underlined Text Fields
+@ft.control
 class UnderlinedTextField(TextField):
     
     def __init__(self, *args, **kwargs):
@@ -108,6 +114,7 @@ class UnderlinedTextField(TextField):
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
         
 # Small textfields
+@ft.control
 class SmallTextField(TextField):
     
     def __init__(self, *args, **kwargs):

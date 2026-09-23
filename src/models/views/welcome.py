@@ -5,7 +5,7 @@ from styles.snack_bar import SnackBar
 
 def create_welcome_view(page: ft.Page) -> ft.View:
     ''' Creates a loading view to be shown while the app is initializing '''
-    from models.app import app
+    return
 
     async def _run_tutorial_clicked(e):
         ''' Save that we have launched the app before, and route to the tutorial '''

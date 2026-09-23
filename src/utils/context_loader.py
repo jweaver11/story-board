@@ -2,7 +2,7 @@
 import os
 import json
 from dataclasses import asdict
-from constants import SETTINGS_FILE_PATH, PAINT_SETTINGS_FILE_PATH, DRAWING_SETTINGS_FILE_PATH, TEXT_SETTINGS_FILE_PATH
+from contexts.constants import SETTINGS_FILE_PATH, PAINT_SETTINGS_FILE_PATH, DRAWING_SETTINGS_FILE_PATH, TEXT_SETTINGS_FILE_PATH
 
 def check_file(file_path: str, default_data: dict = None):
     ''' Checks if a file exists, and creates it with default data if it doesn't '''

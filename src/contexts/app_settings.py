@@ -5,11 +5,11 @@ A Settings object is created for every story
 
 import flet as ft
 from models.views.story import Story
-from constants import SETTINGS_FILE_PATH, APP_DATA_PATH
+from contexts.constants import SETTINGS_FILE_PATH, APP_DATA_PATH
 from styles.colors import colors, theme_colors
 import os
 import json
-from ui.menu_bar import MenuBar
+from view_components.menu_bar import MenuBar
 from styles.snack_bar import SnackBar
 from models.dataclasses.character_template import default_character_template_data_dict
 from styles.text_fields import TextField
@@ -91,35 +91,10 @@ class AppSettings:
     chart_show_tick_labels: bool = False
     chart_rotate_node_titles: bool = True
 
-    # TODO: Finish rest of dict to dataclass
-    # Create dataclass for contexts
-    # Make contexts folder to store the dif contexts
-    # Make sure sub dicts in dataclasses are set as additional dataclases
 
     #character_templates: dict = {}
     #world_templates: dict = {}
             
-        
-        
-
-    
-    # Called for little data changes
-    def update_data(self, **kwargs):
-        ''' Changes a key/value pair in our data and saves the json file ''' 
-
-        # Allow updating of nested dicts without overriding the entire dict
-        def _merge_data(target: dict, updates: dict):
-            for key, value in updates.items():
-                current_value = target.get(key)
-                if isinstance(current_value, dict) and isinstance(value, dict):
-                    _merge_data(current_value, value)
-                else:
-                    target[key] = value
-
-        _merge_data(self.data, kwargs)  # Merge the new data into the existing data
-
-        self.data = {**self.data}
-
     
     # Called whenever there are changes in our data
     async def save_file(self):
@@ -136,13 +111,11 @@ class AppSettings:
 
     async def close_settings(self, e=None):
         ''' Closes the settings view and returns to the story or home view '''
-        return
         await self.save_file()
-        #await self.page.push_route(self.story.route if self.story is not None else "/")
+        #await ft.context.page.navigate(self.story.route if self.story is not None else "/")
 
     async def save_story(self, e=None):
         ''' Called when the page is closed. Saves any dirty changes '''
-        return
         await self.save_file()
         return
         if self.story is not None:
@@ -167,7 +140,7 @@ class AppSettings:
     # Called when the page is resized
     def page_resized(self, e: ft.WindowEvent):
         ''' This is set inside of app.load_settings() to be called whenever the page is resized. Saves the new page size to data/if its maximized'''
-        from models.app import app  
+        return
 
         # Catch page resizing when app is initializing and ignore them
         if app.ignore_settings_change:      

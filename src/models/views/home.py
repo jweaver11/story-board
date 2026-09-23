@@ -1,5 +1,5 @@
 import flet as ft
-from ui.menu_bar import MenuBar
+from view_components.menu_bar import MenuBar
 from contexts.contexts import AppContext, AppSettingsContext
 
 
@@ -7,7 +7,6 @@ from contexts.contexts import AppContext, AppSettingsContext
 @ft.component
 def HomeView() -> ft.View: 
     ''' Creates a custom menu bar with new, open, and import new story buttons, and a create new story button in the middle'''
-    #from models.app import app
     
     def submit_new_story(e=None):
         ''' Creates a new story with the given title '''

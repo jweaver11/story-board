@@ -1,7 +1,8 @@
 import flet as ft
 
 
-# Styling for our menu option buttons
+# Styling for our menu option buttons that sit inside menus when we right click
+@ft.control
 class MenuOptionStyle(ft.GestureDetector):
 
     # Constructor
@@ -13,7 +14,6 @@ class MenuOptionStyle(ft.GestureDetector):
         no_padding: bool = False,              # Whether to remove default padding around the content (used for popupmenu buttons)
         no_effects: bool = False,              # Whether to remove default hover effects (used for submenu buttons)
     ):
-
 
         # Parent constructor
         super().__init__(

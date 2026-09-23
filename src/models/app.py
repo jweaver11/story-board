@@ -10,12 +10,14 @@ import flet as ft
 import os
 import json
 import asyncio
-from utils.route_change import route_change
-from constants import SETTINGS_FILE_PATH, STORIES_DIRECTORY_PATH
+from contexts.constants import SETTINGS_FILE_PATH, STORIES_DIRECTORY_PATH
 from dataclasses import dataclass, field
 from models.views.settings import AppSettings
 from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext
 from utils.context_loader import load_app_settings, load_paint_settings, load_drawing_settings, load_text_settings
+from utils.configure_page import configure_page
+from utils.stories_loader import load_stories
+
 
 @ft.observable
 @dataclass
@@ -29,174 +31,23 @@ class App:
     # Called when app creates a new story. Accepts our title, page reference, a template, and a type
     def create_story(self, title: str) -> Story:
         ''' Creates the new story object and has it run its 'startup' method. Changes route so our view displays the new story '''
-        
-        story = Story(title)
-        ft.context.page.run_task(story.save_file)  # Save it to data
 
-        settings = ft.use_context(settings)
-        
+        settings = ft.use_context(settings)     # Grab our context
+        story = Story(title)    # Create our story
+        ft.context.page.run_task(story.save_file)  # Save story to data
+
         # Create a new story object and add it to our stories dict
-        self.stories[story.data.get('id')] = story
+        self.stories[story.id] = story
 
-        # Opens this new story as the active one on screen
-        ft.context.page.navigate.push_route(story.route)
-        settings.update_data(**{'page': {'route': story.route}})
-        settings.story = story
-
-    # Handle saving the other contexts to data
-    def save_paint_settings(self, paint_settings: dict):
-        return
-    def save_drawings_settings(self, drawings_settings: dict):
-        return
-    def save_text_settings(self, text_settings: dict):
-        return
-
-# Called once from AppView, after a page exists (ft.context.page is only valid inside a Flet callback/render)
-def configure_page(app: App, settings: AppSettings, page: ft.Page):
-    ''' Applies our loaded settings to the current page (title, theme, window size, fonts, event handlers) '''
-
-    # Sets our app title
-    page.title = "StoryBoard (alpha)"
-
-    # Sets our themes and which one we use. Default to dark mode with blue
-    page.theme = ft.Theme(color_scheme_seed=settings.theme_color)  
-    page.dark_theme = ft.Theme(color_scheme_seed=settings.theme_color) 
-    page.theme_mode = settings.theme_mode  
-    # Sets the title of our app, padding, and maximizes the window
-    #page.padding = ft.Padding.only(top=0, left=0, right=0, bottom=0)    
-
-    # Set the window size as maximized or not
-    if settings.window_maximized:
-        page.window.maximized = True
-    else:
-
-        
-        width = settings.window_width
-        height = settings.window_height
-        left = settings.window_left
-        top = settings.window_top
-
-        if width is not None:
-            page.window.width = width
-        if height is not None:
-            page.window.height = height
-        if left is not None:
-            page.window.left = left
-        if top is not None:
-            page.window.top = top
-
-
-    # Set our logic when page window is resized
-    page.on_resize = settings.page_resized
-
-    # Intercept the close event BEFORE the window tears down so canvas.capture() still works.
-    # prevent_close stops the OS from closing the window immediately; we close manually after saving.
-    page.window.prevent_close = True
-
-    # Intercept the close event BEFORE the window tears down so canvas.capture() still works.
-    async def _on_window_event(e: ft.WindowEvent):
-        if e.type == ft.WindowEventType.CLOSE:
-            # Save the settings upon close if they have changed between last auto save and close
-            if settings:
-                await settings.save_file()  
-
-                # TODO: Check other contexts and save them
-
-            # Save the story if it has unsaved widgets between last auto save and close
-            if page.route.startswith("stories"):
-                story_id = page.route.split("/")[-1]
-                story = app.stories.get(story_id)
-                if story:
-                    #settings.story.block_page()    # Block the page to show us loading the saves
-                    await settings.save_story()
-                
-            page.window.prevent_close = False
-            await page.window.destroy()
-
-    # Set size and route change events
-    page.window.on_event = _on_window_event
-    #page.on_route_change = route_change 
-
-    
-
-    #print("Settings loaded with data: ", app.settings.data)
-    page.fonts = {
-        "Arial": None,
-        "Open Sans": "/fonts/OpenSans-VariableFont_wdth,wght.ttf",
-        #"Pacifico": "/fonts/Pacifico-Regular.ttf",
-        #"Ibarra Real Nova": "/fonts/IbarraRealNova-VariableFont_wght.ttf",
-        #"Nunito": "/fonts/Nunito-VariableFont_wght.ttf",
-        "Roboto": "/fonts/Roboto-VariableFont_wght.ttf",
-    }       
-
-    page.navigate(settings.route)
-    return
-
-    # Load our custom fonts
-    for saved_font in settings.data.get('text_options', {}).get('fonts', []):
-        font_name = saved_font.get('font_name')
-        file_name = saved_font.get('file_name')
-        if font_name and file_name:
-            page.fonts[font_name] = f"/fonts/{file_name}"
-
-    # Will load the most recent route. This loads the story if it was the last route
-    page.navigate(settings.data.get('page', {}).get('route', None))
-
-
-# Called on app startup in main
-def load_stories(app: App):
-    ''' Loads our saved stories from the json files in story folders within the stories directory. If none exist, do nothing '''
-
-    # Create the stories directory if it doesnt exist already
-    os.makedirs(STORIES_DIRECTORY_PATH, exist_ok=True)
-        
-    # Iterate through all items in the stories directory
-    for story_folder in os.listdir(STORIES_DIRECTORY_PATH):
-
-        story_directory = os.path.join(STORIES_DIRECTORY_PATH, story_folder)
-        
-            
-        # Look for JSON files within this story folder (ignore subdirectories)
-        try:
-            
-            # Check every item (folder and file) in this story folder
-            for item in os.listdir(story_directory):
-
-                # Check for the story json data file. If it is, we'll load our story around this file data
-                if item.endswith(".json"):
-
-                    # Set the file path to this json file so we can open it
-                    file_path = os.path.join(story_directory, item)
-
-                    # Read the JSON file
-                    with open(file_path, "r", encoding='utf-8') as f:
-                        # Set our data to be passed into our objects
-                        story_data = json.load(f)
-
-                    # Our story title is the same as the folder
-                    story_title = story_data.get("title", file_path.replace(".json", ""))
-                    story_id = story_data.get("id", file_path.replace(".json", ""))
-                        
-                    app.stories[story_id] = Story(story_title, story_data)
-                    #print("Loaded story:", story_id)
-
-                    break
-                # Else, continue through the next story folder
-                else:
-                    continue
-                    
-        except Exception as e:
-            print(f"Error loading story {story_title}: {e}. May not be a directory")
-
-    app.ignore_settings_change = False
-
-
+        # Load our new route and set the settings route so it saves to data
+        ft.context.page.navigate(story.route)
+        settings.route = story.route
 
 # View for errors, should be impossible
 @ft.component
 def ErrorView() -> ft.View:
     return ft.View(
-        [ft.Text("An error has occurred.")]
+        [ft.Text("An error has occurred within the router")]
     )
 
 # Handles a view for a story, and loads that story and returns its view
@@ -209,11 +60,6 @@ def StoryRoute() -> ft.View:
     app = ft.use_context(AppContext)
     story_id = current_route.split("/")[-1]  
 
-    
-
-    
-    
-
     # See where the story exists in the apps dictionary, and return its view
     if story_id in app.stories:
         story = app.stories[story_id]
@@ -222,7 +68,6 @@ def StoryRoute() -> ft.View:
 
         # Returns our story view with needed contexts
         return StoryView(story)
-        #return StoryView(story)
     
     # Return errors
     return ft.View(
@@ -287,9 +132,3 @@ def AppView() -> list[ft.Control]:
             )
         )
     )
-    
-
-# OLD -- PHASE OUT
-app = App()
-
-

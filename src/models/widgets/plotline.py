@@ -14,7 +14,7 @@ import flet.canvas as cv
 #from models.app import app
 import asyncio 
 import uuid
-from constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
+from contexts.constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
 from styles.colors import colors
 from styles.text_fields import TextField, SingleLineTextField
 from styles.snack_bar import SnackBar

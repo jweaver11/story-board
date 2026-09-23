@@ -5,11 +5,11 @@ A Settings object is created for every story
 
 import flet as ft
 from models.views.story import Story
-from constants import SETTINGS_FILE_PATH, APP_DATA_PATH
+from contexts.constants import SETTINGS_FILE_PATH, APP_DATA_PATH
 from styles.colors import colors, theme_colors
 import os
 import json
-from ui.menu_bar import MenuBar
+from view_components.menu_bar import MenuBar
 from styles.snack_bar import SnackBar
 from models.dataclasses.character_template import default_character_template_data_dict
 from styles.text_fields import TextField
@@ -181,7 +181,7 @@ class AppSettings:
     # Called when the page is resized
     def page_resized(self, e: ft.WindowEvent):
         ''' This is set inside of app.load_settings() to be called whenever the page is resized. Saves the new page size to data/if its maximized'''
-        from models.app import app  
+        return
 
         # Catch page resizing when app is initializing and ignore them
         if app.ignore_settings_change:      

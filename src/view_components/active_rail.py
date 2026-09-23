@@ -5,14 +5,9 @@ And gives us the correct rail on startup based on selected workspace
 '''
 
 import flet as ft
-#from models.app import app
 from models.views.story import Story
-from ui.rails.characters_rail import CharactersRail  
-from ui.tree_view_rail import ContentRail
-from ui.rails.plotlines_rail import PlotlinesRail
-from ui.rails.world_building import WorldBuildingRail
-from ui.rails.canvas_rail import CanvasRail
-from ui.rails.planning_rail import PlanningRail  
+from view_components.tree_view_rail import ContentRail
+
 
 
 # Class is created in main on program startup

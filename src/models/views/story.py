@@ -9,7 +9,7 @@ import flet as ft
 import os
 import shutil
 import json
-import constants
+import contexts.constants as constants
 from styles.snack_bar import SnackBar
 from utils.safe_string_checker import return_safe_name
 import asyncio
@@ -153,7 +153,7 @@ class Story:
     # Called when a new folder is created.
     async def create_folder(self, name: str, directory_path: str=None, update: bool=True, full_path: str=None):
         ''' Creates a new folderinside of our story structure for content organization '''
-        from models.app import app
+        return
 
         if directory_path is None:
             directory_path = self.data.get('content_directory_path', '')
@@ -585,7 +585,7 @@ class Story:
 
     # Opens the dialog to export
     async def handle_export(self, e=ft.Event):
-        from models.app import app
+        return
 
         async def export_confirmed(e=None):
             folder_path = await ft.FilePicker().get_directory_path()
@@ -911,7 +911,8 @@ class Story:
         from models.widgets.chart import Chart
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
-        from models.app import app
+
+        return
 
         
         if directory_path is None:
@@ -1184,21 +1185,11 @@ class Story:
 @ft.component
 def StoryView(story: 'Story') -> ft.View:
     ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
-    from ui.menu_bar import MenuBar
-    from ui.workspaces_rail import WorkspacesRail
-    from ui.drawing_controls_rail import DrawingControlsRail
-    from ui.tree_view_rail import TreeViewRail
-    from ui.workspace import Workspace
-    from models.isolated_controls.row import IsolatedRow
-
-    
-
-    
-    # TODO: Fix two rails before workspace. tree view first
-    # REMINDER: ft.use_ref holds values that can be changed WITHOUT causing re-render
-    # ESSENTIALLY, use_state for values on UI, use_ref for values that don't need to trigger re-render
-
-    
+    from view_components.menu_bar import MenuBar
+    #from ui.drawing_controls_rail import DrawingControlsRail
+    from view_components.tree_view_rail import TreeViewRail
+    #from ui.workspace import Workspace
+    #from models.isolated_controls.row import IsolatedRow
 
 
     # Handles keyboard events for the story
@@ -1229,24 +1220,11 @@ def StoryView(story: 'Story') -> ft.View:
 
     page = ft.context.page
     app = ft.use_context(AppContext)
-    settings = ft.use_context(AppSettingsContext)
-    print("StoryView called with story:", story)
-        
+    settings = ft.use_context(AppSettingsContext)        
 
     # Set our specific event to detect keyboard events for the story
     page.on_keyboard_event = handle_keyboard_event 
     page.title = f"Story Board (alpha) - {story.data.get('title', 'Untitled')}"   # Set our page title
-
-    # story/settings are @ft.observable and passed as args, so StoryView's whole body re-runs on
-    # every mutation to either (e.g. every pixel of the resizer drag). load_widgets() walks the
-    # story's content folder and re-reads/re-parses every widget JSON from disk - that disk I/O
-    # running dozens of times per second during a drag is what freezes the UI, regardless of what
-    # controls are actually returned below. Only reload widgets from disk once per story.
-    #ft.use_effect(story.load_widgets, dependencies=[story.data.get('id')])
-
-
-    
-        
 
     
     return ft.View(

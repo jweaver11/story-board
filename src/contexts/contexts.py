@@ -1,7 +1,6 @@
-''' Creates our contexts for the app to use so they can be imported anywhere '''
+''' Creates our contexts for the app to use so they can be imported from components who have access to them '''
+
 import flet as ft
-
-
 
 # App and settings
 AppContext = ft.create_context(None)

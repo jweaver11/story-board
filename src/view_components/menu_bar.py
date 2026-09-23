@@ -3,9 +3,7 @@ Class for our menubar, which will hold our file options, drawing controls, and s
 '''
 
 import flet as ft
-#from models.self.app import self.app
 from models.views.story import Story
-from utils.check_story_unique import story_is_unique
 from styles.snack_bar import SnackBar
 from styles.text_fields import TextField
 from flet_color_pickers import ColorPicker
@@ -17,10 +15,10 @@ import json
 import asyncio
 import shutil
 import stat
-from constants import STORIES_DIRECTORY_PATH
+from contexts.constants import STORIES_DIRECTORY_PATH
 from styles.snack_bar import SnackBar
 from dataclasses import dataclass
-from ui.drawing_controls_rail import DrawingControls
+from view_components.drawing_controls_rail import DrawingControls
 from contexts.contexts import AppContext, AppSettingsContext
 
     
@@ -355,13 +353,12 @@ def MenuBar(story: Story=None):
             page.show_dialog(SnackBar(f"Error exporting story: {error}"))
 
     
-
-    def toggle_show_canvas_rail(e: ft.Event[ft.MenuItemButton]):
+    # Updates whether to show drawing controls or not
+    def toggle_show_drawing_controls(e: ft.Event[ft.MenuItemButton]):
         ''' Toggles the visibility of the canvas rail on the left side of the page '''
        
-        new_value = not show_canvas_rail
-        set_show_canvas_rail(new_value)
-        #settings.data['story']['show_canvas_rail'] = new_value
+        new_value = not show_drawing_controls
+        set_show_drawing_controls(new_value)
         app_settings.show_drawing_controls = new_value
         
        
@@ -419,9 +416,8 @@ def MenuBar(story: Story=None):
         )
         ft.context.page.show_dialog(dlg)
 
-    show_canvas_rail, set_show_canvas_rail = ft.use_state(app_settings.show_drawing_controls)
+    show_drawing_controls, set_show_drawing_controls = ft.use_state(app_settings.show_drawing_controls)
         
-
         
 
     # Create our menu bar with submenu items
@@ -483,15 +479,14 @@ def MenuBar(story: Story=None):
                     ),
                     
                     ft.MenuItemButton(
-                        content=ft.Text("Toggle Canvas Rail", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                        content=ft.Text("Hide Drawing Controls" if show_drawing_controls else "Show Drawing Controls", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(
-                            ft.Icons.VISIBILITY_OUTLINED if show_canvas_rail else ft.Icons.VISIBILITY_OFF_OUTLINED,
+                            ft.Icons.VISIBILITY_OUTLINED if show_drawing_controls else ft.Icons.VISIBILITY_OFF_OUTLINED,
                             ft.Colors.PRIMARY
                         ),
                         close_on_click=True, 
-                        disabled=story is None,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                        on_click=toggle_show_canvas_rail,
+                        on_click=toggle_show_drawing_controls,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Settings", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
@@ -533,7 +528,7 @@ def MenuBar(story: Story=None):
             controls=[
                 file_options,    # File options button
 
-                ft.Row(controls=DrawingControls(app_settings, story), alignment=ft.MainAxisAlignment.CENTER),
+                ft.Row(controls=DrawingControls(app_settings, story), alignment=ft.MainAxisAlignment.CENTER, visible=show_drawing_controls),
 
 
                 ft.Row([        # Row that has alpha text, info button, and settings button

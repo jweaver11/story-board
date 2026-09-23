@@ -13,7 +13,6 @@ import time
 import uuid
 import os
 from PIL import Image, ImageDraw, ImageTk, ImageColor
-from models.app import app
 from collections import deque
 
 async def paint_tool_on_canvas(canvas: cv.Canvas, tool: CanvasShape, end_stroke_callback):
@@ -65,6 +64,7 @@ async def paint_tool_on_canvas(canvas: cv.Canvas, tool: CanvasShape, end_stroke_
 
 # Updates any tools that have not yet been painted onto a canvas with the current paint and text settings
 def update_tool_preview(tool: CanvasShape):
+    return
     canvas_settings = app.settings.data.get('canvas_settings', {}).copy()
     paint_settings = app.settings.data.get('paint_settings', {}).copy()
     text_settings = app.settings.data.get('text_settings', {}).copy()
@@ -98,6 +98,7 @@ def update_tool_preview(tool: CanvasShape):
 
 # Draws a point on the canvas with the current paint settings
 async def draw_point(canvas: cv.Canvas, position: ft.Offset):
+    return
     if not canvas.visible:
         return
     paint_settings = app.settings.data.get('paint_settings', {}).copy()
@@ -117,6 +118,7 @@ async def draw_point(canvas: cv.Canvas, position: ft.Offset):
 
 # Creates an initial stroke path on the canvas depending on current paint settings
 def start_stroke(canvas: cv.Canvas, current_position: ft.Offset, prev_position: ft.Offset=None):
+    return
     if not canvas.visible:
         ft.context.page.show_dialog(SnackBar("Set an active layer to draw on."))
         return
@@ -162,7 +164,7 @@ def start_stroke(canvas: cv.Canvas, current_position: ft.Offset, prev_position: 
 
 # Updates our current stroke path on the canvas with a new line element
 def update_stroke(canvas: cv.Canvas, current_position: ft.Offset, prev_position: ft.Offset=None):
-    # TODO: Handle Stroke smoothing
+    return    # TODO: Handle Stroke smoothing
 
     # Catch errors
     if not canvas.visible:

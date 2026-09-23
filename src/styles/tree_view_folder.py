@@ -1,12 +1,13 @@
+''' Tree View Control for folders that appears as an expansion tile in the UI '''
+
 import flet as ft
 from models.views.story import Story
 import os
 import json
-from styles.menu_option_style import MenuOptionStyle
-from styles.colors import colors
-from styles.snack_bar import SnackBar
-from utils.new_canvas import new_canvas_alert_dlg
-#from models.app import app
+from styled_controls.menu_option_style import MenuOptionStyle
+from styled_controls.colors import colors
+from styled_controls.snack_bar import SnackBar
+from utils.new_canvas import new_canvas_dlg
 from models.isolated_controls.expansion_tile import IsolatedExpansionTile
 import asyncio
 
@@ -396,7 +397,7 @@ class RailFolder(ft.GestureDetector):
 
             case "canvas":
                 await self.story.close_menu()
-                self.page.show_dialog(new_canvas_alert_dlg(self.page, self.story, self.full_path))
+                self.page.show_dialog(new_canvas_dlg(self.page, self.story, self.full_path))
                 return
                         
             case "canvas_board":

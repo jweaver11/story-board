@@ -10,7 +10,7 @@ import flet.canvas as cv
 from styles.snack_bar import SnackBar
 from styles.colors import colors
 import asyncio
-from constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT
+from contexts.constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT
 import uuid
 from styles.text_fields import NoLabelTextField
 

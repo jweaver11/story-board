@@ -2265,3 +2265,9 @@ def DrawingControls(settings, story) -> list[ft.control]:
         #rectangle_tool_button,
         #triangle_tool_button
     ]
+
+# TODO??: 
+# Add fonts and shadow options
+# Font outline colors
+# Build in dialoge bubbles shapes for dialogue (up-left, up-right, down-left, down-right, middle-up, middle-down). See canvas example on flet docs, they have one
+# -- Both round and normal for above dialogue boxes

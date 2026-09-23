@@ -5,7 +5,7 @@ from models.views.story import Story
 import os
 
 
-def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) -> ft.AlertDialog:
+def new_canvas_dlg(page: ft.Page, story: Story, directory_path: str=None) -> ft.AlertDialog:
     ''' Creates a new alert dialog for the canvas '''
 
     if directory_path is None:

@@ -11,7 +11,7 @@ from styles.snack_bar import SnackBar
 from styles.menu_option_style import MenuOptionStyle
 from styles.icons import connection_icons
 from styles.colors import colors
-from constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT
+from contexts.constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT
 
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
 class CharacterRelationshipMap(Widget):

@@ -6,7 +6,7 @@ from styles.text_styles import text_style
 import flet.canvas as cv
 from styles.icons import icons
 from styles.text_fields import TextField
-from constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
+from contexts.constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
 from styles.icons import icons
 from styles.menu_option_style import MenuOptionStyle
 #from models.app import app
