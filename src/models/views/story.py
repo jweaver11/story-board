@@ -16,135 +16,72 @@ import asyncio
 from utils.tutorial import run_tutorial
 import uuid
 from styles.colors import dark_gradient
-from dataclasses import dataclass
+from dataclasses import dataclass, field, asdict
 from concurrent.futures import ThreadPoolExecutor
 from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext
 
+
+# Folder class to hold folder metadata so we can save stuff like color, expanded state, etc.
+@ft.observable
+@dataclass
+class Folder:
+    path: str
+    name: str
+    color: str
+    is_expanded: bool = True
+
+# Main Story class
 @ft.observable
 @dataclass 
 class Story:
 
-    # Constructor.
-    def __init__(
-        self, 
-        title: str,             # Title of our story
-        data: dict=None,        # Data to load our story with (if any)
-    ):
+    title: str = "Story Title"
+    id: str = str(uuid.uuid4())
+    tag: str = "story"
+    directory_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id)
+    content_directory_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id, "content")   # Path to store widget json files
+    file_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id, f"{id}.json")   # Path to story's json file
 
-        self.data = data                # Sets our data (if any) passed in. New stories just have none
+    selected_tab_index: int = 0 # Index of the selected tab in the story's UI (old: workspace_selected_index)
+    #folders: dict[Folder] = field(default_factory=dict) #{'path': {'name": '', 'color': '', 'is_expanded': True}}
 
-        # Verifies this object has the required data fields, and creates them if not
-        if data is None:
-            id = str(uuid.uuid4())
-            self.data = {
-                'title': title,
-                'tag': "story",
-                'id': id,
+    route: str = f"stories/{id}"
 
-                # Directory paths and file paths
-                'directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id),
-                'content_directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, "content"),   # Path to store widget json files
-                #'canvas_directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, "canvas"),     # Path to store canvas png captures
-                'file_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, f"{id}.json"),   # Path to story's json file
+    #widgets: dict = field(default_factory=dict)
 
-                #'selected_rail': "content",
-                'workspace_selected_index': 0,   # Index of the selected widget in the main pin, used for switching between tabs in the main pin
-
-                'created_at': str(),
-                'last_modified': str(),
-
-                # Sort methods for our specialized rails
-                'character_rail_sort_method': "Index",
-                'character_rail_sort_direction': "Ascending",
-                'plotline_rail_sort_method': "Index",
-                'plotline_rail_sort_direction': "Ascending",
-                'world_building_rail_sort_method': "Index",
-                'world_building_rail_sort_direction': "Ascending",
-                
-                # Dict of our folders an their metadata
-                'folders': {
-                    'path': {                   # Path to the folder (used as the key, since all will be unique)
-                        'name': str(),            # Name of folder just in case
-                        'color': str(),           # Color of that folder
-                        'is_expanded': True     # Whether this folder is expanded in the tree view
-                    }
-                },        
-            }
-
-        # Set our route after we have generated an id if we are a new Story
-        self.route = return_safe_name(f"/{self.data.get('id', '')}")
+    #mouse_position
         
+    # Block the app from any interactions during rebuilds
+    #self.blocker = ft.Container(
+        #ft.Row([ft.ProgressRing(width=100, height=100)], alignment=ft.MainAxisAlignment.CENTER), 
+        #expand=True, visible=False, blur=5, left=0, right=0, top=0, bottom=0
+    #)
+    
+    # Store all our widgets above in a master list for easier rendering in the UI
+    #self.widgets: dict = {} 
 
-        # State for storying mouse coords
-        self.mouse_x: int = 0
-        self.mouse_y: int = 0
-            
-        # Declare our UI elements before we create them later. They are stored as objects so we can reload them when needed
-        self.menubar: ft.Container     # Menu bar at top of page
-        self.workspaces_rail: ft.Container      # Rail on left side showing our 6 workspaces
-        self.canvas_rail: ft.Container      # Rail on left side showing our 6 workspaces
-        self.active_rail: ft.Container    # Rail showing whichever workspace is selected
-        self.workspace: ft.Container       # Main workspace area where our pins display our widgets
-
-        self.menu: ft.Container         # Container that sits in the overlay and gets menu options passed into it
-        self.outside_menu_detector: ft.GestureDetector      # Sets under the menu to handle closing and opening the menu
-        self.blocker: ft.Container  # Blocks the page while we do intense loads
-
-        # Block the app from any interactions during rebuilds
-        self.blocker = ft.Container(
-            ft.Row([ft.ProgressRing(width=100, height=100)], alignment=ft.MainAxisAlignment.CENTER), 
-            expand=True, visible=False, blur=5, left=0, right=0, top=0, bottom=0
-        )
-        
-        # Store all our widgets above in a master list for easier rendering in the UI
-        self.widgets: dict = {} 
-
-        self.load_widgets()
-
-        # Controller for text shapes (canvas), labels and location labels (maps)
-        # Canvas shapes get updated with this in real time if they are being edited
-
-        
-
-
+    #self.load_widgets()
 
           
     # Isolates stories from page.update calls. Needed for keeping performance when opening menus
     def is_isolated(self): 
         return True
     
-    # Updates data for this widget and marks it as dirty for the next file save
-    def update_data(self, **kwargs):
-        
-        # Allow updating of nested dicts without overriding the entire dict
-        def _merge_data(target: dict, updates: dict):
-            for key, value in updates.items():
-                current_value = target.get(key)
-                if isinstance(current_value, dict) and isinstance(value, dict):
-                    _merge_data(current_value, value)
-                else:
-                    target[key] = value
-
-        _merge_data(self.data, kwargs)  # Merge the new data into the existing data
-
-        #self.page.run_task(self.save_file)  # Save the updated data to the file
-
     # Called whenever there are changes in our data that need to be saved
     async def save_file(self):
         ''' Saves the data of our story to its JSON File, and all its folders as well '''
 
-        try: 
+        print(f"Saving story: {self.title} with ID")
 
-            # Create the directory if it doesn't exist. Catches errors from users deleting folders
-            os.makedirs(self.data.get('directory_path'), exist_ok=True)
-            
+        try: 
+            os.makedirs(self.directory_path, exist_ok=True)
             # Save the data to the file (creates file if doesnt exist)
-            with open(self.data.get('file_path'), "w", encoding='utf-8') as f:   
-                json.dump(self.data, f, indent=4)
+            with open(self.file_path, "w", encoding='utf-8') as f:   
+                json.dump(asdict(self), f, indent=4)   # asdict() strips observable bookkeeping, unlike self.__dict__
         
         # Handle errors
         except Exception as e:
-            self.page.show_dialog(SnackBar(f"Error saving story data: {e}"))
+            print(f"Error saving story data: {e}")
 
     # Get widget object by its unique ID.
     def get_widget_by_id(self, id: str) -> ft.Control:
@@ -1224,7 +1161,7 @@ def StoryView(story: 'Story') -> ft.View:
 
     # Set our specific event to detect keyboard events for the story
     page.on_keyboard_event = handle_keyboard_event 
-    page.title = f"Story Board (alpha) - {story.data.get('title', 'Untitled')}"   # Set our page title
+    page.title = f"Story Board (alpha) - {story.title}"   # Set our page title
 
     
     return ft.View(

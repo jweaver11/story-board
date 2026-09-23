@@ -204,9 +204,10 @@ class RailFile(ft.GestureDetector):
             on_blur=hide_edit_title_tf,
             on_submit=self.widget.submit_rename,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            border_radius=4, dense=True, capitalization=ft.TextCapitalization.SENTENCES,
-            border_color=ft.Colors.TRANSPARENT,
-            focused_border_color=ft.Colors.PRIMARY,
+            #border_radius=4, 
+            dense=True, capitalization=ft.TextCapitalization.SENTENCES,
+            #border_color=ft.Colors.TRANSPARENT,
+            #focused_border_color=ft.Colors.PRIMARY,
         )
 
         self.title_text = ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS)

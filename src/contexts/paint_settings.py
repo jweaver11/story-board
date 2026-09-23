@@ -2,7 +2,7 @@ import flet as ft
 import json
 from dataclasses import dataclass, field, asdict
 import os
-from constants import APP_DATA_PATH, PAINT_SETTINGS_FILE_PATH
+from contexts.constants import APP_DATA_PATH, PAINT_SETTINGS_FILE_PATH
 
 @ft.observable
 @dataclass

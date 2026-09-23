@@ -15,7 +15,7 @@ def HomeView() -> ft.View:
 
         # Check if the title is unique
             #print("title is unique, story being created: ", title)
-        app.create_story(title, page) # Needs the story object
+        app.create_story(title, settings)
         set_show_dlg(False)
 
     page = ft.context.page

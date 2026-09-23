@@ -269,9 +269,10 @@ class MiniWidget(ft.GestureDetector):
                 on_submit=save_new_info, visible=False, expand=True,
                 on_blur=handle_new_info_blur, margin=ft.Margin.only(left=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-                border_radius=4, dense=True, capitalization=ft.TextCapitalization.SENTENCES,
-                border_color=ft.Colors.TRANSPARENT,
-                focused_border_color=ft.Colors.PRIMARY,
+                #border_radius=4, 
+                dense=True, capitalization=ft.TextCapitalization.SENTENCES,
+                #border_color=ft.Colors.TRANSPARENT,
+                #focused_border_color=ft.Colors.PRIMARY,
                 label="New Item Label", label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
             )
             
@@ -284,9 +285,9 @@ class MiniWidget(ft.GestureDetector):
         self.description_tf = ft.TextField(
             value=self.data.get('description', ''), label="Description",
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            border_color=ft.Colors.TRANSPARENT,
+            #border_color=ft.Colors.TRANSPARENT,
             margin=ft.Margin.only(top=4),
-            focused_border_color=ft.Colors.PRIMARY,
+            #focused_border_color=ft.Colors.PRIMARY,
             multiline=True, dense=True, expand=True, 
             on_blur=self.save_description,
             capitalization=ft.TextCapitalization.SENTENCES,

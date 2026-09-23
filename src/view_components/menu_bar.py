@@ -20,85 +20,57 @@ from styles.snack_bar import SnackBar
 from dataclasses import dataclass
 from view_components.drawing_controls_rail import DrawingControls
 from contexts.contexts import AppContext, AppSettingsContext
+import asyncio
 
     
 
 @ft.component
 def MenuBar(story: Story=None):
 
+    # Grab our contexts
     page = ft.context.page
     app_settings = ft.use_context(AppSettingsContext)
     app = ft.use_context(AppContext)
 
-    class Dropdown(ft.Dropdown):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.border_color=ft.Colors.OUTLINE_VARIANT
-            self.menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4))
-            self.label_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
-            self.margin=ft.Margin.only(top=8, left=4, right=4)
-            self.dense=True
+    show_new_story_dlg, set_show_new_story_dialog = ft.use_state(False)
 
-    class Switch(ft.Switch):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.adaptive=True
-            self.label_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
-            #self.margin=ft.Margin.only(top=8, left=4, right=4)
-            
+    # State for showing or hiding the drawing controls rail
+    show_drawing_controls, set_show_drawing_controls = ft.use_state(app_settings.show_drawing_controls)
 
 
     # Called when file -> new is clicked
-    def handle_create_story(e):
+    def build_new_story_dlg() -> ft.AlertDialog:
         ''' Opens a dialog to create a new story. Checks story is unique or not '''
 
-
-        
-
-        async def submit_new_story(e=None):
+        async def submit_new_story(_):
             ''' Creates a new story with the given title '''
 
-            title = story_title_field.value.strip()
+            title = new_story_title.value.strip()
+            page.pop_dialog()   # Force the dialog close before re-routing
+            set_show_new_story_dialog(False)    # I dunno, i just like the state being accurate, but this does nothing
+            app.create_story(title, app_settings)
+            
+        new_story_title = ft.TextField(label="Story Title", autofocus=True, capitalization=ft.TextCapitalization.WORDS,on_submit=submit_new_story)
 
-            app.create_new_story(title, page) # Needs the story object
-            page.pop_dialog()
-
-
-        
-
-        # Create a reference to the text field so we can access its value
-        story_title_field = ft.TextField(
-            label="Story Title",
-            autofocus=True, capitalization=ft.TextCapitalization.WORDS,
-            on_submit=submit_new_story,
-        )
-    
-        # The dialog that will pop up whenever the new story button is clicked
-        dlg = ft.AlertDialog(
-
-            # Title of our dialog
-            title=ft.Text(
-                "Create New Story", 
-                color=ft.Colors.ON_SURFACE,
-                weight=ft.FontWeight.BOLD,
-            ),
-
-            # Main content is text box for user to input story title
-            content=story_title_field,
-
-            # Our two action buttons at the bottom of the dialog
+        # Return the dialog
+        return ft.AlertDialog(
+            title=ft.Text("Create New Story", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
+            content=new_story_title,
+            # Cancel and create buttons
             actions=[
-                ft.TextButton("Cancel", on_click=lambda: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda: set_show_new_story_dialog(False), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                 ft.TextButton(
                     "Create Story", on_click=submit_new_story, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)
                 )
             ],
+            # Handle clicks outside dialog area. Doesn't actually dismiss the dialog, but makes sure state matches
+            on_dismiss=lambda _: set_show_new_story_dialog(False),  
         )
+            
+    # Create dialogs for stories
+    ft.use_dialog(build_new_story_dlg() if show_new_story_dlg else None)
+        
 
-        # Open our dialog in the overlay
-        page.show_dialog(dlg)
-
-    
 
 
     # Called when file -> open is clicked
@@ -416,7 +388,7 @@ def MenuBar(story: Story=None):
         )
         ft.context.page.show_dialog(dlg)
 
-    show_drawing_controls, set_show_drawing_controls = ft.use_state(app_settings.show_drawing_controls)
+    
         
         
 
@@ -445,7 +417,7 @@ def MenuBar(story: Story=None):
                         leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, ft.Colors.PRIMARY),
                         close_on_click=True,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                        on_click=handle_create_story,
+                        on_click=lambda: set_show_new_story_dialog(True),
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Open Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),

@@ -29,19 +29,26 @@ class App:
 
     
     # Called when app creates a new story. Accepts our title, page reference, a template, and a type
-    def create_story(self, title: str) -> Story:
+    def create_story(self, title: str, app_settings: AppSettings) -> Story:
         ''' Creates the new story object and has it run its 'startup' method. Changes route so our view displays the new story '''
 
-        settings = ft.use_context(settings)     # Grab our context
-        story = Story(title)    # Create our story
-        ft.context.page.run_task(story.save_file)  # Save story to data
+        # Find our old story and save it before we create a new one
+        old_story_id = ft.context.page.route.split("/")[-1] if ft.context.page.route.startswith("stories/") else None
+        old_story = self.stories.get(old_story_id) if old_story_id else None
+        if old_story:
+            ft.context.page.run_task(old_story.save_file)  # Save the old story before creating a new one
+        
+        # Create new story and force it to save immediately
+        new_story = Story(title)    
+        print("New Story created:\n\n\n", new_story, "\n\n")
+        ft.context.page.run_task(new_story.save_file)  
 
-        # Create a new story object and add it to our stories dict
-        self.stories[story.id] = story
+        # Add the story to our stories dictionary
+        self.stories[new_story.id] = new_story
 
         # Load our new route and set the settings route so it saves to data
-        ft.context.page.navigate(story.route)
-        settings.route = story.route
+        ft.context.page.navigate(new_story.route)
+        app_settings.route = new_story.route
 
 # View for errors, should be impossible
 @ft.component
@@ -59,6 +66,8 @@ def StoryRoute() -> ft.View:
     current_route = ft.context.page.route
     app = ft.use_context(AppContext)
     story_id = current_route.split("/")[-1]  
+
+    print("Loading story route")
 
     # See where the story exists in the apps dictionary, and return its view
     if story_id in app.stories:

@@ -4,7 +4,7 @@ import flet as ft
 from dataclasses import dataclass, field, asdict
 import os
 import json
-from constants import APP_DATA_PATH, TEXT_SETTINGS_FILE_PATH
+from contexts.constants import APP_DATA_PATH, TEXT_SETTINGS_FILE_PATH
 
 @ft.observable
 @dataclass

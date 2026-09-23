@@ -36,8 +36,7 @@ def load_stories(app):
                     story_title = story_data.get("title", file_path.replace(".json", ""))
                     story_id = story_data.get("id", file_path.replace(".json", ""))
                         
-                    app.stories[story_id] = Story(story_title, story_data)
-
+                    app.stories[story_id] = Story(**(story_data or {}))
                     break
                 # Else, continue through the next story folder
                 else:
