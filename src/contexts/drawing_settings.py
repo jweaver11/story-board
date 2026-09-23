@@ -2,7 +2,10 @@
 
 import flet as ft
 import json
+import os
+from dataclasses import asdict
 from dataclasses import dataclass, field
+from constants import APP_DATA_PATH, DRAWING_SETTINGS_FILE_PATH
 
 @ft.observable
 @dataclass
@@ -18,3 +21,16 @@ class DrawingSettings:
     #saved_text_settings: dict = field(default_factory=dict)          # Saved text settings the user has created that we can load
 
     rectangle_border_radius: int = 0          # Border radius for rectangle shapes
+
+    # Called whenever there are changes in our data
+    async def save_file(self):
+        ''' Saves our current data to the json file '''
+
+        try:
+            os.makedirs(APP_DATA_PATH, exist_ok=True)
+            # Save the data to the file (creates file if doesnt exist)
+            with open(DRAWING_SETTINGS_FILE_PATH, "w", encoding='utf-8') as f:   
+                json.dump(asdict(self), f, indent=4)   # asdict() strips observable bookkeeping, unlike self.__dict__
+        
+        except Exception as e:
+            print(f"Error saving settings to {DRAWING_SETTINGS_FILE_PATH}: {e}")

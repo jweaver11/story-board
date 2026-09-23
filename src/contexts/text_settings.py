@@ -1,7 +1,10 @@
 ''' Our ft.textstyle to be passed into cv.text shapes on canvases '''
 
 import flet as ft
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
+import os
+import json
+from constants import APP_DATA_PATH, TEXT_SETTINGS_FILE_PATH
 
 @ft.observable
 @dataclass
@@ -27,3 +30,15 @@ class TextSettings:
     letter_spacing: int = 0
     word_spacing: int = 0
     baseline: str = "alphabetic"  # How text is rendered - Options: alphabetic or ideographic
+
+    async def save_file(self):
+        ''' Saves our current data to the json file '''
+
+        try:
+            os.makedirs(APP_DATA_PATH, exist_ok=True)
+            # Save the data to the file (creates file if doesnt exist)
+            with open(TEXT_SETTINGS_FILE_PATH, "w", encoding='utf-8') as f:   
+                json.dump(asdict(self), f, indent=4)   # asdict() strips observable bookkeeping, unlike self.__dict__
+        
+        except Exception as e:
+            print(f"Error saving settings to {TEXT_SETTINGS_FILE_PATH}: {e}")
