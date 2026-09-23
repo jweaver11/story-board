@@ -88,22 +88,19 @@ def AppView() -> list[ft.Control]:
 
     # Give us an app and settings state objects that we will attach to our context.
     app, _ = ft.use_state(App())
-    settings, _ = ft.use_state(load_app_settings())
+    app_settings, _ = ft.use_state(load_app_settings())
 
     
     paint_settings, _ = ft.use_state(load_paint_settings())
     drawing_settings, _ = ft.use_state(load_drawing_settings())
     text_settings, _ = ft.use_state(load_text_settings())
-
-
-    #print(settings.route)
     
     page = ft.context.page  # Grab the page so we can configure it easier
 
     # Load our stories into the app dict, and configure the page
     def _initialize():
         load_stories(app)  # Load all stories based on the current settings
-        configure_page(app, settings, page)  # Will load last route based on settings
+        configure_page(app, app_settings, paint_settings, drawing_settings, text_settings, page)  # Will load last route based on settings
 
     ft.use_effect(_initialize, dependencies=[])
 
@@ -128,7 +125,7 @@ def AppView() -> list[ft.Control]:
     return AppContext(
         app,
         lambda: AppSettingsContext(
-            settings, 
+            app_settings, 
             lambda: PaintContext(
                 paint_settings,
                 lambda: DrawingContext(

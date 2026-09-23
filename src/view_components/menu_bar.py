@@ -36,6 +36,7 @@ def MenuBar(story: Story=None):
     # Declare our state variables for our dialogs
     show_new_story_dlg, set_show_new_story_dialog = ft.use_state(False)
     show_open_story_dlg, set_show_open_story_dialog = ft.use_state(False)
+    show_rename_story_dlg, set_show_rename_story_dialog = ft.use_state(False)
 
     selected_story_id, set_selected_story_id = ft.use_state("")   # Selected radio value for opening stories
 
@@ -75,8 +76,6 @@ def MenuBar(story: Story=None):
             # Handle clicks outside dialog area. Doesn't actually dismiss the dialog, but makes sure state matches
             on_dismiss=lambda _: set_show_new_story_dialog(False),  
         )
-            
-    
 
     # Called when file -> open is clicked
     def build_open_story_dlg() -> ft.AlertDialog:
@@ -144,33 +143,23 @@ def MenuBar(story: Story=None):
             on_dismiss=lambda: set_show_open_story_dialog(False),
         )
 
-        
+    def build_rename_story_dlg() -> ft.AlertDialog:
 
-
-    # Create dialogs for stories. Could be all one line, but this looks nicer
-    ft.use_dialog(build_new_story_dlg() if show_new_story_dlg else None)
-    ft.use_dialog(build_open_story_dlg() if show_open_story_dlg else None)
-    
-
-    def handle_rename_story(e: ft.Event=None):
-
-
-        async def rename_story(e=None):
-            story.rename(title_tf.value)
-            
-            
+        def rename_story(_):
+            story.title = title_tf.value
+            set_show_rename_story_dialog(False)
+            #story.rename(title_tf.value)
 
         title_tf = ft.TextField(
-            value=story.data.get('title', ''),
+            value=story.title,
             autofocus=True, capitalization=ft.TextCapitalization.WORDS,
             on_submit=rename_story,
         )
 
-        dlg = ft.AlertDialog(
-            
+        return ft.AlertDialog(
             # Title of our dialog
             title=ft.Text(
-                f"Rename {story.data.get('title', '')}", 
+                f"Rename {story.title}", 
                 color=ft.Colors.ON_SURFACE,
                 weight=ft.FontWeight.BOLD,
             ),
@@ -180,13 +169,23 @@ def MenuBar(story: Story=None):
 
             # Our two action buttons at the bottom of the dialog
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                ft.TextButton("Rename", on_click=rename_story,style=ft.ButtonStyle(mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda: set_show_rename_story_dialog(False), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton(
+                    "Rename", on_click=rename_story, 
+                    style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)
+                    if title_tf.value.strip() or title_tf.value != story.title
+                    else 
+                    ft.ButtonStyle(mouse_cursor="click"),
+                ),
             ],
+            on_dismiss=lambda: set_show_rename_story_dialog(False),
         )
 
-        # Open our dialog in the overlay
-        page.show_dialog(dlg)
+
+    # Create dialogs for stories. Could be all one use_dialog function, but this looks nicer
+    ft.use_dialog(build_new_story_dlg() if show_new_story_dlg else None)
+    ft.use_dialog(build_open_story_dlg() if show_open_story_dlg else None)
+    ft.use_dialog(build_rename_story_dlg() if show_rename_story_dlg else None)
 
     async def handle_import_story(e=None):
         """Import a complete story export into the app's story directory."""
@@ -429,7 +428,7 @@ def MenuBar(story: Story=None):
                         leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY),
                         close_on_click=True, disabled=not story,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                        on_click=handle_rename_story,
+                        on_click=lambda: set_show_rename_story_dialog(True),
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Import Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
