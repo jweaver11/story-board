@@ -37,6 +37,7 @@ def MenuBar(story: Story=None):
     show_new_story_dlg, set_show_new_story_dialog = ft.use_state(False)
     show_open_story_dlg, set_show_open_story_dialog = ft.use_state(False)
     show_rename_story_dlg, set_show_rename_story_dialog = ft.use_state(False)
+    show_delete_story_dlg, set_show_delete_story_dialog = ft.use_state(False)
 
     selected_story_id, set_selected_story_id = ft.use_state("")   # Selected radio value for opening stories
 
@@ -148,7 +149,6 @@ def MenuBar(story: Story=None):
         def rename_story(_):
             story.title = title_tf.value
             set_show_rename_story_dialog(False)
-            #story.rename(title_tf.value)
 
         title_tf = ft.TextField(
             value=story.title,
@@ -186,6 +186,7 @@ def MenuBar(story: Story=None):
     ft.use_dialog(build_new_story_dlg() if show_new_story_dlg else None)
     ft.use_dialog(build_open_story_dlg() if show_open_story_dlg else None)
     ft.use_dialog(build_rename_story_dlg() if show_rename_story_dlg else None)
+
 
     async def handle_import_story(e=None):
         """Import a complete story export into the app's story directory."""
@@ -287,22 +288,22 @@ def MenuBar(story: Story=None):
 
             await imported_story.save_file()
             app.stories[story_id] = imported_story
-            app_settings.story = imported_story
-            await page.push_route(imported_story.route)
-            page.update()
+            
+            page.navigate(imported_story.route)
+            app_settings.route = imported_story.route
 
         except OSError as error:
-            page.show_dialog(SnackBar(f"Error importing story: {error}"))
+            print(f"Error importing story: {error}")
         except (TypeError, ValueError, json.JSONDecodeError) as error:
             if destination_path and os.path.isdir(destination_path):
                 shutil.rmtree(destination_path, ignore_errors=True)
-            page.show_dialog(SnackBar(f"Error importing story: {error}"))
+            print(f"Error importing story: {error}")
         
 
     async def handle_export_story(e=None):
         """Export the story directory contents into a selected folder."""
         folder_path = await ft.FilePicker().get_directory_path()
-        story_dir_path = story.data.get("directory_path")
+        story_dir_path = story.directory_path
 
         if not folder_path or not story_dir_path:
             return
@@ -319,7 +320,7 @@ def MenuBar(story: Story=None):
                 dirs_exist_ok=True,
             )
         except OSError as error:
-            page.show_dialog(SnackBar(f"Error exporting story: {error}"))
+            print(f"Error exporting story: {error}")
 
     
     # Updates whether to show drawing controls or not
@@ -329,8 +330,6 @@ def MenuBar(story: Story=None):
         new_value = not show_drawing_controls
         set_show_drawing_controls(new_value)
         app_settings.show_drawing_controls = new_value
-        
-       
 
     async def handle_settings_clicked(e=None):
         ''' Goes to the settings page '''
@@ -347,35 +346,34 @@ def MenuBar(story: Story=None):
         print("Change route to: ", page.route)
 
 
-    async def handle_delete_story(e=None):
+    async def build_delete_story_dlg(e=None):
 
         async def confirm_delete(e=None):
             try:
 
-                story_id = story.data.get('id')
-                deleted_id = app.stories.pop(story_id)
-                app_settings.story = None                    
+                app.stories.pop(story.id)
 
-                story_dir_path = story.data.get('directory_path')
-                full_norm = os.path.normcase(os.path.normpath(story_dir_path))
+                full_norm = os.path.normcase(os.path.normpath(story.directory_path))
                 
                 # Delete the folder from storage
                 shutil.rmtree(full_norm)
 
-                ft.context.page.pop_dialog()
-                await ft.context.page.push_route("/")
-                ft.context.page.show_dialog(SnackBar(f"{story.data.get('title', 'Story')} deleted successfully."))
+                #ft.context.page.pop_dialog()
+                ft.context.page.navigate("/")
+                #ft.context.page.show_dialog(SnackBar(f"{story.title} deleted successfully."))
 
                 ft.context.page.title = "Story Board (alpha)"
-                ft.context.page.update()
+                #ft.context.page.update()
 
             except Exception as e:
                 ft.context.page.show_dialog(SnackBar(f"Error deleting story: {e}"))
+
+            set_show_delete_story_dialog(False)
             
 
 
-        dlg = ft.AlertDialog(
-            title=ft.Text(f"Delete {story.data.get('title', 'Story')}?", weight=ft.FontWeight.BOLD),
+        return ft.AlertDialog(
+            title=ft.Text(f"Delete {story.title}?", weight=ft.FontWeight.BOLD),
             content=ft.Text("Are you sure you want to delete this story? This action cannot be undone!"),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
@@ -383,9 +381,6 @@ def MenuBar(story: Story=None):
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        ft.context.page.show_dialog(dlg)
-
-    
         
         
 
@@ -469,7 +464,7 @@ def MenuBar(story: Story=None):
                         leading=ft.Icon(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR),
                         close_on_click=True, disabled=story is None,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                        on_click=handle_delete_story,
+                        on_click=lambda: set_show_delete_story_dialog(True),
                     ),
                 ],
             ),
