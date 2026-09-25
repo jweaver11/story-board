@@ -6,7 +6,7 @@ import os
 from dataclasses import asdict
 from dataclasses import dataclass, field
 from contexts.constants import APP_DATA_PATH, DRAWING_SETTINGS_FILE_PATH
-
+ 
 @ft.observable
 @dataclass
 class DrawingSettings:

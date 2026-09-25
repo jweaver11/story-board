@@ -5,7 +5,7 @@ import os
 from contexts.constants import APP_DATA_PATH, PAINT_SETTINGS_FILE_PATH
 
 @ft.observable
-@dataclass
+@dataclass 
 class PaintSettings:
     color: str = "#FFFFFFFF"     # Hex color folowed by opacity
     stroke_width: int = 3          # Size of the strokees

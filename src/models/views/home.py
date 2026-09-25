@@ -11,18 +11,19 @@ def HomeView() -> ft.View:
     def submit_new_story(e=None):
         ''' Creates a new story with the given title '''
 
-        title = story_title_field.value.strip()  # Get the title from the text field and strip whitespace
-
-        # Check if the title is unique
-            #print("title is unique, story being created: ", title)
-        app.create_story(title, settings)
-        set_show_dlg(False)
+        title = new_story_title.value.strip()
+        if not title:
+            set_show_dlg(False)
+            return
+        page.pop_dialog()   # Force the dialog close before re-routing
+        set_show_dlg(False)    # I dunno, i just like the state being accurate, but this does nothing
+        app.create_story(title, app_settings)
 
     page = ft.context.page
     app = ft.use_context(AppContext)
-    settings = ft.use_context(AppSettingsContext)
+    app_settings = ft.use_context(AppSettingsContext)
 
-    story_title_field = ft.TextField(
+    new_story_title = ft.TextField(
         label="Story Title",
         autofocus=True,
         capitalization=ft.TextCapitalization.SENTENCES,
@@ -41,7 +42,7 @@ def HomeView() -> ft.View:
             title=ft.Text("Create New Story"),
 
             # Main content is text box for user to input story title
-            content=story_title_field,
+            content=new_story_title,
 
             # Our two action buttons at the bottom of the dialog
             actions=[

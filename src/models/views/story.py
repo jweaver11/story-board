@@ -16,19 +16,10 @@ import asyncio
 from utils.tutorial import run_tutorial
 import uuid
 from styles.colors import dark_gradient
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, fields
 from concurrent.futures import ThreadPoolExecutor
 from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext
 
-
-# Folder class to hold folder metadata so we can save stuff like color, expanded state, etc.
-@ft.observable
-@dataclass
-class Folder:
-    path: str
-    name: str
-    color: str
-    is_expanded: bool = True
 
 # Main Story class
 @ft.observable
@@ -38,17 +29,17 @@ class Story:
     title: str = "Story Title"
     id: str = str(uuid.uuid4())
     tag: str = "story"
-    directory_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id)
-    content_directory_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id, "content")   # Path to store widget json files
+    directory_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id)        # Where our stories metadata and content folder live
+    content_directory_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id, "content")   # Where our folders and widgets live
     file_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id, f"{id}.json")   # Path to story's json file
 
     selected_tab_index: int = 0 # Index of the selected tab in the story's UI (old: workspace_selected_index)
-    #folders: dict[Folder] = field(default_factory=dict) #{'path': {'name": '', 'color': '', 'is_expanded': True}}
+    folders: dict[str, dict] = field(default_factory=dict) #{'path': {'name": '', 'color': '', 'is_expanded': True}}
 
     route: str = f"stories/{id}"
 
-    #widgets: dict = field(default_factory=dict)
-
+    #widgets: dict[str, dataclass] = field(default_factory=dict, init=False, repr=False,)
+    widgets: dict[str, dataclass] = field(default_factory=dict)
     #mouse_position
         
     # Block the app from any interactions during rebuilds
@@ -56,16 +47,11 @@ class Story:
         #ft.Row([ft.ProgressRing(width=100, height=100)], alignment=ft.MainAxisAlignment.CENTER), 
         #expand=True, visible=False, blur=5, left=0, right=0, top=0, bottom=0
     #)
-    
-    # Store all our widgets above in a master list for easier rendering in the UI
-    #self.widgets: dict = {} 
 
-    #self.load_widgets()
-
-          
-    # Isolates stories from page.update calls. Needed for keeping performance when opening menus
-    def is_isolated(self): 
-        return True
+    def __post__init__(self):
+        self.load_widgets() 
+        print(self)
+        
     
     # Called whenever there are changes in our data that need to be saved
     async def save_file(self):
@@ -75,9 +61,16 @@ class Story:
 
         try: 
             os.makedirs(self.directory_path, exist_ok=True)
-            # Save the data to the file (creates file if doesnt exist)
+
+            # Create our data excluding widgets, since they save themselves
+            story_data = {
+                story_field.name: getattr(self, story_field.name)
+                for story_field in fields(self)
+                if story_field.name != "widgets"
+            }
+
             with open(self.file_path, "w", encoding='utf-8') as f:   
-                json.dump(asdict(self), f, indent=4)   # asdict() strips observable bookkeeping, unlike self.__dict__
+                json.dump(story_data, f, indent=4)   # asdict() strips observable bookkeeping, unlike self.__dict__
         
         # Handle errors
         except Exception as e:
@@ -90,10 +83,9 @@ class Story:
     # Called when a new folder is created.
     async def create_folder(self, name: str, directory_path: str=None, update: bool=True, full_path: str=None):
         ''' Creates a new folderinside of our story structure for content organization '''
-        return
-
+        
         if directory_path is None:
-            directory_path = self.data.get('content_directory_path', '')
+            directory_path = self.content_directory_path
 
         try:
 
@@ -110,16 +102,11 @@ class Story:
             # Make the folder in our storage if it doesn't already exist
             os.makedirs(folder_path, exist_ok=True) 
 
-            # Preserve existing folder settings when the folder is encountered again.
-            folders = self.data.setdefault('folders', {})
-            folders.setdefault(folder_path, {
+            self.folders[folder_path] = {
                 'name': name,
                 'is_expanded': True,
-                'color': app.settings.data.get('story', {}).get('default_folder_color', "primary"),
-            })
-            self.update_data(**{'folders': folders})
-            if update:
-                self.active_rail.reload_rail()
+                'color': "primary"
+            }
 
         # Handle errors
         except Exception as e:

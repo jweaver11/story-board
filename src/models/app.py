@@ -24,7 +24,7 @@ from utils.stories_loader import load_stories
 class App:
 
     # Dict of all our stories.
-    stories: dict[Story] = field(default_factory=dict)
+    stories: dict[str, Story] = field(default_factory=dict)
     ignore_settings_change: bool = True  # Ignore settings changes when page is loading itself and saving incorrect changes based on premature event firings
 
     
@@ -79,9 +79,7 @@ def StoryRoute() -> ft.View:
         return StoryView(story)
     
     # Return errors
-    return ft.View(
-        [ft.Text("Error loading story")]
-    )
+    return HomeView()
 
 @ft.component
 def AppView() -> list[ft.Control]:

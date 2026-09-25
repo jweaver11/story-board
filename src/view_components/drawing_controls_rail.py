@@ -57,8 +57,15 @@ def DrawingControlsRail(settings, story: Story) -> ft.Control:
 
 # Returns the buttons for our drawing controls so it can be added to a column or row
 @ft.component
-def DrawingControls(settings, story) -> list[ft.control]:
+def DrawingControls(settings, story: Story) -> list[ft.control]:
+
     page = ft.context.page
+
+    # Set our contexts
+    #settings = ft.use_context(Story)
+    paint_settings = ft.use_context(PaintContext)
+    drawing_settings = ft.use_context(DrawingContext)
+    text_settings = ft.use_context(TextContext)
 
 
 
@@ -206,25 +213,11 @@ def DrawingControls(settings, story) -> list[ft.control]:
 
     # Sets current control mode to drawing
     def set_draw_mode(e=None):
-        nonlocal drawing_settings, paint_settings, brush_selector, set_draw_mode_button
-        drawing_settings['current_control_mode'] = "draw"
-        if settings.data.get('paint_settings', {}).get('blend_mode', "") == "clear":
-            paint_settings['blend_mode'] = "src_over"
-        settings.update_data(**{'paint_settings': paint_settings, 'drawing_settings': drawing_settings})
-        # Update UI
         
-        brush_preview.content = build_preview_brush()
-        reset_button_bgcolors()
-        reset_tool_icons()
-
-        set_draw_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-        set_draw_mode_button.icon = tool_icons.get('brush')
-        brush_selector.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-
-        #self.update()
-
-    
-
+        drawing_settings.control_mode = "draw"
+        if paint_settings.blend_mode == "clear":
+            paint_settings.blend_mode = "src_over"
+   
     # Build a small preview of current or passed in brush settings to show in the brush selector
     def build_preview_brush(brush_settings: dict=None) -> ft.Control:
         nonlocal paint_settings
@@ -254,15 +247,12 @@ def DrawingControls(settings, story) -> list[ft.control]:
         ]
         return preview_canvas   # Return the canvas
 
-    def build_preview_text(ts: dict=None) -> ft.Control:
-        nonlocal text_settings
-        if not ts:
-            ts = text_settings.copy()
-
-        text_style = ft.TextStyle(**ts)
+    def build_preview_text(ts) -> ft.Control:
+        
+        text_style = ft.TextStyle(ts)
         text_control = ft.Text("Preview Text", style=text_style)
 
-        decoration = ts.get('decoration', None)
+        decoration = ts.decoration
         match decoration:
             case "underline":
                 text_control.style.decoration = ft.TextDecoration.UNDERLINE
@@ -274,39 +264,33 @@ def DrawingControls(settings, story) -> list[ft.control]:
                 text_control.style.decoration = None
 
         text_control.style.shadow = ft.BoxShadow(
-            blur_radius=ts.get('shadow', {}).get('blur_radius', 0),
-            color=ts.get('shadow', {}).get('color', None),
+            blur_radius=ts.shadow.blur_radius,
+            color=ts.shadow.color,
             offset=ft.Offset(
-                ts.get('shadow', {}).get('offset_x', 0),
-                ts.get('shadow', {}).get('offset_y', 0)
+                ts.shadow.offset_x,
+                ts.shadow.offset_y
             ),
         )
         return text_control
     
     # Sets current brush settings using passed in brush settings
     def set_active_brush(brush_settings: dict, name: str):
-        nonlocal drawing_settings, paint_settings
-        drawing_settings.update({"current_control_mode": {'current_control_mode': "draw", 'current_brush_name': name}})
-        paint_settings.update(**brush_settings)
-        settings.update_data(**{"drawing_settings": drawing_settings, "paint_settings": brush_settings})
+        drawing_settings.brush_name = name
+
+        #TODO: paint_settings = brush_settings ??
         
-        brush_preview.content = build_preview_brush()
-        brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
         set_draw_mode()
         #self.update()
         
     
     # Sets current text settings using passed in text settings
     def set_active_text_setting(new_text_settings: dict, name: str):
-        nonlocal text_settings
-        text_settings.clear()
-        text_settings.update(**new_text_settings)
-        settings.update_data(**{"text_settings": text_settings})
+        
+        #TODO: text_settings = new_text_settings
 
-        update_text_preview()
-        text_settings_button.controls = get_text_options()   # Update the text settings selector with the new setting
+       
         set_text_mode()
-        #self.update()
+       
 
     # Called to save our active brush settings as a custom brush we can load later (Excludes color and opacity)
     def save_custom_brush_clicked(e=None):
@@ -1826,10 +1810,7 @@ def DrawingControls(settings, story) -> list[ft.control]:
 
         return ctrls
 
-    # Set our contexts
-    paint_settings = ft.use_context(PaintContext)
-    drawing_settings = ft.use_context(DrawingContext)
-    text_settings = ft.use_context(TextContext)
+    
 
     # Color picker for changing brush color
     color_picker = ColorPicker(

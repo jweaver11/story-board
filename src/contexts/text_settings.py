@@ -6,7 +6,7 @@ import os
 import json
 from contexts.constants import APP_DATA_PATH, TEXT_SETTINGS_FILE_PATH
 
-@ft.observable
+@ft.observable 
 @dataclass
 class TextSettings:
     size: int = 14

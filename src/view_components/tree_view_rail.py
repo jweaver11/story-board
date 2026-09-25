@@ -210,6 +210,60 @@ def TreeViewRail(story) -> ft.Control:
 
     app_settings = ft.use_context(AppSettingsContext)
 
+    # Called when new category button or menu option is clicked
+    async def new_item_clicked(e: ft.Event[ft.Control]):
+        ''' Handles setting our textfield for new category creation '''
+        print("New item clicked")
+
+        set_creating_item(True)
+        set_new_item_hint("")
+        set_new_item_data(e.control.data)   # Sets the tag
+
+            
+        tag = e.control.data
+        
+        
+        # Make textfield visible, reset its value, and give it right data for logic
+        #self.new_item_textfield.visible = True
+        #self.new_item_textfield.value = None
+        #self.new_item_textfield.data = tag
+       # self.new_item_textfield.label = None
+
+        # See how to set our hint depending on situation
+        match tag:
+            case "character_relationship_map":
+                set_new_item_hint("Character Relationship Map Title")
+        
+            case "character" | "folder" | "item" | "object":
+                set_new_item_hint(f"{tag.capitalize()} Name")
+                if tag == "character":
+                    template_name = str(e.control.content)
+                    set_new_item_label(template_name)
+
+            case "canvas":
+                #await self.story.close_menu()
+                #self.page.show_dialog(new_canvas_dlg(self.page, self.story))
+                return
+                        
+            case "canvas_board":
+                set_new_item_hint("Canvas Board Title")
+            case "world":
+                set_new_item_hint("World Title")
+                template_name = str(e.control.content)
+                set_new_item_label(f"{template_name}")
+            case "comic_preview":
+                set_new_item_hint("Comic Preview Title")
+            case "plot_chart":
+                set_new_item_hint("Plot Chart Title")
+            # Charts
+            case _:
+                if ":" in tag:
+                    set_new_item_hint(f"{tag.split(':')[0].capitalize()} Title")
+                else:
+                    set_new_item_hint(f"{tag.capitalize()} Title")
+        
+        #await self.story.close_menu()
+
     top_row_buttons = [
         ft.SubmenuButton(
             ft.Container(
@@ -220,7 +274,7 @@ def TreeViewRail(story) -> ft.Control:
             [
                 ft.MenuItemButton(      # Folders
                     leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, ft.Colors.PRIMARY), content="Folder", 
-                    data="folder", #on_click=self.new_item_clicked, close_on_click=True,
+                    data="folder", on_click=new_item_clicked, close_on_click=True,
                     tooltip="Create a new folder to organize your story",
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ), 
@@ -230,7 +284,7 @@ def TreeViewRail(story) -> ft.Control:
                         ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, visible=False, 
                                 tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                     leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY),
-                    data="manuscript", #on_click=self.new_item_clicked, close_on_click=True,
+                    data="manuscript", on_click=new_item_clicked, close_on_click=True,
                     tooltip="Create a new manuscript for text chapters or scenes in your story",
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ), 
@@ -240,20 +294,20 @@ def TreeViewRail(story) -> ft.Control:
                         ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
                                 tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                     leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
-                    data="canvas", #on_click=self.new_item_clicked, close_on_click=True,
+                    data="canvas", on_click=new_item_clicked, close_on_click=True,
                     tooltip="Create a new Canvas for sketching drawing, or visual note taking",
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
                 
                 ft.MenuItemButton(      
                     leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY), content="Note", 
-                    data="note", #on_click=self.new_item_clicked, close_on_click=True,
+                    data="note", on_click=new_item_clicked, close_on_click=True,
                     tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ), 
                 ft.MenuItemButton(
                     leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY), content="Plotline",
-                    data="plotline", #on_click=self.new_item_clicked, close_on_click=True, 
+                    data="plotline", on_click=new_item_clicked, close_on_click=True, 
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                     tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"
                 ),
@@ -263,7 +317,7 @@ def TreeViewRail(story) -> ft.Control:
                         ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
                                 tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                     leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), 
-                    data="canvas_board", #on_click=self.new_item_clicked, close_on_click=True,
+                    data="canvas_board", on_click=new_item_clicked, close_on_click=True,
                     tooltip="Create a new Canvas Board to organize your canvases and plan your story visually",
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
@@ -273,33 +327,33 @@ def TreeViewRail(story) -> ft.Control:
                         ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
                                 tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                     leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
-                    data="map", #on_click=self.new_item_clicked, close_on_click=True,
+                    data="map", on_click=new_item_clicked, close_on_click=True,
                     tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 ),
                 
                 ft.MenuItemButton(
                     leading=ft.Icon(ft.Icons.STAR_OUTLINE_ROUNDED, ft.Colors.PRIMARY), content="Item", 
-                    data="item", #on_click=self.new_item_clicked, close_on_click=True,
+                    data="item", on_click=new_item_clicked, close_on_click=True,
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     tooltip="New Items and Equipment for your story"
                 ),  
                 ft.MenuItemButton(
                     leading=ft.Icon(ft.Icons.ACCOUNT_TREE_OUTLINED, ft.Colors.PRIMARY), content="Plot Chart", 
-                    data="plot_chart", #on_click=self.new_item_clicked, close_on_click=True,
+                    data="plot_chart", on_click=new_item_clicked, close_on_click=True,
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     tooltip="New Items and Equipment for your story", 
                 ),  
                 ft.MenuItemButton(
                     leading=ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, ft.Colors.PRIMARY), content="Comic Preview", 
-                    data="comic_preview", #on_click=self.new_item_clicked, close_on_click=True,
+                    data="comic_preview", on_click=new_item_clicked, close_on_click=True,
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                     tooltip="Preview the canvases in your story as a comic strip",
                 ),
                 
                 ft.MenuItemButton(
                     leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Relationship Map", 
-                    data="character_relationship_map", #on_click=self.new_item_clicked, close_on_click=True,
+                    data="character_relationship_map", on_click=new_item_clicked, close_on_click=True,
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     tooltip="Visualize the connections between the characters in your story"
                 ),  
@@ -377,7 +431,51 @@ def TreeViewRail(story) -> ft.Control:
         controls=[menubar]
     )
 
-    #new_item_textfield
+    # Called whenever we submit a new item (Chapter, note, category, etc.) via enter key
+    async def submit_item(e: ft.Event[ft.TextField]):
+        ''' Sets our state to submitting, and creates new item if unique. Father is either Plotline or arc for creating mini widgets '''
+        # Grab our title from the textfield
+        title = e.control.value
+
+        # Protect against empty titles. They break things
+        if not title or title.strip() == "":
+            return
+        
+        tag = e.control.data    # Tag of widget
+        if ":" in tag:
+            tag, chart_type = tag.split(":")
+
+        # Creating new folders
+        if tag == "folder":
+            await story.create_folder(name=title)
+
+        # All other cases are widgets
+        else:
+            # Create the widget and reload all our rails
+            await story.create_widget(title, tag, chart_type=chart_type if tag == "chart" else None)
+        
+
+    creating_item, set_creating_item = ft.use_state(False)
+    creating_canvas, set_creating_canvas = ft.use_state(False)
+
+    new_item_hint, set_new_item_hint = ft.use_state("")
+    new_item_data, set_new_item_data = ft.use_state("")
+    new_item_label, set_new_item_label = ft.use_state("")
+
+
+    new_item_textfield = ft.TextField(     
+        label=new_item_label,
+        hint_text=new_item_hint, 
+        data=new_item_data,                 # Hint text and data tag for logic                      
+        autofocus=True, dense=True,                 
+        capitalization=ft.TextCapitalization.WORDS,     # Capitalize sentences for names
+        visible=creating_item,                                      # Hidden by default
+        text_style=ft.TextStyle(size=14, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),                         # Text style for consistency
+        on_submit=submit_item,                         # Called when enter is pressed and textfield is focused
+        key="new_item_textfield",
+        on_blur=lambda: set_creating_item(False),
+    )
+    
                 
 
     # Build the content of our rail
@@ -386,9 +484,9 @@ def TreeViewRail(story) -> ft.Control:
         spacing=0,
         expand=True,
         controls=[
-            #ft.Container(self.new_item_textfield, margin=ft.Margin.only(left=10, right=10, top=6))
+            ft.Container(new_item_textfield, margin=ft.Margin.only(left=10, right=10, top=6))
         ],
-    )
+    ) 
 
 
     # Load our content directory data into the rail
@@ -418,6 +516,7 @@ def TreeViewRail(story) -> ft.Control:
         expand=True,
         #on_hover=self._set_menu_coords,
         #on_secondary_tap=lambda: self.story.open_menu(self.get_new_item_menu_options()),  
+        on_tap=lambda e: print("Menu gesture detector tapped"),
         hover_interval=20,
     )
 
@@ -459,7 +558,7 @@ def TreeViewRail(story) -> ft.Control:
             ft.Column([
                 header,
                 ft.Divider(thickness=2, leading_indent=8),
-                #menu_gesture_detector
+                menu_gesture_detector
             ], expand=True, spacing=0, margin=ft.Margin.only(top=10, bottom=10)),
             ActiveRailResizer(),
         ], spacing=0),

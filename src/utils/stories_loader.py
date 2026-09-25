@@ -32,6 +32,9 @@ def load_stories(app):
                         # Set our data to be passed into our objects
                         story_data = json.load(f)
 
+                        if not story_data:
+                            break
+
                     # Our story title is the same as the folder
                     story_title = story_data.get("title", file_path.replace(".json", ""))
                     story_id = story_data.get("id", file_path.replace(".json", ""))
