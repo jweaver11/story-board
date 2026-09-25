@@ -42,7 +42,6 @@ NEGATIVE_NUMBER_FILTER = ft.InputFilter(allow=True, regex_string=r"^-?[0-9]*$")
 @ft.component
 def DrawingControlsRail(settings, story: Story) -> ft.Control:
     
-    page = ft.context.page
     return ft.Container(
         ft.Column(DrawingControls(settings, story)),
         alignment=ft.Alignment.CENTER,  # Aligns content to the 
@@ -50,9 +49,9 @@ def DrawingControlsRail(settings, story: Story) -> ft.Control:
         #animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
         bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-        width=78 if settings.data.get('story', {}).get('show_canvas_rail', False) == True else 0,
-        visible=settings.data.get('story', {}).get('show_canvas_rail', False) == True and not page.platform.is_mobile()
-        #visible=settings.show_canvas_rail == True and not page.platform.is_mobile()
+        #width=78 if settings.data.get('story', {}).get('show_canvas_rail', False) == True else 0,
+        #visible=settings.data.get('story', {}).get('show_canvas_rail', False) == True and not ft.context.page.platform.is_mobile()
+        #visible=settings.show_canvas_rail == True and not ft.context.page.platform.is_mobile()
     )
 
 
@@ -60,6 +59,80 @@ def DrawingControlsRail(settings, story: Story) -> ft.Control:
 @ft.component
 def DrawingControls(settings, story) -> list[ft.control]:
     page = ft.context.page
+
+
+
+    @ft.component
+    def ColorPickerView(color: str):
+
+        
+
+        
+
+        return ft.Container()
+
+    @ft.component
+    def ColorSelector(settings: dataclasses.dataclass):
+
+        # Set the color pickers color upon change, so that saving it goes to right spot
+        def set_color(e: ft.Event[ColorPicker]):
+            color_ref.current = e.data
+
+        def save_color(_):
+            if not color_ref.current:
+                return
+            settings.color = color_ref.current
+            if color_ref.current not in color_history:
+                print("Color_ref: ", color_ref.current)
+                set_color_history(color_history + [color_ref.current])
+                print("Added color to history", color_history)
+                
+                if len(color_history) > 6:
+                    set_color_history(color_history[1:])
+                    print("Color history clamped")
+
+        color_history, set_color_history = ft.use_state([])
+
+        color_ref = ft.use_ref(None)
+
+        # Rebuilt every render (not use_state) so color_history stays current;
+        # key= keeps the underlying widget patched in place instead of remounted.
+        cp = ColorPicker(
+            key=f"{settings}.color_picker",
+            color=settings.color,
+            on_color_change=set_color,
+            picker_area_border_radius=ft.BorderRadius.all(4),
+            color_history=color_history
+        )
+        
+        return ft.SubmenuButton(
+            ft.Icon(ft.Icons.CIRCLE, settings.color), 
+            tooltip="The color of your brush strokes.",
+            on_close=save_color,
+            width=40, height=40,
+            controls=[ft.Column([
+                cp,  
+                ft.MenuItemButton(
+                    "Set Color", 
+                    on_click=lambda: None,  # Something so its not disabled
+                    style=ft.ButtonStyle(
+                        shape=ft.RoundedRectangleBorder(radius=4), #mouse_cursor=ft.MouseCursor.CLICK,
+                        bgcolor=ft.Colors.SURFACE_CONTAINER
+                    )
+                )
+            ])],
+            style=ft.ButtonStyle(
+                #mouse_cursor=ft.MouseCursor.CLICK,  
+                #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                shape=ft.RoundedRectangleBorder(radius=0),
+            ),
+            menu_style=ft.MenuStyle(
+                alignment=ft.Alignment.TOP_RIGHT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                shape=ft.RoundedRectangleBorder(radius=4),
+                padding=ft.Padding.all(0)
+            ),
+        )
     
     
     class Switch(ft.Switch):
@@ -119,50 +192,16 @@ def DrawingControls(settings, story) -> list[ft.control]:
                 ]
             )
             
-            
-    # Updates the mouse cursor or all visible canvases based on updated tool mode
-    def set_canvas_mouse_cursor():
-        if story is None:
-            return
-        for widget in story.workspace.tab_view.controls:
-            if not widget.data: # Protect empty
-                return
-            if widget.data.get('tag') == "canvas":
-                widget.set_mouse_cursor()
-                break
-
-    # Checks all our widgets. If any of them are manipulating a tool, we paint it on the canvas if switching from tool to draw mode
-    def update_canvas_tool_preview():
-        if story is None:
-            return
-        for widget in story.workspace.tab_view.controls:
-            if not widget.data: # Protect empty
-                return
-            if widget.data.get('tag') == "canvas":
-                if widget.data.get('visible', True):
-                    if widget.state.manipulating_shape == True:
-                        widget.update_tool_preview()
-                        break
 
     # Set the color pickers color upon change, so that saving it goes to right spot
-    def set_color(e: ft.Event[ColorPicker]):
-        e.control.color = e.data
+    #def set_color(e: ft.Event[ColorPicker]):
+        #return
+        #e.control.color = e.data
         
 
     # Saves our color to data and updates the brush selector
     def save_color(e=None):
-        paint_settings.update({"color": color_picker.color})
-        settings.update_data(**{"paint_settings": paint_settings})
-        brush_preview.content = build_preview_brush()   # Update the brush selector with the new brush
-        set_tool_mode_button.icon = update_tool_icon()
-        color_selector.content.color = color_picker.color
-        if color_picker.color not in color_picker.color_history:
-            color_picker.color_history.append(color_picker.color)
-            if len(color_picker.color_history) > 6:
-                color_picker.color_history.pop(0)
-        #self.update()
-        set_canvas_mouse_cursor()
-        update_canvas_tool_preview()
+        return
 
 
     # Sets current control mode to drawing
@@ -175,7 +214,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
         # Update UI
         
         brush_preview.content = build_preview_brush()
-        set_canvas_mouse_cursor()
         reset_button_bgcolors()
         reset_tool_icons()
 
@@ -256,8 +294,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
         brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
         set_draw_mode()
         #self.update()
-        set_canvas_mouse_cursor()
-        update_canvas_tool_preview()
         
     
     # Sets current text settings using passed in text settings
@@ -271,7 +307,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
         text_settings_button.controls = get_text_options()   # Update the text settings selector with the new setting
         set_text_mode()
         #self.update()
-        update_canvas_tool_preview()
 
     # Called to save our active brush settings as a custom brush we can load later (Excludes color and opacity)
     def save_custom_brush_clicked(e=None):
@@ -438,7 +473,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
         drawing_settings['current_control_mode'] = "tool"
         drawing_settings['current_tool_name'] = e.control.data
         settings.update_data(**{'drawing_settings': drawing_settings})
-        set_canvas_mouse_cursor()
         
         reset_button_bgcolors()
         reset_tool_icons()
@@ -477,7 +511,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
         set_text_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
         text_settings_button.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
         
-        set_canvas_mouse_cursor()
 
         reset_button_bgcolors()
         reset_tool_icons()
@@ -621,7 +654,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
         
         brush_preview.content = build_preview_brush()
         #.update()
-        update_canvas_tool_preview()
 
     # Called when changing paint anti-aliasing
     def update_paint_anti_alias(e: ft.Event[ft.Switch]):
@@ -631,7 +663,7 @@ def DrawingControls(settings, story) -> list[ft.control]:
         
         brush_preview.content = build_preview_brush()
         #.update()
-        update_canvas_tool_preview()
+        ()
 
     # Updates whether we'll use path smoothing or not
     def update_paint_brush_smoothing(e: ft.Event[ft.Switch]):
@@ -662,8 +694,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
         e.control.content.leading = get_stroke_cap_icon()
         brush_preview.content = build_preview_brush()
         #.update()
-        set_canvas_mouse_cursor()
-        update_canvas_tool_preview()
 
     # Returns the correct icon for the current stroke join setting based on current paint settings
     def get_stroke_join_icon() -> ft.Icon:
@@ -683,7 +713,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
         e.control.content.leading = get_stroke_join_icon()
         brush_preview.content = build_preview_brush()
         #.update()
-        update_canvas_tool_preview()
 
     # Set the blend mode label based on current mode in settings
     def set_blend_mode_value() -> str:
@@ -734,8 +763,7 @@ def DrawingControls(settings, story) -> list[ft.control]:
         paint_settings.update(**{"blend_mode": mode})
         settings.update_data(**{"paint_settings": paint_settings})
         #.update()
-        update_canvas_tool_preview()
-
+        
     
     # Returns a list of our controls for for the brush selector for settings, save, and custom brushes
     def get_brush_options() -> list[ft.Control]:
@@ -802,10 +830,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
                 settings.update_data(**{"drawing_settings": drawing_settings})
 
             brush_preview.content = build_preview_brush()
-
-            #.update()
-            set_canvas_mouse_cursor()
-            update_canvas_tool_preview()
             
 
 
@@ -1043,7 +1067,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
 
             update_text_preview()
             text_preview.update()
-            update_canvas_tool_preview()
 
         # Update text shadow settings (blur radius, blur style, offset, spread radius)
         def update_text_shadow_setting(e: ft.Event[TextField | ft.RadioGroup]):
@@ -1075,7 +1098,7 @@ def DrawingControls(settings, story) -> list[ft.control]:
 
             update_text_preview()
             text_preview.update()
-            update_canvas_tool_preview()
+        
 
         # Update text foreground settings
         def update_text_foreground_setting(e: ft.Event[ft.TextField | ft.Dropdown | ft.Slider | ft.Switch]):
@@ -1092,7 +1115,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
                 if len(text_color_picker.color_history) > 6:
                     text_color_picker.color_history.pop(0)
             #.update()
-            update_canvas_tool_preview()
             update_text_preview()
             text_preview.update()
 
@@ -1107,7 +1129,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
                 if len(text_bg_color_picker.color_history) > 6:
                     text_bg_color_picker.color_history.pop(0)
             #.update()
-            update_canvas_tool_preview()
             update_text_preview()
             text_preview.update()
 
@@ -1122,7 +1143,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
                 if len(text_decoration_color_picker.color_history) > 6:
                     text_decoration_color_picker.color_history.pop(0)
             #.update()
-            update_canvas_tool_preview()
             update_text_preview()
             text_preview.update()
 
@@ -1139,7 +1159,6 @@ def DrawingControls(settings, story) -> list[ft.control]:
                 if len(text_shadow_color_picker.color_history) > 6:
                     text_shadow_color_picker.color_history.pop(0)
             #.update()
-            update_canvas_tool_preview()
             update_text_preview()
             text_preview.update()
 
@@ -1267,35 +1286,15 @@ def DrawingControls(settings, story) -> list[ft.control]:
         
 
         # Color picker for changing brush color
-        text_color_picker = ColorPicker(
-            color=text_settings.color,
-            on_color_change=set_color, 
-            picker_area_border_radius=ft.BorderRadius.all(4),
-            color_history=[]
-        ) 
+        text_color_picker = ColorPickerView(text_settings.color) 
 
         
         # Color picker for changing brush color
-        text_bg_color_picker = ColorPicker(
-            color=text_settings.bgcolor,
-            on_color_change=set_color, 
-            picker_area_border_radius=ft.BorderRadius.all(4),
-            color_history=[]
-        )   
+        text_bg_color_picker = ColorPickerView(text_settings.bgcolor) 
 
-        text_decoration_color_picker = ColorPicker(
-            color=text_settings.decoration_color,
-            on_color_change=set_color, 
-            picker_area_border_radius=ft.BorderRadius.all(4),
-            color_history=[]
-        )
+        text_decoration_color_picker = ColorPickerView(text_settings.decoration_color) 
 
-        text_shadow_color_picker = ColorPicker(
-            color=shadow_settings.get('color', None),
-            on_color_change=set_color, 
-            picker_area_border_radius=ft.BorderRadius.all(4),
-            color_history=[]
-        )
+        text_shadow_color_picker = ColorPickerView(shadow_settings.get('color', ft.Colors.PRIMARY)) 
 
         # Create our color selector button
         text_color_selector = ft.SubmenuButton(
@@ -1835,41 +1834,13 @@ def DrawingControls(settings, story) -> list[ft.control]:
     # Color picker for changing brush color
     color_picker = ColorPicker(
         color=paint_settings.color,
-        on_color_change=set_color, 
+        #on_color_change=set_color, 
         picker_area_border_radius=ft.BorderRadius.all(4),
         color_history=[]
     )   
 
     # Create our color selector button
-    color_selector = ft.SubmenuButton(
-        ft.Icon(ft.Icons.CIRCLE, paint_settings.color), 
-        tooltip="The color of your brush strokes.",
-        on_close=save_color, #expand=True,
-        width=40,
-        height=40,
-        controls=[ft.Column([
-            color_picker,  
-            ft.MenuItemButton(
-                "Set Color", 
-                on_click=lambda: None,  # Something so its not disabled
-                style=ft.ButtonStyle(
-                    shape=ft.RoundedRectangleBorder(radius=4), #mouse_cursor=ft.MouseCursor.CLICK,
-                    bgcolor=ft.Colors.SURFACE_CONTAINER
-                )
-            )
-        ])],
-        style=ft.ButtonStyle(
-            #mouse_cursor=ft.MouseCursor.CLICK,  
-            #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-            shape=ft.RoundedRectangleBorder(radius=0),
-        ),
-        menu_style=ft.MenuStyle(
-            alignment=ft.Alignment.TOP_RIGHT,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
-            shape=ft.RoundedRectangleBorder(radius=4),
-            padding=ft.Padding.all(0)
-        ),
-    )
+    color_selector = ColorSelector(paint_settings)
 
     def get_color_options(target_color_picker: ColorPicker, apply_color) -> list[ft.Control]:
         nonlocal drawing_settings
