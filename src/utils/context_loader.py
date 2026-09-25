@@ -4,19 +4,19 @@ import json
 from dataclasses import asdict
 from contexts.constants import SETTINGS_FILE_PATH, PAINT_SETTINGS_FILE_PATH, DRAWING_SETTINGS_FILE_PATH, TEXT_SETTINGS_FILE_PATH
 
-def check_file(file_path: str, default_data: dict = None):
+def check_file(file_path: str):
     ''' Checks if a file exists, and creates it with default data if it doesn't '''
     if not os.path.exists(file_path):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Ensure directory exists
         with open(file_path, "w", encoding='utf-8') as f:
-            json.dump(default_data if default_data is not None else {}, f)
+            json.dump({}, f)
         return False
 
 def load_app_settings():
     ''' Loads our settings from a JSON file into our rendered settings control. If none exist, creates default settings '''
     from contexts.app_settings import AppSettings
     
-    check_file(SETTINGS_FILE_PATH, default_data=asdict(AppSettings())) # Check the file exists
+    check_file(SETTINGS_FILE_PATH) # Check the file exists
     
     try:
         # Read the JSON file
@@ -39,7 +39,7 @@ def load_app_settings():
 def load_paint_settings():
     from contexts.paint_settings import PaintSettings
     
-    check_file(PAINT_SETTINGS_FILE_PATH, default_data=asdict(PaintSettings()))
+    check_file(PAINT_SETTINGS_FILE_PATH)
     
     try:
         with open(PAINT_SETTINGS_FILE_PATH, "r", encoding='utf-8') as f:
@@ -56,7 +56,7 @@ def load_paint_settings():
 def load_drawing_settings():
     from contexts.drawing_settings import DrawingSettings
     
-    check_file(DRAWING_SETTINGS_FILE_PATH, default_data=asdict(DrawingSettings()))
+    check_file(DRAWING_SETTINGS_FILE_PATH)
     
     try:
         with open(DRAWING_SETTINGS_FILE_PATH, "r", encoding='utf-8') as f:
@@ -73,7 +73,7 @@ def load_drawing_settings():
 def load_text_settings():
     from contexts.text_settings import TextSettings
     
-    check_file(TEXT_SETTINGS_FILE_PATH, default_data=asdict(TextSettings()))
+    check_file(TEXT_SETTINGS_FILE_PATH)
     
     try:
         with open(TEXT_SETTINGS_FILE_PATH, "r", encoding='utf-8') as f:

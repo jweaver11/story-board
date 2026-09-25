@@ -27,18 +27,18 @@ from contexts.contexts import AppContext, AppSettingsContext, PaintContext, Draw
 class Story:
 
     title: str = "Story Title"
-    id: str = str(uuid.uuid4())
     tag: str = "story"
+    id: str = str(uuid.uuid4())
+    route: str = f"stories/{id}"
+
     directory_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id)        # Where our stories metadata and content folder live
     content_directory_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id, "content")   # Where our folders and widgets live
     file_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id, f"{id}.json")   # Path to story's json file
 
-    selected_tab_index: int = 0 # Index of the selected tab in the story's UI (old: workspace_selected_index)
+    selected_tab_index: int = 0     # Index of the selected tab in the story's UI (old: workspace_selected_index)
+
+    
     folders: dict[str, dict] = field(default_factory=dict) #{'path': {'name": '', 'color': '', 'is_expanded': True}}
-
-    route: str = f"stories/{id}"
-
-    #widgets: dict[str, dataclass] = field(default_factory=dict, init=False, repr=False,)
     widgets: dict[str, dataclass] = field(default_factory=dict)
     #mouse_position
         
@@ -57,12 +57,12 @@ class Story:
     async def save_file(self):
         ''' Saves the data of our story to its JSON File, and all its folders as well '''
 
-        print(f"Saving story: {self.title} with ID")
+        print(f"Saving story: {self.title}")
 
         try: 
             os.makedirs(self.directory_path, exist_ok=True)
 
-            # Create our data excluding widgets, since they save themselves
+            # Create our data excluding widgets, since they save themselves, and will break json structure
             story_data = {
                 story_field.name: getattr(self, story_field.name)
                 for story_field in fields(self)
@@ -183,7 +183,7 @@ class Story:
 
     def rename(self, new_title: str):
         ''' Renames the story '''
-        self.update_data(**{'title': new_title})
+        self.title = new_title
         self.page.title = f"Story Board (alpha) - {new_title}"
         self.route=return_safe_name(f"/{new_title}_story")
         self.page.pop_dialog()
@@ -274,15 +274,15 @@ class Story:
         self.widgets.clear()
         
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder
-        if not os.path.exists(self.data['content_directory_path']):
+        if not os.path.exists(self.content_directory_path):
             try:
-                os.makedirs(self.data['content_directory_path'])    
+                os.makedirs(self.content_directory_path)    
             except Exception:
                 pass
             return  # Since this didn't exist, there is no content
 
         # Loads all files inside the content directory and its sub folders
-        for dirpath, dirnames, filenames in os.walk(self.data['content_directory_path']):
+        for dirpath, dirnames, filenames in os.walk(self.content_directory_path):
             for filename in filenames:
 
                 # All our objects are stored as JSON, so if not we skip
@@ -294,6 +294,8 @@ class Story:
                         # Read the JSON file and set our data
                         with open(file_path, "r", encoding='utf-8') as f:
                             widget_data = json.load(f)
+                            if not widget_data:
+                                continue
                         
                         # Extract the title, directory, and unique widget id
                         tag = widget_data.get("tag", "")
@@ -407,7 +409,7 @@ class Story:
 
     async def import_folder_clicked(self, e: ft.Event):
         self.block_page()
-        directory_path = e.control.data or self.data.get('content_directory_path', '')
+        directory_path = e.control.data or self.content_directory_path
 
         try:
             folder_path = await ft.FilePicker().get_directory_path()

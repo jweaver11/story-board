@@ -40,7 +40,6 @@ class App:
         
         # Create new story and force it to save immediately
         new_story = Story(title)    
-        print("New Story created:\n\n\n", new_story, "\n\n")
         ft.context.page.run_task(new_story.save_file)  
 
         # Add the story to our stories dictionary

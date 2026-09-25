@@ -1,7 +1,7 @@
 ''' Our ft.textstyle to be passed into cv.text shapes on canvases '''
 
 import flet as ft
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, fields
 import os
 import json
 from contexts.constants import APP_DATA_PATH, TEXT_SETTINGS_FILE_PATH
@@ -19,13 +19,13 @@ class TextSettings:
     font_family: str = None
     color: str = "#FFFFFF"  # Hex color folowed by opacity
     bgcolor: str = "#00000000"  # Background color for text shapes
-    #shadow: dict = field(default_factory=lambda: {
-        #'blur_radius': 0,
-        #'blur_style': 'normal', # Options: normal, solid, outer, inner
-        #'color': "#00000000",
-        #'offset': (0, 0),
-        #'spread_radius': 0,
-    #})   # Boxshad values
+    shadow: dict = field(default_factory=lambda: {
+        'blur_radius': 0,
+        'blur_style': 'normal', # Options: normal, solid, outer, inner
+        'color': "#00000000",
+        'offset': (0, 0),
+        'spread_radius': 0,
+    })   # Boxshad values
     foreground: any = None # [list of gradients/color values] (ft.PaintLinearGradient, ft.PaintRadialGradient, ft.PaintGradient ft.PaintSweepGradient)
     letter_spacing: int = 0
     word_spacing: int = 0
@@ -36,9 +36,15 @@ class TextSettings:
 
         try:
             os.makedirs(APP_DATA_PATH, exist_ok=True)
+
+            text_data = {
+                story_field.name: getattr(self, story_field.name)
+                for story_field in fields(self)
+            }
+
             # Save the data to the file (creates file if doesnt exist)
             with open(TEXT_SETTINGS_FILE_PATH, "w", encoding='utf-8') as f:   
-                json.dump(asdict(self), f, indent=4)   # asdict() strips observable bookkeeping, unlike self.__dict__
+                json.dump(text_data, f, indent=4)   # asdict() strips observable bookkeeping, unlike self.__dict__
         
         except Exception as e:
             print(f"Error saving settings to {TEXT_SETTINGS_FILE_PATH}: {e}")
