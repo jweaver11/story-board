@@ -8,7 +8,7 @@ import flet as ft
 import os
 import json
 from models.views.story import Story
-from styles.tree_view_folder import RailFolderView
+from styles.tree_view_folder import RailFolder
 from styles.tree_view_file import RailFile
 import math
 
@@ -24,8 +24,6 @@ def load_directory_data(story: Story, directory: str) -> list[ft.Control]:
 
         # Gives us a list of all files and folders in our current directory
         entrys = os.listdir(directory)
-
-        
         directories = []    # List to store directory names separately
         files = []      # List to store file names separately
 
@@ -50,10 +48,8 @@ def load_directory_data(story: Story, directory: str) -> list[ft.Control]:
 
             # Grab and normalize the full path
             full_path = os.path.join(directory, directory_name)     
-            #full_path = _canon_path(full_path)
 
             # Grab the data from the story
-            
             folder_data = story.folders[full_path]
             
             if not folder_data:
@@ -61,7 +57,7 @@ def load_directory_data(story: Story, directory: str) -> list[ft.Control]:
                 continue
 
             # Create the new folder dropdown
-            folder_view = RailFolderView(folder_data, story)
+            folder_view = RailFolder(folder_data, story)
 
             # Since its a folder, load all its content recursively
             load_directory_data(story, full_path)
@@ -72,7 +68,8 @@ def load_directory_data(story: Story, directory: str) -> list[ft.Control]:
 
         # Now go through our files
         for file_name in files:
-            break
+            
+            
             widget = None
             try:
                 # Load the file data to see if it's valid
@@ -93,6 +90,7 @@ def load_directory_data(story: Story, directory: str) -> list[ft.Control]:
                 
             else:
                 print("Could not find widget inside load_directory_data")
+                print(story.widgets.keys())
                 continue
 
         # Sort Folders and files alphabetically

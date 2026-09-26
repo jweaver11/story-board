@@ -390,7 +390,7 @@ class PlotChart(Widget):
                 on_blur=_save_title,
                 #text_style=ft.TextStyle()
                 text_align=ft.TextAlign.CENTER,
-                expand=True, border_radius=4
+                expand=True, #border_radius=4
             )
 
             # Our nodes content. Column with label, divider, description text field, and connection points
@@ -619,7 +619,7 @@ class PlotChart(Widget):
             text_style=ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=14),
             data=node_data.get('id'),
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            multiline=True, dense=True, expand=True, border_radius=4,
+            multiline=True, dense=True, expand=True, #border_radius=4,
             capitalization=ft.TextCapitalization.SENTENCES,
             label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
         )

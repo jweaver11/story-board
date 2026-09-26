@@ -6,7 +6,6 @@ import flet as ft
 import os
 import json
 from models.views.story import Story
-from models.widgets.plotline import Plotline
 from utils.new_canvas import new_canvas_dlg
 import asyncio
 #from models.app import app

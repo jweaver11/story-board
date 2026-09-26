@@ -74,7 +74,7 @@ class Manuscript(Widget):
             super().__init__(
                 data=data, 
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-                multiline=True, dense=True, expand=True, border_radius=4,
+                multiline=True, dense=True, expand=True, #border_radius=4,
                 on_blur=lambda e: self.update_data(**{'content': e.control.value}),
                 capitalization=ft.TextCapitalization.SENTENCES,
                 suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, mouse_cursor="click", on_click=self.delete_comment),

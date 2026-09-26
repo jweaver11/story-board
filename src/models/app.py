@@ -105,7 +105,6 @@ def AppView() -> list[ft.Control]:
     @ft.component
     def build_router():
 
-
         return ft.Router(
             [
                 ft.Route(index=True, component=HomeView),

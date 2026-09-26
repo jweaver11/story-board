@@ -3,38 +3,18 @@
 import flet as ft
 from models.views.story import Story
 from models.widget import Widget
-#from models.app import app
 from styles.text_fields import TextField, UnderlinedTextField, NoLabelTextField
 from styles.menu_option_style import MenuOptionStyle
 import asyncio
 from styles.colors import colors
+from dataclasses import field
     
 
 class Note(Widget):
 
-    # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict={}, is_new: bool=False):
- 
-        # Initialize from our parent class 'Widget'. 
-        super().__init__(
-            title = title,                      # Title of the note
-            directory_path = directory_path,    # Path to our notes json file
-            story = story,                      # Reference to our story object
-            data = data,
-            is_new = is_new
-        )
-
-        # If we're new, give default values for our data 
-        if self.is_new == True:
-            self.data.update({ 
-                'tag': "note", 
-                #'color': app.settings.data.get('widget_defaults', {}).get('note', {}).get('color'),
-
-                # Note card data. Stored as list so we can duplicate labels
-                'card_data': [ 
-                    {"label": "", "value": "", 'color': 'onsurface', 'strikethrough': False},
-                ]
-            })
+    tag: str = "note"
+    card_data: list = field(default_factory=list)
+    # {"label": "", "value": "", 'color': 'onsurface', 'strikethrough': False}, {...}
 
 
     # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild

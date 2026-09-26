@@ -592,9 +592,9 @@ class MapLocation(MiniWidget):
             ),
             expand=True, text_align=ft.TextAlign.CENTER,
             content_padding=ft.Padding.all(0),
-            on_blur=self.save_rename, dense=True, border_radius=4,
-            border_color=ft.Colors.TRANSPARENT,
-            focused_border_color=ft.Colors.PRIMARY,
+            on_blur=self.save_rename, dense=True, #border_radius=4,
+            #border_color=ft.Colors.TRANSPARENT,
+            #focused_border_color=ft.Colors.PRIMARY,
             multiline=True,
         )
 

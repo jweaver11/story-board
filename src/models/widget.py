@@ -17,74 +17,57 @@ import flet.canvas as cv
 import asyncio
 import uuid
 from styles.text_fields import TextField, SidebarTitleTextField
-from dataclasses import fields, asdict, dataclass
+from dataclasses import fields, asdict, dataclass, field
 
 
 
 @ft.observable
 @dataclass
-class Widget(ft.Container):
+class Widget:
+
     
-    # Constructor. All widgets require a title,  page reference, directory path, and story reference
-    def __init__(
-        self, 
-        title: str,             # Title of our widget
-        directory_path: str,    # Path to our directory that will contain our json file
-        story: Story,           # Reference to our story object that owns this widget
-        data: dict = None,       # Our data passed in if loaded (or none if new object)
-        is_new: bool = False   # Whether we need to create default data or use what was passed in
-    ):
+    title: str
+    directory_path: str
+    
 
-        # Parent constructor to set data and other attributes
-        super().__init__(
-            data=data, 
-            on_size_change=self._set_size, 
-            size_change_interval=50
-        )
-        
-        self.is_new: bool = is_new 
+    tag: str
+    id: str = str(uuid.uuid4())
+    index: int = 999
+    visible: bool = True
+    color: str = "primary"
+    image_base64: str = str()
+    sidebar_visible: bool = True
+    notes: list = field(default_factory=list)
+    description: str = str()
 
-        # Give us default data if we're new. Child class will for a file save
-        if self.is_new == True:
-            self.data = {
-                'id': str(uuid.uuid4()),       # Unique ID for each widget
-                'title': title,                            # Title of our widget  
-                'directory_path': directory_path,          # Directory path to the file this widget's data is stored in
-                'tag': str(),                              # Tag to identify what type of widget this is
-                'index': 999,                  # Index of this widget in the workspace (start at end)
-                #'rail_index': 999,                 # Index of this widget in the rail for sorting (start at end)
-                'visible': True,                  # Whether this widget is visible in the workspace or not
-                'color': "primary",                   # Color of this widget's tab and icon in workspace and on rail
-                'image_base64': str(),                 # Base64 string of the image for this widget, if it has one
-                'show_sidebar': False,               # Whether to show the sidebar. Widgets that use it set to True in their own data
-                'notes': list(),                # Several widgets have notes{'label': str(), 'value': str()}
-                'description': str(),
-            } 
+    needs_file_write: bool = False
+    visible_mw_id: str = ""
 
-        # Set title and story references
-        self.story: Story = story   
-        
-        # Apply our visibility
-        self.visible = self.data.get('visible', True)
 
-        # State tracking for widgets
-        self.w: int = 0          # Width of content space of the widget
-        self.h: int = 0          # Height of content space of the widget
-        self.needs_file_write: bool = False        # Whether we need to write to file or not. Set to true when data changes, and false when saved  
-        self.visible_mw_id: str = ""                # ID of the miniwidget we are currently showing in the sidebar
-                       
-        # Sidebar controls
-        self.sidebar_title: SidebarTitleTextField       # Title of the sidebar for this widget that sits in the header
-        self.sidebar_header: ft.Row       # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
-        self.sidebar_body: ft.Column      # Column that holds the header and any other content for the sidebar
-        self.sidebar: ft.Container      # Container on right side of widgets to hold mini widgets or sidebar info
-        self.toggle_sidebar_visibility_button: ft.Container     # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
-        self.sidebar_notes_label: ft.Row
-        self.sidebar_notes_column: ft.Column
+    # Parent constructor to set data and other attributes
+    #ft.container()
+    #super().__init__(
+        #data=data, 
+        #on_size_change=self._set_size, 
+        #size_change_interval=50
+    #)
 
-        # Other shared controls
-        self.description_tf: TextField      # Description of this widget textfield. Mostly used in sidebar, but can be used in body
-        self.select_image_button: ft.GestureDetector    # Button certain widgets use when they have an image to represent them (world, character, item, etc.)
+    # State tracking for widgets
+    #self.w: int = 0          # Width of content space of the widget
+    #self.h: int = 0          # Height of content space of the widget
+                    
+    # Sidebar controls
+    #self.sidebar_title: SidebarTitleTextField       # Title of the sidebar for this widget that sits in the header
+    #self.sidebar_header: ft.Row       # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
+    #self.sidebar_body: ft.Column      # Column that holds the header and any other content for the sidebar
+    #self.sidebar: ft.Container      # Container on right side of widgets to hold mini widgets or sidebar info
+    #self.toggle_sidebar_visibility_button: ft.Container     # Button to show the sidebar when it is hidden. Only shows when sidebar is hidden
+    #self.sidebar_notes_label: ft.Row
+    #self.sidebar_notes_column: ft.Column
+
+    # Other shared controls
+    #self.description_tf: TextField      # Description of this widget textfield. Mostly used in sidebar, but can be used in body
+    #self.select_image_button: ft.GestureDetector    # Button certain widgets use when they have an image to represent them (world, character, item, etc.)
 
     # Updates data for this widget and marks it as dirty for the next file save
     def update_data(self, **kwargs):
@@ -106,7 +89,8 @@ class Widget(ft.Container):
 
     # Writes our current data to the correct json file if we are dirty
     async def save_file(self):
-        if self.needs_file_write:
+        #if self.needs_file_write:
+        if self.visible:    # Just save visible ones for now
             print("Saving widget to file: ", self.title)
 
             file_path = os.path.join(self.directory_path, f"{self.id}.json")
@@ -117,17 +101,16 @@ class Widget(ft.Container):
                 widget_data = {
                     widget_field.name: getattr(self, widget_field.name)
                     for widget_field in fields(self)
-                    if widget_field.name != "widgets"
                 }
                 
                 # Save our json data to the file
                 with open(file_path, "w", encoding='utf-8') as f:   
-                    json.dump(self.data, f, indent=4)
+                    json.dump(widget_data, f, indent=4)
 
                 self.needs_file_write = False   # Mark as clean
-                self.is_new = False   # Mark as not new anymore
+                #self.is_new = False   # Mark as not new anymore
             except Exception as e:
-                print(f"Error saving widget {self.data.get('title', 'untitled')} to file: {e}")
+                print(f"Error saving widget {self.title} to file: {e}")
             
     # Called when moving widget files
     async def delete_file(self) -> bool:
@@ -715,7 +698,7 @@ class Widget(ft.Container):
 
 
     # Builds functionality for widget
-    def build(self):
+    def build(self, story):
 
         # Description textfield we use in the sidebar
         self.description_tf = ft.TextField(

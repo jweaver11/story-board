@@ -14,7 +14,7 @@ import asyncio
 
 # Called when we need to reload this directory tile
 @ft.component
-def RailFolderView(folder_data: dict, story: Story) -> ft.GestureDetector:
+def RailFolder(folder_data: dict, story: Story) -> ft.GestureDetector:
 
     # Switch between expanded and not in data
     def toggle_expand(e=None):

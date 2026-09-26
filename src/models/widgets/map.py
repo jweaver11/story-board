@@ -330,9 +330,9 @@ class Map(Widget):
                 ),
                 expand=True, text_align=ft.TextAlign.CENTER,
                 content_padding=ft.Padding.all(0),
-                on_blur=save_label, dense=True, border_radius=4,
-                border_color=ft.Colors.TRANSPARENT,
-                focused_border_color=ft.Colors.PRIMARY,
+                on_blur=save_label, dense=True, #border_radius=4,
+                #border_color=ft.Colors.TRANSPARENT,
+                #focused_border_color=ft.Colors.PRIMARY,
                 multiline=True,
             )
 
@@ -1163,7 +1163,7 @@ class Map(Widget):
                 data.get('content'), label=data.get('label'), data=idx, expand=True, on_blur=save_lore_value, capitalization=ft.TextCapitalization.SENTENCES, multiline=True, dense=True,
                 suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_lore_content, mouse_cursor=ft.MouseCursor.CLICK),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
-                border_color=ft.Colors.TRANSPARENT, focused_border_color=ft.Colors.PRIMARY,
+                #border_color=ft.Colors.TRANSPARENT, focused_border_color=ft.Colors.PRIMARY,
             )
         
         # Creates a new history text field control for our history column
@@ -1172,7 +1172,7 @@ class Map(Widget):
                 data.get('content'), label=data.get('label'), data=idx, expand=True, on_blur=save_history_value, capitalization=ft.TextCapitalization.SENTENCES, multiline=True, dense=True,
                 suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_history_content, mouse_cursor=ft.MouseCursor.CLICK),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, 
-                border_color=ft.Colors.TRANSPARENT, focused_border_color=ft.Colors.PRIMARY,
+                #border_color=ft.Colors.TRANSPARENT, focused_border_color=ft.Colors.PRIMARY,
                 label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
             )
         

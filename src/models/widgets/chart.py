@@ -6,7 +6,6 @@ import flet as ft
 from models.views.story import Story
 from models.widget import Widget
 from styles.menu_option_style import MenuOptionStyle
-#from models.app import app
 from utils.safe_string_checker import return_safe_name
 from styles.text_fields import TextField
 import flet_charts as fch
@@ -549,7 +548,8 @@ class Chart(Widget):
                                 label="Max Y Value", value=str(self.data.get('bar_data', {}).get('max_y', 20)), 
                                 input_filter=ft.NumbersOnlyInputFilter(), data="max", on_blur=set_max_y_value,
                                 margin=ft.Margin.only(top=6, left=10, right=10), border_color=ft.Colors.OUTLINE_VARIANT,
-                                border_radius=4, dense=True
+                                #border_radius=4, 
+                                dense=True
                             ),
                             # Adjust Rod width
                             ft.Row([
@@ -727,7 +727,8 @@ class Chart(Widget):
                         width=120
                     ),
                 ], tight=True, spacing=6),
-                border_radius=ft.BorderRadius.all(4), padding=ft.Padding.all(6),
+                border_radius=ft.BorderRadius.all(4), 
+                padding=ft.Padding.all(6),
                 margin=ft.Margin.only(left=10),
             )
 
@@ -938,7 +939,7 @@ class Chart(Widget):
                     value=title, 
                     dense=True, data=idx, expand=True,
                     on_blur=update_node_title,
-                    border=ft.InputBorder.NONE, border_radius=4,
+                    #border=ft.InputBorder.NONE, border_radius=4,
                     text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
                     bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                     suffix=ft.IconButton(       #  Delete button
@@ -950,7 +951,7 @@ class Chart(Widget):
                         disabled=idx < 3
                     )    
                 ),
-                border_radius=4,
+                #border_radius=4,
             )
         
         # Create sidebar column to hold our nodes and data_sets
@@ -1097,7 +1098,7 @@ class Chart(Widget):
                                 data="min_value",
                                 input_filter=ft.NumbersOnlyInputFilter(),
                                 margin=ft.Margin.only(top=6, left=10, right=10), border_color=ft.Colors.OUTLINE_VARIANT,
-                                border_radius=4, dense=True
+                                #border_radius=4, dense=True
                             ),
                             ft.TextField(
                                 value=str(self.data.get('radar_data', {}).get('max_value', 20)),
@@ -1106,7 +1107,8 @@ class Chart(Widget):
                                 input_filter=ft.NumbersOnlyInputFilter(),
                                 data="max_value",
                                 margin=ft.Margin.only(top=6, left=10, right=10), border_color=ft.Colors.OUTLINE_VARIANT,
-                                border_radius=4, dense=True
+                                #border_radius=4, 
+                                dense=True
                             )
                             
                             

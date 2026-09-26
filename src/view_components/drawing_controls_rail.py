@@ -152,7 +152,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
     class ExpansionTile(ft.ExpansionTile):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-            self.border_radius=ft.BorderRadius.all(4)
+            #self.border_radius=ft.BorderRadius.all(4)
             self.tile_padding=ft.Padding.only(left=0, right=0)
             self.shape = ft.RoundedRectangleBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), radius=4)
             self.collapsed_shape = ft.RoundedRectangleBorder(radius=4)
@@ -166,7 +166,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             super().__init__(*args, **kwargs)
             self.dense=True
             self.label_style=ft.TextStyle(color=ft.Colors.PRIMARY, italic=True)
-            self.border_radius=ft.BorderRadius.all(4)
+            #self.border_radius=ft.BorderRadius.all(4)
             #self.content_padding=ft.Padding.only(left=6, right=6, top=4, bottom=4)
             #self.expand=False
             self.multiline=False
@@ -174,8 +174,8 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             if self.input_filter is None:
                 self.input_filter=ft.NumbersOnlyInputFilter()
             self.margin=ft.Margin.only(top=8, left=4, right=4)
-            self.border_color=ft.Colors.OUTLINE_VARIANT
-            self.focused_border_color=ft.Colors.PRIMARY
+            #self.border_color=ft.Colors.OUTLINE_VARIANT
+            #self.focused_border_color=ft.Colors.PRIMARY
 
     class UpDownButtons(ft.Column):
         def __init__(self, up_function=None, down_function=None):

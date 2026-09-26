@@ -39,7 +39,6 @@ class Story:
 
     folders: dict[str, dict] = field(default_factory=dict) #{'path': {'name": '', 'color': '', 'is_expanded': True}}
     widgets: dict[str, dataclass] = field(default_factory=dict)
-
     
     #mouse_position
         
@@ -49,9 +48,13 @@ class Story:
         #expand=True, visible=False, blur=5, left=0, right=0, top=0, bottom=0
     #)
 
-    def __post__init__(self):
+
+    def __post_init__(self):
         self.load_widgets() 
-        print(self)
+        self.notify()
+        print("Loaded widgets:")
+        print([widget.title for widget in self.widgets.values()])
+
         
     
     # Called whenever there are changes in our data that need to be saved
@@ -272,6 +275,9 @@ class Story:
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
 
+        print("Load widgets called")
+
+
         # If we are being re-loaded after settings or another story, clear our content so we can load it fresh
         self.widgets.clear()
         
@@ -296,113 +302,47 @@ class Story:
                         # Read the JSON file and set our data
                         with open(file_path, "r", encoding='utf-8') as f:
                             widget_data = json.load(f)
+                            print("widget_data", widget_data)
                             if not widget_data:
                                 continue
                         
                         # Extract the title, directory, and unique widget id
                         tag = widget_data.get("tag", "")
-                        dir_path = widget_data.get("directory_path", "")
                         id = widget_data.get("id", "")
-
+                        
                         widget = None
 
                         match tag:
                             case "manuscript": 
-                                widget = Manuscript(     # Create the object in its dict
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Manuscript(**widget_data)
                             case "canvas":
-                                widget = Canvas(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Canvas(**widget_data)
                             case "canvas_board":
-                                widget = CanvasBoard(
-                                    widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = CanvasBoard(**widget_data)
                             case "note":
-                                widget = Note(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Note(**widget_data)
                             case "character":
-                                widget = Character(
-                                    widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Character(**widget_data)
                             case "plotline":
-                                widget = Plotline(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Plotline(**widget_data)
                             case "map":
-                                widget = Map(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Map(**widget_data)
                             case "world":
-                                widget = World(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = World(**widget_data)
                             case "character_relationship_map":
-                                widget = CharacterRelationshipMap(
-                                    widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = CharacterRelationshipMap(**widget_data)
                             case "item":
-                                widget = Item(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Item(**widget_data)
                             case "chart":
-                                widget = Chart(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Chart(**widget_data)
                             case "comic_preview":
-                                widget = ComicPreview(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
-
+                                widget = ComicPreview(**widget_data)
                             case "plot_chart":
-                                widget = PlotChart(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = PlotChart(**widget_data)
                             case _:
                                 print("Widget tag not valid Tag: ", tag)
 
-                        if widget is not None and id != "":
+                        if widget:
                             self.widgets[id] = widget
                             
                     # Handle errors if the path is wrong
@@ -845,11 +785,18 @@ class Story:
 
         widget = None
 
+        widget_data = {
+            'id': str(uuid.uuid4()),
+            'title': title,
+            'tag': tag,
+            'directory_path': directory_path
+        }
+
         match tag:
             case "manuscript":
                 widget = Manuscript(title, directory_path, self)
             case "note":
-                widget = Note(title, directory_path, self)
+                widget = Note(**widget_data)
             case "canvas":
                 data = {'canvas_data': canvas_data} if canvas_data is not None else None
                 widget = Canvas(title,  directory_path, self, data, True)

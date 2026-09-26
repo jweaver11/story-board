@@ -388,7 +388,7 @@ class Character(Widget):
                 self.data.get('about', ""), on_blur=lambda e: self.update_data(**{"about": e.control.value}), expand=True, 
                 dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
                 border_color=ft.Colors.OUTLINE_VARIANT, margin=ft.Margin.only(right=10),
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4,
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), #border_radius=4,
                 content_padding=ft.Padding.all(6), min_lines=3, cursor_color=ft.Colors.PRIMARY
             )
             
@@ -396,7 +396,7 @@ class Character(Widget):
 
         # Adjust our description text field to match the theme outside of a sidebar
         self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-        self.description_tf.focused_border_color = ft.Colors.PRIMARY
+        #self.description_tf.focused_border_color = ft.Colors.PRIMARY
         
         # Header that holds our image, edit mode button, and about section
         header = ft.Row([
