@@ -7,7 +7,6 @@ import os
 import json
 from models.views.story import Story
 from models.widgets.plotline import Plotline
-from styles.tree_view_folder import RailFolder
 from utils.new_canvas import new_canvas_dlg
 import asyncio
 #from models.app import app

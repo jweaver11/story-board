@@ -2,14 +2,13 @@
 
 import flet as ft
 from models.widget import Widget
-from styled_controls.menu_option_style import MenuOptionStyle
-from styled_controls.tree_view_folder import RailFolder
-from styled_controls.colors import colors
-from styled_controls.text_fields import TextField
+from styles.menu_option_style import MenuOptionStyle
+from styles.colors import colors
+from styles.text_fields import TextField
 import os
 import asyncio
 import math
-from styled_controls.snack_bar import SnackBar
+from styles.snack_bar import SnackBar
 
 # Class for items within a tree view on the rail
 @ft.control
@@ -18,7 +17,7 @@ class RailFile(ft.GestureDetector):
     def __init__(
         self, 
         widget: Widget, 
-        father: RailFolder = None,
+        father=None,
     ):
         
         

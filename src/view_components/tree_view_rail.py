@@ -488,15 +488,10 @@ def TreeViewRail(story) -> ft.Control:
         ],
     ) 
 
-
-    # Load our content directory data into the rail
-    #load_directory_data(
-        #story=story,
-        #directory=story.data.get('content_directory_path'),
-        #rail=self,
-        #column=content,
-    #)
-
+    # Load the diretory of the story
+    content.controls.extend(load_directory_data(story, story.content_directory_path))
+    #ctrls = load_directory_data(story, story.content_directory_path)
+    #print(ctrls)
     
     # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space
     content.controls.append(ft.Container(expand=True))

@@ -37,9 +37,10 @@ class Story:
 
     selected_tab_index: int = 0     # Index of the selected tab in the story's UI (old: workspace_selected_index)
 
-    
     folders: dict[str, dict] = field(default_factory=dict) #{'path': {'name": '', 'color': '', 'is_expanded': True}}
     widgets: dict[str, dataclass] = field(default_factory=dict)
+
+    
     #mouse_position
         
     # Block the app from any interactions during rebuilds
@@ -103,6 +104,7 @@ class Story:
             os.makedirs(folder_path, exist_ok=True) 
 
             self.folders[folder_path] = {
+                'full_path': folder_path,
                 'name': name,
                 'is_expanded': True,
                 'color': "primary"

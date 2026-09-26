@@ -8,33 +8,32 @@ import flet as ft
 import os
 import json
 from models.views.story import Story
-from styles.tree_view_folder import RailFolder
+from styles.tree_view_folder import RailFolderView
 from styles.tree_view_file import RailFile
 import math
 
+# Helper function to normalize paths for consistent comparison
+def _canon_path(p: str) -> str:
+    return os.path.normcase(os.path.normpath(p))
 
-def load_directory_data(
-    story: Story,                                         # Story reference for any story related data
-    directory: str,                                       # The directory to load data from
-    rail: ft.Control,                                     # The rail this tree view is in
-    folder: RailFolder = None,             # Optional parent expansion tile for when recursively called
-    column: ft.Column = None,                             # Optional column to add to if this is the top most call with no parent expansion tile
-) -> ft.Control:
-    
-    def _canon_path(p: str) -> str:
-        return os.path.normcase(os.path.normpath(p))
-    
+
+# Load all data in a directory and add it to expansion tiles or to rail (column) for uniform look
+def load_directory_data(story: Story, directory: str) -> list[ft.Control]:
 
     try: 
 
         # Gives us a list of all files and folders in our current directory
         entrys = os.listdir(directory)
 
-        # Keep track of directories vs files so we can add them in the order we want
-        directories = []
-        files = []  
+        
+        directories = []    # List to store directory names separately
+        files = []      # List to store file names separately
 
-        # Goes through all the folders and files
+        # Lists to store the controls for directories and files separately
+        directory_controls = []   
+        file_controls = []
+
+        # Goes through all the folders and files in the directory, create a full path for them, and categorize them into directories and files lists
         for entry in entrys:
             # Set a full path they need for logic
             full_path =  os.path.join(directory, entry) 
@@ -47,47 +46,34 @@ def load_directory_data(
 
         # Go through our directories first
         for directory_name in directories:
-
-            # Set the path and give us the capitalized name
-            full_path = os.path.join(directory, directory_name)
-            capital_dir_path = directory_name.capitalize()
             
-            # Build a normalized map of folder metadata once per call in order to get the call
-            folders_meta = { _canon_path(k): v for k, v in story.data.get('folders', {}).items() }
 
-            # Set our color and expanded state
-            color = folders_meta.get(_canon_path(full_path), {}).get('color', "primary")
-            is_expanded = folders_meta.get(_canon_path(full_path), {}).get('is_expanded', False)    
+            # Grab and normalize the full path
+            full_path = os.path.join(directory, directory_name)     
+            #full_path = _canon_path(full_path)
+
+            # Grab the data from the story
+            
+            folder_data = story.folders[full_path]
+            
+            if not folder_data:
+                print(f"No folder data found for {full_path}")
+                continue
 
             # Create the new folder dropdown
-            new_folder = RailFolder(
-                full_path=full_path,
-                title=capital_dir_path,
-                story=story,
-                color=color, rail=rail,
-                is_expanded=is_expanded,
-                father=folder,
-            )
+            folder_view = RailFolderView(folder_data, story)
 
             # Since its a folder, load all its content recursively
-            load_directory_data(
-                story=story,                                            
-                directory=full_path,                                      
-                folder=new_folder,                     
-                rail=rail,
-            )
-
+            load_directory_data(story, full_path)
 
             # After loading the folders content, add it to either a parent folder (if it has one) or the column for the rail
-            if folder is not None:
-                folder.expansion_tile.controls.append(new_folder)
-            else:
-                column.controls.append(new_folder)
+            directory_controls.append(folder_view)
+
 
         # Now go through our files
         for file_name in files:
+            break
             widget = None
-
             try:
                 # Load the file data to see if it's valid
                 with open(os.path.join(directory, file_name), 'r', encoding='utf-8') as f:
@@ -101,45 +87,20 @@ def load_directory_data(
                 print(f"Error loading file {file_name} in directory {directory}: {e}")
                 continue
             
-            
-            if widget is not None:
-
-                # Create the file item
-                file = RailFile(
-                    widget,
-                    father=folder,
-                )       
-
-
-                # Add them to parent expansion tile if one exists, otherwise just add it to the column
-                if folder is not None:
-                    folder.expansion_tile.controls.append(file)
-                else: 
-                    column.controls.append(file)
+            # Add the file control to the controls list
+            if widget:    
+                file_controls.append(RailFile(widget, story))
                 
-
             else:
-                print("Could not find widget")
+                print("Could not find widget inside load_directory_data")
                 continue
 
-        # Sort files alphabetically
-        if folder is not None:
-            sorted_files = []
-            for control in folder.expansion_tile.controls:
-                if isinstance(control, RailFile):
-                    sorted_files.append(control)
-            sorted_files.sort(key=lambda x: x.widget.data.get('title', '').lower())
-            folder.expansion_tile.controls = [control for control in folder.expansion_tile.controls if not isinstance(control, RailFile)] + sorted_files
-        else:
-            sorted_files = []
-            for control in column.controls:
-                if isinstance(control, RailFile):
-                    sorted_files.append(control)
-            sorted_files.sort(key=lambda x: x.widget.data.get('title', '').lower())
-            column.controls = [control for control in column.controls if not isinstance(control, RailFile)] + sorted_files
+        # Sort Folders and files alphabetically
+        #directory_controls.sort(key=lambda x: x.folder_data['name'].lower())
+        #file_controls.sort(key=lambda x: x.widget.title.lower())
 
-        # Return the parent expansion tile or column depending on what was provided
-        return folder if folder is not None else column
+        # Retrun directory/folder controls on top, followed by file controls
+        return directory_controls + file_controls
     
     # Handle errors
     except Exception as e:
