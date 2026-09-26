@@ -38,8 +38,8 @@ class TextSettings:
             os.makedirs(APP_DATA_PATH, exist_ok=True)
 
             text_data = {
-                story_field.name: getattr(self, story_field.name)
-                for story_field in fields(self)
+                text_field.name: getattr(self, text_field.name)
+                for text_field in fields(self)
             }
 
             # Save the data to the file (creates file if doesnt exist)

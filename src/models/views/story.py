@@ -822,7 +822,7 @@ class Story:
         self.page.show_dialog(dlg)
         
     # Called to create a new widget based on tag (document, note, character, etc)
-    async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict=None, chart_type: str="bar", update: bool=True):
+    async def create_widget(self, title: str, tag: str, directory_path: str=None, chart_type: str="bar", canvas_data: dict=None, update: bool=True):
         ''' Creates our new widget based on the tag passed in and directory_path passed in'''
         from models.widgets.manuscript import Manuscript
         from models.widgets.note import Note
@@ -838,60 +838,53 @@ class Story:
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
 
-        return
-
         
-        if directory_path is None:
-            directory_path = self.data.get('content_directory_path',  '')
+        directory_path = directory_path or self.content_directory_path
 
         widget = None
 
         match tag:
             case "manuscript":
-                widget = Manuscript(title, directory_path, self, data, True)
+                widget = Manuscript(title, directory_path, self)
             case "note":
-                widget = Note(title, directory_path, self, data, True)
+                widget = Note(title, directory_path, self)
             case "canvas":
-                d = {'canvas_data': data} if data is not None else None
-                widget = Canvas(title,  directory_path, self, d, True)
+                data = {'canvas_data': canvas_data} if canvas_data is not None else None
+                widget = Canvas(title,  directory_path, self, data, True)
             case "character":
-                if app.settings.data.get('active_character_template', "None") != "None":
-                    data = app.settings.data['character_templates'].get(app.settings.data['active_character_template'], {}).copy()
-                    data = {'character_data': data}
-                widget = Character(title, directory_path, self, data, True)
+                
+                widget = Character(title, directory_path, self)
             case "plotline":
-                widget = Plotline(title, directory_path, self, data, True)
+                widget = Plotline(title, directory_path, self)
             case "map":
-                d = {'canvas_data': data} if data is not None else None
-                widget = Map(title, directory_path, self, data, True)
+                widget = Map(title, directory_path, self, data)
             case "character_relationship_map":
-                widget = CharacterRelationshipMap(title, directory_path, self, data, True)
+                widget = CharacterRelationshipMap(title, directory_path, self)
             case "world":
-                if app.settings.data.get('active_world_template', "None") != "None":
-                    data = app.settings.data['world_templates'].get(app.settings.data['active_world_template'], {}).copy()
-                    data = {'world_data': data}
-                widget = World(title, directory_path, self, data, True)
+                
+                widget = World(title, directory_path, self)
             case "canvas_board":
-                widget = CanvasBoard(title, directory_path, self, data, True)   
+                widget = CanvasBoard(title, directory_path, self)   
             case "item":
-                widget = Item(title, directory_path, self, data, True)  
+                widget = Item(title, directory_path, self)  
             case "chart":
-                widget = Chart(title, directory_path, self, data, True, type=chart_type)
+                widget = Chart(title, directory_path, self, type=chart_type)
             case "comic_preview":
-                widget = ComicPreview(title, directory_path, self, data, True)
+                widget = ComicPreview(title, directory_path, self)
             case "plot_chart":
-                widget = PlotChart(title, directory_path, self, data, True)
+                widget = PlotChart(title, directory_path, self)
             case _:
-                self.page.show_dialog(SnackBar(f"Error creating widget {title}: Invalid tag {tag}"))
+                print(f"Error creating widget {title}: Invalid tag {tag}")
 
         # Force a file write for newly created widgets
-        if widget is not None:
+        if widget:
             widget.needs_file_write = True
             await widget.save_file()
         
         # Save our widget to our widgets list
-        self.widgets[widget.data['id']] = widget        
-
+        self.widgets[widget.id] = widget        
+        print("created new widget: ", widget.title)
+        return
         if update:
             # Finish tasks creating widget to make sure the file has enough time to save
             await self.workspace.add_widget_to_workspace(widget)  # Add the new widget to the workspace and select it

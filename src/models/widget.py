@@ -17,10 +17,12 @@ import flet.canvas as cv
 import asyncio
 import uuid
 from styles.text_fields import TextField, SidebarTitleTextField
+from dataclasses import fields, asdict, dataclass
 
 
 
-@ft.control
+@ft.observable
+@dataclass
 class Widget(ft.Container):
     
     # Constructor. All widgets require a title,  page reference, directory path, and story reference
@@ -105,12 +107,18 @@ class Widget(ft.Container):
     # Writes our current data to the correct json file if we are dirty
     async def save_file(self):
         if self.needs_file_write:
-            print("Saving widget to file: ", self.data.get('title', 'Untitled'))
+            print("Saving widget to file: ", self.title)
 
-            file_path = os.path.join(self.data.get('directory_path'), f"{self.data.get('id')}.json")
+            file_path = os.path.join(self.directory_path, f"{self.id}.json")
 
             try:
-                os.makedirs(self.data.get('directory_path'), exist_ok=True)     # Make sure directory exists still
+                os.makedirs(self.directory_path, exist_ok=True)     # Make sure directory exists still
+
+                widget_data = {
+                    widget_field.name: getattr(self, widget_field.name)
+                    for widget_field in fields(self)
+                    if widget_field.name != "widgets"
+                }
                 
                 # Save our json data to the file
                 with open(file_path, "w", encoding='utf-8') as f:   

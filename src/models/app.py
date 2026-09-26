@@ -66,13 +66,13 @@ def StoryRoute() -> ft.View:
     app = ft.use_context(AppContext)
     story_id = current_route.split("/")[-1]  
 
-    print("Loading story route")
+    #print("Loading story route")
 
     # See where the story exists in the apps dictionary, and return its view
     if story_id in app.stories:
         story = app.stories[story_id]
 
-        #ft.context.page.overlay = []
+        #ft.context.page.overlay = []   # TODO: Overlay menu stuff
 
         # Returns our story view with needed contexts
         return StoryView(story)

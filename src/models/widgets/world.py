@@ -48,6 +48,9 @@ class World(Widget):
                 # World data
                 #'world_data': app.settings.data.get('world_templates', {}).get(app.settings.data.get('active_world_template', ""), default_world_template_data_dict()) 
                 #if data is None or 'world_data' not in data else data['world_data'],
+                #if app.settings.data.get('active_world_template', "None") != "None":
+                                    #data = app.settings.data['world_templates'].get(app.settings.data['active_world_template'], {}).copy()
+                                   # data = {'world_data': data}
             }
         )
  

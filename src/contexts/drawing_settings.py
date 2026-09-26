@@ -30,8 +30,8 @@ class DrawingSettings:
             
             os.makedirs(APP_DATA_PATH, exist_ok=True)
             drawing_data = {
-                story_field.name: getattr(self, story_field.name)
-                for story_field in fields(self)
+                drawing_field.name: getattr(self, drawing_field.name)
+                for drawing_field in fields(self)
             }
             # Save the data to the file (creates file if doesnt exist)
             with open(DRAWING_SETTINGS_FILE_PATH, "w", encoding='utf-8') as f:   

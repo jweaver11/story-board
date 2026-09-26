@@ -48,6 +48,9 @@ class Character(Widget):
                 #if data is None or 'character_data' not in data else data['character_data'],
 
                 'charts': {}
+                #if app.settings.data.get('active_character_template', "None") != "None":
+                                    #data = app.settings.data['character_templates'].get(app.settings.data['active_character_template'], {}).copy()
+                                    #data = {'character_data': data}
             })         
 
     # Called after any changes happen to the data that need to be reflected in the UI
