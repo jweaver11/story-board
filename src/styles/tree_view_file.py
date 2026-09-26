@@ -164,7 +164,10 @@ def RailFile(widget: dataclass, story):
         #border_radius=4, 
         dense=True, capitalization=ft.TextCapitalization.SENTENCES,
         #border_color=ft.Colors.TRANSPARENT,
-        #focused_border_color=ft.Colors.PRIMARY,
+        border={
+            ft.ControlState.FOCUSED: ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.PRIMARY)),
+        }
+        #focused_border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.PRIMARY))
     )
 
     return ft.GestureDetector(
@@ -172,7 +175,6 @@ def RailFile(widget: dataclass, story):
             group="widgets",
             data=widget.id,
             content_feedback=ft.TextButton(ft.Row([ft.Icon(icon, widget.color, expand=True), ft.Text(widget.title, weight=ft.FontWeight.W_500, expand=True, overflow=ft.TextOverflow.ELLIPSIS)], expand=True)),
-            #on_drag_start=lambda _: self.widget.story.workspace.show_pin_drag_targets(),
             content=ft.Container(
                 ft.Row([
                     leading_control, 
@@ -184,7 +186,6 @@ def RailFile(widget: dataclass, story):
                 border_radius=4,
                 on_click=widget.show_widget,
                 padding=ft.Padding.only(top=2, bottom=2),
-                
             ),
         ),
         on_enter=lambda: set_highlighting(True),

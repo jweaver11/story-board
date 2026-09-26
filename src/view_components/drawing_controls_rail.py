@@ -8,7 +8,8 @@ import math
 import flet.canvas as cv
 from utils.safe_string_checker import return_safe_name
 from models.views.story import Story
-from contexts.contexts import PaintContext, DrawingContext, TextContext
+from contexts.contexts import PaintContext, DrawingContext, TextContext, AppSettingsContext
+from dataclasses import dataclass
 import dataclasses
 
 tool_icons = {
@@ -40,46 +41,46 @@ NEGATIVE_NUMBER_FILTER = ft.InputFilter(allow=True, regex_string=r"^-?[0-9]*$")
 
 # Rail container on desktop to hold the drawing controls
 @ft.component
-def DrawingControlsRail(settings, story: Story) -> ft.Control:
+def DrawingControlsRail(app_settings, story: Story) -> ft.Control:
     
     return ft.Container(
-        ft.Column(DrawingControls(settings, story)),
+        ft.Column(DrawingControls(app_settings, story)),
         alignment=ft.Alignment.CENTER,  # Aligns content to the 
         padding=ft.Padding.only(bottom=10, right=6, left=6, top=10),
         #animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
         bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-        #width=78 if settings.data.get('story', {}).get('show_canvas_rail', False) == True else 0,
-        #visible=settings.data.get('story', {}).get('show_canvas_rail', False) == True and not ft.context.page.platform.is_mobile()
-        #visible=settings.show_canvas_rail == True and not ft.context.page.platform.is_mobile()
+        #width=78 if app_settings.data.get('story', {}).get('show_canvas_rail', False) == True else 0,
+        #visible=app_settings.data.get('story', {}).get('show_canvas_rail', False) == True and not ft.context.page.platform.is_mobile()
+        #visible=app_settings.show_canvas_rail == True and not ft.context.page.platform.is_mobile()
     )
 
 
 # Returns the buttons for our drawing controls so it can be added to a column or row
 @ft.component
-def DrawingControls(settings, story: Story) -> list[ft.control]:
+def DrawingControls(story: Story) -> list[ft.control]:
 
     page = ft.context.page
 
     # Set our contexts
-    #settings = ft.use_context(Story)
-    paint_settings = ft.use_context(PaintContext)
-    drawing_settings = ft.use_context(DrawingContext)
-    text_settings = ft.use_context(TextContext)
+    app_settings = ft.use_context(AppSettingsContext)
+    paint_app_settings = ft.use_context(PaintContext)
+    drawing_app_settings = ft.use_context(DrawingContext)
+    text_app_settings = ft.use_context(TextContext)
 
 
 
     @ft.component
     def ColorPickerView(color: str):
 
-        
-
-        
 
         return ft.Container()
 
+    
+    
+
     @ft.component
-    def ColorSelector(settings: dataclasses.dataclass):
+    def ColorSelector(app_settings: dataclass) -> ft.SubmenuButton:
 
         # Set the color pickers color upon change, so that saving it goes to right spot
         def set_color(e: ft.Event[ColorPicker]):
@@ -88,7 +89,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         def save_color(_):
             if not color_ref.current:
                 return
-            settings.color = color_ref.current
+            app_settings.color = color_ref.current
             if color_ref.current not in color_history:
                 print("Color_ref: ", color_ref.current)
                 set_color_history(color_history + [color_ref.current])
@@ -105,15 +106,15 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         # Rebuilt every render (not use_state) so color_history stays current;
         # key= keeps the underlying widget patched in place instead of remounted.
         cp = ColorPicker(
-            key=f"{settings}.color_picker",
-            color=settings.color,
+            key=f"{app_settings}.color_picker",
+            color=app_settings.color,
             on_color_change=set_color,
             picker_area_border_radius=ft.BorderRadius.all(4),
             color_history=color_history
         )
         
         return ft.SubmenuButton(
-            ft.Icon(ft.Icons.CIRCLE, settings.color), 
+            ft.Icon(ft.Icons.CIRCLE, app_settings.color), 
             tooltip="The color of your brush strokes.",
             on_close=save_color,
             width=40, height=40,
@@ -140,6 +141,30 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                 padding=ft.Padding.all(0)
             ),
         )
+
+    @ft.component
+    def SavedColorsSelector(on_close: callable):
+        ''' Returns a submenubutton for selecting our saved colors, and saving new ones '''
+
+        
+
+        return ft.SubmenuButton(
+            controls=get_color_options(color_picker, save_color),
+            content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
+            style=ft.ButtonStyle(
+                #mouse_cursor=ft.MouseCursor.CLICK,  
+                shape=ft.RoundedRectangleBorder(radius=0),
+                padding=ft.Padding.all(0),
+            ),
+            menu_style=ft.MenuStyle(
+                alignment=ft.Alignment.TOP_RIGHT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER, 
+                shape=ft.RoundedRectangleBorder(radius=4),
+                padding=ft.Padding.all(0)
+            ),
+            expand=True,
+            width=24,
+        )  
     
     
     class Switch(ft.Switch):
@@ -214,36 +239,36 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
     # Sets current control mode to drawing
     def set_draw_mode(e=None):
         
-        drawing_settings.control_mode = "draw"
-        if paint_settings.blend_mode == "clear":
-            paint_settings.blend_mode = "src_over"
+        drawing_app_settings.control_mode = "draw"
+        if paint_app_settings.blend_mode == "clear":
+            paint_app_settings.blend_mode = "src_over"
    
-    # Build a small preview of current or passed in brush settings to show in the brush selector
-    def build_preview_brush(brush_settings: dict=None) -> ft.Control:
-        nonlocal paint_settings
+    # Build a small preview of current or passed in brush app_settings to show in the brush selector
+    def build_preview_brush(brush_app_settings: dict=None) -> ft.Control:
+        nonlocal paint_app_settings
 
-        if brush_settings is None:
-            brush_settings = dataclasses.replace(paint_settings)
+        if brush_app_settings is None:
+            brush_app_settings = dataclasses.replace(paint_app_settings)
         else:
-            brush_settings = dataclasses.replace(brush_settings)
+            brush_app_settings = dataclasses.replace(brush_app_settings)
 
         # Create our preview canvas. Paint like w=100, and h=30. Extra height is justp adding
         preview_canvas = cv.Canvas(width=120, height=50)
 
         # Set max values of paint so that it fits normally on our small preview
-        if brush_settings.stroke_width > 6:
-            brush_settings.stroke_width = 6
-        if brush_settings.blur_image > 10:
-            brush_settings.blur_image = 10
-        brush_settings.blend_mode = None     # Turn off blend mode
+        if brush_app_settings.stroke_width > 6:
+            brush_app_settings.stroke_width = 6
+        if brush_app_settings.blur_image > 10:
+            brush_app_settings.blur_image = 10
+        brush_app_settings.blend_mode = None     # Turn off blend mode
 
-        # Paint the stroke with safe paint settings, leaving 10px padding on all sides
+        # Paint the stroke with safe paint app_settings, leaving 10px padding on all sides
         preview_canvas.shapes = [
             cv.Path([
                 cv.Path.MoveTo(10, 40),     # Bottom Left
                 cv.Path.CubicTo(10, 40, 35, 20, 60, 25),    # Bottom left -> Middle
                 cv.Path.CubicTo(60, 25, 80, 30, 110, 10)    # Middle -> Top Right
-            ], brush_settings)
+            ], brush_app_settings)
         ]
         return preview_canvas   # Return the canvas
 
@@ -273,38 +298,38 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         )
         return text_control
     
-    # Sets current brush settings using passed in brush settings
-    def set_active_brush(brush_settings: dict, name: str):
-        drawing_settings.brush_name = name
+    # Sets current brush app_settings using passed in brush app_settings
+    def set_active_brush(brush_app_settings: dict, name: str):
+        drawing_app_settings.brush_name = name
 
-        #TODO: paint_settings = brush_settings ??
+        #TODO: paint_app_settings = brush_app_settings ??
         
         set_draw_mode()
         #self.update()
         
     
-    # Sets current text settings using passed in text settings
-    def set_active_text_setting(new_text_settings: dict, name: str):
+    # Sets current text app_settings using passed in text app_settings
+    def set_active_text_setting(new_text_app_settings: dict, name: str):
         
-        #TODO: text_settings = new_text_settings
+        #TODO: text_app_settings = new_text_app_settings
 
        
         set_text_mode()
        
 
-    # Called to save our active brush settings as a custom brush we can load later (Excludes color and opacity)
+    # Called to save our active brush app_settings as a custom brush we can load later (Excludes color and opacity)
     def save_custom_brush_clicked(e=None):
         ''' Shows our existing brush options and allows us to override or save as a new brush '''
 
         # Saves the current name and closes the dialog
         async def _save_and_close(e=None): 
 
-            nonlocal name, paint_settings
+            nonlocal name, paint_app_settings
             safe_name = return_safe_name(name)
 
-            # Save current brush settings as a new custom brush
-            settings.data['drawing_settings']['saved_brushes'][safe_name] = paint_settings.copy()
-            settings.update_data(**{"drawing_settings": {"saved_brushes": settings.data['drawing_settings']['saved_brushes']}})
+            # Save current brush app_settings as a new custom brush
+            app_settings.data['drawing_app_settings']['saved_brushes'][safe_name] = paint_app_settings.copy()
+            app_settings.update_data(**{"drawing_app_settings": {"saved_brushes": app_settings.data['drawing_app_settings']['saved_brushes']}})
 
             page.pop_dialog()
             brush_selector.controls = get_brush_options()   # Update the brush selector with the new brush
@@ -317,9 +342,9 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             name = e.control.data
 
             # Remove it from data
-            if name in settings.data.get('drawing_settings', {}).get('saved_brushes', {}):
-                del settings.data['drawing_settings']['saved_brushes'][name]
-                settings.update_data(**{"drawing_settings": {"saved_brushes": settings.data['drawing_settings']['saved_brushes']}})
+            if name in app_settings.data.get('drawing_app_settings', {}).get('saved_brushes', {}):
+                del app_settings.data['drawing_app_settings']['saved_brushes'][name]
+                app_settings.update_data(**{"drawing_app_settings": {"saved_brushes": app_settings.data['drawing_app_settings']['saved_brushes']}})
 
             # Remove the control from the dialog
             dlg.content.controls = [ctrl for ctrl in content.controls if ctrl.data != name]   
@@ -408,7 +433,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             ]
         )
 
-        for name, existing_brush in settings.data.get('drawing_settings', {}).get('saved_brushes', {}).items():
+        for name, existing_brush in app_settings.data.get('drawing_app_settings', {}).get('saved_brushes', {}).items():
             content.controls.append(
                 ft.Container(
                     ft.Row([
@@ -427,9 +452,9 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         page.show_dialog(dlg)
 
     def update_tool_icon():
-        nonlocal drawing_settings
-        in_tool_mode = drawing_settings.control_mode
-        match drawing_settings.tool_name:
+        nonlocal drawing_app_settings
+        in_tool_mode = drawing_app_settings.control_mode
+        match drawing_app_settings.tool_name:
             case "erase": 
                 return ft.Icon(ft.Icons.AUTO_FIX_NORMAL if in_tool_mode else ft.Icons.AUTO_FIX_NORMAL_OUTLINED, ft.Colors.PRIMARY)
             case "line":
@@ -453,10 +478,10 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
     # Sets current control mode to tool
     def set_tool_mode(e: ft.Event[ft.IconButton]):
-        nonlocal drawing_settings, paint_settings, brush_selector, tool_selector
-        drawing_settings['current_control_mode'] = "tool"
-        drawing_settings['current_tool_name'] = e.control.data
-        settings.update_data(**{'drawing_settings': drawing_settings})
+        nonlocal drawing_app_settings, paint_app_settings, brush_selector, tool_selector
+        drawing_app_settings['current_control_mode'] = "tool"
+        drawing_app_settings['current_tool_name'] = e.control.data
+        app_settings.update_data(**{'drawing_app_settings': drawing_app_settings})
         
         reset_button_bgcolors()
         reset_tool_icons()
@@ -473,7 +498,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         set_draw_mode_button.bgcolor = None
         brush_selector.style.bgcolor = None
         set_text_mode_button.bgcolor = None
-        text_settings_button.style.bgcolor = None
+        text_app_settings_button.style.bgcolor = None
 
     # Set icons to outlined values
     def reset_tool_icons():
@@ -489,17 +514,17 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
 
     def set_text_mode(e=None):
-        nonlocal drawing_settings, paint_settings, brush_selector, set_tool_mode_button
-        drawing_settings['current_control_mode'] = "text"
-        settings.update_data(**{'drawing_settings': drawing_settings})
+        nonlocal drawing_app_settings, paint_app_settings, brush_selector, set_tool_mode_button
+        drawing_app_settings['current_control_mode'] = "text"
+        app_settings.update_data(**{'drawing_app_settings': drawing_app_settings})
         set_text_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-        text_settings_button.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+        text_app_settings_button.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
         
 
         reset_button_bgcolors()
         reset_tool_icons()
 
-        text_settings_button.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+        text_app_settings_button.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
         set_text_mode_button.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
         set_text_mode_button.icon = tool_icons.get('text')
 
@@ -617,10 +642,10 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
     # Sets the active tool and updates the tool selector icon and brush preview
     async def set_active_tool(e: ft.Event[ft.MenuItemButton]):
-        nonlocal drawing_settings, paint_settings
+        nonlocal drawing_app_settings, paint_app_settings
         tool_name = e.control.data
-        drawing_settings.update({"current_tool_name": tool_name})
-        settings.update_data(**{"drawing_settings": drawing_settings})
+        drawing_app_settings.update({"current_tool_name": tool_name})
+        app_settings.update_data(**{"drawing_app_settings": drawing_app_settings})
         set_tool_mode(e.control)
         #.update()
 
@@ -628,22 +653,22 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
     # Add fill or not to our style based on teh switch state
     def update_paint_fill(e: ft.Event[ft.Switch]):
-        nonlocal paint_settings
+        nonlocal paint_app_settings
         is_fill = e.control.value
         if is_fill:
-            paint_settings.update({"style": paint_settings['style'] + "_fill"})
+            paint_app_settings.update({"style": paint_app_settings['style'] + "_fill"})
         else:
-            paint_settings.update({"style": paint_settings['style'].replace("_fill", "")})
-        settings.update_data(**{"paint_settings": paint_settings})
+            paint_app_settings.update({"style": paint_app_settings['style'].replace("_fill", "")})
+        app_settings.update_data(**{"paint_app_settings": paint_app_settings})
         
         brush_preview.content = build_preview_brush()
         #.update()
 
     # Called when changing paint anti-aliasing
     def update_paint_anti_alias(e: ft.Event[ft.Switch]):
-        nonlocal paint_settings
-        paint_settings.update({"anti_alias": e.control.value})
-        settings.update_data(**{"paint_settings": paint_settings})
+        nonlocal paint_app_settings
+        paint_app_settings.update({"anti_alias": e.control.value})
+        app_settings.update_data(**{"paint_app_settings": paint_app_settings})
         
         brush_preview.content = build_preview_brush()
         #.update()
@@ -651,38 +676,38 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
     # Updates whether we'll use path smoothing or not
     def update_paint_brush_smoothing(e: ft.Event[ft.Switch]):
-        nonlocal drawing_settings
-        drawing_settings.update(**{"use_brush_smoothing": e.control.value})
-        settings.update_data(**{"drawing_settings": drawing_settings})
+        nonlocal drawing_app_settings
+        drawing_app_settings.update(**{"use_brush_smoothing": e.control.value})
+        app_settings.update_data(**{"drawing_app_settings": drawing_app_settings})
 
     # Updates the strength of the smooth stroke effect
     def update_paint_stroke_smoothing_strength(e: ft.Event[ft.Slider]):
-        nonlocal drawing_settings
-        drawing_settings.update(**{"stroke_smoothing_strength": e.control.value})
-        settings.update_data(**{"drawing_settings": drawing_settings})
+        nonlocal drawing_app_settings
+        drawing_app_settings.update(**{"stroke_smoothing_strength": e.control.value})
+        app_settings.update_data(**{"drawing_app_settings": drawing_app_settings})
 
-    # Returns the correct icon for the current stroke cap setting based on current paint settings
+    # Returns the correct icon for the current stroke cap setting based on current paint app_settings
     def get_stroke_cap_icon() -> ft.Icon:
-        nonlocal paint_settings
-        stroke_cap = paint_settings.stroke_cap
+        nonlocal paint_app_settings
+        stroke_cap = paint_app_settings.stroke_cap
         if stroke_cap == 'round': return ft.Icon(ft.Icons.CIRCLE, ft.Colors.PRIMARY)
         elif stroke_cap == 'square':return ft.Icon(ft.Icons.SQUARE, ft.Colors.PRIMARY)
         else: return ft.Icon(ft.Icons.SQUARE_ROUNDED, ft.Colors.PRIMARY)
 
     # Updates the stroke cap of the current paint
     def update_paint_stroke_cap(e: ft.Event[ft.RadioGroup]):
-        nonlocal paint_settings
+        nonlocal paint_app_settings
         new_stroke_cap = e.control.value.lower()
-        paint_settings.stroke_cap = new_stroke_cap
-        settings.update_data(**{"paint_settings": {"stroke_cap": new_stroke_cap}})
+        paint_app_settings.stroke_cap = new_stroke_cap
+        app_settings.update_data(**{"paint_app_settings": {"stroke_cap": new_stroke_cap}})
         e.control.content.leading = get_stroke_cap_icon()
         brush_preview.content = build_preview_brush()
         #.update()
 
-    # Returns the correct icon for the current stroke join setting based on current paint settings
+    # Returns the correct icon for the current stroke join setting based on current paint app_settings
     def get_stroke_join_icon() -> ft.Icon:
-        nonlocal paint_settings
-        stroke_join = paint_settings.stroke_join
+        nonlocal paint_app_settings
+        stroke_join = paint_app_settings.stroke_join
         if stroke_join == 'round': return ft.Icon(ft.Icons.CIRCLE, ft.Colors.PRIMARY)
         elif stroke_join == 'bevel': return ft.Icon(ft.Icons.SQUARE, ft.Colors.PRIMARY)
         else: return ft.Icon(ft.Icons.SQUARE_ROUNDED, ft.Colors.PRIMARY)
@@ -690,18 +715,18 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
     # Updates the stroke join of the current paint
     async def update_paint_stroke_join(e: ft.Event[ft.RadioGroup]):
-        nonlocal paint_settings
+        nonlocal paint_app_settings
         new_stroke_join = e.control.value.lower()
-        paint_settings.stroke_join = new_stroke_join
-        settings.update_data(**{"paint_settings": {"stroke_join": new_stroke_join}})
+        paint_app_settings.stroke_join = new_stroke_join
+        app_settings.update_data(**{"paint_app_settings": {"stroke_join": new_stroke_join}})
         e.control.content.leading = get_stroke_join_icon()
         brush_preview.content = build_preview_brush()
         #.update()
 
-    # Set the blend mode label based on current mode in settings
+    # Set the blend mode label based on current mode in app_settings
     def set_blend_mode_value() -> str:
-        nonlocal paint_settings
-        mode = paint_settings.blend_mode
+        nonlocal paint_app_settings
+        mode = paint_app_settings.blend_mode
         if mode is None:
             return f"Blend Mode: None"
         return f"Blend Mode: {mode.replace("_", " ").title()}"
@@ -740,19 +765,19 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         ]
             
     
-    # Updates the blend mode of the current paint settings
+    # Updates the blend mode of the current paint app_settings
     def update_paint_blend_mode(e: ft.Event[ft.RadioGroup]):
-        nonlocal paint_settings
+        nonlocal paint_app_settings
         mode = e.control.value
-        paint_settings.update(**{"blend_mode": mode})
-        settings.update_data(**{"paint_settings": paint_settings})
+        paint_app_settings.update(**{"blend_mode": mode})
+        app_settings.update_data(**{"paint_app_settings": paint_app_settings})
         #.update()
         
     
-    # Returns a list of our controls for for the brush selector for settings, save, and custom brushes
+    # Returns a list of our controls for for the brush selector for app_settings, save, and custom brushes
     def get_brush_options() -> list[ft.Control]:
-        # Default brush settings to creating non-custom brushes
-        default_brush_settings = {
+        # Default brush app_settings to creating non-custom brushes
+        default_brush_app_settings = {
             'color': "#FFFFFF",   
             'stroke_width': 3,
             'style': "stroke",
@@ -764,8 +789,8 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             'blur_image': 0,
             'blend_mode': "src_over",
         }
-        # Settings for default shadow brush
-        shadow_brush_settings = {
+        # app_settings for default shadow brush
+        shadow_brush_app_settings = {
             'color': "#40000000",   
             'stroke_width': 20,
             'style': "stroke",
@@ -776,12 +801,12 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             'anti_alias': True,
             'blur_image': 10,
         }
-        default_brush_settings = dataclasses.replace(paint_settings, **default_brush_settings)
-        shadow_brush_settings = dataclasses.replace(paint_settings, **shadow_brush_settings)
-        # Button to save current paint settings as a custom brush
+        default_brush_app_settings = dataclasses.replace(paint_app_settings, **default_brush_app_settings)
+        shadow_brush_app_settings = dataclasses.replace(paint_app_settings, **shadow_brush_app_settings)
+        # Button to save current paint app_settings as a custom brush
         save_custom_brush_button = ft.IconButton(      
             ft.Icons.SAVE_ROUNDED, ft.Colors.PRIMARY,
-            tooltip="Save current brush settings as a custom brush", 
+            tooltip="Save current brush app_settings as a custom brush", 
             on_click=save_custom_brush_clicked,
             #margin=ft.Margin.only(right=4),
             style=ft.ButtonStyle( #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
@@ -790,10 +815,10 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         
 
         def update_tf(e: ft.Event[ft.TextField]):
-            nonlocal paint_settings
+            nonlocal paint_app_settings
             # If less than 0, reset to the value it was
             if not e.control.value.strip():
-                e.control.value = str(text_settings.get(e.control.data, 10))
+                e.control.value = str(text_app_settings.get(e.control.data, 10))
                 e.control.update()
                 return
 
@@ -806,18 +831,18 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             e.control.update()
 
             key = e.control.data
-            paint_settings.update({key: value})
+            paint_app_settings.update({key: value})
             if e.control.data != "stroke_smoothing_strength":
-                settings.update_data(**{"paint_settings": paint_settings})
+                app_settings.update_data(**{"paint_app_settings": paint_app_settings})
             else:
-                drawing_settings.update(**{"stroke_smoothing_strength": value})
-                settings.update_data(**{"drawing_settings": drawing_settings})
+                drawing_app_settings.update(**{"stroke_smoothing_strength": value})
+                app_settings.update_data(**{"drawing_app_settings": drawing_app_settings})
 
             brush_preview.content = build_preview_brush()
             
 
 
-        # Increase the value (clamped) and pass the event along for settings
+        # Increase the value (clamped) and pass the event along for app_settings
         def increate_tf_value(e: ft.Event[TextField]):
             current_val = int(e.control.parent.parent.value)
             clamp_bounds = 50 if e.control.parent.parent.data == "blur_image" else 100
@@ -827,7 +852,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             e.control.parent.parent.value = str(new_val)
             update_tf(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
 
-        # Decrease the value (clamped) and pass the event along for settings
+        # Decrease the value (clamped) and pass the event along for app_settings
         def decrease_tf_value(e: ft.Event[TextField]):
             current_val = int(e.control.parent.parent.value)
             new_val = max(current_val - 1, 0)
@@ -836,19 +861,19 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
         
         width_tf = TextField(
-            label="Size (0-100)", value=str(paint_settings.stroke_width), 
+            label="Size (0-100)", value=str(paint_app_settings.stroke_width), 
             on_blur=update_tf, data="stroke_width", input_filter=ft.NumbersOnlyInputFilter(),
             suffix_icon=UpDownButtons(increate_tf_value, decrease_tf_value),
         )
 
         blur_tf = TextField(
-            label="Blur Strength (0-50)", value=str(paint_settings.blur_image),
+            label="Blur Strength (0-50)", value=str(paint_app_settings.blur_image),
             on_blur=update_tf, data="blur_image", input_filter=ft.NumbersOnlyInputFilter(),
             suffix_icon=UpDownButtons(increate_tf_value, decrease_tf_value),
         )
 
         stroke_smoothing_tf = TextField(
-            label="Stroke Smoothing Strength (0-10)", value=str(drawing_settings.stroke_smoothing_strength),
+            label="Stroke Smoothing Strength (0-10)", value=str(drawing_app_settings.stroke_smoothing_strength),
             on_blur=update_tf, data="stroke_smoothing_strength", input_filter=ft.NumbersOnlyInputFilter(),
             suffix_icon=UpDownButtons(increate_tf_value, decrease_tf_value),
         )
@@ -857,20 +882,20 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         # Whether to fill strokes and shapes or not
         fill_switch = Switch(
             label="Fill Paint", on_change=update_paint_fill,
-            value=paint_settings.style.endswith('_fill'),
+            value=paint_app_settings.style.endswith('_fill'),
             tooltip="Whether to fill strokes and shapes, or leave them hollow (Transparent). Forces brush smoothing",
         )
 
         # If we use anti aliasing or not
         anti_alias_switch = Switch(
             label="Anti-Aliasing", on_change=update_paint_anti_alias,
-            value=paint_settings.anti_alias,
+            value=paint_app_settings.anti_alias,
             tooltip="Whether to use anti-aliasing for smoother brush strokes. Disabling may result in jagged edges",
         )
 
         brush_smoothing_switch = Switch(
             label="Brush Smoothing", on_change=update_paint_brush_smoothing,
-            value=drawing_settings.use_brush_smoothing,
+            value=drawing_app_settings.use_brush_smoothing,
             tooltip="Whether to smooth brush strokes to have a uniform color and opacity.",
         )
 
@@ -884,7 +909,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                     ft.Radio(key.capitalize(), value=key) for key in ("butt", "round", "square")
                 ]
             ),
-            value=paint_settings.stroke_cap,
+            value=paint_app_settings.stroke_cap,
             on_change=update_paint_stroke_cap,
         )
 
@@ -900,7 +925,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                     ft.Radio(key.capitalize(), value=key) for key in ("miter", "round", "bevel")
                 ]
             ),
-            value=paint_settings.stroke_join,
+            value=paint_app_settings.stroke_join,
             on_change=update_paint_stroke_join,
         )
 
@@ -912,7 +937,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                 leading=ft.Icon(ft.Icons.LENS_BLUR, ft.Colors.PRIMARY),
                 controls=get_blend_mode_options()
             ),
-            value=paint_settings.blend_mode,
+            value=paint_app_settings.blend_mode,
             on_change=update_paint_blend_mode,
         )
 
@@ -928,7 +953,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         # Start by building our default brush options
         ctrls = [
             ft.Row([
-                ft.Text("Brush Settings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   
+                ft.Text("Brush app_settings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),   
                 save_custom_brush_button
             ], margin=ft.Margin.only(left=4), alignment=ft.MainAxisAlignment.CENTER),
 
@@ -970,21 +995,21 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
     
             ft.GestureDetector(
                 ft.Container(
-                    ft.Row([ft.Text("Default", expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(default_brush_settings)], spacing=20),
+                    ft.Row([ft.Text("Default", expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(default_brush_app_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=4, padding=ft.Padding.only(left=10, right=10)
                 ),
-                data=default_brush_settings,
-                on_tap=lambda _: set_active_brush(default_brush_settings, name="Default"),
+                data=default_brush_app_settings,
+                on_tap=lambda _: set_active_brush(default_brush_app_settings, name="Default"),
                 on_enter=highlight_option,
                 on_exit=stop_highlight_option
             ),    
             ft.GestureDetector(
                 ft.Container(
-                    ft.Row([ft.Text("Shadow", expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(shadow_brush_settings)], spacing=20),
+                    ft.Row([ft.Text("Shadow", expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(shadow_brush_app_settings)], spacing=20),
                     clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=4, padding=ft.Padding.only(left=10, right=10)
                 ),
-                data=shadow_brush_settings,
-                on_tap=lambda _: set_active_brush(shadow_brush_settings, name="Shadow"),
+                data=shadow_brush_app_settings,
+                on_tap=lambda _: set_active_brush(shadow_brush_app_settings, name="Shadow"),
                 on_enter=highlight_option,
                 on_exit=stop_highlight_option
             )
@@ -996,14 +1021,14 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         ]
         return ctrls
         # Go through our saved brushes and add options to select them
-        for name, brush_settings in settings.data.get('drawing_settings', {}).get('saved_brushes', {}).items():
+        for name, brush_app_settings in app_settings.data.get('drawing_app_settings', {}).get('saved_brushes', {}).items():
             ctrls.append(
                 ft.GestureDetector(
                     ft.Container(
-                        ft.Row([ft.Text(name, expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(brush_settings)], spacing=20),
+                        ft.Row([ft.Text(name, expand=True, overflow=ft.TextOverflow.ELLIPSIS), build_preview_brush(brush_app_settings)], spacing=20),
                         clip_behavior=ft.ClipBehavior.HARD_EDGE, border_radius=4, padding=ft.Padding.only(left=10, right=10)
                     ),
-                    data=brush_settings,
+                    data=brush_app_settings,
                     on_tap=lambda e: set_active_brush(e.control.data, name=name),
                     on_enter=highlight_option,
                     on_exit=stop_highlight_option
@@ -1013,11 +1038,11 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         return ctrls
 
     def get_text_options() -> list[ft.Control]:
-        nonlocal text_settings
+        nonlocal text_app_settings
 
-        # Updating standard text settings
+        # Updating standard text app_settings
         def update_text_setting(e: ft.Event[TextField | ft.RadioGroup | ft.Slider | Switch]):
-            nonlocal text_settings
+            nonlocal text_app_settings
 
             if isinstance(e.control, ft.RadioGroup):
                 value = e.control.value
@@ -1033,7 +1058,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             elif isinstance(e.control, TextField):
                 # If less than 0, reset to the value it was
                 if not e.control.value.strip():
-                    e.control.value = str(text_settings.get(e.control.data, 10))
+                    e.control.value = str(text_app_settings.get(e.control.data, 10))
                     e.control.update()
                     return
 
@@ -1046,16 +1071,16 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                 return
 
             key = e.control.data
-            text_settings.update(**{key: value})
-            settings.update_data(**{"text_settings": text_settings})
+            text_app_settings.update(**{key: value})
+            app_settings.update_data(**{"text_app_settings": text_app_settings})
 
             update_text_preview()
             text_preview.update()
 
-        # Update text shadow settings (blur radius, blur style, offset, spread radius)
+        # Update text shadow app_settings (blur radius, blur style, offset, spread radius)
         def update_text_shadow_setting(e: ft.Event[TextField | ft.RadioGroup]):
-            nonlocal text_settings
-            shadow = text_settings.get('shadow') or {}
+            nonlocal text_app_settings
+            shadow = text_app_settings.get('shadow') or {}
 
             if isinstance(e.control, ft.RadioGroup):
                 value = e.control.value
@@ -1077,22 +1102,22 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                 return
 
             shadow[e.control.data] = value
-            text_settings['shadow'] = shadow
-            settings.update_data(**{"text_settings": text_settings})
+            text_app_settings['shadow'] = shadow
+            app_settings.update_data(**{"text_app_settings": text_app_settings})
 
             update_text_preview()
             text_preview.update()
         
 
-        # Update text foreground settings
+        # Update text foreground app_settings
         def update_text_foreground_setting(e: ft.Event[ft.TextField | ft.Dropdown | ft.Slider | ft.Switch]):
-            nonlocal text_settings
+            nonlocal text_app_settings
 
         def save_text_color(e: ft.Event[ft.SubmenuButton]):
             nonlocal text_color_picker, text_color_selector
             color = text_color_picker.color
-            text_settings.update({"color": color})
-            settings.update_data(**{"text_settings": text_settings})
+            text_app_settings.update({"color": color})
+            app_settings.update_data(**{"text_app_settings": text_app_settings})
             text_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
             if text_color_picker.color not in text_color_picker.color_history:
                 text_color_picker.color_history.append(text_color_picker.color)
@@ -1105,8 +1130,8 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         def save_text_bg_color(e: ft.Event[ft.SubmenuButton]):
             nonlocal text_bg_color_picker, text_bg_color_selector
             color = text_bg_color_picker.color
-            text_settings.update({"bgcolor": color})
-            settings.update_data(**{"text_settings": text_settings})
+            text_app_settings.update({"bgcolor": color})
+            app_settings.update_data(**{"text_app_settings": text_app_settings})
             text_bg_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
             if text_bg_color_picker.color not in text_bg_color_picker.color_history:
                 text_bg_color_picker.color_history.append(text_bg_color_picker.color)
@@ -1119,8 +1144,8 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         def save_text_decoration_color(e: ft.Event[ft.SubmenuButton]):
             nonlocal text_decoration_color_picker, text_decoration_color_selector
             color = text_decoration_color_picker.color
-            text_settings.update(**{"decoration_color": color})
-            settings.update_data(**{"text_settings": text_settings})
+            text_app_settings.update(**{"decoration_color": color})
+            app_settings.update_data(**{"text_app_settings": text_app_settings})
             text_decoration_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
             if text_decoration_color_picker.color not in text_decoration_color_picker.color_history:
                 text_decoration_color_picker.color_history.append(text_decoration_color_picker.color)
@@ -1133,10 +1158,10 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         def save_text_shadow_color(e: ft.Event[ft.SubmenuButton] = None):
             nonlocal text_shadow_color_picker, text_shadow_color_selector
             color = text_shadow_color_picker.color
-            shadow = text_settings.get('shadow') or {}
+            shadow = text_app_settings.get('shadow') or {}
             shadow['color'] = color
-            text_settings['shadow'] = shadow
-            settings.update_data(**{"text_settings": text_settings})
+            text_app_settings['shadow'] = shadow
+            app_settings.update_data(**{"text_app_settings": text_app_settings})
             text_shadow_color_selector.content = ft.Icon(ft.Icons.CIRCLE, color)
             if text_shadow_color_picker.color not in text_shadow_color_picker.color_history:
                 text_shadow_color_picker.color_history.append(text_shadow_color_picker.color)
@@ -1160,14 +1185,14 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             e.control.parent.parent.value = str(new_val)
             update_text_shadow_setting(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
 
-        # Increase the value (clamped) and pass the event along for settings
+        # Increase the value (clamped) and pass the event along for app_settings
         def increate_tf_value(e: ft.Event[TextField]):
             current_val = int(e.control.parent.parent.value)
             new_val = min(current_val + 1, 128)
             e.control.parent.parent.value = str(new_val)
             update_text_setting(ft.Event(name="click", control=e.control.parent.parent, data=e.control.parent.parent.data))
 
-        # Decrease the value (clamped) and pass the event along for settings
+        # Decrease the value (clamped) and pass the event along for app_settings
         def decrease_tf_value(e: ft.Event[TextField]):
             current_val = int(e.control.parent.parent.value)
             new_val = max(current_val - 1, 0)
@@ -1178,73 +1203,73 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
         bold_switch = Switch(   # TODO: make radio with normal, 100-1000, bold
             True, "Bold", on_change=update_text_setting,
-            value=text_settings.weight.lower() == "bold",
+            value=text_app_settings.weight.lower() == "bold",
             data="weight",
         )
 
         italic_switch = Switch(
             True, "Italic", on_change=update_text_setting,
-            value=text_settings.italic,
+            value=text_app_settings.italic,
             data="italic",
         )
 
         
 
         size_tf = TextField(
-            value=str(text_settings.size),
+            value=str(text_app_settings.size),
             on_blur=update_text_setting, data="size", label="Text Size (0-128)", 
             input_filter=ft.NumbersOnlyInputFilter(), 
             suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value),
         )
 
         letter_spacing_tf = TextField(
-            value=str(text_settings.letter_spacing),
+            value=str(text_app_settings.letter_spacing),
             on_blur=update_text_setting, data="letter_spacing", label="Letter Spacing (0-128)",
             input_filter=ft.NumbersOnlyInputFilter(),
             suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value)
         )
 
         word_spacing_tf = TextField(
-            value=str(text_settings.word_spacing),
+            value=str(text_app_settings.word_spacing),
             on_blur=update_text_setting, data="word_spacing", label="Word Spacing (0-128)",
             input_filter=ft.NumbersOnlyInputFilter(),
             suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value)
         )
 
         text_decoration_thickness_tf = TextField(
-            value=str(text_settings.decoration_thickness),
+            value=str(text_app_settings.decoration_thickness),
             on_blur=update_text_setting, data="decoration_thickness", label="Text Decoration Thickness (0-128)",
             input_filter=ft.NumbersOnlyInputFilter(),
             suffix_icon=UpDownButtons(up_function=increate_tf_value, down_function=decrease_tf_value)
         )
         text_decoration_thickness_tf.margin = ft.Margin.only(top=8, left=4, right=4, bottom=4)
 
-        #shadow_settings = text_settings.get('shadow') or {}
-        shadow_settings = {}
+        #shadow_app_settings = text_app_settings.get('shadow') or {}
+        shadow_app_settings = {}
 
         shadow_blur_radius_tf = TextField(
-            value=str(shadow_settings.get('blur_radius', 0)),
+            value=str(shadow_app_settings.get('blur_radius', 0)),
             on_blur=update_text_shadow_setting, data="blur_radius", label="Shadow Blur Radius (0-100)",
             input_filter=ft.NumbersOnlyInputFilter(),
             suffix_icon=UpDownButtons(up_function=increase_shadow_tf_value, down_function=decrease_shadow_tf_value)
         )
 
         shadow_spread_radius_tf = TextField(
-            value=str(shadow_settings.get('spread_radius', 0)),
+            value=str(shadow_app_settings.get('spread_radius', 0)),
             on_blur=update_text_shadow_setting, data="spread_radius", label="Shadow Spread Radius (0-100)",
             input_filter=ft.NumbersOnlyInputFilter(),
             suffix_icon=UpDownButtons(up_function=increase_shadow_tf_value, down_function=decrease_shadow_tf_value)
         )
 
         shadow_offset_x_tf = TextField(
-            value=str(shadow_settings.get('offset_x', 0)),
+            value=str(shadow_app_settings.get('offset_x', 0)),
             on_blur=update_text_shadow_setting, data="offset_x", label="Shadow Offset X (-100-100)",
             input_filter=NEGATIVE_NUMBER_FILTER,
             suffix_icon=UpDownButtons(up_function=increase_shadow_tf_value, down_function=decrease_shadow_tf_value)
         )
 
         shadow_offset_y_tf = TextField(
-            value=str(shadow_settings.get('offset_y', 0)),
+            value=str(shadow_app_settings.get('offset_y', 0)),
             on_blur=update_text_shadow_setting, data="offset_y", label="Shadow Offset Y (-100-100)",
             input_filter=NEGATIVE_NUMBER_FILTER,
             suffix_icon=UpDownButtons(up_function=increase_shadow_tf_value, down_function=decrease_shadow_tf_value)
@@ -1258,7 +1283,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                     #ft.Radio(key, value=key) for key in page.fonts.keys()
                 ]
             ),
-            value=text_settings.font_family,
+            value=text_app_settings.font_family,
             on_change=update_text_setting,
             data="font_family"
         )
@@ -1270,19 +1295,19 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         
 
         # Color picker for changing brush color
-        text_color_picker = ColorPickerView(text_settings.color) 
+        text_color_picker = ColorPickerView(text_app_settings.color) 
 
         
         # Color picker for changing brush color
-        text_bg_color_picker = ColorPickerView(text_settings.bgcolor) 
+        text_bg_color_picker = ColorPickerView(text_app_settings.bgcolor) 
 
-        text_decoration_color_picker = ColorPickerView(text_settings.decoration_color) 
+        text_decoration_color_picker = ColorPickerView(text_app_settings.decoration_color) 
 
-        text_shadow_color_picker = ColorPickerView(shadow_settings.get('color', ft.Colors.PRIMARY)) 
+        text_shadow_color_picker = ColorPickerView(shadow_app_settings.get('color', ft.Colors.PRIMARY)) 
 
         # Create our color selector button
         text_color_selector = ft.SubmenuButton(
-            ft.Icon(ft.Icons.CIRCLE, text_settings.color), 
+            ft.Icon(ft.Icons.CIRCLE, text_app_settings.color), 
             tooltip="The color of your text",
             on_close=save_text_color, #expand=True,
             width=40,
@@ -1299,7 +1324,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
         # Create our color selector button
         text_bg_color_selector = ft.SubmenuButton(
-            ft.Icon(ft.Icons.CIRCLE, text_settings.bgcolor), 
+            ft.Icon(ft.Icons.CIRCLE, text_app_settings.bgcolor), 
             tooltip="The color of your background behind your text.",
             on_close=save_text_bg_color, #expand=True,
             width=40,
@@ -1315,7 +1340,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         )
 
         text_decoration_color_selector = ft.SubmenuButton(
-            ft.Icon(ft.Icons.CIRCLE, text_settings.decoration_color),
+            ft.Icon(ft.Icons.CIRCLE, text_app_settings.decoration_color),
             tooltip="The color of your text decoration (underline, overline, line through).",
             on_close=save_text_decoration_color, #expand=True,
             width=40,
@@ -1331,7 +1356,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         )
 
         text_shadow_color_selector = ft.SubmenuButton(
-            ft.Icon(ft.Icons.CIRCLE, shadow_settings.get('color', ft.Colors.PRIMARY)),
+            ft.Icon(ft.Icons.CIRCLE, shadow_app_settings.get('color', ft.Colors.PRIMARY)),
             tooltip="The color of your text shadow.",
             on_close=save_text_shadow_color, #expand=True,
             width=40,
@@ -1418,7 +1443,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         
 
         text_shadow_rg = ExpansionTile(
-            title=ft.Text("Text Shadow Settings", size=14),
+            title=ft.Text("Text Shadow app_settings", size=14),
             controls=[
                     #ft.RadioGroup(
                         #content=ft.Column(
@@ -1427,7 +1452,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                             #] + [
                             #ft.Radio(key.capitalize(), value=key) for key in ("none", "normal", "solid", "outer", "inner")
                         #], spacing=0),
-                        # value=shadow_settings.get('blur_style', 'normal') if shadow_settings.get('blur_style', None) is not None else 'normal',
+                        # value=shadow_app_settings.get('blur_style', 'normal') if shadow_app_settings.get('blur_style', None) is not None else 'normal',
                         #on_change=update_text_shadow_setting,
                         #data="blur_style"
                             #)
@@ -1441,7 +1466,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         
 
         text_decoration_rg = ExpansionTile(
-            title=ft.Text("Text Decoration Settings", size=14),
+            title=ft.Text("Text Decoration app_settings", size=14),
             controls=[
                 ft.RadioGroup(
                     content=ft.Column(
@@ -1450,7 +1475,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                         ],
                         spacing=0
                     ),
-                    value=text_settings.decoration,
+                    value=text_app_settings.decoration,
                     on_change=update_text_setting,
                     data="decoration"
                 ),
@@ -1462,7 +1487,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                         ],
                         spacing=0
                     ),
-                    value=text_settings.decoration_style,
+                    value=text_app_settings.decoration_style,
                     on_change=update_text_setting,
                     data="decoration_style"
                 )
@@ -1470,22 +1495,22 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         )
         
     
-        # Called to save our active text settings as a custom named text setting we can load later
-        def save_custom_text_settings_clicked(e=None):
+        # Called to save our active text app_settings as a custom named text setting we can load later
+        def save_custom_text_app_settings_clicked(e=None):
             ''' Shows our existing text setting options and allows us to override or save as a new one '''
 
             # Saves the current name and closes the dialog
             async def _save_and_close(e=None):
 
-                nonlocal name, text_settings
+                nonlocal name, text_app_settings
                 safe_name = return_safe_name(name)
 
-                # Save current text settings as a new custom text setting
-                settings.data['drawing_settings']['saved_text_settings'][safe_name] = text_settings.copy()
-                settings.update_data(**{"drawing_settings": {"saved_text_settings": settings.data['drawing_settings']['saved_text_settings']}})
+                # Save current text app_settings as a new custom text setting
+                app_settings.data['drawing_app_settings']['saved_text_app_settings'][safe_name] = text_app_settings.copy()
+                app_settings.update_data(**{"drawing_app_settings": {"saved_text_app_settings": app_settings.data['drawing_app_settings']['saved_text_app_settings']}})
 
                 page.pop_dialog()
-                text_settings_button.controls = get_text_options()   # Update the text settings selector with the new setting
+                text_app_settings_button.controls = get_text_options()   # Update the text app_settings selector with the new setting
                 #self.update()
 
             # Deletes a saved text setting
@@ -1494,15 +1519,15 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                 name = e.control.data
 
                 # Remove it from data
-                if name in settings.data.get('drawing_settings', {}).get('saved_text_settings', {}):
-                    del settings.data['drawing_settings']['saved_text_settings'][name]
-                    settings.update_data(**{"drawing_settings": {"saved_text_settings": settings.data['drawing_settings']['saved_text_settings']}})
+                if name in app_settings.data.get('drawing_app_settings', {}).get('saved_text_app_settings', {}):
+                    del app_settings.data['drawing_app_settings']['saved_text_app_settings'][name]
+                    app_settings.update_data(**{"drawing_app_settings": {"saved_text_app_settings": app_settings.data['drawing_app_settings']['saved_text_app_settings']}})
 
                 # Remove the control from the dialog
                 dlg.content.controls = [ctrl for ctrl in content.controls if ctrl.data != name]
                 content.update()
 
-                text_settings_button.controls = get_text_options()   # Update the text settings selector with the new setting
+                text_app_settings_button.controls = get_text_options()   # Update the text app_settings selector with the new setting
                 #.update()
 
                 # If we were going to override it but instead deleted it, apply that UI change
@@ -1513,7 +1538,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                     save_button.update()
                     await new_custom_text_setting_name_text_field.focus()
 
-            # Sets an existing custom text setting to be overwritten by the current settings
+            # Sets an existing custom text setting to be overwritten by the current app_settings
             def _select_active_text_setting_override(e):
                 nonlocal name, content
 
@@ -1584,7 +1609,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                 ]
             )
 
-            for name, existing_text_setting in settings.data.get('drawing_settings', {}).get('saved_text_settings', {}).items():
+            for name, existing_text_setting in app_settings.data.get('drawing_app_settings', {}).get('saved_text_app_settings', {}).items():
                 content.controls.append(
                     ft.Container(
                         ft.Row([
@@ -1606,10 +1631,10 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
         ctrls = [
             ft.Row([
-                ft.Text("Text Settings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, tooltip="Settings for text shapes used on canvases"),
+                ft.Text("Text app_settings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, tooltip="app_settings for text shapes used on canvases"),
                 ft.IconButton(
-                    ft.Icons.SAVE_ROUNDED, ft.Colors.PRIMARY, on_click=save_custom_text_settings_clicked, 
-                    tooltip="Save the current text settings as a custom text setting you can load later.", 
+                    ft.Icons.SAVE_ROUNDED, ft.Colors.PRIMARY, on_click=save_custom_text_app_settings_clicked, 
+                    tooltip="Save the current text app_settings as a custom text setting you can load later.", 
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
                 )
             ], alignment=ft.MainAxisAlignment.CENTER),   
@@ -1654,7 +1679,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                             text_color_options_button,    
                             border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
                             alignment=ft.Alignment.CENTER
-                        ),  # Button to save current color to settings
+                        ),  # Button to save current color to app_settings
                     ],
                     style=ft.MenuStyle(
                         alignment=ft.Alignment.CENTER_LEFT,
@@ -1689,7 +1714,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                             text_bg_color_options_button,    
                             border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
                             alignment=ft.Alignment.CENTER
-                        ),  # Button to save current color to settings
+                        ),  # Button to save current color to app_settings
                     ],
                     style=ft.MenuStyle(
                         alignment=ft.Alignment.CENTER_RIGHT,
@@ -1724,7 +1749,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                                 text_decoration_color_options_button,    
                                 border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
                                 alignment=ft.Alignment.CENTER
-                            ),  # Button to save current color to settings
+                            ),  # Button to save current color to app_settings
                         ],
                         style=ft.MenuStyle(
                             alignment=ft.Alignment.CENTER_LEFT,
@@ -1759,7 +1784,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                             text_shadow_color_options_button,
                             border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
                             alignment=ft.Alignment.CENTER
-                        ),  # Button to save current color to settings
+                        ),  # Button to save current color to app_settings
                     ],
                     style=ft.MenuStyle(
                         alignment=ft.Alignment.CENTER_RIGHT,
@@ -1776,7 +1801,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
             ft.Divider(),
             ft.Row([
-                ft.Text("Saved Text Settings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
+                ft.Text("Saved Text app_settings", color=ft.Colors.ON_SURFACE_VARIANT, italic=True),
             ], alignment=ft.MainAxisAlignment.CENTER),  
         ]
 
@@ -1788,9 +1813,9 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             e.control.update()
 
         # Go through our saved text options and add them to the list of controls
-        # NOTE: loop var must not be named `text_settings`, it would shadow the nonlocal current settings dict
+        # NOTE: loop var must not be named `text_app_settings`, it would shadow the nonlocal current app_settings dict
         return ctrls
-        for name, saved_text_setting in settings.data.get('drawing_settings', {}).get('saved_text_settings', {}).items():
+        for name, saved_text_setting in app_settings.data.get('drawing_app_settings', {}).get('saved_text_app_settings', {}).items():
             ctrls.append(
                 ft.GestureDetector(
                     ft.Container(
@@ -1814,17 +1839,17 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
     # Color picker for changing brush color
     color_picker = ColorPicker(
-        color=paint_settings.color,
+        color=paint_app_settings.color,
         #on_color_change=set_color, 
         picker_area_border_radius=ft.BorderRadius.all(4),
         color_history=[]
     )   
 
     # Create our color selector button
-    color_selector = ColorSelector(paint_settings)
+    color_selector = ColorSelector(paint_app_settings)
 
     def get_color_options(target_color_picker: ColorPicker, apply_color) -> list[ft.Control]:
-        nonlocal drawing_settings
+        nonlocal drawing_app_settings
 
         def set_saved_color(e: ft.Event[ft.MenuItemButton]):
             color_data = e.control.data
@@ -1832,32 +1857,32 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             apply_color(None)
 
         def delete_color(e: ft.Event[ft.IconButton]):
-            nonlocal drawing_settings
+            nonlocal drawing_app_settings
             idx = e.control.data
-            drawing_settings['saved_colors'].pop(idx)
-            settings.update_data(**{"drawing_settings": {"saved_colors": drawing_settings['saved_colors']}})
+            drawing_app_settings['saved_colors'].pop(idx)
+            app_settings.update_data(**{"drawing_app_settings": {"saved_colors": drawing_app_settings['saved_colors']}})
             color_options_button.controls = get_color_options(color_picker, save_color)
-            text_settings_button.controls = get_text_options()
+            text_app_settings_button.controls = get_text_options()
             #.update()
 
         def save_custom_color(e: ft.Event[ft.IconButton]):
 
             # Saves the color to data and pops the dialog
             async def save_color_name(e=None):
-                nonlocal drawing_settings
+                nonlocal drawing_app_settings
                 color_name = name_tf.value.strip()
                 # Always pull from the picker that triggered this save, not the paint picker
                 current_color = target_color_picker.color
-                drawing_settings['saved_colors'].append({'name': color_name, 'value': current_color})
-                settings.update_data(**{"drawing_settings": {"saved_colors": drawing_settings['saved_colors']}})
+                drawing_app_settings['saved_colors'].append({'name': color_name, 'value': current_color})
+                app_settings.update_data(**{"drawing_app_settings": {"saved_colors": drawing_app_settings['saved_colors']}})
                 color_options_button.controls = get_color_options(color_picker, save_color)
-                text_settings_button.controls = get_text_options()
+                text_app_settings_button.controls = get_text_options()
                 #.update()
                 page.pop_dialog()
         
 
             name_tf = ft.TextField(label="Color Name", autofocus=True, on_submit=save_color_name, capitalization=ft.TextCapitalization.WORDS)
-            #color = e.control.parent.parent.parent.parent.controls[0].content.color or paint_settings.get('color', "#000000")
+            #color = e.control.parent.parent.parent.parent.controls[0].content.color or paint_app_settings.get('color', "#000000")
             
             page.show_dialog(
                 ft.AlertDialog(
@@ -1889,7 +1914,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             ], margin=ft.Margin.only(left=4), alignment=ft.MainAxisAlignment.CENTER)   
         ]
         return ctrls
-        for idx, color_data in enumerate(drawing_settings.get('saved_colors', [])):
+        for idx, color_data in enumerate(drawing_app_settings.get('saved_colors', [])):
             ctrls.append(
                 ft.GestureDetector(
                     ft.Container(
@@ -1929,9 +1954,9 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
     # Button to set the control mode to draw mode
     set_draw_mode_button = ft.IconButton(
-        ft.Icons.BRUSH_ROUNDED if drawing_settings.control_mode == "draw" else ft.Icons.BRUSH_OUTLINED,
+        ft.Icons.BRUSH_ROUNDED if drawing_app_settings.control_mode == "draw" else ft.Icons.BRUSH_OUTLINED,
         ft.Colors.PRIMARY,
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.control_mode == "draw" else None,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.control_mode == "draw" else None,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0)),
         tooltip="Set the active control to the last used brush",
         data="draw", on_click=set_draw_mode
@@ -1941,12 +1966,12 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         
     # Selector to choose a build in brush or a custom brush
     brush_selector = ft.SubmenuButton(
-        #build_preview_brush(paint_settings),
+        #build_preview_brush(paint_app_settings),
         controls=get_brush_options(),
         content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
         style=ft.ButtonStyle(
             #mouse_cursor=ft.MouseCursor.CLICK,  
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.control_mode == "draw" else None,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.control_mode == "draw" else None,
             shape=ft.RoundedRectangleBorder(radius=0),
             padding=ft.Padding.all(0),
         ),
@@ -1966,7 +1991,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
     set_tool_mode_button = ft.IconButton(
         update_tool_icon(),
         ft.Colors.PRIMARY,
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.control_mode == "tool" else None,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.control_mode == "tool" else None,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0)),
         tooltip="Set the active control to the last used tool",
         data="tool", on_click=set_tool_mode
@@ -1978,7 +2003,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
         style=ft.ButtonStyle(
             #mouse_cursor=ft.MouseCursor.CLICK,  
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.control_mode == "tool" else None,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.control_mode == "tool" else None,
             shape=ft.RoundedRectangleBorder(radius=0),
             padding=ft.Padding.all(0),
         ),
@@ -1994,15 +2019,15 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
 
     text_preview = ft.Text(
         "Preview Text", selectable=True, 
-        #style=ft.TextStyle(**text_settings)
+        #style=ft.TextStyle(**text_app_settings)
     )
 
     def update_text_preview():
-        nonlocal text_preview, text_settings
-        text_preview.style = ft.TextStyle(text_settings)
+        nonlocal text_preview, text_app_settings
+        text_preview.style = ft.TextStyle(text_app_settings)
         
         # Match decoration accordingly, since its str -> control doesnt work
-        decoration = text_settings.decoration
+        decoration = text_app_settings.decoration
         match decoration:
             case "underline":
                 text_preview.style.decoration = ft.TextDecoration.UNDERLINE
@@ -2014,26 +2039,26 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                 text_preview.style.decoration = None
 
         text_preview.style.shadow = ft.BoxShadow(
-            #blur_radius=text_settings.get('shadow', {}).get('blur_radius', 0),
-            #color=text_settings.get('shadow', {}).get('color', None),
+            #blur_radius=text_app_settings.get('shadow', {}).get('blur_radius', 0),
+            #color=text_app_settings.get('shadow', {}).get('color', None),
             #offset=ft.Offset(
-                #text_settings.get('shadow', {}).get('offset_x', 0),
-                #text_settings.get('shadow', {}).get('offset_y', 0)
+                #text_app_settings.get('shadow', {}).get('offset_x', 0),
+                #text_app_settings.get('shadow', {}).get('offset_y', 0)
             #),
         )
 
     update_text_preview()
 
     set_text_mode_button = ft.IconButton(
-        ft.Icons.TEXT_FIELDS if drawing_settings.control_mode == "text" else ft.Icons.TEXT_FIELDS_OUTLINED,
+        ft.Icons.TEXT_FIELDS if drawing_app_settings.control_mode == "text" else ft.Icons.TEXT_FIELDS_OUTLINED,
         ft.Colors.PRIMARY,
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.control_mode == "text" else None,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.control_mode == "text" else None,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0)),
         tooltip="Set the active control to text mode.",
         data="text", on_click=set_text_mode
     )
 
-    text_settings_button = ft.SubmenuButton(
+    text_app_settings_button = ft.SubmenuButton(
         controls=get_text_options(),
         content=ft.Icon(
             ft.Icons.ARROW_DROP_DOWN, 
@@ -2044,7 +2069,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
             #mouse_cursor=ft.MouseCursor.CLICK,  f
             shape=ft.RoundedRectangleBorder(radius=0),
             padding=ft.Padding.all(0),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.control_mode == "text" else None
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.control_mode == "text" else None
         ),
         menu_style=ft.MenuStyle(
             alignment=ft.Alignment.TOP_RIGHT,
@@ -2057,12 +2082,12 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
     )
 
     erase_tool_button = ft.IconButton(
-        ft.Icons.AUTO_FIX_NORMAL if drawing_settings.tool_name == "erase" and drawing_settings.control_mode == "tool" else ft.Icons.AUTO_FIX_NORMAL_OUTLINED,
+        ft.Icons.AUTO_FIX_NORMAL if drawing_app_settings.tool_name == "erase" and drawing_app_settings.control_mode == "tool" else ft.Icons.AUTO_FIX_NORMAL_OUTLINED,
         ft.Colors.PRIMARY,
         data="erase",
         on_click=set_tool_mode,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4),),
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.tool_name == "erase" and drawing_settings.control_mode == "tool" else None,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.tool_name == "erase" and drawing_app_settings.control_mode == "tool" else None,
         tooltip="Erase Tool"
     )
     fill_tool_button = ft.IconButton(
@@ -2072,61 +2097,61 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
         #disabled=True,
         on_click=set_tool_mode,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4),),
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.tool_name == "fill" and drawing_settings.control_mode == "tool" else None,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.tool_name == "fill" and drawing_app_settings.control_mode == "tool" else None,
         tooltip="Fill Tool"
     )
     line_tool_button = ft.IconButton(
-        ft.Icons.REMOVE if drawing_settings.tool_name == "line" and drawing_settings.control_mode == "tool" else ft.Icons.REMOVE_OUTLINED,
+        ft.Icons.REMOVE if drawing_app_settings.tool_name == "line" and drawing_app_settings.control_mode == "tool" else ft.Icons.REMOVE_OUTLINED,
         ft.Colors.PRIMARY,
         data="line",
         on_click=set_tool_mode,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4),),
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.tool_name == "line" and drawing_settings.control_mode == "tool" else None,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.tool_name == "line" and drawing_app_settings.control_mode == "tool" else None,
         tooltip="Line Tool"
     )
     circle_tool_button = ft.IconButton(
-        ft.Icons.CIRCLE if drawing_settings.tool_name == "circle" and drawing_settings.control_mode == "tool" else ft.Icons.CIRCLE_OUTLINED,
+        ft.Icons.CIRCLE if drawing_app_settings.tool_name == "circle" and drawing_app_settings.control_mode == "tool" else ft.Icons.CIRCLE_OUTLINED,
         ft.Colors.PRIMARY,
         data="circle",
         on_click=set_tool_mode,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.tool_name == "circle" and drawing_settings.control_mode == "tool" else None,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.tool_name == "circle" and drawing_app_settings.control_mode == "tool" else None,
         tooltip="Circle Shape"
     )
                             
     oval_tool_button = ft.IconButton(
-        ft.Icon(ft.Icons.CIRCLE, ft.Colors.PRIMARY, scale=ft.Scale(scale_x=0.8),) if drawing_settings.tool_name == "oval" and drawing_settings.control_mode == "tool" else ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.PRIMARY, scale=ft.Scale(scale_x=0.8),),
+        ft.Icon(ft.Icons.CIRCLE, ft.Colors.PRIMARY, scale=ft.Scale(scale_x=0.8),) if drawing_app_settings.tool_name == "oval" and drawing_app_settings.control_mode == "tool" else ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.PRIMARY, scale=ft.Scale(scale_x=0.8),),
         data="oval",
         on_click=set_tool_mode,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.tool_name == "oval" and drawing_settings.control_mode == "tool" else None, 
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.tool_name == "oval" and drawing_app_settings.control_mode == "tool" else None, 
         tooltip="Oval Shape"
     )
     arc_tool_button = ft.IconButton(
-        tool_icons.get('arc') if drawing_settings.tool_name == "arc" and drawing_settings.control_mode == "tool" else tool_icons.get('arc_outlined'),
+        tool_icons.get('arc') if drawing_app_settings.tool_name == "arc" and drawing_app_settings.control_mode == "tool" else tool_icons.get('arc_outlined'),
         
         data="arc",
         on_click=set_tool_mode,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), ),
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.tool_name == "arc" and drawing_settings.control_mode == "tool" else None,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.tool_name == "arc" and drawing_app_settings.control_mode == "tool" else None,
         tooltip="Arc Shape"
     )
     rectangle_tool_button = ft.IconButton(
-        ft.Icons.RECTANGLE if drawing_settings.tool_name == "rectangle" and drawing_settings.control_mode == "tool" else ft.Icons.RECTANGLE_OUTLINED,
+        ft.Icons.RECTANGLE if drawing_app_settings.tool_name == "rectangle" and drawing_app_settings.control_mode == "tool" else ft.Icons.RECTANGLE_OUTLINED,
         ft.Colors.PRIMARY,
         data="rectangle",
         on_click=set_tool_mode,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4),),
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.tool_name == "rectangle" and drawing_settings.control_mode == "tool" else None,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.tool_name == "rectangle" and drawing_app_settings.control_mode == "tool" else None,
         tooltip="Rectangle Shape"
     )
     triangle_tool_button = ft.IconButton(
-        ft.CupertinoIcons.ARROWTRIANGLE_UP_FILL if drawing_settings.tool_name == "triangle" and drawing_settings.control_mode == "tool" else ft.CupertinoIcons.ARROWTRIANGLE_UP,
+        ft.CupertinoIcons.ARROWTRIANGLE_UP_FILL if drawing_app_settings.tool_name == "triangle" and drawing_app_settings.control_mode == "tool" else ft.CupertinoIcons.ARROWTRIANGLE_UP,
         ft.Colors.PRIMARY,
         data="triangle",
         on_click=set_tool_mode,
         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), ),
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_settings.tool_name == "triangle" and drawing_settings.control_mode == "tool" else None,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST if drawing_app_settings.tool_name == "triangle" and drawing_app_settings.control_mode == "tool" else None,
         tooltip="Triangle Shape"
     )
     
@@ -2154,7 +2179,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                         color_options_button,    
                         border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
                         alignment=ft.Alignment.CENTER
-                    ),  # Button to save current color to settings
+                    ),  # Button to save current color to app_settings
                 ],
                 style=ft.MenuStyle(
                     alignment=ft.Alignment.CENTER_LEFT,
@@ -2194,7 +2219,7 @@ def DrawingControls(settings, story: Story) -> list[ft.control]:
                     border_radius=ft.BorderRadius.only(top_left=4, bottom_left=4),
                 ),
                 ft.Container(
-                    text_settings_button,     
+                    text_app_settings_button,     
                     border_radius=ft.BorderRadius.only(top_right=4, bottom_right=4),
                     #margin=ft.Margin.only(right=20)
                 ),

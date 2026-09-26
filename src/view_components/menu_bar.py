@@ -480,7 +480,7 @@ def MenuBar(story: Story=None):
             controls=[
                 file_options,    # File options button
 
-                ft.Row(controls=DrawingControls(app_settings, story), alignment=ft.MainAxisAlignment.CENTER, visible=show_drawing_controls),
+                ft.Row(controls=DrawingControls(story), alignment=ft.MainAxisAlignment.CENTER, visible=show_drawing_controls),
 
 
                 ft.Row([        # Row that has alpha text, info button, and settings button

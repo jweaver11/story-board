@@ -51,9 +51,9 @@ class Story:
 
     def __post_init__(self):
         self.load_widgets() 
-        self.notify()
-        print("Loaded widgets:")
-        print([widget.title for widget in self.widgets.values()])
+        #self.notify()
+        #print("Loaded widgets:")
+        #print([widget.title for widget in self.widgets.values()])
 
         
     
@@ -275,9 +275,6 @@ class Story:
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
 
-        print("Load widgets called")
-
-
         # If we are being re-loaded after settings or another story, clear our content so we can load it fresh
         self.widgets.clear()
         
@@ -302,7 +299,6 @@ class Story:
                         # Read the JSON file and set our data
                         with open(file_path, "r", encoding='utf-8') as f:
                             widget_data = json.load(f)
-                            print("widget_data", widget_data)
                             if not widget_data:
                                 continue
                         
