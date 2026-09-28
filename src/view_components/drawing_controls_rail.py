@@ -12,6 +12,7 @@ from contexts.contexts import PaintContext, DrawingContext, TextContext, AppSett
 from dataclasses import dataclass
 import dataclasses
 from typing import Any
+import uuid
 
 tool_icons = {
     'brush': ft.Icons.BRUSH_ROUNDED,
@@ -68,13 +69,12 @@ def DrawingControls(story: Story) -> list[ft.control]:
     paint_app_settings = ft.use_context(PaintContext)
     drawing_app_settings = ft.use_context(DrawingContext)
     text_app_settings = ft.use_context(TextContext)
+    text_shadow_app_settings = text_app_settings.shadow or {}
 
-    # State for showing dlg for saving custom colors
-    show_save_color_dlg, set_show_save_color_dlg = ft.use_state(False)
    
 
     @ft.component
-    def ColorSelector(settings: dict | Any) -> ft.MenuBar:
+    def ColorSelector(settings: dict | Any, field: str="color") -> ft.MenuBar:
         ''' Returns a MenuBar with two functions:
         1. First control allows users to click a submenubutton that opens a color picker for selecting a color based on the active settings.
         2. Second control allows users to select from previously saved colors, and save new ones'''
@@ -90,7 +90,10 @@ def DrawingControls(story: Story) -> list[ft.control]:
             if isinstance(settings, dict):
                 settings["color"] = color_ref.current
             else:
-                settings.color = color_ref.current
+                if field:
+                    setattr(settings, field, color_ref.current)
+                else:
+                    settings.color = color_ref.current
             #settings.color = color_ref.current
             if color_ref.current not in color_history:
                 #print("Color_ref: ", color_ref.current)
@@ -105,17 +108,20 @@ def DrawingControls(story: Story) -> list[ft.control]:
         color_history, set_color_history = ft.use_state([])
 
         cp = ColorPicker(
-            color=settings.get("color") if isinstance(settings, dict) else settings.color,
+            color=settings.get("color") if isinstance(settings, dict) else getattr(settings, field),
             on_color_change=change_color,
             picker_area_border_radius=ft.BorderRadius.all(4),
             color_history=color_history
         )   
+
+        key, _ = ft.use_state(str(uuid.uuid4()))
         
         return ft.MenuBar(
             [
                 ft.SubmenuButton(
-                    ft.Icon(ft.Icons.CIRCLE, settings.get("color") if isinstance(settings, dict) else settings.color), 
+                    ft.Icon(ft.Icons.CIRCLE, settings.get("color") if isinstance(settings, dict) else getattr(settings, field)), 
                     tooltip="The color of your brush strokes.",
+                    key=key,
                     on_close=set_color,
                     width=40, height=40,
                     controls=[
@@ -149,7 +155,7 @@ def DrawingControls(story: Story) -> list[ft.control]:
         )
 
     @ft.component
-    def SavedColorsSelector(settings: dict | Any) -> ft.MenuBar:
+    def SavedColorsSelector(settings: dict | Any, field: str="color") -> ft.MenuBar:
         ''' Returns a submenubutton for selecting our saved colors, and saving new ones '''
 
         def get_saved_colors() -> list[ft.Control]:
@@ -164,7 +170,7 @@ def DrawingControls(story: Story) -> list[ft.control]:
                 if isinstance(settings, dict):
                     settings['color'] = color
                 else:
-                    settings.color = color
+                    setattr(settings, field, color)
 
             # Deletes a color from the saved dict
             def delete_color(e: ft.Event[ft.IconButton]):
@@ -176,10 +182,11 @@ def DrawingControls(story: Story) -> list[ft.control]:
             async def save_color(_):
                 page.pop_dialog()
                 set_show_save_color_dlg(False)
-                drawing_app_settings.saved_colors[color_name.current] = settings['color'] if isinstance(settings, dict) else settings.color
+                drawing_app_settings.saved_colors[color_name.current] = settings[field] if isinstance(settings, dict) else getattr(settings, field)
                 
             # Color name when saving a custom color
             color_name = ft.use_ref("")
+            show_save_color_dlg, set_show_save_color_dlg = ft.use_state(False)
 
             ft.use_dialog(
                 ft.AlertDialog(
@@ -226,7 +233,6 @@ def DrawingControls(story: Story) -> list[ft.control]:
                 )
             
             for key, color_value in drawing_app_settings.saved_colors.items():
-                print(key, color_value)
                 ctrls.append(create_option_ctrl(key, color_value))
             
             return ctrls
@@ -330,11 +336,6 @@ def DrawingControls(story: Story) -> list[ft.control]:
         #return
         #e.control.color = e.data
         
-
-    # Saves our color to data and updates the brush selector
-    def save_color(e=None):
-        return
-
 
     # Sets current control mode to drawing
     def set_draw_mode(e=None):
@@ -583,22 +584,12 @@ def DrawingControls(story: Story) -> list[ft.control]:
         drawing_app_settings['current_tool_name'] = e.control.data
         app_settings.update_data(**{'drawing_app_settings': drawing_app_settings})
         
-        reset_button_bgcolors()
-        reset_tool_icons()
         
         e.control.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
         e.control.icon = tool_icons.get(e.control.data)
         #self.update() 
 
-    # Turn off all bgcolors
-    def reset_button_bgcolors():
-        #for ctrl in self.content.controls:
-            #if isinstance(ctrl, ft.IconButton):
-                #ctrl.bgcolor = None
-        set_draw_mode_button.bgcolor = None
-        brush_selector.style.bgcolor = None
-        set_text_mode_button.bgcolor = None
-        text_app_settings_button.style.bgcolor = None
+    
 
     # Set icons to outlined values
     def reset_tool_icons():
@@ -621,7 +612,6 @@ def DrawingControls(story: Story) -> list[ft.control]:
         text_app_settings_button.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
         
 
-        reset_button_bgcolors()
         reset_tool_icons()
 
         text_app_settings_button.style.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
@@ -1344,32 +1334,30 @@ def DrawingControls(story: Story) -> list[ft.control]:
         )
         text_decoration_thickness_tf.margin = ft.Margin.only(top=8, left=4, right=4, bottom=4)
 
-        #shadow_app_settings = text_app_settings.get('shadow') or {}
-        shadow_app_settings = {}
 
         shadow_blur_radius_tf = TextField(
-            value=str(shadow_app_settings.get('blur_radius', 0)),
+            value=str(text_shadow_app_settings.get('blur_radius', 0)),
             on_blur=update_text_shadow_setting, data="blur_radius", label="Shadow Blur Radius (0-100)",
             input_filter=ft.NumbersOnlyInputFilter(),
             suffix_icon=UpDownButtons(up_function=increase_shadow_tf_value, down_function=decrease_shadow_tf_value)
         )
 
         shadow_spread_radius_tf = TextField(
-            value=str(shadow_app_settings.get('spread_radius', 0)),
+            value=str(text_shadow_app_settings.get('spread_radius', 0)),
             on_blur=update_text_shadow_setting, data="spread_radius", label="Shadow Spread Radius (0-100)",
             input_filter=ft.NumbersOnlyInputFilter(),
             suffix_icon=UpDownButtons(up_function=increase_shadow_tf_value, down_function=decrease_shadow_tf_value)
         )
 
         shadow_offset_x_tf = TextField(
-            value=str(shadow_app_settings.get('offset_x', 0)),
+            value=str(text_shadow_app_settings.get('offset_x', 0)),
             on_blur=update_text_shadow_setting, data="offset_x", label="Shadow Offset X (-100-100)",
             input_filter=NEGATIVE_NUMBER_FILTER,
             suffix_icon=UpDownButtons(up_function=increase_shadow_tf_value, down_function=decrease_shadow_tf_value)
         )
 
         shadow_offset_y_tf = TextField(
-            value=str(shadow_app_settings.get('offset_y', 0)),
+            value=str(text_shadow_app_settings.get('offset_y', 0)),
             on_blur=update_text_shadow_setting, data="offset_y", label="Shadow Offset Y (-100-100)",
             input_filter=NEGATIVE_NUMBER_FILTER,
             suffix_icon=UpDownButtons(up_function=increase_shadow_tf_value, down_function=decrease_shadow_tf_value)
@@ -1397,142 +1385,19 @@ def DrawingControls(story: Story) -> list[ft.control]:
 
         text_decoration_color_picker = ColorPicker(text_app_settings.decoration_color) 
 
-        text_shadow_color_picker = ColorPicker(shadow_app_settings.get('color', ft.Colors.PRIMARY)) 
+        text_shadow_color_picker = ColorPicker(text_shadow_app_settings.get('color', ft.Colors.PRIMARY)) 
 
         # Create our color selector button
-        text_color_selector = ft.SubmenuButton(
-            ft.Icon(ft.Icons.CIRCLE, text_app_settings.color), 
-            tooltip="The color of your text",
-            on_close=save_text_color, #expand=True,
-            width=40,
-            height=40,
-            controls=[text_color_picker],
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0)),
-            menu_style=ft.MenuStyle(
-                alignment=ft.Alignment.TOP_RIGHT,
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
-                shape=ft.RoundedRectangleBorder(radius=4),
-                padding=ft.Padding.all(0)
-            ),
-        )
+        text_color_selector = ColorSelector(text_app_settings)
+        text_bg_color_selector = ColorSelector(text_app_settings, field="bgcolor")
+        text_decoration_color_selector = ColorSelector(text_app_settings, field="decoration_color")
+        text_shadow_color_selector = ColorSelector(text_shadow_app_settings, field="color")
 
-        # Create our color selector button
-        text_bg_color_selector = ft.SubmenuButton(
-            ft.Icon(ft.Icons.CIRCLE, text_app_settings.bgcolor), 
-            tooltip="The color of your background behind your text.",
-            on_close=save_text_bg_color, #expand=True,
-            width=40,
-            height=40,
-            controls=[text_bg_color_picker],
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0),),
-            menu_style=ft.MenuStyle(
-                alignment=ft.Alignment.CENTER_RIGHT,
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
-                shape=ft.RoundedRectangleBorder(radius=4),
-                padding=ft.Padding.all(0)
-            ),
-        )
-
-        text_decoration_color_selector = ft.SubmenuButton(
-            ft.Icon(ft.Icons.CIRCLE, text_app_settings.decoration_color),
-            tooltip="The color of your text decoration (underline, overline, line through).",
-            on_close=save_text_decoration_color, #expand=True,
-            width=40,
-            height=40,
-            controls=[text_decoration_color_picker],
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0),),
-            menu_style=ft.MenuStyle(
-                alignment=ft.Alignment.CENTER_RIGHT,
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-                shape=ft.RoundedRectangleBorder(radius=4),
-                padding=ft.Padding.all(0)
-            ),
-        )
-
-        text_shadow_color_selector = ft.SubmenuButton(
-            ft.Icon(ft.Icons.CIRCLE, shadow_app_settings.get('color', ft.Colors.PRIMARY)),
-            tooltip="The color of your text shadow.",
-            on_close=save_text_shadow_color, #expand=True,
-            width=40,
-            height=40,
-            controls=[text_shadow_color_picker],
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0),),
-            menu_style=ft.MenuStyle(
-                alignment=ft.Alignment.CENTER_RIGHT,
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-                shape=ft.RoundedRectangleBorder(radius=4),
-                padding=ft.Padding.all(0)
-            ),
-        )
-
-        text_color_options_button = ft.SubmenuButton(
-            controls=get_color_options(text_color_picker, save_text_color),
-            content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
-            style=ft.ButtonStyle(
-                #mouse_cursor=ft.MouseCursor.CLICK,  
-                shape=ft.RoundedRectangleBorder(radius=0),
-                padding=ft.Padding.all(0),
-            ),
-            menu_style=ft.MenuStyle(
-                alignment=ft.Alignment.TOP_RIGHT,
-                bgcolor=ft.Colors.SURFACE_CONTAINER, 
-                shape=ft.RoundedRectangleBorder(radius=4),
-                padding=ft.Padding.all(0)
-            ),
-            expand=True,
-            width=24,
-        )  
-
-        text_bg_color_options_button = ft.SubmenuButton(
-            controls=get_color_options(text_bg_color_picker, save_text_bg_color),
-            content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
-            style=ft.ButtonStyle(
-                shape=ft.RoundedRectangleBorder(radius=0),
-                padding=ft.Padding.all(0),
-            ),
-            menu_style=ft.MenuStyle(
-                alignment=ft.Alignment.CENTER_RIGHT,
-                bgcolor=ft.Colors.SURFACE_CONTAINER, 
-                shape=ft.RoundedRectangleBorder(radius=4),
-                padding=ft.Padding.all(0)
-            ),
-            expand=True,
-            width=24,
-        )  
-
-        text_decoration_color_options_button = ft.SubmenuButton(
-            controls=get_color_options(text_decoration_color_picker, save_text_decoration_color),
-            content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
-            style=ft.ButtonStyle(
-                shape=ft.RoundedRectangleBorder(radius=0),
-                padding=ft.Padding.all(0),
-            ),
-            menu_style=ft.MenuStyle(
-                alignment=ft.Alignment.CENTER_RIGHT,
-                bgcolor=ft.Colors.SURFACE_CONTAINER, 
-                shape=ft.RoundedRectangleBorder(radius=4),
-                padding=ft.Padding.all(0)
-            ),
-            expand=True,
-            width=24,
-        )
-
-        text_shadow_color_options_button = ft.SubmenuButton(
-            controls=get_color_options(text_shadow_color_picker, save_text_shadow_color),
-            content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
-            style=ft.ButtonStyle(
-                shape=ft.RoundedRectangleBorder(radius=0),
-                padding=ft.Padding.all(0),
-            ),
-            menu_style=ft.MenuStyle(
-                alignment=ft.Alignment.CENTER_RIGHT,
-                bgcolor=ft.Colors.SURFACE_CONTAINER, 
-                shape=ft.RoundedRectangleBorder(radius=4),
-                padding=ft.Padding.all(0)
-            ),
-            expand=True,
-            width=24,
-        )
+        # Color selectors
+        text_color_options_button = SavedColorsSelector(text_app_settings)
+        text_bg_color_options_button = SavedColorsSelector(text_app_settings, field="bgcolor")
+        text_decoration_color_options_button = SavedColorsSelector(text_app_settings, field="decoration_color")
+        text_shadow_color_options_button = SavedColorsSelector(text_shadow_app_settings, field="color")
 
         
 
@@ -1546,7 +1411,7 @@ def DrawingControls(story: Story) -> list[ft.control]:
                             #] + [
                             #ft.Radio(key.capitalize(), value=key) for key in ("none", "normal", "solid", "outer", "inner")
                         #], spacing=0),
-                        # value=shadow_app_settings.get('blur_style', 'normal') if shadow_app_settings.get('blur_style', None) is not None else 'normal',
+                        # value=text_shadow_app_settings.get('blur_style', 'normal') if text_shadow_app_settings.get('blur_style', None) is not None else 'normal',
                         #on_change=update_text_shadow_setting,
                         #data="blur_style"
                             #)
@@ -1929,120 +1794,6 @@ def DrawingControls(story: Story) -> list[ft.control]:
 
         return ctrls
 
-    
-
-    # Color picker for changing brush color
-    color_picker = ColorPicker(
-        color=paint_app_settings.color,
-        #on_color_change=set_color, 
-        picker_area_border_radius=ft.BorderRadius.all(4),
-        color_history=[]
-    )   
-
-
-    def get_color_options(target_color_picker: ColorPicker, apply_color) -> list[ft.Control]:
-        nonlocal drawing_app_settings
-
-        def set_saved_color(e: ft.Event[ft.MenuItemButton]):
-            color_data = e.control.data
-            target_color_picker.color = color_data.get('value', "#000000")
-            apply_color(None)
-
-        def delete_color(e: ft.Event[ft.IconButton]):
-            nonlocal drawing_app_settings
-            idx = e.control.data
-            drawing_app_settings['saved_colors'].pop(idx)
-            app_settings.update_data(**{"drawing_app_settings": {"saved_colors": drawing_app_settings['saved_colors']}})
-            color_options_button.controls = get_color_options(color_picker, save_color)
-            text_app_settings_button.controls = get_text_options()
-            #.update()
-
-        def save_custom_color(e: ft.Event[ft.IconButton]):
-
-            # Saves the color to data and pops the dialog
-            async def save_color_name(e=None):
-                nonlocal drawing_app_settings
-                color_name = name_tf.value.strip()
-                # Always pull from the picker that triggered this save, not the paint picker
-                current_color = target_color_picker.color
-                drawing_app_settings['saved_colors'].append({'name': color_name, 'value': current_color})
-                app_settings.update_data(**{"drawing_app_settings": {"saved_colors": drawing_app_settings['saved_colors']}})
-                color_options_button.controls = get_color_options(color_picker, save_color)
-                text_app_settings_button.controls = get_text_options()
-                #.update()
-                page.pop_dialog()
-        
-
-            name_tf = ft.TextField(label="Color Name", autofocus=True, on_submit=save_color_name, capitalization=ft.TextCapitalization.WORDS)
-            #color = e.control.parent.parent.parent.parent.controls[0].content.color or paint_app_settings.get('color', "#000000")
-            
-            page.show_dialog(
-                ft.AlertDialog(
-                    title="Name Color",
-                    content=name_tf,
-                    actions=[
-                        ft.TextButton("Cancel", on_click=lambda: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK)),
-                        ft.TextButton("Save", on_click=save_color_name, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
-                    ]
-                )
-            )
-            
-        def highlight_option(e: ft.Event[ft.GestureDetector]):
-            e.control.content.bgcolor = ft.Colors.OUTLINE_VARIANT
-            e.control.update()
-        def stop_highlight_option(e: ft.Event[ft.GestureDetector]):
-            e.control.content.bgcolor = ft.Colors.TRANSPARENT
-            e.control.update()
-
-
-        ctrls = [
-            ft.Row([    # Label
-                ft.Text("Saved Colors", color=ft.Colors.ON_SURFACE_VARIANT, italic=True, margin=ft.Margin.only(left=4)),
-                ft.IconButton(  # Save button
-                    ft.Icons.SAVE_ROUNDED, ft.Colors.PRIMARY, on_click=save_custom_color, 
-                    tooltip="Save the current color to your saved colors", 
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
-                ),
-            ], margin=ft.Margin.only(left=4), alignment=ft.MainAxisAlignment.CENTER)   
-        ]
-        return ctrls
-        for idx, color_data in enumerate(drawing_app_settings.get('saved_colors', [])):
-            ctrls.append(
-                ft.GestureDetector(
-                    ft.Container(
-                        ft.Row([
-                            ft.Icon(ft.Icons.CIRCLE, color_data.get('value', "#000000")),
-                            ft.Text(color_data.get('name', 'Unnamed Color')),
-                            ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, data=idx, tooltip="Delete this saved color", on_click=delete_color),
-                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                        border_radius=ft.BorderRadius.all(4), padding=ft.Padding.only(left=10, right=10)
-                    ),
-                    data=color_data,
-                    on_tap=set_saved_color,
-                    on_enter=highlight_option,
-                    on_exit=stop_highlight_option,
-                )
-            )
-        
-        return ctrls
-
-    color_options_button = ft.SubmenuButton(
-        controls=get_color_options(color_picker, save_color),
-        content=ft.Icon(ft.Icons.ARROW_DROP_DOWN, ft.Colors.PRIMARY, scale=0.8),
-        style=ft.ButtonStyle(
-            #mouse_cursor=ft.MouseCursor.CLICK,  
-            shape=ft.RoundedRectangleBorder(radius=0),
-            padding=ft.Padding.all(0),
-        ),
-        menu_style=ft.MenuStyle(
-            alignment=ft.Alignment.TOP_RIGHT,
-            bgcolor=ft.Colors.SURFACE_CONTAINER, 
-            shape=ft.RoundedRectangleBorder(radius=4),
-            padding=ft.Padding.all(0)
-        ),
-        expand=True,
-        width=24,
-    )  
 
     # Button to set the control mode to draw mode
     set_draw_mode_button = ft.IconButton(
