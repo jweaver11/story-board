@@ -22,12 +22,17 @@ class Overlay:
         self.menu_visible = True
     def hide_menu(self):
         self.menu_visible = False
-    def set_menu_position(self, position: ft.Offset):
-        self.menu_position = position
     def unblock_page(self):
         self.blocker_visible = False
     def block_page(self):
         self.blocker_visible = True
+
+    def set_menu_position(self, position: ft.Offset):
+        self.menu_position = position
+
+    def set_menu_options(self, options: list[ft.Control]):
+        self.menu_options = options
+    
 
 
 @ft.component
@@ -48,7 +53,6 @@ def Blocker(overlay: Overlay):
 def Menu(overlay: Overlay):
     return ft.Stack([
         ft.GestureDetector(
-            ft.Container(expand=True, bgcolor="red"),
             expand=True, 
             visible=overlay.menu_visible,
             on_tap_down=overlay.hide_menu,
@@ -69,4 +73,4 @@ def Menu(overlay: Overlay):
             on_click=overlay.hide_menu,
         )
 
-    ], width=ft.context.page.width, height=ft.context.page.height)
+    ], expand=True)

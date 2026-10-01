@@ -8,6 +8,7 @@ from utils.tree_view import load_directory_data
 from styles.menu_option_style import MenuOptionStyle
 import math
 from contexts.app_settings import AppSettingsContext
+from contexts.contexts import OverlayContext
 
 
 
@@ -463,8 +464,7 @@ def TreeViewRail(story) -> ft.Control:
     creating_canvas, set_creating_canvas = ft.use_state(False)  # Canvas is special and gets its own dialog
 
     # For right clicking to open a menu
-    show_menu, set_show_menu = ft.use_state(False)
-    menu_position, set_menu_position = ft.use_state(ft.Offset())
+    overlay = ft.use_context(OverlayContext)
 
 
     new_item_textfield = ft.TextField(     
@@ -512,8 +512,8 @@ def TreeViewRail(story) -> ft.Control:
     menu_gesture_detector = ft.GestureDetector(
         content=dt,
         expand=True,
-        on_hover=lambda e: set_menu_position(e.local_position) if not show_menu else None,
-        on_secondary_tap=lambda: set_show_menu(not show_menu),
+        on_hover=lambda e: overlay.set_menu_position(e.global_position) if not overlay.menu_visible else None,
+        on_secondary_tap=lambda: overlay.show_menu(),
         #on_secondary_tap=lambda: self.story.open_menu(self.get_new_item_menu_options()),  
         hover_interval=20,
     )
@@ -549,11 +549,6 @@ def TreeViewRail(story) -> ft.Control:
             drag_interval=20,
         )
 
-
-    
-    
-    def hide_menu():
-        set_show_menu(False)
 
     
     # Return our build rail

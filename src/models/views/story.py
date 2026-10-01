@@ -1088,6 +1088,7 @@ def StoryView(story: 'Story') -> ft.View:
     settings = ft.use_context(AppSettingsContext)   
 
     overlay, _ = ft.use_state(Overlay())  
+   
     
 
     # Set our specific event to detect keyboard events for the story
@@ -1097,23 +1098,25 @@ def StoryView(story: 'Story') -> ft.View:
 
 
     
-    return ft.Stack(
+    return ft.View(
         [
-            ft.View(
+            ft.Stack(
                 [
-                    MenuBar(story),
-                    ft.Row([       # Keep the majority of the page out up updates
-                        #DrawingControlsRail(settings, story),
-                        TreeViewRail(story),
-                        #story.workspace,
-                    ], spacing=0, expand=True),
+                    ft.Column([
+                        MenuBar(story),
+                        ft.Row([       # Keep the majority of the page out up updates
+                            #DrawingControlsRail(settings, story),
+                            OverlayContext(overlay, lambda: TreeViewRail(story)),   # Allow the overlay into the tree view
+                            #story.workspace,
+                        ], spacing=0, expand=True),
+                    ], expand=True, spacing=0),
+                    Menu(overlay),
+                    Blocker(overlay),
                 ],
-                padding=ft.Padding.all(0),      # No padding for the page
-                spacing=0,                                                      # No spacing between menubar and rest of page
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
+                expand=True
             ),
-            Menu(overlay),
-            Blocker(overlay)
         ],
-        expand=True
+        padding=ft.Padding.all(0),      # No padding for the page
+        spacing=0,                                                      # No spacing between menubar and rest of page
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
     )
