@@ -16,6 +16,8 @@ import asyncio
 @ft.component
 def RailFolder(folder_data: dict, story: Story) -> ft.GestureDetector:
 
+    print("Loaded rail folder component")
+
     # Switch between expanded and not in data
     def toggle_expand(e=None):
         folder_data['is_expanded'] = not folder_data.get('is_expanded', False)

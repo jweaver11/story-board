@@ -63,7 +63,7 @@ def load_directory_data(story: Story, directory: str) -> list[ft.Control]:
             load_directory_data(story, full_path)
 
             # After loading the folders content, add it to either a parent folder (if it has one) or the column for the rail
-            directory_controls.append(folder_view)
+            directory_controls.append((folder_data.get('name', '').lower(), folder_view))
 
 
         # Now go through our files
@@ -86,19 +86,20 @@ def load_directory_data(story: Story, directory: str) -> list[ft.Control]:
             
             # Add the file control to the controls list
             if widget:    
-                file_controls.append(RailFile(widget, story))
+                file_controls.append((widget.title.lower(), RailFile(widget, story)))
                 
             else:
                 print("Could not find widget inside load_directory_data")
                 print(story.widgets.keys())
                 continue
 
-        # Sort Folders and files alphabetically
-        #directory_controls.sort(key=lambda x: x.folder_data['name'].lower())
-        #file_controls.sort(key=lambda x: x.widget.title.lower())
+        # Sort folders and files alphabetically by the name/title tracked alongside each control,
+        # since RailFolder/RailFile return plain controls with no folder_data/widget attribute of their own
+        directory_controls.sort(key=lambda pair: pair[0])
+        file_controls.sort(key=lambda pair: pair[0])
 
         # Retrun directory/folder controls on top, followed by file controls
-        return directory_controls + file_controls
+        return [control for _, control in directory_controls] + [control for _, control in file_controls]
     
     # Handle errors
     except Exception as e:

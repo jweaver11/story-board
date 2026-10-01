@@ -71,7 +71,7 @@ def StoryRoute() -> ft.View:
     # See where the story exists in the apps dictionary, and return its view
     if story_id in app.stories:
         story = app.stories[story_id]
-        #story = ft.use_memo(lambda: story, [story.id])
+        story = ft.use_memo(lambda: story, [story.id])
 
         #ft.context.page.overlay = []   # TODO: Overlay menu stuff
         #ft.context.page.overlay.extend([

@@ -113,6 +113,8 @@ def get_menu_options(self) -> list[ft.Control]:
 # Called to reload our tree view file display
 @ft.component
 def RailFile(widget: dataclass, story):
+
+    print("Loaded rail file component")
     
     match widget.tag:
         case "manuscript": icon = ft.Icons.DESCRIPTION_OUTLINED

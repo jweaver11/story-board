@@ -11,15 +11,11 @@ class Overlay:
     blocker_visible: bool = False
     menu_visible: bool = False
 
-    # Position of the menu
-    menu_position: ft.Offset = field(default_factory=lambda: ft.Offset(0, 0))
-
     # Options for the menu
+    menu_position: ft.Offset = field(default_factory=lambda: ft.Offset(0, 0))
     menu_options: list[ft.Control] = None
 
-
-    def show_menu(self):
-        self.menu_visible = True
+    
     def hide_menu(self):
         self.menu_visible = False
     def unblock_page(self):
@@ -27,11 +23,12 @@ class Overlay:
     def block_page(self):
         self.blocker_visible = True
 
-    def set_menu_position(self, position: ft.Offset):
-        self.menu_position = position
+   
 
-    def set_menu_options(self, options: list[ft.Control]):
-        self.menu_options = options
+    def show_menu(self, position: ft.Offset, menu_options: list[ft.Control]):
+        self.menu_position = position
+        self.menu_options = menu_options
+        self.menu_visible = True
     
 
 
@@ -44,7 +41,8 @@ def Blocker(overlay: Overlay):
         ], alignment=ft.MainAxisAlignment.CENTER), 
         expand=True, 
         visible=overlay.blocker_visible, 
-        blur=5, left=0, right=0, top=0, bottom=0
+        blur=5, left=0, right=0, top=0, bottom=0,
+        key="blocker"
     )
 
 
@@ -73,4 +71,4 @@ def Menu(overlay: Overlay):
             on_click=overlay.hide_menu,
         )
 
-    ], expand=True)
+    ], expand=True, key="menu")
