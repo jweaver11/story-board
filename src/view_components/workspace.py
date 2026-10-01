@@ -9,6 +9,7 @@ import flet as ft
 #from models.app import app
 from models.views.story import Story
 from models.widget import Widget
+import functools
 import json
 from styles.colors import dark_gradient
 from styles.snack_bar import SnackBar
@@ -19,7 +20,8 @@ import asyncio
 from styles.menu_option_style import MenuOptionStyle
 import os
 from models.widget import WidgetView
-from contexts.contexts import StoryContext
+from models.widgets.note import NoteView
+from contexts.contexts import StoryContext, OverlayContext
 
 # Our workspace object that is stored in our story object
 class WorkspaceOld(ft.Container):
@@ -281,7 +283,22 @@ def Workspace():
     @ft.component
     def build_widget_view(widget: Widget):
         ''' Returns the correct widget view based on the widgets tag'''
+        match widget.tag:
+            case "note": return NoteView(widget)
         return WidgetView(widget)
+
+    # Called to hide the widget from the workspace
+    async def hide_widget(widget):
+        ''' Hides this widget from the workspace but keeps it in the story and rail '''
+        await overlay.block_page()
+
+        widget.visible = False
+        story.widgets[widget.id] = widget   # Touch to observable to trigger observers
+
+        if widget.tag == "canvas" or widget.tag == "manuscript" or widget.tag == "map" or widget.tag == "canvas_board":    # Widgets that must be rendered to save
+            ft.context.page.run_task(widget.save_file)
+        await overlay.unblock_page()
+
 
     # Creates a new tab control for the given widget
     @ft.component
@@ -349,7 +366,7 @@ def Workspace():
         # Button to remove the widget from the workspace
         hide_widget_button = ft.IconButton(    # Hide widget button on right side of tab
             scale=0.8,
-            on_click=lambda: widget.hide_widget(story),    # Calls remove_widget_from_workspace. Just keep it this way for consistency with other widget actions
+            on_click=functools.partial(hide_widget, widget),    # partial (not lambda) so Flet awaits the coroutine directly
             icon=ft.Icons.CLOSE_ROUNDED,
             icon_color=ft.Colors.OUTLINE,
             tooltip="Hide",
@@ -395,6 +412,7 @@ def Workspace():
         return tab
 
     story = ft.use_context(StoryContext)
+    overlay = ft.use_context(OverlayContext)
 
     visible_widgets = [widget for widget in story.widgets.values() if widget.visible]
     sorted_visible_widgets: list = sorted(visible_widgets, key=lambda w: w.index)
@@ -421,8 +439,6 @@ def Workspace():
         ],
         expand=True
     )
-
-    print(len(tab_bar.tabs), len(sorted_visible_widgets))
 
     return ft.Tabs(
         expand=True, 

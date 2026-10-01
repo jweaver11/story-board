@@ -2,197 +2,206 @@
 
 import flet as ft
 from models.views.story import Story
-from models.widget import Widget
+from models.widget import Widget, WidgetView
 from styles.text_fields import TextField, UnderlinedTextField, NoLabelTextField
 from styles.menu_option_style import MenuOptionStyle
 import asyncio
 from styles.colors import colors
 from dataclasses import field
+from contexts.contexts import StoryContext, OverlayContext
+from dataclasses import dataclass
+    
+@ft.observable
+@dataclass
+class Note(Widget):
+    tag: str = "note"
+    card_data: list = field(default_factory=lambda: [{'label': '', 'value': '', 'color': 'onsurface', 'strikethrough': False}])
+
+
+# Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
+@ft.component
+def NoteView(note: Note):
+    ''' Reloads/Rebuilds our widget based on current data '''
+
+    story = ft.use_context(StoryContext)
+    overlay = ft.use_context(OverlayContext)
+
+    menu_position = ft.use_ref(ft.Offset(0, 0)) # Menu position without update UI
+
+    # Control refs
+    card_column = ft.use_ref(ft.Column()) # Stable ref to the scrollable column, immune to remounts across re-renders
+    
+    def set_menu_position(position: ft.Offset): # Set that menu position
+        menu_position.current = position
+
+    
+    # Adds our new card to data and our column
+    async def handle_create_card(e=None):
+        note.card_data.append({"label": '', "value": "", 'color': "white"})
+        await asyncio.sleep(0.05)   # Consistant seperate updates so scrolling works correctly when new 'row' is added
+        await card_column.current.scroll_to(offset=-1, duration=200)
+        
+
+    # Saves label when text field is unfocused
+    def save_card_label(e: ft.Event[ft.TextField]):
+        index = e.control.parent.parent.parent.data
+        if len(note.card_data) > index:
+            note.card_data[index]['label'] = e.control.value
+            
+                
+
+    # Saves content when text field is unfocused
+    def save_card_value(e: ft.Event[ft.TextField]):
+        index = e.control.parent.parent.parent.data
+        
+        if len(note.card_data) > index:
+            note.card_data[index]['value'] = e.control.value
+            
+
+    def get_card_options(idx: int) -> list[ft.Control]:
+        ''' Pops open a column of the menu options for this tree view item'''
+
+        async def handle_delete(e: ft.Event[ft.Control]):
+            if len(note.card_data) > idx:
+                del note.card_data[idx]
+                
+                card_row.controls.pop(idx)
+                card_row.update()
+                for i, ctrl in enumerate(card_row.controls):
+                    ctrl.data = i
+                #await note.story.close_menu()
+
+        async def handle_color_change(e: ft.Event[ft.Control]):
+            new_color = e.control.data
+            if len(note.card_data) > idx:
+                note.card_data[idx]['color'] = new_color
+                
+                card_row.controls[idx].content.bgcolor = ft.Colors.with_opacity(0.05, new_color)
+                card_row.controls[idx].content.update()
+                #await note.story.close_menu()
+
+        async def handle_strikethrough(e: ft.Event[ft.Control]):
+            if len(note.card_data) > idx:
+                note.card_data[idx]['strikethrough'] = not note.card_data[idx].get('strikethrough', False)
+               
+                card_row.controls[idx].content.update()
+                #await note.story.close_menu()
+
+
+        return [
+            MenuOptionStyle(
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY), 
+                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    [ft.MenuItemButton(color.capitalize(), style=ft.ButtonStyle(color), on_click=handle_color_change, data=color) for color in colors],
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    tooltip="Change this widget's color"
+                ),
+                no_padding=True, no_effects=True
+            ),
+            #MenuOptionStyle(
+                #on_click=handle_strikethrough,
+                #content=ft.Row([
+                    #ft.Icon(ft.Icons.FORMAT_STRIKETHROUGH_OUTLINED, size=20, color=ft.Colors.PRIMARY),
+                    #ft.Text("Mark Done", weight=ft.FontWeight.BOLD)
+                #], alignment=ft.MainAxisAlignment.START, spacing=10),
+            #),
+            MenuOptionStyle(
+                on_click=handle_delete,
+                content=ft.Row([
+                    ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, size=20, color=ft.Colors.ERROR),
+                    ft.Text("Delete Card", weight=ft.FontWeight.BOLD)
+                ], alignment=ft.MainAxisAlignment.START, spacing=10),
+            )
+        ]
+
+    # Gives us a new textfield for each note card
+    def new_card(idx: int, data: dict={}) -> TextField:
+        label = data.get('label', '')
+        value = data.get('value', '')
+        color = data.get('color', 'onsurface')
+        strikethrough = data.get('strikethrough', False)
+
+        # Top textfield for the label
+        label_tf = ft.TextField(
+            value=label,
+            dense=True, multiline=True, width=400,
+            #border_color=ft.Colors.TRANSPARENT,
+            capitalization=ft.TextCapitalization.SENTENCES,
+            text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE),
+            suffix_icon=ft.GestureDetector(
+                ft.IconButton(
+                    ft.Icons.MORE_VERT, ft.Colors.ON_SURFACE_VARIANT, 
+                    #on_click=lambda e: note.story.open_menu(get_card_options(e.control.parent.parent.parent.parent.parent.data)),
+                    mouse_cursor=ft.MouseCursor.CLICK,
+                ),
+                on_hover=lambda e: set_menu_position(e.global_position),
+                hover_interval=30,
+            ),
+            on_blur=save_card_label
+        )
+
+        # Bottom textfield for the body of the card
+        body_tf = ft.TextField(
+            dense=True,
+            #border_color=ft.Colors.TRANSPARENT,
+            text_style=ft.TextStyle(size=14, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE),
+            multiline=True,
+            capitalization=ft.TextCapitalization.SENTENCES,
+            value=value, expand=True, on_blur=save_card_value,
+        )  
+        
+        
+        card = ft.Card(
+            ft.Container(
+                ft.Column([
+                    label_tf,
+                    ft.Divider(2, 2, leading_indent=10, trailing_indent=10),
+                    body_tf
+                ], spacing=0, expand=True),
+                bgcolor=ft.Colors.with_opacity(0.05, color),
+            ),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            height=300, width=400,
+            shape=ft.RoundedRectangleBorder(radius=4),
+            data=idx
+        )
+        return card
+
+    # Column to hold our cards textfields
+    card_row = ft.Row(
+        controls=[], 
+        wrap=True, alignment=ft.MainAxisAlignment.START, expand=True,
+    )
+
+    # Go through the note data and load the cards
+    for idx, card_data in enumerate(note.card_data):
+        card_row.controls.append(new_card(idx, card_data))
+
+
+    # Button to click to add a new card
+    add_card_button = ft.Button(
+        "Add Card", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+        tooltip="Add a new card to your note.", 
+        on_click=handle_create_card, 
+        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
+        bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+    )
+
     
 
-class Note(Widget):
 
-    tag: str = "note"
-    card_data: list = field(default_factory=list)
-    # {"label": "", "value": "", 'color': 'onsurface', 'strikethrough': False}, {...}
-
-
-    # Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
-    def build(self):
-        ''' Reloads/Rebuilds our widget based on current data '''
-
-        super().build()
-
-        self.padding = ft.Padding.all(10)   # Set padding
-
-        
-        # Adds our new card to data and our column
-        async def handle_create_card(e=None):
-            self.data['card_data'].append({"label": '', "value": "", 'color': "white"})
-            self.update_data(**{'card_data': self.data['card_data']})
-            card_row.controls.append(new_card(len(self.data['card_data']) - 1, self.data['card_data'][-1]))
-            card_row.update()
-            await asyncio.sleep(0.02)
-            await card_row.parent.scroll_to(offset=-1, duration=200)
-            
-
-        # Saves label when text field is unfocused
-        def save_card_label(e: ft.Event[ft.TextField]):
-            index = e.control.parent.parent.parent.data
-            if len(self.data['card_data']) > index:
-                self.data['card_data'][index]['label'] = e.control.value
-                self.update_data(**{'card_data': self.data['card_data']})
-                    
-
-        # Saves content when text field is unfocused
-        def save_card_value(e: ft.Event[ft.TextField]):
-            index = e.control.parent.parent.parent.data
-            
-            if len(self.data['card_data']) > index:
-                self.data['card_data'][index]['value'] = e.control.value
-                self.update_data(**{'card_data': self.data['card_data']})
-
-        def get_card_options(idx: int) -> list[ft.Control]:
-            ''' Pops open a column of the menu options for this tree view item'''
-
-            async def handle_delete(e: ft.Event[ft.Control]):
-                if len(self.data['card_data']) > idx:
-                    del self.data['card_data'][idx]
-                    self.update_data(**{'card_data': self.data['card_data']})
-                    card_row.controls.pop(idx)
-                    card_row.update()
-                    for i, ctrl in enumerate(card_row.controls):
-                        ctrl.data = i
-                    await self.story.close_menu()
-
-            async def handle_color_change(e: ft.Event[ft.Control]):
-                new_color = e.control.data
-                if len(self.data['card_data']) > idx:
-                    self.data['card_data'][idx]['color'] = new_color
-                    self.update_data(**{'card_data': self.data['card_data']})
-                    card_row.controls[idx].content.bgcolor = ft.Colors.with_opacity(0.05, new_color)
-                    card_row.controls[idx].content.update()
-                    await self.story.close_menu()
-
-            async def handle_strikethrough(e: ft.Event[ft.Control]):
-                if len(self.data['card_data']) > idx:
-                    self.data['card_data'][idx]['strikethrough'] = not self.data['card_data'][idx].get('strikethrough', False)
-                    self.update_data(**{'card_data': self.data['card_data']})
-                    card_row.controls[idx].content.update()
-                    await self.story.close_menu()
-
-
-            return [
-                MenuOptionStyle(
-                    ft.SubmenuButton(
-                        ft.Row([
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY), 
-                            ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
-                            ft.Icon(ft.Icons.ARROW_RIGHT),
-                        ], expand=True),
-                        [ft.MenuItemButton(color.capitalize(), style=ft.ButtonStyle(color), on_click=handle_color_change, data=color) for color in colors],
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="Change this widget's color"
-                    ),
-                    no_padding=True, no_effects=True
-                ),
-                #MenuOptionStyle(
-                    #on_click=handle_strikethrough,
-                    #content=ft.Row([
-                        #ft.Icon(ft.Icons.FORMAT_STRIKETHROUGH_OUTLINED, size=20, color=ft.Colors.PRIMARY),
-                        #ft.Text("Mark Done", weight=ft.FontWeight.BOLD)
-                    #], alignment=ft.MainAxisAlignment.START, spacing=10),
-                #),
-                MenuOptionStyle(
-                    on_click=handle_delete,
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, size=20, color=ft.Colors.ERROR),
-                        ft.Text("Delete Card", weight=ft.FontWeight.BOLD)
-                    ], alignment=ft.MainAxisAlignment.START, spacing=10),
-                )
-            ]
-
-        # Gives us a new textfield for each note card
-        def new_card(idx: int, data: dict={}) -> TextField:
-            label = data.get('label', '')
-            value = data.get('value', '')
-            color = data.get('color', 'onsurface')
-            strikethrough = data.get('strikethrough', False)
-
-            # Top textfield for the label
-            label_tf = ft.TextField(
-                value=label,
-                dense=True, multiline=True, width=400,
-                border_color=ft.Colors.TRANSPARENT,
-                capitalization=ft.TextCapitalization.SENTENCES,
-                text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE),
-                suffix_icon=ft.GestureDetector(
-                    ft.IconButton(
-                        ft.Icons.MORE_VERT, ft.Colors.ON_SURFACE_VARIANT, 
-                        on_click=lambda e: self.story.open_menu(get_card_options(e.control.parent.parent.parent.parent.parent.data)),
-                        mouse_cursor=ft.MouseCursor.CLICK,
-                    ),
-                    on_hover=lambda e: self.set_mouse_coords(e),
-                    hover_interval=30,
-                ),
-                on_blur=save_card_label
-            )
-
-            # Bottom textfield for the body of the card
-            body_tf = ft.TextField(
-                dense=True,
-                border_color=ft.Colors.TRANSPARENT,
-                text_style=ft.TextStyle(size=14, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE),
-                multiline=True,
-                capitalization=ft.TextCapitalization.SENTENCES,
-                value=value, expand=True, on_blur=save_card_value,
-            )  
-            
-            
-            card = ft.Card(
-                ft.Container(
-                    ft.Column([
-                        label_tf,
-                        ft.Divider(2, 2, leading_indent=10, trailing_indent=10),
-                        body_tf
-                    ], spacing=0, expand=True),
-                    bgcolor=ft.Colors.with_opacity(0.05, color),
-                ),
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-                height=300, width=400,
-                shape=ft.RoundedRectangleBorder(radius=4),
-                data=idx
-            )
-            return card
-
-        # Column to hold our cards textfields
-        card_row = ft.Row(
-            controls=[], 
-            wrap=True, alignment=ft.MainAxisAlignment.START, expand=True,
-        )
-
-        # Go through the note data and load the cards
-        for idx, card_data in enumerate(self.data.get('card_data', [])):
-            card_row.controls.append(new_card(idx, card_data))
-
-
-        # Button to click to add a new card
-        add_card_button = ft.Button(
-            "Add Card", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
-            tooltip="Add a new card to your note.", 
-            on_click=handle_create_card, 
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
-        )
-
-        
-
-
-        self.content = ft.Stack([
-            ft.Column([card_row], expand=True, alignment=ft.MainAxisAlignment.START, scroll=ft.ScrollMode.AUTO),
+    return WidgetView(
+        note, 
+        ft.Stack([
+            ft.Column([card_row], ref=card_column, key=f"{note.id}_note_card_column", expand=True, alignment=ft.MainAxisAlignment.START, scroll=ft.ScrollMode.AUTO),
             ft.Column([
                 
                 add_card_button, 
             ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
         ], alignment=ft.Alignment.TOP_LEFT, expand=True)
+    )

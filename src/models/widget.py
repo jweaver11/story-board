@@ -388,15 +388,7 @@ class Widget:
 
         #await self.story.workspace.add_widget_to_workspace(self)  # Adds ourselves to the workspace and focus our tab
        
-    # Called to hide the widget from the workspace
-    def hide_widget(self, story: Story):
-        ''' Hides this widget from the workspace but keeps it in the story and rail '''
-  
-        self.visible = False
-        story.widgets[self.id] = self   # Touch to observable to trigger observers
-
-        if self.tag == "canvas" or self.tag == "manuscript" or self.tag == "map" or self.tag == "canvas_board":    # Widgets that must be rendered to save
-            ft.context.page.run_task(self.save_file)
+    
         
 
     # Called when right clicking our tab
@@ -404,7 +396,7 @@ class Widget:
 
         async def close_tab(e=None):
             await self.story.close_menu()
-            await self.hide_widget()
+            #await self.hide_widget()
 
         # Color, rename, close_tab
         return [
@@ -744,6 +736,9 @@ class Widget:
         )
 
 @ft.component
-def WidgetView(widget: Widget):
+def WidgetView(widget: Widget, content: ft.Control):
     story = ft.use_context(StoryContext)
-    return ft.Text(f"Base widget view for: {widget.title}", key=widget.id)
+    return ft.Container(
+        content,
+        key=widget.id,
+    )

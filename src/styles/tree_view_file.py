@@ -10,6 +10,8 @@ import asyncio
 import math
 from styles.snack_bar import SnackBar
 from dataclasses import dataclass
+from contexts.contexts import OverlayContext
+import functools
 
     
 # Called when this item is right clicked
@@ -154,6 +156,7 @@ def RailFile(widget: dataclass, story):
 
     is_editing_title, set_is_editing_title = ft.use_state(False)
     highlighting, set_highlighting = ft.use_state(False)
+    overlay = ft.use_context(OverlayContext)
 
     
     edit_title_tf = ft.TextField(
@@ -172,6 +175,17 @@ def RailFile(widget: dataclass, story):
         #focused_border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.PRIMARY))
     )
 
+    async def show_widget(widget: Widget):
+        await overlay.block_page()
+        if widget.visible:
+            story.selected_index = widget.index
+        else:
+            widget.visible = True
+            ft.context.page.run_task(widget.save_file)
+        story.widgets[widget.id] = widget   # Touch to observable to trigger observers
+        await overlay.unblock_page()
+        return
+
     return ft.GestureDetector(
         ft.Draggable( 
             group="widgets",
@@ -186,13 +200,12 @@ def RailFile(widget: dataclass, story):
                 ], spacing=6),
                 bgcolor=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE) if highlighting else None,
                 border_radius=4,
-                on_click=lambda: widget.show_widget(story),
+                on_click=functools.partial(show_widget, widget),
                 padding=ft.Padding.only(top=2, bottom=2),
             ),
         ),
         on_enter=lambda: set_highlighting(True),
         on_exit=lambda: set_highlighting(False),
         #on_secondary_tap = lambda _: self.widget.story.open_menu(self.get_menu_options()),
-        #on_tap = self.widget.show_widget,
         mouse_cursor = ft.MouseCursor.CLICK,
     )

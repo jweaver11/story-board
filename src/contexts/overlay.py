@@ -1,6 +1,7 @@
 ''' Overlay, generally for storiess'''
 
 import flet as ft
+import asyncio
 from dataclasses import dataclass, field
 
 @ft.observable
@@ -18,10 +19,11 @@ class Overlay:
     
     def hide_menu(self):
         self.menu_visible = False
-    def unblock_page(self):
+    async def unblock_page(self):
         self.blocker_visible = False
-    def block_page(self):
+    async def block_page(self):
         self.blocker_visible = True
+        await asyncio.sleep(0.1)  # give the updates scheduler a turn to flush this patch before we continue
 
    
 
