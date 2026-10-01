@@ -7,8 +7,8 @@ from view_components.rail import Rail
 from utils.tree_view import load_directory_data
 from styles.menu_option_style import MenuOptionStyle
 import math
-from contexts.app_settings import AppSettingsContext
-from contexts.contexts import OverlayContext
+#from contexts.app_settings import AppSettingsContext
+from contexts.contexts import OverlayContext, StoryContext, AppSettingsContext
 
 
 
@@ -39,7 +39,7 @@ class ContentRail(Rail):
 
 # Reload the rail whenever we need
 @ft.component
-def TreeViewRail(story) -> ft.Control:
+def TreeViewRail() -> ft.Control:
     ''' Reloads the content rail. `settings` is passed explicitly (not just read off `app`) so this
     component subscribes to the Settings observable itself and re-renders when binder_rail_width changes '''
 
@@ -212,6 +212,7 @@ def TreeViewRail(story) -> ft.Control:
     
 
     app_settings = ft.use_context(AppSettingsContext)
+    story = ft.use_context(StoryContext)
 
     # Called when new category button or menu option is clicked
     async def new_item_clicked(e: ft.Event[ft.Control]):

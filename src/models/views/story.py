@@ -18,7 +18,7 @@ import uuid
 from styles.colors import dark_gradient
 from dataclasses import dataclass, field, asdict, fields
 from concurrent.futures import ThreadPoolExecutor
-from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext, OverlayContext
+from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext, OverlayContext, StoryContext
 from contexts.overlay import Menu, Blocker, Overlay
 
 
@@ -43,15 +43,6 @@ class Story:
     widgets: dict[str, dataclass] = field(default_factory=dict)
 
     selected_index: int = 0     # The selected index in the workspace
-    
-    #mouse_position
-        
-    # Block the app from any interactions during rebuilds
-    #self.blocker = ft.Container(
-        #ft.Row([ft.ProgressRing(width=100, height=100)], alignment=ft.MainAxisAlignment.CENTER), 
-        #expand=True, visible=False, blur=5, left=0, right=0, top=0, bottom=0
-    #)
-
 
     def __post_init__(self):
         self.load_widgets() 
@@ -1051,7 +1042,7 @@ class Story:
 
 # Builds our view
 @ft.component
-def StoryView(story: 'Story') -> ft.View:
+def StoryView() -> ft.View:
     ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
     from view_components.menu_bar import MenuBar
     from view_components.drawing_controls_rail import DrawingControlsRail
@@ -1089,6 +1080,7 @@ def StoryView(story: 'Story') -> ft.View:
     page = ft.context.page
     app = ft.use_context(AppContext)
     settings = ft.use_context(AppSettingsContext)   
+    story = ft.use_context(StoryContext)
 
     overlay, _ = ft.use_state(Overlay())  
    
@@ -1106,11 +1098,11 @@ def StoryView(story: 'Story') -> ft.View:
             ft.Stack(
                 [
                     ft.Column([
-                        MenuBar(story),
+                        MenuBar(),
                         ft.Row([       # Keep the majority of the page out up updates
-                            DrawingControlsRail(story),
-                            OverlayContext(overlay, lambda: TreeViewRail(story)),   # Allow the overlay into the tree view
-                            OverlayContext(overlay, lambda: Workspace(story)),
+                            DrawingControlsRail(),
+                            OverlayContext(overlay, lambda: TreeViewRail()),   # Allow the overlay into the tree view
+                            OverlayContext(overlay, lambda: Workspace()),
                         ], spacing=0, expand=True),
                     ], expand=True, spacing=0),
                     Menu(overlay),

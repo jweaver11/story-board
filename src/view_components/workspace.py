@@ -19,7 +19,7 @@ import asyncio
 from styles.menu_option_style import MenuOptionStyle
 import os
 from models.widget import WidgetView
-
+from contexts.contexts import StoryContext
 
 # Our workspace object that is stored in our story object
 class WorkspaceOld(ft.Container):
@@ -276,12 +276,12 @@ class WorkspaceOld(ft.Container):
 
 
 @ft.component
-def Workspace(story: Story):
+def Workspace():
 
     @ft.component
     def build_widget_view(widget: Widget):
         ''' Returns the correct widget view based on the widgets tag'''
-        return WidgetView(widget, story)
+        return WidgetView(widget)
 
     # Creates a new tab control for the given widget
     @ft.component
@@ -394,6 +394,8 @@ def Workspace(story: Story):
         tab = ft.Tab(label=tab_gd) 
         return tab
 
+    story = ft.use_context(StoryContext)
+
     visible_widgets = [widget for widget in story.widgets.values() if widget.visible]
     sorted_visible_widgets: list = sorted(visible_widgets, key=lambda w: w.index)
 
@@ -401,7 +403,7 @@ def Workspace(story: Story):
 
     # Build at tab bar with tabs for each widget
     tab_bar = ft.TabBar(
-        tabs=[build_widget_tab(widget) for widget in sorted_visible_widgets],    # Gives a tab for each widget
+        tabs=[build_widget_tab(widget) for widget in sorted_visible_widgets] if len(sorted_visible_widgets) > 0 else [ft.Tab(" <- Add Widget")],    # Gives a tab for each widget
         scrollable=True, 
         #indicator_color=indicator_color, 
         divider_height=2,
@@ -412,13 +414,19 @@ def Workspace(story: Story):
 
     # Build our tab view that holds each widget
     tab_view = ft.TabBarView(
-        controls=[build_widget_view(widget) for widget in sorted_visible_widgets],     # Adds each widget
+        controls=[
+            build_widget_view(widget) for widget in sorted_visible_widgets
+        ] if len(sorted_visible_widgets) > 0 else [
+            ft.Container(ft.Text(" <- Add Widget"), alignment=ft.Alignment.CENTER_LEFT)
+        ],
         expand=True
     )
 
+    print(len(tab_bar.tabs), len(sorted_visible_widgets))
+
     return ft.Tabs(
         expand=True, 
-        length=len(sorted_visible_widgets),
+        length=len(sorted_visible_widgets) if len(sorted_visible_widgets) > 0 else 1,
         selected_index=story.selected_index if story.selected_index <= len(sorted_visible_widgets) else 0,
         #selected_index=0,
         #on_change=self.tab_change,

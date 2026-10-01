@@ -8,7 +8,7 @@ import math
 import flet.canvas as cv
 from utils.safe_string_checker import return_safe_name
 from models.views.story import Story
-from contexts.contexts import PaintContext, DrawingContext, TextContext, AppSettingsContext
+from contexts.contexts import PaintContext, DrawingContext, TextContext, AppSettingsContext, StoryContext
 from dataclasses import dataclass
 import dataclasses
 from typing import Any
@@ -43,10 +43,10 @@ NEGATIVE_NUMBER_FILTER = ft.InputFilter(allow=True, regex_string=r"^-?[0-9]*$")
 
 # Rail container on desktop to hold the drawing controls
 @ft.component
-def DrawingControlsRail(story: Story) -> ft.Control:
+def DrawingControlsRail() -> ft.Control:
     
     return ft.Container(
-        ft.Column(DrawingControls(story)),
+        ft.Column(DrawingControls()),
         alignment=ft.Alignment.CENTER,  # Aligns content to the 
         padding=ft.Padding.only(bottom=10, right=6, left=6, top=10),
         #animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
@@ -60,7 +60,7 @@ def DrawingControlsRail(story: Story) -> ft.Control:
 
 # Returns the buttons for our drawing controls so it can be added to a column or row
 @ft.component
-def DrawingControls(story: Story) -> list[ft.control]:
+def DrawingControls() -> list[ft.control]:
 
     page = ft.context.page
 
@@ -70,6 +70,8 @@ def DrawingControls(story: Story) -> list[ft.control]:
     drawing_app_settings = ft.use_context(DrawingContext)
     text_app_settings = ft.use_context(TextContext)
     text_shadow_app_settings = text_app_settings.shadow or {}
+
+    story = ft.use_context(StoryContext)
 
    
 

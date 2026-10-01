@@ -18,7 +18,7 @@ import asyncio
 import uuid
 from styles.text_fields import TextField, SidebarTitleTextField
 from dataclasses import fields, asdict, dataclass, field
-
+from contexts.contexts import StoryContext
 
 
 @ft.observable
@@ -744,5 +744,6 @@ class Widget:
         )
 
 @ft.component
-def WidgetView(widget: Widget, story: Story):
+def WidgetView(widget: Widget):
+    story = ft.use_context(StoryContext)
     return ft.Text(f"Base widget view for: {widget.title}", key=widget.id)

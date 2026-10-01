@@ -13,7 +13,7 @@ import asyncio
 from contexts.constants import SETTINGS_FILE_PATH, STORIES_DIRECTORY_PATH
 from dataclasses import dataclass, field
 from models.views.settings import AppSettings
-from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext
+from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext, StoryContext
 from utils.context_loader import load_app_settings, load_paint_settings, load_drawing_settings, load_text_settings
 from utils.configure_page import configure_page
 from utils.stories_loader import load_stories
@@ -70,16 +70,15 @@ def StoryRoute() -> ft.View:
 
     # See where the story exists in the apps dictionary, and return its view
     if story_id in app.stories:
-        story = app.stories[story_id]
-        story = ft.use_memo(lambda: story, [story.id])
+        
 
-        #ft.context.page.overlay = []   # TODO: Overlay menu stuff
-        #ft.context.page.overlay.extend([
-            #ft.Text("Menu is shown", left=100, top=100, key="menu")
-        #])
+        story, _ = ft.use_state(app.stories[story_id])
 
         # Returns our story view with needed contexts
-        return StoryView(story)
+        return StoryContext(
+            story,
+            lambda: StoryView()
+        )
     
     # Return errors
     return HomeView()

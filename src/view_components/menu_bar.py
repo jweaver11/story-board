@@ -19,18 +19,20 @@ from contexts.constants import STORIES_DIRECTORY_PATH
 from styles.snack_bar import SnackBar
 from dataclasses import dataclass
 from view_components.drawing_controls_rail import DrawingControls
-from contexts.contexts import AppContext, AppSettingsContext
+from contexts.contexts import AppContext, AppSettingsContext, StoryContext
 import asyncio
 
     
 
 @ft.component
-def MenuBar(story: Story=None):
+def MenuBar():
 
     # Grab our contexts
     page = ft.context.page
     app = ft.use_context(AppContext)
     app_settings = ft.use_context(AppSettingsContext)
+
+    story = ft.use_context(StoryContext)
     
 
     # Declare our state variables for our dialogs
@@ -480,7 +482,7 @@ def MenuBar(story: Story=None):
             controls=[
                 file_options,    # File options button
 
-                ft.Row(controls=DrawingControls(story), alignment=ft.MainAxisAlignment.CENTER, visible=show_drawing_controls),
+                #ft.Row(controls=DrawingControls(), alignment=ft.MainAxisAlignment.CENTER, visible=show_drawing_controls),
 
 
                 ft.Row([        # Row that has alpha text, info button, and settings button
