@@ -268,6 +268,22 @@ def TreeViewRail(story) -> ft.Control:
         
         #await self.story.close_menu()
 
+    # Called when a widget is dragged and dropped into this directory
+    def move_widget_file(e: ft.DragTargetEvent):
+        ''' Moves our widgets into this directory from wherever they were '''
+
+        draggable = e.page.get_control(e.src_id)
+
+        widget = story.get_widget_by_id(draggable.data)
+
+        if widget is None:
+            #self.page.show_dialog(SnackBar("Error, file not found."))
+            print("Error, file not found.")
+            return
+
+        new_directory = story.content_directory_path
+        ft.context.page.run_task(widget.move_file, new_directory, story)
+
     top_row_buttons = [
         ft.SubmenuButton(
             ft.Container(
@@ -510,7 +526,7 @@ def TreeViewRail(story) -> ft.Control:
     menu_gesture_detector = ft.GestureDetector(
         content=ft.DragTarget(      # Drag target for moving widgets file locations from folders to base content dir
             group="widgets",
-            #on_accept=lambda e: self.move_widget_file(e, self.story.data.get('content_directory_path'))
+            on_accept=move_widget_file,
             content=content,     
         ),
         expand=True,

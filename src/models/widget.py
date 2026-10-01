@@ -119,7 +119,7 @@ class Widget:
         try:
 
             # File path to save our json data to
-            old_file_path = os.path.join(self.data.get('directory_path'), f"{self.data.get('id')}.json")
+            old_file_path = os.path.join(self.directory_path, f"{self.id}.json")
 
             # Delete the file if it exists
             if os.path.exists(old_file_path):
@@ -131,15 +131,16 @@ class Widget:
 
         # Handle errors
         except Exception as e:
-            self.page.show_dialog(SnackBar(f"Error deleting file {old_file_path}: {e}"))
+            #self.page.show_dialog(SnackBar(f"Error deleting file {old_file_path}: {e}"))
+            print(f"Error deleting file {old_file_path}: {e}")
             return False
         
     # Called when moving widget files
-    async def move_file(self, new_directory: str) -> bool:
+    async def move_file(self, new_directory: str, story: Story) -> bool:
         ''' Deletes our old file and updates our directory, then saves the new file there '''
 
         # If didn't move, don't run logic
-        if new_directory == self.data.get('directory_path', ''):
+        if new_directory == self.directory_path:
             return False
     
         # Delete our old file
@@ -147,11 +148,11 @@ class Widget:
 
             # If it was successful, update our directory path and key, then save our new file
             
-            self.update_data(**{'directory_path': new_directory})
+            self.directory_path = new_directory
             await self.save_file()
+            story.widgets[self.id] = self   # Touch observable to force re-render
 
             # Reload the rail to apply changes
-            self.story.active_rail.reload_rail()
             return True
         else:
             return False

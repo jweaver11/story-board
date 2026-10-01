@@ -106,19 +106,7 @@ class Rail(ft.Column):
 
         return template_options
     
-    # Called when a widget is dragged and dropped into this directory
-    def move_widget_file(self, e: ft.DragTargetEvent, new_directory: str):
-        ''' Moves our widgets into this directory from wherever they were '''
-
-        draggable = e.page.get_control(e.src_id)
-
-        widget = self.story.get_widget_by_id(draggable.data)
-
-        if widget is None:
-            self.page.show_dialog(SnackBar("Error, file not found."))
-            return
-
-        self.page.run_task(widget.move_file, new_directory)
+    
 
 
     # Called when new category button or menu option is clicked

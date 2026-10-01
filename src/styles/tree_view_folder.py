@@ -12,11 +12,29 @@ from models.isolated_controls.expansion_tile import IsolatedExpansionTile
 import asyncio
 
 
+
 # Called when we need to reload this directory tile
 @ft.component
 def RailFolder(folder_data: dict, story: Story) -> ft.GestureDetector:
+    from utils.tree_view import load_directory_data
 
-    print("Loaded rail folder component")
+    #print("Loaded rail folder component")
+
+    # Called when a widget is dragged and dropped into this directory
+    def move_widget_file(e: ft.DragTargetEvent):
+        ''' Moves our widgets into this directory from wherever they were '''
+
+        draggable = e.page.get_control(e.src_id)
+        widget = story.get_widget_by_id(draggable.data)
+
+        if widget is None:
+            #self.page.show_dialog(SnackBar("Error, file not found."))
+            print("Error, file not found.")
+            return
+
+        new_directory = folder_data.get('full_path', "")
+
+        ft.context.page.run_task(widget.move_file, new_directory, story)
 
     # Switch between expanded and not in data
     def toggle_expand(e=None):
@@ -48,12 +66,13 @@ def RailFolder(folder_data: dict, story: Story) -> ft.GestureDetector:
         adaptive=True, bgcolor=ft.Colors.TRANSPARENT,
         shape=ft.RoundedRectangleBorder(radius=4),
         on_change=toggle_expand,
+        controls=load_directory_data(story, folder_data.get('full_path', ""))
     )
 
     # Wrap in all in a drag target so we can drag to move widgets into different folders
     drag_target = ft.DragTarget(
         group="widgets",
-        #on_accept=rail_folder.on_drag_accept,
+        on_accept=move_widget_file,
         content=expansion_tile,
     )
     
