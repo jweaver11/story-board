@@ -280,12 +280,7 @@ class WorkspaceOld(ft.Container):
 @ft.component
 def Workspace():
 
-    @ft.component
-    def build_widget_view(widget: Widget):
-        ''' Returns the correct widget view based on the widgets tag'''
-        match widget.tag:
-            case "note": return NoteView(widget)
-        return WidgetView(widget)
+    
 
     # Called to hide the widget from the workspace
     async def hide_widget(widget):
@@ -299,6 +294,12 @@ def Workspace():
             ft.context.page.run_task(widget.save_file)
         await overlay.unblock_page()
 
+    @ft.component
+    def build_widget_view(widget: Widget):
+        ''' Returns the correct widget view based on the widgets tag'''
+        match widget.tag:
+            case "note": return NoteView(widget)
+        return WidgetView(widget)
 
     # Creates a new tab control for the given widget
     @ft.component
@@ -408,7 +409,7 @@ def Workspace():
         )
 
         # Set the tab itself
-        tab = ft.Tab(label=tab_gd) 
+        tab = ft.Tab(label=tab_gd, key=f"{widget.id}_tab") 
         return tab
 
     story = ft.use_context(StoryContext)
@@ -451,6 +452,7 @@ def Workspace():
             tab_bar,
             tab_view
         ], expand=True, spacing=0),
+        key=f"{story.id}_workspace"
     )    
 
 

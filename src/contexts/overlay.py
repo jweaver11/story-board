@@ -23,7 +23,7 @@ class Overlay:
         self.blocker_visible = False
     async def block_page(self):
         self.blocker_visible = True
-        await asyncio.sleep(0.1)  # give the updates scheduler a turn to flush this patch before we continue
+        await asyncio.sleep(0)  # give the updates scheduler a turn to flush this patch before we continue
 
    
 
