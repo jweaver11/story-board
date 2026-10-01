@@ -56,11 +56,8 @@ def load_directory_data(story: Story, directory: str) -> list[ft.Control]:
                 print(f"No folder data found for {full_path}")
                 continue
 
-            # Create the new folder dropdown
+            # Create the new folder control. This will load its children recursively
             folder_view = RailFolder(folder_data, story)
-
-            # Since its a folder, load all its content recursively
-            #load_directory_data(story, full_path)
 
             # After loading the folders content, add it to either a parent folder (if it has one) or the column for the rail
             directory_controls.append((folder_data.get('name', '').lower(), folder_view))

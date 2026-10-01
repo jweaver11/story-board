@@ -43,10 +43,10 @@ NEGATIVE_NUMBER_FILTER = ft.InputFilter(allow=True, regex_string=r"^-?[0-9]*$")
 
 # Rail container on desktop to hold the drawing controls
 @ft.component
-def DrawingControlsRail(app_settings, story: Story) -> ft.Control:
+def DrawingControlsRail(story: Story) -> ft.Control:
     
     return ft.Container(
-        ft.Column(DrawingControls(app_settings, story)),
+        ft.Column(DrawingControls(story)),
         alignment=ft.Alignment.CENTER,  # Aligns content to the 
         padding=ft.Padding.only(bottom=10, right=6, left=6, top=10),
         #animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),

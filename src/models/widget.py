@@ -90,27 +90,28 @@ class Widget:
     # Writes our current data to the correct json file if we are dirty
     async def save_file(self):
         #if self.needs_file_write:
-        if self.visible:    # Just save visible ones for now
-            print("Saving widget to file: ", self.title)
+        #if self.visible:    # Just save visible ones for now
+        #if True:
+        print("Saving widget to file: ", self.title)
 
-            file_path = os.path.join(self.directory_path, f"{self.id}.json")
+        file_path = os.path.join(self.directory_path, f"{self.id}.json")
 
-            try:
-                os.makedirs(self.directory_path, exist_ok=True)     # Make sure directory exists still
+        try:
+            os.makedirs(self.directory_path, exist_ok=True)     # Make sure directory exists still
 
-                widget_data = {
-                    widget_field.name: getattr(self, widget_field.name)
-                    for widget_field in fields(self)
-                }
-                
-                # Save our json data to the file
-                with open(file_path, "w", encoding='utf-8') as f:   
-                    json.dump(widget_data, f, indent=4)
+            widget_data = {
+                widget_field.name: getattr(self, widget_field.name)
+                for widget_field in fields(self)
+            }
+            
+            # Save our json data to the file
+            with open(file_path, "w", encoding='utf-8') as f:   
+                json.dump(widget_data, f, indent=4)
 
-                self.needs_file_write = False   # Mark as clean
-                #self.is_new = False   # Mark as not new anymore
-            except Exception as e:
-                print(f"Error saving widget {self.title} to file: {e}")
+            self.needs_file_write = False   # Mark as clean
+            #self.is_new = False   # Mark as not new anymore
+        except Exception as e:
+            print(f"Error saving widget {self.title} to file: {e}")
             
     # Called when moving widget files
     async def delete_file(self) -> bool:
@@ -358,38 +359,44 @@ class Widget:
     
 
     # Called to show the widget in the workspace
-    async def show_widget(self, e=None):
+    def show_widget(self, story: Story):
         ''' Shows this widget in the workspace if it is hidden '''
 
+        if self.visible:
+            story.selected_index = self.index
+        else:
+            self.visible = True
+            ft.context.page.run_task(self.save_file)
+        story.widgets[self.id] = self   # Touch to observable to trigger observers
+        return
+
         # Saves any widget on screen that requires to be on page for saving
-        await self.story.workspace.save_active_widget()
+        #await self.story.workspace.save_active_widget()
 
         # If we're already visible, focus our tab
         if self.data.get('visible', False) == True:
             if self.data.get('index', 999) >= len(self.story.workspace.tab_view.controls):
                 self.data['index'] = len(self.story.workspace.tab_view.controls) - 1
                 self.update_data(**{'index': self.data['index']})
-            await self.story.workspace.tabs.move_to(self.data.get('index', 0), animation_duration=100)  # Select the new widget tab
+            #await self.story.workspace.tabs.move_to(self.data.get('index', 0), animation_duration=100)  # Select the new widget tab
             self.story.update_data(**{'workspace_selected_index': self.data.get('index', 0)})
             return
         
         # Update our data to be visible
         self.update_data(**{'visible': True})  
-        await self.save_file()  # We lose state tracking upon being shown since we get rebuilt, so force a save to maintain data
+        #await self.save_file()  # We lose state tracking upon being shown since we get rebuilt, so force a save to maintain data
 
-        await self.story.workspace.add_widget_to_workspace(self)  # Adds ourselves to the workspace and focus our tab
+        #await self.story.workspace.add_widget_to_workspace(self)  # Adds ourselves to the workspace and focus our tab
        
     # Called to hide the widget from the workspace
-    async def hide_widget(self, e=None):
+    def hide_widget(self, story: Story):
         ''' Hides this widget from the workspace but keeps it in the story and rail '''
-        # Skip if already hidden (should be impossible)
-        if not self.visible:
-            return
-        
-        self.update_data(**{'visible': False})
-        if self.data.get('tag', '') == "canvas" or self.data.get('tag', '') == "manuscript" or self.data.get('tag', '') == "map" or self.data.get('tag', '') == "canvas_board":    # Widgets that must be rendered to save
-            await self.save_file() 
-        await self.story.workspace.remove_widget_from_workspace(self)
+  
+        self.visible = False
+        story.widgets[self.id] = self   # Touch to observable to trigger observers
+
+        if self.tag == "canvas" or self.tag == "manuscript" or self.tag == "map" or self.tag == "canvas_board":    # Widgets that must be rendered to save
+            ft.context.page.run_task(self.save_file)
         
 
     # Called when right clicking our tab
@@ -736,4 +743,6 @@ class Widget:
             hover_interval=100
         )
 
-        
+@ft.component
+def WidgetView(widget: Widget, story: Story):
+    return ft.Text(f"Base widget view for: {widget.title}", key=widget.id)

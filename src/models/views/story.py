@@ -22,6 +22,7 @@ from contexts.contexts import AppContext, AppSettingsContext, PaintContext, Draw
 from contexts.overlay import Menu, Blocker, Overlay
 
 
+
 # Main Story class
 @ft.observable
 @dataclass 
@@ -40,6 +41,8 @@ class Story:
 
     folders: dict[str, dict] = field(default_factory=dict) #{'path': {'name": '', 'color': '', 'is_expanded': True}}
     widgets: dict[str, dataclass] = field(default_factory=dict)
+
+    selected_index: int = 0     # The selected index in the workspace
     
     #mouse_position
         
@@ -1051,10 +1054,10 @@ class Story:
 def StoryView(story: 'Story') -> ft.View:
     ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
     from view_components.menu_bar import MenuBar
-    #from ui.drawing_controls_rail import DrawingControlsRail
+    from view_components.drawing_controls_rail import DrawingControlsRail
     from view_components.tree_view_rail import TreeViewRail
-    #from ui.workspace import Workspace
-    #from models.isolated_controls.row import IsolatedRow
+    from view_components.workspace import Workspace
+   
 
 
     # Handles keyboard events for the story
@@ -1105,9 +1108,9 @@ def StoryView(story: 'Story') -> ft.View:
                     ft.Column([
                         MenuBar(story),
                         ft.Row([       # Keep the majority of the page out up updates
-                            #DrawingControlsRail(settings, story),
+                            DrawingControlsRail(story),
                             OverlayContext(overlay, lambda: TreeViewRail(story)),   # Allow the overlay into the tree view
-                            #story.workspace,
+                            OverlayContext(overlay, lambda: Workspace(story)),
                         ], spacing=0, expand=True),
                     ], expand=True, spacing=0),
                     Menu(overlay),

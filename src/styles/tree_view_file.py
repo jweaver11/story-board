@@ -184,9 +184,9 @@ def RailFile(widget: dataclass, story):
                     edit_title_tf,
                     #self.options_button
                 ], spacing=6),
-                bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE) if highlighting else None,
+                bgcolor=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE) if highlighting else None,
                 border_radius=4,
-                on_click=widget.show_widget,
+                on_click=lambda: widget.show_widget(story),
                 padding=ft.Padding.only(top=2, bottom=2),
             ),
         ),

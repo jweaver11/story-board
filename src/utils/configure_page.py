@@ -57,6 +57,8 @@ def configure_page(app, app_settings, paint_settings, drawing_settings, text_set
                     print("Found story: ", story.title)
                     #settings.story.block_page()    # Block the page to show us loading the saves
                     await story.save_file()
+                    for widget in story.widgets.values():
+                        await widget.save_file()
                 
             page.window.prevent_close = False
             await page.window.destroy()
