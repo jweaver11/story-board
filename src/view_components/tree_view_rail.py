@@ -8,7 +8,7 @@ from utils.tree_view import load_directory_data
 from styles.menu_option_style import MenuOptionStyle
 import math
 from contexts.app_settings import AppSettingsContext
-#from contexts.contexts import AppSettingsContext
+
 
 
 
@@ -454,13 +454,17 @@ def TreeViewRail(story) -> ft.Control:
             # Create the widget and reload all our rails
             await story.create_widget(title, tag, chart_type=chart_type if tag == "chart" else None)
         
-
+    # For creating new widgets and folders, and managing the textfield associated with it
     creating_item, set_creating_item = ft.use_state(False)
-    creating_canvas, set_creating_canvas = ft.use_state(False)
-
     new_item_hint, set_new_item_hint = ft.use_state("")
     new_item_data, set_new_item_data = ft.use_state("")
     new_item_label, set_new_item_label = ft.use_state("")
+
+    creating_canvas, set_creating_canvas = ft.use_state(False)  # Canvas is special and gets its own dialog
+
+    # For right clicking to open a menu
+    show_menu, set_show_menu = ft.use_state(False)
+    menu_position, set_menu_position = ft.use_state(ft.Offset())
 
 
     new_item_textfield = ft.TextField(     
@@ -503,15 +507,14 @@ def TreeViewRail(story) -> ft.Control:
         content=content,     # Our content is the content we built above
         #on_accept=lambda e: self.move_widget_file(e, self.story.data.get('content_directory_path'))
     )
-    
 
     # Gesture detector to put on top of stack on the rail to pop open menus on right click
     menu_gesture_detector = ft.GestureDetector(
         content=dt,
         expand=True,
-        #on_hover=self._set_menu_coords,
+        on_hover=lambda e: set_menu_position(e.local_position) if not show_menu else None,
+        on_secondary_tap=lambda: set_show_menu(not show_menu),
         #on_secondary_tap=lambda: self.story.open_menu(self.get_new_item_menu_options()),  
-        on_tap=lambda e: print("Menu gesture detector tapped"),
         hover_interval=20,
     )
 
@@ -546,17 +549,26 @@ def TreeViewRail(story) -> ft.Control:
             drag_interval=20,
         )
 
+
+    
+    
+    def hide_menu():
+        set_show_menu(False)
+
     
     # Return our build rail
     return ft.Container(
-        ft.Row([
-            ft.Column([
-                header,
-                ft.Divider(thickness=2, leading_indent=8),
-                menu_gesture_detector
-            ], expand=True, spacing=0, margin=ft.Margin.only(top=10, bottom=10)),
-            ActiveRailResizer(),
-        ], spacing=0),
+        ft.Stack([
+            ft.Row([
+                ft.Column([
+                    header,
+                    ft.Divider(thickness=2, leading_indent=8),
+                    menu_gesture_detector
+                ], expand=True, spacing=0, margin=ft.Margin.only(top=10, bottom=10)),
+                ActiveRailResizer(),
+            ], spacing=0),
+            #Menu(position=menu_position, visible=show_menu, hide_callable=hide_menu)
+        ]),
         width=tree_view_rail_width,     # Set the width based on the settings, but will adjust when dragged without triggering a full re-render
         #key="tree_view_rail_container",
         alignment=ft.Alignment.TOP_CENTER,
