@@ -15,10 +15,8 @@ class TextField(ft.TextField):
         self.multiline=True
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
-        #self.border_radius=4
-        #self.border_color=ft.Colors.TRANSPARENT
-        #self.focused_border_color=ft.Colors.PRIMARY
-
+        self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
+        
 
 # Standard styling for most text fields we use
 @ft.control

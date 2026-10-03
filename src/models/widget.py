@@ -90,6 +90,10 @@ class Widget:
         if self.needs_file_write == False:
             self.needs_file_write = True
 
+    # Saves our descripption as the passed in value
+    def save_description(self, description: str):
+        self.description = description
+
     # Writes our current data to the correct json file if we are dirty
     async def save_file(self):
         #if self.needs_file_write:
@@ -737,6 +741,48 @@ class Widget:
             on_hover=self.set_mouse_coords,
             hover_interval=100
         )
+
+
+# Returns the styled section for descriptions of widgets with shared styles. Character, World, Item
+def WidgetDescription(description: str, save_description: callable) -> ft.TextField:
+    return ft.Column([
+        ft.Row([
+            ft.Text(f"Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18)),
+        ], spacing=0),
+        ft.TextField(
+            value=description,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+            margin=ft.Margin.only(top=4),
+            border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
+            multiline=True, dense=True, expand=True, 
+            on_blur=lambda e: save_description(e.control.value),
+            capitalization=ft.TextCapitalization.SENTENCES,
+            label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
+        )
+    ], expand=True, spacing=0, alignment=ft.MainAxisAlignment.CENTER, tight=True)
+
+@ft.component
+def WidgetImageButton(image: str) -> ft.GestureDetector:
+    return ft.GestureDetector(
+        ft.IconButton(
+            ft.Container(
+                ft.Image(
+                    src=image,
+                    width=150,
+                    height=150,
+                    fit=ft.BoxFit.FILL,
+                ), 
+                clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+            ) if image else ft.Icons.IMAGE_OUTLINED, 
+            ft.Colors.PRIMARY, icon_size=150,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
+            tooltip="Upload an Image for this widget", mouse_cursor=ft.MouseCursor.CLICK,
+            #on_click=lambda: self.story.open_menu(self.set_widget_image_options()), 
+        ),
+        #on_hover=self.set_mouse_coords,
+        hover_interval=100,
+        on_secondary_tap=lambda e: print("Secondary tap detected"),
+    )
 
 @ft.component
 def WidgetView(widget: Widget, content: ft.Control):

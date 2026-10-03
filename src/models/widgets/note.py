@@ -7,9 +7,8 @@ from styles.text_fields import TextField, UnderlinedTextField, NoLabelTextField
 from styles.menu_option_style import MenuOptionStyle
 import asyncio
 from styles.colors import colors
-from dataclasses import field
+from dataclasses import field, dataclass
 from contexts.contexts import StoryContext, OverlayContext
-from dataclasses import dataclass
 import uuid
 
 
@@ -156,13 +155,14 @@ def NoteView(note: Note) -> WidgetView:
                     controls=[
                         CardView(card, card_id, note.delete_card) for card_id, card in note.card_data.items()
                     ] + [
-                        ft.Button(      # Button to add cards
-                            "Add Card", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+                        
+                        ft.IconButton(
+                            ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
                             tooltip="Add a new card to your note.", 
-                            on_click=create_card, 
-                            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
-                            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
-                        ),
+                            on_click=create_card,
+                            mouse_cursor="click",
+                            scale=1.5
+                        )
                     ], 
                     wrap=True, alignment=ft.MainAxisAlignment.START, expand=True,
                 )

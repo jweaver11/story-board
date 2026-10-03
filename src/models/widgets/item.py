@@ -2,182 +2,116 @@
 
 import flet as ft
 from models.views.story import Story
-from models.widget import Widget
+from models.widget import Widget, WidgetView, WidgetDescription, WidgetImageButton
 from styles.menu_option_style import MenuOptionStyle
-#from models.app import app
 from styles.text_fields import TextField
 import asyncio
+from dataclasses import dataclass, field
     
-
+@ft.observable
+@dataclass
 class Item(Widget):
 
-    # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict={}, is_new: bool = False):
+    tag: str = "item"
+    data: dict = field(default_factory=lambda: {
+        'Type': "",
+        'Rarity': "",
+        'Effects': "",
+        'Material': "",
+        'Size': "",
+        'Weight': "",
+        'Lore': "",
+        'Cost': "",
+        'Locations': "",
+        'Count': "",
+        'Notes': "",
+    })
 
-        # Initialize from our parent class 'Widget'. 
-        super().__init__(
-            title = title,                      
-            directory_path = directory_path,    
-            story = story,                     
-            data = data,
-            is_new = is_new
+    # Creates a new field with passed in title
+    def create_field(self, key: str):
+        if key not in self.data:
+            self.data[key] = ""
+
+    # Deletes a field with the passed in title from the item's data dictionary
+    def delete_field(self, key: str):
+        if key in self.data:
+            del self.data[key]
+
+    # Update the data within the items data dict
+    def update_field(self, **kwargs):
+        for key, value in kwargs.items():
+            self.data[key] = value
+
+@ft.component
+def ItemView(item: Item) -> WidgetView:
+
+    print("ItemView component loaded")
+
+    # Gives us a new textfield for each note field
+    def field_ctrl(key: str, value: str='') -> TextField:
+        tf = TextField(
+            value, expand=True, capitalization=ft.TextCapitalization.SENTENCES, 
+            multiline=True, label=key, dense=True, 
+            on_blur=lambda e: item.update_field(**{key: e.control.value}), 
+            data=key,
+            suffix_icon=ft.IconButton(
+                ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                tooltip=f"Delete field {key}",
+                on_click=lambda: item.delete_field(key),
+                mouse_cursor="click", data=key
+            ),
         )
+        tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+        return tf
 
-         # If we're new, give default values for our data 
-        if self.is_new == True:
-            self.data.update({
-                # Widget data
-                'tag': "item",             # Tag to identify what type of object this is
-                #'color': app.settings.data.get('widget_defaults', {}).get('item', {}).get('color'),
+    creating_field, set_creating_field = ft.use_state(False)
+    fields_column = ft.use_ref(ft.Column())
 
-                'image_base64': str(), 
+    # Column to hold our fields textfields
+    fields_column = ft.Column(
+        expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, 
+        controls=[field_ctrl(key, value) for key, value in item.data.items()], 
+        scroll="auto", alignment=ft.MainAxisAlignment.START,
+    )
 
-                # Item data - list of segments with title and string
-                'item_data': [
-                    {'title': "Type", 'content': ""},
-                    {'title': "Rarity", 'content': ""}, 
-                    {'title': "Effects", 'content': ""},
-                    {'title': "Material", 'content': ""},
-                    {'title': "Size", 'content': ""},
-                    {'title': "Weight", 'content': ""},
-                    {'title': "Lore", 'content': ""},
-                    {'title': "Cost", 'content': ""},
-                    {'title': "Locations", 'content': ""},
-                    {'title': "Count", 'content': ""},
-                    {'title': "Notes", 'content': ""},
-                ]
-            },
-        )
+    body = ft.Column([
+        ft.Row([
+            WidgetImageButton(item.image_base64),
+            WidgetDescription(item.description, item.save_description),
+        ], vertical_alignment=ft.CrossAxisAlignment.START, margin=ft.Margin.only(bottom=10)),
+        fields_column
+    ], expand=True, spacing=0)
 
-    def build(self):
+    # Button to click to add a new field
+    create_field_button = ft.Button(
+        "Add field", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+        tooltip="Add a new field to your note.", 
+        visible=not creating_field,
+        on_click=lambda: set_creating_field(True), 
+        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
+        bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+    )
 
-        super().build()
+    # Textfield for naming the new field
+    create_field_tf = ft.TextField(
+        label="Field Name", dense=True, 
+        capitalization=ft.TextCapitalization.WORDS,
+        on_blur=lambda: set_creating_field(False), 
+        on_submit=lambda e: item.create_field(e.control.value), visible=creating_field, autofocus=True,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+    ) 
 
-        self.padding = ft.Padding.all(10)   # Set padding
-
-        # Column to hold our segments textfields
-        segments_column = ft.Column(
-            expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, 
-            controls=[], scroll="auto", alignment=ft.MainAxisAlignment.START,
-        )
-
-        
-        # Adds our new segment to data and our column
-        async def create_segment(e=None):
-            self.data['item_data'].append({"title": self.new_segment_tf.value, "content": ""})
-            self.update_data(**{'item_data': self.data['item_data']})
-            segments_column.controls.append(new_segment_textfield(len(self.data['item_data']) - 1, self.new_segment_tf.value, ""))
-            segments_column.update()
-            self.new_segment_tf.value = ""
-            self.new_segment_tf.update()
-            add_segment_button.visible = True
-            add_segment_button.update()
-            await asyncio.sleep(0.02)
-            await segments_column.scroll_to(offset=-1, duration=200)
-
-        # Deletes a segment from data and our column
-        async def delete_segment(e: ft.Event):
-            index = e.control.data
-            if len(self.data['item_data']) > index:
-                del self.data['item_data'][index]
-                self.update_data(**{'item_data': self.data['item_data']})
-                segments_column.controls.pop(index)
-                segments_column.update()
-
-                # Updates the indices
-                for i, ctrl in enumerate(segments_column.controls):
-                    ctrl.data = i
-                    ctrl.suffix_icon.data = i
-
-        # Saves content when text field is unfocused
-        async def save_segment(e):
-            index = e.control.data
-            if len(self.data['item_data']) > index:
-                self.data['item_data'][index]['content'] = e.control.value
-                self.update_data(**{'item_data': self.data['item_data']})
-
-        # Gives us a new textfield for each note segment
-        def new_segment_textfield(idx: int, key: str='', value: str='') -> TextField:
-            tf = TextField(
-                value, expand=True, capitalization=ft.TextCapitalization.SENTENCES, 
-                multiline=True, label=key, dense=True, 
-                on_blur=save_segment, 
-                data=idx,
-                suffix_icon=ft.IconButton(
-                    ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
-                    tooltip=f"Delete segment {key}",
-                    on_click=delete_segment,
-                    mouse_cursor="click", data=idx
-                ),
-            )
-            tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-            return tf
-
-        # Go through the note data and load the segments
-        for idx, segment in enumerate(self.data.get('item_data', [])):
-            key = segment.get('title', '')
-            value = segment.get('content', '')
-            segments_column.controls.append(new_segment_textfield(idx, key, value))
-
-        # Show the textfield to label the new segment
-        async def _create_new_segment_clicked(e):
-            add_segment_button.visible = False
-            add_segment_button.update()
-            self.new_segment_tf.value = ""
-            self.new_segment_tf.visible = True
-            self.new_segment_tf.label = "New Segment Label"
-            self.new_segment_tf.update() 
-            await self.new_segment_tf.focus()
-
-        # Hide the textfield
-        async def _hide_new_segment_tf(e):
-            self.new_segment_tf.visible = False
-            self.new_segment_tf.update()
-            add_segment_button.visible = True
-            add_segment_button.update()
-
-        # Button to click to add a new segment
-        add_segment_button = ft.Button(
-            "Add Segment", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
-            tooltip="Add a new segment to your note.", 
-            on_click=_create_new_segment_clicked, 
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
-        )
-
-        self.new_segment_tf = ft.TextField(
-            label="Add New Segment", dense=True, 
-            capitalization=ft.TextCapitalization.WORDS,
-            on_blur=_hide_new_segment_tf, 
-            on_submit=create_segment, visible=False, autofocus=True,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
-        ) 
-
-        description_section = ft.Column([
-            ft.Row([
-                ft.Text(f"Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18)),
+    return WidgetView(
+        item,
+        ft.Container(
+            ft.Stack([
+                body,
                 
-            ], spacing=0),
-            self.description_tf
-            
-        ], expand=True, spacing=0, alignment=ft.MainAxisAlignment.CENTER,)
-        
-        self.description_tf.label = ""
-        self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-
-        body = ft.Column([
-            ft.Row([
-                self.select_image_button,
-                description_section
-            ], vertical_alignment=ft.CrossAxisAlignment.START),
-            segments_column
-        ], expand=True, spacing=0)
-
-        self.content = ft.Stack([
-            body,
-            
-            ft.Column([
-                self.new_segment_tf,
-                add_segment_button, 
-            ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
-        ], alignment=ft.Alignment.TOP_RIGHT, expand=True)
+                ft.Column([
+                    create_field_tf,
+                    create_field_button, 
+                ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
+            ], alignment=ft.Alignment.TOP_RIGHT, expand=True),
+            expand=True, padding=ft.Padding.all(10)
+        )
+    )

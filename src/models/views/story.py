@@ -804,7 +804,7 @@ class Story:
             case "canvas_board":
                 widget = CanvasBoard(title, directory_path, self)   
             case "item":
-                widget = Item(title, directory_path, self)  
+                widget = Item(**widget_data)  
             case "chart":
                 widget = Chart(title, directory_path, self, type=chart_type)
             case "comic_preview":

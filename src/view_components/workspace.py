@@ -21,6 +21,7 @@ from styles.menu_option_style import MenuOptionStyle
 import os
 from models.widget import WidgetView
 from models.widgets.note import NoteView
+from models.widgets.item import ItemView
 from contexts.contexts import StoryContext, OverlayContext
 from styles.icons import widget_icons
 
@@ -280,6 +281,7 @@ def build_widget_view(widget: Widget):
     ''' Returns the correct widget view based on the widgets tag'''
     match widget.tag:
         case "note": return NoteView(widget)
+        case "item": return ItemView(widget)
     return WidgetView(widget)
 
 
