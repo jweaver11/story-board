@@ -61,7 +61,7 @@ def TreeViewRail() -> ft.Control:
     ''' Reloads the content rail. `settings` is passed explicitly (not just read off `app`) so this
     component subscribes to the Settings observable itself and re-renders when binder_rail_width changes '''
 
-    #print("Loaded TreeViewRail component")
+    print("TreeViewRail component loaded")
 
     # Called to return our list of menu options for the content rail
     def get_new_item_menu_options() -> list[ft.Control]:

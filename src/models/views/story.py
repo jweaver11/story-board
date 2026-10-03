@@ -1046,7 +1046,8 @@ def StoryView() -> ft.View:
     from view_components.drawing_controls_rail import DrawingControlsRail
     from view_components.tree_view_rail import TreeViewRail
     from view_components.workspace import Workspace
-   
+
+    print("Story view component loaded")
 
 
     # Handles keyboard events for the story

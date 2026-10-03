@@ -12,6 +12,7 @@ from styles.snack_bar import SnackBar
 from dataclasses import dataclass
 from contexts.contexts import OverlayContext
 import functools
+from styles.icons import widget_icons
 
     
 # Called when this item is right clicked
@@ -118,25 +119,7 @@ def RailFile(widget: dataclass, story):
 
     #print("Loaded rail file component")
     
-    match widget.tag:
-        case "manuscript": icon = ft.Icons.DESCRIPTION_OUTLINED
-        case "canvas": icon = ft.Icons.BRUSH_OUTLINED
-        case "canvas_board": icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
-        case "note": icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
-        case "character": icon = ft.Icons.PERSON_OUTLINED
-        case "plotline": icon = ft.Icons.TIMELINE_OUTLINED
-        case "map": icon = ft.Icons.MAP_OUTLINED
-        case "world": icon = ft.Icons.PUBLIC_OUTLINED
-        case "character_relationship_map": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
-        case "item": icon = ft.Icons.STAR_OUTLINE_ROUNDED 
-        case "comic_preview": icon = ft.Icons.SLIDESHOW_OUTLINED
-        case "chart": 
-            if widget.chart_type == "bar":
-                icon = ft.Icons.INSERT_CHART_OUTLINED
-            else:
-                icon = ft.CupertinoIcons.COMPASS
-        case "plot_chart": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
-        case _: icon = ft.Icons.ERROR_OUTLINE
+    icon = widget_icons.get(widget.tag, ft.Icons.ERROR_OUTLINE)
 
     
     leading_control = ft.Container(
@@ -164,6 +147,7 @@ def RailFile(widget: dataclass, story):
         visible=is_editing_title, 
         expand=True,
         on_blur=lambda: set_is_editing_title(False),
+        key=f"{widget.id}_edit_title_rail",
         #on_submit=self.widget.submit_rename,
         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
         #border_radius=4, 

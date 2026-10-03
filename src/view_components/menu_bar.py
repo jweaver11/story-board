@@ -25,7 +25,9 @@ import asyncio
     
 
 @ft.component
-def MenuBar():
+def MenuBar() -> ft.Control:
+
+    print("MenuBar component loaded")
 
     # Grab our contexts
     page = ft.context.page

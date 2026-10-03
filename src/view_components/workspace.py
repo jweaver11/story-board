@@ -22,6 +22,7 @@ import os
 from models.widget import WidgetView
 from models.widgets.note import NoteView
 from contexts.contexts import StoryContext, OverlayContext
+from styles.icons import widget_icons
 
 # Our workspace object that is stored in our story object
 class WorkspaceOld(ft.Container):
@@ -283,7 +284,9 @@ def build_widget_view(widget: Widget):
 
 
 @ft.component
-def Workspace():
+def Workspace() -> ft.Tabs:
+
+    print("Workspace component loaded")
 
     # Called to hide the widget from the workspace
     async def hide_widget(widget):
@@ -337,25 +340,7 @@ def Workspace():
         is_renaming, set_is_renaming = ft.use_state(False)
 
         # Set our icon based on what type of widget we have
-        match widget.tag:
-            case "manuscript": icon = ft.Icons.DESCRIPTION_OUTLINED
-            case "canvas": icon = ft.Icons.BRUSH_OUTLINED
-            case "canvas_board": icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
-            case "note": icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
-            case "character": icon = ft.Icons.PERSON_OUTLINE
-            case "character_relationship_map": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
-            case "plotline": icon = ft.Icons.TIMELINE
-            case "map": icon = ft.Icons.MAP_OUTLINED
-            case "world": icon = ft.Icons.PUBLIC_OUTLINED
-            case "item": icon = ft.Icons.STAR_OUTLINE_ROUNDED
-            case "chart": 
-                if widget.chart_type == 'bar':
-                    icon = ft.Icons.INSERT_CHART_OUTLINED 
-                else:
-                    icon = ft.CupertinoIcons.COMPASS
-            case "comic_preview": icon = ft.Icons.SLIDESHOW_OUTLINED
-            case "plot_chart": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
-            case _: icon = ft.Icons.ERROR_OUTLINE
+        icon = widget_icons.get(widget.tag, ft.Icons.ERROR_OUTLINE)
 
         # Set the icon contrl
         tab_icon = ft.Icon(icon, color=widget.color)  

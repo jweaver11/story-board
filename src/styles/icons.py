@@ -31,6 +31,23 @@ icons = {
     "group": ft.Icons.GROUP,
 }
 
+widget_icons = {
+    "manuscript": ft.Icons.DESCRIPTION_OUTLINED,
+    "canvas": ft.Icons.BRUSH_OUTLINED,
+    "canvas_board": ft.Icons.SPACE_DASHBOARD_OUTLINED,
+    "note": ft.Icons.LIBRARY_BOOKS_OUTLINED,
+    "character": ft.Icons.PERSON_OUTLINE,
+    "character_relationship_map": ft.Icons.ACCOUNT_TREE_OUTLINED,
+    "plotline": ft.Icons.TIMELINE,
+    "map": ft.Icons.MAP_OUTLINED,
+    "world": ft.Icons.PUBLIC_OUTLINED,
+    "item": ft.Icons.STAR_OUTLINE_ROUNDED,
+    "chart": ft.Icons.INSERT_CHART_OUTLINED,
+    "comic_preview": ft.Icons.SLIDESHOW_OUTLINED,
+    "plot_chart": ft.Icons.ACCOUNT_TREE_OUTLINED,
+    "error": ft.Icons.ERROR_OUTLINE,
+}
+
 # Icons used for character relationship maps
 connection_icons = {
     "link": ft.Icons.LINK,

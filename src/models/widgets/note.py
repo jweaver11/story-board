@@ -138,6 +138,8 @@ def CardView(card: Card, card_id: str, delete_card: callable) -> ft.Container:
 def NoteView(note: Note) -> WidgetView:
     ''' Reloads/Rebuilds our widget based on current data '''
 
+    print("NoteView component loaded")
+
     # Create the card and scroll down
     async def create_card(_):
         note.create_card()
@@ -165,9 +167,6 @@ def NoteView(note: Note) -> WidgetView:
                     wrap=True, alignment=ft.MainAxisAlignment.START, expand=True,
                 )
             ], ref=card_column, key=f"{note.id}_note_card_column", expand=True, alignment=ft.MainAxisAlignment.START, scroll=ft.ScrollMode.AUTO),
-            
-            
-            
             padding=ft.Padding.all(10),
             expand=True
         )

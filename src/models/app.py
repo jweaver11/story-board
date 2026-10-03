@@ -33,7 +33,7 @@ class App:
         ''' Creates the new story object and has it run its 'startup' method. Changes route so our view displays the new story '''
 
         # Find our old story and save it before we create a new one
-        old_story_id = ft.context.page.route.split("/")[-1] if ft.context.page.route.startswith("stories/") else None
+        old_story_id = ft.context.page.route.split("/")[-1] if ft.context.page.route.startswith("stories") else None
         old_story = self.stories.get(old_story_id) if old_story_id else None
         if old_story:
             ft.context.page.run_task(old_story.save_file)  # Save the old story before creating a new one
@@ -66,9 +66,7 @@ def StoryRoute() -> ft.View:
     app = ft.use_context(AppContext)
     story_id = current_route.split("/")[-1]  
     story, _ = ft.use_state(app.stories.get(story_id))
-    #story = ft.use_memo(lambda: app.stories.get(story_id), dependencies=[story_id])
-
-    print("Loading story route")
+    story = ft.use_memo(lambda: app.stories.get(story_id), dependencies=[story_id])
 
     # See where the story exists in the apps dictionary, and return its view
     if story_id in app.stories:
