@@ -12,7 +12,8 @@ from contexts.contexts import StoryContext, OverlayContext
 from dataclasses import dataclass
 import uuid
 
-    
+
+# Notes contain cards (note cards) with a label, body, color, and strikethrough option
 @ft.observable
 @dataclass
 class Card:
@@ -32,6 +33,7 @@ class Card:
         self.strikethrough = not self.strikethrough
 
 
+# The note widget, which just contains cards
 @ft.observable
 @dataclass
 class Note(Widget):
@@ -55,24 +57,20 @@ class Note(Widget):
             self.card_data.pop(card_id)
 
 
-# Gives us a new textfield for each note card
+# Component for cards that returns a container control for each note card, with label, body, and ability to change its color, strikethrough status, or delete it
 @ft.component
 def CardView(card: Card, card_id: str, delete_card: callable) -> ft.Container:
 
-    def save_label(e: ft.Event[ft.TextField]):
-        card.set_label(e.control.value)
-
-    def save_body(e: ft.Event[ft.TextField]):
-        card.set_body(e.control.value)
-            
+    # Returns our popupmenu options for the cards menu on the right side of the label
     def get_card_options() -> list[ft.Control]:
         ''' Pops open a column of the menu options for this tree view item'''
 
+        # Handles changing the color of the card via the popup menu
         async def handle_color_change(e: ft.Event[ft.Control]):
             card.set_color(e.control.data)
         
         return [
-            ft.PopupMenuItem(
+            ft.PopupMenuItem(       # Color change options
                 ft.SubmenuButton(
                     ft.Row([
                         ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY), 
@@ -86,12 +84,12 @@ def CardView(card: Card, card_id: str, delete_card: callable) -> ft.Container:
                 ),
                 padding=ft.Padding.all(0)
             ),
-            ft.PopupMenuItem(
+            ft.PopupMenuItem(       # Toggle strikethrough
                 "Strikethrough",
                 ft.Icon(ft.Icons.FORMAT_STRIKETHROUGH_OUTLINED, ft.Colors.PRIMARY),
                 on_click=card.toggle_strikethrough
             ),
-            ft.PopupMenuItem(
+            ft.PopupMenuItem(       # Delete card   
                 "Delete Card", ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, size=20, color=ft.Colors.ERROR), 
                 on_click=lambda: delete_card(card_id),
             )
@@ -107,7 +105,7 @@ def CardView(card: Card, card_id: str, delete_card: callable) -> ft.Container:
         capitalization=ft.TextCapitalization.SENTENCES,
         text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD, decoration=ft.TextDecoration.LINE_THROUGH if card.strikethrough else ft.TextDecoration.NONE, decoration_thickness=2),
         suffix_icon=ft.PopupMenuButton(items=get_card_options(), tooltip="Card Options", menu_padding=ft.Padding.all(0)),
-        on_blur=save_label,
+        on_blur=lambda e: card.set_label(e.control.value),
     )
 
     # Bottom textfield for the body of the card
@@ -119,7 +117,7 @@ def CardView(card: Card, card_id: str, delete_card: callable) -> ft.Container:
         capitalization=ft.TextCapitalization.SENTENCES,
         value=card.body, expand=True, 
         key=f"{card_id}_body",
-        on_blur=save_body,
+        on_blur=lambda e: card.set_body(e.control.value),
     )  
     
     # Returns the container for the card
@@ -135,15 +133,15 @@ def CardView(card: Card, card_id: str, delete_card: callable) -> ft.Container:
         height=300, width=400,
     )
 
-# Called after any changes happen to the data that need to be reflected in the UI, usually just ones that require a rebuild
+# Component for the note view, which contains all the note cards and allows adding new cards
 @ft.component
-def NoteView(note: Note):
+def NoteView(note: Note) -> WidgetView:
     ''' Reloads/Rebuilds our widget based on current data '''
 
     # Create the card and scroll down
     async def create_card(_):
         note.create_card()
-        await card_column.current.scroll_to(-1, duration=500)
+        await card_column.current.scroll_to(-1, duration=500)   # Scroll down the column to see the new note card
 
     card_column = ft.use_ref(ft.Column())   # Stable ref to the scrollable column, immune to remounts across re-renders
 
@@ -151,23 +149,25 @@ def NoteView(note: Note):
     return WidgetView(
         note, 
         ft.Container(
-            ft.Stack([
-                ft.Column([     # Column that holds our roll with stable ref for auto scrolling
-                    ft.Row(     # Row that holds all the cards
-                        controls=[CardView(card, card_id, note.delete_card) for card_id, card in note.card_data.items()], 
-                        wrap=True, alignment=ft.MainAxisAlignment.START, expand=True,
-                    )
-                ], ref=card_column, key=f"{note.id}_note_card_column", expand=True, alignment=ft.MainAxisAlignment.START, scroll=ft.ScrollMode.AUTO),
-                ft.Column([
-                    ft.Button(      # Button to add cards
-                        "Add Card", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
-                        tooltip="Add a new card to your note.", 
-                        on_click=create_card, 
-                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
-                        bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
-                    ), 
-                ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
-            ], alignment=ft.Alignment.TOP_LEFT, expand=True),
+            ft.Column([     # Column that holds our roll with stable ref for auto scrolling
+                ft.Row(     # Row that holds all the cards
+                    controls=[
+                        CardView(card, card_id, note.delete_card) for card_id, card in note.card_data.items()
+                    ] + [
+                        ft.Button(      # Button to add cards
+                            "Add Card", ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+                            tooltip="Add a new card to your note.", 
+                            on_click=create_card, 
+                            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
+                            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+                        ),
+                    ], 
+                    wrap=True, alignment=ft.MainAxisAlignment.START, expand=True,
+                )
+            ], ref=card_column, key=f"{note.id}_note_card_column", expand=True, alignment=ft.MainAxisAlignment.START, scroll=ft.ScrollMode.AUTO),
+            
+            
+            
             padding=ft.Padding.all(10),
             expand=True
         )
