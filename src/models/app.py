@@ -66,6 +66,7 @@ def StoryRoute() -> ft.View:
     app = ft.use_context(AppContext)
     story_id = current_route.split("/")[-1]  
     story, _ = ft.use_state(app.stories.get(story_id))
+    #story = ft.use_memo(lambda: app.stories.get(story_id), dependencies=[story_id])
 
     print("Loading story route")
 

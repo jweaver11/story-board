@@ -17,7 +17,7 @@ import flet.canvas as cv
 import asyncio
 import uuid
 from styles.text_fields import TextField, SidebarTitleTextField
-from dataclasses import fields, asdict, dataclass, field
+from dataclasses import fields, asdict, dataclass, field, is_dataclass
 from contexts.contexts import StoryContext
 
 
@@ -109,7 +109,7 @@ class Widget:
             
             # Save our json data to the file
             with open(self.file_path, "w", encoding='utf-8') as f:   
-                json.dump(widget_data, f, indent=4)
+                json.dump(widget_data, f, indent=4, default=lambda o: asdict(o) if is_dataclass(o) else str(o))
 
             self.needs_file_write = False   # Mark as clean
             #self.is_new = False   # Mark as not new anymore
