@@ -65,15 +65,12 @@ def StoryRoute() -> ft.View:
     current_route = ft.context.page.route
     app = ft.use_context(AppContext)
     story_id = current_route.split("/")[-1]  
+    story, _ = ft.use_state(app.stories.get(story_id))
 
     print("Loading story route")
 
     # See where the story exists in the apps dictionary, and return its view
     if story_id in app.stories:
-        
-
-        story, _ = ft.use_state(app.stories[story_id])
-
         # Returns our story view with needed contexts
         return StoryContext(
             story,
@@ -82,6 +79,22 @@ def StoryRoute() -> ft.View:
     
     # Return errors
     return HomeView()
+
+# Build the router that will handle which view to display based on the current route
+@ft.component
+def build_router():
+
+    return ft.Router(
+        [
+            ft.Route(index=True, component=HomeView),
+            ft.Route("loading", component=LoadingView),
+            ft.Route("settings", component=SettingsView),
+            #ft.Route(path="tutorial", component=lambda: TutorialView()),
+            ft.Route("stories/:story_id", component=StoryRoute)
+        ],
+        not_found=ErrorView(),
+        manage_views=True
+    )
 
 @ft.component
 def AppView() -> list[ft.Control]:
@@ -104,21 +117,7 @@ def AppView() -> list[ft.Control]:
 
     ft.use_effect(_initialize, dependencies=[])
 
-    # Build the router that will handle which view to display based on the current route
-    @ft.component
-    def build_router():
-
-        return ft.Router(
-            [
-                ft.Route(index=True, component=HomeView),
-                ft.Route("loading", component=LoadingView),
-                ft.Route("settings", component=SettingsView),
-                #ft.Route(path="tutorial", component=lambda: TutorialView()),
-                ft.Route("stories/:story_id", component=StoryRoute)
-            ],
-            not_found=ErrorView(),
-            manage_views=True
-        )
+    
 
     # Set the context available fore each component
     return AppContext(

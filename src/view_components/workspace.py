@@ -274,13 +274,16 @@ class WorkspaceOld(ft.Container):
             return
 
 
-
+@ft.component
+def build_widget_view(widget: Widget):
+    ''' Returns the correct widget view based on the widgets tag'''
+    match widget.tag:
+        case "note": return NoteView(widget)
+    return WidgetView(widget)
 
 
 @ft.component
 def Workspace():
-
-    
 
     # Called to hide the widget from the workspace
     async def hide_widget(widget):
@@ -294,26 +297,35 @@ def Workspace():
             ft.context.page.run_task(widget.save_file)
         await overlay.unblock_page()
 
-    @ft.component
-    def build_widget_view(widget: Widget):
-        ''' Returns the correct widget view based on the widgets tag'''
-        match widget.tag:
-            case "note": return NoteView(widget)
-        return WidgetView(widget)
+
+    # Sets our new selected index when we change tabs and updates the tab bar indicator color to match the new selected tab
+    async def tab_change(e: ft.Event[ft.Tabs]):
+
+        # Save new selected index
+        new_selected_index = int(e.data)
+        story.selected_index = new_selected_index
+        tabs = e.control
+
+        # Set the new selected index and indicator color, then update
+        #tabs.selected_index = new_selected_index
+        #tab_bar.indicator_color = tab_view.controls[new_selected_index].color
+
+    # Handles a click event on a tab in the workspace
+    async def tab_click(self, e: ft.Event):
+        """Save the active widget before Flet switches to another tab."""
+        return
+        selected_index = self.tabs.selected_index
+        if 0 <= selected_index < len(self.tab_view.controls):
+            selected_widget = self.tab_view.controls[selected_index]
+            if hasattr(selected_widget, 'save_file'):
+                await selected_widget.save_file()
+
+    
 
     # Creates a new tab control for the given widget
     @ft.component
     def build_widget_tab(widget: Widget) -> ft.Tab:
         ''' Returns a new tab control for the given widget '''
-
-        # When renaming, show our textfield and hide our title
-        async def handle_rename(e=None):
-            #await self.story.close_menu()
-            edit_title_tf.value = widget.title
-            edit_title_tf.visible = True
-            tab_title.visible = False
-            tab_gd.update()
-            await edit_title_tf.focus()
 
         # When done renaming or canceling, hide our textfield and show our title. Make sure title is updated
         def blur_edit_title_tf(e=None):
@@ -321,6 +333,8 @@ def Workspace():
             tab_title.visible = True
             tab_title.value = widget.title
             tab_gd.update()
+
+        is_renaming, set_is_renaming = ft.use_state(False)
 
         # Set our icon based on what type of widget we have
         match widget.tag:
@@ -349,16 +363,18 @@ def Workspace():
         # Title of the text in the tab
         tab_title = ft.Text(
             widget.title, weight=ft.FontWeight.BOLD, size=16, 
-            color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True
+            color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True,
+            visible=not is_renaming,
         )
 
         # Textfield for renaming. starts hidden
         edit_title_tf = ft.TextField(
             value=widget.title,
-            visible=False,
+            visible=is_renaming,
             on_blur=blur_edit_title_tf,
             on_submit=widget.submit_rename,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            autofocus=True,
             #border_radius=4, dense=True, capitalization=ft.TextCapitalization.SENTENCES,
             #border_color=ft.Colors.TRANSPARENT,
             #focused_border_color=ft.Colors.PRIMARY,
@@ -441,12 +457,12 @@ def Workspace():
         expand=True
     )
 
+    # Return he tabs control
     return ft.Tabs(
         expand=True, 
         length=len(sorted_visible_widgets) if len(sorted_visible_widgets) > 0 else 1,
-        selected_index=story.selected_index if story.selected_index <= len(sorted_visible_widgets) else 0,
-        #selected_index=0,
-        #on_change=self.tab_change,
+        selected_index=story.selected_index if story.selected_index < len(sorted_visible_widgets) else 0,
+        on_change=tab_change,
         animation_duration=100,
         content=ft.Column([
             tab_bar,

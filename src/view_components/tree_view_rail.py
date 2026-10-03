@@ -35,6 +35,24 @@ class ContentRail(Rail):
         e.control.content.update()
 
 
+# Resizer/right boarder for the tree rail. Dragging resizes the tree view rail
+@ft.component
+def ActiveRailResizer(update_width: callable, save_width: callable) -> ft.GestureDetector:
+    return ft.GestureDetector(
+        content=ft.Container(
+            width=10,   # Total width of the GD, so its easier to find with mouse
+            content=ft.VerticalDivider(2, 2),     
+            padding=ft.Padding.only(left=8), 
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+        ),
+        # Stable key so re-renders (triggered while dragging) patch this control in place
+        # instead of remounting it, which would drop the in-progress pan gesture.
+        key="tree_view_rail_resizer",   # Set a key so re-renders view this control as the same instance, so our drag is not interrupted
+        mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  
+        on_pan_update=update_width,    # Resize the active rail as app is dragging
+        on_pan_end=save_width,   # Save the resize when app is done dragging
+        drag_interval=20,
+    )
 
 
 # Reload the rail whenever we need
@@ -548,24 +566,7 @@ def TreeViewRail() -> ft.Control:
     def save_tree_view_rail_width(e: ft.DragEndEvent=None):
         app_settings.tree_view_rail_width = tree_view_rail_width
 
-    # Resizer/right boarder for the tree rail. Dragging resizes the tree view rail
-    @ft.component
-    def ActiveRailResizer() -> ft.GestureDetector:
-        return ft.GestureDetector(
-            content=ft.Container(
-                width=10,   # Total width of the GD, so its easier to find with mouse
-                content=ft.VerticalDivider(2, 2),     
-                padding=ft.Padding.only(left=8), 
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
-            ),
-            # Stable key so re-renders (triggered while dragging) patch this control in place
-            # instead of remounting it, which would drop the in-progress pan gesture.
-            key="tree_view_rail_resizer",   # Set a key so re-renders view this control as the same instance, so our drag is not interrupted
-            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  
-            on_pan_update=resize_tree_view_rail,    # Resize the active rail as app is dragging
-            on_pan_end=save_tree_view_rail_width,   # Save the resize when app is done dragging
-            drag_interval=20,
-        )
+    
 
 
     
@@ -578,7 +579,7 @@ def TreeViewRail() -> ft.Control:
                     ft.Divider(thickness=2, leading_indent=8),
                     menu_gesture_detector
                 ], expand=True, spacing=0, margin=ft.Margin.only(top=10, bottom=10)),
-                ActiveRailResizer(),
+                ActiveRailResizer(resize_tree_view_rail, save_tree_view_rail_width),
             ], spacing=0),
             #Menu(position=menu_position, visible=show_menu, hide_callable=hide_menu)
         ]),

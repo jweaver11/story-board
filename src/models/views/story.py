@@ -30,27 +30,27 @@ class Story:
 
     title: str = "Story Title"
     tag: str = "story"
-    id: str = str(uuid.uuid4())
-    route: str = f"stories/{id}"
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    route: str = None
 
-    directory_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id)        # Where our stories metadata and content folder live
-    content_directory_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id, "content")   # Where our folders and widgets live
-    file_path: str = os.path.join(constants.STORIES_DIRECTORY_PATH, id, f"{id}.json")   # Path to story's json file
+    directory_path: str = None        # Where our stories metadata and content folder live
+    content_directory_path: str = None   # Where our folders and widgets live
+    file_path: str = None   # Path to story's json file
 
-    selected_tab_index: int = 0     # Index of the selected tab in the story's UI (old: workspace_selected_index)
+    selected_index: int = 0     # Index of the selected tab in the story's UI 
 
     folders: dict[str, dict] = field(default_factory=dict) #{'path': {'name": '', 'color': '', 'is_expanded': True}}
     widgets: dict[str, dataclass] = field(default_factory=dict)
 
-    selected_index: int = 0     # The selected index in the workspace
 
+    # Give us our paths based on the id after object creation
     def __post_init__(self):
+        self.directory_path = os.path.join(constants.STORIES_DIRECTORY_PATH, self.id)
+        self.content_directory_path = os.path.join(constants.STORIES_DIRECTORY_PATH, self.id, "content")
+        self.file_path = os.path.join(constants.STORIES_DIRECTORY_PATH, self.id, f"{self.id}.json")
+        self.route = f"stories/{self.id}"
         self.load_widgets() 
-        #self.notify()
-        #print("Loaded widgets:")
-        #print([widget.title for widget in self.widgets.values()])
-
-        
+   
     
     # Called whenever there are changes in our data that need to be saved
     async def save_file(self):
@@ -184,10 +184,8 @@ class Story:
     def rename(self, new_title: str):
         ''' Renames the story '''
         self.title = new_title
-        self.page.title = f"Story Board (alpha) - {new_title}"
-        self.route=return_safe_name(f"/{new_title}_story")
-        self.page.pop_dialog()
-        self.page.update()
+
+        #self.page.title = f"Story Board (alpha) - {new_title}"
 
         # Settings route is wrong.
 

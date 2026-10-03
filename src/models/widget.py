@@ -31,7 +31,7 @@ class Widget:
     
 
     tag: str
-    id: str = str(uuid.uuid4())
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
     index: int = 999
     visible: bool = True
     color: str = "primary"
@@ -42,6 +42,9 @@ class Widget:
 
     needs_file_write: bool = False
     visible_mw_id: str = ""
+
+    def __post_init__(self):
+        self.file_path = os.path.join(self.directory_path, f"{self.id}.json")
 
 
     # Parent constructor to set data and other attributes
@@ -94,7 +97,7 @@ class Widget:
         #if True:
         print("Saving widget to file: ", self.title)
 
-        file_path = os.path.join(self.directory_path, f"{self.id}.json")
+        #file_path = os.path.join(self.directory_path, f"{self.id}.json")
 
         try:
             os.makedirs(self.directory_path, exist_ok=True)     # Make sure directory exists still
@@ -105,7 +108,7 @@ class Widget:
             }
             
             # Save our json data to the file
-            with open(file_path, "w", encoding='utf-8') as f:   
+            with open(self.file_path, "w", encoding='utf-8') as f:   
                 json.dump(widget_data, f, indent=4)
 
             self.needs_file_write = False   # Mark as clean

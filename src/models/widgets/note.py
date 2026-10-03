@@ -23,6 +23,8 @@ class Note(Widget):
 def NoteView(note: Note):
     ''' Reloads/Rebuilds our widget based on current data '''
 
+    # TODO: Make cards their own module based component
+
     story = ft.use_context(StoryContext)
     overlay = ft.use_context(OverlayContext)
 
