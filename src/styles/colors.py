@@ -46,3 +46,5 @@ dark_gradient = ft.LinearGradient(
         ft.Colors.with_opacity(0.2, ft.Colors.OUTLINE_VARIANT),
     ],
 )
+
+highlight_menu_option_color = ft.Colors.with_opacity(0.2, ft.Colors.ON_SURFACE_VARIANT)

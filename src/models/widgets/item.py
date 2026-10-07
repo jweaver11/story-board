@@ -76,7 +76,7 @@ def ItemView(item: Item) -> WidgetView:
 
     body = ft.Column([
         ft.Row([
-            WidgetImageButton(item.image_base64),
+            WidgetImageButton(item),
             WidgetDescription(item.description, item.save_description),
         ], vertical_alignment=ft.CrossAxisAlignment.START, margin=ft.Margin.only(bottom=10)),
         fields_column

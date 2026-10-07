@@ -18,8 +18,8 @@ import uuid
 from styles.colors import dark_gradient
 from dataclasses import dataclass, field, asdict, fields
 from concurrent.futures import ThreadPoolExecutor
-from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext, OverlayContext, StoryContext
-from contexts.overlay import Menu, Blocker, Overlay
+from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext, OverlayContext, StoryContext, MenuContext
+from contexts.context_menu import Menu, Blocker, Overlay
 
 
 
@@ -1082,14 +1082,11 @@ def StoryView() -> ft.View:
     story = ft.use_context(StoryContext)
 
     overlay, _ = ft.use_state(Overlay())  
-   
-    
+
 
     # Set our specific event to detect keyboard events for the story
     page.on_keyboard_event = handle_keyboard_event 
     page.title = f"Story Board (alpha) - {story.title}"   # Set our page title
-
-
 
     
     return ft.View(

@@ -16,36 +16,26 @@ class Overlay:
     menu_position: ft.Offset = field(default_factory=lambda: ft.Offset(0, 0))
     menu_options: list[ft.Control] = None
 
-    
-    def hide_menu(self):
-        self.menu_visible = False
-    async def unblock_page(self):
-        self.blocker_visible = False
     async def block_page(self):
         self.blocker_visible = True
         await asyncio.sleep(0)  # give the updates scheduler a turn to flush this patch before we continue
 
-   
+    async def unblock_page(self):
+        self.blocker_visible = False
 
     def show_menu(self, position: ft.Offset, menu_options: list[ft.Control]):
+        print("Show menu called")
         self.menu_position = position
         self.menu_options = menu_options
         self.menu_visible = True
+
+    def hide_menu(self):
+        print("Hide menu called")
+        self.menu_visible = False
     
 
 
-@ft.component
-def Blocker(overlay: Overlay):
-    ''' A small spinning ring to block interactions with the page while demanding calculations happen '''
-    return ft.Container(
-        ft.Row([
-            ft.ProgressRing(width=100, height=100)
-        ], alignment=ft.MainAxisAlignment.CENTER), 
-        expand=True, 
-        visible=overlay.blocker_visible, 
-        blur=5, left=0, right=0, top=0, bottom=0,
-        key="blocker"
-    )
+
 
 
 ''' The control returned when opening a menu. Has a GD sit under it to close the menu so multiple can't be opened at once, and give it nice behavior '''
@@ -72,5 +62,17 @@ def Menu(overlay: Overlay):
             ),
             on_click=overlay.hide_menu,
         )
+    ], expand=True, key="context_menu")
 
-    ], expand=True, key="menu")
+@ft.component
+def Blocker(overlay: Overlay):
+    ''' A small spinning ring to block interactions with the page while demanding calculations happen '''
+    return ft.Container(
+        ft.Row([
+            ft.ProgressRing(width=100, height=100)
+        ], alignment=ft.MainAxisAlignment.CENTER), 
+        expand=True, 
+        visible=overlay.blocker_visible, 
+        blur=5, left=0, right=0, top=0, bottom=0,
+        key="blocker"
+    )

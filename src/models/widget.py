@@ -10,15 +10,16 @@ from models.views.story import Story
 import os
 import json
 from styles.colors import dark_gradient
-from styles.colors import colors
+from styles.colors import colors, highlight_menu_option_color
 from styles.snack_bar import SnackBar
-from styles.menu_option_style import MenuOptionStyle
+from styles.menu_option_style import MenuOptionStyle, OverlayOption
 import flet.canvas as cv
 import asyncio
 import uuid
 from styles.text_fields import TextField, SidebarTitleTextField
 from dataclasses import fields, asdict, dataclass, field, is_dataclass
-from contexts.contexts import StoryContext
+from contexts.contexts import StoryContext, OverlayContext
+from styles.context_menu import ContextMenu
 
 
 @ft.observable
@@ -235,132 +236,7 @@ class Widget:
         await app.settings.body_container.content.scroll_to(scroll_key=widget_type, duration=1200)
 
 
-    # Options when setting the image of a widget. Either upload, set a canvas, or clear image
-    def set_widget_image_options(self) -> list[ft.Control]:
-
-        # Called when clicking our upload image button 
-        async def upload_image(e: ft.Event):
-            await self.story.close_menu()   # Close menu
-
-            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
-            if files:
-
-                file_path = files[0].path
-                try:
-                    import base64
-
-                    with open(file_path, "rb") as image_file:
-                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                        # Save to our data
-                        self.update_data(**{'image_base64': f"{encoded_string}"})
-
-                    # Update the image in our widget
-                    self.select_image_button.content.icon = ft.Container(
-                        ft.Image(
-                            src=self.data.get('image_base64', ""),
-                            width=150,
-                            height=150,
-                            fit=ft.BoxFit.FILL,
-                        ), border_radius=4, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
-                    )
-                    self.select_image_button.update()
-
-                except Exception:
-                    pass
-
-        # Sets a canvas as our image
-        async def set_canvas_as_image(e=None):
-
-            # Set the canvas id when selecting a canvas from the radio group
-            def select_canvas(e: ft.Event[ft.RadioGroup]):
-                nonlocal canvas_id
-                canvas_id = e.data
-                
-            # Sets the canvas image from the returned canvas snapshot
-            def set_canvas_image(e=None):
-                if canvas_id is None:
-                    self.page.pop_dialog()
-                    return
-                widget = self.story.get_widget_by_id(canvas_id)
-                if widget is None:
-                    self.page.pop_dialog()
-                    self.page.show_dialog(SnackBar("Canvas not found. Please try again."))
-                    return
-
-                snapshot_str = widget.get_snapshot_string(quality="low")
-                if not snapshot_str:
-                    self.page.pop_dialog()
-                    self.page.show_dialog(SnackBar("Empty Canvas cannot be made as the image"))
-                    return
-
-                self.update_data(**{'image_base64': snapshot_str})
-                self.select_image_button.content.icon = ft.Container(
-                    ft.Image(
-                        src=self.data.get('image_base64', ""),
-                        width=150,
-                        height=150,
-                        fit=ft.BoxFit.FILL,
-                    ), #shape=ft.BoxShape.CIRCLE, 
-                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-                    border_radius=4
-                )
-                self.select_image_button.update()
-                
-                self.page.pop_dialog()
-
-            canvas_id: str = None
-
-            dlg = ft.AlertDialog(
-                title=ft.Text("Set a Canvas as Image", weight=ft.FontWeight.BOLD),
-                content=ft.RadioGroup(
-                    ft.Column([
-                        ft.Radio(
-                            label=widget.data.get('title', 'Untitled'),
-                            value=id, mouse_cursor=ft.MouseCursor.CLICK,
-                        ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"],
-                        tight=True
-                    ),
-                    on_change=select_canvas
-                ),
-                actions=[
-                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                    ft.TextButton("Select", on_click=set_canvas_image, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),]
-            )
-            self.page.show_dialog(dlg)
-
-            await self.story.close_menu()   # Close menu
-
-        # Resets our image to nothing and our button to the placeholder
-        async def clear_image(e: ft.Event):
-            await self.story.close_menu()   # Close menu
-            self.update_data(**{'image_base64': ""})
-            self.select_image_button.content.icon = ft.Icons.IMAGE_OUTLINED
-            self.select_image_button.update()
-
-        # Build the options
-        return [
-            MenuOptionStyle(
-                on_click=set_canvas_as_image,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
-                    ft.Text("Set Canvas", weight=ft.FontWeight.BOLD), 
-                ], tooltip="Set a canvas as the image for this widget"),
-            ),
-            MenuOptionStyle(
-                on_click=upload_image,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY),
-                    ft.Text("Upload Image", weight=ft.FontWeight.BOLD), 
-                ]),
-            ),
-            MenuOptionStyle(
-                on_click=clear_image,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.PRIMARY),
-                    ft.Text("Clear Image", weight=ft.FontWeight.BOLD), 
-                ]),
-            ),
-        ]
+    
         
 
     
@@ -742,6 +618,141 @@ class Widget:
             hover_interval=100
         )
 
+# Options when setting the image of a widget. Either upload, set a canvas, or clear image
+def get_widget_image_options(widget: Widget, page: ft.Page) -> list[ft.Control]:
+
+    # Called when clicking our upload image button 
+    async def upload_image(e: ft.Event):
+
+        files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+        if files:
+
+            file_path = files[0].path
+            try:
+                import base64
+
+                with open(file_path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                    # Save to our data
+                    widget.image_base64 = f"{encoded_string}"
+
+            except Exception as e:
+                print("Error uploading image:", e)
+
+    # Sets a canvas as our image
+    async def set_canvas_as_image(e=None):
+
+        # Set the canvas id when selecting a canvas from the radio group
+        def select_canvas(e: ft.Event[ft.RadioGroup]):
+            nonlocal canvas_id
+            canvas_id = e.data
+            
+        # Sets the canvas image from the returned canvas snapshot
+        def set_canvas_image(e=None):
+            if canvas_id is None:
+                widget.page.pop_dialog()
+                return
+            widget = widget.story.get_widget_by_id(canvas_id)
+            if widget is None:
+                widget.page.pop_dialog()
+                widget.page.show_dialog(SnackBar("Canvas not found. Please try again."))
+                return
+
+            snapshot_str = widget.get_snapshot_string(quality="low")
+            if not snapshot_str:
+                page.pop_dialog()
+                page.show_dialog(SnackBar("Empty Canvas cannot be made as the image"))
+                return
+
+            widget.image_base64 = snapshot_str
+            
+            page.pop_dialog()
+
+        canvas_id: str = None
+
+        dlg = ft.AlertDialog(
+            title=ft.Text("Set a Canvas as Image", weight=ft.FontWeight.BOLD),
+            content=ft.RadioGroup(
+                ft.Column([
+                    ft.Radio(
+                        label=widget.data.get('title', 'Untitled'),
+                        value=id, mouse_cursor=ft.MouseCursor.CLICK,
+                    ) for id, widget in widget.story.widgets.items() if widget.data.get('tag', '') == "canvas"],
+                    tight=True
+                ),
+                on_change=select_canvas
+            ),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda: page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                ft.TextButton("Select", on_click=set_canvas_image, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),]
+        )
+        page.show_dialog(dlg)
+
+    # Resets our image to nothing and our button to the placeholder
+    async def clear_image(_):
+        widget.image_base64 = ""
+
+    # Build the options
+    return [
+        OverlayOption(
+            #on_click=set_canvas_as_image,
+            content=ft.Row([
+                ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
+                ft.Text("Set Canvas", weight=ft.FontWeight.BOLD), 
+            ], tooltip="Set a canvas as the image for this widget"),
+        ),
+        OverlayOption(
+            on_click=upload_image,
+            content=ft.Row([
+                ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY),
+                ft.Text("Upload Image", weight=ft.FontWeight.BOLD), 
+            ]),
+        ),
+        OverlayOption(
+            on_click=clear_image,
+            content=ft.Row([
+                ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.PRIMARY),
+                ft.Text("Clear Image", weight=ft.FontWeight.BOLD), 
+            ]),
+        ),
+    ]
+
+
+
+
+@ft.component
+def WidgetImageButton(widget: Widget) -> ft.GestureDetector:
+    ''' Returns a button that many widgets use to show their image and set a new image '''
+
+    highlighting, set_highlighting = ft.use_state(False)
+
+
+    return ContextMenu(
+        content=ft.GestureDetector(
+            ft.Container(
+                content=ft.Image(
+                    src=widget.image_base64,
+                    width=150,
+                    height=150,
+                    fit=ft.BoxFit.FILL,
+                ) if widget.image_base64 else ft.Icon(
+                    ft.Icons.IMAGE_OUTLINED,
+                    size=150,
+                    color=ft.Colors.PRIMARY
+                ), 
+                clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+                tooltip="Upload an Image for this widget",
+                border_radius=4,
+                bgcolor=highlight_menu_option_color if highlighting else None,
+            ),
+            mouse_cursor=ft.MouseCursor.CLICK,
+            on_enter=lambda: set_highlighting(True),
+            on_exit=lambda: set_highlighting(False),
+        ),
+        primary_items=get_widget_image_options(widget, ft.context.page),
+        secondary_items=[],
+        #key=f"widget_image_button_{widget.id}"
+    )
 
 # Returns the styled section for descriptions of widgets with shared styles. Character, World, Item
 def WidgetDescription(description: str, save_description: callable) -> ft.TextField:
@@ -761,33 +772,17 @@ def WidgetDescription(description: str, save_description: callable) -> ft.TextFi
         )
     ], expand=True, spacing=0, alignment=ft.MainAxisAlignment.CENTER, tight=True)
 
-@ft.component
-def WidgetImageButton(image: str) -> ft.GestureDetector:
-    return ft.GestureDetector(
-        ft.IconButton(
-            ft.Container(
-                ft.Image(
-                    src=image,
-                    width=150,
-                    height=150,
-                    fit=ft.BoxFit.FILL,
-                ), 
-                clip_behavior=ft.ClipBehavior.ANTI_ALIAS
-            ) if image else ft.Icons.IMAGE_OUTLINED, 
-            ft.Colors.PRIMARY, icon_size=150,
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
-            tooltip="Upload an Image for this widget", mouse_cursor=ft.MouseCursor.CLICK,
-            #on_click=lambda: self.story.open_menu(self.set_widget_image_options()), 
-        ),
-        #on_hover=self.set_mouse_coords,
-        hover_interval=100,
-        on_secondary_tap=lambda e: print("Secondary tap detected"),
-    )
-
+# Returns the consistant control for all widgets
 @ft.component
 def WidgetView(widget: Widget, content: ft.Control):
-    story = ft.use_context(StoryContext)
-    return ft.Container(
+    #story = ft.use_context(StoryContext)
+    return IsoWidgetView(
         content,
         key=widget.id,
     )
+
+# Allows us to isolate widgets, since they will handle their own updates without making the rest of the page suffer
+@ft.control
+class IsoWidgetView(ft.Container):
+    def is_isolated(self) -> bool:
+        return True
