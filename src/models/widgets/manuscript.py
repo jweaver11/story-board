@@ -10,7 +10,7 @@ import asyncio
 import uuid
 from styles.text_fields import TextField
 from styles.snack_bar import SnackBar
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 
 MANUSCRIPT_WIDTH = 820
 MANUSCRIPT_HEIGHT = 1060

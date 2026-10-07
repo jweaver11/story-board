@@ -6,7 +6,7 @@ If it cannot do both, its not a mini widget
 
 import flet as ft
 from models.widget import Widget
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 from styles.colors import colors
 from styles.text_fields import TextField
 import uuid

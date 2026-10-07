@@ -2,6 +2,7 @@
 
 import flet as ft
 
+# Styled context menu to share options between components. Needs a content, and either primary/secondary items
 class ContextMenu(ft.ContextMenu):
 
     def __init__(

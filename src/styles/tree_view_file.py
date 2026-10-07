@@ -2,7 +2,7 @@
 
 import flet as ft
 from models.widget import Widget
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 from styles.colors import colors
 from styles.text_fields import TextField
 import os
@@ -10,7 +10,6 @@ import asyncio
 import math
 from styles.snack_bar import SnackBar
 from dataclasses import dataclass
-from contexts.contexts import OverlayContext
 import functools
 from styles.icons import widget_icons
 
@@ -139,7 +138,7 @@ def RailFile(widget: dataclass, story):
 
     is_editing_title, set_is_editing_title = ft.use_state(False)
     highlighting, set_highlighting = ft.use_state(False)
-    overlay = ft.use_context(OverlayContext)
+    #overlay = ft.use_context(OverlayContext)
 
     
     edit_title_tf = ft.TextField(
@@ -160,14 +159,14 @@ def RailFile(widget: dataclass, story):
     )
 
     async def show_widget(widget: Widget):
-        await overlay.block_page()
+        #await overlay.block_page()
         if widget.visible:
             story.selected_index = widget.index
         else:
             widget.visible = True
             ft.context.page.run_task(widget.save_file)
         story.widgets[widget.id] = widget   # Touch to observable to trigger observers
-        await overlay.unblock_page()
+        #await overlay.unblock_page()
         return
 
     return ft.GestureDetector(

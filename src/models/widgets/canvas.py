@@ -18,7 +18,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 import asyncio
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 from models.dataclasses.canvas_shape import CanvasShape    
 from styles.text_fields import TextField
 import time

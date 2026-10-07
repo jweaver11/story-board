@@ -12,7 +12,7 @@ from styles.icons import location_icons
 from styles.text_fields import TextField
 import time
 import asyncio
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 from styles.colors import colors
 from styles.text_styles import TextShadow
 from styles.snack_bar import SnackBar

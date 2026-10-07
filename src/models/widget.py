@@ -12,13 +12,13 @@ import json
 from styles.colors import dark_gradient
 from styles.colors import colors, highlight_menu_option_color
 from styles.snack_bar import SnackBar
-from styles.menu_option_style import MenuOptionStyle, OverlayOption
+from styles.context_menu_option import MenuOptionStyle, ContextMenuOption
 import flet.canvas as cv
 import asyncio
 import uuid
 from styles.text_fields import TextField, SidebarTitleTextField
 from dataclasses import fields, asdict, dataclass, field, is_dataclass
-from contexts.contexts import StoryContext, OverlayContext
+from contexts.contexts import StoryContext
 from styles.context_menu import ContextMenu
 
 
@@ -654,8 +654,8 @@ def get_widget_image_options(widget: Widget, page: ft.Page) -> list[ft.Control]:
                 return
             widget = widget.story.get_widget_by_id(canvas_id)
             if widget is None:
-                widget.page.pop_dialog()
-                widget.page.show_dialog(SnackBar("Canvas not found. Please try again."))
+                page.pop_dialog()
+                page.show_dialog(SnackBar("Canvas not found. Please try again."))
                 return
 
             snapshot_str = widget.get_snapshot_string(quality="low")
@@ -694,26 +694,20 @@ def get_widget_image_options(widget: Widget, page: ft.Page) -> list[ft.Control]:
 
     # Build the options
     return [
-        OverlayOption(
+        ContextMenuOption(
             #on_click=set_canvas_as_image,
-            content=ft.Row([
-                ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
-                ft.Text("Set Canvas", weight=ft.FontWeight.BOLD), 
-            ], tooltip="Set a canvas as the image for this widget"),
+            icon=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
+            content=ft.Text("Set Canvas", weight=ft.FontWeight.BOLD, tooltip="Set a canvas as the image for this widget"),
         ),
-        OverlayOption(
+        ContextMenuOption(
             on_click=upload_image,
-            content=ft.Row([
-                ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY),
-                ft.Text("Upload Image", weight=ft.FontWeight.BOLD), 
-            ]),
+            icon=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY),
+            content="Upload Image"
         ),
-        OverlayOption(
+        ContextMenuOption(
             on_click=clear_image,
-            content=ft.Row([
-                ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.PRIMARY),
-                ft.Text("Clear Image", weight=ft.FontWeight.BOLD), 
-            ]),
+            icon=ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.PRIMARY),
+            content="Clear Image"
         ),
     ]
 
@@ -725,7 +719,6 @@ def WidgetImageButton(widget: Widget) -> ft.GestureDetector:
     ''' Returns a button that many widgets use to show their image and set a new image '''
 
     highlighting, set_highlighting = ft.use_state(False)
-
 
     return ContextMenu(
         content=ft.GestureDetector(
@@ -751,7 +744,7 @@ def WidgetImageButton(widget: Widget) -> ft.GestureDetector:
         ),
         primary_items=get_widget_image_options(widget, ft.context.page),
         secondary_items=[],
-        #key=f"widget_image_button_{widget.id}"
+        key=f"widget_image_button_{widget.id}"
     )
 
 # Returns the styled section for descriptions of widgets with shared styles. Character, World, Item
@@ -776,13 +769,7 @@ def WidgetDescription(description: str, save_description: callable) -> ft.TextFi
 @ft.component
 def WidgetView(widget: Widget, content: ft.Control):
     #story = ft.use_context(StoryContext)
-    return IsoWidgetView(
+    return ft.Container(
         content,
         key=widget.id,
     )
-
-# Allows us to isolate widgets, since they will handle their own updates without making the rest of the page suffer
-@ft.control
-class IsoWidgetView(ft.Container):
-    def is_isolated(self) -> bool:
-        return True

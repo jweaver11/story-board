@@ -5,10 +5,10 @@ import os
 from models.views.story import Story
 from view_components.rail import Rail
 from utils.tree_view import load_directory_data
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 import math
 #from contexts.app_settings import AppSettingsContext
-from contexts.contexts import OverlayContext, StoryContext, AppSettingsContext
+from contexts.contexts import StoryContext, AppSettingsContext
 
 
 
@@ -240,7 +240,7 @@ def TreeViewRail() -> ft.Control:
         set_creating_item(True)
         set_new_item_hint("")
         set_new_item_data(e.control.data)   # Sets the tag
-        overlay.hide_menu()
+        #overlay.hide_menu()
 
             
         tag = e.control.data
@@ -499,10 +499,7 @@ def TreeViewRail() -> ft.Control:
     new_item_data, set_new_item_data = ft.use_state("")
     new_item_label, set_new_item_label = ft.use_state("")
 
-    creating_canvas, set_creating_canvas = ft.use_state(False)  # Canvas is special and gets its own dialog
-
     # For right clicking to open a menu
-    overlay = ft.use_context(OverlayContext)
     menu_position = ft.use_ref(ft.Offset(0, 0)) # Menu position without update UI
 
     def set_menu_position(position: ft.Offset): # Set that menu position
@@ -550,7 +547,7 @@ def TreeViewRail() -> ft.Control:
         ),
         expand=True,
         on_hover=lambda e: set_menu_position(e.global_position), #if not overlay.menu_visible else None,
-        on_secondary_tap=lambda: overlay.show_menu(menu_position.current, get_new_item_menu_options()),
+        #on_secondary_tap=lambda: overlay.show_menu(menu_position.current, get_new_item_menu_options()),
         hover_interval=20,  # Throttle hover rate
     )
 

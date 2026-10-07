@@ -27,6 +27,13 @@ class App:
     stories: dict[str, Story] = field(default_factory=dict)
     ignore_settings_change: bool = True  # Ignore settings changes when page is loading itself and saving incorrect changes based on premature event firings
 
+    blocker_visible: bool = False    # If we should block the page for demanding opterations
+
+    def block_page(self):
+        self.blocker_visible = True
+    def unblock_page(self):
+        self.blocker_visible = False
+
     
     # Called when app creates a new story. Accepts our title, page reference, a template, and a type
     def create_story(self, title: str, app_settings: AppSettings) -> Story:
@@ -55,6 +62,7 @@ def ErrorView() -> ft.View:
     return ft.View(
         [ft.Text("An error has occurred within the router")]
     )
+
 
 # Handles a view for a story, and loads that story and returns its view
 # Only called when route starts with 'stories/'

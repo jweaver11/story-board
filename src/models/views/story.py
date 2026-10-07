@@ -18,8 +18,8 @@ import uuid
 from styles.colors import dark_gradient
 from dataclasses import dataclass, field, asdict, fields
 from concurrent.futures import ThreadPoolExecutor
-from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext, OverlayContext, StoryContext, MenuContext
-from contexts.context_menu import Menu, Blocker, Overlay
+from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext, StoryContext
+from contexts.blocker import Blocker
 
 
 
@@ -1081,8 +1081,6 @@ def StoryView() -> ft.View:
     settings = ft.use_context(AppSettingsContext)   
     story = ft.use_context(StoryContext)
 
-    overlay, _ = ft.use_state(Overlay())  
-
 
     # Set our specific event to detect keyboard events for the story
     page.on_keyboard_event = handle_keyboard_event 
@@ -1097,12 +1095,11 @@ def StoryView() -> ft.View:
                         MenuBar(),
                         ft.Row([       # Keep the majority of the page out up updates
                             DrawingControlsRail(),
-                            OverlayContext(overlay, lambda: TreeViewRail()),   # Allow the overlay into the tree view
-                            OverlayContext(overlay, lambda: Workspace()),
+                            TreeViewRail(),   # Allow the overlay into the tree view
+                            Workspace(),
                         ], spacing=0, expand=True),
                     ], expand=True, spacing=0),
-                    Menu(overlay),
-                    Blocker(overlay),
+                    Blocker(app.blocker_visible),
                 ],
                 expand=True
             ),

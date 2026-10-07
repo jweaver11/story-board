@@ -4,11 +4,11 @@ import flet as ft
 from models.views.story import Story
 from models.widget import Widget, WidgetView
 from styles.text_fields import TextField, UnderlinedTextField, NoLabelTextField
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 import asyncio
 from styles.colors import colors
 from dataclasses import field, dataclass
-from contexts.contexts import StoryContext, OverlayContext
+from contexts.contexts import StoryContext
 import uuid
 
 

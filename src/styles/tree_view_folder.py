@@ -4,7 +4,7 @@ import flet as ft
 from models.views.story import Story
 import os
 import json
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 from styles.colors import colors
 from styles.snack_bar import SnackBar
 from utils.new_canvas import new_canvas_dlg

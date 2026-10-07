@@ -3,7 +3,7 @@
 import flet as ft
 from models.views.story import Story
 from models.widget import Widget
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 #from models.app import app
 from styles.text_fields import SmallTextField, TextField
 import flet.canvas as cv

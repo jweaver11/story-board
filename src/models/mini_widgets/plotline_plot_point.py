@@ -8,7 +8,7 @@ from styles.icons import icons
 from styles.text_fields import TextField
 from contexts.constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
 from styles.icons import icons
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 #from models.app import app
 from styles.colors import colors
 

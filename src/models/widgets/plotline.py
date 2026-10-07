@@ -6,7 +6,7 @@ These objects is displayed in the plotlines widget, and store our mini widgets p
 import json
 import os
 import flet as ft
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 from models.views.story import Story
 from models.widget import Widget
 from models.mini_widgets.plotline_plot_point import PlotlinePlotPoint

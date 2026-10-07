@@ -40,8 +40,9 @@ class MenuOptionStyle(ft.GestureDetector):
         self.content.bgcolor = None
         self.content.update()
 
-def OverlayOption(
+def ContextMenuOption(
         content: ft.Control,                # Control displayed as the button
+        icon: ft.Icon = None,          # Optional icon to display alongside the content
         on_click: callable = None,          # Function called on click
         data = None,                         # Any data needed for this option to help with logic
         no_padding: bool = False,              # Whether to remove default padding around the content (used for popupmenu buttons)
@@ -50,13 +51,12 @@ def OverlayOption(
 
 
     return ft.PopupMenuItem(
+        content=content,
+        icon=icon,
         data=data,
         mouse_cursor=ft.MouseCursor.CLICK,
         on_click=on_click if on_click is not None else lambda: None,        # Set our on click function
-        content=ft.Container(
-            #padding=ft.Padding.all(8) if not no_padding else None,     # Add padding if not disabled
-            content=content,                                                 # Set our content passed in           
-            border_radius=ft.BorderRadius.all(4),
-        ),
+        label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+        height=40,
     )
    

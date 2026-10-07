@@ -3,7 +3,7 @@
 import flet as ft
 from models.views.story import Story
 from models.widget import Widget, WidgetView, WidgetDescription, WidgetImageButton
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 from styles.text_fields import TextField
 import asyncio
 from dataclasses import dataclass, field

@@ -17,12 +17,12 @@ from models.isolated_controls.row import IsolatedRow
 from models.isolated_controls.column import IsolatedColumn
 from models.isolated_controls.tab_bar_view import IsolatedTabBarView
 import asyncio
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 import os
 from models.widget import WidgetView
 from models.widgets.note import NoteView
 from models.widgets.item import ItemView
-from contexts.contexts import StoryContext, OverlayContext
+from contexts.contexts import StoryContext
 from styles.icons import widget_icons
 
 # Our workspace object that is stored in our story object
@@ -293,14 +293,14 @@ def Workspace() -> ft.Tabs:
     # Called to hide the widget from the workspace
     async def hide_widget(widget):
         ''' Hides this widget from the workspace but keeps it in the story and rail '''
-        await overlay.block_page()
+        #await overlay.block_page()
 
         widget.visible = False
         story.widgets[widget.id] = widget   # Touch to observable to trigger observers
 
         if widget.tag == "canvas" or widget.tag == "manuscript" or widget.tag == "map" or widget.tag == "canvas_board":    # Widgets that must be rendered to save
             ft.context.page.run_task(widget.save_file)
-        await overlay.unblock_page()
+        #await overlay.unblock_page()
 
 
     # Sets our new selected index when we change tabs and updates the tab bar indicator color to match the new selected tab
@@ -416,7 +416,7 @@ def Workspace() -> ft.Tabs:
         return tab
 
     story = ft.use_context(StoryContext)
-    overlay = ft.use_context(OverlayContext)
+    #overlay = ft.use_context(OverlayContext)
 
     visible_widgets = [widget for widget in story.widgets.values() if widget.visible]
     sorted_visible_widgets: list = sorted(visible_widgets, key=lambda w: w.index)
@@ -432,6 +432,7 @@ def Workspace() -> ft.Tabs:
         enable_feedback=False, 
         #on_click=self.tab_click,
         label_padding=ft.Padding.only(left=6), #padding=ft.Padding.all(20)
+        key=f"{story.id}_tab_bar"
     )
 
     # Build our tab view that holds each widget
@@ -441,7 +442,8 @@ def Workspace() -> ft.Tabs:
         ] if len(sorted_visible_widgets) > 0 else [
             ft.Container(ft.Text(" <- Add Widget"), alignment=ft.Alignment.CENTER_LEFT)
         ],
-        expand=True
+        expand=True,
+        key=f"{story.id}_tab_view"
     )
 
     # Return he tabs control

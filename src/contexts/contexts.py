@@ -13,8 +13,3 @@ TextContext = ft.create_context(None)
 
 # Context for a story
 StoryContext = ft.create_context(None)
-
-# Overlay for our stories to open menus or block the page when needed
-OverlayContext = ft.create_context(None)
-
-MenuContext = ft.create_context(None)
