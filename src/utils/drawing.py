@@ -12,7 +12,7 @@ from styles.text_fields import TextField
 import time
 import uuid
 import os
-from PIL import Image, ImageDraw, ImageTk, ImageColor
+from PIL import Image, ImageColor
 from models.app import app
 from collections import deque
 
