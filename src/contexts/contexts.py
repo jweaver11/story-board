@@ -13,3 +13,6 @@ TextContext = ft.create_context(None)
 
 # Context for a story
 StoryContext = ft.create_context(None)
+
+# Blocking the page context for heavy calcs
+BlockerContext = ft.create_context(None)

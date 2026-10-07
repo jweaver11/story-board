@@ -12,6 +12,7 @@ from styles.snack_bar import SnackBar
 from dataclasses import dataclass
 import functools
 from styles.icons import widget_icons
+from contexts.contexts import BlockerContext
 
     
 # Called when this item is right clicked
@@ -138,7 +139,6 @@ def RailFile(widget: dataclass, story):
 
     is_editing_title, set_is_editing_title = ft.use_state(False)
     highlighting, set_highlighting = ft.use_state(False)
-    #overlay = ft.use_context(OverlayContext)
 
     
     edit_title_tf = ft.TextField(
@@ -158,16 +158,28 @@ def RailFile(widget: dataclass, story):
         #focused_border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.PRIMARY))
     )
 
+    # Adds our widget to the workspace or selects the tab already showing it if its already visible
     async def show_widget(widget: Widget):
-        #await overlay.block_page()
+        await blocker.block_page()
+
+        # If we're already showing, highlight that tab
         if widget.visible:
             story.selected_index = widget.index
+            ft.context.page.run_task(story.save_file)
+
+        # Otherwise, add us to the workspace
         else:
             widget.visible = True
+            num_visible_widgets = sum(1 for w in story.widgets.values() if w.visible)
+            widget.index = num_visible_widgets
+            story.selected_index = widget.index
             ft.context.page.run_task(widget.save_file)
+        
         story.widgets[widget.id] = widget   # Touch to observable to trigger observers
-        #await overlay.unblock_page()
+        blocker.unblock_page()
         return
+
+    blocker = ft.use_context(BlockerContext)
 
     return ft.GestureDetector(
         ft.Draggable( 

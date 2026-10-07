@@ -2,7 +2,7 @@ import flet as ft
 
 
 # Styling for our menu option buttons that sit inside menus when we right click
-#@ft.control
+#@ft.control -- OLD
 class MenuOptionStyle(ft.GestureDetector):
 
     # Constructor
@@ -40,6 +40,8 @@ class MenuOptionStyle(ft.GestureDetector):
         self.content.bgcolor = None
         self.content.update()
 
+
+# Our standard menu option for context menus across our program
 def ContextMenuOption(
         content: ft.Control,                # Control displayed as the button
         icon: ft.Icon = None,          # Optional icon to display alongside the content
@@ -49,7 +51,7 @@ def ContextMenuOption(
         no_effects: bool = False,              # Whether to remove default hover effects (used for submenu buttons)
     ) -> ft.PopupMenuItem:
 
-
+    # Context menus use popup menu items, so we style them here
     return ft.PopupMenuItem(
         content=content,
         icon=icon,
