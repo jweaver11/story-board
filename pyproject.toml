@@ -34,6 +34,10 @@ copyright = "Copyright (C) 2025 by Flet"
 [tool.flet.app]
 path = "src"
 
+# jni_flutter needs jni ^1.1.0 but pub resolved 1.0.0
+[tool.flet.flutter.pubspec.dependency_overrides]
+jni = "^1.1.0"
+
 [tool.uv]
 dev-dependencies = [
     "flet[all]==1.0.0",
