@@ -40,15 +40,22 @@ class Note(Widget):
     card_data: dict = field(default_factory=lambda: {str(uuid.uuid4()): Card()})
 
     def __post_init__(self):
-        super().__post_init__()
-        # Cards loaded from json arrive as plain dicts, so convert them to Card objects in place
+        # Convert cards loaded from json (plain dicts) before super(), so the conversion isn't counted as a change
         for card_id, card in self.card_data.items():
             if isinstance(card, dict):
                 self.card_data[card_id] = Card(**card)
+        super().__post_init__()
+
+        # Card edits happen on Card objects, which our dict can't see. Hold the listener strongly: observables keep weak refs
+        self._card_listener = lambda sender, field: self.mark_dirty()
+        for card in self.card_data.values():
+            card.subscribe(self._card_listener)
 
     # Create a new card
     def create_card(self):
-        self.card_data[str(uuid.uuid4())] = Card()
+        card = Card()
+        card.subscribe(self._card_listener)
+        self.card_data[str(uuid.uuid4())] = card
 
     # Deletes the key for the card
     def delete_card(self, card_id: str):

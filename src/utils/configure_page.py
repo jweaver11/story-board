@@ -44,8 +44,7 @@ def configure_page(app, app_settings, paint_settings, drawing_settings, text_set
 
         if e.type == ft.WindowEventType.CLOSE:
 
-            # Show the saving changes view while closing
-            page.navigate("/saving_to_cloud")
+            page.navigate("/loading")
 
             # Save the settings and contexts upon close if they have changed between last auto save and close
             if app_settings:
@@ -69,11 +68,14 @@ def configure_page(app, app_settings, paint_settings, drawing_settings, text_set
                         await widget.save_file()
 
             # Push everything to Google Drive if connected. Failures must never block closing the app
-            try:
-                if await asyncio.to_thread(google_drive.is_authenticated):
-                    await asyncio.to_thread(google_drive.push_to_drive)
-            except Exception as ex:
-                print(f"Cloud push on close failed: {ex}")
+            if app_settings.sync_with_cloud_on_close:
+                # Show the saving changes view while closing
+                page.navigate("/saving_to_cloud")
+                try:
+                    if await asyncio.to_thread(google_drive.is_authenticated):
+                        await asyncio.to_thread(google_drive.push_to_drive)
+                except Exception as ex:
+                    print(f"Cloud push on close failed: {ex}")
                 
             page.window.prevent_close = False
             await page.window.destroy()

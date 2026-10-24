@@ -34,6 +34,8 @@ class AppSettings:
     theme_mode: str = "dark"
     theme_color: str = "#A0CAFD"
 
+    sync_with_cloud_on_close: bool = field(default=False)  # If we should sync to the cloud on close
+
     # Story settings
     show_drawing_controls: bool = True
     tree_view_rail_width: int = 250

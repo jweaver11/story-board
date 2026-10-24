@@ -486,31 +486,115 @@ def MenuBar() -> ft.Control:
 
     ft.use_effect(_check_saved_login, dependencies=[])
 
-    async def handle_cloud_clicked(e=None):
-        ''' Connects the user's Google account. Pushing to Drive happens automatically when the app closes '''
-        if is_connecting or is_authenticated:
+    async def handle_connect_clicked(e=None):
+        ''' Opens the browser so the user can connect their Google account '''
+        if is_connecting:
             return
         set_is_connecting(True)
         try:
             page.show_dialog(SnackBar("Opening browser to connect your Google account..."))
             await asyncio.to_thread(google_drive.authenticate)
             set_is_authenticated(True)
-            page.show_dialog(SnackBar("Google account connected. Your stories will back up to Drive when you close the app."))
+            page.show_dialog(SnackBar("Google account connected."))
         except Exception as ex:
             page.show_dialog(SnackBar(f"Google Drive error: {ex}"))
         finally:
             set_is_connecting(False)
 
-    cloud_button = ft.IconButton(
-        ft.Icons.CLOUD_DONE_OUTLINED if is_authenticated else ft.Icons.CLOUD_OUTLINED, "primary",
-        tooltip="Connecting..." if is_connecting else (
-            "Google Drive connected. Backs up when the app closes" if is_authenticated else "Connect Google Drive"
-        ),
-        disabled=is_connecting,
-        on_click=handle_cloud_clicked,
-        mouse_cursor=ft.MouseCursor.CLICK
-    )
+    async def _run_cloud_action(action, busy_text: str, done_text: str, restart_after: bool = False):
+        set_is_connecting(True)
+        page.pop_dialog()
+        page.show_dialog(SnackBar(busy_text, duration=60000))
+        try:
+            count = await asyncio.to_thread(action)
+            if restart_after:
+                # Skip the close handler (it would save the old in-memory data over what we just pulled)
+                page.window.prevent_close = False
+                await page.window.destroy()
+                return
+            page.show_dialog(SnackBar(f"{done_text} ({count} files)"))
+        except Exception as ex:
+            page.show_dialog(SnackBar(f"Google Drive error: {ex}"))
+        finally:
+            set_is_connecting(False)
 
+    def _confirm_cloud_action(title: str, message: str, confirm_label: str, action, busy_text: str, done_text: str, restart_after: bool = False):
+        page.show_dialog(ft.AlertDialog(
+            modal=True,
+            title=ft.Text(title),
+            content=ft.Text(message),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda: page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
+                ft.TextButton(
+                    confirm_label, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"),
+                    on_click=lambda: page.run_task(_run_cloud_action, action, busy_text, done_text, restart_after),
+                ),
+            ],
+        ))
+
+    def handle_push_clicked(e=None):
+        _confirm_cloud_action(
+            "Push to cloud?",
+            "This overwrites everything in your Google Drive 'Story Board' folder with the data on this device. "
+            "Stories, widgets, and settings that exist only in the cloud will be permanently removed from it.",
+            "Push and overwrite cloud", google_drive.push_to_drive, "Pushing to Google Drive...", "Pushed to Google Drive",
+        )
+
+    def handle_pull_clicked(e=None):
+        _confirm_cloud_action(
+            "Pull from cloud?",
+            "This overwrites everything on this device with the data in your Google Drive 'Story Board' folder. "
+            "Local stories, widgets, and settings that are not in the cloud will be permanently deleted. "
+            "The app will close afterwards. Reopen it to see the pulled data.",
+            "Pull and overwrite local", google_drive.pull_from_drive, "Pulling from Google Drive...", "Pulled from Google Drive",
+            restart_after=True,
+        )
+
+    if is_authenticated:
+        cloud_button = ft.PopupMenuButton(
+            icon=ft.Icons.CLOUD_DONE_OUTLINED,
+            icon_color="primary",
+            tooltip="Working..." if is_connecting else "Google Drive",
+            disabled=is_connecting,
+            items=[
+                ft.PopupMenuItem(
+                    ft.Text(
+                            spans=[
+                                ft.TextSpan("Push to Google Drive\n"),
+                                ft.TextSpan(
+                                    "Saves current story and settings to the cloud. Use this as a backup, or to pick up where you left off on another device.",
+                                    style=ft.TextStyle(color=ft.Colors.OUTLINE, size=12), expand=True, 
+                                ),
+                            ],
+                            width=220   # Bind the width, since popupmenuitems styling are jacked up otherwise.
+                        ),
+                    icon=ft.Icon(ft.Icons.CLOUD_UPLOAD_OUTLINED, ft.Colors.PRIMARY), on_click=handle_push_clicked,
+                ),
+                ft.PopupMenuItem(ft.Divider(), height=10, disabled=True),
+                ft.PopupMenuItem(
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("Pull from Google Drive\n"),
+                            ft.TextSpan(
+                                "Pull the current story and settings from your cloud data to this device. This will overwrite any local data, so make sure the cloud has the latest version.", 
+                                style=ft.TextStyle(color=ft.Colors.OUTLINE, size=12)
+                            )
+                        ],
+                        width=220   # Bind the width, since popupmenuitems styling are jacked up otherwise.
+                    ), 
+                    ft.Icon(ft.Icons.CLOUD_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), 
+                    on_click=handle_pull_clicked, expand=True
+                ),
+            ],
+        )
+    else:
+        cloud_button = ft.IconButton(
+            ft.Icons.CLOUD_OUTLINED, "primary",
+            tooltip="Connecting..." if is_connecting else "Connect Google Drive",
+            disabled=is_connecting,
+            on_click=handle_connect_clicked,
+            mouse_cursor=ft.MouseCursor.CLICK
+        )
     return ft.Container(
         ft.Row(
             spacing=0,

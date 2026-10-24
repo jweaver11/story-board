@@ -9,7 +9,7 @@ def SavingToCloudView() -> ft.View:
             ft.Text("Saving changes to Cloud...", size=24),
             ft.ProgressRing()
         ],
-        route="/loading",
+        route="/saving_to_cloud",
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         vertical_alignment=ft.MainAxisAlignment.CENTER,
     )

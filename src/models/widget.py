@@ -6,8 +6,10 @@ Only Widgets create mini widgets
 '''
 
 import flet as ft
+from flet.components.observable import Observable
 from models.views.story import Story
 import os
+import time
 import json
 from styles.colors import dark_gradient
 from styles.colors import colors, highlight_menu_option_color
@@ -21,6 +23,9 @@ from dataclasses import fields, asdict, dataclass, field, is_dataclass
 from contexts.contexts import StoryContext
 from styles.context_menu import ContextMenu
 
+# Fields that change as a side effect of saving/tracking, so they never count as a user change
+_UNTRACKED_FIELDS = {"dirty", "last_modified", "file_path", "needs_file_write"}
+
 
 @ft.observable
 @dataclass
@@ -29,9 +34,13 @@ class Widget:
     
     title: str
     directory_path: str
-    
-
     tag: str
+
+    # Metadata
+    last_modified: float = 0.0  # OLD _ PHASE OUT
+    needs_file_write: bool = False  # OLD PHASE OUT
+    dirty: bool = False
+
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     index: int = 999
     visible: bool = True
@@ -41,11 +50,25 @@ class Widget:
     notes: list = field(default_factory=list)
     description: str = str()
 
-    needs_file_write: bool = False
+    
     visible_mw_id: str = ""
 
     def __post_init__(self):
         self.file_path = os.path.join(self.directory_path, f"{self.id}.json")
+        object.__setattr__(self, "dirty", False)    # A widget just loaded from file is clean, whatever the file says
+        self._tracking = True   # Set last, so loading from a file doesn't count as a change
+
+    # Observable calls this for every field assignment AND every in-place change to a list/dict field
+    def _notify(self, field: str | None):
+        Observable._notify(self, field)     # Explicit call, since super() doesn't reach Observable once @ft.observable mixes it in
+        if getattr(self, "_tracking", False) and field not in _UNTRACKED_FIELDS:
+            self.mark_dirty()
+
+    def mark_dirty(self):
+        ''' Flags us as needing a file write. Call manually after changes Flet can't see, like editing an object inside a list '''
+        # object.__setattr__ skips the observable notify, so flagging doesn't trigger UI re-renders
+        #object.__setattr__(self, "last_modified", time.time())
+        object.__setattr__(self, "dirty", True)
 
 
     # Parent constructor to set data and other attributes
@@ -73,10 +96,9 @@ class Widget:
     #self.description_tf: TextField      # Description of this widget textfield. Mostly used in sidebar, but can be used in body
     #self.select_image_button: ft.GestureDetector    # Button certain widgets use when they have an image to represent them (world, character, item, etc.)
 
-    # Updates data for this widget and marks it as dirty for the next file save
+    # Sets fields by name. Dict values merge into existing dict fields instead of replacing them
     def update_data(self, **kwargs):
         
-        # Allow updating of nested dicts without overriding the entire dict
         def _merge_data(target: dict, updates: dict):
             for key, value in updates.items():
                 current_value = target.get(key)
@@ -85,11 +107,14 @@ class Widget:
                 else:
                     target[key] = value
 
-        _merge_data(self.data, kwargs)  # Merge the new data into the existing data
+        for key, value in kwargs.items():
+            current = getattr(self, key, None)
+            if isinstance(current, dict) and isinstance(value, dict):
+                _merge_data(current, value)
+            else:
+                setattr(self, key, value)
 
-        # Mark widget as dirty for file write
-        if self.needs_file_write == False:
-            self.needs_file_write = True
+        self.mark_dirty()   # Covers merges where nothing observable changed
 
     # Saves our descripption as the passed in value
     def save_description(self, description: str):
@@ -100,26 +125,29 @@ class Widget:
         #if self.needs_file_write:
         #if self.visible:    # Just save visible ones for now
         #if True:
-        print("Saving widget to file: ", self.title)
+        if self.dirty:
+            print("Saving widget to file: ", self.title)
 
-        #file_path = os.path.join(self.directory_path, f"{self.id}.json")
+            #file_path = os.path.join(self.directory_path, f"{self.id}.json")
 
-        try:
-            os.makedirs(self.directory_path, exist_ok=True)     # Make sure directory exists still
+            try:
+                os.makedirs(self.directory_path, exist_ok=True)     # Make sure directory exists still
 
-            widget_data = {
-                widget_field.name: getattr(self, widget_field.name)
-                for widget_field in fields(self)
-            }
-            
-            # Save our json data to the file
-            with open(self.file_path, "w", encoding='utf-8') as f:   
-                json.dump(widget_data, f, indent=4, default=lambda o: asdict(o) if is_dataclass(o) else str(o))
+                widget_data = {
+                    widget_field.name: getattr(self, widget_field.name)
+                    for widget_field in fields(self)
+                }
+                
+                # Save our json data to the file
+                with open(self.file_path, "w", encoding='utf-8') as f:   
+                    json.dump(widget_data, f, indent=4, default=lambda o: asdict(o) if is_dataclass(o) else str(o))
 
-            self.needs_file_write = False   # Mark as clean
-            #self.is_new = False   # Mark as not new anymore
-        except Exception as e:
-            print(f"Error saving widget {self.title} to file: {e}")
+                self.needs_file_write = False   # Mark as clean
+                #self.is_new = False   # Mark as not new anymore
+            except Exception as e:
+                print(f"Error saving widget {self.title} to file: {e}")
+
+            self.dirty = False  # Mark as clean after saving
             
     # Called when moving widget files
     async def delete_file(self) -> bool:

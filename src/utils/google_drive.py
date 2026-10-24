@@ -1,5 +1,5 @@
 '''
-Google Drive sync: OAuth (installed-app flow) and one-way push of APP_DATA_PATH to a "Story Board" Drive folder.
+Google Drive sync: OAuth (installed-app flow) and manual push/pull that mirrors APP_DATA_PATH with a "Story Board" Drive folder (the receiving side is overwritten).
 All functions here are blocking; call them with asyncio.to_thread from the UI.
 '''
 
@@ -9,6 +9,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+import shutil
 from contexts.constants import APP_DATA_PATH
 
 # drive.file only grants access to files/folders this app created
@@ -20,7 +21,7 @@ TOKEN_FILE_NAME = "google_token.json"
 TOKEN_PATH = os.path.join(APP_DATA_PATH, TOKEN_FILE_NAME)
 CLIENT_SECRET_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "google_client_secret.json")
 
-# Never upload credentials
+# Never uploaded, downloaded, or deleted
 EXCLUDED_FILES = {TOKEN_FILE_NAME}
 
 
@@ -58,57 +59,135 @@ def authenticate() -> bool:
     return True
 
 
-def _escape(name: str) -> str:
-    return name.replace("\\", "\\\\").replace("'", "\\'")
+def _service():
+    creds = _load_credentials()
+    if creds is None:
+        raise PermissionError("Not authenticated with Google")
+    return build("drive", "v3", credentials=creds, cache_discovery=False)
 
 
-def _find(service, name: str, parent_id: str | None, mime: str | None = None) -> str | None:
-    q = f"name = '{_escape(name)}' and trashed = false"
-    if parent_id:
-        q += f" and '{parent_id}' in parents"
-    q += f" and mimeType = '{FOLDER_MIME}'" if mime == FOLDER_MIME else f" and mimeType != '{FOLDER_MIME}'"
-    res = service.files().list(q=q, fields="files(id)", pageSize=1).execute()
-    files = res.get("files", [])
+def _list_all(service) -> dict[str, list[dict]]:
+    ''' Every non-trashed item this app can see, grouped by parent folder id '''
+    children: dict[str, list[dict]] = {}
+    token = None
+    while True:
+        res = service.files().list(
+            q="trashed = false", fields="nextPageToken, files(id, name, mimeType, parents)",
+            pageSize=1000, pageToken=token,
+        ).execute()
+        for item in res.get("files", []):
+            for parent in item.get("parents", []):
+                children.setdefault(parent, []).append(item)
+        token = res.get("nextPageToken")
+        if not token:
+            return children
+
+
+def _find_root(service) -> str | None:
+    q = f"name = '{DRIVE_FOLDER_NAME}' and mimeType = '{FOLDER_MIME}' and trashed = false"
+    files = service.files().list(q=q, fields="files(id)", pageSize=1).execute().get("files", [])
     return files[0]["id"] if files else None
 
 
-def _get_or_create_folder(service, name: str, parent_id: str | None) -> str:
-    existing = _find(service, name, parent_id, FOLDER_MIME)
-    if existing:
-        return existing
+def _create_folder(service, name: str, parent_id: str | None) -> str:
     body = {"name": name, "mimeType": FOLDER_MIME}
     if parent_id:
         body["parents"] = [parent_id]
     return service.files().create(body=body, fields="id").execute()["id"]
 
 
-def _upload_file(service, local_path: str, parent_id: str) -> None:
-    name = os.path.basename(local_path)
-    media = MediaFileUpload(local_path, resumable=False)
-    existing = _find(service, name, parent_id)
-    if existing:
-        service.files().update(fileId=existing, media_body=media).execute()
-    else:
-        service.files().create(body={"name": name, "parents": [parent_id]}, media_body=media, fields="id").execute()
+def _trash(service, item_id: str) -> None:
+    service.files().update(fileId=item_id, body={"trashed": True}).execute()
 
 
-def _upload_directory(service, local_dir: str, parent_id: str) -> int:
+def _push_dir(service, children: dict, local_dir: str, folder_id: str, is_root: bool) -> int:
     count = 0
+    remote = {}     # name -> item. Duplicate names are trashed
+    for item in children.get(folder_id, []):
+        if item["name"] in remote:
+            _trash(service, item["id"])
+        else:
+            remote[item["name"]] = item
+
+    local_names = set()
     for entry in os.scandir(local_dir):
+        if (is_root and entry.name in EXCLUDED_FILES) or entry.name.endswith(".tmp"):
+            continue
+        local_names.add(entry.name)
+        existing = remote.get(entry.name)
+        is_remote_folder = existing is not None and existing["mimeType"] == FOLDER_MIME
+
         if entry.is_dir():
-            sub_id = _get_or_create_folder(service, entry.name, parent_id)
-            count += _upload_directory(service, entry.path, sub_id)
-        elif entry.is_file() and entry.name not in EXCLUDED_FILES:
-            _upload_file(service, entry.path, parent_id)
+            if existing is not None and not is_remote_folder:   # A file is in the way of this folder
+                _trash(service, existing["id"])
+                existing = None
+            sub_id = existing["id"] if existing else _create_folder(service, entry.name, folder_id)
+            count += _push_dir(service, children, entry.path, sub_id, False)
+        elif entry.is_file():
+            media = MediaFileUpload(entry.path, resumable=False)
+            if existing is not None and not is_remote_folder:
+                service.files().update(fileId=existing["id"], media_body=media).execute()
+            else:
+                if existing is not None:
+                    _trash(service, existing["id"])
+                service.files().create(body={"name": entry.name, "parents": [folder_id]}, media_body=media, fields="id").execute()
             count += 1
+
+    for name, item in remote.items():   # Mirror: anything on Drive that we don't have locally goes
+        if name not in local_names:
+            _trash(service, item["id"])
     return count
 
 
 def push_to_drive() -> int:
-    ''' Uploads everything in APP_DATA_PATH to Drive/Story Board. Returns number of files uploaded '''
-    creds = _load_credentials()
-    if creds is None:
-        raise PermissionError("Not authenticated with Google")
-    service = build("drive", "v3", credentials=creds, cache_discovery=False)
-    root_id = _get_or_create_folder(service, DRIVE_FOLDER_NAME, None)
-    return _upload_directory(service, APP_DATA_PATH, root_id)
+    ''' Makes Drive/Story Board an exact copy of APP_DATA_PATH. Returns the number of files uploaded '''
+    service = _service()
+    root_id = _find_root(service) or _create_folder(service, DRIVE_FOLDER_NAME, None)
+    return _push_dir(service, _list_all(service), APP_DATA_PATH, root_id, True)
+
+
+def _collect_remote(service, children: dict, folder_id: str, rel: str, files: dict, dirs: set) -> None:
+    for item in children.get(folder_id, []):
+        item_rel = os.path.join(rel, item["name"]) if rel else item["name"]
+        if item["mimeType"] == FOLDER_MIME:
+            dirs.add(item_rel)
+            _collect_remote(service, children, item["id"], item_rel, files, dirs)
+        elif item_rel not in files:
+            files[item_rel] = service.files().get_media(fileId=item["id"]).execute()
+
+
+def pull_from_drive() -> int:
+    ''' Makes APP_DATA_PATH an exact copy of Drive/Story Board. Returns the number of files written '''
+    service = _service()
+    root_id = _find_root(service)
+    if root_id is None:
+        raise FileNotFoundError("No 'Story Board' folder was found in your Google Drive. Push to the cloud first.")
+
+    # Download everything before touching local data, so a failed download changes nothing
+    files: dict[str, bytes] = {}
+    dirs: set[str] = set()
+    _collect_remote(service, _list_all(service), root_id, "", files, dirs)
+    files = {rel: data for rel, data in files.items() if rel not in EXCLUDED_FILES}
+
+    for rel in dirs:
+        os.makedirs(os.path.join(APP_DATA_PATH, rel), exist_ok=True)
+    for rel, data in files.items():
+        path = os.path.join(APP_DATA_PATH, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        tmp = path + ".tmp"
+        with open(tmp, "wb") as f:
+            f.write(data)
+        os.replace(tmp, path)
+
+    keep_files = {os.path.normcase(os.path.join(APP_DATA_PATH, rel)) for rel in files} | {os.path.normcase(TOKEN_PATH)}
+    keep_dirs = {os.path.normcase(os.path.join(APP_DATA_PATH, rel)) for rel in dirs}
+    for current, dirnames, filenames in os.walk(APP_DATA_PATH, topdown=False):
+        for name in filenames:
+            path = os.path.join(current, name)
+            if os.path.normcase(path) not in keep_files:
+                os.remove(path)
+        for name in dirnames:
+            path = os.path.join(current, name)
+            if os.path.normcase(path) not in keep_dirs:
+                shutil.rmtree(path, ignore_errors=True)
+    return len(files)

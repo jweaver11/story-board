@@ -38,6 +38,9 @@ class AppSettings:
     show_drawing_controls: bool = True
     tree_view_rail_width: int = 250
 
+    # Cloud settings
+    sync_with_cloud_on_close: bool = False  # If we should push to the cloud on close
+
     # Widget and folder Colors
     new_folder_color: str = "primary"
     new_manuscript_color: str = "primary"
