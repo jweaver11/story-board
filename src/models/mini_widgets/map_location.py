@@ -12,7 +12,7 @@ from styles.icons import location_icons
 from styles.text_fields import TextField
 import time
 import asyncio
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 from styles.colors import colors
 from styles.text_styles import TextShadow
 from styles.snack_bar import SnackBar
@@ -592,9 +592,9 @@ class MapLocation(MiniWidget):
             ),
             expand=True, text_align=ft.TextAlign.CENTER,
             content_padding=ft.Padding.all(0),
-            on_blur=self.save_rename, dense=True, border_radius=4,
-            border_color=ft.Colors.TRANSPARENT,
-            focused_border_color=ft.Colors.PRIMARY,
+            on_blur=self.save_rename, dense=True, #border_radius=4,
+            #border_color=ft.Colors.TRANSPARENT,
+            #focused_border_color=ft.Colors.PRIMARY,
             multiline=True,
         )
 

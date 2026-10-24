@@ -35,15 +35,16 @@ colors = [
     "black",
 ]
 
+# Old gradient background
 dark_gradient = ft.LinearGradient(
     begin=ft.Alignment.TOP_CENTER,
     end=ft.Alignment.BOTTOM_CENTER,
     tile_mode=ft.GradientTileMode.REPEATED,
     stops=[0.8, 1.0],
     colors=[
-        #ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE_VARIANT),
-        #ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE_VARIANT),
         ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE_VARIANT),
         ft.Colors.with_opacity(0.2, ft.Colors.OUTLINE_VARIANT),
     ],
 )
+
+highlight_menu_option_color = ft.Colors.with_opacity(0.2, ft.Colors.ON_SURFACE_VARIANT)

@@ -3,9 +3,7 @@ Class for our menubar, which will hold our file options, drawing controls, and s
 '''
 
 import flet as ft
-#from models.self.app import self.app
 from models.views.story import Story
-from utils.check_story_unique import story_is_unique
 from styles.snack_bar import SnackBar
 from styles.text_fields import TextField
 from flet_color_pickers import ColorPicker
@@ -17,113 +15,77 @@ import json
 import asyncio
 import shutil
 import stat
-from constants import STORIES_DIRECTORY_PATH
+from contexts.constants import STORIES_DIRECTORY_PATH
 from styles.snack_bar import SnackBar
 from dataclasses import dataclass
+from view_components.drawing_controls_rail import DrawingControls
+from contexts.contexts import AppContext, AppSettingsContext, StoryContext
+import asyncio
 
-
-
-@ft.observable
-@dataclass
-class MenuBar:
-    app: any = None
-    story: Story = None
     
 
 @ft.component
-def MenuBarView(app, story: Story):
+def MenuBar() -> ft.Control:
 
+    print("MenuBar component loaded")
+
+    # Grab our contexts
     page = ft.context.page
+    app = ft.use_context(AppContext)
+    app_settings = ft.use_context(AppSettingsContext)
 
-    class Dropdown(ft.Dropdown):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.border_color=ft.Colors.OUTLINE_VARIANT
-            self.menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4))
-            self.label_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
-            self.margin=ft.Margin.only(top=8, left=4, right=4)
-            self.dense=True
+    story = ft.use_context(StoryContext)
+    
 
-    class Switch(ft.Switch):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.adaptive=True
-            self.label_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
-            #self.margin=ft.Margin.only(top=8, left=4, right=4)
-            
+    # Declare our state variables for our dialogs
+    show_new_story_dlg, set_show_new_story_dialog = ft.use_state(False)
+    show_open_story_dlg, set_show_open_story_dialog = ft.use_state(False)
+    show_rename_story_dlg, set_show_rename_story_dialog = ft.use_state(False)
+    show_delete_story_dlg, set_show_delete_story_dialog = ft.use_state(False)
+
+    selected_story_id, set_selected_story_id = ft.use_state("")   # Selected radio value for opening stories
+
+
+    # State for showing or hiding the drawing controls rail
+    show_drawing_controls, set_show_drawing_controls = ft.use_state(app_settings.show_drawing_controls)
 
 
     # Called when file -> new is clicked
-    def handle_create_story(e):
+    def build_new_story_dlg() -> ft.AlertDialog:
         ''' Opens a dialog to create a new story. Checks story is unique or not '''
 
+        # Creates the new story with the given title
+        async def submit_new_story(_):
+            title = new_story_title.value.strip()
+            if not title:
+                set_show_new_story_dialog(False)
+                return
+            page.pop_dialog()   # Force the dialog close before re-routing
+            set_show_new_story_dialog(False)    # I dunno, i just like the state being accurate, but this does nothing
+            app.create_story(title, app_settings)
 
-        
+        # Set the title for the new story
+        new_story_title = ft.TextField(label="Story Title", autofocus=True, capitalization=ft.TextCapitalization.WORDS,on_submit=submit_new_story)
 
-        async def submit_new_story(e=None):
-            ''' Creates a new story with the given title '''
-
-            title = story_title_field.value.strip()
-
-            app.create_new_story(title, page) # Needs the story object
-            page.pop_dialog()
-
-
-        
-
-        # Create a reference to the text field so we can access its value
-        story_title_field = ft.TextField(
-            label="Story Title",
-            autofocus=True, capitalization=ft.TextCapitalization.WORDS,
-            on_submit=submit_new_story,
-        )
-    
-        # The dialog that will pop up whenever the new story button is clicked
-        dlg = ft.AlertDialog(
-
-            # Title of our dialog
-            title=ft.Text(
-                "Create New Story", 
-                color=ft.Colors.ON_SURFACE,
-                weight=ft.FontWeight.BOLD,
-            ),
-
-            # Main content is text box for user to input story title
-            content=story_title_field,
-
-            # Our two action buttons at the bottom of the dialog
+        # Return the dialog
+        return ft.AlertDialog(
+            title=ft.Text("Create New Story", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
+            content=new_story_title,
+            # Cancel and create buttons
             actions=[
-                ft.TextButton("Cancel", on_click=lambda: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda: set_show_new_story_dialog(False), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                 ft.TextButton(
                     "Create Story", on_click=submit_new_story, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)
                 )
             ],
+            # Handle clicks outside dialog area. Doesn't actually dismiss the dialog, but makes sure state matches
+            on_dismiss=lambda _: set_show_new_story_dialog(False),  
         )
 
-        # Open our dialog in the overlay
-        page.show_dialog(dlg)
-
-    
-
-
     # Called when file -> open is clicked
-    async def handle_open_story(e=None):
+    def build_open_story_dlg() -> ft.AlertDialog:
         ''' Opens a dialog to open an existing story '''
-
-        #print("Open Story Clicked")
-
-        selected_story = None
-
-        # Called when a new story text button is clicked
-        def change_selected_story(e):
-            ''' Changes our selected story variable '''
-
-            nonlocal selected_story
-            selected_story = e.control.value
-            open_button.disabled = False
-            open_button.style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")
-            open_button.update()
-
+        
         # Returns a list of all story titles available to open
         def get_stories_list() -> ft.Control:
             ''' Returns a list of all story titles available to open '''
@@ -140,33 +102,27 @@ def MenuBarView(app, story: Story):
 
             # Use something better than radio in future, but for now this works
             for story in app.stories.values():
-                stories.append(ft.Radio(expand=False, value=story.data.get('id'), label=story.data.get('title'), label_style=style, mouse_cursor=ft.MouseCursor.CLICK))
+                stories.append(ft.Radio(expand=False, value=story.id, label=story.title, label_style=style, mouse_cursor=ft.MouseCursor.CLICK))
 
             # Return our list of stories
             return stories
 
 
         # Called when the 'open' button is clicked in the bottom right of the dialog
-        async def open_selected_story(e=None):
+        def open_selected_story(_):
             ''' Changes the route to the selected story '''
 
-            #print("Open button clicked, selected story is: ", selected_story)
-
-            if selected_story is not None:
-                await page.push_route(app.stories[selected_story].route)
-                app.settings.story = app.stories[selected_story]  # Gives our settings widget the story reference it needs
-                page.pop_dialog()
-                page.update()
-            else:
-                print("No story selected")
-
             page.pop_dialog()
-            page.update()
+            set_show_open_story_dialog(False)
 
-        open_button = ft.TextButton("Open", on_click=open_selected_story, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
+            # If we have a selected story, navigate to it, and set our settings context to match
+            if selected_story_id:
+                story = app.stories[selected_story_id]
+                page.navigate(story.route)
+                app_settings.route = story.route
 
         # Our alert dialog that pops up when file -> open is clicked
-        dlg = ft.AlertDialog(
+        return ft.AlertDialog(
             title=ft.Text(
                 "What story would you like to open?",
                 color=ft.Colors.ON_SURFACE,
@@ -175,37 +131,39 @@ def MenuBarView(app, story: Story):
             alignment=ft.Alignment.CENTER,
             title_padding=ft.Padding.all(25),
             content=ft.RadioGroup(
+                value=selected_story_id,
                 content=ft.Column(scroll=ft.ScrollMode.AUTO, expand=False, tight=True, controls=get_stories_list()),
-                on_change=change_selected_story
+                on_change=lambda e: set_selected_story_id(e.control.value),
             ),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                open_button,
-            ]
+                ft.TextButton("Cancel", on_click=lambda: set_show_open_story_dialog(False), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton(
+                    "Open", on_click=open_selected_story, disabled=not selected_story_id, 
+                    style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")
+                    if selected_story_id 
+                    else 
+                    ft.ButtonStyle(mouse_cursor="click"),
+                )
+            ],
+            on_dismiss=lambda: set_show_open_story_dialog(False),
         )
 
-        # Opens our dialog
-        page.show_dialog(dlg)
+    def build_rename_story_dlg() -> ft.AlertDialog:
 
-    def handle_rename_story(e: ft.Event=None):
-
-
-        async def rename_story(e=None):
-            story.rename(title_tf.value)
-            
-            
+        def rename_story(_):
+            story.title = title_tf.value
+            set_show_rename_story_dialog(False)
 
         title_tf = ft.TextField(
-            value=story.data.get('title', ''),
+            value=story.title,
             autofocus=True, capitalization=ft.TextCapitalization.WORDS,
             on_submit=rename_story,
         )
 
-        dlg = ft.AlertDialog(
-            
+        return ft.AlertDialog(
             # Title of our dialog
             title=ft.Text(
-                f"Rename {story.data.get('title', '')}", 
+                f"Rename {story.title}", 
                 color=ft.Colors.ON_SURFACE,
                 weight=ft.FontWeight.BOLD,
             ),
@@ -215,13 +173,24 @@ def MenuBarView(app, story: Story):
 
             # Our two action buttons at the bottom of the dialog
             actions=[
-                ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                ft.TextButton("Rename", on_click=rename_story,style=ft.ButtonStyle(mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda: set_show_rename_story_dialog(False), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton(
+                    "Rename", on_click=rename_story, 
+                    style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)
+                    if title_tf.value.strip() or title_tf.value != story.title
+                    else 
+                    ft.ButtonStyle(mouse_cursor="click"),
+                ),
             ],
+            on_dismiss=lambda: set_show_rename_story_dialog(False),
         )
 
-        # Open our dialog in the overlay
-        page.show_dialog(dlg)
+
+    # Create dialogs for stories. Could be all one use_dialog function, but this looks nicer
+    ft.use_dialog(build_new_story_dlg() if show_new_story_dlg else None)
+    ft.use_dialog(build_open_story_dlg() if show_open_story_dlg else None)
+    ft.use_dialog(build_rename_story_dlg() if show_rename_story_dlg else None)
+
 
     async def handle_import_story(e=None):
         """Import a complete story export into the app's story directory."""
@@ -323,22 +292,22 @@ def MenuBarView(app, story: Story):
 
             await imported_story.save_file()
             app.stories[story_id] = imported_story
-            app.settings.story = imported_story
-            await page.push_route(imported_story.route)
-            page.update()
+            
+            page.navigate(imported_story.route)
+            app_settings.route = imported_story.route
 
         except OSError as error:
-            page.show_dialog(SnackBar(f"Error importing story: {error}"))
+            print(f"Error importing story: {error}")
         except (TypeError, ValueError, json.JSONDecodeError) as error:
             if destination_path and os.path.isdir(destination_path):
                 shutil.rmtree(destination_path, ignore_errors=True)
-            page.show_dialog(SnackBar(f"Error importing story: {error}"))
+            print(f"Error importing story: {error}")
         
 
     async def handle_export_story(e=None):
         """Export the story directory contents into a selected folder."""
         folder_path = await ft.FilePicker().get_directory_path()
-        story_dir_path = story.data.get("directory_path")
+        story_dir_path = story.directory_path
 
         if not folder_path or not story_dir_path:
             return
@@ -355,66 +324,60 @@ def MenuBarView(app, story: Story):
                 dirs_exist_ok=True,
             )
         except OSError as error:
-            page.show_dialog(SnackBar(f"Error exporting story: {error}"))
+            print(f"Error exporting story: {error}")
 
     
-
-    def toggle_show_canvas_rail(e: ft.Event[ft.MenuItemButton]):
+    # Updates whether to show drawing controls or not
+    def toggle_show_drawing_controls(e: ft.Event[ft.MenuItemButton]):
         ''' Toggles the visibility of the canvas rail on the left side of the page '''
-        new_value = not app.settings.data.get('story', {}).get('show_canvas_rail', False)
-        app.settings.update_data(**{'story': {'show_canvas_rail': new_value}})
-        if new_value:
-            e.control.leading.icon = ft.Icons.VISIBILITY_OUTLINED
-        else:
-            e.control.leading.icon = ft.Icons.VISIBILITY_OFF_OUTLINED
-        if story is not None:
-            if new_value:
-                story.canvas_rail.width = 78
-            else:
-                story.canvas_rail.width = 0
-            story.canvas_rail.update()
-        e.control.update()
+       
+        new_value = not show_drawing_controls
+        set_show_drawing_controls(new_value)
+        app_settings.show_drawing_controls = new_value
 
     async def handle_settings_clicked(e=None):
         ''' Goes to the settings page '''
+        
         if page.route != "/settings":
-            await page.push_route("/settings")
+            page.navigate("/settings")
         else:
             # Get the active story title and find its route
             if story is not None:
-                await page.push_route(story.route)
+                page.navigate(story.route)
             else:
-                await page.push_route("/")
+                page.navigate("/")
 
-    async def handle_delete_story(e=None):
+        print("Change route to: ", page.route)
+
+
+    async def build_delete_story_dlg(e=None):
 
         async def confirm_delete(e=None):
             try:
 
-                story_id = story.data.get('id')
-                deleted_id = app.stories.pop(story_id)
-                app.settings.story = None                    
+                app.stories.pop(story.id)
 
-                story_dir_path = story.data.get('directory_path')
-                full_norm = os.path.normcase(os.path.normpath(story_dir_path))
+                full_norm = os.path.normcase(os.path.normpath(story.directory_path))
                 
                 # Delete the folder from storage
                 shutil.rmtree(full_norm)
 
-                ft.context.page.pop_dialog()
-                await ft.context.page.push_route("/")
-                ft.context.page.show_dialog(SnackBar(f"{story.data.get('title', 'Story')} deleted successfully."))
+                #ft.context.page.pop_dialog()
+                ft.context.page.navigate("/")
+                #ft.context.page.show_dialog(SnackBar(f"{story.title} deleted successfully."))
 
                 ft.context.page.title = "Story Board (alpha)"
-                ft.context.page.update()
+                #ft.context.page.update()
 
             except Exception as e:
                 ft.context.page.show_dialog(SnackBar(f"Error deleting story: {e}"))
+
+            set_show_delete_story_dialog(False)
             
 
 
-        dlg = ft.AlertDialog(
-            title=ft.Text(f"Delete {story.data.get('title', 'Story')}?", weight=ft.FontWeight.BOLD),
+        return ft.AlertDialog(
+            title=ft.Text(f"Delete {story.title}?", weight=ft.FontWeight.BOLD),
             content=ft.Text("Are you sure you want to delete this story? This action cannot be undone!"),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
@@ -422,8 +385,7 @@ def MenuBarView(app, story: Story):
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        ft.context.page.show_dialog(dlg)
-
+        
         
 
     # Create our menu bar with submenu items
@@ -438,33 +400,34 @@ def MenuBarView(app, story: Story):
         controls=[  # The controls shown in our menu bar from left to right
             ft.SubmenuButton(   # Button that opens a subment
                 content=ft.Container(
-                    content=ft.Text("File", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),     # Content of subment button
+                    #content=ft.Text("File", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),     # Content of subment button
+                    content=ft.Icon(ft.Icons.MENU, ft.Colors.PRIMARY),
                     alignment=ft.Alignment.CENTER
                 ), 
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                 menu_style=ft.MenuStyle(padding=ft.Padding.all(0)),
-                
+                #width=40,
                 controls=[      # The options shown inside of our button
                     ft.MenuItemButton(
                         content=ft.Text("New Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, ft.Colors.PRIMARY),
                         close_on_click=True,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                        on_click=handle_create_story,
+                        on_click=lambda: set_show_new_story_dialog(True),
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Open Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.CupertinoIcons.BOOK, ft.Colors.PRIMARY),
                         close_on_click=True,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                        on_click=handle_open_story,
+                        on_click=lambda: set_show_open_story_dialog(True),
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Rename Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY),
-                        close_on_click=True, disabled=story is None,
+                        close_on_click=True, disabled=not story,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                        on_click=handle_rename_story,
+                        on_click=lambda: set_show_rename_story_dialog(True),
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Import Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
@@ -484,15 +447,14 @@ def MenuBarView(app, story: Story):
                     ),
                     
                     ft.MenuItemButton(
-                        content=ft.Text("Toggle Canvas Rail", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                        content=ft.Text("Hide Drawing Controls" if show_drawing_controls else "Show Drawing Controls", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(
-                            ft.Icons.VISIBILITY_OUTLINED if app.settings.data.get('story', {}).get('show_canvas_rail', False) else ft.Icons.VISIBILITY_OFF_OUTLINED,
+                            ft.Icons.VISIBILITY_OUTLINED if show_drawing_controls else ft.Icons.VISIBILITY_OFF_OUTLINED,
                             ft.Colors.PRIMARY
                         ),
                         close_on_click=True, 
-                        disabled=story is None,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                        on_click=toggle_show_canvas_rail,
+                        on_click=toggle_show_drawing_controls,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Settings", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
@@ -506,7 +468,7 @@ def MenuBarView(app, story: Story):
                         leading=ft.Icon(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR),
                         close_on_click=True, disabled=story is None,
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                        on_click=handle_delete_story,
+                        on_click=lambda: set_show_delete_story_dialog(True),
                     ),
                 ],
             ),
@@ -515,32 +477,6 @@ def MenuBarView(app, story: Story):
 
 
 
-
-
-
-
-    # DRAW MODE STUFFF -----------------------------------------------------
-
-
-
-    
-    
-
-    # Create our menu bar with submenu items
-    drawing_controls = ft.MenuBar(
-        #expand=True,
-        visible=page.platform.is_mobile(),
-        style=ft.MenuStyle(     # Styling our menubar
-            alignment=ft.Alignment.CENTER,
-            bgcolor=ft.Colors.TRANSPARENT,
-            shadow_color=ft.Colors.TRANSPARENT,
-        ),
-        controls=[  # Segment button of draw mode, brush options, and dropdown of saved brushes with option to save current
-            
-            ft.Container()
-        ], 
-    )
-
     return ft.Container(
         ft.Row(
             spacing=0,
@@ -548,7 +484,8 @@ def MenuBarView(app, story: Story):
             controls=[
                 file_options,    # File options button
 
-                drawing_controls,   # Main drawing controls
+                #ft.Row(controls=DrawingControls(), alignment=ft.MainAxisAlignment.CENTER, visible=show_drawing_controls),
+
 
                 ft.Row([        # Row that has alpha text, info button, and settings button
                     ft.Text(
@@ -560,9 +497,11 @@ def MenuBarView(app, story: Story):
                         tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nJoin the Discord (Settings -> Resources) to suggest your features and report bugs"
                     ),
                     ft.IconButton(ft.Icons.SETTINGS_OUTLINED, "primary", on_click=handle_settings_clicked, mouse_cursor=ft.MouseCursor.CLICK),   # Settings button
+                
                 ], tight=True, spacing=0)
             ]
         ),
         border = ft.Border.only(bottom=ft.BorderSide(width=1, color=ft.Colors.OUTLINE_VARIANT)),
         bgcolor = ft.Colors.SURFACE_CONTAINER_LOWEST,
+        #padding=ft.Padding.only(left=10)
     )

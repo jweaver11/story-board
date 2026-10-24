@@ -18,7 +18,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 import asyncio
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 from models.dataclasses.canvas_shape import CanvasShape    
 from styles.text_fields import TextField
 import time
@@ -1401,7 +1401,7 @@ class Canvas(Widget):
                         on_submit=update_layer_name,
                         on_blur=hide_layer_name_tf,
                         #border=ft.InputBorder.NONE, 
-                        border_radius=4,
+                        #border_radius=4,
                         text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
                         focused_bgcolor=ft.Colors.TRANSPARENT,
                         bgcolor=ft.Colors.TRANSPARENT,

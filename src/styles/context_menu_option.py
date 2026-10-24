@@ -1,7 +1,8 @@
 import flet as ft
 
 
-# Styling for our menu option buttons
+# Styling for our menu option buttons that sit inside menus when we right click
+#@ft.control -- OLD
 class MenuOptionStyle(ft.GestureDetector):
 
     # Constructor
@@ -14,15 +15,14 @@ class MenuOptionStyle(ft.GestureDetector):
         no_effects: bool = False,              # Whether to remove default hover effects (used for submenu buttons)
     ):
 
-
         # Parent constructor
         super().__init__(
             expand=True,
             data=data,
             mouse_cursor=ft.MouseCursor.CLICK,
             on_tap=on_click if on_click is not None else lambda e: None,        # Set our on click function
-            on_enter=self.on_hover if not no_effects else None,                                             # Set our hover functions                             
-            on_exit=self.on_hover_exit if not no_effects else None,                                         # Set our stop hovering function
+            #on_enter=self.on_hover if not no_effects else None,                                             # Set our hover functions                             
+            #on_exit=self.on_hover_exit if not no_effects else None,                                         # Set our stop hovering function
             content=ft.Container(
                 padding=ft.Padding.all(8) if not no_padding else None,     # Add padding if not disabled
                 content=content,                                                 # Set our content passed in           
@@ -30,18 +30,35 @@ class MenuOptionStyle(ft.GestureDetector):
             ),
         )
 
-    # Called when mouse is hovering over this option
     async def on_hover(self, e: ft.HoverEvent):
         ''' Changes background color to highlight hover '''
-        
         self.content.bgcolor = ft.Colors.with_opacity(0.2, ft.Colors.ON_SURFACE_VARIANT)
         self.content.update()
 
-    # Called when mouse is no longer hovering over this option
     async def on_hover_exit(self, e: ft.HoverEvent):
         ''' Resets background color on hover exit '''
-        
         self.content.bgcolor = None
         self.content.update()
 
+
+# Our standard menu option for context menus across our program
+def ContextMenuOption(
+        content: ft.Control,                # Control displayed as the button
+        icon: ft.Icon = None,          # Optional icon to display alongside the content
+        on_click: callable = None,          # Function called on click
+        data = None,                         # Any data needed for this option to help with logic
+        no_padding: bool = False,              # Whether to remove default padding around the content (used for popupmenu buttons)
+        no_effects: bool = False,              # Whether to remove default hover effects (used for submenu buttons)
+    ) -> ft.PopupMenuItem:
+
+    # Context menus use popup menu items, so we style them here
+    return ft.PopupMenuItem(
+        content=content,
+        icon=icon,
+        data=data,
+        mouse_cursor=ft.MouseCursor.CLICK,
+        on_click=on_click if on_click is not None else lambda: None,        # Set our on click function
+        label_text_style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+        height=40,
+    )
    

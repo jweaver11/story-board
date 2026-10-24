@@ -9,6 +9,7 @@ import flet as ft
 #from models.app import app
 from models.views.story import Story
 from models.widget import Widget
+import functools
 import json
 from styles.colors import dark_gradient
 from styles.snack_bar import SnackBar
@@ -16,12 +17,16 @@ from models.isolated_controls.row import IsolatedRow
 from models.isolated_controls.column import IsolatedColumn
 from models.isolated_controls.tab_bar_view import IsolatedTabBarView
 import asyncio
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 import os
-
+from models.widget import WidgetView
+from models.widgets.note import NoteView
+from models.widgets.item import ItemView
+from contexts.contexts import StoryContext
+from styles.icons import widget_icons
 
 # Our workspace object that is stored in our story object
-class Workspace(ft.Container):
+class WorkspaceOld(ft.Container):
     # Constructor
     def __init__(self, story: Story):
 
@@ -86,113 +91,7 @@ class Workspace(ft.Container):
 
     
 
-    # Creates a new tab control for the given widget
-    def create_widget_tab_ctrl(self, widget: Widget) -> ft.Tab:
-
-        # When renaming, show our textfield and hide our title
-        async def handle_rename(e=None):
-            await self.story.close_menu()
-            edit_title_tf.value = widget.data.get('title', '')
-            edit_title_tf.visible = True
-            tab_title.visible = False
-            tab_gd.update()
-            await edit_title_tf.focus()
-
-        # When done renaming or canceling, hide our textfield and show our title. Make sure title is updated
-        def blur_edit_title_tf(e=None):
-            edit_title_tf.visible = False
-            tab_title.visible = True
-            tab_title.value = widget.data.get('title', '')
-            tab_gd.update()
-
-        # Set our icon based on what type of widget we have
-        match widget.data.get('tag', ''):
-            case "manuscript": icon = ft.Icons.DESCRIPTION_OUTLINED
-            case "canvas": icon = ft.Icons.BRUSH_OUTLINED
-            case "canvas_board": icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
-            case "note": icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
-            case "character": icon = ft.Icons.PERSON_OUTLINE
-            case "character_relationship_map": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
-            case "plotline": icon = ft.Icons.TIMELINE
-            case "map": icon = ft.Icons.MAP_OUTLINED
-            case "world": icon = ft.Icons.PUBLIC_OUTLINED
-            case "item": icon = ft.Icons.STAR_OUTLINE_ROUNDED
-            case "chart": 
-                if widget.data.get('chart_type', '') == 'bar':
-                    icon = ft.Icons.INSERT_CHART_OUTLINED 
-                else:
-                    icon = ft.CupertinoIcons.COMPASS
-            case "comic_preview": icon = ft.Icons.SLIDESHOW_OUTLINED
-            case "plot_chart": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
-            case _: icon = ft.Icons.ERROR_OUTLINE
-
-        # Set the icon contrl
-        tab_icon = ft.Icon(icon, color=widget.data.get('color', ft.Colors.PRIMARY))  
-
-        # Title of the text in the tab
-        tab_title = ft.Text(
-            widget.data.get('title', ''), weight=ft.FontWeight.BOLD, size=16, 
-            color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True
-        )
-
-        # Textfield for renaming. starts hidden
-        edit_title_tf = ft.TextField(
-            value=widget.data.get('title', 'untitled'),
-            visible=False,
-            on_blur=blur_edit_title_tf,
-            on_submit=widget.submit_rename,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            border_radius=4, dense=True, capitalization=ft.TextCapitalization.SENTENCES,
-            border_color=ft.Colors.TRANSPARENT,
-            focused_border_color=ft.Colors.PRIMARY,
-        )
-
-        # Button to remove the widget from the workspace
-        hide_widget_button = ft.IconButton(    # Hide widget button on right side of tab
-            scale=0.8,
-            on_click=widget.hide_widget,    # Calls remove_widget_from_workspace. Just keep it this way for consistency with other widget actions
-            icon=ft.Icons.CLOSE_ROUNDED,
-            icon_color=ft.Colors.OUTLINE,
-            tooltip="Hide",
-            mouse_cursor=ft.MouseCursor.CLICK,
-        )
-
-        file_path = os.path.join(
-            widget.data.get('directory_path', ''),
-            f"{widget.data.get('id', '')}.json",
-        )
-
-        menu_options = [
-            MenuOptionStyle(
-                on_click=handle_rename,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, widget.data.get('color', 'primary'),),
-                    ft.Text(
-                        "Rename", 
-                        weight=ft.FontWeight.BOLD, 
-                    ), 
-                ]),
-            ),
-            ft.MenuItemButton(
-                leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), content="Export Widget", 
-                on_click=widget.story.handle_export, close_on_click=True,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
-                tooltip="Export this part of your story.", data=file_path
-            ),
-        ] + widget.get_menu_options()  
-
-        # Gesture Detector for opening menus that holds our tab icon, title, and hide button
-        tab_gd = ft.GestureDetector(
-            ft.Row([tab_icon, tab_title, edit_title_tf, hide_widget_button]),
-            mouse_cursor=ft.MouseCursor.CLICK,
-            hover_interval=40,
-            on_hover=widget.set_mouse_coords,
-            on_secondary_tap=lambda: self.story.open_menu(menu_options),
-        )
-
-        # Set the tab itself
-        tab = ft.Tab(label=tab_gd) 
-        return tab
+    
 
     # Removes a widget from the workspace
     async def remove_widget_from_workspace(self, widget: Widget):
@@ -376,105 +275,190 @@ class Workspace(ft.Container):
             self.tabs.selected_index = 0
             return
 
-'''
-    # OLD --------------------------------------------------------------
-    # Arranges our widgets into the main pin
-    def arrange_widgets(self):
-        self.main_pin.clear()
-        visible_widgets = [w for w in self.story.widgets.values() if w.data.get('visible', False)]
-        sorted_widgets = sorted(visible_widgets, key=lambda w: w.data.get('index', 0))
-        for i, w in enumerate(sorted_widgets):
-            if w.data.get('visible', False):
 
-                # Rebuild and add the widget to the main pin
-                widget = self.story.rebuild_widget(w)  
-                widget.update_data(**{'index': i})
-                self.main_pin.append(widget)
+@ft.component
+def build_widget_view(widget: Widget):
+    ''' Returns the correct widget view based on the widgets tag'''
+    match widget.tag:
+        case "note": return NoteView(widget)
+        case "item": return ItemView(widget)
+    return WidgetView(widget)
+
+
+@ft.component
+def Workspace() -> ft.Tabs:
+
+    print("Workspace component loaded")
+
+    # Called to hide the widget from the workspace
+    async def hide_widget(widget):
+        ''' Hides this widget from the workspace but keeps it in the story and rail '''
+        #await overlay.block_page()
+
+        widget.visible = False
+        story.widgets[widget.id] = widget   # Touch to observable to trigger observers
+
+        if widget.tag == "canvas" or widget.tag == "manuscript" or widget.tag == "map" or widget.tag == "canvas_board":    # Widgets that must be rendered to save
+            ft.context.page.run_task(widget.save_file)
+        #await overlay.unblock_page()
+
+
+    # Sets our new selected index when we change tabs and updates the tab bar indicator color to match the new selected tab
+    async def tab_change(e: ft.Event[ft.Tabs]):
+
+        # Save new selected index
+        new_selected_index = int(e.data)
+        story.selected_index = new_selected_index
+        tabs = e.control
+
+        # Set the new selected index and indicator color, then update
+        #tabs.selected_index = new_selected_index
+        #tab_bar.indicator_color = tab_view.controls[new_selected_index].color
+
+    # Handles a click event on a tab in the workspace
+    async def tab_click(self, e: ft.Event):
+        """Save the active widget before Flet switches to another tab."""
+        return
+        selected_index = self.tabs.selected_index
+        if 0 <= selected_index < len(self.tab_view.controls):
+            selected_widget = self.tab_view.controls[selected_index]
+            if hasattr(selected_widget, 'save_file'):
+                await selected_widget.save_file()
 
     
 
-    # Reloads the workspace
-    def reload_workspace(self, update: bool=True):
+    # Creates a new tab control for the given widget
+    @ft.component
+    def build_widget_tab(widget: Widget) -> ft.Tab:
+        ''' Returns a new tab control for the given widget '''
 
-        self.page.run_task(self.story.block_page)
+        # When done renaming or canceling, hide our textfield and show our title. Make sure title is updated
+        def blur_edit_title_tf(e=None):
+            edit_title_tf.visible = False
+            tab_title.visible = True
+            tab_title.value = widget.title
+            tab_gd.update()
 
-        self.arrange_widgets()
+        is_renaming, set_is_renaming = ft.use_state(False)
 
-        # If we're empty, skip all logic
-        if len(self.main_pin) <= 0:
-            self.content = None
-            if update:
-                self.update()
-            self.page.run_task(self.story.unblock_page)
-            return
+        # Set our icon based on what type of widget we have
+        icon = widget_icons.get(widget.tag, ft.Icons.ERROR_OUTLINE)
 
-        # Sets our new index when switching tabs
-        async def tab_change(e: ft.Event):
-            from models.widgets.canvas import Canvas
+        # Set the icon contrl
+        tab_icon = ft.Icon(icon, color=widget.color)  
 
-            # Save new selected index
-            self.story.update_data(**{'workspace_selected_index': e.data})
+        # Title of the text in the tab
+        tab_title = ft.Text(
+            widget.title, weight=ft.FontWeight.BOLD, size=16, 
+            color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True,
+            visible=not is_renaming,
+        )
+
+        # Textfield for renaming. starts hidden
+        edit_title_tf = ft.TextField(
+            value=widget.title,
+            visible=is_renaming,
+            on_blur=blur_edit_title_tf,
+            on_submit=widget.submit_rename,
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            autofocus=True,
+            #border_radius=4, dense=True, capitalization=ft.TextCapitalization.SENTENCES,
+            #border_color=ft.Colors.TRANSPARENT,
+            #focused_border_color=ft.Colors.PRIMARY,
+        )
+
+        # Button to remove the widget from the workspace
+        hide_widget_button = ft.IconButton(    # Hide widget button on right side of tab
+            scale=0.8,
+            on_click=functools.partial(hide_widget, widget),    # partial (not lambda) so Flet awaits the coroutine directly
+            icon=ft.Icons.CLOSE_ROUNDED,
+            icon_color=ft.Colors.OUTLINE,
+            tooltip="Hide",
+            mouse_cursor=ft.MouseCursor.CLICK,
+        )
+
+        file_path = os.path.join(
+            widget.directory_path,
+            f"{widget.id}.json",
+        )
+
+        #menu_options = [
+            #MenuOptionStyle(
+                #on_click=handle_rename,
+                #content=ft.Row([
+                    #ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, widget.color),
+                    #ft.Text(
+                       # "Rename", 
+                       # weight=ft.FontWeight.BOLD, 
+                    #), 
+                #]),
+            #),
+            #ft.MenuItemButton(
+                #leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), content="Export Widget", 
+               # on_click=story.handle_export, 
+                #close_on_click=True,
+                #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+               # tooltip="Export this part of your story.", data=file_path
+            #),
+        #] + widget.get_menu_options()  
+
+        # Gesture Detector for opening menus that holds our tab icon, title, and hide button
+        tab_gd = ft.GestureDetector(
+            ft.Row([tab_icon, tab_title, edit_title_tf, hide_widget_button]),
+            mouse_cursor=ft.MouseCursor.CLICK,
+            hover_interval=40,
+            #on_hover=widget.set_mouse_coords,
+            #on_secondary_tap=lambda: story.open_menu(menu_options),
+        )
+
+        # Set the tab itself
+        tab = ft.Tab(label=tab_gd, key=f"{widget.id}_tab") 
+        return tab
+
+    story = ft.use_context(StoryContext)
+    #overlay = ft.use_context(OverlayContext)
+
+    visible_widgets = [widget for widget in story.widgets.values() if widget.visible]
+    sorted_visible_widgets: list = sorted(visible_widgets, key=lambda w: w.index)
 
 
-            for idx, widget in enumerate(self.main_pin):
-                if idx == e.data:
-                    tabs.content.controls[0].indicator_color = widget.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
-                    tabs.content.controls[0].update()  
 
-                # Make it so canvases don't redraw unneccesarily when switching tabs
-                if isinstance(widget, Canvas):
-                    widget.skip_first_resize = True
+    # Build at tab bar with tabs for each widget
+    tab_bar = ft.TabBar(
+        tabs=[build_widget_tab(widget) for widget in sorted_visible_widgets] if len(sorted_visible_widgets) > 0 else [ft.Tab(" <- Add Widget")],    # Gives a tab for each widget
+        scrollable=True, 
+        #indicator_color=indicator_color, 
+        divider_height=2,
+        enable_feedback=False, 
+        #on_click=self.tab_click,
+        label_padding=ft.Padding.only(left=6), #padding=ft.Padding.all(20)
+        key=f"{story.id}_tab_bar"
+    )
 
-        sel_idx = int(self.story.data.get('workspace_selected_index', 0))
+    # Build our tab view that holds each widget
+    tab_view = ft.TabBarView(
+        controls=[
+            build_widget_view(widget) for widget in sorted_visible_widgets
+        ] if len(sorted_visible_widgets) > 0 else [
+            ft.Container(ft.Text(" <- Add Widget"), alignment=ft.Alignment.CENTER_LEFT)
+        ],
+        expand=True,
+        key=f"{story.id}_tab_view"
+    )
 
-        # Tabs that hold our workspace
-        tabs = ft.Tabs(
-            expand=True, 
-            length=len(self.main_pin),
-            selected_index=sel_idx if sel_idx < len(self.main_pin) else len(self.main_pin) - 1,  
-            on_change=tab_change,
-            animation_duration=100,
-            content=ft.Column([
-                ft.TabBar(
-                    tabs=[widget.tab for widget in self.main_pin], scrollable=True, indicator_color=ft.Colors.ON_SURFACE_VARIANT, divider_height=2
-                ), 
-                ft.TabBarView(
-                    #controls=[widget.master_stack for widget in self.main_pin],
-                    controls=[widget for widget in self.main_pin],
-                    expand=True
-                )
-            ], expand=True, spacing=0),
-        )   
-
-        
-
-        # Check our last widget. If its index is 999, it was just added and needs its data updated
-        if self.main_pin[-1].data.get('index', -1) == 999:   
-            #tabs.selected_index = len(self.main_pin) - 1    # Set the selected index
-            #self.story.data['workspace_selected_index'] = len(self.main_pin) - 1 
-            #self.story.update_data(**{'workspace_selected_index': len(self.main_pin) - 1})  # Update our story data to reflect the new selected index
-            #tabs.content.controls[0].indicator_color = self.main_pin[-1].data.get('color', ft.Colors.ON_SURFACE_VARIANT)
-            pass
-            
-
-        else:
-            for widget in self.main_pin:
-                if widget.data.get('index', -1) == self.story.data.get('workspace_selected_index', 0):
-                    tabs.content.controls[0].indicator_color = widget.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
-                    tabs.selected_index = widget.data.get('index', 0)
-                    break
-
-        # If our selected index is out of range (The active tab was last and just hidden), make the last tab active
-        if int(self.story.data.get('workspace_selected_index', 0)) >= len(self.main_pin):
-            tabs.selected_index = len(self.main_pin) - 1
-            self.story.update_data(**{'workspace_selected_index': len(self.main_pin) - 1})  # Update our story data to reflect the new selected index
+    # Return he tabs control
+    return ft.Tabs(
+        expand=True, 
+        length=len(sorted_visible_widgets) if len(sorted_visible_widgets) > 0 else 1,
+        selected_index=story.selected_index if story.selected_index < len(sorted_visible_widgets) else 0,
+        on_change=tab_change,
+        animation_duration=100,
+        content=ft.Column([
+            tab_bar,
+            tab_view
+        ], expand=True, spacing=0),
+        key=f"{story.id}_workspace"
+    )    
 
 
-        # Set our tabs as the content
-        self.content = tabs
-
-        if update:
-            self.update()
-        
-        self.page.run_task(self.story.unblock_page)
-'''
+    

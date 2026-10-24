@@ -6,15 +6,14 @@ These objects is displayed in the plotlines widget, and store our mini widgets p
 import json
 import os
 import flet as ft
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 from models.views.story import Story
 from models.widget import Widget
 from models.mini_widgets.plotline_plot_point import PlotlinePlotPoint
 import flet.canvas as cv
-#from models.app import app
 import asyncio 
 import uuid
-from constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
+from contexts.constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
 from styles.colors import colors
 from styles.text_fields import TextField, SingleLineTextField
 from styles.snack_bar import SnackBar
@@ -263,9 +262,9 @@ class Plotline(Widget):
                         expand=True, text_align=ft.TextAlign.CENTER,
                         content_padding=ft.Padding.all(0),
                         on_blur=lambda e: self.update_data(**{'title': e.control.value}), 
-                        dense=True, border_radius=4,
-                        border_color=ft.Colors.TRANSPARENT,
-                        focused_border_color=ft.Colors.PRIMARY,
+                        dense=True, #border_radius=4,
+                        #border_color=ft.Colors.TRANSPARENT,
+                        #focused_border_color=ft.Colors.PRIMARY,
                         multiline=True,
                     ), width=PLOTLINE_PADDING * 2
                 ),
@@ -707,10 +706,10 @@ class Plotline(Widget):
                 on_blur=update_value, text_align=ft.TextAlign.CENTER, offset=ft.Offset(-0.5, -1),
                 text_style=ft.TextStyle(14, weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),
                 content_padding=ft.Padding.all(0), 
-                border_color=ft.Colors.TRANSPARENT, focused_border_color=ft.Colors.PRIMARY,
+                #border_color=ft.Colors.TRANSPARENT, focused_border_color=ft.Colors.PRIMARY,
                 capitalization=ft.TextCapitalization.SENTENCES,
                 bgcolor=ft.Colors.TRANSPARENT,
-                border_radius=4, 
+                #border_radius=4, 
             )
 
         # Clear plotline shapes and divisions stack controls
@@ -836,9 +835,9 @@ class Plotline(Widget):
             capitalization=ft.TextCapitalization.SENTENCES,
             bgcolor=ft.Colors.TRANSPARENT,
             on_blur=change_label,
-            border_radius=4, content_padding=ft.Padding.all(0),
-            border_color=ft.Colors.TRANSPARENT,
-            focused_border_color=ft.Colors.PRIMARY,
+            #border_radius=4, content_padding=ft.Padding.all(0),
+            #border_color=ft.Colors.TRANSPARENT,
+            #focused_border_color=ft.Colors.PRIMARY,
             data='start_label',
             text_align=ft.TextAlign.CENTER,
             left=PLOTLINE_PADDING,
@@ -853,9 +852,10 @@ class Plotline(Widget):
             capitalization=ft.TextCapitalization.SENTENCES,
             bgcolor=ft.Colors.TRANSPARENT,
             on_blur=change_label,
-            border_radius=4, content_padding=ft.Padding.all(0),
-            border_color=ft.Colors.TRANSPARENT,
-            focused_border_color=ft.Colors.PRIMARY,
+            #border_radius=4, 
+            content_padding=ft.Padding.all(0),
+            #border_color=ft.Colors.TRANSPARENT,
+            #focused_border_color=ft.Colors.PRIMARY,
             data='end_label',
             text_align=ft.TextAlign.CENTER,
             left=PLOTLINE_WIDTH - PLOTLINE_PADDING,
@@ -870,9 +870,9 @@ class Plotline(Widget):
             capitalization=ft.TextCapitalization.SENTENCES,
             bgcolor=ft.Colors.TRANSPARENT,
             on_blur=change_label,
-            border_radius=4,
-            border_color=ft.Colors.TRANSPARENT,
-            focused_border_color=ft.Colors.PRIMARY,
+            #border_radius=4,
+            #border_color=ft.Colors.TRANSPARENT,
+            #focused_border_color=ft.Colors.PRIMARY,
             data='time_label',
             text_align=ft.TextAlign.CENTER,
             left=PLOTLINE_WIDTH / 2,

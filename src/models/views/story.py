@@ -9,172 +9,71 @@ import flet as ft
 import os
 import shutil
 import json
-import constants
+import contexts.constants as constants
 from styles.snack_bar import SnackBar
 from utils.safe_string_checker import return_safe_name
 import asyncio
 from utils.tutorial import run_tutorial
 import uuid
 from styles.colors import dark_gradient
-from dataclasses import dataclass
+from dataclasses import dataclass, field, asdict, fields
 from concurrent.futures import ThreadPoolExecutor
+from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext, StoryContext, BlockerContext
+from contexts.blocker import Blocker, BlockerState
 
+
+
+# Main Story class
 @ft.observable
 @dataclass 
-class Story(ft.View):
+class Story:
 
-    # Constructor.
-    def __init__(
-        self, 
-        title: str,             # Title of our story
-        data: dict=None,        # Data to load our story with (if any)
-    ):
-        
-        # Parent constructor
-        #super().__init__(
-            #route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
-            #padding=ft.Padding.all(0),      # No padding for the page
-            #spacing=0,                                                      # No spacing between menubar and rest of page
-            #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
-        #)  
+    title: str = "Story Title"
+    tag: str = "story"
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    route: str = None
 
-        self.data = data                # Sets our data (if any) passed in. New stories just have none
+    directory_path: str = None        # Where our stories metadata and content folder live
+    content_directory_path: str = None   # Where our folders and widgets live
+    file_path: str = None   # Path to story's json file
 
-        # Verifies this object has the required data fields, and creates them if not
-        if data is None:
-            id = str(uuid.uuid4())
-            self.data = {
-                'title': title,
-                'tag': "story",
-                'id': id,
+    selected_index: int = 0     # Index of the selected tab in the story's UI 
 
-                # Directory paths and file paths
-                'directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id),
-                'content_directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, "content"),   # Path to store widget json files
-                'canvas_directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, "canvas"),     # Path to store canvas png captures
-                'file_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, f"{id}.json"),   # Path to story's json file
-                
+    folders: dict[str, dict] = field(default_factory=dict) #{'path': {'name": '', 'color': '', 'is_expanded': True}}
+    widgets: dict[str, dataclass] = field(default_factory=dict)
 
-                'selected_rail': "content",
-                'workspace_selected_index': 0,   # Index of the selected widget in the main pin, used for switching between tabs in the main pin
 
-                'created_at': str(),
-                'last_modified': str(),
-
-                # Sort methods for our specialized rails
-                'character_rail_sort_method': "Index",
-                'character_rail_sort_direction': "Ascending",
-                'plotline_rail_sort_method': "Index",
-                'plotline_rail_sort_direction': "Ascending",
-                'world_building_rail_sort_method': "Index",
-                'world_building_rail_sort_direction': "Ascending",
-                
-                # Dict of our folders an their metadata
-                'folders': {
-                    'path': {                   # Path to the folder (used as the key, since all will be unique)
-                        'name': str(),            # Name of folder just in case
-                        'color': str(),           # Color of that folder
-                        'is_expanded': True     # Whether this folder is expanded in the tree view
-                    }
-                },        
-            }
-
-        # Set our route after we have generated an id if we are a new Story
-        self.route = return_safe_name(f"/{self.data.get('id', '')}")
-        
-
-        # State for storying mouse coords
-        self.mouse_x: int = 0
-        self.mouse_y: int = 0
-            
-        # Declare our UI elements before we create them later. They are stored as objects so we can reload them when needed
-        self.menubar: ft.Container     # Menu bar at top of page
-        self.workspaces_rail: ft.Container      # Rail on left side showing our 6 workspaces
-        self.canvas_rail: ft.Container      # Rail on left side showing our 6 workspaces
-        self.active_rail: ft.Container    # Rail showing whichever workspace is selected
-        self.workspace: ft.Container       # Main workspace area where our pins display our widgets
-
-        self.menu: ft.Container         # Container that sits in the overlay and gets menu options passed into it
-        self.outside_menu_detector: ft.GestureDetector      # Sets under the menu to handle closing and opening the menu
-        self.blocker: ft.Container  # Blocks the page while we do intense loads
-
-        # Block the app from any interactions during rebuilds
-        self.blocker = ft.Container(
-            ft.Row([ft.ProgressRing(width=100, height=100)], alignment=ft.MainAxisAlignment.CENTER), 
-            expand=True, visible=False, blur=5, left=0, right=0, top=0, bottom=0
-        )
-        
-        # Store all our widgets above in a master list for easier rendering in the UI
-        self.widgets: dict = {} 
-
-        # Controller for text shapes (canvas), labels and location labels (maps)
-        # Canvas shapes get updated with this in real time if they are being edited
-
-        # Our container that sits on top of the story.page overlay when right clicking options. Starts invisible
-        self.menu = ft.Container(
-            left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
-            border_radius=4, visible=False,
-            bgcolor=ft.Colors.SURFACE_CONTAINER,
-            width=200, #border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-            shadow=ft.BoxShadow(0, 1, offset=ft.Offset(0, 1), ),
-            content=ft.Column(
-                spacing=0,
-                controls=[]
-            ),
-        )
+    # Give us our paths based on the id after object creation
+    def __post_init__(self):
+        self.directory_path = os.path.join(constants.STORIES_DIRECTORY_PATH, self.id)
+        self.content_directory_path = os.path.join(constants.STORIES_DIRECTORY_PATH, self.id, "content")
+        self.file_path = os.path.join(constants.STORIES_DIRECTORY_PATH, self.id, f"{self.id}.json")
+        self.route = f"stories/{self.id}"
+        self.load_widgets() 
+   
     
-        # Outside gesture detector to close the menu when clicking outside the menu container
-        self.close_menu_detector = ft.GestureDetector(
-            expand=True, visible=False,
-            on_tap_down=self.close_menu,
-            on_secondary_tap_down=self.close_menu,
-        )
-        
-    
-        # Overlay is a stack, so add the detector, then the menu container
-        ft.context.page.overlay.extend([
-            self.close_menu_detector,
-            self.menu,
-            self.blocker
-        ])
-
-          
-    # Isolates stories from page.update calls. Needed for keeping performance when opening menus
-    def is_isolated(self): 
-        return True
-    
-    # Updates data for this widget and marks it as dirty for the next file save
-    def update_data(self, **kwargs):
-        
-        # Allow updating of nested dicts without overriding the entire dict
-        def _merge_data(target: dict, updates: dict):
-            for key, value in updates.items():
-                current_value = target.get(key)
-                if isinstance(current_value, dict) and isinstance(value, dict):
-                    _merge_data(current_value, value)
-                else:
-                    target[key] = value
-
-        _merge_data(self.data, kwargs)  # Merge the new data into the existing data
-
-        #self.page.run_task(self.save_file)  # Save the updated data to the file
-
     # Called whenever there are changes in our data that need to be saved
     async def save_file(self):
         ''' Saves the data of our story to its JSON File, and all its folders as well '''
 
-        try: 
+        print(f"Saving story: {self.title}")
 
-            # Create the directory if it doesn't exist. Catches errors from users deleting folders
-            os.makedirs(self.data.get('directory_path'), exist_ok=True)
-            
-            # Save the data to the file (creates file if doesnt exist)
-            with open(self.data.get('file_path'), "w", encoding='utf-8') as f:   
-                json.dump(self.data, f, indent=4)
+        try: 
+            os.makedirs(self.directory_path, exist_ok=True)
+
+            # Create our data excluding widgets, since they save themselves, and will break json structure
+            story_data = {
+                story_field.name: getattr(self, story_field.name)
+                for story_field in fields(self)
+                if story_field.name != "widgets"
+            }
+
+            with open(self.file_path, "w", encoding='utf-8') as f:   
+                json.dump(story_data, f, indent=4)   # asdict() strips observable bookkeeping, unlike self.__dict__
         
         # Handle errors
         except Exception as e:
-            self.page.show_dialog(SnackBar(f"Error saving story data: {e}"))
+            print(f"Error saving story data: {e}")
 
     # Get widget object by its unique ID.
     def get_widget_by_id(self, id: str) -> ft.Control:
@@ -183,10 +82,9 @@ class Story(ft.View):
     # Called when a new folder is created.
     async def create_folder(self, name: str, directory_path: str=None, update: bool=True, full_path: str=None):
         ''' Creates a new folderinside of our story structure for content organization '''
-        from models.app import app
-
+        
         if directory_path is None:
-            directory_path = self.data.get('content_directory_path', '')
+            directory_path = self.content_directory_path
 
         try:
 
@@ -203,16 +101,12 @@ class Story(ft.View):
             # Make the folder in our storage if it doesn't already exist
             os.makedirs(folder_path, exist_ok=True) 
 
-            # Preserve existing folder settings when the folder is encountered again.
-            folders = self.data.setdefault('folders', {})
-            folders.setdefault(folder_path, {
+            self.folders[folder_path] = {
+                'full_path': folder_path,
                 'name': name,
                 'is_expanded': True,
-                'color': app.settings.data.get('story', {}).get('default_folder_color', "primary"),
-            })
-            self.update_data(**{'folders': folders})
-            if update:
-                self.active_rail.reload_rail()
+                'color': "primary"
+            }
 
         # Handle errors
         except Exception as e:
@@ -289,11 +183,9 @@ class Story(ft.View):
 
     def rename(self, new_title: str):
         ''' Renames the story '''
-        self.update_data(**{'title': new_title})
-        self.page.title = f"Story Board (alpha) - {new_title}"
-        self.route=return_safe_name(f"/{new_title}_story")
-        self.page.pop_dialog()
-        self.page.update()
+        self.title = new_title
+
+        #self.page.title = f"Story Board (alpha) - {new_title}"
 
         # Settings route is wrong.
 
@@ -380,15 +272,15 @@ class Story(ft.View):
         self.widgets.clear()
         
         # Check if the characters folder exists. Creates it if it doesn't. Exists in case people delete this folder
-        if not os.path.exists(self.data['content_directory_path']):
+        if not os.path.exists(self.content_directory_path):
             try:
-                os.makedirs(self.data['content_directory_path'])    
+                os.makedirs(self.content_directory_path)    
             except Exception:
                 pass
             return  # Since this didn't exist, there is no content
 
         # Loads all files inside the content directory and its sub folders
-        for dirpath, dirnames, filenames in os.walk(self.data['content_directory_path']):
+        for dirpath, dirnames, filenames in os.walk(self.content_directory_path):
             for filename in filenames:
 
                 # All our objects are stored as JSON, so if not we skip
@@ -400,111 +292,46 @@ class Story(ft.View):
                         # Read the JSON file and set our data
                         with open(file_path, "r", encoding='utf-8') as f:
                             widget_data = json.load(f)
+                            if not widget_data:
+                                continue
                         
                         # Extract the title, directory, and unique widget id
                         tag = widget_data.get("tag", "")
-                        dir_path = widget_data.get("directory_path", "")
                         id = widget_data.get("id", "")
-
+                        
                         widget = None
 
                         match tag:
                             case "manuscript": 
-                                widget = Manuscript(     # Create the object in its dict
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Manuscript(**widget_data)
                             case "canvas":
-                                widget = Canvas(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Canvas(**widget_data)
                             case "canvas_board":
-                                widget = CanvasBoard(
-                                    widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = CanvasBoard(**widget_data)
                             case "note":
-                                widget = Note(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Note(**widget_data)
                             case "character":
-                                widget = Character(
-                                    widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Character(**widget_data)
                             case "plotline":
-                                widget = Plotline(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Plotline(**widget_data)
                             case "map":
-                                widget = Map(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Map(**widget_data)
                             case "world":
-                                widget = World(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = World(**widget_data)
                             case "character_relationship_map":
-                                widget = CharacterRelationshipMap(
-                                    widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = CharacterRelationshipMap(**widget_data)
                             case "item":
-                                widget = Item(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Item(**widget_data)
                             case "chart":
-                                widget = Chart(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = Chart(**widget_data)
                             case "comic_preview":
-                                widget = ComicPreview(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
-
+                                widget = ComicPreview(**widget_data)
                             case "plot_chart":
-                                widget = PlotChart(
-                                    title=widget_data.get('title', 'Untitled Manuscript'),
-                                    directory_path=dir_path,
-                                    story=self,
-                                    data=widget_data,
-                                )
+                                widget = PlotChart(**widget_data)
                             case _:
                                 print("Widget tag not valid Tag: ", tag)
 
-                        if widget is not None and id != "":
+                        if widget:
                             self.widgets[id] = widget
                             
                     # Handle errors if the path is wrong
@@ -513,7 +340,7 @@ class Story(ft.View):
 
     async def import_folder_clicked(self, e: ft.Event):
         self.block_page()
-        directory_path = e.control.data or self.data.get('content_directory_path', '')
+        directory_path = e.control.data or self.content_directory_path
 
         try:
             folder_path = await ft.FilePicker().get_directory_path()
@@ -615,7 +442,7 @@ class Story(ft.View):
 
     # Opens the dialog to export
     async def handle_export(self, e=ft.Event):
-        from models.app import app
+        return
 
         async def export_confirmed(e=None):
             folder_path = await ft.FilePicker().get_directory_path()
@@ -926,7 +753,7 @@ class Story(ft.View):
         self.page.show_dialog(dlg)
         
     # Called to create a new widget based on tag (document, note, character, etc)
-    async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict=None, chart_type: str="bar", update: bool=True):
+    async def create_widget(self, title: str, tag: str, directory_path: str=None, chart_type: str="bar", canvas_data: dict=None, update: bool=True):
         ''' Creates our new widget based on the tag passed in and directory_path passed in'''
         from models.widgets.manuscript import Manuscript
         from models.widgets.note import Note
@@ -941,60 +768,61 @@ class Story(ft.View):
         from models.widgets.chart import Chart
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
-        from models.app import app
 
         
-        if directory_path is None:
-            directory_path = self.data.get('content_directory_path',  '')
+        directory_path = directory_path or self.content_directory_path
 
         widget = None
 
+        widget_data = {
+            'id': str(uuid.uuid4()),
+            'title': title,
+            'tag': tag,
+            'directory_path': directory_path
+        }
+
         match tag:
             case "manuscript":
-                widget = Manuscript(title, directory_path, self, data, True)
+                widget = Manuscript(title, directory_path, self)
             case "note":
-                widget = Note(title, directory_path, self, data, True)
+                widget = Note(**widget_data)
             case "canvas":
-                d = {'canvas_data': data} if data is not None else None
-                widget = Canvas(title,  directory_path, self, d, True)
+                data = {'canvas_data': canvas_data} if canvas_data is not None else None
+                widget = Canvas(title,  directory_path, self, data, True)
             case "character":
-                if app.settings.data.get('active_character_template', "None") != "None":
-                    data = app.settings.data['character_templates'].get(app.settings.data['active_character_template'], {}).copy()
-                    data = {'character_data': data}
-                widget = Character(title, directory_path, self, data, True)
+                
+                widget = Character(title, directory_path, self)
             case "plotline":
-                widget = Plotline(title, directory_path, self, data, True)
+                widget = Plotline(title, directory_path, self)
             case "map":
-                d = {'canvas_data': data} if data is not None else None
-                widget = Map(title, directory_path, self, data, True)
+                widget = Map(title, directory_path, self, data)
             case "character_relationship_map":
-                widget = CharacterRelationshipMap(title, directory_path, self, data, True)
+                widget = CharacterRelationshipMap(title, directory_path, self)
             case "world":
-                if app.settings.data.get('active_world_template', "None") != "None":
-                    data = app.settings.data['world_templates'].get(app.settings.data['active_world_template'], {}).copy()
-                    data = {'world_data': data}
-                widget = World(title, directory_path, self, data, True)
+                
+                widget = World(title, directory_path, self)
             case "canvas_board":
-                widget = CanvasBoard(title, directory_path, self, data, True)   
+                widget = CanvasBoard(title, directory_path, self)   
             case "item":
-                widget = Item(title, directory_path, self, data, True)  
+                widget = Item(**widget_data)  
             case "chart":
-                widget = Chart(title, directory_path, self, data, True, type=chart_type)
+                widget = Chart(title, directory_path, self, type=chart_type)
             case "comic_preview":
-                widget = ComicPreview(title, directory_path, self, data, True)
+                widget = ComicPreview(title, directory_path, self)
             case "plot_chart":
-                widget = PlotChart(title, directory_path, self, data, True)
+                widget = PlotChart(title, directory_path, self)
             case _:
-                self.page.show_dialog(SnackBar(f"Error creating widget {title}: Invalid tag {tag}"))
+                print(f"Error creating widget {title}: Invalid tag {tag}")
 
         # Force a file write for newly created widgets
-        if widget is not None:
+        if widget:
             widget.needs_file_write = True
             await widget.save_file()
         
         # Save our widget to our widgets list
-        self.widgets[widget.data['id']] = widget        
-
+        self.widgets[widget.id] = widget        
+        print("created new widget: ", widget.title)
+        return
         if update:
             # Finish tasks creating widget to make sure the file has enough time to save
             await self.workspace.add_widget_to_workspace(widget)  # Add the new widget to the workspace and select it
@@ -1211,35 +1039,21 @@ class Story(ft.View):
         self.blocker.update()
 
 # Builds our view
-def StoryView(app, settings, story: 'Story') -> list[ft.Control]:
+@ft.component
+def StoryView() -> ft.View:
     ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
-    from ui.menu_bar import MenuBar, MenuBarView
-    from ui.workspaces_rail import WorkspacesRail
-    from ui.canvas_rail import DrawingControlsRail
-    from ui.binder_view_rail import BinderViewRail
-    from ui.workspace import Workspace
-    #from models.app import app
-    from models.isolated_controls.row import IsolatedRow
+    from view_components.menu_bar import MenuBar
+    from view_components.drawing_controls_rail import DrawingControlsRail
+    from view_components.tree_view_rail import TreeViewRail
+    from view_components.workspace import Workspace
 
-    # Called when resizing the active rail by dragging the resizer
-    def resize_binder_rail(e: ft.DragUpdateEvent):
-        ''' Responsible for altering the width of the active rail '''
-        
-        #story.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
+    print("Story view component loaded")
 
-        #print(app.settings.binder_rail_width)
-
-        old_width = app.settings.binder_rail_width
-        new_width = old_width + int(e.local_delta.x)    # Apply the change to our rail
-        new_width = max(0, min(new_width, 600))     # Clamp the width between 0 and 600
-        app.settings.binder_rail_width = new_width
-
-        
-   
 
     # Handles keyboard events for the story
     async def handle_keyboard_event(e: ft.KeyboardEvent):
         ''' Handles keyboard events for the story '''
+        return
         # Calls undo on our active widget
         async def undo():
             widget = story.workspace.tab_view.controls[story.workspace.tabs.selected_index]
@@ -1263,86 +1077,36 @@ def StoryView(app, settings, story: 'Story') -> list[ft.Control]:
                     await redo()
 
     page = ft.context.page
-        
+    #app = ft.use_context(AppContext)
+    #settings = ft.use_context(AppSettingsContext)   
+    story = ft.use_context(StoryContext)
+
+    block_context, _ = ft.use_state(BlockerState())
+
 
     # Set our specific event to detect keyboard events for the story
     page.on_keyboard_event = handle_keyboard_event 
-    page.title = f"Story Board (alpha) - {story.data.get('title', 'Untitled')}"   # Set our page title
+    page.title = f"Story Board (alpha) - {story.title}"   # Set our page title
 
-    # Load our widgets
-    story.load_widgets() 
-
-    # Create our menubar, workspaces rail, active rail, and workspace objects
-    #self.menubar = MenuBar(self)
-    #menu_bar, _ = ft.use_state(MenuBar)
-    #story.workspaces_rail = WorkspacesRail(self) 
-    #story.canvas_rail = CanvasRail(self)
-    #story.active_rail = ActiveRail(self) 
-    #story.workspace = Workspace(self)  
-
-    @ft.component
-    def ActiveRailResizer() -> ft.GestureDetector:
-        return ft.GestureDetector(
-            content=ft.Container(
-                width=10,   # Total width of the GD, so its easier to find with mouse
-                content=ft.VerticalDivider(2, 2),     # Original
-                padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+    
+    return ft.View(
+        [
+            ft.Stack(
+                [
+                    ft.Column([
+                        MenuBar(),
+                        ft.Row([       # Keep the majority of the page out up updates
+                            DrawingControlsRail(),
+                            BlockerContext(block_context, lambda: TreeViewRail()),   # Allow the overlay into the tree view
+                            BlockerContext(block_context, lambda: Workspace()),
+                        ], spacing=0, expand=True),
+                    ], expand=True, spacing=0),
+                    Blocker(block_context),
+                ],
+                expand=True
             ),
-            mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
-            on_pan_update=resize_binder_rail, # Resize the active rail as app is dragging
-            #on_pan_end=lambda: app.settings.update_data(**{'story': {'active_rail_width': story.active_rail.width}}),  # Save the resize when app is done dragging
-            drag_interval=20,
-        )
-    
-
-
-    # The actual resizer for the active rail (gesture detector)
-    
-
-
-    return [
-        ft.Column([
-            MenuBarView(app, story),
-            IsolatedRow([
-                
-                #story.workspaces_rail,
-                DrawingControlsRail(app, story),
-                BinderViewRail(app, app.settings, story),
-                ActiveRailResizer(),
-                #story.workspace,
-                #ft.Container(story.workspace, expand=True, gradient=dark_gradient)
-            ], spacing=0, expand=True)
-        ], expand=True, spacing=0)
-    ]
-
-
-    # Our container that sits on top of the story.page overlay when right clicking options. Starts invisible
-    story.menu = ft.Container(
-        left=story.mouse_x, top=story.mouse_y,   # Positions the menu at the mouse location
-        border_radius=4, visible=False,
-        bgcolor=ft.Colors.SURFACE_CONTAINER,
-        width=200, #border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-        shadow=ft.BoxShadow(0, 1, offset=ft.Offset(0, 1), ),
-        content=ft.Column(
-            spacing=0,
-            controls=[]
-        ),
+        ],
+        padding=ft.Padding.all(0),      # No padding for the page
+        spacing=0,                                                      # No spacing between menubar and rest of page
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
     )
-
-    # Outside gesture detector to close the menu when clicking outside the menu container
-    #story.close_menu_detector = ft.GestureDetector(
-       # expand=True, visible=False,
-        #on_tap_down=story.close_menu,
-        #on_secondary_tap_down=story.close_menu,
-    #)
-    
-
-    # Overlay is a stack, so add the detector, then the menu container
-    #story.page.overlay.extend([
-        #story.close_menu_detector,
-        #story.menu,
-        #story.blocker
-    #])
-
-    #story.page.update()

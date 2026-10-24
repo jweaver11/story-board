@@ -48,6 +48,9 @@ class World(Widget):
                 # World data
                 #'world_data': app.settings.data.get('world_templates', {}).get(app.settings.data.get('active_world_template', ""), default_world_template_data_dict()) 
                 #if data is None or 'world_data' not in data else data['world_data'],
+                #if app.settings.data.get('active_world_template', "None") != "None":
+                                    #data = app.settings.data['world_templates'].get(app.settings.data['active_world_template'], {}).copy()
+                                   # data = {'world_data': data}
             }
         )
  
@@ -359,7 +362,8 @@ class World(Widget):
 
                 # Container to hold the text control of our section info
                 container = ft.Container(         # For template data
-                    padding=ft.Padding.all(6), border_radius=4, expand=True,
+                    padding=ft.Padding.all(6), #border_radius=4, 
+                    expand=True,
                     #border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), 
                     margin=ft.Margin.only(left=10, bottom=10, right=10),
                     bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
@@ -424,8 +428,9 @@ class World(Widget):
             ft.TextField(
                 self.data.get('about', ""), on_blur=lambda e: self.update_data(**{"about": e.control.value}), expand=True, 
                 dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
-                border_color=ft.Colors.OUTLINE_VARIANT, margin=ft.Margin.only(right=10),
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4,
+                #border_color=ft.Colors.OUTLINE_VARIANT, 
+                margin=ft.Margin.only(right=10),
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), #border_radius=4,
                 content_padding=ft.Padding.all(6), min_lines=3, cursor_color=ft.Colors.PRIMARY
             )
             
@@ -434,7 +439,7 @@ class World(Widget):
 
         # Adjust our description text field to match the theme outside of a sidebar
         self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-        self.description_tf.focused_border_color = ft.Colors.PRIMARY
+        #self.description_tf.focused_border_color = ft.Colors.PRIMARY
         
         # Header that holds our image, edit mode button, and about section
         header = ft.Row([

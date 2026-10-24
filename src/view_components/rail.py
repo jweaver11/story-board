@@ -6,11 +6,8 @@ import flet as ft
 import os
 import json
 from models.views.story import Story
-from models.widgets.plotline import Plotline
-from styles.rail.rail_folder import RailFolder
-from utils.new_canvas import new_canvas_alert_dlg
+from utils.new_canvas import new_canvas_dlg
 import asyncio
-#from models.app import app
 from styles.snack_bar import SnackBar
 
 
@@ -108,19 +105,7 @@ class Rail(ft.Column):
 
         return template_options
     
-    # Called when a widget is dragged and dropped into this directory
-    def move_widget_file(self, e: ft.DragTargetEvent, new_directory: str):
-        ''' Moves our widgets into this directory from wherever they were '''
-
-        draggable = e.page.get_control(e.src_id)
-
-        widget = self.story.get_widget_by_id(draggable.data)
-
-        if widget is None:
-            self.page.show_dialog(SnackBar("Error, file not found."))
-            return
-
-        self.page.run_task(widget.move_file, new_directory)
+    
 
 
     # Called when new category button or menu option is clicked
@@ -154,7 +139,7 @@ class Rail(ft.Column):
 
             case "canvas":
                 await self.story.close_menu()
-                self.page.show_dialog(new_canvas_alert_dlg(self.page, self.story))
+                self.page.show_dialog(new_canvas_dlg(self.page, self.story))
                 return
                         
             case "canvas_board":
@@ -228,7 +213,7 @@ class Rail(ft.Column):
 
         # Close the menu (if ones is open), which will update the page as well
         self.story.close_menu_instant()   
-        self.page.show_dialog(new_canvas_alert_dlg(self.page, self.story))
+        self.page.show_dialog(new_canvas_dlg(self.page, self.story))
 
     # Called every time the mouse moves over our rail
     async def _set_menu_coords(self, e: ft.PointerEvent):

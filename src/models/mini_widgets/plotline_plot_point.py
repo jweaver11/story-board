@@ -6,9 +6,9 @@ from styles.text_styles import text_style
 import flet.canvas as cv
 from styles.icons import icons
 from styles.text_fields import TextField
-from constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
+from contexts.constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
 from styles.icons import icons
-from styles.menu_option_style import MenuOptionStyle
+from styles.context_menu_option import MenuOptionStyle
 #from models.app import app
 from styles.colors import colors
 
@@ -419,8 +419,8 @@ class PlotlinePlotPoint(MiniWidget):
             value=self.data.get('description', ''), 
             bgcolor=ft.Colors.TRANSPARENT, 
             text_style=ft.TextStyle(size=10, italic=True),
-            border_color=ft.Colors.TRANSPARENT,
-            focused_border_color=ft.Colors.PRIMARY,
+            #border_color=ft.Colors.TRANSPARENT,
+            #focused_border_color=ft.Colors.PRIMARY,
             multiline=True, dense=True, width=150,
             on_blur=self.save_description,
             capitalization=ft.TextCapitalization.SENTENCES,
