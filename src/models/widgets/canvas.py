@@ -12,7 +12,6 @@ from styles.snack_bar import SnackBar
 from models.dataclasses.canvas_state import State
 import flet.canvas as cv
 import math
-#from models.app import app
 import json
 import base64
 from io import BytesIO

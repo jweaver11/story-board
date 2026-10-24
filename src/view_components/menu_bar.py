@@ -10,6 +10,7 @@ from flet_color_pickers import ColorPicker
 import math
 import flet.canvas as cv
 from utils.safe_string_checker import return_safe_name
+from utils import google_drive
 import os
 import json
 import asyncio
@@ -475,7 +476,36 @@ def MenuBar() -> ft.Control:
         ], 
     )
 
+    is_authenticated, set_is_authenticated = ft.use_state(False)
+    is_syncing, set_is_syncing = ft.use_state(False)
 
+    async def handle_cloud_clicked(e=None):
+        ''' Connects to Google if needed, otherwise pushes all app data to Drive '''
+        if is_syncing:
+            return
+        set_is_syncing(True)
+        try:
+            if not await asyncio.to_thread(google_drive.is_authenticated):
+                page.show_dialog(SnackBar("Opening browser to connect your Google account..."))
+                await asyncio.to_thread(google_drive.authenticate)
+                set_is_authenticated(True)
+                page.show_dialog(SnackBar("Google account connected."))
+                return
+            set_is_authenticated(True)
+            count = await asyncio.to_thread(google_drive.push_to_drive)
+            page.show_dialog(SnackBar(f"Uploaded {count} files to Google Drive."))
+        except Exception as ex:
+            page.show_dialog(SnackBar(f"Google Drive error: {ex}"))
+        finally:
+            set_is_syncing(False)
+
+    cloud_button = ft.IconButton(
+        ft.Icons.CLOUD_DONE_OUTLINED if is_authenticated else ft.Icons.CLOUD_OUTLINED, "primary",
+        tooltip="Syncing..." if is_syncing else ("Push to Google Drive" if is_authenticated else "Connect Google Drive"),
+        disabled=is_syncing,
+        on_click=handle_cloud_clicked,
+        mouse_cursor=ft.MouseCursor.CLICK
+    )
 
     return ft.Container(
         ft.Row(
@@ -496,6 +526,7 @@ def MenuBar() -> ft.Control:
                         ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, 
                         tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nJoin the Discord (Settings -> Resources) to suggest your features and report bugs"
                     ),
+                    cloud_button,
                     ft.IconButton(ft.Icons.SETTINGS_OUTLINED, "primary", on_click=handle_settings_clicked, mouse_cursor=ft.MouseCursor.CLICK),   # Settings button
                 
                 ], tight=True, spacing=0)
