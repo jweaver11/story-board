@@ -6,6 +6,7 @@ from models.views.story import Story, StoryView
 from models.views.home import HomeView
 from models.views.settings import SettingsView
 from models.views.loading import LoadingView
+from models.views.saving_to_cloud import SavingToCloudView
 import flet as ft
 import os
 import json
@@ -15,7 +16,7 @@ from dataclasses import dataclass, field
 from models.views.settings import AppSettings
 from contexts.contexts import AppContext, AppSettingsContext, PaintContext, DrawingContext, TextContext, StoryContext
 from utils.context_loader import load_app_settings, load_paint_settings, load_drawing_settings, load_text_settings
-from utils.configure_page import configure_page
+from utils.configure_page import configure_page, create_warning
 from utils.stories_loader import load_stories
 
 
@@ -91,6 +92,7 @@ def build_router():
             ft.Route(index=True, component=HomeView),
             ft.Route("loading", component=LoadingView),
             ft.Route("settings", component=SettingsView),
+            ft.Route("saving_to_cloud", component=SavingToCloudView),
             #ft.Route(path="tutorial", component=lambda: TutorialView()),
             ft.Route("stories/:story_id", component=StoryRoute)
         ],
@@ -116,6 +118,7 @@ def AppView() -> list[ft.Control]:
     def _initialize():
         load_stories(app)  # Load all stories based on the current settings
         configure_page(app, app_settings, paint_settings, drawing_settings, text_settings, page)  # Will load last route based on settings
+        create_warning()  # Initialize any warnings after configuring the page
 
     ft.use_effect(_initialize, dependencies=[])
 

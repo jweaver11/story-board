@@ -1,4 +1,8 @@
 import flet as ft
+import os
+import asyncio
+from utils import google_drive
+from contexts.constants import APP_DATA_PATH
 
 
 # Called once from AppView, after a page exists (ft.context.page is only valid inside a Flet callback/render)
@@ -39,6 +43,10 @@ def configure_page(app, app_settings, paint_settings, drawing_settings, text_set
     async def _on_window_event(e: ft.WindowEvent):
 
         if e.type == ft.WindowEventType.CLOSE:
+
+            # Show the saving changes view while closing
+            page.navigate("/saving_to_cloud")
+
             # Save the settings and contexts upon close if they have changed between last auto save and close
             if app_settings:
                 await app_settings.save_file()  
@@ -59,6 +67,13 @@ def configure_page(app, app_settings, paint_settings, drawing_settings, text_set
                     await story.save_file()
                     for widget in story.widgets.values():
                         await widget.save_file()
+
+            # Push everything to Google Drive if connected. Failures must never block closing the app
+            try:
+                if await asyncio.to_thread(google_drive.is_authenticated):
+                    await asyncio.to_thread(google_drive.push_to_drive)
+            except Exception as ex:
+                print(f"Cloud push on close failed: {ex}")
                 
             page.window.prevent_close = False
             await page.window.destroy()
@@ -90,4 +105,20 @@ def configure_page(app, app_settings, paint_settings, drawing_settings, text_set
         if font_name and file_name:
             page.fonts[font_name] = f"/fonts/{file_name}"
 
-    
+
+def create_warning():
+    ''' Creates WARNING.txt in the app data folder (synced to Drive) if it doesn't exist yet '''
+    path = os.path.join(APP_DATA_PATH, "WARNING.txt")
+    if os.path.exists(path):
+        return
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(
+                "WARNING: DO NOT MANUALLY EDIT, MOVE, RENAME, OR DELETE FILES IN THIS FOLDER.\n\n"
+                "This folder is managed by Story Board and contains your settings and stories.\n"
+                "Changing its contents by hand can corrupt your data or cause stories to be lost.\n"
+                "Please make all changes from inside the Story Board app.\n\n"
+                "Happy Story Boarding!\n"
+            )
+    except OSError as e:
+        print(f"Could not create WARNING.txt: {e}")

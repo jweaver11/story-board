@@ -477,32 +477,36 @@ def MenuBar() -> ft.Control:
     )
 
     is_authenticated, set_is_authenticated = ft.use_state(False)
-    is_syncing, set_is_syncing = ft.use_state(False)
+    is_connecting, set_is_connecting = ft.use_state(False)
+
+    # Check for a saved, valid Google token on launch (refreshes it if expired)
+    async def _check_saved_login():
+        if await asyncio.to_thread(google_drive.is_authenticated):
+            set_is_authenticated(True)
+
+    ft.use_effect(_check_saved_login, dependencies=[])
 
     async def handle_cloud_clicked(e=None):
-        ''' Connects to Google if needed, otherwise pushes all app data to Drive '''
-        if is_syncing:
+        ''' Connects the user's Google account. Pushing to Drive happens automatically when the app closes '''
+        if is_connecting or is_authenticated:
             return
-        set_is_syncing(True)
+        set_is_connecting(True)
         try:
-            if not await asyncio.to_thread(google_drive.is_authenticated):
-                page.show_dialog(SnackBar("Opening browser to connect your Google account..."))
-                await asyncio.to_thread(google_drive.authenticate)
-                set_is_authenticated(True)
-                page.show_dialog(SnackBar("Google account connected."))
-                return
+            page.show_dialog(SnackBar("Opening browser to connect your Google account..."))
+            await asyncio.to_thread(google_drive.authenticate)
             set_is_authenticated(True)
-            count = await asyncio.to_thread(google_drive.push_to_drive)
-            page.show_dialog(SnackBar(f"Uploaded {count} files to Google Drive."))
+            page.show_dialog(SnackBar("Google account connected. Your stories will back up to Drive when you close the app."))
         except Exception as ex:
             page.show_dialog(SnackBar(f"Google Drive error: {ex}"))
         finally:
-            set_is_syncing(False)
+            set_is_connecting(False)
 
     cloud_button = ft.IconButton(
         ft.Icons.CLOUD_DONE_OUTLINED if is_authenticated else ft.Icons.CLOUD_OUTLINED, "primary",
-        tooltip="Syncing..." if is_syncing else ("Push to Google Drive" if is_authenticated else "Connect Google Drive"),
-        disabled=is_syncing,
+        tooltip="Connecting..." if is_connecting else (
+            "Google Drive connected. Backs up when the app closes" if is_authenticated else "Connect Google Drive"
+        ),
+        disabled=is_connecting,
         on_click=handle_cloud_clicked,
         mouse_cursor=ft.MouseCursor.CLICK
     )
