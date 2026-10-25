@@ -122,11 +122,7 @@ def EdgeView(source_node: Node, target_node: Node, spider_web_view: bool=False):
 
     # Three-node turns
     else:
-        # Adjust for in/out nodes
-        #if start_x < end_x:
-           # end_x += 150
-        #else:
-            #start_x += 150
+        
 
         mid_x = (start_x + end_x) / 2
         elements = [
@@ -185,9 +181,9 @@ def NodeView(
     # Start of new edge from drag, we set the start position and source node ID
     def start_new_edge_drag(e: ft.DragStartEvent):
         start_pos = node.position.copy()
-        set_start_new_edge_position(ft.Offset(**start_pos))
-        set_update_new_edge_position(ft.Offset(**start_pos))
-        print("Set positions: ", start_new_edge_position, update_new_edge_position)
+        set_start_new_edge_position(update_new_edge_position)
+        #set_update_new_edge_position(ft.Offset(**start_pos))
+
         if source_node_id:
             set_target_node_id(node.id)
         else:
@@ -198,17 +194,12 @@ def NodeView(
         new_x = old_pos.x + e.local_delta.x
         new_y = old_pos.y + e.local_delta.y
         set_update_new_edge_position(ft.Offset(new_x, new_y))
-        #set_update_new_edge_position(e.local_position)
 
     def end_new_edge_drag(e: ft.DragEndEvent):
-        set_start_new_edge_position(ft.Offset(0, 0))
-        set_update_new_edge_position(ft.Offset(0, 0))
+        set_start_new_edge_position(update_new_edge_position)
 
         if source_node_id and target_node_id:
             create_or_delete_edge(source_node_id, target_node_id)
-            print("Created edge")
-
-        print("Source node ID:", source_node_id, "Target node ID:", target_node_id)
 
         set_source_node_id("")
         set_target_node_id("")
@@ -252,15 +243,6 @@ def NodeView(
     highlight_left, set_highlight_left = ft.use_state(False)
     highlight_right, set_highlight_right = ft.use_state(False)
 
-    # Updates the start position to reflect when drawing an edge from the node
-    def hover_node(e: ft.HoverEvent):
-        delta_x = e.local_delta.x
-        delta_y = e.local_delta.y
-        old_x = start_new_edge_position.x
-        old_y = start_new_edge_position.y
-        new_start_new_edge_position = ft.Offset(old_x + delta_x, old_y + delta_y)
-        set_start_new_edge_position(new_start_new_edge_position)
-
     # Our nodes content. Column with label, divider, description text field, and connection points
     return ft.GestureDetector(
         ft.Container(
@@ -291,7 +273,6 @@ def NodeView(
         offset=ft.Offset(-0.5, -0.5),   # Shift the node to center it on its position
         animate_position=ft.Animation(250, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         on_secondary_tap=lambda: None,
-        #on_hover=hover_node,
         hover_interval=20,
         key=node.id
     )
