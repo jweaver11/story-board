@@ -47,17 +47,4 @@ class ActiveRail(ft.Container):
             self.update()
         return
 
-        # Grab our selected rail and re-set our content to a new one of those
-        selected_rail = self.story.data.get('selected_rail', "content")
-        match selected_rail:
-            case "content": self.content = ContentRail(self.story)
-            case "characters": self.content = CharactersRail(self.story)
-            case "plot": self.content = PlotlinesRail(self.story)
-            case "world_building": self.content = WorldBuildingRail(self.story)
-            case "canvas": self.content = CanvasRail(self.story)
-            case "planning": self.content = PlanningRail(self.story)
-            case _: self.content = ContentRail(self.story)
-                
-        # Update except on build where it updates automatically
-        if update: 
-            self.update()
+        

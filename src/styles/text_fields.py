@@ -1,6 +1,7 @@
 import flet as ft
 
 # Standard styling for most text fields we use
+@ft.control
 class TextField(ft.TextField):
     
     def __init__(self, *args, **kwargs):
@@ -14,12 +15,11 @@ class TextField(ft.TextField):
         self.multiline=True
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
-        self.border_radius=4
-        self.border_color=ft.Colors.TRANSPARENT
-        self.focused_border_color=ft.Colors.PRIMARY
-
+        self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
+        
 
 # Standard styling for most text fields we use
+@ft.control
 class SingleLineTextField(ft.TextField):
     
     def __init__(self, *args, **kwargs):
@@ -33,11 +33,12 @@ class SingleLineTextField(ft.TextField):
         self.multiline=False
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
-        self.border_radius=4
-        self.border_color=ft.Colors.TRANSPARENT
-        self.focused_border_color=ft.Colors.PRIMARY
+        #self.border_radius=4
+        #self.border_color=ft.Colors.TRANSPARENT
+        #self.focused_border_color=ft.Colors.PRIMARY
 
 # Standard styling for most text fields we use
+@ft.control
 class SettingsTextField(ft.TextField):
     
     def __init__(self, *args, **kwargs):
@@ -51,13 +52,14 @@ class SettingsTextField(ft.TextField):
         self.multiline=False
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
-        self.border_radius=4
-        self.border_color=ft.Colors.TRANSPARENT
-        self.focused_border_color=ft.Colors.PRIMARY
+        #self.border_radius=4
+        #self.border_color=ft.Colors.TRANSPARENT
+        #self.focused_border_color=ft.Colors.PRIMARY
         self.margin=ft.Margin.only(left=20)
         self.width=200
 
 # Styling for title in the sidebar
+@ft.control
 class SidebarTitleTextField(ft.TextField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -68,13 +70,14 @@ class SidebarTitleTextField(ft.TextField):
         self.content_padding=ft.Padding.only(top=2, bottom=2)
         self.capitalization=ft.TextCapitalization.WORDS
         self.bgcolor=ft.Colors.TRANSPARENT
-        self.border_color=ft.Colors.TRANSPARENT
-        self.focused_border_color=ft.Colors.TRANSPARENT
+        #self.border_color=ft.Colors.TRANSPARENT
+        #self.focused_border_color=ft.Colors.TRANSPARENT
         self.expand=True
         
         
 
 # Meant to be used with no label
+@ft.control
 class NoLabelTextField(TextField):
     
     def __init__(self, *args, **kwargs):
@@ -82,7 +85,7 @@ class NoLabelTextField(TextField):
         super().__init__(*args, **kwargs)
 
         self.dense = True
-        self.border=ft.InputBorder.NONE
+        #self.border=ft.InputBorder.NONE
         self.text_style=ft.TextStyle(size=14)
         self.multiline=True
         self.content_padding=ft.Padding.all(0)
@@ -90,15 +93,16 @@ class NoLabelTextField(TextField):
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
         
 # Underlined Text Fields
+@ft.control
 class UnderlinedTextField(TextField):
     
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
-        self.border=ft.InputBorder.UNDERLINE
-        self.border_color=ft.Colors.BLACK
-        self.border_width=1
+        #self.border=ft.InputBorder.UNDERLINE
+        #self.border_color=ft.Colors.BLACK
+        #self.border_width=1
         self.label_style = ft.TextStyle(weight=ft.FontWeight.W_500, size=16)
         self.dense = True
         
@@ -108,6 +112,7 @@ class UnderlinedTextField(TextField):
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
         
 # Small textfields
+@ft.control
 class SmallTextField(TextField):
     
     def __init__(self, *args, **kwargs):
@@ -119,7 +124,7 @@ class SmallTextField(TextField):
         self.text_style=ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=12)
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.multiline=True
-        self.border=ft.InputBorder.NONE
+        #self.border=ft.InputBorder.NONE
         self.text_align=ft.TextAlign.CENTER
         self.bgcolor=ft.Colors.TRANSPARENT
-        self.focused_bgcolor=ft.Colors.TRANSPARENT
+        #self.focused_bgcolor=ft.Colors.TRANSPARENT

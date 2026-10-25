@@ -49,6 +49,7 @@ class Settings(ft.View):
                 
                 
                 'is_first_launch': True,    # If this is the first time the app has been launched or not
+                'sync_with_cloud_on_close': False,   # If the app should sync with Google Drive on close
 
                 # Settings about the page
                 'page': {

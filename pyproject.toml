@@ -13,6 +13,8 @@ dependencies = [
   "flet-color-pickers",
   "flet>=1.0.0",
   "flet-charts",
+  "google-api-python-client",
+  "google-auth-oauthlib",
   "Pillow"
 ]
 

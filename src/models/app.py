@@ -9,6 +9,7 @@ import json
 import asyncio
 from utils.route_change import route_change
 from constants import SETTINGS_FILE_PATH, STORIES_DIRECTORY_PATH
+from utils import google_drive
 
 
 class App:
@@ -21,6 +22,9 @@ class App:
         
         # Dict of all our stories.
         self.stories = {}
+
+        # If we are connected to the cloud
+        self.is_cloud_authenticated: bool = False
 
         # State management
         self.ignore_settings_change = True # Ignore settings changes when page is loading itself and saving incorrect changes
@@ -107,6 +111,16 @@ class App:
                 if app.settings.story:
                     app.settings.story.block_page()
                     await app.settings.save_story()
+                # Push everything to Google Drive if connected. Failures must never block closing the app
+                if app.settings.data.get('sync_with_cloud_on_close', False):
+                    # Show the saving changes view while closing
+                    if app.is_cloud_authenticated == True:
+                        page.navigate("/saving_to_cloud")
+                        try:
+                            if await asyncio.to_thread(google_drive.is_authenticated):
+                                await asyncio.to_thread(google_drive.push_to_drive)
+                        except Exception as ex:
+                            print(f"Cloud push on close failed: {ex}")
                 page.window.prevent_close = False
                 await page.window.destroy()
 
