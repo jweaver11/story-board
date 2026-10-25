@@ -652,7 +652,7 @@ def WidgetDescription(description: str, save_description: callable) -> ft.TextFi
     ], expand=True, spacing=0, alignment=ft.MainAxisAlignment.CENTER, tight=True)
 
 @ft.component
-def WidgetSidebar(widget: Widget, header_ctrls: list[ft.Control]=None, body_ctrls: list[ft.Control]=None, show_notes: bool=True):
+def WidgetSidebar(widget: Widget, header_ctrls: list[ft.Control]=[], body_ctrls: list[ft.Control]=[], show_notes: bool=True):
 
 
     def rename_widget(e: ft.Event[ft.TextField]):
@@ -688,38 +688,44 @@ def WidgetSidebar(widget: Widget, header_ctrls: list[ft.Control]=None, body_ctrl
         note_idx = e.control.parent.data
         widget.notes.pop(note_idx)
 
+    # Toggles the sidebar to be visible or not
     def toggle_sidebar_visibility(e: ft.Event):
         widget.sidebar_visible = not widget.sidebar_visible
 
     creating_note, set_creating_note = ft.use_state(False)
+    title_reset_count, set_title_reset_count = ft.use_state(0)
 
-    
+    # Flet only pushes a value to the client when the prop changes, so typed-but-unsubmitted text would stay.
+    # Changing the key remounts the field with the real title instead
+    def reset_title(e: ft.Event[ft.TextField]):
+        if e.control.value != widget.title:
+            set_title_reset_count(title_reset_count + 1)
 
     # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
     sidebar_header = ft.Row(
         [
             SidebarTitleTextField(
                 value=widget.title,
+                key=f"{widget.id}_sidebar_title_{title_reset_count}",
                 on_submit=rename_widget, 
+                on_blur=reset_title,
             ), 
-        ],
+        ] + header_ctrls,
         spacing=0
     )
 
     description_tf = ft.TextField(
         value=widget.description, label="Description",
         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-        #border_color=ft.Colors.TRANSPARENT,
         margin=ft.Margin.only(top=4),
-        #focused_border_color=ft.Colors.PRIMARY,
+        border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
         multiline=True, dense=True, expand=True, 
         on_blur=update_description,
         capitalization=ft.TextCapitalization.SENTENCES,
         label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
     )   
 
-    # Where we build the different content in each sidebar
-    sidebar_body = ft.Column([], scroll=ft.ScrollMode.AUTO, expand=True, spacing=0,)
+    
 
     # Footer in the sidebar to hold the description textfield and any other controls that need to be at the bottom of the sidebar
     sidebar_footer = ft.Row([description_tf])
@@ -727,29 +733,31 @@ def WidgetSidebar(widget: Widget, header_ctrls: list[ft.Control]=None, body_ctrl
     # The label for Notes with a new note button and textfield
     sidebar_notes_label = ft.Row([
         ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True),
-        new_note_button := ft.IconButton(
+        ft.IconButton(
             ft.Icons.NEW_LABEL_OUTLINED, ft.Colors.PRIMARY, 
             tooltip="Add Note",
             on_click=lambda: set_creating_note(True),
             mouse_cursor="click", visible=not creating_note
         ),
-        new_note_tf := ft.TextField(
+        ft.TextField(
             on_submit=save_new_note, visible=creating_note, expand=True,
-            on_blur=lambda: set_creating_note(False), margin=ft.Margin.only(left=4),
+            on_blur=lambda: set_creating_note(False), margin=ft.Margin.only(left=4, bottom=10),
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            
-            #border_radius=4, 
+            autofocus=True,
             dense=True, capitalization=ft.TextCapitalization.SENTENCES,
-            #border_color=ft.Colors.TRANSPARENT,
-            #focused_border_color=ft.Colors.PRIMARY,
+            border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
             label="New Note Label", label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
         )
         
-    ], spacing=0)
+    ], spacing=0, visible=show_notes)
 
     sidebar_notes_column = ft.Column(
-        [create_new_note_ctrl(idx, value) for idx, value in enumerate(widget.notes)]
+        [create_new_note_ctrl(idx, value) for idx, value in enumerate(widget.notes)],
+        visible=show_notes
     )
+
+    # Where we build the different content in each sidebar
+    sidebar_body = ft.Column([sidebar_notes_label, sidebar_notes_column] + body_ctrls, scroll=ft.ScrollMode.AUTO, expand=True, spacing=0)
 
     # Button (container) for showing and hiding the sidebar
     toggle_sidebar_visibility_button = ft.Container(
@@ -766,11 +774,10 @@ def WidgetSidebar(widget: Widget, header_ctrls: list[ft.Control]=None, body_ctrl
     return ft.Row([
         toggle_sidebar_visibility_button,
         ft.Container(
-            #border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             padding=ft.Padding.all(10),
             shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE_CONTAINER_LOWEST), 
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            width=0 if not widget.sidebar_visible else widget.w / 4, # Start collapsed, and when built we will get bigger if showing
+            width=0 if not widget.sidebar_visible else widget.w / 4, 
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.Column([     # Holds our header seperated by the body
                 sidebar_header, 
@@ -794,5 +801,6 @@ def WidgetView(widget: Widget, content: ft.Control):
     return ft.Container(
         content,
         key=widget.id,
-        on_size_change=get_size
+        on_size_change=get_size,
+        size_change_interval=50
     )

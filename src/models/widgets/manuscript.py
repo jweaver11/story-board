@@ -31,127 +31,34 @@ class Manuscript(Widget):
     manuscript_data: list = field(default_factory=list) # Holds the manuscript's text data as a list of json objects
 
     editor_dirty: bool = False  # True if the editor has unsaved changes
-    quill_editor: FletQuillEditor = None  # The attached quill editor, not a dataclass field
 
     def __post_init__(self):
         super().__post_init__()
-        object.__setattr__(self, "quill_editor", None)   # plain attribute, not a dataclass field
+        object.__setattr__(self, "quill_editor", None)   # Unannotated on purpose, so it isn't a dataclass field and never gets saved to json
 
-    def attach_editor(self, editor):
+    def attach_editor(self, editor, owner=None):
         object.__setattr__(self, "quill_editor", editor)
+        object.__setattr__(self, "_editor_owner", owner)
 
-    class Comment(TextField):
-
-        # Constructor
-        def __init__(self, title: str, widget: 'Manuscript', data: dict=None):
-
-            self.widget = widget
-
-            # If we're new, give default values for our data 
-            if data is None:
-                data = {
-                    'id': str(uuid.uuid4()),
-                    'title': title,
-                    'tag': "comment",
-                    'content': "",
-                }
-
-            # Parent constructor
-            super().__init__(
-                data=data, 
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-                multiline=True, dense=True, expand=True, #border_radius=4,
-                on_blur=lambda e: self.update_data(**{'content': e.control.value}),
-                capitalization=ft.TextCapitalization.SENTENCES,
-                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, mouse_cursor="click", on_click=self.delete_comment),
-                label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
-            ) 
-
-        # Updates our data then the associated dict inside parents 'comments' dict
-        def update_data(self, **kwargs):
-            self.data.update(kwargs)
-            self.widget.update_data(comments={self.data["id"]: self.data})
-
-        # Deletes this comment from parents data and controls
-        def delete_comment(self, e=None):
-            self.widget.data['comments'].pop(self.data["id"], None)
-            self.widget.update_data(**{'comments': self.widget.data.get('comments', {})})
-            self.widget.comments_column.controls.remove(self)
-            self.widget.comments_column.update()
-            
-        # Build the comment
-        def build(self):
-            self.value = self.data.get('content', "")
-            self.label = self.data.get('title', "")
-            self.label_style = ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
-    
-    class ReferenceImage(ft.Container):
-        def __init__(self, widget: 'Manuscript', data: dict=None):
-
-            self.widget = widget
-
-            # If we're new, give default values for our data 
-            if data is None:
-                data = {
-                    'id': str(uuid.uuid4()),
-                    'tag': "reference_image",
-                    'image': "",
-                }
-            
-            # Parent constructor
-            super().__init__(
-                data=data,
-                border_radius=10,
-                expand=True,
-                padding=10,
-            ) 
-
-        # Updates our data then the associated dict inside parents 'comments' dict
-        def update_data(self, **kwargs):
-            self.data.update(kwargs)
-            self.widget.update_data(reference_images={self.data["id"]: self.data})
-            
-        # Deletes this comment from parents data and controls
-        def delete_image(self, e=None):
-            self.widget.data['reference_images'].pop(self.data["id"], None)
-            self.widget.update_data(**{'reference_images': self.widget.data.get('reference_images', {})})
-            self.widget.ref_img_column.controls.remove(self)
-            self.widget.ref_img_column.update()
-            
-
-        # Build the image
-        def build(self):
-
-            async def show_delete_icon(e: ft.Event):
-                self.content.content.controls[1].opacity = 1
-                self.content.update()
-            async def hide_delete_icon(e: ft.Event):
-                self.content.content.controls[1].opacity = 0
-                self.content.update()
-            
-           # self.image = ft.DecorationImage()
-            self.content = ft.GestureDetector(
-                ft.Stack([
-                    ft.Image(src=self.data['image'], fit=ft.BoxFit.CONTAIN),
-                    ft.IconButton(
-                        ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, tooltip="Delete reference image?",
-                        opacity=0, scale=1.5, on_click=self.delete_image, mouse_cursor="click",
-                        animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-                    ),
-                ], alignment=ft.Alignment.CENTER),
-                on_enter=show_delete_icon,
-                on_exit=hide_delete_icon,
-            )
+    # Only the view that attached the editor may detach it, so a stale view's cleanup can't clear a newer view's editor
+    def detach_editor(self, owner):
+        if getattr(self, "_editor_owner", None) is owner:
+            object.__setattr__(self, "quill_editor", None)
+            object.__setattr__(self, "_editor_owner", None)
             
     # Checks if our manuscript is dirty, and saves it if it is
     async def save_file(self):
         if self.editor_dirty and self.quill_editor is not None:
-            self.editor_dirty = False
-            self.manuscript_data = await self.quill_editor.save()
+            try:
+                self.manuscript_data = await self.quill_editor.save()
+                self.editor_dirty = False
+                self.dirty = True
+            except RuntimeError:
+                pass    # Editor isn't on the page anymore, so it can't be read. Keep editor_dirty set
         await super().save_file()
 
     async def export(self, file_type: str="docx"):
-        manuscript_data = self.data.get('manuscript_data', [])
+        manuscript_data = self.manuscript_data
         paragraphs = self._parse_manuscript_ops(manuscript_data)
 
         if file_type == "docx":
@@ -291,142 +198,68 @@ class Manuscript(Widget):
 @ft.component
 def ManuscriptView(manuscript: Manuscript) -> WidgetView:
 
-    # Gets our word count and opens a menu to show it
-    async def get_word_count():
-        word_count = 0
-        doc_data = await manuscript.quill_editor.save()
-        for block in doc_data:
-            if "insert" in block:
-                if isinstance(block["insert"], str):    # Protect against page breaks
-                    word_count += len(block["insert"].split())
-        manuscript.story.open_menu([ft.Text(f"Word Count: {word_count}", margin=ft.Margin.only(left=6, right=6, top=10, bottom=10))])
+    word_count, set_word_count = ft.use_state(0)
+
+    # Counts words in the editor's current content. Reads the live editor, not the last saved data
+    async def refresh_word_count(e=None):
+        editor = manuscript.quill_editor
+        if editor is None:
+            return
+        try:
+            doc_data = await editor.save()
+        except RuntimeError:
+            print("Failed to save editor content")
+            return  # Editor isn't on the page
+        # Join first, so a word split across formatting runs (like a bold letter) counts once. Skips embeds like page breaks
+        text = "".join(block["insert"] for block in doc_data if isinstance(block.get("insert"), str))
+        set_word_count(len(text.split()))
 
     # Mark us dirty after keystroke changes so we can track unsaved changes
-    def mark_dirty(e=None):
-        if manuscript.dirty == False:
-            manuscript.dirty = True
+    def mark_editor_dirty(e=None):
+        if manuscript.editor_dirty == False:
+            manuscript.editor_dirty = True
 
-
-    # Handles adding a new comment, hiding the button and showing the textfield for input
-    async def new_comment_clicked(e=None):
-        new_comment_button.visible = False
-        new_comment_button.update()
-        new_comment_tf.visible = True
-        new_comment_tf.value = ""
-        new_comment_tf.update()
-        await new_comment_tf.focus()  
-
-    # Shows our new mini widget button and hides our textfield after creating/blurring comment tf
-    def show_new_comment_button(e=None):
-        new_comment_button.visible = True
-        new_comment_button.update()
-        new_comment_tf.value = ""
-        new_comment_tf.visible = False
-        new_comment_tf.update()
-
-    # Creates our new comment in data then adds it to the column
-    def create_comment(e: ft.Event[ft.TextField]):
-        comment_title = e.control.value.strip()
-        new_comment = manuscript.Comment(title=comment_title, widget=manuscript)
-        manuscript.update_data(**{'comments': {new_comment.data["id"]: new_comment.data}})
-        comments_column.controls.append(new_comment)
-        comments_column.update()
-
-    # Opens our file picker to imoprt our image
-    async def new_ref_image_clicked(e: ft.Event[ft.IconButton]):
-        files = await ft.FilePicker().pick_files(allowed_extensions=["jpg", "jpeg", "png", "webp"])
-        if files:
-
-            file_path = files[0].path
-            try:
-                import base64
-
-                with open(file_path, "rb") as image_file:
-                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-
-                reference_image = manuscript.ReferenceImage(
-                    widget=manuscript, 
-                    data={
-                        'id': str(uuid.uuid4()),
-                        'tag': "reference_image",
-                        'image': encoded_string,
-                    }
-                )
-                manuscript.update_data(**{'reference_images': {reference_image.data["id"]: reference_image.data}})
-                ref_img_column.controls.append(reference_image)
-                ref_img_column.update()
-                    
-            except Exception as e:
-                e.control.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
-
-
-    # Word count button
-    word_count_button = ft.IconButton(
-        icon=ft.CupertinoIcons.TEXTFORMAT_SIZE, #icon_color=ft.Colors.PRIMARY,
-        tooltip="Word Count", 
-        on_click=get_word_count,
-        bgcolor=ft.Colors.TRANSPARENT,
-        highlight_color=ft.Colors.TRANSPARENT,
-        hover_color=ft.Colors.TRANSPARENT
+    # The popup builds its items when it opens, so they must already be current. Hovering refreshes the count before the click, on_open covers keyboard/touch opens
+    word_count_button = ft.GestureDetector(
+        ft.PopupMenuButton(
+            icon=ft.CupertinoIcons.TEXTFORMAT_SIZE,
+            tooltip="Word Count",
+            items=[ft.PopupMenuItem(f"Word Count: {word_count:,}", disabled=True, height=20, label_text_style=ft.TextStyle(color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD))],
+            on_open=refresh_word_count,
+            style=ft.ButtonStyle(overlay_color=ft.Colors.TRANSPARENT)
+        ),
+        on_enter=refresh_word_count,
     )
         
-    
     # Grab our flet quill elements
     quill_toolbar = FletQuillToolbar(
         controller_id=manuscript.id,
         expand=True,
-        toolbar_buttons=[ft.GestureDetector(word_count_button, on_hover=manuscript.set_mouse_coords, hover_interval=50)]
-    )  # Toolbar
-    quill_editor, _ = ft.use_state(
-        FletQuillEditor(    # Editor
-            controller_id=manuscript.id,
-            text_data=manuscript.manuscript_data,   # Pass in data
-            placeholder_text="Start your masterpiece here...",
-            expand=True,
-        )
+        toolbar_buttons=[word_count_button]
+    )  
+    
+    # Flet re-creates controls every render and re-parents only the new instances. A control kept in state keeps a stale parent,
+    # so its .page lookup fails and save() raises. Build the editor fresh each render, with a stable key and initial data, and point the manuscript at the newest one
+    view_token, _ = ft.use_state(lambda: object())
+    initial_data, _ = ft.use_state(lambda: manuscript.manuscript_data)
+
+    quill_editor = FletQuillEditor(
+        controller_id=manuscript.id,
+        text_data=initial_data,
+        placeholder_text="Start your masterpiece here...",
+        expand=True,
+        key=f"quill_editor_{manuscript.id}"
     )
+    manuscript.attach_editor(quill_editor, view_token)
 
-    def attach():
-        manuscript.attach_editor(quill_editor)
-        return lambda: manuscript.attach_editor(None)
-
-    ft.use_effect(attach, [])
+    ft.use_effect(lambda: None, [], cleanup=lambda: manuscript.detach_editor(view_token))
 
     
     editor_container = ft.Container(
-        ft.KeyboardListener(quill_editor, on_key_down=mark_dirty),
+        ft.KeyboardListener(quill_editor, on_key_down=mark_editor_dirty),
         expand=True,
         margin=ft.Margin.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN, vertical=MANUSCRIPT_VERTICAL_MARGIN),
     )
-
-    # Build our comments and reference images columns from data
-    comments_column = ft.Column(
-        #[manuscript.Comment(title=comment_data.get('title'), widget=manuscript, data=comment_data) for comment_data in manuscript.data.get('comments', {}).values()], 
-        tight=True
-    )
-    ref_img_column = ft.Column(
-        #[manuscript.ReferenceImage(widget=manuscript, data=mw_data) for mw_data in manuscript.data.get('reference_images', {}).values()], 
-        tight=True
-    )
-
-    
-
-    # Set our mouse coords whenever we hover over word count button
-    #manuscript.sidebar_header.controls.append(ft.GestureDetector(word_count_button, on_hover=manuscript.set_mouse_coords, hover_interval=50))
-    new_comment_button = ft.IconButton(     
-        ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
-        on_click=new_comment_clicked, 
-        mouse_cursor="click",
-    )
-    new_comment_tf = ft.TextField(
-        label="Comment Title", dense=True, margin=ft.Margin.symmetric(horizontal=6),
-        capitalization=ft.TextCapitalization.WORDS,
-        on_blur=show_new_comment_button, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-        on_submit=create_comment, animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-        visible=False, autofocus=True, expand=True,
-    )
-
-    
     
 
     return WidgetView(

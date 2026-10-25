@@ -44,8 +44,6 @@ def configure_page(app, app_settings, paint_settings, drawing_settings, text_set
 
         if e.type == ft.WindowEventType.CLOSE:
 
-            page.navigate("/loading")
-
             # Save the settings and contexts upon close if they have changed between last auto save and close
             if app_settings:
                 await app_settings.save_file()  

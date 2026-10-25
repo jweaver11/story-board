@@ -70,8 +70,7 @@ class SidebarTitleTextField(ft.TextField):
         self.content_padding=ft.Padding.only(top=2, bottom=2)
         self.capitalization=ft.TextCapitalization.WORDS
         self.bgcolor=ft.Colors.TRANSPARENT
-        #self.border_color=ft.Colors.TRANSPARENT
-        #self.focused_border_color=ft.Colors.TRANSPARENT
+        self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
         self.expand=True
         
         
@@ -124,6 +123,7 @@ class SmallTextField(TextField):
         self.text_style=ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=12)
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.multiline=True
+        self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
         #self.border=ft.InputBorder.NONE
         self.text_align=ft.TextAlign.CENTER
         self.bgcolor=ft.Colors.TRANSPARENT
