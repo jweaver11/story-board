@@ -26,8 +26,7 @@ MANUSCRIPT_HORIZONTAL_MARGIN = 70
 class Manuscript(Widget):
 
     tag: str = "manuscript" # Tag to differentiate this widget type
-    comments: dict = field(default_factory=dict)    # Holds the comments associated with this manuscript
-    reference_images: dict = field(default_factory=dict)    # Holds the reference images associated with this manuscript
+    
     manuscript_data: list = field(default_factory=list) # Holds the manuscript's text data as a list of json objects
 
     editor_dirty: bool = False  # True if the editor has unsaved changes

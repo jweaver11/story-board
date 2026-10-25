@@ -141,7 +141,12 @@ class Widget:
                 
                 # Save our json data to the file
                 with open(self.file_path, "w", encoding='utf-8') as f:   
-                    json.dump(widget_data, f, indent=4, default=lambda o: asdict(o) if is_dataclass(o) else str(o))
+                    # Shallow field walk instead of asdict(): asdict can't rebuild flet's ObservableDict/ObservableList
+                    def _to_json(o):
+                        if is_dataclass(o):
+                            return {f_.name: getattr(o, f_.name) for f_ in fields(o)}
+                        return str(o)
+                    json.dump(widget_data, f, indent=4, default=_to_json)
 
                 self.needs_file_write = False   # Mark as clean
                 #self.is_new = False   # Mark as not new anymore
@@ -755,7 +760,7 @@ def WidgetSidebar(widget: Widget, header_ctrls: list[ft.Control]=[], body_ctrls:
     )
 
     # Where we build the different content in each sidebar
-    sidebar_body = ft.Column([sidebar_notes_label, sidebar_notes_column] + body_ctrls, scroll=ft.ScrollMode.AUTO, expand=True, spacing=0)
+    sidebar_body = ft.Column(body_ctrls + [sidebar_notes_label, sidebar_notes_column], scroll=ft.ScrollMode.AUTO, expand=True, spacing=0)
 
     # Button (container) for showing and hiding the sidebar
     toggle_sidebar_visibility_button = ft.Container(

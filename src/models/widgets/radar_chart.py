@@ -48,30 +48,6 @@ class RadarChart(Widget):
 
                 'show_sidebar': True,   # Whether to show the info column on the side of our charts or not.
 
-                'bar_data': {
-                    'left_axis_title': "Left Axis",
-                    'bottom_axis_title': "Bottom Axis",
-                    'show_labels': app.settings.data.get('widget_defaults', {}).get('show_labels', True),           # Whether to show labels on our axes or not
-                    'rod_shape': app.settings.data.get('widget_defaults', {}).get('rod_shape', "rounded"),          # The shape of our bars/rods. Either "rounded" or "square"
-                    'rod_width': app.settings.data.get('widget_defaults', {}).get('rod_width', 30),         # The width of our bars/rods. Only applies to vertical bar charts, not horizontal ones
-                    'stack_rods': app.settings.data.get('widget_defaults', {}).get('stack_rods', False),      # If False, rods display on top of each other, not side by side
-                    'show_horizontal_grid_lines': app.settings.data.get('widget_defaults', {}).get('show_horizontal_grid_lines', True),
-                    'show_vertical_grid_lines': app.settings.data.get('widget_defaults', {}).get('show_vertical_grid_lines', False),
-                    'max_y': 20,        # The max y value of our chart, which is the value that will fill the whole chart. Should be higher than any value in our bars
-                    'rod_spacing': app.settings.data.get('widget_defaults', {}).get('rod_spacing', 10),   # The spacing between rods in the chart
-                    'groups': [
-                        #{
-                            #'name': "Group 1", 
-                            #'expanded': False,
-                            #'rods': [
-                                #{'to_y': 5, 'color': "primary"},
-                                #{'to_y': 10, 'color': "primary"},
-                                #{'to_y': 7, 'color': "primary"},
-                            #]
-                        #},
-                    ]
-                },        
-
 
                 # Data used for radar charts
                 'radar_data': {

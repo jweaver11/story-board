@@ -39,9 +39,7 @@ class Note(Widget):
     card_data: list = field(default_factory=lambda: [Card()])   # Holds a list of our card data objects
 
     def __post_init__(self):
-        # Older notes stored cards in a dictionary; keep their values when loading them
-        if isinstance(self.card_data, dict):
-            self.card_data = list(self.card_data.values())
+        
         # Convert cards loaded from json (plain dicts) before super(), so the conversion isn't counted as a change
         self.card_data = [
             Card(**card) if isinstance(card, dict) else card

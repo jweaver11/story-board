@@ -22,6 +22,7 @@ from models.widget import WidgetView
 from models.widgets.note import NoteView
 from models.widgets.item import ItemView
 from models.widgets.manuscript import ManuscriptView
+from models.widgets.plot_chart import PlotChartView
 from contexts.contexts import StoryContext
 from styles.icons import widget_icons
 
@@ -283,6 +284,7 @@ def build_widget_view(widget: Widget):
         case "note": return NoteView(widget)
         case "item": return ItemView(widget)
         case "manuscript": return ManuscriptView(widget)
+        case "plot_chart": return PlotChartView(widget)
     return WidgetView(widget)
 
 
@@ -310,11 +312,6 @@ def Workspace() -> ft.Tabs:
         # Save new selected index
         new_selected_index = int(e.data)
         story.selected_index = new_selected_index
-        tabs = e.control
-
-        # Set the new selected index and indicator color, then update
-        #tabs.selected_index = new_selected_index
-        #tab_bar.indicator_color = tab_view.controls[new_selected_index].color
 
     # Handles a click event on a tab in the workspace
     async def save_widget(_):
@@ -419,7 +416,7 @@ def Workspace() -> ft.Tabs:
         tab = ft.Tab(label=tab_gd, key=f"{widget.id}_tab") 
         return tab
 
-    story = ft.use_context(StoryContext)
+    story: Story = ft.use_context(StoryContext)
 
     visible_widgets = [widget for widget in story.widgets.values() if widget.visible]
     sorted_visible_widgets: list = sorted(visible_widgets, key=lambda w: w.index)
