@@ -180,9 +180,7 @@ def NodeView(
     
     # Start of new edge from drag, we set the start position and source node ID
     def start_new_edge_drag(e: ft.DragStartEvent):
-        start_pos = node.position.copy()
         set_start_new_edge_position(update_new_edge_position)
-        #set_update_new_edge_position(ft.Offset(**start_pos))
 
         if source_node_id:
             set_target_node_id(node.id)
@@ -196,7 +194,7 @@ def NodeView(
         set_update_new_edge_position(ft.Offset(new_x, new_y))
 
     def end_new_edge_drag(e: ft.DragEndEvent):
-        set_start_new_edge_position(update_new_edge_position)
+        set_start_new_edge_position(ft.Offset(**node.position))
 
         if source_node_id and target_node_id:
             create_or_delete_edge(source_node_id, target_node_id)
@@ -350,8 +348,6 @@ def PlotChartView(plot_chart: PlotChart):
         start_x = start_new_edge_position.x
         start_y = start_new_edge_position.y
 
-        print(start_x, start_y)
-
         # Build a line
         return [cv.Line(
             start_x, start_y,
@@ -397,7 +393,6 @@ def PlotChartView(plot_chart: PlotChart):
         width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT
     )
 
-    
     # Info container on the right to show details of our edges and nodes
     sidebar_ctrls = [
         
@@ -409,12 +404,6 @@ def PlotChartView(plot_chart: PlotChart):
             tight=True, #margin=ft.Margin.only(left=10, right=10)
         ),
     ]
-        
-    
-    
-    
-
-    
 
     # Go through and draw our edges on the canvas
     for edge in plot_chart.edges:
@@ -438,7 +427,6 @@ def PlotChartView(plot_chart: PlotChart):
     )   
 
     
-
     context_menu = ft.ContextMenu(iv, items=get_menu_options(), expand=True)
 
     return WidgetView(
@@ -448,6 +436,3 @@ def PlotChartView(plot_chart: PlotChart):
             WidgetSidebar(plot_chart, body_ctrls=sidebar_ctrls)
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
     )
-        
-
-    #plot_chart.page.run_task(plot_chart.iv.pan, -FIXED_STACK_WIDTH / 4, -FIXED_STACK_HEIGHT / 4, 0)  # Center the view on the stack
