@@ -55,8 +55,11 @@ class PlotChart(Widget):
 
     def delete_node(self, node_id: str):
         if node_id in self.nodes:
-            node = self.nodes.pop(node_id)
-            node.unsubscribe(self._node_listener)
+            self.nodes.pop(node_id)
+            #node.unsubscribe(self._node_listener)
+            for edge in self.edges[:]:
+                if node_id in edge:
+                    self.edges.remove(edge)
 
     def toggle_view_mode(self):
         self.spider_web_view = not self.spider_web_view
@@ -165,6 +168,7 @@ def NodeView(
         target_node_id: str,
         set_target_node_id: Callable,
         create_or_delete_edge: Callable,
+        delete_node: Callable,
     ):
 
     def enter_connector(set_highlight):
@@ -201,6 +205,26 @@ def NodeView(
 
         set_source_node_id("")
         set_target_node_id("")
+
+    def get_node_options() -> list[ft.PopupMenuItem]:
+        return [
+            ft.PopupMenuItem("Rename", ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY), on_click=lambda: set_renaming_node(True)),
+            ft.PopupMenuItem(       # Color change options
+                ft.SubmenuButton(
+                    ft.Row([
+                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY), 
+                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
+                        ft.Icon(ft.Icons.ARROW_RIGHT),
+                    ], expand=True),
+                    [ft.MenuItemButton(color.capitalize(), style=ft.ButtonStyle(color), on_click=lambda e, data=color: node.set_color(data)) for color in colors],
+                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click", overlay_color=ft.Colors.TRANSPARENT),
+                    tooltip="Change this widget's color"
+                ),
+                padding=ft.Padding.all(0)
+            ),
+            ft.PopupMenuItem("Delete", ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR), on_click=lambda: delete_node(node.id)),
+        ]
         
 
     def connector(side: str, highlight: bool, set_highlight) -> ft.GestureDetector:
@@ -224,6 +248,7 @@ def NodeView(
         node.description,
         expand=True, 
         on_change=lambda e: node.set_description(e.control.value),
+        enable_interactive_selection=False
     )
 
     renaming_node, set_renaming_node = ft.use_state(False)
@@ -244,22 +269,26 @@ def NodeView(
     # Our nodes content. Column with label, divider, description text field, and connection points
     return ft.GestureDetector(
         ft.Container(
-            ft.Column([
-                ft.GestureDetector(
-                    ft.Container(title_tf, ignore_interactions=not renaming_node, expand=True),
-                    on_pan_update=node.move_node,
-                    mouse_cursor=ft.MouseCursor.MOVE,
-                    drag_interval=20,
-                    on_double_tap=lambda: set_renaming_node(True),
-                    tooltip="Double tap to rename Node"
-                ),
-                ft.Divider(ft.Colors.SURFACE_CONTAINER_LOW, 2),
-                description_ctrl,
-                ft.Row([
-                    connector("left", highlight_left, set_highlight_left),
-                    connector("right", highlight_right, set_highlight_right),
-                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
+            ft.ContextMenu(
+                ft.Column([
+                    ft.GestureDetector(
+                        ft.Container(title_tf, ignore_interactions=not renaming_node, expand=True),
+                        on_pan_update=node.move_node,
+                        mouse_cursor=ft.MouseCursor.MOVE,
+                        drag_interval=20,
+                        on_double_tap=lambda: set_renaming_node(True),
+                        tooltip="Double tap to rename Node"
+                    ),
+                    ft.Divider(ft.Colors.SURFACE_CONTAINER_LOW, 2),
+                    description_ctrl,
+                    ft.Row([
+                        connector("left", highlight_left, set_highlight_left),
+                        connector("right", highlight_right, set_highlight_right),
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
+                expand=True,
+                secondary_items=get_node_options()
+            ),
             expand=True,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
             border_radius=8, padding=ft.Padding.all(8),
@@ -387,7 +416,8 @@ def PlotChartView(plot_chart: PlotChart):
                 set_source_node_id,
                 target_node_id,
                 set_target_node_id,
-                plot_chart.create_or_delete_edge
+                plot_chart.create_or_delete_edge,
+                plot_chart.delete_node
             ) for node in plot_chart.nodes.values()
         ],
         width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT
