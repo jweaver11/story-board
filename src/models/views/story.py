@@ -49,7 +49,7 @@ class Story:
         self.content_directory_path = os.path.join(constants.STORIES_DIRECTORY_PATH, self.id, "content")
         self.file_path = os.path.join(constants.STORIES_DIRECTORY_PATH, self.id, f"{self.id}.json")
         self.route = f"stories/{self.id}"
-        self.load_widgets() 
+        #self.load_widgets() 
    
     
     # Called whenever there are changes in our data that need to be saved
@@ -816,7 +816,7 @@ class Story:
 
         # Force a file write for newly created widgets
         if widget:
-            widget.needs_file_write = True
+            widget.dirty = True
             await widget.save_file()
         
         # Save our widget to our widgets list
@@ -1050,6 +1050,8 @@ def StoryView() -> ft.View:
     print("Story view component loaded")
 
 
+
+
     # Handles keyboard events for the story
     async def handle_keyboard_event(e: ft.KeyboardEvent):
         ''' Handles keyboard events for the story '''
@@ -1081,11 +1083,18 @@ def StoryView() -> ft.View:
     #settings = ft.use_context(AppSettingsContext)   
     story = ft.use_context(StoryContext)
 
+    if not story:
+        return ft.View([ft.Text("Error finding story")])
+
+    story.load_widgets()
+
     block_context, _ = ft.use_state(BlockerState())
 
 
     # Set our specific event to detect keyboard events for the story
     page.on_keyboard_event = handle_keyboard_event 
+
+    
     page.title = f"Story Board (alpha) - {story.title}"   # Set our page title
 
     

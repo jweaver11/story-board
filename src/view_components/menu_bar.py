@@ -507,12 +507,16 @@ def MenuBar() -> ft.Control:
         page.show_dialog(SnackBar(busy_text, duration=60000))
         try:
             count = await asyncio.to_thread(action)
-            if restart_after:
+            #if restart_after:
                 # Skip the close handler (it would save the old in-memory data over what we just pulled)
-                page.window.prevent_close = False
-                await page.window.destroy()
-                return
+                
+                #page.window.prevent_close = False
+                #await page.window.destroy()
+                #return
             page.show_dialog(SnackBar(f"{done_text} ({count} files)"))
+            page.navigate("/loading")
+            await asyncio.sleep(0.2)
+            page.navigate(story.route)
         except Exception as ex:
             page.show_dialog(SnackBar(f"Google Drive error: {ex}"))
         finally:

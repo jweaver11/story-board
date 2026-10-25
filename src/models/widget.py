@@ -39,7 +39,7 @@ class Widget:
     # Metadata
     last_modified: float = 0.0  # OLD _ PHASE OUT
     needs_file_write: bool = False  # OLD PHASE OUT
-    dirty: bool = False
+    dirty: bool = True
 
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     index: int = 999
