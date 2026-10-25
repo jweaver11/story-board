@@ -318,6 +318,7 @@ def Workspace() -> ft.Tabs:
     # Handles a click event on a tab in the workspace
     async def save_widget(_):
         """Save the active widget before Flet switches to another tab."""
+        return
         
         selected_index = tabs.selected_index
         if 0 <= selected_index < len(tab_view.controls):

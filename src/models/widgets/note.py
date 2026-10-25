@@ -9,7 +9,6 @@ import asyncio
 from styles.colors import colors
 from dataclasses import field, dataclass
 from contexts.contexts import StoryContext
-import uuid
 
 
 # Notes contain cards (note cards) with a label, body, color, and strikethrough option
@@ -37,35 +36,52 @@ class Card:
 @dataclass
 class Note(Widget):
     tag: str = "note"
-    card_data: dict = field(default_factory=lambda: {str(uuid.uuid4()): Card()})
+    card_data: list = field(default_factory=lambda: [Card()])
 
     def __post_init__(self):
+        # Older notes stored cards in a dictionary; keep their values when loading them
+        if isinstance(self.card_data, dict):
+            self.card_data = list(self.card_data.values())
         # Convert cards loaded from json (plain dicts) before super(), so the conversion isn't counted as a change
-        for card_id, card in self.card_data.items():
-            if isinstance(card, dict):
-                self.card_data[card_id] = Card(**card)
+        self.card_data = [
+            Card(**card) if isinstance(card, dict) else card
+            for card in self.card_data
+        ]
         super().__post_init__()
 
-        # Card edits happen on Card objects, which our dict can't see. Hold the listener strongly: observables keep weak refs
+        # Card edits happen on Card objects, which the list can't see. Hold the listener strongly: observables keep weak refs
         self._card_listener = lambda sender, field: self.mark_dirty()
-        for card in self.card_data.values():
+        for card in self.card_data:
             card.subscribe(self._card_listener)
 
     # Create a new card
     def create_card(self):
         card = Card()
         card.subscribe(self._card_listener)
-        self.card_data[str(uuid.uuid4())] = card
+        self.card_data.append(card)
 
-    # Deletes the key for the card
-    def delete_card(self, card_id: str):
-        if card_id in self.card_data:
-            self.card_data.pop(card_id)
+    # Swaps a card with its neighbor. Does nothing at either end
+    def move_card(self, card_index: int, offset: int):
+        target_index = card_index + offset
+        if not 0 <= card_index < len(self.card_data):
+            return
+        if not 0 <= target_index < len(self.card_data):
+            return
+
+        self.card_data[card_index], self.card_data[target_index] = (
+            self.card_data[target_index],
+            self.card_data[card_index],
+        )
+
+    # Deletes the card at the index
+    def delete_card(self, card_index: int):
+        if 0 <= card_index < len(self.card_data):
+            self.card_data.pop(card_index)
 
 
 # Component for cards that returns a container control for each note card, with label, body, and ability to change its color, strikethrough status, or delete it
 @ft.component
-def CardView(card: Card, card_id: str, delete_card: callable) -> ft.Container:
+def CardView(card: Card, card_index: int, delete_card: callable, move_card: callable) -> ft.Container:
 
     # Returns our popupmenu options for the cards menu on the right side of the label
     def get_card_options() -> list[ft.Control]:
@@ -85,11 +101,22 @@ def CardView(card: Card, card_id: str, delete_card: callable) -> ft.Container:
                     ], expand=True),
                     [ft.MenuItemButton(color.capitalize(), style=ft.ButtonStyle(color), on_click=handle_color_change, data=color) for color in colors],
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click", overlay_color=ft.Colors.TRANSPARENT),
                     tooltip="Change this widget's color"
                 ),
                 padding=ft.Padding.all(0)
             ),
+            ft.PopupMenuItem(
+                "Move Up",
+                ft.Icon(ft.Icons.ARROW_UPWARD_OUTLINED, ft.Colors.PRIMARY),
+                on_click=lambda e: move_card(card_index, -1)
+            ),
+            ft.PopupMenuItem(
+                "Move Down",
+                ft.Icon(ft.Icons.ARROW_DOWNWARD_OUTLINED, ft.Colors.PRIMARY),
+                on_click=lambda e: move_card(card_index, 1)
+            ),
+
             ft.PopupMenuItem(       # Toggle strikethrough
                 "Strikethrough",
                 ft.Icon(ft.Icons.FORMAT_STRIKETHROUGH_OUTLINED, ft.Colors.PRIMARY),
@@ -97,7 +124,7 @@ def CardView(card: Card, card_id: str, delete_card: callable) -> ft.Container:
             ),
             ft.PopupMenuItem(       # Delete card   
                 "Delete Card", ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, size=20, color=ft.Colors.ERROR), 
-                on_click=lambda: delete_card(card_id),
+                on_click=lambda: delete_card(card_index),
             )
         ]
     
@@ -105,7 +132,7 @@ def CardView(card: Card, card_id: str, delete_card: callable) -> ft.Container:
     # Top textfield for the label
     label = ft.TextField(
         value=card.label,
-        key=f"{card_id}_label",
+        key=f"{card_index}_label",
         dense=True, multiline=True, width=400,
         border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT)),
         capitalization=ft.TextCapitalization.SENTENCES,
@@ -122,7 +149,7 @@ def CardView(card: Card, card_id: str, delete_card: callable) -> ft.Container:
         multiline=True,
         capitalization=ft.TextCapitalization.SENTENCES,
         value=card.body, expand=True, 
-        key=f"{card_id}_body",
+        key=f"{card_index}_body",
         on_blur=lambda e: card.set_body(e.control.value),
     )  
     
@@ -135,7 +162,7 @@ def CardView(card: Card, card_id: str, delete_card: callable) -> ft.Container:
         ], spacing=0, expand=True),
         bgcolor=ft.Colors.with_opacity(0.05, card.color),
         border_radius=4,
-        key=f"{card_id}_card",
+        key=f"{card_index}_card",
         height=300, width=400,
     )
 
@@ -160,9 +187,9 @@ def NoteView(note: Note) -> WidgetView:
             ft.Column([     # Column that holds our roll with stable ref for auto scrolling
                 ft.Row(     # Row that holds all the cards
                     controls=[
-                        CardView(card, card_id, note.delete_card) for card_id, card in note.card_data.items()
+                        CardView(card, card_index, note.delete_card, note.move_card)
+                        for card_index, card in enumerate(note.card_data)
                     ] + [
-                        
                         ft.IconButton(
                             ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
                             tooltip="Add a new card to your note.", 

@@ -581,7 +581,7 @@ def TreeViewRail() -> ft.Control:
             #Menu(position=menu_position, visible=show_menu, hide_callable=hide_menu)
         ]),
         width=tree_view_rail_width,     # Set the width based on the settings, but will adjust when dragged without triggering a full re-render
-        #key="tree_view_rail_container",
+        key="tree_view_rail_container",
         alignment=ft.Alignment.TOP_CENTER,
         padding=ft.Padding.only(left=8),
         animate_size=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),  # Animate the drag so it looks nice
