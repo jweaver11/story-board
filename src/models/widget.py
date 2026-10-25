@@ -274,12 +274,10 @@ class Widget:
     def show_widget(self, story: Story):
         ''' Shows this widget in the workspace if it is hidden '''
 
-        if self.visible:
-            story.selected_index = self.index
-        else:
-            self.visible = True
+        was_visible = self.visible
+        story.show_widget_tab(self)
+        if not was_visible:
             ft.context.page.run_task(self.save_file)
-        story.widgets[self.id] = self   # Touch to observable to trigger observers
         return
 
         # Saves any widget on screen that requires to be on page for saving

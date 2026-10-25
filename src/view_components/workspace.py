@@ -424,11 +424,15 @@ def Workspace() -> ft.Tabs:
     visible_widgets = [widget for widget in story.widgets.values() if widget.visible]
     sorted_visible_widgets: list = sorted(visible_widgets, key=lambda w: w.index)
 
+    for idx, widget in enumerate(sorted_visible_widgets):
+        if widget.index != idx:
+            widget.index = idx
 
+    widget_tabs = [build_widget_tab(widget) for widget in sorted_visible_widgets] if len(sorted_visible_widgets) > 0 else [ft.Tab(" <- Add Widget")]
 
     # Build at tab bar with tabs for each widget
     tab_bar = ft.TabBar(
-        tabs=[build_widget_tab(widget) for widget in sorted_visible_widgets] if len(sorted_visible_widgets) > 0 else [ft.Tab(" <- Add Widget")],    # Gives a tab for each widget
+        tabs=widget_tabs,    # Gives a tab for each widget
         scrollable=True, 
         #indicator_color=indicator_color, 
         divider_height=2,

@@ -50,8 +50,7 @@ class Story:
         self.file_path = os.path.join(constants.STORIES_DIRECTORY_PATH, self.id, f"{self.id}.json")
         self.route = f"stories/{self.id}"
         self.load_widgets() 
-   
-    
+
     # Called whenever there are changes in our data that need to be saved
     async def save_file(self):
         ''' Saves the data of our story to its JSON File, and all its folders as well '''
@@ -823,13 +822,12 @@ class Story:
             widget.dirty = True
             await widget.save_file()
         
-        # Save our widget to our widgets list
+        # Save our widget to our widgets list  
         self.widgets[widget.id] = widget        
         print("created new widget: ", widget.title)
-        self.selected_index = len([w for w in self.widgets.values() if w.visible]) - 1
-
-        await asyncio.sleep(0.5)
-        print("selected index: ", self.selected_index)
+        await asyncio.sleep(0.15)  # Yield control to allow UI updates
+        num_visible_widgets = sum(1 for w in self.widgets.values() if w.visible)
+        self.selected_index = num_visible_widgets - 1
         return
  
     # Called to open a right click menu in the page overlay

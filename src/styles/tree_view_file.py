@@ -160,7 +160,6 @@ def RailFile(widget: dataclass, story):
 
     # Adds our widget to the workspace or selects the tab already showing it if its already visible
     async def show_widget(widget: Widget):
-        await blocker.block_page()
 
         # If we're already showing, highlight that tab
         if widget.visible:
@@ -171,13 +170,15 @@ def RailFile(widget: dataclass, story):
         else:
             widget.visible = True
             num_visible_widgets = sum(1 for w in story.widgets.values() if w.visible)
-            widget.index = num_visible_widgets
+            widget.index = num_visible_widgets - 1
             story.selected_index = widget.index
             ft.context.page.run_task(widget.save_file)
-        
+            
+        await asyncio.sleep(0.15)  # Yield control to allow UI updates
         story.widgets[widget.id] = widget   # Touch to observable to trigger observers
-        blocker.unblock_page()
-        return
+        story.selected_index = widget.index # Re-touch somehow triggers re-render????
+        
+        
 
     blocker = ft.use_context(BlockerContext)
 
