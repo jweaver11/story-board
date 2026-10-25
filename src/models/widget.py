@@ -732,7 +732,7 @@ def WidgetSidebar(widget: Widget, header_ctrls: list[ft.Control]=[], body_ctrls:
 
     # The label for Notes with a new note button and textfield
     sidebar_notes_label = ft.Row([
-        ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True),
+        ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
         ft.IconButton(
             ft.Icons.NEW_LABEL_OUTLINED, ft.Colors.PRIMARY, 
             tooltip="Add Note",

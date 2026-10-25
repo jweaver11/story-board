@@ -264,7 +264,8 @@ class Story:
         from models.widgets.character_relationship_map import CharacterRelationshipMap
         from models.widgets.world import World
         from models.widgets.item import Item
-        from models.widgets.chart import Chart
+        from models.widgets.bar_chart import BarChart
+        from models.widgets.radar_chart import RadarChart
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
 
@@ -322,8 +323,10 @@ class Story:
                                 widget = CharacterRelationshipMap(**widget_data)
                             case "item":
                                 widget = Item(**widget_data)
-                            case "chart":
-                                widget = Chart(**widget_data)
+                            case "bar_chart":
+                                widget = BarChart(**widget_data)
+                            case "radar_chart":
+                                widget = RadarChart(**widget_data)
                             case "comic_preview":
                                 widget = ComicPreview(**widget_data)
                             case "plot_chart":
@@ -765,7 +768,8 @@ class Story:
         from models.widgets.character_relationship_map import CharacterRelationshipMap
         from models.widgets.item import Item
         from models.widgets.world import World
-        from models.widgets.chart import Chart
+        from models.widgets.bar_chart import BarChart
+        from models.widgets.radar_chart import RadarChart
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
 
@@ -790,27 +794,27 @@ class Story:
                 data = {'canvas_data': canvas_data} if canvas_data is not None else None
                 widget = Canvas(title,  directory_path, self, data, True)
             case "character":
-                
-                widget = Character(title, directory_path, self)
+                widget = Character(**widget_data)
             case "plotline":
-                widget = Plotline(title, directory_path, self)
+                widget = Plotline(**widget_data)
             case "map":
-                widget = Map(title, directory_path, self, data)
+                widget = Map(**widget_data)
             case "character_relationship_map":
-                widget = CharacterRelationshipMap(title, directory_path, self)
+                widget = CharacterRelationshipMap(**widget_data)
             case "world":
-                
-                widget = World(title, directory_path, self)
+                widget = World(**widget_data)
             case "canvas_board":
-                widget = CanvasBoard(title, directory_path, self)   
+                widget = CanvasBoard(**widget)   
             case "item":
                 widget = Item(**widget_data)  
-            case "chart":
-                widget = Chart(title, directory_path, self, type=chart_type)
+            case "bar_chart":
+                widget = BarChart(**widget_data)
+            case "radar_chart":
+                widget = RadarChart(**widget_data)
             case "comic_preview":
-                widget = ComicPreview(title, directory_path, self)
+                widget = ComicPreview(**widget_data)
             case "plot_chart":
-                widget = PlotChart(title, directory_path, self)
+                widget = PlotChart(**widget_data)
             case _:
                 print(f"Error creating widget {title}: Invalid tag {tag}")
 
@@ -827,181 +831,6 @@ class Story:
         await asyncio.sleep(0.5)
         print("selected index: ", self.selected_index)
         return
-        if update:
-            # Finish tasks creating widget to make sure the file has enough time to save
-            await self.workspace.add_widget_to_workspace(widget)  # Add the new widget to the workspace and select it
-
-            # Apply the UI changes
-            #if self.data.get('selected_rail', "content") != "canvas":
-            self.active_rail.reload_rail()
-    
-       
-
-    def rebuild_widget(self, widget) -> ft.Control:
-        ''' Delcares the widget as a new object to refresh its page reference. '''
-        from models.widgets.manuscript import Manuscript
-        from models.widgets.note import Note
-        from models.widgets.canvas import Canvas
-        from models.widgets.canvas_board import CanvasBoard
-        from models.widgets.character import Character
-        from models.widgets.plotline import Plotline
-        from models.widgets.map import Map
-        from models.widgets.character_relationship_map import CharacterRelationshipMap
-        from models.widgets.world import World
-        from models.widgets.item import Item
-        from models.widgets.chart import Chart
-        from models.widgets.comic_preview import ComicPreview
-        from models.widgets.plot_chart import PlotChart
-
-        tag = widget.data.get('tag', None)
-        new_widget = None
-        match tag:
-            case "manuscript":
-                new_widget = Manuscript(
-                    title=widget.data.get('title', 'Untitled Manuscript'),
-                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
-                    story=self,
-                    data=widget.data,
-                    is_new=widget.is_new
-                )
-                
-            case "canvas":
-                new_widget = Canvas(
-                    title=widget.data.get('title', 'Untitled Manuscript'),
-                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
-                    story=self,
-                    data=widget.data,
-                    is_new=widget.is_new
-                )
-                
-            case "note":
-                new_widget = Note(
-                    title=widget.data.get('title', 'Untitled Manuscript'),
-                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
-                    story=self,
-                    data=widget.data,
-                    is_new=widget.is_new
-                )
-                
-            case "character":
-                new_widget = Character(
-                    widget.data.get('title', 'Untitled Manuscript'),
-                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
-                    story=self,
-                    data=widget.data,
-                    is_new=widget.is_new
-                )
-                
-            case "plotline":
-                new_widget = Plotline(
-                    title=widget.data.get('title', 'Untitled Manuscript'),
-                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
-                    story=self,
-                    data=widget.data,
-                    is_new=widget.is_new
-                )
-                
-            case "map":
-                new_widget = Map(
-                    title=widget.data.get('title', 'Untitled Manuscript'),
-                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
-                    story=self,
-                    data=widget.data,
-                    is_new=widget.is_new
-                )
-                
-            case "world":
-                new_widget = World(
-                    title=widget.data.get('title', 'Untitled Manuscript'),
-                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
-                    story=self,
-                    data=widget.data,
-                    is_new=widget.is_new
-                )
-                
-            case "character_relationship_map":
-                new_widget = CharacterRelationshipMap(
-                    widget.data.get('title', 'Untitled Manuscript'),
-                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
-                    story=self,
-                    data=widget.data,
-                    is_new=widget.is_new
-                )
-                
-            case "canvas_board":
-                new_widget = CanvasBoard(
-                    widget.data.get('title', 'Untitled Manuscript'),
-                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
-                    story=self,
-                    data=widget.data,
-                    is_new=widget.is_new
-                )
-
-            case "item":
-                new_widget = Item(
-                    widget.data.get('title', 'Untitled Manuscript'),
-                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
-                    story=self,
-                    data=widget.data,
-                    is_new=widget.is_new
-                )
-
-            case "chart":
-                new_widget = Chart(
-                    title=widget.data.get('title', 'Untitled Manuscript'),
-                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
-                    story=self,
-                    data=widget.data,
-                    is_new=widget.is_new
-                )
-            case "comic_preview":
-                new_widget = ComicPreview(
-                    title=widget.data.get('title', 'Untitled Manuscript'),
-                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
-                    story=self,
-                    data=widget.data,
-                    is_new=widget.is_new
-                )
-
-            case "plot_chart":
-                new_widget = PlotChart(
-                    title=widget.data.get('title', 'Untitled Manuscript'),
-                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
-                    story=self,
-                    data=widget.data,
-                    is_new=widget.is_new
-                )
-                
-            case _:
-                self.page.show_dialog(SnackBar(f"Error rebuilding widget {widget.title}: Invalid tag {tag}"))
-
-        
-
-        self.widgets[new_widget.data.get('id')] = new_widget
-
-        return new_widget
-
-
-    # Called clicking outside the menu to close it
-    async def close_menu(self, e=None):
-        ''' Closes our right click menu when clicking outside of it '''
-        
-        if self.menu.visible:
-            self.menu.visible = False
-            self.menu.update()
-        if self.close_menu_detector.visible:
-            self.close_menu_detector.visible = False
-            self.close_menu_detector.update()
-
-    def close_menu_instant(self, e=None):
-        ''' Closes our right click menu when clicking outside of it '''
-       
-        if self.menu.visible:
-            self.menu.visible = False
-            self.menu.update()
-        if self.close_menu_detector.visible:
-            self.close_menu_detector.visible = False
-            self.close_menu_detector.update()
  
     # Called to open a right click menu in the page overlay
     def open_menu(self, menu_options: list):

@@ -166,6 +166,18 @@ def TreeViewRail() -> ft.Control:
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             tooltip="Visualize the connections between the characters in your story"
                         ),
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Radar Chart", 
+                            data="character_relationship_map", on_click=new_item_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            tooltip="Visualize the connections between the characters in your story"
+                        ),
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Bar Chart", 
+                            data="character_relationship_map", on_click=new_item_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            tooltip="Visualize the connections between the characters in your story"
+                        ),
                         ft.SubmenuButton(
                             ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                             #self.get_template_options("character"), 
@@ -389,13 +401,23 @@ def TreeViewRail() -> ft.Control:
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
                     tooltip="Preview the canvases in your story as a comic strip",
                 ),
-                
                 ft.MenuItemButton(
                     leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY), content="Character Relationship Map", 
                     data="character_relationship_map", on_click=new_item_clicked, close_on_click=True,
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     tooltip="Visualize the connections between the characters in your story"
                 ),  
+                ft.MenuItemButton(
+                    "Radar Chart", data="radar_chart", 
+                    on_click=new_item_clicked, leading=ft.Icon(ft.CupertinoIcons.COMPASS, ft.Colors.PRIMARY),
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
+                ),
+                ft.MenuItemButton(
+                    "Bar Chart", data="bar_chart", 
+                    on_click=new_item_clicked, leading=ft.Icon(ft.Icons.INSERT_CHART_OUTLINED_OUTLINED, ft.Colors.PRIMARY),
+                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
+                ),
+                
                 ft.SubmenuButton(
                     ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
                     #self.get_template_options("character"), 
@@ -411,13 +433,6 @@ def TreeViewRail() -> ft.Control:
                     style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     tooltip="Create a new world for your story. Choose from templates or create a default world."
                 ),
-                ft.SubmenuButton(
-                    ft.Row([ft.Icon(ft.Icons.INSERT_CHART_OUTLINED, ft.Colors.PRIMARY), ft.Text("Chart", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
-                    #self.get_template_options("chart"), 
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    tooltip="New Charts for your story"
-                ), 
             ],
             menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
             style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),

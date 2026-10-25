@@ -14,7 +14,7 @@ import math
 from styles.snack_bar import SnackBar
     
 
-class Chart(Widget):
+class BarChart(Widget):
 
     # Constructor
     def __init__(
