@@ -35,8 +35,8 @@ class Card:
 @ft.observable
 @dataclass
 class Note(Widget):
-    tag: str = "note"
-    card_data: list = field(default_factory=lambda: [Card()])
+    tag: str = "note"   # Tag to differentiate this widget type
+    card_data: list = field(default_factory=lambda: [Card()])   # Holds a list of our card data objects
 
     def __post_init__(self):
         # Older notes stored cards in a dictionary; keep their values when loading them

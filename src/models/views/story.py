@@ -783,7 +783,7 @@ class Story:
 
         match tag:
             case "manuscript":
-                widget = Manuscript(title, directory_path, self)
+                widget = Manuscript(**widget_data)
             case "note":
                 widget = Note(**widget_data)
             case "canvas":

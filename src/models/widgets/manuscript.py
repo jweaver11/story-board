@@ -1,6 +1,6 @@
 import flet as ft
 from models.views.story import Story
-from models.widget import Widget
+from models.widget import Widget, WidgetView, WidgetSidebar
 from flet_quill import FletQuill, FletQuillEditor, FletQuillToolbar
 #from models.app import app
 import math
@@ -11,6 +11,7 @@ import uuid
 from styles.text_fields import TextField
 from styles.snack_bar import SnackBar
 from styles.context_menu_option import MenuOptionStyle
+from dataclasses import dataclass, field
 
 MANUSCRIPT_WIDTH = 820
 MANUSCRIPT_HEIGHT = 1060
@@ -20,39 +21,24 @@ MANUSCRIPT_HORIZONTAL_MARGIN = 70
 
 
 # Class that holds our text manuscript objects
+@ft.observable
+@dataclass
 class Manuscript(Widget):
-    # Constructor
-    def __init__(self, title: str, directory_path: str, story: Story, data: dict={}, is_new: bool = False):
 
+    tag: str = "manuscript" # Tag to differentiate this widget type
+    comments: dict = field(default_factory=dict)    # Holds the comments associated with this manuscript
+    reference_images: dict = field(default_factory=dict)    # Holds the reference images associated with this manuscript
+    manuscript_data: list = field(default_factory=list) # Holds the manuscript's text data as a list of json objects
 
-        # Initialize from our parent class 'Widget'. 
-        super().__init__(
-            title = title,  
-            directory_path = directory_path,  
-            story = story,       
-            data = data,  
-            is_new = is_new  
-        )
+    editor_dirty: bool = False  # True if the editor has unsaved changes
+    quill_editor: FletQuillEditor = None  # The attached quill editor, not a dataclass field
 
-        # If we're new, give default values for our data 
-        if self.is_new == True:
-            self.data.update({
-                # Widget data
-                'tag': "manuscript",
-                #'color': app.settings.data.get('widget_defaults', {}).get('manuscript', {}).get('color'),
-                'show_sidebar': True,
+    def __post_init__(self):
+        super().__post_init__()
+        object.__setattr__(self, "quill_editor", None)   # plain attribute, not a dataclass field
 
-
-                # Holds our comments and reference images in data
-                'comments': dict(),
-                'reference_images': dict(),
-
-                # The text as json list data that is loaded and saved
-                'manuscript_data': list(),       
-
-            })  
-            ft.TextStyle()
-        self.dirty = False  # Marks if the manuscript has unsaved changes
+    def attach_editor(self, editor):
+        object.__setattr__(self, "quill_editor", editor)
 
     class Comment(TextField):
 
@@ -159,9 +145,9 @@ class Manuscript(Widget):
             
     # Checks if our manuscript is dirty, and saves it if it is
     async def save_file(self):
-        if self.dirty == True:
-            self.dirty = False
-            self.update_data(**{'manuscript_data': await self.quill_editor.save()})
+        if self.editor_dirty and self.quill_editor is not None:
+            self.editor_dirty = False
+            self.manuscript_data = await self.quill_editor.save()
         await super().save_file()
 
     async def export(self, file_type: str="docx"):
@@ -302,172 +288,162 @@ class Manuscript(Widget):
         return buffer.getvalue()
         
         
+@ft.component
+def ManuscriptView(manuscript: Manuscript) -> WidgetView:
 
-    def build(self):
+    # Gets our word count and opens a menu to show it
+    async def get_word_count():
+        word_count = 0
+        doc_data = await manuscript.quill_editor.save()
+        for block in doc_data:
+            if "insert" in block:
+                if isinstance(block["insert"], str):    # Protect against page breaks
+                    word_count += len(block["insert"].split())
+        manuscript.story.open_menu([ft.Text(f"Word Count: {word_count}", margin=ft.Margin.only(left=6, right=6, top=10, bottom=10))])
 
-        # Gets our word count and opens a menu to show it
-        async def get_word_count():
-            word_count = 0
-            doc_data = await self.quill_editor.save()
-            for block in doc_data:
-                if "insert" in block:
-                    if isinstance(block["insert"], str):    # Protect against page breaks
-                        word_count += len(block["insert"].split())
-            self.story.open_menu([ft.Text(f"Word Count: {word_count}", margin=ft.Margin.only(left=6, right=6, top=10, bottom=10))])
-
-        # Mark us dirty after keystroke changes so we can track unsaved changes
-        def mark_dirty(e=None):
-            if self.dirty == False:
-                self.dirty = True
+    # Mark us dirty after keystroke changes so we can track unsaved changes
+    def mark_dirty(e=None):
+        if manuscript.dirty == False:
+            manuscript.dirty = True
 
 
-        # Handles adding a new comment, hiding the button and showing the textfield for input
-        async def new_comment_clicked(e=None):
-            new_comment_button.visible = False
-            new_comment_button.update()
-            new_comment_tf.visible = True
-            new_comment_tf.value = ""
-            new_comment_tf.update()
-            await new_comment_tf.focus()  
+    # Handles adding a new comment, hiding the button and showing the textfield for input
+    async def new_comment_clicked(e=None):
+        new_comment_button.visible = False
+        new_comment_button.update()
+        new_comment_tf.visible = True
+        new_comment_tf.value = ""
+        new_comment_tf.update()
+        await new_comment_tf.focus()  
 
-        # Shows our new mini widget button and hides our textfield after creating/blurring comment tf
-        def show_new_comment_button(e=None):
-            new_comment_button.visible = True
-            new_comment_button.update()
-            new_comment_tf.value = ""
-            new_comment_tf.visible = False
-            new_comment_tf.update()
+    # Shows our new mini widget button and hides our textfield after creating/blurring comment tf
+    def show_new_comment_button(e=None):
+        new_comment_button.visible = True
+        new_comment_button.update()
+        new_comment_tf.value = ""
+        new_comment_tf.visible = False
+        new_comment_tf.update()
 
-        # Creates our new comment in data then adds it to the column
-        def create_comment(e: ft.Event[ft.TextField]):
-            comment_title = e.control.value.strip()
-            new_comment = self.Comment(title=comment_title, widget=self)
-            self.update_data(**{'comments': {new_comment.data["id"]: new_comment.data}})
-            comments_column.controls.append(new_comment)
-            comments_column.update()
+    # Creates our new comment in data then adds it to the column
+    def create_comment(e: ft.Event[ft.TextField]):
+        comment_title = e.control.value.strip()
+        new_comment = manuscript.Comment(title=comment_title, widget=manuscript)
+        manuscript.update_data(**{'comments': {new_comment.data["id"]: new_comment.data}})
+        comments_column.controls.append(new_comment)
+        comments_column.update()
 
-        # Opens our file picker to imoprt our image
-        async def new_ref_image_clicked(e: ft.Event[ft.IconButton]):
-            files = await ft.FilePicker().pick_files(allowed_extensions=["jpg", "jpeg", "png", "webp"])
-            if files:
+    # Opens our file picker to imoprt our image
+    async def new_ref_image_clicked(e: ft.Event[ft.IconButton]):
+        files = await ft.FilePicker().pick_files(allowed_extensions=["jpg", "jpeg", "png", "webp"])
+        if files:
 
-                file_path = files[0].path
-                try:
-                    import base64
+            file_path = files[0].path
+            try:
+                import base64
 
-                    with open(file_path, "rb") as image_file:
-                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                with open(file_path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
 
-                    reference_image = self.ReferenceImage(
-                        widget=self, 
-                        data={
-                            'id': str(uuid.uuid4()),
-                            'tag': "reference_image",
-                            'image': encoded_string,
-                        }
-                    )
-                    self.update_data(**{'reference_images': {reference_image.data["id"]: reference_image.data}})
-                    ref_img_column.controls.append(reference_image)
-                    ref_img_column.update()
-                        
-                except Exception as e:
-                    e.control.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
+                reference_image = manuscript.ReferenceImage(
+                    widget=manuscript, 
+                    data={
+                        'id': str(uuid.uuid4()),
+                        'tag': "reference_image",
+                        'image': encoded_string,
+                    }
+                )
+                manuscript.update_data(**{'reference_images': {reference_image.data["id"]: reference_image.data}})
+                ref_img_column.controls.append(reference_image)
+                ref_img_column.update()
+                    
+            except Exception as e:
+                e.control.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
 
-        super().build() # Parent constructor
 
-        # Word count button
-        word_count_button = ft.IconButton(
-            icon=ft.CupertinoIcons.TEXTFORMAT_SIZE, #icon_color=ft.Colors.PRIMARY,
-            tooltip="Word Count", 
-            on_click=get_word_count,
-            bgcolor=ft.Colors.TRANSPARENT,
-            highlight_color=ft.Colors.TRANSPARENT,
-            hover_color=ft.Colors.TRANSPARENT
-        )
-            
+    # Word count button
+    word_count_button = ft.IconButton(
+        icon=ft.CupertinoIcons.TEXTFORMAT_SIZE, #icon_color=ft.Colors.PRIMARY,
+        tooltip="Word Count", 
+        on_click=get_word_count,
+        bgcolor=ft.Colors.TRANSPARENT,
+        highlight_color=ft.Colors.TRANSPARENT,
+        hover_color=ft.Colors.TRANSPARENT
+    )
         
-        # Grab our flet quill elements
-        quill_toolbar = FletQuillToolbar(
-            controller_id=self.data.get('id', None),
-            expand=True,
-            toolbar_buttons=[ft.GestureDetector(word_count_button, on_hover=self.set_mouse_coords, hover_interval=50)]
-        )  # Toolbar
-        self.quill_editor = FletQuillEditor(    # Editor
-            controller_id=self.data.get('id', None),
-            text_data=self.data.get('manuscript_data', [{"insert": "Hello World!\n"}]),   # Pass in data
+    
+    # Grab our flet quill elements
+    quill_toolbar = FletQuillToolbar(
+        controller_id=manuscript.id,
+        expand=True,
+        toolbar_buttons=[ft.GestureDetector(word_count_button, on_hover=manuscript.set_mouse_coords, hover_interval=50)]
+    )  # Toolbar
+    quill_editor, _ = ft.use_state(
+        FletQuillEditor(    # Editor
+            controller_id=manuscript.id,
+            text_data=manuscript.manuscript_data,   # Pass in data
             placeholder_text="Start your masterpiece here...",
             expand=True,
         )
+    )
 
-        
-        editor_container = ft.Container(
-            ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty),
-            expand=True,
-            margin=ft.Margin.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN, vertical=MANUSCRIPT_VERTICAL_MARGIN),
-        )
+    def attach():
+        manuscript.attach_editor(quill_editor)
+        return lambda: manuscript.attach_editor(None)
 
-        # Build our comments and reference images columns from data
-        comments_column = ft.Column(
-            [self.Comment(title=comment_data.get('title'), widget=self, data=comment_data) for comment_data in self.data.get('comments', {}).values()], 
-            tight=True
-        )
-        ref_img_column = ft.Column(
-            [self.ReferenceImage(widget=self, data=mw_data) for mw_data in self.data.get('reference_images', {}).values()], 
-            tight=True
-        )
+    ft.use_effect(attach, [])
 
-        
+    
+    editor_container = ft.Container(
+        ft.KeyboardListener(quill_editor, on_key_down=mark_dirty),
+        expand=True,
+        margin=ft.Margin.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN, vertical=MANUSCRIPT_VERTICAL_MARGIN),
+    )
 
-        # Set our mouse coords whenever we hover over word count button
-        #self.sidebar_header.controls.append(ft.GestureDetector(word_count_button, on_hover=self.set_mouse_coords, hover_interval=50))
-        
+    # Build our comments and reference images columns from data
+    comments_column = ft.Column(
+        #[manuscript.Comment(title=comment_data.get('title'), widget=manuscript, data=comment_data) for comment_data in manuscript.data.get('comments', {}).values()], 
+        tight=True
+    )
+    ref_img_column = ft.Column(
+        #[manuscript.ReferenceImage(widget=manuscript, data=mw_data) for mw_data in manuscript.data.get('reference_images', {}).values()], 
+        tight=True
+    )
 
-        # Build the sidebar
-        self.sidebar_body.controls.extend([
-            ft.Row([
-                
-                ft.Text("Comments", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-                new_comment_button := ft.IconButton(     
-                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
-                    on_click=new_comment_clicked, 
-                    mouse_cursor="click",
-                ), 
-                new_comment_tf := ft.TextField(
-                    label="Comment Title", dense=True, margin=ft.Margin.symmetric(horizontal=6),
-                    capitalization=ft.TextCapitalization.WORDS,
-                    on_blur=show_new_comment_button, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-                    on_submit=create_comment, animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-                    visible=False, autofocus=True, expand=True,
+    
+
+    # Set our mouse coords whenever we hover over word count button
+    #manuscript.sidebar_header.controls.append(ft.GestureDetector(word_count_button, on_hover=manuscript.set_mouse_coords, hover_interval=50))
+    new_comment_button = ft.IconButton(     
+        ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+        on_click=new_comment_clicked, 
+        mouse_cursor="click",
+    )
+    new_comment_tf = ft.TextField(
+        label="Comment Title", dense=True, margin=ft.Margin.symmetric(horizontal=6),
+        capitalization=ft.TextCapitalization.WORDS,
+        on_blur=show_new_comment_button, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+        on_submit=create_comment, animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+        visible=False, autofocus=True, expand=True,
+    )
+
+    
+    
+
+    return WidgetView(
+        manuscript,
+        ft.Row([
+            ft.Column([
+                ft.Container(
+                    quill_toolbar, 
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                    alignment=ft.Alignment.CENTER_LEFT, 
+                    padding=ft.Padding.only(left=4)
                 ),
-                    
-            ], spacing=0),
-            
-            comments_column, 
-
-            ft.Row([
-                ft.Text("Reference Images", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-                ft.IconButton(     
-                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
-                    on_click=new_ref_image_clicked, 
-                    mouse_cursor="click",
-                ), 
-            ], spacing=0),
-
-            ref_img_column
-        ])
-        
-
-        self.content = ft.Column([
-            ft.Container(
-                quill_toolbar, 
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
-                alignment=ft.Alignment.CENTER_LEFT, 
-                padding=ft.Padding.only(left=4)
-            ),
-            ft.Divider(2, 2),
-            ft.Row([
-                ft.Column([editor_container], scroll=ft.ScrollMode.HIDDEN, expand=True),
-                self.toggle_sidebar_visibility_button, 
-                self.sidebar,
-            ], spacing=0, expand=True),
-        ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+                ft.Divider(2, 2),
+                ft.Row([
+                    ft.Column([editor_container], scroll=ft.ScrollMode.HIDDEN, expand=True),
+                    WidgetSidebar(manuscript), 
+                ], spacing=0, expand=True),
+            ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+        ], expand=True, spacing=0)
+    )

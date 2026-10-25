@@ -37,7 +37,6 @@ class Widget:
     tag: str
 
     # Metadata
-    
     dirty: bool = True  # If we need a file write
 
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -48,6 +47,9 @@ class Widget:
     sidebar_visible: bool = True
     notes: list = field(default_factory=list)
     description: str = str()
+
+    w: int = 0          # Width of content space of the widget
+    h: int = 0          # Height of content space of the widget
 
     
     visible_mw_id: str = ""
@@ -434,21 +436,7 @@ class Widget:
     async def redo_task(self):
         return
 
-    # Returns freshly created instances of sidebar header controls. Only widgets with mini widgets use this
-    def create_sidebar_header_ctrls(self) -> list[ft.Control]:
-
-        # Re-sets the title value if it was changed in sidebar and not submitted
-        def set_title_value():
-            self.sidebar_title.value = self.data.get('title', '')
-            self.sidebar_title.update()
-
-        # Title that sits in the header
-        self.sidebar_title = SidebarTitleTextField(
-            value=self.data.get('title', ''),
-            on_submit=self.submit_rename, on_blur=set_title_value)
-
-        # Return the title
-        return [self.sidebar_title]
+    
 
     async def handle_export(self) -> bytes:
         ''' Returns a screenshot of the widget as bytes. Only widgets that have a canvas or image can return a screenshot '''
@@ -471,140 +459,11 @@ class Widget:
 
         ft.context.page.show_dialog(dlg)
 
-    # Called in constructor to build our sidebar controls
-    def build_sidebar(self):
-
-        # Handles hiding our new note button and focusing our new note textfield
-        async def handle_new_note_clicked(e=None):
-            new_note_button.visible = False
-            new_note_tf.visible = True
-            new_note_tf.value = ""
-            new_note_button.update()
-            new_note_tf.update()
-            await new_note_tf.focus()
-
-        # Create a new note in data, then add it to the column
-        async def save_new_note(e: ft.Event[ft.TextField]):
-            self.data.get('notes', []).append({'label': e.control.value, 'value': ''})
-            self.update_data(**{'notes': self.data.get('notes', [])})
-            self.sidebar_notes_column.controls.append(
-                create_new_note_ctrl(
-                    note_idx = len(self.data.get('notes', [])) - 1,
-                    note_data = self.data.get('notes', [])[-1]
-                )
-            )
-            self.sidebar_notes_column.update()
-            await asyncio.sleep(0.05)
-            await self.sidebar_body.scroll_to(offset=-1, duration=200)
-
-        # Saves the value of the note
-        def save_note_content(e: ft.Event[ft.TextField]):
-            note_idx = e.control.data
-            if len(self.data.get('notes', [])) > note_idx:
-                self.data.get('notes', [])[note_idx]['value'] = e.control.value
-                self.update_data(**{'notes': self.data.get('notes', [])})
-            
-        # Returns a textfield of the note control
-        def create_new_note_ctrl(note_idx: int, note_data: dict) -> TextField:
-            return TextField(
-                note_data.get('value', ''), label=note_data.get('label', ''), data=note_idx, expand=True, on_blur=save_note_content, 
-                capitalization=ft.TextCapitalization.SENTENCES, multiline=True, dense=True,
-                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_note, mouse_cursor=ft.MouseCursor.CLICK)
-            )
-
-        # Deletes the note from data and then the column and updates the indices
-        def delete_note(e: ft.Event):
-            note_idx = e.control.parent.data
-            self.data.get('notes', []).pop(note_idx)
-            self.update_data(**{'notes': self.data.get('notes', [])})
-            self.sidebar_notes_column.controls.pop(note_idx)
-            self.sidebar_notes_column.update()
-            update_note_indices()
-
-        def handle_new_note_blur(e=None):
-            new_note_button.visible = True
-            new_note_tf.visible = False
-            new_note_button.update()
-            new_note_tf.update()
-
-        # Updates all our notes ctrls (textfields) data to be accurate after an index was deleted
-        def update_note_indices():
-            for idx, ctrl in enumerate(self.sidebar_notes_column.controls):
-                ctrl.data = idx
-
-        # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
-        self.sidebar_header = ft.Row(self.create_sidebar_header_ctrls(), spacing=0,)
-
-        # Where we build the different content in each sidebar
-        self.sidebar_body = ft.Column([], scroll=ft.ScrollMode.AUTO, expand=True, spacing=0,)
-
-        # Footer in the sidebar to hold the description textfield and any other controls that need to be at the bottom of the sidebar
-        self.sidebar_footer = ft.Row([self.description_tf])
-
-        # The label for Notes with a new note button and textfield
-        self.sidebar_notes_label = ft.Row([
-            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True),
-            new_note_button := ft.IconButton(
-                ft.Icons.NEW_LABEL_OUTLINED, ft.Colors.PRIMARY, 
-                tooltip="Add Note",
-                on_click=handle_new_note_clicked,
-                mouse_cursor="click"
-            ),
-            new_note_tf := ft.TextField(
-                on_submit=save_new_note, visible=False, expand=True,
-                on_blur=handle_new_note_blur, margin=ft.Margin.only(left=4),
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-                #border_radius=4, 
-                dense=True, capitalization=ft.TextCapitalization.SENTENCES,
-                #border_color=ft.Colors.TRANSPARENT,
-                #focused_border_color=ft.Colors.PRIMARY,
-                label="New Note Label", label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
-            )
-            
-        ], spacing=0)
-
-        self.sidebar_notes_column = ft.Column(
-            [create_new_note_ctrl(idx, value) for idx, value in enumerate(self.data.get('notes', []))]
-        )
-
-        # Button (container) for showing and hiding the sidebar
-        self.toggle_sidebar_visibility_button = ft.Container(
-            ft.Icon(
-                ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED if not self.data.get('show_sidebar', True) else ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED,
-                ft.Colors.PRIMARY, 
-            ),
-            on_click=self.show_sidebar if not self.data.get('show_sidebar', True) else self.hide_sidebar,
-            ink=True, border_radius=4, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE_CONTAINER_LOWEST),
-            padding=ft.Padding.symmetric(horizontal=0, vertical=0),
-            height=40
-        )
-
-        # Container on right side of widgets to hold mini widgets or sidebar info
-        self.sidebar = ft.Container(
-            #border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
-            padding=ft.Padding.all(10),
-            shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE_CONTAINER_LOWEST), 
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            width=0, # Start collapsed, and when built we will get bigger if showing
-            animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            content=ft.Column([     # Holds our header seperated by the body
-                self.sidebar_header, 
-                ft.Divider(),
-                self.sidebar_body,
-                self.sidebar_footer
-            ], expand=True, spacing=0)
-        )
+    
 
         
 
-        # OLD
-        #ft.IconButton(      # Open the settings fo this type of widget
-            #ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY),
-            #on_click=self.open_widget_settings, 
-            #mouse_cursor=ft.MouseCursor.CLICK,
-            #tooltip=f"Open Settings for {self.data.get('tag', '').capitalize()} widgets."
-        #),
+        
 
 
     # Builds functionality for widget
@@ -622,7 +481,7 @@ class Widget:
             capitalization=ft.TextCapitalization.SENTENCES,
             label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
         )   
-        self.build_sidebar()
+        #self.build_sidebar()
 
         # Our image button 
         self.select_image_button = ft.GestureDetector(
@@ -792,11 +651,148 @@ def WidgetDescription(description: str, save_description: callable) -> ft.TextFi
         )
     ], expand=True, spacing=0, alignment=ft.MainAxisAlignment.CENTER, tight=True)
 
+@ft.component
+def WidgetSidebar(widget: Widget, header_ctrls: list[ft.Control]=None, body_ctrls: list[ft.Control]=None, show_notes: bool=True):
+
+
+    def rename_widget(e: ft.Event[ft.TextField]):
+        widget.title = e.control.value
+
+    def update_description(e: ft.Event[ft.TextField]):
+        widget.description = e.control.value
+
+    # Create a new note in data, then add it to the column
+    async def save_new_note(e: ft.Event[ft.TextField]):
+        widget.notes.append({'label': e.control.value, 'value': ''})
+        
+        await asyncio.sleep(0.05)
+        #await widget.sidebar_body.scroll_to(offset=-1, duration=200)
+
+    # Saves the value of the note
+    def save_note_content(e: ft.Event[ft.TextField]):
+        note_idx = e.control.data
+        if len(widget.notes) > note_idx:
+            widget.notes[note_idx]['value'] = e.control.value
+            
+        
+    # Returns a textfield of the note control
+    def create_new_note_ctrl(note_idx: int, note_data: dict) -> TextField:
+        return TextField(
+            note_data.get('value', ''), label=note_data.get('label', ''), data=note_idx, expand=True, on_blur=save_note_content, 
+            capitalization=ft.TextCapitalization.SENTENCES, multiline=True, dense=True,
+            suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_note, mouse_cursor=ft.MouseCursor.CLICK)
+        )
+
+    # Deletes the note from data and then the column and updates the indices
+    def delete_note(e: ft.Event):
+        note_idx = e.control.parent.data
+        widget.notes.pop(note_idx)
+
+    def toggle_sidebar_visibility(e: ft.Event):
+        widget.sidebar_visible = not widget.sidebar_visible
+
+    creating_note, set_creating_note = ft.use_state(False)
+
+    
+
+    # Header that is shared by all widgets using the sidebar. Gives them a title, open settings button, and close button
+    sidebar_header = ft.Row(
+        [
+            SidebarTitleTextField(
+                value=widget.title,
+                on_submit=rename_widget, 
+            ), 
+        ],
+        spacing=0
+    )
+
+    description_tf = ft.TextField(
+        value=widget.description, label="Description",
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+        #border_color=ft.Colors.TRANSPARENT,
+        margin=ft.Margin.only(top=4),
+        #focused_border_color=ft.Colors.PRIMARY,
+        multiline=True, dense=True, expand=True, 
+        on_blur=update_description,
+        capitalization=ft.TextCapitalization.SENTENCES,
+        label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY) 
+    )   
+
+    # Where we build the different content in each sidebar
+    sidebar_body = ft.Column([], scroll=ft.ScrollMode.AUTO, expand=True, spacing=0,)
+
+    # Footer in the sidebar to hold the description textfield and any other controls that need to be at the bottom of the sidebar
+    sidebar_footer = ft.Row([description_tf])
+
+    # The label for Notes with a new note button and textfield
+    sidebar_notes_label = ft.Row([
+        ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True),
+        new_note_button := ft.IconButton(
+            ft.Icons.NEW_LABEL_OUTLINED, ft.Colors.PRIMARY, 
+            tooltip="Add Note",
+            on_click=lambda: set_creating_note(True),
+            mouse_cursor="click", visible=not creating_note
+        ),
+        new_note_tf := ft.TextField(
+            on_submit=save_new_note, visible=creating_note, expand=True,
+            on_blur=lambda: set_creating_note(False), margin=ft.Margin.only(left=4),
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            
+            #border_radius=4, 
+            dense=True, capitalization=ft.TextCapitalization.SENTENCES,
+            #border_color=ft.Colors.TRANSPARENT,
+            #focused_border_color=ft.Colors.PRIMARY,
+            label="New Note Label", label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
+        )
+        
+    ], spacing=0)
+
+    sidebar_notes_column = ft.Column(
+        [create_new_note_ctrl(idx, value) for idx, value in enumerate(widget.notes)]
+    )
+
+    # Button (container) for showing and hiding the sidebar
+    toggle_sidebar_visibility_button = ft.Container(
+        ft.Icon(
+            ft.Icons.KEYBOARD_DOUBLE_ARROW_LEFT_ROUNDED if not widget.sidebar_visible else ft.Icons.KEYBOARD_DOUBLE_ARROW_RIGHT_ROUNDED,
+            ft.Colors.PRIMARY, 
+        ),
+        on_click=toggle_sidebar_visibility,
+        ink=True, border_radius=4, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+        shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE_CONTAINER_LOWEST),
+        padding=ft.Padding.symmetric(horizontal=0, vertical=0),
+        height=40
+    )
+    return ft.Row([
+        toggle_sidebar_visibility_button,
+        ft.Container(
+            #border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
+            padding=ft.Padding.all(10),
+            shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE_CONTAINER_LOWEST), 
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            width=0 if not widget.sidebar_visible else widget.w / 4, # Start collapsed, and when built we will get bigger if showing
+            animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            content=ft.Column([     # Holds our header seperated by the body
+                sidebar_header, 
+                ft.Divider(),
+                sidebar_body,
+                sidebar_footer
+            ], expand=True, spacing=0)
+        )
+    ], tight=True, spacing=0)
+
 # Returns the consistant control for all widgets
 @ft.component
 def WidgetView(widget: Widget, content: ft.Control):
+
+    def get_size(e: ft.LayoutSizeChangeEvent):
+        widget.w = e.width
+        widget.h = e.height
+
     #story = ft.use_context(StoryContext)
+
     return ft.Container(
         content,
         key=widget.id,
+        on_size_change=get_size
     )
