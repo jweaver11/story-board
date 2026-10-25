@@ -316,14 +316,16 @@ def Workspace() -> ft.Tabs:
         #tab_bar.indicator_color = tab_view.controls[new_selected_index].color
 
     # Handles a click event on a tab in the workspace
-    async def tab_click(self, e: ft.Event):
+    async def save_widget(_):
         """Save the active widget before Flet switches to another tab."""
-        return
-        selected_index = self.tabs.selected_index
-        if 0 <= selected_index < len(self.tab_view.controls):
-            selected_widget = self.tab_view.controls[selected_index]
+        
+        selected_index = tabs.selected_index
+        if 0 <= selected_index < len(tab_view.controls):
+            selected_widget = tab_view.controls[selected_index]
+            print("Selected widget:", selected_widget.title)
             if hasattr(selected_widget, 'save_file'):
                 await selected_widget.save_file()
+                print("Saved widget", selected_widget.title)
 
     
 
@@ -416,7 +418,6 @@ def Workspace() -> ft.Tabs:
         return tab
 
     story = ft.use_context(StoryContext)
-    #overlay = ft.use_context(OverlayContext)
 
     visible_widgets = [widget for widget in story.widgets.values() if widget.visible]
     sorted_visible_widgets: list = sorted(visible_widgets, key=lambda w: w.index)
@@ -430,7 +431,7 @@ def Workspace() -> ft.Tabs:
         #indicator_color=indicator_color, 
         divider_height=2,
         enable_feedback=False, 
-        #on_click=self.tab_click,
+        on_click=save_widget,
         label_padding=ft.Padding.only(left=6), #padding=ft.Padding.all(20)
         key=f"{story.id}_tab_bar"
     )
@@ -446,11 +447,17 @@ def Workspace() -> ft.Tabs:
         key=f"{story.id}_tab_view"
     )
 
-    # Return he tabs control
-    return ft.Tabs(
+    # Flutter's Tabs ignores a new selected_index when the tab count changes in the same update,
+    # so we apply the selection one render later, after the new length has landed
+    tab_count = len(sorted_visible_widgets) if len(sorted_visible_widgets) > 0 else 1
+    target_index = story.selected_index if story.selected_index < len(sorted_visible_widgets) else 0
+    shown_index, set_shown_index = ft.use_state(target_index)
+    ft.use_effect(lambda: set_shown_index(target_index), [tab_count, target_index])
+
+    tabs = ft.Tabs(
         expand=True, 
-        length=len(sorted_visible_widgets) if len(sorted_visible_widgets) > 0 else 1,
-        selected_index=story.selected_index if story.selected_index < len(sorted_visible_widgets) else 0,
+        length=tab_count,
+        selected_index=min(shown_index, tab_count - 1),
         on_change=tab_change,
         animation_duration=100,
         content=ft.Column([
@@ -459,6 +466,9 @@ def Workspace() -> ft.Tabs:
         ], expand=True, spacing=0),
         key=f"{story.id}_workspace"
     )    
+
+    # Return he tabs control
+    return tabs
 
 
     

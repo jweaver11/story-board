@@ -44,17 +44,19 @@ NEGATIVE_NUMBER_FILTER = ft.InputFilter(allow=True, regex_string=r"^-?[0-9]*$")
 # Rail container on desktop to hold the drawing controls
 @ft.component
 def DrawingControlsRail() -> ft.Control:
+
+    app_settings = ft.use_context(AppSettingsContext)
     
     return ft.Container(
         ft.Column(DrawingControls()),
         alignment=ft.Alignment.CENTER,  # Aligns content to the 
         padding=ft.Padding.only(bottom=10, right=6, left=6, top=10),
-        #animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+        animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
         bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-        #width=78 if app_settings.data.get('story', {}).get('show_canvas_rail', False) == True else 0,
-        #visible=app_settings.data.get('story', {}).get('show_canvas_rail', False) == True and not ft.context.page.platform.is_mobile()
-        #visible=app_settings.show_canvas_rail == True and not ft.context.page.platform.is_mobile()
+        width=78 if app_settings.show_drawing_controls == True else 0,
+        #key="drawing_controls_rail",
+        visible=not ft.context.page.platform.is_mobile()
     )
 
 

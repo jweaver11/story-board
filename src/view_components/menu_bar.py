@@ -18,7 +18,7 @@ import shutil
 import stat
 from contexts.constants import STORIES_DIRECTORY_PATH
 from styles.snack_bar import SnackBar
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from view_components.drawing_controls_rail import DrawingControls
 from contexts.contexts import AppContext, AppSettingsContext, StoryContext
 import asyncio
@@ -506,17 +506,29 @@ def MenuBar() -> ft.Control:
         page.pop_dialog()
         page.show_dialog(SnackBar(busy_text, duration=60000))
         try:
+            if restart_after:
+                # Leave the story view first so its components unmount (and flush any saves) BEFORE the files are replaced
+                page.navigate("/loading")
+                await asyncio.sleep(0.3)
+
             count = await asyncio.to_thread(action)
-            #if restart_after:
-                # Skip the close handler (it would save the old in-memory data over what we just pulled)
-                
-                #page.window.prevent_close = False
-                #await page.window.destroy()
-                #return
+
+            if restart_after:
+                # Replace all in-memory state with the pulled files, so nothing stale can be saved over them later
+                from utils.stories_loader import load_stories
+                from utils.context_loader import load_app_settings
+                app.stories.clear()
+                await asyncio.to_thread(load_stories, app)
+                new_settings = load_app_settings()
+                for name, value in asdict(new_settings).items():
+                    setattr(app_settings, name, value)
+
+                target = app_settings.route if app_settings.route.lstrip("/").split("/")[-1] in app.stories else "/"
+                page.show_dialog(SnackBar(f"{done_text} ({count} files)"))
+                page.navigate(target)
+                return
+
             page.show_dialog(SnackBar(f"{done_text} ({count} files)"))
-            page.navigate("/loading")
-            await asyncio.sleep(0.2)
-            page.navigate(story.route)
         except Exception as ex:
             page.show_dialog(SnackBar(f"Google Drive error: {ex}"))
         finally:
@@ -549,7 +561,7 @@ def MenuBar() -> ft.Control:
             "Pull from cloud?",
             "This overwrites everything on this device with the data in your Google Drive 'Story Board' folder. "
             "Local stories, widgets, and settings that are not in the cloud will be permanently deleted. "
-            "The app will close afterwards. Reopen it to see the pulled data.",
+            "The app will reload the pulled data afterwards.",
             "Pull and overwrite local", google_drive.pull_from_drive, "Pulling from Google Drive...", "Pulled from Google Drive",
             restart_after=True,
         )

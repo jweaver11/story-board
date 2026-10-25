@@ -49,7 +49,7 @@ class Story:
         self.content_directory_path = os.path.join(constants.STORIES_DIRECTORY_PATH, self.id, "content")
         self.file_path = os.path.join(constants.STORIES_DIRECTORY_PATH, self.id, f"{self.id}.json")
         self.route = f"stories/{self.id}"
-        #self.load_widgets() 
+        self.load_widgets() 
    
     
     # Called whenever there are changes in our data that need to be saved
@@ -822,6 +822,10 @@ class Story:
         # Save our widget to our widgets list
         self.widgets[widget.id] = widget        
         print("created new widget: ", widget.title)
+        self.selected_index = len([w for w in self.widgets.values() if w.visible]) - 1
+
+        await asyncio.sleep(0.5)
+        print("selected index: ", self.selected_index)
         return
         if update:
             # Finish tasks creating widget to make sure the file has enough time to save
@@ -1085,8 +1089,6 @@ def StoryView() -> ft.View:
 
     if not story:
         return ft.View([ft.Text("Error finding story")])
-
-    story.load_widgets()
 
     block_context, _ = ft.use_state(BlockerState())
 
