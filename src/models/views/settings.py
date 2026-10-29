@@ -286,7 +286,7 @@ class Settings(ft.View):
         from models.app import app  
 
         # Catch page resizing when app is initializing and ignore them
-        if app.ignore_settings_change:      
+        if app.ignore_settings_change == True:     
             return
         
         # If we're minmized, save nothing and just return

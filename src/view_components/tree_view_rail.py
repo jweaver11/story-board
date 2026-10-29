@@ -60,7 +60,7 @@ class ContentRail(ft.Column):
     def __init__(self, story: Story):
         
         # Initialize the parent Rail class first
-        super().__init__()
+        super().__init__(spacing=0)
         
         self.story = story
 

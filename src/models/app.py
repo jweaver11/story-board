@@ -26,8 +26,7 @@ class App:
         # If we are connected to the cloud
         self.is_cloud_authenticated: bool = False
 
-        # State management
-        self.ignore_settings_change = True # Ignore settings changes when page is loading itself and saving incorrect changes
+        self.ignore_settings_change = True  # Ignore settings changes when page is loading itself and saving incorrect changes
 
     # Called on app startup in main
     def load_settings(self, page: ft.Page):
@@ -198,6 +197,7 @@ class App:
             if story.route == app.settings.data.get('page', {}).get('route', None):
                 app.settings.story = story  # Gives our settings widget the story reference it needs
                 await page.push_route(story.route)
+                self.ignore_settings_change = False
                 return
                 
             
