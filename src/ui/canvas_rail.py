@@ -81,7 +81,7 @@ class CanvasRail(ft.Container):
                 super().__init__(*args, **kwargs)
                 self.dense=True
                 self.label_style=ft.TextStyle(color=ft.Colors.PRIMARY, italic=True)
-                self.border_radius=ft.BorderRadius.all(4)
+                #self.border_radius=ft.BorderRadius.all(4)
                 #self.content_padding=ft.Padding.only(left=6, right=6, top=4, bottom=4)
                 #self.expand=False
                 self.multiline=False
@@ -89,8 +89,8 @@ class CanvasRail(ft.Container):
                 if self.input_filter is None:
                     self.input_filter=ft.NumbersOnlyInputFilter()
                 self.margin=ft.Margin.only(top=8, left=4, right=4)
-                self.border_color=ft.Colors.OUTLINE_VARIANT
-                self.focused_border_color=ft.Colors.PRIMARY
+                #self.border_color=ft.Colors.OUTLINE_VARIANT
+                #self.focused_border_color=ft.Colors.PRIMARY
 
         class UpDownButtons(ft.Column):
             def __init__(self, up_function=None, down_function=None):

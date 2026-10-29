@@ -676,8 +676,8 @@ class MenuBar(ft.Container):
                     )
                 ]
 
-        app.is_cloud_authenticated = self.page.run_task(_check_cloud_sync_authentication)
-        print(f"Cloud authenticated: {app.is_cloud_authenticated}")
+        #app.is_cloud_authenticated = self.page.run_task(_check_cloud_sync_authentication)
+        #print(f"Cloud authenticated: {app.is_cloud_authenticated}")
 
         
         self.cloud_button = ft.PopupMenuButton(

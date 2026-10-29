@@ -390,7 +390,7 @@ class PlotChart(Widget):
                 on_blur=_save_title,
                 #text_style=ft.TextStyle()
                 text_align=ft.TextAlign.CENTER,
-                expand=True, border_radius=4
+                expand=True, #border_radius=4
             )
 
             # Our nodes content. Column with label, divider, description text field, and connection points
@@ -436,7 +436,8 @@ class PlotChart(Widget):
                 expand=True, #shadow=ft.BoxShadow(1, 1, blur_style=ft.BlurStyle.OUTER),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 #bgcolor=ft.Colors.with_opacity(0.12, self.color),
-                border_radius=8, padding=ft.Padding.all(8),
+                #border_radius=8, 
+                padding=ft.Padding.all(8),
                 alignment=ft.Alignment.TOP_CENTER,
             )
                 
@@ -619,7 +620,7 @@ class PlotChart(Widget):
             text_style=ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=14),
             data=node_data.get('id'),
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            multiline=True, dense=True, expand=True, border_radius=4,
+            multiline=True, dense=True, expand=True, #border_radius=4,
             capitalization=ft.TextCapitalization.SENTENCES,
             label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
         )
@@ -738,7 +739,7 @@ class PlotChart(Widget):
             content=ft.Stack([      # Hold the edge canvas and node stack
                 ft.Container(
                     image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
-                    expand=True, border_radius=4
+                    expand=True, #border_radius=4
                 ),
                 self.edge_canvas,
                 self.node_stack, 

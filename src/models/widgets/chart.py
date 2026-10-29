@@ -547,8 +547,9 @@ class Chart(Widget):
                             ft.TextField(
                                 label="Max Y Value", value=str(self.data.get('bar_data', {}).get('max_y', 20)), 
                                 input_filter=ft.NumbersOnlyInputFilter(), data="max", on_blur=set_max_y_value,
-                                margin=ft.Margin.only(top=6, left=10, right=10), border_color=ft.Colors.OUTLINE_VARIANT,
-                                border_radius=4, dense=True
+                                margin=ft.Margin.only(top=6, left=10, right=10), #border_color=ft.Colors.OUTLINE_VARIANT,
+                                #border_radius=4, 
+                                dense=True
                             ),
                             # Adjust Rod width
                             ft.Row([
@@ -1095,8 +1096,9 @@ class Chart(Widget):
                                 on_blur=update_min_max_value,
                                 data="min_value",
                                 input_filter=ft.NumbersOnlyInputFilter(),
-                                margin=ft.Margin.only(top=6, left=10, right=10), border_color=ft.Colors.OUTLINE_VARIANT,
-                                border_radius=4, dense=True
+                                margin=ft.Margin.only(top=6, left=10, right=10), #border_color=ft.Colors.OUTLINE_VARIANT,
+                                #border_radius=4, 
+                                dense=True
                             ),
                             ft.TextField(
                                 value=str(self.data.get('radar_data', {}).get('max_value', 20)),
@@ -1104,8 +1106,9 @@ class Chart(Widget):
                                 on_blur=update_min_max_value,
                                 input_filter=ft.NumbersOnlyInputFilter(),
                                 data="max_value",
-                                margin=ft.Margin.only(top=6, left=10, right=10), border_color=ft.Colors.OUTLINE_VARIANT,
-                                border_radius=4, dense=True
+                                margin=ft.Margin.only(top=6, left=10, right=10), #border_color=ft.Colors.OUTLINE_VARIANT,
+                                #border_radius=4, 
+                                dense=True
                             )
                             
                             

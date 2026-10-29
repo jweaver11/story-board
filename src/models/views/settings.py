@@ -509,8 +509,8 @@ class Settings(ft.View):
                 self.menu_style=ft.MenuStyle(alignment=ft.Alignment.CENTER_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4))
                 self.fill_color=ft.Colors.SURFACE_CONTAINER_HIGHEST
                 self.filled=True
-                self.border_color=ft.Colors.TRANSPARENT
-                self.focused_border_color=ft.Colors.PRIMARY
+                #self.border_color=ft.Colors.TRANSPARENT
+                #self.focused_border_color=ft.Colors.PRIMARY
                 self.capitalization=ft.TextCapitalization.WORDS
                 self.content_padding=ft.Padding.only(left=10)
                 self.border_radius=4
