@@ -1,4 +1,4 @@
-''' Class for the Notes widget. Displays as its own tab for easy access to pinning '''
+﻿''' Class for the Notes widget. Displays as its own tab for easy access to pinning '''
 
 import flet as ft
 from models.views.story import Story
@@ -44,6 +44,10 @@ class Note(Widget):
         super().build()
 
         self.padding = ft.Padding.all(10)   # Set padding
+
+        def update_indices():
+            for i, ctrl in enumerate(card_row.controls):
+                ctrl.data = i
 
         
         # Adds our new card to data and our column
@@ -96,13 +100,60 @@ class Note(Widget):
 
             async def handle_strikethrough(e: ft.Event[ft.Control]):
                 if len(self.data['card_data']) > idx:
-                    self.data['card_data'][idx]['strikethrough'] = not self.data['card_data'][idx].get('strikethrough', False)
+                    struck = not self.data['card_data'][idx].get('strikethrough', False)
+                    self.data['card_data'][idx]['strikethrough'] = struck
                     self.update_data(**{'card_data': self.data['card_data']})
-                    card_row.controls[idx].content.update()
+                    decoration = ft.TextDecoration.LINE_THROUGH if struck else ft.TextDecoration.NONE
+                    column = card_row.controls[idx].content.content
+                    for tf in (column.controls[0], column.controls[2]):
+                        tf.text_style.decoration = decoration
+                        tf.update()
                     await self.story.close_menu()
 
+            async def move_card(offset: int):
+                await self.story.close_menu()
+                cards = self.data['card_data']
+                target = idx + offset
+                if offset == 0 or not 0 <= idx < len(cards) or not 0 <= target < len(cards):
+                    return
+
+                cards[idx], cards[target] = cards[target], cards[idx]
+                self.update_data(**{'card_data': cards})
+
+                controls = card_row.controls
+                controls[idx], controls[target] = controls[target], controls[idx]
+                update_indices()
+                card_row.update()
+
+            async def move_up(e=None):
+                await move_card(-1)
+
+            async def move_down(e=None):
+                await move_card(1)
 
             return [
+                
+                MenuOptionStyle(
+                    on_click=move_up,
+                    content=ft.Row([
+                        ft.Icon(ft.Icons.ARROW_UPWARD_OUTLINED, ft.Colors.PRIMARY),
+                        ft.Text("Move Up", weight=ft.FontWeight.BOLD)
+                    ], alignment=ft.MainAxisAlignment.START, spacing=10),
+                ),
+                MenuOptionStyle(
+                    on_click=move_down,
+                    content=ft.Row([
+                        ft.Icon(ft.Icons.ARROW_DOWNWARD_OUTLINED, ft.Colors.PRIMARY),
+                        ft.Text("Move Down", weight=ft.FontWeight.BOLD)
+                    ], alignment=ft.MainAxisAlignment.START, spacing=10),
+                ),
+                MenuOptionStyle(
+                    on_click=handle_strikethrough,
+                    content=ft.Row([
+                        ft.Icon(ft.Icons.FORMAT_STRIKETHROUGH_OUTLINED, size=20, color=ft.Colors.PRIMARY),
+                        ft.Text("Mark Done", weight=ft.FontWeight.BOLD)
+                    ], alignment=ft.MainAxisAlignment.START, spacing=10),
+                ),
                 MenuOptionStyle(
                     ft.SubmenuButton(
                         ft.Row([
@@ -117,13 +168,6 @@ class Note(Widget):
                     ),
                     no_padding=True, no_effects=True
                 ),
-                #MenuOptionStyle(
-                    #on_click=handle_strikethrough,
-                    #content=ft.Row([
-                        #ft.Icon(ft.Icons.FORMAT_STRIKETHROUGH_OUTLINED, size=20, color=ft.Colors.PRIMARY),
-                        #ft.Text("Mark Done", weight=ft.FontWeight.BOLD)
-                    #], alignment=ft.MainAxisAlignment.START, spacing=10),
-                #),
                 MenuOptionStyle(
                     on_click=handle_delete,
                     content=ft.Row([
@@ -146,7 +190,7 @@ class Note(Widget):
                 dense=True, multiline=True, width=400,
                 border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT)),
                 capitalization=ft.TextCapitalization.SENTENCES,
-                text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE),
+                text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE, decoration_thickness=2),
                 suffix_icon=ft.GestureDetector(
                     ft.IconButton(
                         ft.Icons.MORE_VERT, ft.Colors.ON_SURFACE_VARIANT, 
@@ -163,7 +207,7 @@ class Note(Widget):
             body_tf = ft.TextField(
                 dense=True,
                 border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT)),
-                text_style=ft.TextStyle(size=14, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE),
+                text_style=ft.TextStyle(size=14, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE, decoration_thickness=2),
                 multiline=True,
                 capitalization=ft.TextCapitalization.SENTENCES,
                 value=value, expand=True, on_blur=save_card_value,
@@ -178,6 +222,7 @@ class Note(Widget):
                         body_tf
                     ], spacing=0, expand=True),
                     bgcolor=ft.Colors.with_opacity(0.05, color),
+                    border_radius=4
                 ),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                 height=300, width=400,
