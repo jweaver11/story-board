@@ -79,14 +79,13 @@ class Note(Widget):
         def get_card_options(idx: int) -> list[ft.Control]:
             ''' Pops open a column of the menu options for this tree view item'''
 
-            async def handle_delete(e: ft.Event[ft.Control]):
+            async def delete_card(e: ft.Event[ft.Control]):
                 if len(self.data['card_data']) > idx:
                     del self.data['card_data'][idx]
                     self.update_data(**{'card_data': self.data['card_data']})
                     card_row.controls.pop(idx)
                     card_row.update()
-                    for i, ctrl in enumerate(card_row.controls):
-                        ctrl.data = i
+                    update_indices()
                     await self.story.close_menu()
 
             async def handle_color_change(e: ft.Event[ft.Control]):
@@ -169,7 +168,7 @@ class Note(Widget):
                     no_padding=True, no_effects=True
                 ),
                 MenuOptionStyle(
-                    on_click=handle_delete,
+                    on_click=delete_card,
                     content=ft.Row([
                         ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, size=20, color=ft.Colors.ERROR),
                         ft.Text("Delete Card", weight=ft.FontWeight.BOLD)

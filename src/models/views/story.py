@@ -88,7 +88,7 @@ class Story(ft.View):
         # Declare our UI elements before we create them later. They are stored as objects so we can reload them when needed
         self.menubar: ft.Container     # Menu bar at top of page
         self.canvas_rail: ft.Container      # Rail on left side showing our 6 workspaces
-        self.active_rail: ft.Container    # Rail showing whichever workspace is selected
+        self.tree_view_rail: ft.Container    # Rail showing whichever workspace is selected
         self.workspace: ft.Container       # Main workspace area where our pins display our widgets
 
         self.menu: ft.Container         # Container that sits in the overlay and gets menu options passed into it
@@ -181,7 +181,7 @@ class Story(ft.View):
             })
             self.update_data(**{'folders': folders})
             if update:
-                self.active_rail.reload_rail()
+                self.tree_view_rail.reload_rail()
 
         # Handle errors
         except Exception as e:
@@ -220,7 +220,7 @@ class Story(ft.View):
             self.update_data(**{'folders': self.data['folders']})   
 
             if self.data.get('selected_rail', "content") != "canvas":
-                self.active_rail.reload_rail()
+                self.tree_view_rail.reload_rail()
             self.close_menu_instant()
            
 
@@ -529,7 +529,7 @@ class Story(ft.View):
                         print(f"Error importing content from {file_path}: {error}")
 
             self.load_widgets()
-            self.active_rail.reload_rail()
+            self.tree_view_rail.reload_rail()
         except OSError as error:
             self.page.show_dialog(SnackBar(f"Error importing folder: {error}"))
         finally:
@@ -576,7 +576,7 @@ class Story(ft.View):
                     print(f"Error importing widget file {selected_file.path}: {error}")
 
             self.load_widgets()
-            self.active_rail.reload_rail()
+            self.tree_view_rail.reload_rail()
         except OSError as error:
             self.page.show_dialog(SnackBar(f"Error importing files: {error}"))
         finally:
@@ -970,7 +970,7 @@ class Story(ft.View):
 
             # Apply the UI changes
             #if self.data.get('selected_rail', "content") != "canvas":
-            self.active_rail.reload_rail()
+            self.tree_view_rail.reload_rail()
     
        
 
@@ -1184,23 +1184,23 @@ class Story(ft.View):
         ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
         from view_components.menu_bar import MenuBar
         from view_components.canvas_rail import CanvasRail
-        from view_components.active_rail import ActiveRail
+        from view_components.tree_view_rail import ActiveRail
         from view_components.workspace import Workspace
         from models.app import app
         from models.isolated_controls.row import IsolatedRow
 
         # Called when resizing the active rail by dragging the resizer
-        def resize_active_rail(e: ft.DragUpdateEvent):
+        def resize_tree_view_rail(e: ft.DragUpdateEvent):
             ''' Responsible for altering the width of the active rail '''
             
-            self.active_rail.width += int(e.local_delta.x)    # Apply the change to our rail
+            self.tree_view_rail.width += int(e.local_delta.x)    # Apply the change to our rail
 
             # Clamp rail
-            if self.active_rail.width <= 120:
-                self.active_rail.width = 120
-            elif self.active_rail.width > 600:
-                self.active_rail.width = 600
-            self.active_rail.update()     
+            if self.tree_view_rail.width <= 120:
+                self.tree_view_rail.width = 120
+            elif self.tree_view_rail.width > 600:
+                self.tree_view_rail.width = 600
+            self.tree_view_rail.update()     
 
         # Handles keyboard events for the story
         async def handle_keyboard_event(e: ft.KeyboardEvent):
@@ -1238,13 +1238,13 @@ class Story(ft.View):
         # Create our menubar, workspaces rail, active rail, and workspace objects
         self.menubar = MenuBar(self)
         self.canvas_rail = CanvasRail(self)
-        self.active_rail = ActiveRail(self) 
+        self.tree_view_rail = ActiveRail(self) 
         self.workspace = Workspace(self)  
         
 
 
         # The actual resizer for the active rail (gesture detector)
-        self.active_rail_resizer = ft.GestureDetector(
+        self.tree_view_rail_resizer = ft.GestureDetector(
             content=ft.Container(
                 width=10,   # Total width of the GD, so its easier to find with mouse
                 content=ft.VerticalDivider(2, 2),     # Original
@@ -1252,8 +1252,8 @@ class Story(ft.View):
                 bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
             ),
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
-            on_pan_update=resize_active_rail, # Resize the active rail as app is dragging
-            on_pan_end=lambda: app.settings.update_data(**{'story': {'active_rail_width': self.active_rail.width}}),  # Save the resize when app is done dragging
+            on_pan_update=resize_tree_view_rail, # Resize the active rail as app is dragging
+            on_pan_end=lambda: app.settings.update_data(**{'story': {'tree_view_rail_width': self.tree_view_rail.width}}),  # Save the resize when app is done dragging
             drag_interval=20,
         )
 
@@ -1265,8 +1265,8 @@ class Story(ft.View):
             IsolatedRow([
                 
                 self.canvas_rail,
-                self.active_rail,
-                self.active_rail_resizer,
+                self.tree_view_rail,
+                self.tree_view_rail_resizer,
                 self.workspace,
                 #ft.Container(self.workspace, expand=True, gradient=dark_gradient)
             ], spacing=0, expand=True)
