@@ -440,6 +440,11 @@ class ContentRail(ft.Column):
             )
         ]
 
+    async def change_sort_method(self, e: ft.Event[ft.MenuItemButton]):
+        sort_method = e.control.data
+        app.settings.update_data(**{'story': {'rail_sort_method': sort_method}})
+        self.parent.reload_rail()
+
     # Reload the rail whenever we need
     def build(self) -> ft.Control:
         ''' Reloads the content rail '''
@@ -593,6 +598,54 @@ class ContentRail(ft.Column):
                 style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
                 tooltip="Import or Export",
             ),
+            ft.SubmenuButton(
+                ft.Container(
+                    ft.Icon(ft.Icons.SORT_OUTLINED, ft.Colors.PRIMARY),
+                    padding=ft.Padding.all(8), shape=ft.BoxShape.CIRCLE,
+                    width=40, height=40, alignment=ft.Alignment.CENTER,
+                ),
+                [
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.SORT_OUTLINED, ft.Colors.PRIMARY), content="Default", 
+                        on_click=self.change_sort_method, close_on_click=True, data="default", 
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                        tooltip="Let your Operating System decide the order. Windows is alphabetical, Mac is by creation date", 
+                    ),  
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.SORT_BY_ALPHA_OUTLINED, ft.Colors.PRIMARY), content="Alphabetical", 
+                        on_click=self.change_sort_method, close_on_click=True, data="alphabetical", 
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    ),  
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.SORT_BY_ALPHA_OUTLINED, ft.Colors.PRIMARY), content="Alphabetical Reversed", 
+                        on_click=self.change_sort_method, close_on_click=True, data="alphabetical_reversed", 
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                    ),  
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY), content="Color", 
+                        on_click=self.change_sort_method, close_on_click=True, data="color",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY), content="Color Reversed", 
+                        on_click=self.change_sort_method, close_on_click=True, data="color_reversed",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.UPDATE_OUTLINED, ft.Colors.PRIMARY), content="Creation Date", 
+                        on_click=self.change_sort_method, close_on_click=True, data="creation_date",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                    ),
+                    ft.MenuItemButton(
+                        leading=ft.Icon(ft.Icons.UPDATE_OUTLINED, ft.Colors.PRIMARY), content="Creation Date Reversed", 
+                        on_click=self.change_sort_method, close_on_click=True, data="creation_date_reversed",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
+                    ),
+                ],
+                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
+                style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                tooltip="Change how you sort your story's content.",
+            ),
         ]
 
         menubar = ft.MenuBar(
@@ -615,13 +668,14 @@ class ContentRail(ft.Column):
         # Build the content of our rail
         content = IsolatedListView(
             scroll=ft.ScrollMode.AUTO,
-            spacing=0,
+            spacing=0, 
             expand=True,
             controls=[
                 ft.Container(self.new_item_textfield, margin=ft.Margin.only(left=10, right=10, top=6))
             ],
         )
 
+        
 
         # Load our content directory data into the rail
         load_directory_data(

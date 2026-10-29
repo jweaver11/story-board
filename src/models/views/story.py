@@ -17,6 +17,7 @@ from utils.tutorial import run_tutorial
 import uuid
 from styles.colors import dark_gradient
 from concurrent.futures import ThreadPoolExecutor
+import time
 
  
 class Story(ft.View):
@@ -51,12 +52,11 @@ class Story(ft.View):
                 'content_directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, "content"),   # Path to store widget json files
                 'canvas_directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, "canvas"),     # Path to store canvas png captures
                 'file_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, f"{id}.json"),   # Path to story's json file
-                
+                'created_at': time.time(),
 
                 'selected_rail': "content",
                 'workspace_selected_index': 0,   # Index of the selected widget in the main pin, used for switching between tabs in the main pin
 
-                'created_at': str(),
                 'last_modified': str(),
 
                 # Sort methods for our specialized rails
@@ -72,7 +72,8 @@ class Story(ft.View):
                     'path': {                   # Path to the folder (used as the key, since all will be unique)
                         'name': str(),            # Name of folder just in case
                         'color': str(),           # Color of that folder
-                        'is_expanded': True     # Whether this folder is expanded in the tree view
+                        'is_expanded': True,     # Whether this folder is expanded in the tree view
+                        'created_at': time.time()
                     }
                 },        
             }
@@ -178,6 +179,7 @@ class Story(ft.View):
                 'name': name,
                 'is_expanded': True,
                 'color': app.settings.data.get('story', {}).get('default_folder_color', "primary"),
+                'created_at': time.time()
             })
             self.update_data(**{'folders': folders})
             if update:

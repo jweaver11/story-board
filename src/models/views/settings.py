@@ -63,17 +63,10 @@ class Settings(ft.View):
 
                 # Settings about story details
                 'story': {
-                    'workspaces_rail_is_collapsed': False,
-                    'active_rail_width': 250,  
+                    'tree_view_rail_width': 250,  
                     'default_folder_color': "primary",    # Categories thrown in here
                     'show_canvas_rail': True,   # If the canvas rail is hidden or not
-                    'workspaces_rail_order': [      # Order of the workspace rail 
-                        "content",
-                        "canvas",
-                        "plot",
-                        "characters",
-                        "world_building",
-                    ],
+                    'rail_sort_method': "default",   # Method to sort items in the rail. Defaul lets OS decide, alphabetically, color, creation date
                 },
 
                 # Default settings for the newly created widgets. All have a color, but can have additional settings specific to each widget type.

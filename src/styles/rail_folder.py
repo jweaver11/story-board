@@ -23,7 +23,8 @@ class RailFolder(ft.GestureDetector):
         rail: ft.Control,                                       # Reference to the rail this directory is in
         is_expanded: bool = False,                              # Whether this directory is expanded or not
         color: str = "primary",                                 # Color of the folder icon
-        father: 'RailFolder' = None,                     # Optional parent directory tile, if there is one
+        created_at: float = 0,                                  # Creation timestamp of the folder
+        father: 'RailFolder' = None,                            # Optional parent directory tile, if there is one
     ):
         
         # Reference for all our passed in data
@@ -32,7 +33,8 @@ class RailFolder(ft.GestureDetector):
         self.story = story
         self.father = father
         self.color = color
-        self.is_expanded = is_expanded  
+        self.created_at = created_at
+        self.is_expanded = is_expanded
         self.rail = rail
 
         # State tracking variables
@@ -98,7 +100,7 @@ class RailFolder(ft.GestureDetector):
             icon_color=self.color,
             controls_padding=ft.Padding(10, 0, 0, 0),       # Keeps all sub children indented
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
-            adaptive=True, bgcolor="transparent",
+            adaptive=True, #bgcolor="transparent",
             shape=ft.RoundedRectangleBorder(radius=4),
             on_change=self.toggle_expand,
             controls=[self.new_item_textfield],     
@@ -106,12 +108,18 @@ class RailFolder(ft.GestureDetector):
 
     # Show our button to show options when we enter this folder
     async def _highlight(self, e=None):
+        self.expansion_tile.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
+        self.expansion_tile.collapsed_bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
+        self.expansion_tile.update()
         return
         self.expansion_tile.trailing.visible = True
         self.expansion_tile.update()
 
     # Hide our button to show options when we exit this folder
     async def _stop_highlight(self, e=None):
+        self.expansion_tile.bgcolor = ft.Colors.TRANSPARENT
+        self.expansion_tile.collapsed_bgcolor = ft.Colors.TRANSPARENT
+        self.expansion_tile.update()
         return
         self.expansion_tile.trailing.visible = False
         self.expansion_tile.update()
@@ -538,7 +546,7 @@ class RailFolder(ft.GestureDetector):
             
             # Otherwise we're not submitting (just clicking off the textbox), so we cancel the rename
             else:
-                self.story.active_rail.reload_rail()
+                self.story.tree_view_rail.reload_rail()
        
 
         # Called everytime a change in textbox occurs
@@ -604,7 +612,7 @@ class RailFolder(ft.GestureDetector):
                 #self.story.blocker.visible = True
                 #self.story.blocker.update()
                 #await asyncio.sleep(0)
-                self.story.active_rail.reload_rail()
+                self.story.tree_view_rail.reload_rail()
                 self.page.pop_dialog()
                 #self.story.blocker.visible = False
                 #self.story.blocker.update()
@@ -653,7 +661,7 @@ class RailFolder(ft.GestureDetector):
             await self.story.change_folder_data(self.full_path, 'color', color)
             
             # Change our icon to match, apply the update
-            self.story.active_rail.reload_rail()
+            self.story.tree_view_rail.reload_rail()
             await self.story.close_menu() 
 
         # List for our colors when formatted

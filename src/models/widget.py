@@ -17,6 +17,7 @@ import flet.canvas as cv
 import asyncio
 import uuid
 from styles.text_fields import TextField, SidebarTitleTextField
+import time
 
 
 
@@ -49,6 +50,7 @@ class Widget(ft.Container):
                 'title': title,                            # Title of our widget  
                 'directory_path': directory_path,          # Directory path to the file this widget's data is stored in
                 'tag': str(),                              # Tag to identify what type of widget this is
+                'created_at': time.time(),
                 'index': 999,                  # Index of this widget in the workspace (start at end)
                 #'rail_index': 999,                 # Index of this widget in the rail for sorting (start at end)
                 'visible': True,                  # Whether this widget is visible in the workspace or not
@@ -160,7 +162,7 @@ class Widget(ft.Container):
             await self.save_file()
 
             # Reload the rail to apply changes
-            self.story.active_rail.reload_rail()
+            self.story.tree_view_rail.reload_rail()
             return True
         else:
             return False
@@ -444,7 +446,7 @@ class Widget(ft.Container):
         await self.save_file()  # Force a file save
                 
         if self.story.data.get("selected_rail", "content") != "canvas":
-            self.story.active_rail.reload_rail()   # Reload the rail to reflect the name change
+            self.story.tree_view_rail.reload_rail()   # Reload the rail to reflect the name change
 
         if self.data.get('visible', False) == True:
             await self.story.workspace.update_widget_tab_title(self.data.get('index'), self.data.get('title'))  # Update the title of the tab in the workspace if we're visible
@@ -468,7 +470,7 @@ class Widget(ft.Container):
                 await self.story.workspace.update_widget_tab_color(self.data.get('index'), self.data.get('color'))  # Update the color of the tab in the workspace if we're visible
                 
             if self.story.data.get("selected_rail", "content") != "canvas":
-                self.story.active_rail.reload_rail()   # Reload the rail to reflect the color change
+                self.story.tree_view_rail.reload_rail()   # Reload the rail to reflect the color change
             await self.story.close_menu()
 
         # List for our colors when formatted
@@ -496,7 +498,7 @@ class Widget(ft.Container):
             if await self.delete_file():
                 self.story.widgets.pop(self.data.get('id', ''), None)   # Remove ourselves from the story's widgets
                 
-            self.story.active_rail.reload_rail()    # Reload the rail to reflect the deletion
+            self.story.tree_view_rail.reload_rail()    # Reload the rail to reflect the deletion
 
             if self.data.get('visible', False) == True:
                 await self.story.workspace.remove_widget_from_workspace(self)  # Remove ourselves from the workspace if we were visible

@@ -13,6 +13,50 @@ from styles.rail_file import RailFile
 import math
 
 
+def sort_entries(entrys: list, entry_type: str="file") -> list:
+    ''' Sorts the passed in list by either default (os decide), alphabetically, color, or creattion date, as well as the reverse of these options (except default)'''
+    from models.app import app
+    sort_method = app.settings.data.get('story', {}).get('rail_sort_method', 'default')
+
+    if entry_type == "folder":
+        match sort_method:
+            case "alphabetical":
+                return sorted(entrys, key=lambda x: x.title.lower())
+            case "alphabetical_reversed":
+                return sorted(entrys, key=lambda x: x.title.lower(), reverse=True)
+            case "color":
+                return sorted(entrys, key=lambda x: str(x.color).lower())
+            case "color_reversed":
+                return sorted(entrys, key=lambda x: str(x.color).lower(), reverse=True)
+            case "creation_date":
+                return sorted(entrys, key=lambda x: x.created_at)
+            case "creation_date_reversed":
+                return sorted(entrys, key=lambda x: x.created_at, reverse=True)
+            case _:
+                return entrys
+        return entrys
+
+    # For the files
+    else:
+        match sort_method:
+            case "alphabetical":
+                return sorted(entrys, key=lambda x: x.widget.data.get('title', '').lower())
+            case "alphabetical_reversed":
+                return sorted(entrys, key=lambda x: x.widget.data.get('title', '').lower(), reverse=True)
+            case "color":
+                return sorted(entrys, key=lambda x: x.widget.data.get('color', '').lower())
+            case "color_reversed":
+                return sorted(entrys, key=lambda x: x.widget.data.get('color', '').lower(), reverse=True)
+            case "creation_date":
+                return sorted(entrys, key=lambda x: x.widget.data.get('created_at', ''))
+            case "creation_date_reversed":
+                return sorted(entrys, key=lambda x: x.widget.data.get('created_at', ''), reverse=True)
+            case _:
+                return entrys
+
+
+
+
 def load_directory_data(
     story: Story,                                         # Story reference for any story related data
     directory: str,                                       # The directory to load data from
@@ -23,6 +67,7 @@ def load_directory_data(
     
     def _canon_path(p: str) -> str:
         return os.path.normcase(os.path.normpath(p))
+
     
 
     try: 
@@ -58,6 +103,7 @@ def load_directory_data(
             # Set our color and expanded state
             color = folders_meta.get(_canon_path(full_path), {}).get('color', "primary")
             is_expanded = folders_meta.get(_canon_path(full_path), {}).get('is_expanded', False)    
+            created_at = folders_meta.get(_canon_path(full_path), {}).get('created_at', 0)
 
             # Create the new folder dropdown
             new_folder = RailFolder(
@@ -66,6 +112,7 @@ def load_directory_data(
                 story=story,
                 color=color, rail=rail,
                 is_expanded=is_expanded,
+                created_at=created_at,
                 father=folder,
             )
 
@@ -122,21 +169,18 @@ def load_directory_data(
                 print("Could not find widget")
                 continue
 
-        # Sort files alphabetically
+        controls = folder.expansion_tile.controls if folder is not None else column.controls
+
+        # Folders first, then files, each sorted by the chosen method
+        folder_controls = sort_entries([c for c in controls if isinstance(c, RailFolder)], "folder")
+        file_controls = sort_entries([c for c in controls if isinstance(c, RailFile)])
+        others = [c for c in controls if not isinstance(c, (RailFolder, RailFile))]
+        new_controls = others + folder_controls + file_controls
+
         if folder is not None:
-            sorted_files = []
-            for control in folder.expansion_tile.controls:
-                if isinstance(control, RailFile):
-                    sorted_files.append(control)
-            sorted_files.sort(key=lambda x: x.widget.data.get('title', '').lower())
-            folder.expansion_tile.controls = [control for control in folder.expansion_tile.controls if not isinstance(control, RailFile)] + sorted_files
+            folder.expansion_tile.controls = new_controls
         else:
-            sorted_files = []
-            for control in column.controls:
-                if isinstance(control, RailFile):
-                    sorted_files.append(control)
-            sorted_files.sort(key=lambda x: x.widget.data.get('title', '').lower())
-            column.controls = [control for control in column.controls if not isinstance(control, RailFile)] + sorted_files
+            column.controls = new_controls
 
         # Return the parent expansion tile or column depending on what was provided
         return folder if folder is not None else column
