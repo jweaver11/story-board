@@ -144,7 +144,7 @@ class Note(Widget):
             label_tf = ft.TextField(
                 value=label,
                 dense=True, multiline=True, width=400,
-                #border_color=ft.Colors.TRANSPARENT,
+                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT)),
                 capitalization=ft.TextCapitalization.SENTENCES,
                 text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE),
                 suffix_icon=ft.GestureDetector(
@@ -162,7 +162,7 @@ class Note(Widget):
             # Bottom textfield for the body of the card
             body_tf = ft.TextField(
                 dense=True,
-                #border_color=ft.Colors.TRANSPARENT,
+                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT)),
                 text_style=ft.TextStyle(size=14, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE),
                 multiline=True,
                 capitalization=ft.TextCapitalization.SENTENCES,

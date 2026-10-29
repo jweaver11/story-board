@@ -1,16 +1,17 @@
-''' Widget rail items that don't need to be dragged and dropped but still need all other functionality '''
-
 import flet as ft
 from models.widget import Widget
 from styles.menu_option_style import MenuOptionStyle
-from styles.rail.rail_folder import RailFolder
+from styles.rail_folder import RailFolder
 from models.app import app
 from styles.colors import colors
+from styles.text_fields import TextField
 import os
+import asyncio
 import math
+from styles.snack_bar import SnackBar
 
 # Class for items within a tree view on the rail
-class WidgetRailItem(ft.GestureDetector):
+class RailFile(ft.GestureDetector):
 
     def __init__(
         self, 
@@ -25,7 +26,7 @@ class WidgetRailItem(ft.GestureDetector):
         tag = widget.data.get('tag', None)
 
         match tag:
-            case "document": self.icon = ft.Icons.DESCRIPTION_OUTLINED
+            case "manuscript": self.icon = ft.Icons.DESCRIPTION_OUTLINED
             case "canvas": self.icon = ft.Icons.BRUSH_OUTLINED
             case "canvas_board": self.icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
             case "note": self.icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
@@ -33,11 +34,11 @@ class WidgetRailItem(ft.GestureDetector):
             case "plotline": self.icon = ft.Icons.TIMELINE_OUTLINED
             case "map": self.icon = ft.Icons.MAP_OUTLINED
             case "world": self.icon = ft.Icons.PUBLIC_OUTLINED
-            case "character_connection_map": self.icon = ft.Icons.ACCOUNT_TREE_OUTLINED
+            case "character_relationship_map": self.icon = ft.Icons.ACCOUNT_TREE_OUTLINED
             case "item": self.icon = ft.Icons.STAR_OUTLINE_ROUNDED 
             case "comic_preview": self.icon = ft.Icons.SLIDESHOW_OUTLINED
             case "chart": 
-                if widget.data.get('type', None) == "bar":
+                if widget.data.get('chart_type', None) == "bar":
                     self.icon = ft.Icons.INSERT_CHART_OUTLINED
                 else:
                     self.icon = ft.CupertinoIcons.COMPASS
@@ -48,7 +49,7 @@ class WidgetRailItem(ft.GestureDetector):
         self.text_style = ft.TextStyle(
             size=14,
             color=ft.Colors.ON_SURFACE,
-            weight=ft.FontWeight.BOLD,
+            weight=ft.FontWeight.W_500,
             overflow=ft.TextOverflow.ELLIPSIS,
         )
 
@@ -63,6 +64,7 @@ class WidgetRailItem(ft.GestureDetector):
             on_tap = self.widget.show_widget,
             mouse_cursor = ft.MouseCursor.CLICK,
         )
+
     
     # Called when this item is right clicked
     def get_menu_options(self) -> list[ft.Control]:
@@ -75,17 +77,65 @@ class WidgetRailItem(ft.GestureDetector):
             self.update()
             await self.edit_title_tf.focus()
 
+        async def handle_delete(e=None):
+            
+            async def _delete_confirmed(_=ft.Event):
+                ''' Deletes the widget after confirmation '''
+
+                # Delete file, remove from dict
+                if await self.widget.delete_file():
+                    self.widget.story.widgets.pop(self.widget.data.get('id', ''), None)   # Remove ourselves from the story's widgets
+                else:
+                    self.page.pop_dialog()
+                    self.page.show_dialog(SnackBar("Error deleting file. Please try again."))
+                    return
+
+                if self.widget.data.get('visible', False) == True:
+                    await self.widget.story.workspace.remove_widget_from_workspace(self.widget)  # Remove ourselves from the workspace if we were visible
+
+                self.parent.controls.remove(self)  # Remove ourselves from the rail
+                self.parent.update()
+
+                self.page.pop_dialog()
+
+            
+
+            # Append an overlay to confirm the deletion
+            dlg = ft.AlertDialog(
+                title=ft.Text(f"Are you sure you want to delete {self.widget.data.get('title', '')} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
+                alignment=ft.Alignment.CENTER,
+                title_padding=ft.Padding.all(25),
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
+                    ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ]
+            )
+
+            await self.widget.story.close_menu()
+            self.page.show_dialog(dlg)
+            await self.widget.story.close_menu()
+
+        file_path = os.path.join(
+            self.widget.data.get('directory_path', ''),
+            f"{self.widget.data.get('id', '')}.json",
+        )
+
         return [
             MenuOptionStyle(
                 on_click=handle_rename,
                 content=ft.Row([
                     ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.widget.data.get('color', 'primary'),),
                     ft.Text(
-                        f"Rename {self.widget.data.get('title')}", 
+                        f"Rename {self.widget.data.get('title')}",
                         weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS, expand=True
-                        
                     ), 
                 ]),
+            ),
+            ft.MenuItemButton(
+                leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), content="Export Widget",
+                on_click=self.widget.story.handle_export, close_on_click=True,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                tooltip="Export this part of your story.", data=file_path
             ),
             MenuOptionStyle(
                 ft.SubmenuButton(
@@ -96,7 +146,7 @@ class WidgetRailItem(ft.GestureDetector):
                     ], expand=True),
                     self.widget.get_color_options(), 
                     menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
+                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     tooltip="Change this widget's color"
                 ),
                 no_padding=True, no_effects=True
@@ -112,35 +162,39 @@ class WidgetRailItem(ft.GestureDetector):
 
     # Called when hovering mouse over a tree view item
     async def _highlight(self, e=None):
-        self.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
-        #self.content.trailing.visible = True    
+        self.content.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
+        #self.options_button.opacity = 1
         self.update()
 
     # Called when stopping hover over a tree view item
     async def _stop_highlight(self, e=None):
-        self.content.bgcolor = ft.Colors.TRANSPARENT
-        #self.content.trailing.visible = False
+        self.content.content.bgcolor = ft.Colors.TRANSPARENT
+        #self.options_button.opacity = 0
         self.update()
-
-    
-    
 
 
     # Called to reload our tree view file display
     def build(self):
 
+        
         leading_control = ft.Container(
             ft.Icon(self.icon, color=self.icon_color),
             border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if self.father is not None else None,
             padding=ft.Padding.only(left=6)
         )
 
+
+        #self.options_button = ft.IconButton(
+            #icon=ft.Icons.MORE_HORIZ_ROUNDED,
+            #opacity=0,
+            #on_click=lambda _: self.widget.story.open_menu(self.get_menu_options()),
+            #mouse_cursor=ft.MouseCursor.CLICK,
+            #visual_density=ft.VisualDensity.COMPACT
+        #)
         def hide_edit_title_tf(e=None):
             self.edit_title_tf.visible = False
             self.title_text.visible = True
             self.update()
-
-        self.title_text = ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS)
 
         self.edit_title_tf = ft.TextField(
             value=self.widget.data.get('title', 'untitled'),
@@ -154,14 +208,23 @@ class WidgetRailItem(ft.GestureDetector):
             #focused_border_color=ft.Colors.PRIMARY,
         )
 
-        self.content = ft.Container(
-            ft.Row([
-                leading_control, 
-                self.title_text,
-                self.edit_title_tf
-                #self.options_button
-            ], spacing=6),
-            border_radius=4,
-            padding=ft.Padding.only(top=2, bottom=2),
-        )
-        
+        self.title_text = ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS)
+
+        self.content = ft.Draggable( 
+            group="widgets",
+            data=self.widget.data.get('id', ""),
+            content_feedback=ft.TextButton(ft.Row([ft.Icon(self.icon, self.icon_color, expand=True), ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True)], expand=True)),
+            #on_drag_start=lambda _: self.widget.story.workspace.show_pin_drag_targets(),
+            content=ft.Container(
+                ft.Row([
+                    leading_control, 
+                    self.title_text,
+                    self.edit_title_tf,
+                    #self.options_button
+                ], spacing=6),
+                border_radius=4,
+                on_click=self.widget.show_widget,
+                padding=ft.Padding.only(top=2, bottom=2),
+                
+            ),
+    )

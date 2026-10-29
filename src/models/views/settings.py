@@ -9,7 +9,7 @@ from constants import SETTINGS_FILE_PATH, APP_DATA_PATH
 from styles.colors import colors, theme_colors
 import os
 import json
-from ui.menu_bar import MenuBar
+from view_components.menu_bar import MenuBar
 from styles.snack_bar import SnackBar
 from models.dataclasses.character_template import default_character_template_data_dict
 from styles.text_fields import TextField

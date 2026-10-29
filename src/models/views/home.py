@@ -1,5 +1,5 @@
 import flet as ft
-from ui.menu_bar import MenuBar
+from view_components.menu_bar import MenuBar
 from styles.colors import dark_gradient
 from utils.check_story_unique import story_is_unique
 

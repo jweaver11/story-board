@@ -7,7 +7,7 @@ import os
 import json
 from models.views.story import Story
 from models.widgets.plotline import Plotline
-from styles.rail.rail_folder import RailFolder
+from styles.rail_folder import RailFolder
 from utils.new_canvas import new_canvas_alert_dlg
 import asyncio
 from models.app import app
@@ -24,7 +24,7 @@ class Rail(ft.Column):
     ):
         
         # Initialize the parent Container class first
-        super().__init__(spacing=0, expand=True, scroll="none")
+        super().__init__(spacing=0, expand=True, scroll="none", key=f"{self.story.data.get('id')}_rail")
 
         # Store our parameters
         self.story = story
