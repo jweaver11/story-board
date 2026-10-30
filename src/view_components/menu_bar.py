@@ -5,7 +5,6 @@ Class for our menubar, which will hold our file options, drawing controls, and s
 import flet as ft
 from models.app import app
 from models.views.story import Story
-from utils.check_story_unique import story_is_unique
 from styles.snack_bar import SnackBar
 from styles.text_fields import TextField
 from flet_color_pickers import ColorPicker
