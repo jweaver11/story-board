@@ -1,20 +1,28 @@
-'''
+﻿'''
 Google Drive sync: OAuth (installed-app flow) and manual push/pull that mirrors APP_DATA_PATH with a "Story Board" Drive folder (the receiving side is overwritten).
 All functions here are blocking; call them with asyncio.to_thread from the UI.
 '''
 
+import io
+import json
 import os
+import socket
+import httplib2
+from google.auth.exceptions import RefreshError, TransportError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
 import shutil
-from constants import APP_DATA_PATH
+from constants import APP_DATA_PATH, STORIES_DIRECTORY_PATH
 
 # drive.file only grants access to files/folders this app created
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 DRIVE_FOLDER_NAME = "Story Board"
 FOLDER_MIME = "application/vnd.google-apps.folder"
+SETTINGS_FILE_NAME = "settings.json"
+STORIES_FOLDER_NAME = "stories"
 
 TOKEN_FILE_NAME = "google_token.json"
 TOKEN_PATH = os.path.join(APP_DATA_PATH, TOKEN_FILE_NAME)
@@ -36,6 +44,8 @@ def _load_credentials() -> Credentials | None:
             creds.refresh(Request())
             _save_credentials(creds)
             return creds
+    except TransportError:
+        raise   # Offline. Not the same as being signed out
     except Exception as e:
         print(f"Google credentials invalid: {e}")
     return None
@@ -47,7 +57,14 @@ def _save_credentials(creds: Credentials) -> None:
 
 
 def is_authenticated() -> bool:
-    return _load_credentials() is not None
+    ''' Local check only (works offline): True if saved credentials exist that can be used or refreshed '''
+    if not os.path.exists(TOKEN_PATH):
+        return False
+    try:
+        creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
+        return bool(creds.valid or creds.refresh_token)
+    except Exception:
+        return False
 
 
 def authenticate() -> bool:
@@ -140,11 +157,59 @@ def _push_dir(service, children: dict, local_dir: str, folder_id: str, is_root: 
     return count
 
 
-def push_to_drive() -> int:
-    ''' Makes Drive/Story Board an exact copy of APP_DATA_PATH. Returns the number of files uploaded '''
+def _ensure_folder(service, children: dict, parent_id: str, name: str) -> str:
+    for item in children.get(parent_id, []):
+        if item["name"] == name and item["mimeType"] == FOLDER_MIME:
+            return item["id"]
+    folder_id = _create_folder(service, name, parent_id)
+    children.setdefault(parent_id, []).append({"id": folder_id, "name": name, "mimeType": FOLDER_MIME})
+    return folder_id
+
+
+def _upload_settings(service, children: dict, root_id: str, settings_data: dict) -> None:
+    ''' Uploads settings.json to the Drive root, leaving out the device specific 'page' settings '''
+    data = {k: v for k, v in settings_data.items() if k != "page"}
+    media = MediaIoBaseUpload(io.BytesIO(json.dumps(data, indent=4).encode("utf-8")), mimetype="application/json", resumable=False)
+    existing = [i for i in children.get(root_id, []) if i["name"] == SETTINGS_FILE_NAME and i["mimeType"] != FOLDER_MIME]
+    if existing:
+        service.files().update(fileId=existing[0]["id"], media_body=media).execute()
+        for duplicate in existing[1:]:
+            _trash(service, duplicate["id"])
+    else:
+        service.files().create(body={"name": SETTINGS_FILE_NAME, "parents": [root_id]}, media_body=media, fields="id").execute()
+
+
+def push_settings(settings_data: dict) -> int:
+    ''' Uploads all settings except 'page'. Returns the number of files uploaded '''
     service = _service()
+    children = _list_all(service)
     root_id = _find_root(service) or _create_folder(service, DRIVE_FOLDER_NAME, None)
-    return _push_dir(service, _list_all(service), APP_DATA_PATH, root_id, True)
+    _upload_settings(service, children, root_id, settings_data)
+    return 1
+
+
+def push_story(story_dir: str) -> int:
+    ''' Makes this story's folder in the cloud an exact copy of the local one. Returns the number of files uploaded '''
+    service = _service()
+    children = _list_all(service)
+    root_id = _find_root(service) or _create_folder(service, DRIVE_FOLDER_NAME, None)
+    stories_id = _ensure_folder(service, children, root_id, STORIES_FOLDER_NAME)
+    story_id = _ensure_folder(service, children, stories_id, os.path.basename(os.path.normpath(story_dir)))
+    return _push_dir(service, children, story_dir, story_id, False)
+
+
+def push_all(settings_data: dict, story_dir: str | None = None) -> int:
+    ''' Pushes settings (minus 'page') and, if given, the current story '''
+    service = _service()
+    children = _list_all(service)
+    root_id = _find_root(service) or _create_folder(service, DRIVE_FOLDER_NAME, None)
+    _upload_settings(service, children, root_id, settings_data)
+    count = 1
+    if story_dir and os.path.isdir(story_dir):
+        stories_id = _ensure_folder(service, children, root_id, STORIES_FOLDER_NAME)
+        story_id = _ensure_folder(service, children, stories_id, os.path.basename(os.path.normpath(story_dir)))
+        count += _push_dir(service, children, story_dir, story_id, False)
+    return count
 
 
 def _collect_remote(service, children: dict, folder_id: str, rel: str, files: dict, dirs: set) -> None:
@@ -157,38 +222,108 @@ def _collect_remote(service, children: dict, folder_id: str, rel: str, files: di
             files[item_rel] = service.files().get_media(fileId=item["id"]).execute()
 
 
-def pull_from_drive() -> int:
-    ''' Makes APP_DATA_PATH an exact copy of Drive/Story Board. Returns the number of files written '''
+def pull_all() -> tuple[dict | None, int]:
+    '''
+    Downloads the cloud settings and stories. Stories in the cloud replace their local folders; local only stories are kept.
+    Returns (cloud settings or None, number of story files written). Nothing local changes if a download fails.
+    '''
     service = _service()
     root_id = _find_root(service)
     if root_id is None:
         raise FileNotFoundError("No 'Story Board' folder was found in your Google Drive. Push to the cloud first.")
 
-    # Download everything before touching local data, so a failed download changes nothing
+    children = _list_all(service)
+    settings_data = None
+    stories_id = None
+    for item in children.get(root_id, []):
+        if item["name"] == SETTINGS_FILE_NAME and item["mimeType"] != FOLDER_MIME and settings_data is None:
+            settings_data = json.loads(service.files().get_media(fileId=item["id"]).execute().decode("utf-8"))
+        elif item["name"] == STORIES_FOLDER_NAME and item["mimeType"] == FOLDER_MIME:
+            stories_id = item["id"]
+
     files: dict[str, bytes] = {}
     dirs: set[str] = set()
-    _collect_remote(service, _list_all(service), root_id, "", files, dirs)
-    files = {rel: data for rel, data in files.items() if rel not in EXCLUDED_FILES}
+    if stories_id:
+        _collect_remote(service, children, stories_id, "", files, dirs)
 
+    story_names = {rel.split(os.sep)[0] for rel in list(files) + list(dirs)}
+    for name in story_names:
+        shutil.rmtree(os.path.join(STORIES_DIRECTORY_PATH, name), ignore_errors=True)
     for rel in dirs:
-        os.makedirs(os.path.join(APP_DATA_PATH, rel), exist_ok=True)
+        os.makedirs(os.path.join(STORIES_DIRECTORY_PATH, rel), exist_ok=True)
     for rel, data in files.items():
-        path = os.path.join(APP_DATA_PATH, rel)
+        path = os.path.join(STORIES_DIRECTORY_PATH, rel)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         tmp = path + ".tmp"
         with open(tmp, "wb") as f:
             f.write(data)
         os.replace(tmp, path)
+    return settings_data, len(files)
 
-    keep_files = {os.path.normcase(os.path.join(APP_DATA_PATH, rel)) for rel in files} | {os.path.normcase(TOKEN_PATH)}
-    keep_dirs = {os.path.normcase(os.path.join(APP_DATA_PATH, rel)) for rel in dirs}
-    for current, dirnames, filenames in os.walk(APP_DATA_PATH, topdown=False):
-        for name in filenames:
-            path = os.path.join(current, name)
-            if os.path.normcase(path) not in keep_files:
-                os.remove(path)
-        for name in dirnames:
-            path = os.path.join(current, name)
-            if os.path.normcase(path) not in keep_dirs:
-                shutil.rmtree(path, ignore_errors=True)
+
+def _get_settings(service, children: dict, root_id: str) -> dict | None:
+    for item in children.get(root_id, []):
+        if item["name"] == SETTINGS_FILE_NAME and item["mimeType"] != FOLDER_MIME:
+            return json.loads(service.files().get_media(fileId=item["id"]).execute().decode("utf-8"))
+    return None
+
+
+def pull_settings() -> dict:
+    ''' Downloads the cloud settings. Raises FileNotFoundError if none were pushed yet '''
+    service = _service()
+    root_id = _find_root(service)
+    settings_data = _get_settings(service, _list_all(service), root_id) if root_id else None
+    if settings_data is None:
+        raise FileNotFoundError("No settings were found in your Google Drive. Push your settings first.")
+    return settings_data
+
+
+def pull_story(story_dir: str) -> int:
+    ''' Replaces the local story folder with its cloud copy. Nothing local changes if a download fails '''
+    service = _service()
+    root_id = _find_root(service)
+    story_name = os.path.basename(os.path.normpath(story_dir))
+    children = _list_all(service)
+    stories_id = next((i["id"] for i in children.get(root_id, []) if i["name"] == STORIES_FOLDER_NAME and i["mimeType"] == FOLDER_MIME), None) if root_id else None
+    story_id = next((i["id"] for i in children.get(stories_id, []) if i["name"] == story_name and i["mimeType"] == FOLDER_MIME), None) if stories_id else None
+    if story_id is None:
+        raise FileNotFoundError("This story was not found in your Google Drive. Push it first.")
+
+    files: dict[str, bytes] = {}
+    dirs: set[str] = set()
+    _collect_remote(service, children, story_id, "", files, dirs)
+
+    shutil.rmtree(story_dir, ignore_errors=True)
+    os.makedirs(story_dir, exist_ok=True)
+    for rel in dirs:
+        os.makedirs(os.path.join(story_dir, rel), exist_ok=True)
+    for rel, data in files.items():
+        path = os.path.join(story_dir, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(data)
     return len(files)
+
+
+def disconnect() -> None:
+    ''' Forgets the saved Google credentials on this device '''
+    if os.path.exists(TOKEN_PATH):
+        os.remove(TOKEN_PATH)
+
+
+def describe_error(ex: Exception) -> str:
+    ''' Turns a cloud failure into a message the user can act on '''
+    if isinstance(ex, (ConnectionError, TimeoutError, socket.gaierror, socket.timeout, httplib2.ServerNotFoundError, TransportError)):
+        return "No internet connection. Check your connection and try again."
+    if isinstance(ex, RefreshError):
+        return "Your Google connection expired. Please reconnect to Google Drive."
+    if isinstance(ex, PermissionError):
+        return "Not connected to Google Drive."
+    if isinstance(ex, HttpError):
+        status = getattr(ex.resp, "status", None)
+        if status in (401, 403):
+            return "Google Drive denied access (or the quota was exceeded). Try reconnecting."
+        return f"Google Drive error ({status})."
+    if isinstance(ex, OSError) and ex.errno is None and "getaddrinfo" in str(ex):
+        return "No internet connection. Check your connection and try again."
+    return f"Google Drive error: {ex}"

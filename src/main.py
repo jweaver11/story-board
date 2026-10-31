@@ -6,7 +6,8 @@ Initializes the app, settings, page data, and renders our UI onto the page
 import flet as ft
 from pathlib import Path
 from models.app import app
-
+from styles.snack_bar import SnackBar
+from utils import google_drive
 from models.views.home import create_home_view
 from models.views.loading import create_loading_view
 from models.views.welcome import create_welcome_view, animate_welcome_text
@@ -50,9 +51,26 @@ async def main(page: ft.Page):
     else:
         page.views.append(create_loading_view(page))
         page.update()
+
+        sync_on = app.is_cloud_authenticated and app.settings.data.get('sync_with_cloud_on_close', False)
+        pull_on_launch = sync_on and app.settings.data.get('sync_with_cloud_on_launch', False)
+
+        # Pull the latest cloud data before loading stories from disk
+        if pull_on_launch:
+            try:
+                await app.pull_cloud()
+            except Exception as ex:
+                page.show_dialog(SnackBar(f"Could not pull from the cloud, using local data. {google_drive.describe_error(ex)}"))
  
         # If a previous story was loaded, we load its route/view here
         await app.load_previous_story(page)     
+
+        # Not pulling on launch, so push our data up instead
+        if sync_on and not pull_on_launch:
+            try:
+                await app.push_cloud()
+            except Exception as ex:
+                page.show_dialog(SnackBar(f"Could not push to the cloud. {google_drive.describe_error(ex)}"))
 
     # If no story was loaded, Give us a basic home view
     if page.route == "/":

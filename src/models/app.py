@@ -23,10 +23,27 @@ class App:
         # Dict of all our stories.
         self.stories = {}
 
-        # If we are connected to the cloud
-        self.is_cloud_authenticated: bool = False
+        # If we are connected to the cloud. Checked locally (no network) so it works offline
+        self.is_cloud_authenticated: bool = google_drive.is_authenticated()
 
         self.ignore_settings_change = True  # Ignore settings changes when page is loading itself and saving incorrect changes
+
+    async def push_cloud(self) -> int:
+        ''' Pushes all settings (except 'page') and the active story to Google Drive. Raises on failure '''
+        story_dir = self.settings.story.data.get('directory_path') if self.settings.story else None
+        if self.settings.story:
+            await self.settings.story.save_file()
+        await self.settings.save_file()
+        return await asyncio.to_thread(google_drive.push_all, self.settings.data, story_dir)
+
+    async def pull_cloud(self) -> int:
+        ''' Pulls settings (keeping this device's 'page' settings) and stories from Google Drive. Raises on failure '''
+        cloud_settings, count = await asyncio.to_thread(google_drive.pull_all)
+        if cloud_settings is not None:
+            cloud_settings['page'] = self.settings.data.get('page', {})
+            self.settings.data = cloud_settings
+            await self.settings.save_file()
+        return count
 
     # Called on app startup in main
     def load_settings(self, page: ft.Page):
@@ -111,15 +128,12 @@ class App:
                     app.settings.story.block_page()
                     await app.settings.save_story()
                 # Push everything to Google Drive if connected. Failures must never block closing the app
-                if app.settings.data.get('sync_with_cloud_on_close', False):
-                    # Show the saving changes view while closing
-                    if app.is_cloud_authenticated == True:
-                        page.navigate("/saving_to_cloud")
-                        try:
-                            if await asyncio.to_thread(google_drive.is_authenticated):
-                                await asyncio.to_thread(google_drive.push_to_drive)
-                        except Exception as ex:
-                            print(f"Cloud push on close failed: {ex}")
+                if app.settings.data.get('sync_with_cloud_on_close', False) and app.is_cloud_authenticated:
+                    page.navigate("/saving_to_cloud")
+                    try:
+                        await app.push_cloud()
+                    except Exception as ex:
+                        print(f"Cloud push on close failed: {google_drive.describe_error(ex)}")
                 page.window.prevent_close = False
                 await page.window.destroy()
 

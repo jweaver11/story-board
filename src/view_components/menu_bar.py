@@ -541,7 +541,7 @@ class MenuBar(ft.Container):
                 set_cloud_button()
                 self.cloud_button.update()
             except Exception as ex:
-                self.page.show_dialog(SnackBar(f"Google Drive error: {ex}"))
+                self.page.show_dialog(SnackBar(google_drive.describe_error(ex)))
             #finally:
                 #set_is_connecting(False)
 
@@ -555,13 +555,18 @@ class MenuBar(ft.Container):
                     self.page.navigate("/loading")
                     await asyncio.sleep(0.3)
 
-                count = await asyncio.to_thread(action)
+                count = await action()
 
-                
+                if restart_after:
+                    app.stories.clear()
+                    app.settings.story = None
+                    await app.load_previous_story(self.page)
 
                 self.page.show_dialog(SnackBar(f"{done_text} ({count} files)"))
             except Exception as ex:
-                self.page.show_dialog(SnackBar(f"Google Drive error: {ex}"))
+                self.page.show_dialog(SnackBar(google_drive.describe_error(ex)))
+                if restart_after:
+                    await self.page.push_route("/")
             #finally:
                 #set_is_connecting(False)
 
@@ -582,18 +587,18 @@ class MenuBar(ft.Container):
         def handle_push_clicked(e=None):
             _confirm_cloud_action(
                 "Push to cloud?",
-                "This overwrites everything in your Google Drive 'Story Board' folder with the data on this device. "
-                "Stories, widgets, and settings that exist only in the cloud will be permanently removed from it.",
-                "Push and overwrite cloud", google_drive.push_to_drive, "Pushing to Google Drive...", "Pushed to Google Drive",
+                "This uploads your settings (except window/page settings) and the current story to your Google Drive 'Story Board' folder, "
+                "overwriting the cloud copies.",
+                "Push and overwrite cloud", app.push_cloud, "Pushing to Google Drive...", "Pushed to Google Drive",
             )
 
         def handle_pull_clicked(e=None):
             _confirm_cloud_action(
                 "Pull from cloud?",
-                "This overwrites everything on this device with the data in your Google Drive 'Story Board' folder. "
-                "Local stories, widgets, and settings that are not in the cloud will be permanently deleted. "
+                "This replaces your settings (except window/page settings) and any stories that exist in your Google Drive 'Story Board' folder "
+                "with the cloud versions. Stories only on this device are kept. "
                 "The app will reload the pulled data afterwards.",
-                "Pull and overwrite local", google_drive.pull_from_drive, "Pulling from Google Drive...", "Pulled from Google Drive",
+                "Pull and overwrite local", app.pull_cloud, "Pulling from Google Drive...", "Pulled from Google Drive",
                 restart_after=True,
             )
         
@@ -613,14 +618,6 @@ class MenuBar(ft.Container):
                 ft.Container()
             ], 
         )
-
-        async def _check_cloud_sync_authentication():
-            if await asyncio.to_thread(google_drive.is_authenticated):
-                app.is_cloud_authenticated = True
-                set_cloud_button()
-                self.cloud_button.update()
-                return True
-            return False
 
         def set_cloud_button() -> list[ft.PopupMenuItem]:
             if app.is_cloud_authenticated == True:
@@ -676,13 +673,13 @@ class MenuBar(ft.Container):
                     )
                 ]
 
-        #app.is_cloud_authenticated = self.page.run_task(_check_cloud_sync_authentication)
-        #print(f"Cloud authenticated: {app.is_cloud_authenticated}")
+        invisble_routes = ["/settings", "/home", "/", "", "/tutorial"]
+        cloud_visible = self.page.route not in invisble_routes
 
-        
         self.cloud_button = ft.PopupMenuButton(
             icon=ft.Icons.CLOUD_DONE_OUTLINED if app.is_cloud_authenticated == True else ft.Icons.CLOUD_OUTLINED,
             icon_color="primary",
+            visible=cloud_visible,
             #tooltip="Working..." if is_connecting else "Google Drive",
             #disabled=is_connecting,
             #items=get_cloud_sync_

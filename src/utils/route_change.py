@@ -11,6 +11,7 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
     from models.views.home import create_home_view
     from models.views.loading import create_loading_view
     from models.views.saving_to_cloud import SavingToCloudView
+    from models.views.pulling_from_cloud import PullingFromCloudView
 
     # Grabs our page from the event for easier reference
     page: ft.Page = e.page
@@ -57,6 +58,10 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
             return
         case "/saving_to_cloud":
             page.views.append(SavingToCloudView())
+            page.update()
+            return
+        case "/pulling_from_cloud":
+            page.views.append(PullingFromCloudView())
             page.update()
             return
         case "/tutorial":

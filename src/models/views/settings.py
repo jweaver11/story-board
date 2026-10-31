@@ -336,6 +336,8 @@ class Settings(ft.View):
                 self.body_container.content = self._load_cloud_settings()
             case _:
                 self.body_container.content = self._load_appearance_settings()
+
+        
                 
         if update:
             self.update()
@@ -1881,60 +1883,247 @@ class Settings(ft.View):
 
     def _load_cloud_settings(self):
         from models.app import app
+        from utils import google_drive
+
+        
+
+        async def _connect_clicked(e=None):
+            if app.is_cloud_authenticated:
+                await asyncio.to_thread(google_drive.disconnect)
+                app.is_cloud_authenticated = False
+                self.update_data(**{'sync_with_cloud_on_close': False, 'sync_with_cloud_on_launch': False})
+                await self.save_file()
+                self._settings_category_changed()
+                self.page.show_dialog(SnackBar("Disconnected from Google Drive."))
+                return
+            try:
+                self.page.show_dialog(SnackBar("Opening browser to connect your Google account..."))
+                await asyncio.to_thread(google_drive.authenticate)
+                app.is_cloud_authenticated = True
+                self._settings_category_changed()
+                self.page.show_dialog(SnackBar("Google account connected."))
+            except Exception as ex:
+                self.page.show_dialog(SnackBar(google_drive.describe_error(ex)))
+
+        async def _run_with_route(route: str, work):
+            ''' Shows the saving/pulling view while work() runs, then returns to settings with a result snackbar '''
+            page = self.page    # Captured because this view unmounts while we are away
+            await page.push_route(route)
+            try:
+                message = await work()
+            except Exception as ex:
+                message = google_drive.describe_error(ex)
+            await page.push_route("/settings")
+            page.show_dialog(SnackBar(message))
+
+        async def _push_story_clicked(e=None):
+            if self.story is None:
+                return
+            story = self.story
+
+            async def work():
+                await story.save_file()
+                count = await asyncio.to_thread(google_drive.push_story, story.data.get('directory_path'))
+                return f"Pushed story to Google Drive ({count} files)"
+            await _run_with_route("/saving_to_cloud", work)
+
+        async def _push_settings_clicked(e=None):
+            async def work():
+                await self.save_file()
+                await asyncio.to_thread(google_drive.push_settings, self.data)
+                return "Pushed settings to Google Drive"
+            await _run_with_route("/saving_to_cloud", work)
+
+        def _confirm(title: str, message: str, on_confirm):
+            ''' Pulls overwrite local data, so ask first '''
+            page = self.page
+
+            async def _confirmed(e=None):
+                page.pop_dialog()
+                await on_confirm()
+            page.show_dialog(ft.AlertDialog(
+                modal=True, title=ft.Text(title), content=ft.Text(message),
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda: page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
+                    ft.TextButton("Pull and overwrite local", on_click=_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ],
+            ))
+
+        async def _do_pull_story():
+            story = self.story
+
+            async def work():
+                count = await asyncio.to_thread(google_drive.pull_story, story.data.get('directory_path'))
+                with open(story.data.get('file_path'), "r", encoding='utf-8') as f:
+                    new_story = Story(story.data.get('title'), json.load(f))
+                app.stories[story.data.get('id')] = new_story
+                self.story = new_story
+                return f"Pulled story from Google Drive ({count} files)"
+            await _run_with_route("/pulling_from_cloud", work)
+
+        async def _do_pull_settings():
+            async def work():
+                cloud_settings = await asyncio.to_thread(google_drive.pull_settings)
+                cloud_settings['page'] = self.data.get('page', {})   # Window settings are device specific
+                self.data = cloud_settings
+                await self.save_file()
+                return "Pulled settings from Google Drive"
+            await _run_with_route("/pulling_from_cloud", work)
+
+        async def _pull_story_clicked(e=None):
+            if self.story is None:
+                return
+            _confirm(
+                "Pull story from cloud?",
+                f"This replaces the local version of '{self.story.data.get('title')}' with the one in your Google Drive.",
+                _do_pull_story,
+            )
+
+        async def _pull_settings_clicked(e=None):
+            _confirm(
+                "Pull settings from cloud?",
+                "This replaces your local settings (except window settings) with the ones in your Google Drive.",
+                _do_pull_settings,
+            )
+        def _push_on_close_changed(e):
+            value = bool(e.control.value)
+            updates = {'sync_with_cloud_on_close': value}
+            if not value:
+                updates['sync_with_cloud_on_launch'] = False
+            self.update_data(**updates)
+            self._settings_category_changed()
+
+        def _pull_on_launch_changed(e):
+            self.update_data(**{'sync_with_cloud_on_launch': bool(e.control.value)})
+
+        authed = app.is_cloud_authenticated
+        
+        connect_button = ft.IconButton(
+            ft.Icons.CLOUD_DONE_OUTLINED if authed else ft.Icons.CLOUD_OFF_OUTLINED,
+            icon_color=ft.Colors.PRIMARY,# if authed else ft.Colors.ERROR,
+            on_click=_connect_clicked,  mouse_cursor="click", bgcolor=ft.Colors.SURFACE,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
+            tooltip="Connect to Google Drive" if not authed else "Disconnect from Google Drive"
+        )
+
+        story_title = self.story.data.get('title') if self.story else "None"
+        has_story = authed and self.story is not None
+        push_story_button = ft.IconButton(
+            ft.CupertinoIcons.BOOK,
+            icon_color=ft.Colors.PRIMARY if has_story else ft.Colors.ERROR,
+            disabled=not has_story,
+            on_click=_push_story_clicked, icon_size=50, mouse_cursor="click" if has_story else None, bgcolor=ft.Colors.SURFACE,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
+        )
+        push_story_desc = (
+            f"Push current story: {story_title} to cloud, overriding the existing version in the cloud." if has_story
+            else ("Open a story to push it" if authed else "Connect to Google Drive first")
+        )
+
+        pull_story_button = ft.IconButton(
+            ft.CupertinoIcons.BOOK,
+            icon_color=ft.Colors.PRIMARY if has_story else ft.Colors.ERROR,
+            disabled=not has_story,
+            on_click=_pull_story_clicked, icon_size=50, mouse_cursor="click" if has_story else None, bgcolor=ft.Colors.SURFACE,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
+        )
+        pull_story_desc = (
+            f"Pull current story: {story_title} from cloud, overriding the existing local version." if has_story
+            else ("Open a story to pull it" if authed else "Connect to Google Drive first")
+        )
+
+        push_settings_desc = "Push Story Board settings to cloud. These settings include: " if authed else "Connect to Google Drive first"
+        push_settings_details = f"- Character and World Templates\n- Paint Brushes and Saved Font configurations\n- Widget defaults and other settings" if authed else ""
+
+        push_settings_button = ft.IconButton(
+            ft.Icons.SETTINGS_OUTLINED,
+            icon_color=ft.Colors.PRIMARY if authed else ft.Colors.ERROR,
+            disabled=not authed, on_click=_push_settings_clicked, icon_size=50, mouse_cursor="click" if authed else None, bgcolor=ft.Colors.SURFACE,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
+        )
+        pull_settings_button = ft.IconButton(
+            ft.Icons.SETTINGS_OUTLINED,
+            icon_color=ft.Colors.PRIMARY if authed else ft.Colors.ERROR,
+            disabled=not authed, on_click=_pull_settings_clicked, icon_size=50, mouse_cursor="click" if authed else None, bgcolor=ft.Colors.SURFACE,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
+        )
+        pull_settings_desc = "Pull Story Board settings from cloud, overriding the existing local version." if authed else "Connect to Google Drive first"
+
+
+
+        push_on_close_switch = ft.Switch(
+            label="Push TO cloud on close", value=self.data.get('sync_with_cloud_on_close', False),
+            disabled=not authed, on_change=_push_on_close_changed,
+        )
+        pull_on_launch_switch = ft.Switch(
+            label="Pull FROM cloud on launch", value=self.data.get('sync_with_cloud_on_launch', False),
+            disabled=not authed or not self.data.get('sync_with_cloud_on_close', False), on_change=_pull_on_launch_changed,
+            tooltip="Requires 'Push TO cloud on close', otherwise unsynced progress would be lost on relaunch",
+        )
 
 
         content = ft.Column([
             ft.Row([
-                ft.Text("Resources", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
+                ft.Text("Cloud Settings", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
                 ft.IconButton(
                     ft.Icons.CLOSE_OUTLINED, on_click=self.close_settings, 
                     scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
                     mouse_cursor="click", tooltip="Close Settings"
                 ) 
             ]),
-                ft.Row([
-                #ft.Text(f"Resources about Story Board!", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
-                ft.Container(
-                    ft.Text("Click here to Run Tutorial\t", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500), 
-                    #on_click=_run_tutorial,
+            ft.Row([
+                ft.Text(
+                    "Configure your connection to google drive to enable cloud sync. Status: " + ("Connected" if authed else "Not Connected"),
+                    theme_style=ft.TextThemeStyle.BODY_MEDIUM,
+                    color=ft.Colors.ON_SURFACE_VARIANT,
                 ),
-                ft.Text("Join our", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT, ),
-                ft.Container(
-                    ft.Text("Discord", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500),
-                    #on_click=_discord_clicked,
-                ),
-                ft.Text("to be part of our community and see upcoming features!", theme_style=ft.TextThemeStyle.BODY_MEDIUM,),
-            ], spacing=8), # Link
+            ft.Container(connect_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4),
+            ]),
             
-            ft.Container(height=10),    # Spacer
+            #ft.Container(height=10),    # Spacer
             ft.Divider(),
             
 
             ft.Column([
                 
-                ft.Button(
-                    "Connect to Google Drive" if app.is_cloud_authenticated == False else "Disconnect from Google Drive",
-                    ft.Icons.CLOUD_OUTLINED if app.is_cloud_authenticated == False else ft.Icons.CLOUD_DONE_OUTLINED,
-                    ft.Colors.PRIMARY,
-                ),
-
-                ft.Button("Push current story to cloud"),
-                ft.Button("Push settings to cloud"),
-
-                ft.Switch(
-                    True, "Pull FROM cloud on launch", value=self.data.get('sync_with_cloud_on_launch', False), on_change=lambda: 
-                    self.update_data(**{'sync_with_cloud_on_launch': not self.data.get('sync_with_cloud_on_launch', False)})
-                ),
-                ft.Switch(
-                    True, "Push TO cloud on close", value=self.data.get('sync_with_cloud_on_close', False), 
-                    on_change=lambda: self.update_data(**{'sync_with_cloud_on_close': not self.data.get('sync_with_cloud_on_close', False)})
-                ),
                 
+                ft.Row([
+                    ft.Text("Push TO Cloud", expand=True, text_align=ft.TextAlign.CENTER, theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD),
+                    ft.Text("Pull FROM Cloud", expand=True, text_align=ft.TextAlign.CENTER, theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD),
+                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                #ft.Divider(),
+                ft.Row([
+                    ft.Column([
+                        ft.Row([
+                            ft.Container(push_story_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
+                            ft.Text(push_story_desc, weight=ft.FontWeight.BOLD),
+                        ]),
+                        ft.Row([
+                            ft.Container(push_settings_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
+                            ft.Text(push_settings_desc, weight=ft.FontWeight.BOLD),
+                            #ft.Text(push_settings_details, italic=True)
+                        ]),
+                    ], expand=True),
+                    ft.VerticalDivider(),
+                    ft.Column([
+                        ft.Row([
+                            ft.Container(pull_story_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
+                            ft.Text(pull_story_desc, weight=ft.FontWeight.BOLD),
+                        ]),
+                        ft.Row([
+                            ft.Container(pull_settings_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
+                            ft.Text(pull_settings_desc, weight=ft.FontWeight.BOLD),
+                        ]),
+                    ], expand=True)
+                ], expand=True, spacing=30),
+                #push_on_close_switch,
+                #pull_on_launch_switch,
                 
-                
-            ], scroll=ft.ScrollMode.AUTO, expand=True, alignment=ft.MainAxisAlignment.START, margin=ft.Margin.only(left=20, top=10)),
-
-        ], alignment=ft.MainAxisAlignment.START, expand=True)
+            ], scroll=ft.ScrollMode.AUTO, alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.CENTER, margin=ft.Margin.only(left=20, top=10, bottom=10), visible=authed),
+            ft.Divider(visible=authed),
+            ft.Text("Settings that get Synced:", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD, margin=ft.Margin.only(bottom=10, top=10), visible=authed),
+            ft.Text(push_settings_details, italic=True, visible=authed)
+        ], alignment=ft.MainAxisAlignment.START,  expand=True, spacing=0,)
 
         return content
     
