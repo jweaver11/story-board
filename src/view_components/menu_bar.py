@@ -441,7 +441,8 @@ class MenuBar(ft.Container):
             controls=[  # The controls shown in our menu bar from left to right
                 ft.SubmenuButton(   # Button that opens a subment
                     content=ft.Container(
-                        content=ft.Text("File", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),     # Content of subment button
+                        #content=ft.Text("File", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),     # Content of subment button
+                        content=ft.Icon(ft.Icons.MENU, ft.Colors.PRIMARY),
                         alignment=ft.Alignment.CENTER
                     ), 
                     style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
