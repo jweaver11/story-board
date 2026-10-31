@@ -50,6 +50,7 @@ class Settings(ft.View):
                 
                 'is_first_launch': True,    # If this is the first time the app has been launched or not
                 'sync_with_cloud_on_close': False,   # If the app should sync with Google Drive on close
+                'sync_with_cloud_on_launch': False,   # If the app should sync with Google Drive on launch
 
                 # Settings about the page
                 'page': {
@@ -331,6 +332,8 @@ class Settings(ft.View):
                 self.body_container.content = self._load_template_settings(template_name, template_type)
             case 3:
                 self.body_container.content = self._load_resources_settings()
+            case 4:
+                self.body_container.content = self._load_cloud_settings()
             case _:
                 self.body_container.content = self._load_appearance_settings()
                 
@@ -506,7 +509,7 @@ class Settings(ft.View):
                 #self.focused_border_color=ft.Colors.PRIMARY
                 self.capitalization=ft.TextCapitalization.WORDS
                 self.content_padding=ft.Padding.only(left=10)
-                self.border_radius=4
+                #self.border_radius=4
                 self.text_style=ft.TextStyle(weight=ft.FontWeight.BOLD)
                 self.label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
                 self.margin=ft.Margin.only(left=20)
@@ -1756,7 +1759,7 @@ class Settings(ft.View):
             webbrowser.open("https://discord.gg/FMXPwxB5G3")
 
         
-        content=ft.Column([
+        content = ft.Column([
             ft.Row([
                 ft.Text("Resources", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
                 ft.IconButton(
@@ -1875,6 +1878,65 @@ class Settings(ft.View):
         ], alignment=ft.MainAxisAlignment.START, expand=True)
 
         return content
+
+    def _load_cloud_settings(self):
+        from models.app import app
+
+
+        content = ft.Column([
+            ft.Row([
+                ft.Text("Resources", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
+                ft.IconButton(
+                    ft.Icons.CLOSE_OUTLINED, on_click=self.close_settings, 
+                    scale=1.5, icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                    mouse_cursor="click", tooltip="Close Settings"
+                ) 
+            ]),
+                ft.Row([
+                #ft.Text(f"Resources about Story Board!", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Container(
+                    ft.Text("Click here to Run Tutorial\t", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500), 
+                    #on_click=_run_tutorial,
+                ),
+                ft.Text("Join our", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT, ),
+                ft.Container(
+                    ft.Text("Discord", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500),
+                    #on_click=_discord_clicked,
+                ),
+                ft.Text("to be part of our community and see upcoming features!", theme_style=ft.TextThemeStyle.BODY_MEDIUM,),
+            ], spacing=8), # Link
+            
+            ft.Container(height=10),    # Spacer
+            ft.Divider(),
+            
+
+            ft.Column([
+                
+                ft.Button(
+                    "Connect to Google Drive" if app.is_cloud_authenticated == False else "Disconnect from Google Drive",
+                    ft.Icons.CLOUD_OUTLINED if app.is_cloud_authenticated == False else ft.Icons.CLOUD_DONE_OUTLINED,
+                    ft.Colors.PRIMARY,
+                ),
+
+                ft.Button("Push current story to cloud"),
+                ft.Button("Push settings to cloud"),
+
+                ft.Switch(
+                    True, "Pull FROM cloud on launch", value=self.data.get('sync_with_cloud_on_launch', False), on_change=lambda: 
+                    self.update_data(**{'sync_with_cloud_on_launch': not self.data.get('sync_with_cloud_on_launch', False)})
+                ),
+                ft.Switch(
+                    True, "Push TO cloud on close", value=self.data.get('sync_with_cloud_on_close', False), 
+                    on_change=lambda: self.update_data(**{'sync_with_cloud_on_close': not self.data.get('sync_with_cloud_on_close', False)})
+                ),
+                
+                
+                
+            ], scroll=ft.ScrollMode.AUTO, expand=True, alignment=ft.MainAxisAlignment.START, margin=ft.Margin.only(left=20, top=10)),
+
+        ], alignment=ft.MainAxisAlignment.START, expand=True)
+
+        return content
     
     
     # Called when someone expands the drop down holding the color scheme options
@@ -1913,6 +1975,11 @@ class Settings(ft.View):
                     icon=ft.Icons.INFO_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.INFO_ROUNDED, color=ft.Colors.PRIMARY),
                     label=ft.Container(ft.Text("Resources", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.Margin.only(bottom=20))
+                ),
+                ft.NavigationRailDestination(
+                    icon=ft.Icons.CLOUD_OUTLINED,
+                    selected_icon=ft.Icon(ft.Icons.CLOUD_ROUNDED, color=ft.Colors.PRIMARY),
+                    label=ft.Container(ft.Text("Cloud", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.Margin.only(bottom=20))
                 ),
             ],
         )

@@ -226,5 +226,5 @@ class App:
         
     
 # Sets our global app object that main uses and some functions call
-app = App()
+app: App = App()
 

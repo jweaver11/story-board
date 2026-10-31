@@ -681,7 +681,7 @@ class MenuBar(ft.Container):
 
         
         self.cloud_button = ft.PopupMenuButton(
-            icon=ft.Icons.CLOUD_DONE_OUTLINED if app.is_cloud_authenticated else ft.Icons.CLOUD_OUTLINED,
+            icon=ft.Icons.CLOUD_DONE_OUTLINED if app.is_cloud_authenticated == True else ft.Icons.CLOUD_OUTLINED,
             icon_color="primary",
             #tooltip="Working..." if is_connecting else "Google Drive",
             #disabled=is_connecting,
