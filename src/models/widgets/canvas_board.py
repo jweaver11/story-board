@@ -591,13 +591,13 @@ class CanvasBoard(Widget):
                                 str(row_data.get('width')), label="Width", dense=True, width=100, 
                                 input_filter=ft.NumbersOnlyInputFilter(), on_blur=update_width,
                                 label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
-                                #border_color=ft.Colors.OUTLINE_VARIANT
+                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
                             ), 
                             ft.TextField(
                                 str(row_data.get('height')), label="Height", dense=True, width=100, 
                                 input_filter=ft.NumbersOnlyInputFilter(), on_blur=update_height,
                                 label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
-                                #border_color=ft.Colors.OUTLINE_VARIANT
+                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
                             )
                         ], alignment=ft.MainAxisAlignment.CENTER, margin=ft.Margin.only(top=10)),
                         ft.Row([
@@ -614,7 +614,7 @@ class CanvasBoard(Widget):
                             expand=True, 
                             label="Description", 
                             label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
-                            #border_color=ft.Colors.OUTLINE_VARIANT
+                            border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
                         )
                         
                     ], expand=True, alignment=ft.MainAxisAlignment.START),

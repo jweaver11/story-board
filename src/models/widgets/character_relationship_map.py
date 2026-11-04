@@ -601,11 +601,7 @@ class CharacterRelationshipMap(Widget):
 
         super().build()
         
-        # Tip control for pointing at the character bank to drag characters if we're empty
-        self.tip_ctrl = ft.Row([
-            ft.Icon(ft.Icons.ARROW_BACK_OUTLINED, size=50, color=ft.Colors.ON_SURFACE_VARIANT),
-            ft.Text("Drag characters from the bank to add them to the map", weight=ft.FontWeight.W_500, color=ft.Colors.ON_SURFACE_VARIANT, size=24),
-        ], left=150)
+        
             
 
         self.character_bank = ft.Column(
@@ -752,10 +748,6 @@ class CharacterRelationshipMap(Widget):
                 )
                 
             )
-
-        # If no characters are on the map, add a tip to drag from the bank
-        if len(self.data.get('characters', {}).keys()) == 0:
-            self.connections_stack.controls.append(self.tip_ctrl)
 
         # Interactive viewer to hold the stack for UI manipulation
         self.iv = ft.InteractiveViewer(

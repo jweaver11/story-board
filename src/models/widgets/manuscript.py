@@ -42,11 +42,6 @@ class Manuscript(Widget):
                 'color': app.settings.data.get('widget_defaults', {}).get('manuscript', {}).get('color'),
                 'show_sidebar': True,
 
-
-                # Holds our comments and reference images in data
-                'comments': dict(),
-                'reference_images': dict(),
-
                 # The text as json list data that is loaded and saved
                 'manuscript_data': list(),       
 
@@ -54,108 +49,7 @@ class Manuscript(Widget):
             ft.TextStyle()
         self.dirty = False  # Marks if the manuscript has unsaved changes
 
-    class Comment(TextField):
-
-        # Constructor
-        def __init__(self, title: str, widget: 'Manuscript', data: dict=None):
-
-            self.widget = widget
-
-            # If we're new, give default values for our data 
-            if data is None:
-                data = {
-                    'id': str(uuid.uuid4()),
-                    'title': title,
-                    'tag': "comment",
-                    'content': "",
-                }
-
-            # Parent constructor
-            super().__init__(
-                data=data, 
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-                multiline=True, dense=True, expand=True, border_radius=4,
-                on_blur=lambda e: self.update_data(**{'content': e.control.value}),
-                capitalization=ft.TextCapitalization.SENTENCES,
-                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, mouse_cursor="click", on_click=self.delete_comment),
-                label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
-            ) 
-
-        # Updates our data then the associated dict inside parents 'comments' dict
-        def update_data(self, **kwargs):
-            self.data.update(kwargs)
-            self.widget.update_data(comments={self.data["id"]: self.data})
-
-        # Deletes this comment from parents data and controls
-        def delete_comment(self, e=None):
-            self.widget.data['comments'].pop(self.data["id"], None)
-            self.widget.update_data(**{'comments': self.widget.data.get('comments', {})})
-            self.widget.comments_column.controls.remove(self)
-            self.widget.comments_column.update()
-            
-        # Build the comment
-        def build(self):
-            self.value = self.data.get('content', "")
-            self.label = self.data.get('title', "")
-            self.label_style = ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
     
-    class ReferenceImage(ft.Container):
-        def __init__(self, widget: 'Manuscript', data: dict=None):
-
-            self.widget = widget
-
-            # If we're new, give default values for our data 
-            if data is None:
-                data = {
-                    'id': str(uuid.uuid4()),
-                    'tag': "reference_image",
-                    'image': "",
-                }
-            
-            # Parent constructor
-            super().__init__(
-                data=data,
-                border_radius=10,
-                expand=True,
-                padding=10,
-            ) 
-
-        # Updates our data then the associated dict inside parents 'comments' dict
-        def update_data(self, **kwargs):
-            self.data.update(kwargs)
-            self.widget.update_data(reference_images={self.data["id"]: self.data})
-            
-        # Deletes this comment from parents data and controls
-        def delete_image(self, e=None):
-            self.widget.data['reference_images'].pop(self.data["id"], None)
-            self.widget.update_data(**{'reference_images': self.widget.data.get('reference_images', {})})
-            self.widget.ref_img_column.controls.remove(self)
-            self.widget.ref_img_column.update()
-            
-
-        # Build the image
-        def build(self):
-
-            async def show_delete_icon(e: ft.Event):
-                self.content.content.controls[1].opacity = 1
-                self.content.update()
-            async def hide_delete_icon(e: ft.Event):
-                self.content.content.controls[1].opacity = 0
-                self.content.update()
-            
-           # self.image = ft.DecorationImage()
-            self.content = ft.GestureDetector(
-                ft.Stack([
-                    ft.Image(src=self.data['image'], fit=ft.BoxFit.CONTAIN),
-                    ft.IconButton(
-                        ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, tooltip="Delete reference image?",
-                        opacity=0, scale=1.5, on_click=self.delete_image, mouse_cursor="click",
-                        animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-                    ),
-                ], alignment=ft.Alignment.CENTER),
-                on_enter=show_delete_icon,
-                on_exit=hide_delete_icon,
-            )
             
     # Checks if our manuscript is dirty, and saves it if it is
     async def save_file(self):
@@ -321,58 +215,6 @@ class Manuscript(Widget):
                 self.dirty = True
 
 
-        # Handles adding a new comment, hiding the button and showing the textfield for input
-        async def new_comment_clicked(e=None):
-            new_comment_button.visible = False
-            new_comment_button.update()
-            new_comment_tf.visible = True
-            new_comment_tf.value = ""
-            new_comment_tf.update()
-            await new_comment_tf.focus()  
-
-        # Shows our new mini widget button and hides our textfield after creating/blurring comment tf
-        def show_new_comment_button(e=None):
-            new_comment_button.visible = True
-            new_comment_button.update()
-            new_comment_tf.value = ""
-            new_comment_tf.visible = False
-            new_comment_tf.update()
-
-        # Creates our new comment in data then adds it to the column
-        def create_comment(e: ft.Event[ft.TextField]):
-            comment_title = e.control.value.strip()
-            new_comment = self.Comment(title=comment_title, widget=self)
-            self.update_data(**{'comments': {new_comment.data["id"]: new_comment.data}})
-            comments_column.controls.append(new_comment)
-            comments_column.update()
-
-        # Opens our file picker to imoprt our image
-        async def new_ref_image_clicked(e: ft.Event[ft.IconButton]):
-            files = await ft.FilePicker().pick_files(allowed_extensions=["jpg", "jpeg", "png", "webp"])
-            if files:
-
-                file_path = files[0].path
-                try:
-                    import base64
-
-                    with open(file_path, "rb") as image_file:
-                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-
-                    reference_image = self.ReferenceImage(
-                        widget=self, 
-                        data={
-                            'id': str(uuid.uuid4()),
-                            'tag': "reference_image",
-                            'image': encoded_string,
-                        }
-                    )
-                    self.update_data(**{'reference_images': {reference_image.data["id"]: reference_image.data}})
-                    ref_img_column.controls.append(reference_image)
-                    ref_img_column.update()
-                        
-                except Exception as e:
-                    e.control.page.show_dialog(SnackBar(f"Error loading image: {str(e)}"))
-
         super().build() # Parent constructor
 
         # Word count button
@@ -406,54 +248,16 @@ class Manuscript(Widget):
             margin=ft.Margin.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN, vertical=MANUSCRIPT_VERTICAL_MARGIN),
         )
 
-        # Build our comments and reference images columns from data
-        comments_column = ft.Column(
-            [self.Comment(title=comment_data.get('title'), widget=self, data=comment_data) for comment_data in self.data.get('comments', {}).values()], 
-            tight=True
-        )
-        ref_img_column = ft.Column(
-            [self.ReferenceImage(widget=self, data=mw_data) for mw_data in self.data.get('reference_images', {}).values()], 
-            tight=True
-        )
-
-        
 
         # Set our mouse coords whenever we hover over word count button
         #self.sidebar_header.controls.append(ft.GestureDetector(word_count_button, on_hover=self.set_mouse_coords, hover_interval=50))
         
 
         # Build the sidebar
+        self.sidebar_notes_label.margin = None
         self.sidebar_body.controls.extend([
-            ft.Row([
-                
-                ft.Text("Comments", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-                new_comment_button := ft.IconButton(     
-                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
-                    on_click=new_comment_clicked, 
-                    mouse_cursor="click",
-                ), 
-                new_comment_tf := ft.TextField(
-                    label="Comment Title", dense=True, margin=ft.Margin.symmetric(horizontal=6),
-                    capitalization=ft.TextCapitalization.WORDS,
-                    on_blur=show_new_comment_button, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-                    on_submit=create_comment, animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-                    visible=False, autofocus=True, expand=True,
-                ),
-                    
-            ], spacing=0),
-            
-            comments_column, 
-
-            ft.Row([
-                ft.Text("Reference Images", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-                ft.IconButton(     
-                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
-                    on_click=new_ref_image_clicked, 
-                    mouse_cursor="click",
-                ), 
-            ], spacing=0),
-
-            ref_img_column
+            self.sidebar_notes_label,
+            self.sidebar_notes_column
         ])
         
 

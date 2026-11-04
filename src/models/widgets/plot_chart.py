@@ -621,6 +621,7 @@ class PlotChart(Widget):
             data=node_data.get('id'),
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
             multiline=True, dense=True, expand=True, #border_radius=4,
+            border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
             capitalization=ft.TextCapitalization.SENTENCES,
             label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
         )

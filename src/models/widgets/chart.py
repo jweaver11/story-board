@@ -442,8 +442,8 @@ class Chart(Widget):
                 idx,        # Requires value of index
                 label=ft.TextField(     # Tf for editing the label
                     value=name, dense=True, width=120, clip_behavior=ft.ClipBehavior.NONE,
-                    data=idx, on_blur=set_bar_group_label, border=ft.InputBorder.NONE,
-                    text_align=ft.TextAlign.CENTER, text_style=ft.TextStyle(size=14, weight=ft.FontWeight.W_500)
+                    data=idx, on_change=set_bar_group_label, border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
+                    text_align=ft.TextAlign.CENTER, text_style=ft.TextStyle(size=14, weight=ft.FontWeight.W_500), bgcolor=ft.Colors.TRANSPARENT
                 )
                 
             )
@@ -474,8 +474,8 @@ class Chart(Widget):
             left_axis=fch.ChartAxis(
                 ft.TextField(
                     value=self.data.get('bar_data', {}).get('left_axis_title', ""), 
-                    data="left", on_blur=set_chart_axis_title, border=ft.InputBorder.NONE,
-                    text_align=ft.TextAlign.CENTER, text_style=ft.TextStyle(size=18, weight=ft.FontWeight.BOLD)
+                    data="left", on_change=set_chart_axis_title, border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
+                    text_align=ft.TextAlign.CENTER, text_style=ft.TextStyle(size=18, weight=ft.FontWeight.BOLD), bgcolor=ft.Colors.TRANSPARENT
                 ), 
                 title_size=40, label_size=30,
                 show_labels=self.data.get('bar_data', {}).get('show_labels', False),
@@ -483,8 +483,8 @@ class Chart(Widget):
             bottom_axis=fch.ChartAxis(
                 ft.TextField(
                     value=self.data.get('bar_data', {}).get('bottom_axis_title', ""), 
-                    data="bottom", on_blur=set_chart_axis_title, border=ft.InputBorder.NONE,
-                    text_align=ft.TextAlign.CENTER, text_style=ft.TextStyle(size=18, weight=ft.FontWeight.BOLD)
+                    data="bottom", on_change=set_chart_axis_title, border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
+                    text_align=ft.TextAlign.CENTER, text_style=ft.TextStyle(size=18, weight=ft.FontWeight.BOLD), bgcolor=ft.Colors.TRANSPARENT
                 ),
                 title_size=40, label_size=30,
                 show_labels=self.data.get('bar_data', {}).get('show_labels', False),
@@ -546,9 +546,9 @@ class Chart(Widget):
                             # Adjust max y value of the chart
                             ft.TextField(
                                 label="Max Y Value", value=str(self.data.get('bar_data', {}).get('max_y', 20)), 
-                                input_filter=ft.NumbersOnlyInputFilter(), data="max", on_blur=set_max_y_value,
-                                margin=ft.Margin.only(top=6, left=10, right=10), #border_color=ft.Colors.OUTLINE_VARIANT,
-                                #border_radius=4, 
+                                input_filter=ft.NumbersOnlyInputFilter(), data="max", on_change=set_max_y_value,
+                                margin=ft.Margin.only(top=6, left=10, right=10), 
+                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
                                 dense=True
                             ),
                             # Adjust Rod width
@@ -583,6 +583,7 @@ class Chart(Widget):
         )
 
         # Add a label and add groups button in the sidebar
+        self.sidebar_notes_label.margin = None
         self.sidebar_body.controls.extend([
             ft.Row([
                 ft.Text(f"Groups", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
@@ -658,7 +659,6 @@ class Chart(Widget):
         async def update_dataset_title(e: ft.Event):
             data_set_idx = e.control.data
             new_title = e.control.value
-            print("Updated title with index", data_set_idx)
             # Update the data
             self.data.get('radar_data', {}).get('data_sets', [])[data_set_idx]['title'] = new_title
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
@@ -722,13 +722,14 @@ class Chart(Widget):
                     #ft.Text(ds.get('title', "Data Set"), style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
                     ft.TextField(
                         data_set_data.get('title', "Data Set"), dense=True, data=data_set_idx,
-                        border=ft.InputBorder.NONE, text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
-                        on_blur=update_dataset_title,
-                        width=120
+                        border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
+                        text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
+                        on_change=update_dataset_title, content_padding=4,
+                        width=120, bgcolor=ft.Colors.TRANSPARENT
                     ),
                 ], tight=True, spacing=6),
                 border_radius=ft.BorderRadius.all(4), padding=ft.Padding.all(6),
-                margin=ft.Margin.only(left=10),
+                #margin=ft.Margin.only(left=10),
             )
 
         # Load our keys above the chart
@@ -937,8 +938,9 @@ class Chart(Widget):
                 ft.TextField(
                     value=title, 
                     dense=True, data=idx, expand=True,
-                    on_blur=update_node_title,
-                    border=ft.InputBorder.NONE, border_radius=4,
+                    on_change=update_node_title,
+                    content_padding=4,
+                    border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
                     text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
                     bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                     suffix=ft.IconButton(       #  Delete button
@@ -1093,21 +1095,21 @@ class Chart(Widget):
                             ft.TextField(
                                 value=str(self.data.get('radar_data', {}).get('min_value', 0)),
                                 label="Min Value", expand=True,
-                                on_blur=update_min_max_value,
+                                on_change=update_min_max_value,
                                 data="min_value",
                                 input_filter=ft.NumbersOnlyInputFilter(),
-                                margin=ft.Margin.only(top=6, left=10, right=10), #border_color=ft.Colors.OUTLINE_VARIANT,
-                                #border_radius=4, 
+                                margin=ft.Margin.only(top=6, left=10, right=10), 
+                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
                                 dense=True
                             ),
                             ft.TextField(
                                 value=str(self.data.get('radar_data', {}).get('max_value', 20)),
                                 label="Max Value", expand=True,
-                                on_blur=update_min_max_value,
+                                on_change=update_min_max_value,
                                 input_filter=ft.NumbersOnlyInputFilter(),
                                 data="max_value",
-                                margin=ft.Margin.only(top=6, left=10, right=10), #border_color=ft.Colors.OUTLINE_VARIANT,
-                                #border_radius=4, 
+                                margin=ft.Margin.only(top=6, left=10, right=10), 
+                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
                                 dense=True
                             )
                             
@@ -1125,7 +1127,7 @@ class Chart(Widget):
                 ),
             )
         )
-
+        self.sidebar_notes_label.margin = None
         self.sidebar_body.controls.extend([
             ft.Row([    # Label dataset
                 ft.Text(f"Data Sets", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)), 

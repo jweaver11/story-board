@@ -142,10 +142,8 @@ class Workspace(ft.Container):
             on_blur=blur_edit_title_tf,
             on_submit=widget.submit_rename,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            #border_radius=4, 
             dense=True, capitalization=ft.TextCapitalization.SENTENCES,
-            #border_color=ft.Colors.TRANSPARENT,
-            #focused_border_color=ft.Colors.PRIMARY,
+            border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
         )
 
         # Button to remove the widget from the workspace

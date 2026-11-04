@@ -1171,7 +1171,7 @@ class Map(Widget):
                 ctrl.data = idx
             #for idx, ctrl in enumerate(history_column.controls):
                 #ctrl.data = idx
-        
+        self.sidebar_notes_label.margin = None
         
         return [
                 ft.Row([

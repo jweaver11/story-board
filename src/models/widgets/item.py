@@ -153,23 +153,16 @@ class Item(Widget):
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
         ) 
 
-        description_section = ft.Column([
-            ft.Row([
-                ft.Text(f"Description", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18)),
-                
-            ], spacing=0),
-            self.description_tf
-            
-        ], expand=True, spacing=0, alignment=ft.MainAxisAlignment.CENTER,)
         
-        self.description_tf.label = ""
+        
+        #self.description_tf.label = ""
         self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
 
         body = ft.Column([
             ft.Row([
                 self.select_image_button,
-                description_section
-            ], vertical_alignment=ft.CrossAxisAlignment.START),
+                self.description_tf
+            ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
             segments_column
         ], expand=True, spacing=0)
 

@@ -655,17 +655,14 @@ class Widget(ft.Container):
                 on_submit=save_new_note, visible=False, expand=True,
                 on_blur=handle_new_note_blur, margin=ft.Margin.only(left=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-                #border_radius=4, 
                 dense=True, capitalization=ft.TextCapitalization.SENTENCES,
-                #border_color=ft.Colors.TRANSPARENT,
-                #focused_border_color=ft.Colors.PRIMARY,
+                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
                 label="New Note Label", label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
             )
-            
-        ], spacing=0)
+        ], spacing=0, margin=ft.Margin.only(top=10))
 
         self.sidebar_notes_column = ft.Column(
-            [create_new_note_ctrl(idx, value) for idx, value in enumerate(self.data.get('notes', []))]
+            [create_new_note_ctrl(idx, value) for idx, value in enumerate(self.data.get('notes', []))], 
         )
 
         # Button (container) for showing and hiding the sidebar
@@ -715,9 +712,8 @@ class Widget(ft.Container):
         self.description_tf = ft.TextField(
             value=self.data.get('description', ''), label="Description",
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            #border_color=ft.Colors.TRANSPARENT,
             margin=ft.Margin.only(top=4),
-            #focused_border_color=ft.Colors.PRIMARY,
+            border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
             multiline=True, dense=True, expand=True, 
             on_blur=lambda e: self.update_data(**{'description': e.control.value}),
             capitalization=ft.TextCapitalization.SENTENCES,
