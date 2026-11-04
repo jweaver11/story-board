@@ -1099,7 +1099,7 @@ class Chart(Widget):
                                 data="min_value",
                                 input_filter=ft.NumbersOnlyInputFilter(),
                                 margin=ft.Margin.only(top=6, left=10, right=10), 
-                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
+                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
                                 dense=True
                             ),
                             ft.TextField(
@@ -1109,7 +1109,7 @@ class Chart(Widget):
                                 input_filter=ft.NumbersOnlyInputFilter(),
                                 data="max_value",
                                 margin=ft.Margin.only(top=6, left=10, right=10), 
-                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
+                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
                                 dense=True
                             )
                             
