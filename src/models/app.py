@@ -45,6 +45,35 @@ class App:
             await self.settings.save_file()
         return count
 
+    async def push_story_cloud(self, story: Story) -> int:
+        ''' Pushes only the given story to Google Drive. Raises on failure '''
+        if story is None:
+            raise ValueError("No story is open.")
+        await story.save_file()
+        return await asyncio.to_thread(google_drive.push_story, story.data.get('directory_path'))
+
+    async def pull_story_cloud(self, story_id: str) -> Story:
+        ''' Pulls only the story with this id from Google Drive, replacing the local copy, and registers it. Raises on failure '''
+        story_dir = os.path.join(STORIES_DIRECTORY_PATH, story_id)
+        await asyncio.to_thread(google_drive.pull_story, story_dir)
+
+        story_file = next((f for f in os.listdir(story_dir) if f.endswith(".json")), None)
+        if story_file is None:
+            raise FileNotFoundError("The cloud copy of this story has no story file.")
+        with open(os.path.join(story_dir, story_file), "r", encoding='utf-8') as f:
+            data = json.load(f)
+
+        # Paths saved on another device are not valid here
+        data['id'] = story_id
+        data['directory_path'] = story_dir
+        data['content_directory_path'] = os.path.join(story_dir, "content")
+        data['canvas_directory_path'] = os.path.join(story_dir, "canvas")
+        data['file_path'] = os.path.join(story_dir, story_file)
+
+        story = Story(data.get('title', story_id), data)
+        self.stories[story_id] = story
+        return story
+
     # Called on app startup in main
     def load_settings(self, page: ft.Page):
         ''' Loads our settings from a JSON file into our rendered settings control. If none exist, creates default settings '''

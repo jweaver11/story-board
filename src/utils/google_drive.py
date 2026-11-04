@@ -305,6 +305,51 @@ def pull_story(story_dir: str) -> int:
     return len(files)
 
 
+def list_cloud_stories() -> list[dict]:
+    '''
+    Returns [{'id', 'title'}] for every story in the cloud, reading only each story's metadata file (stories/<id>/<id>_metadata.json).
+    Falls back to <id>.json, which is the story file the app writes. Stories with unreadable metadata are skipped.
+    '''
+    service = _service()
+    root_id = _find_root(service)
+    if root_id is None:
+        return []
+    stories_id = next(iter(service.files().list(
+        q=f"'{root_id}' in parents and name = '{STORIES_FOLDER_NAME}' and mimeType = '{FOLDER_MIME}' and trashed = false",
+        fields="files(id)", pageSize=1).execute().get("files", [])), {}).get("id")
+    if stories_id is None:
+        return []
+
+    folders = []
+    token = None
+    while True:
+        res = service.files().list(
+            q=f"'{stories_id}' in parents and mimeType = '{FOLDER_MIME}' and trashed = false",
+            fields="nextPageToken, files(id, name)", pageSize=1000, pageToken=token).execute()
+        folders.extend(res.get("files", []))
+        token = res.get("nextPageToken")
+        if not token:
+            break
+
+    stories = []
+    for folder in folders:
+        name = folder["name"]
+        if "'" in name:
+            continue
+        candidates = [f"{name}_metadata.json", f"{name}.json"]
+        q = f"'{folder['id']}' in parents and mimeType != '{FOLDER_MIME}' and trashed = false and (name = '{candidates[0]}' or name = '{candidates[1]}')"
+        files = service.files().list(q=q, fields="files(id, name)", pageSize=10).execute().get("files", [])
+        files.sort(key=lambda f: candidates.index(f["name"]))
+        if not files:
+            continue
+        try:
+            data = json.loads(service.files().get_media(fileId=files[0]["id"]).execute().decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            continue
+        stories.append({"id": name, "title": data.get("title") or name})
+    return stories
+
+
 def disconnect() -> None:
     ''' Forgets the saved Google credentials on this device '''
     if os.path.exists(TOKEN_PATH):
@@ -319,6 +364,8 @@ def describe_error(ex: Exception) -> str:
         return "Your Google connection expired. Please reconnect to Google Drive."
     if isinstance(ex, PermissionError):
         return "Not connected to Google Drive."
+    if isinstance(ex, FileNotFoundError):
+        return str(ex)
     if isinstance(ex, HttpError):
         status = getattr(ex.resp, "status", None)
         if status in (401, 403):

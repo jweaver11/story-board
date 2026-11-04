@@ -126,13 +126,22 @@ class MenuBar(ft.Container):
                 open_button.disabled = False
                 open_button.style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")
                 open_button.update()
+                cloud_warning.visible = selected_story.startswith("cloud:")
+                cloud_warning.update()
+
+            cloud_stories = []
+            cloud_warning = ft.Text(
+                "Warning: Opening a cloud story will overwrite the local version on this device, if one exists.",
+                visible=False, italic=True, color=ft.Colors.ERROR, size=12, width=300,
+            )
+            cloud_column = ft.Column(tight=True, controls=[])
     
             # Returns a list of all story titles available to open
             def get_stories_list() -> ft.Control:
                 ''' Returns a list of all story titles available to open '''
     
                 # List of our story choices
-                stories = []
+                ctrls = []
     
                 # Set style for our options
                 style = ft.TextStyle(
@@ -140,31 +149,79 @@ class MenuBar(ft.Container):
                     color=ft.Colors.ON_SURFACE,
                     weight=ft.FontWeight.BOLD,
                 )
+                
     
                 # Use something better than radio in future, but for now this works
                 for story in app.stories.values():
-                    stories.append(ft.Radio(expand=False, value=story.data.get('id'), label=story.data.get('title'), label_style=style, mouse_cursor=ft.MouseCursor.CLICK))
+                    ctrls.append(ft.Radio(expand=False, value=f"local:{story.data.get('id')}", label=story.data.get('title'), label_style=style, mouse_cursor=ft.MouseCursor.CLICK))
+
+                if app.is_cloud_authenticated == True:
+                    ctrls.append(ft.Divider())
+                    ctrls.append(ft.Text("Cloud Stories", style=style))
+                    cloud_column.controls = [ft.ProgressRing(width=24, height=24, stroke_width=3)]
+                    ctrls.append(cloud_column)
+                    ctrls.append(cloud_warning)
     
-                # Return our list of stories
-                return stories
+                return ctrls
+
+            async def load_cloud_stories():
+                ''' Fills in the cloud section once the metadata has been read, so the dialog itself opens immediately '''
+                nonlocal cloud_stories
+                style = ft.TextStyle(size=14, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)
+                try:
+                    # Only reads each cloud story's metadata file, not the whole cloud
+                    cloud_stories = await asyncio.to_thread(google_drive.list_cloud_stories)
+                except Exception as ex:
+                    cloud_column.controls = [ft.Text(google_drive.describe_error(ex), color=ft.Colors.ERROR, size=12)]
+                    try:
+                        cloud_column.update()
+                    except Exception:
+                        pass
+                    return
+
+                if not cloud_stories:
+                    cloud_column.controls = [ft.Text("No stories found in the cloud.", color=ft.Colors.OUTLINE, size=12)]
+                else:
+                    cloud_column.controls = [
+                        ft.Radio(
+                            expand=False, value=f"cloud:{s['id']}", label_style=style, mouse_cursor=ft.MouseCursor.CLICK,
+                            label=s['title'],
+                        ) for s in cloud_stories
+                    ]
+                try:
+                    cloud_column.update()
+                except Exception:
+                    pass    # Dialog was closed before the cloud finished loading
     
     
             # Called when the 'open' button is clicked in the bottom right of the dialog
             async def open_selected_story(e=None):
                 ''' Changes the route to the selected story '''
-    
-                #print("Open button clicked, selected story is: ", selected_story)
-    
-                if selected_story is not None:
-                    await self.page.push_route(app.stories[selected_story].route)
-                    app.settings.story = app.stories[selected_story]  # Gives our settings widget the story reference it needs
+
+                if selected_story is None:
                     self.page.pop_dialog()
-                    self.page.update()
-                else:
-                    print("No story selected")
-    
+                    return
+
+                source, _, story_id = selected_story.partition(":")
+
+                if source == "cloud":
+                    title = next((s['title'] for s in cloud_stories if s['id'] == story_id), "this story")
+                    if story_id in app.stories:
+                        _confirm_cloud_action(
+                            "Overwrite local story?",
+                            f"'{title}' also exists on this device. Opening the cloud version replaces the local version, and local changes will be lost.",
+                            "Open and overwrite local",
+                            lambda: pull_story_from_cloud(story_id), "Opening from Google Drive...", "Opened from Google Drive",
+                        )
+                    else:
+                        await _run_cloud_action(lambda: pull_story_from_cloud(story_id), "Opening from Google Drive...", "Opened from Google Drive")
+                    return
+
+                await self.page.push_route(app.stories[story_id].route)
+                app.settings.story = app.stories[story_id]  # Gives our settings widget the story reference it needs
                 self.page.pop_dialog()
                 self.page.update()
+
     
             open_button = ft.TextButton("Open", on_click=open_selected_story, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
     
@@ -189,6 +246,9 @@ class MenuBar(ft.Container):
     
             # Opens our dialog
             self.page.show_dialog(dlg)
+
+            if app.is_cloud_authenticated == True:
+                await load_cloud_stories()
 
         def handle_rename_story(e: ft.Event=None):
 
@@ -225,117 +285,6 @@ class MenuBar(ft.Container):
     
             # Open our dialog in the overlay
             self.page.show_dialog(dlg)
-
-        async def handle_import_story(e=None):
-            """Import a complete story export into the app's story directory."""
-            destination_path = None
-
-            try:
-                folder_path = await ft.FilePicker().get_directory_path()
-                if not folder_path:
-                    return
-
-                folder_path = os.path.normpath(folder_path)
-                content_source_path = os.path.join(folder_path, "content")
-                story_files = [
-                    item for item in os.listdir(folder_path)
-                    if item.lower().endswith(".json")
-                    and os.path.isfile(os.path.join(folder_path, item))
-                ]
-
-                if not os.path.isdir(content_source_path) or len(story_files) != 1:
-                    raise ValueError(
-                        "The selected folder must contain a content folder and one story JSON file."
-                    )
-
-                story_file_name = story_files[0]
-                story_file_path = os.path.join(folder_path, story_file_name)
-                with open(story_file_path, "r", encoding="utf-8") as story_file:
-                    story_data = json.load(story_file)
-
-                story_id = story_data.get("id")
-                if not story_id or story_file_name != f"{story_id}.json":
-                    raise ValueError("The story JSON file name must match the story id.")
-                if os.path.basename(story_id) != story_id or os.path.normpath(story_id) != story_id:
-                    raise ValueError("The story id must be a simple folder name.")
-
-                os.makedirs(STORIES_DIRECTORY_PATH, exist_ok=True)
-                candidate_destination_path = os.path.join(STORIES_DIRECTORY_PATH, story_id)
-                if os.path.exists(candidate_destination_path):
-                    raise FileExistsError(
-                        f"A story with id '{story_id}' already exists."
-                    )
-                destination_path = candidate_destination_path
-
-                old_content_path = os.path.normpath(
-                    story_data.get("content_directory_path", content_source_path)
-                )
-                new_content_path = os.path.join(destination_path, "content")
-
-                story_data.update({
-                    "directory_path": destination_path,
-                    "content_directory_path": new_content_path,
-                    "canvas_directory_path": os.path.join(destination_path, "canvas"),
-                    "file_path": os.path.join(destination_path, f"{story_id}.json"),
-                })
-
-                rebased_folders = {}
-                for old_path, folder_data in story_data.get("folders", {}).items():
-                    old_path = os.path.normpath(old_path)
-                    try:
-                        relative_path = os.path.relpath(old_path, old_content_path)
-                    except ValueError:
-                        continue
-                    if relative_path == os.pardir or relative_path.startswith(os.pardir + os.sep):
-                        continue
-                    new_path = os.path.normpath(os.path.join(new_content_path, relative_path))
-                    rebased_folders[new_path] = folder_data.copy()
-                story_data["folders"] = rebased_folders
-
-                shutil.copytree(folder_path, destination_path)
-
-                imported_story = Story(story_data.get("title", story_id), story_data)
-
-                for dirpath, _, _ in os.walk(new_content_path):
-                    if os.path.normpath(dirpath) == os.path.normpath(new_content_path):
-                        continue
-                    await imported_story.create_folder(
-                        name=os.path.basename(dirpath),
-                        update=False,
-                        full_path=dirpath,
-                    )
-
-                for dirpath, _, filenames in os.walk(new_content_path):
-                    for filename in filenames:
-                        if not filename.lower().endswith(".json"):
-                            continue
-
-                        widget_path = os.path.join(dirpath, filename)
-                        try:
-                            with open(widget_path, "r", encoding="utf-8") as widget_file:
-                                widget_data = json.load(widget_file)
-                        except (json.JSONDecodeError, OSError):
-                            continue
-
-                        if "tag" not in widget_data or "id" not in widget_data:
-                            continue
-
-                        widget_data["directory_path"] = dirpath
-                        with open(widget_path, "w", encoding="utf-8") as widget_file:
-                            json.dump(widget_data, widget_file, indent=4)
-
-                await imported_story.save_file()
-                app.stories[story_id] = imported_story
-                app.settings.story = imported_story
-                await self.page.push_route(imported_story.route)
-                self.page.update()
-
-            except OSError as error:
-                self.page.show_dialog(SnackBar(f"Error importing story: {error}"))
-            except (TypeError, ValueError, json.JSONDecodeError) as error:
-                if destination_path and os.path.isdir(destination_path):
-                    shutil.rmtree(destination_path, ignore_errors=True)
-                self.page.show_dialog(SnackBar(f"Error importing story: {error}"))
             
 
         async def handle_export_story(e=None):
@@ -470,14 +419,7 @@ class MenuBar(ft.Container):
                             style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
                             on_click=handle_rename_story,
                         ),
-                        ft.MenuItemButton(
-                            content=ft.Text("Import Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            tooltip="Import a folder containing an exported story from Story Board on another device.",
-                            leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
-                            close_on_click=True,
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=handle_import_story,
-                        ),
+                        
                         ft.MenuItemButton(
                             content=ft.Text("Export Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                             leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
@@ -562,7 +504,7 @@ class MenuBar(ft.Container):
                     app.settings.story = None
                     await app.load_previous_story(self.page)
 
-                self.page.show_dialog(SnackBar(f"{done_text} ({count} files)"))
+                self.page.show_dialog(SnackBar(f"{done_text} ({count - 1} files)"))
             except Exception as ex:
                 self.page.show_dialog(SnackBar(google_drive.describe_error(ex)))
                 if restart_after:
@@ -585,22 +527,51 @@ class MenuBar(ft.Container):
             ))
 
         def handle_push_clicked(e=None):
+            if self.story is None:
+                self.page.show_dialog(SnackBar("No story is open to push."))
+                return
+            story = self.story
+            async def push_action():
+                return await app.push_story_cloud(story)
             _confirm_cloud_action(
                 "Push to cloud?",
-                "This uploads your settings (except window/page settings) and the current story to your Google Drive 'Story Board' folder, "
-                "overwriting the cloud copies.",
-                "Push and overwrite cloud", app.push_cloud, "Pushing to Google Drive...", "Pushed to Google Drive",
+                f"This uploads '{story.data.get('title', '')}' to your Google Drive 'Story Board' folder, "
+                "overwriting its cloud copy. Settings are not included.",
+                "Push and overwrite cloud", push_action, "Pushing to Google Drive...", "Pushed to Google Drive",
             )
 
+        async def pull_story_from_cloud(story_id: str) -> int:
+            ''' Replaces the local copy of a story with its cloud copy and opens it '''
+            # Leave the story view first so its components unmount (and flush any saves) BEFORE the files are replaced
+            await self.page.push_route("/loading")
+            await asyncio.sleep(0.3)
+            old_story = app.stories.get(story_id)
+            try:
+                story = await app.pull_story_cloud(story_id)
+            except Exception:
+                if old_story is not None:
+                    await self.page.push_route(old_story.route)
+                else:
+                    await self.page.push_route("/")
+                raise
+            app.settings.story = story
+            await self.page.push_route(story.route)
+            return len([f for _, _, files in os.walk(story.data.get('directory_path')) for f in files])
+
         def handle_pull_clicked(e=None):
+            if self.story is None:
+                self.page.show_dialog(SnackBar("No story is open to pull."))
+                return
+            story_id = self.story.data.get('id')
+            async def pull_action():
+                return await pull_story_from_cloud(story_id)
             _confirm_cloud_action(
                 "Pull from cloud?",
-                "This replaces your settings (except window/page settings) and any stories that exist in your Google Drive 'Story Board' folder "
-                "with the cloud versions. Stories only on this device are kept. "
-                "The app will reload the pulled data afterwards.",
-                "Pull and overwrite local", app.pull_cloud, "Pulling from Google Drive...", "Pulled from Google Drive",
-                restart_after=True,
+                f"This replaces '{self.story.data.get('title', '')}' on this device with its Google Drive copy. "
+                "Local changes to this story will be lost. Settings are not affected.",
+                "Pull and overwrite local", pull_action, "Pulling from Google Drive...", "Pulled from Google Drive",
             )
+
         
         
 
@@ -629,7 +600,7 @@ class MenuBar(ft.Container):
                                 spans=[
                                     ft.TextSpan("Push to Google Drive\n"),
                                     ft.TextSpan(
-                                        "Saves current story and settings to the cloud. Use this as a backup, or to pick up where you left off on another device.",
+                                        "Saves current story to your Google Drive, overwriting any existing cloud data. Use this as a backup, or to pick up where you left off on another device.",
                                         style=ft.TextStyle(color=ft.Colors.OUTLINE, size=12), expand=True, 
                                     ),
                                 ],
@@ -643,7 +614,7 @@ class MenuBar(ft.Container):
                             spans=[
                                 ft.TextSpan("Pull from Google Drive\n"),
                                 ft.TextSpan(
-                                    "Pull the current story and settings from your cloud data to this device. This will overwrite any local data, so make sure the cloud has the latest version.", 
+                                    "Pull the current story from your Google Drive to this device. This will overwrite any local data, so make sure the cloud has the latest version.", 
                                     style=ft.TextStyle(color=ft.Colors.OUTLINE, size=12)
                                 )
                             ],
@@ -683,7 +654,8 @@ class MenuBar(ft.Container):
             #tooltip="Working..." if is_connecting else "Google Drive",
             #disabled=is_connecting,
             #items=get_cloud_sync_
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+            menu_padding=0
         )
         
         set_cloud_button()
