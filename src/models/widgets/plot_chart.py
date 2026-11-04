@@ -665,7 +665,7 @@ class PlotChart(Widget):
                             ft.Icons.VERTICAL_DISTRIBUTE_OUTLINED if self.data.get('spider_web_view', False) == True else ft.Icons.SHOW_CHART,
                             ft.Colors.PRIMARY
                         ),
-                        ft.Text("Toggle Connector View", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True), 
+                        ft.Text("Toggle Connections", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True), 
                     ], tooltip="Toggle between spider web connections and 3 line connections"),
                 ),
             ]
@@ -681,6 +681,7 @@ class PlotChart(Widget):
                 width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT,
                 on_hover=self.set_mouse_coords,
                 on_secondary_tap=lambda: self.story.open_menu(get_new_node_menu_options()),
+                on_tap=lambda: self.story.open_menu(get_new_node_menu_options()),
                 hover_interval=40,
                 data="right_click"
             ),

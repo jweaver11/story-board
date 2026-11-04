@@ -350,6 +350,40 @@ def list_cloud_stories() -> list[dict]:
     return stories
 
 
+def _find_story_folder(service, story_id: str) -> str | None:
+    ''' Id of this story's folder in the cloud, or None. Uses targeted queries instead of listing everything '''
+    if "'" in story_id:
+        return None
+    root_id = _find_root(service)
+    if root_id is None:
+        return None
+    def first(parent: str, name: str) -> str | None:
+        q = f"'{parent}' in parents and name = '{name}' and mimeType = '{FOLDER_MIME}' and trashed = false"
+        files = service.files().list(q=q, fields="files(id)", pageSize=1).execute().get("files", [])
+        return files[0]["id"] if files else None
+    stories_id = first(root_id, STORIES_FOLDER_NAME)
+    return first(stories_id, story_id) if stories_id else None
+
+
+def push_story_if_in_cloud(story_dir: str) -> bool:
+    ''' Re-pushes a story only if it already exists in the cloud (used after renames). Returns True if pushed '''
+    service = _service()
+    if _find_story_folder(service, os.path.basename(os.path.normpath(story_dir))) is None:
+        return False
+    push_story(story_dir)
+    return True
+
+
+def delete_story(story_id: str) -> bool:
+    ''' Trashes the story's cloud folder if it exists. Returns True if something was deleted '''
+    service = _service()
+    folder_id = _find_story_folder(service, story_id)
+    if folder_id is None:
+        return False
+    _trash(service, folder_id)
+    return True
+
+
 def disconnect() -> None:
     ''' Forgets the saved Google credentials on this device '''
     if os.path.exists(TOKEN_PATH):

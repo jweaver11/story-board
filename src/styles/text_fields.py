@@ -33,9 +33,7 @@ class SingleLineTextField(ft.TextField):
         self.multiline=False
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
-        #self.border_radius=4
-        #self.border_color=ft.Colors.TRANSPARENT
-        #self.focused_border_color=ft.Colors.PRIMARY
+        self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
 
 # Standard styling for most text fields we use
 @ft.control
@@ -52,9 +50,7 @@ class SettingsTextField(ft.TextField):
         self.multiline=False
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
-        #self.border_radius=4
-        #self.border_color=ft.Colors.TRANSPARENT
-        #self.focused_border_color=ft.Colors.PRIMARY
+        self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
         self.margin=ft.Margin.only(left=20)
         self.width=200
 
@@ -70,8 +66,7 @@ class SidebarTitleTextField(ft.TextField):
         self.content_padding=ft.Padding.only(top=2, bottom=2)
         self.capitalization=ft.TextCapitalization.WORDS
         self.bgcolor=ft.Colors.TRANSPARENT
-        #self.border_color=ft.Colors.TRANSPARENT
-        #self.focused_border_color=ft.Colors.TRANSPARENT
+        self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
         self.expand=True
         
         
@@ -85,7 +80,7 @@ class NoLabelTextField(TextField):
         super().__init__(*args, **kwargs)
 
         self.dense = True
-        #self.border=ft.InputBorder.NONE
+        self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
         self.text_style=ft.TextStyle(size=14)
         self.multiline=True
         self.content_padding=ft.Padding.all(0)
@@ -124,7 +119,6 @@ class SmallTextField(TextField):
         self.text_style=ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=12)
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.multiline=True
-        #self.border=ft.InputBorder.NONE
         self.text_align=ft.TextAlign.CENTER
         self.bgcolor=ft.Colors.TRANSPARENT
-        #self.focused_bgcolor=ft.Colors.TRANSPARENT
+        self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)

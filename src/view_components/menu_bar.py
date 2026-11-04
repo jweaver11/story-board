@@ -254,15 +254,30 @@ class MenuBar(ft.Container):
 
 
             async def rename_story(e=None):
-                self.story.rename(title_tf.value)
-                
-                
+                story = self.story
+                story.rename(title_tf.value)
+
+                # Keep the cloud copy in step, but only if this story is already saved there
+                if app.is_cloud_authenticated == True:
+                    try:
+                        await story.save_file()
+                        if await asyncio.to_thread(google_drive.push_story_if_in_cloud, story.data.get('directory_path')):
+                            self.page.show_dialog(SnackBar("Renamed in Google Drive too."))
+                    except Exception as ex:
+                        self.page.show_dialog(SnackBar(f"Renamed locally, but the cloud copy was not updated: {google_drive.describe_error(ex)}"))
 
             title_tf = ft.TextField(
                 value=self.story.data.get('title', ''),
                 autofocus=True, capitalization=ft.TextCapitalization.WORDS,
                 on_submit=rename_story,
             )
+
+            rename_controls = [title_tf]
+            if app.is_cloud_authenticated == True:
+                rename_controls.append(ft.Text(
+                    "If this story is saved in your Google Drive, the cloud copy will be renamed too.",
+                    italic=True, size=12, color=ft.Colors.ERROR,
+                ))
 
             dlg = ft.AlertDialog(
                 
@@ -274,7 +289,7 @@ class MenuBar(ft.Container):
                 ),
     
                 # Main content is text box for user to input story title
-                content=title_tf,
+                content=ft.Column(tight=True, width=320, controls=rename_controls),
     
                 # Our two action buttons at the bottom of the dialog
                 actions=[
@@ -344,10 +359,21 @@ class MenuBar(ft.Container):
                 try:
 
                     story_id = self.story.data.get('id')
-                    deleted_id = app.stories.pop(story_id)
-                    app.settings.story = None                    
-
+                    title = self.story.data.get('title', 'Story')
                     story_dir_path = self.story.data.get('directory_path')
+
+                    # Delete from the cloud first, so a failure leaves the story intact instead of resurrecting it on the next pull
+                    cloud_deleted = False
+                    if app.is_cloud_authenticated == True:
+                        try:
+                            cloud_deleted = await asyncio.to_thread(google_drive.delete_story, story_id)
+                        except Exception as ex:
+                            ft.context.page.show_dialog(SnackBar(f"Story not deleted. Could not delete the cloud copy: {google_drive.describe_error(ex)}"))
+                            return
+
+                    app.stories.pop(story_id)
+                    app.settings.story = None
+
                     full_norm = os.path.normcase(os.path.normpath(story_dir_path))
                     
                     # Delete the folder from storage
@@ -355,7 +381,8 @@ class MenuBar(ft.Container):
 
                     ft.context.page.pop_dialog()
                     await ft.context.page.push_route("/")
-                    ft.context.page.show_dialog(SnackBar(f"{self.story.data.get('title', 'Story')} deleted successfully."))
+                    suffix = " (also removed from Google Drive)" if cloud_deleted else ""
+                    ft.context.page.show_dialog(SnackBar(f"{title} deleted successfully{suffix}."))
 
                     ft.context.page.title = "Story Board (alpha)"
                     ft.context.page.update()
@@ -364,10 +391,13 @@ class MenuBar(ft.Container):
                     ft.context.page.show_dialog(SnackBar(f"Error deleting story: {e}"))
                 
 
+            delete_text = "Are you sure you want to delete this story? This action cannot be undone!"
+            if app.is_cloud_authenticated == True:
+                delete_text += "\n\nIf this story is saved in your Google Drive, the cloud copy will be deleted too."
 
             dlg = ft.AlertDialog(
                 title=ft.Text(f"Delete {self.story.data.get('title', 'Story')}?", weight=ft.FontWeight.BOLD),
-                content=ft.Text("Are you sure you want to delete this story? This action cannot be undone!"),
+                content=ft.Text(delete_text),
                 actions=[
                     ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                     ft.TextButton("DELETE FOREVER", on_click=confirm_delete,style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.RED)),
