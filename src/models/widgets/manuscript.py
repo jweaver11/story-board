@@ -224,7 +224,9 @@ class Manuscript(Widget):
             on_click=get_word_count,
             bgcolor=ft.Colors.TRANSPARENT,
             highlight_color=ft.Colors.TRANSPARENT,
-            hover_color=ft.Colors.TRANSPARENT
+            hover_color=ft.Colors.TRANSPARENT,
+            padding=ft.Padding.all(0),
+            size_constraints=ft.BoxConstraints(min_width=0, min_height=0),
         )
             
         
@@ -247,10 +249,6 @@ class Manuscript(Widget):
             expand=True,
             margin=ft.Margin.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN, vertical=MANUSCRIPT_VERTICAL_MARGIN),
         )
-
-
-        # Set our mouse coords whenever we hover over word count button
-        #self.sidebar_header.controls.append(ft.GestureDetector(word_count_button, on_hover=self.set_mouse_coords, hover_interval=50))
         
 
         # Build the sidebar

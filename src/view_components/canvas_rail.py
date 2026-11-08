@@ -2170,6 +2170,7 @@ class CanvasRail(ft.Container):
         )
         
         drawing_controls = [
+            ft.Text("Brush", italic=True),
             ft.Row([
                 ft.MenuBar(
                     [
@@ -2225,6 +2226,9 @@ class CanvasRail(ft.Container):
                 ),
             ),
 
+            ft.Divider(2, 2),
+            ft.Text("Tools", italic=True),
+
 
             ft.MenuBar(
                 [
@@ -2264,6 +2268,7 @@ class CanvasRail(ft.Container):
         self.content = ft.Column(
             #[ft.Row([self.rail_label], alignment=ft.MainAxisAlignment.CENTER)] + 
             drawing_controls,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             #[ft.Container(expand=True), ft.Row([self.collapse_icon_button], alignment=ft.MainAxisAlignment.END)],
             #horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             #spacing=20,
