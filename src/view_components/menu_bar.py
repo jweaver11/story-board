@@ -300,31 +300,6 @@ class MenuBar(ft.Container):
     
             # Open our dialog in the overlay
             self.page.show_dialog(dlg)
-            
-
-        async def handle_export_story(e=None):
-            """Export the story directory contents into a selected folder."""
-            folder_path = await ft.FilePicker().get_directory_path()
-            story_dir_path = self.story.data.get("directory_path")
-
-            if not folder_path or not story_dir_path:
-                return
-
-            source_path = os.path.abspath(os.path.normpath(story_dir_path))
-            destination_path = os.path.abspath(os.path.normpath(folder_path))
-            if source_path == destination_path:
-                return
-
-            try:
-                shutil.copytree(
-                    source_path,
-                    destination_path,
-                    dirs_exist_ok=True,
-                )
-            except OSError as error:
-                self.page.show_dialog(SnackBar(f"Error exporting story: {error}"))
-    
-        
 
         def toggle_show_canvas_rail(e: ft.Event[ft.MenuItemButton]):
             ''' Toggles the visibility of the canvas rail on the left side of the page '''
@@ -451,12 +426,12 @@ class MenuBar(ft.Container):
                         ),
                         
                         ft.MenuItemButton(
-                            content=ft.Text("Export Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                            content=ft.Text("Export", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                             leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
                             close_on_click=True, disabled=self.story is None,
-                            tooltip="Export's your story to a folder on your device. Allows for easy import to Story Board on another device.",
+                            tooltip="Export widgets from your story into other formats.",
                             style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=handle_export_story,
+                            on_click=self.story.handle_export if self.story else None,
                         ),
                         
                         ft.MenuItemButton(
@@ -545,12 +520,12 @@ class MenuBar(ft.Container):
         def _confirm_cloud_action(title: str, message: str, confirm_label: str, action, busy_text: str, done_text: str, restart_after: bool = False):
             self.page.show_dialog(ft.AlertDialog(
                 modal=True,
-                title=ft.Text(title),
-                content=ft.Text(message),
+                title=title,
+                content=ft.Text(message, size=16),
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
+                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
                     ft.TextButton(
-                        confirm_label, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click"),
+                        confirm_label, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click"),
                         on_click=lambda: self.page.run_task(_run_cloud_action, action, busy_text, done_text, restart_after),
                     ),
                 ],
@@ -564,10 +539,11 @@ class MenuBar(ft.Container):
             async def push_action():
                 return await app.push_story_cloud(story)
             _confirm_cloud_action(
-                "Push to cloud?",
-                f"This uploads '{story.data.get('title', '')}' to your Google Drive 'Story Board' folder, "
-                "overwriting its cloud copy. Settings are not included.",
-                "Push and overwrite cloud", push_action, "Pushing to Google Drive...", "Pushed to Google Drive",
+                "Push to Google Drive?",
+                f"This saves {story.data.get('title', '')} to your Google Drive from your current device."
+                "\nThis will overwrite the existing cloud, so make sure this device has the most up-to-date version of your story."
+                "\n\nAre you sure you want to proceed?",
+                "Confirm", push_action, "Pushing to Google Drive...", "Pushed to Google Drive",
             )
 
         async def pull_story_from_cloud(story_id: str) -> int:
@@ -597,9 +573,9 @@ class MenuBar(ft.Container):
                 return await pull_story_from_cloud(story_id)
             _confirm_cloud_action(
                 "Pull from cloud?",
-                f"This replaces '{self.story.data.get('title', '')}' on this device with its Google Drive copy. "
-                "Local changes to this story will be lost. Settings are not affected.",
-                "Pull and overwrite local", pull_action, "Pulling from Google Drive...", "Pulled from Google Drive",
+                f"This pulls {self.story.data.get('title', '')} from your Google Drive to this device.\nThis will overwrite any local data, so make sure the cloud has the latest version." 
+                "\n\nAre you sure you want to proceed?",
+                "Confirm", pull_action, "Pulling from Google Drive...", "Pulled from Google Drive",
             )
 
         
@@ -637,6 +613,7 @@ class MenuBar(ft.Container):
                                 width=220   # Bind the width, since popupmenuitems styling are jacked up otherwise.
                             ),
                         icon=ft.Icon(ft.Icons.CLOUD_UPLOAD_OUTLINED, ft.Colors.PRIMARY), on_click=handle_push_clicked,
+                        padding=10
                     ),
                     ft.PopupMenuItem(ft.Divider(), height=10, disabled=True),
                     ft.PopupMenuItem(
@@ -651,7 +628,7 @@ class MenuBar(ft.Container):
                             width=220   # Bind the width, since popupmenuitems styling are jacked up otherwise.
                         ), 
                         ft.Icon(ft.Icons.CLOUD_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), 
-                        on_click=handle_pull_clicked, expand=True
+                        on_click=handle_pull_clicked, expand=True, padding=10
                     )
                 ]
             else:

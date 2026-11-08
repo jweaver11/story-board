@@ -34,7 +34,7 @@ class Story(ft.View):
             #route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
             padding=ft.Padding.all(0),      # No padding for the page
             spacing=0,                                                      # No spacing between menubar and rest of page
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
+            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
         )  
 
         self.data = data                # Sets our data (if any) passed in. New stories just have none
@@ -585,7 +585,7 @@ class Story(ft.View):
             self.unblock_page()
 
     # Opens the dialog to export
-    async def handle_export(self, e=ft.Event):
+    async def handle_export(self, e=ft.Event[ft.Button]):
         from models.app import app
 
         async def export_confirmed(e=None):
@@ -795,91 +795,39 @@ class Story(ft.View):
         manuscript_default_dd = ft.Dropdown(
             value=wd_data.get('manuscript', {}).get('export_file_type'),
             text=wd_data.get('manuscript', {}).get('export_file_type'),
-            label="Manuscript Export File Type", data="manuscript", 
-            dense=True, width=300, on_select=set_widget_default_type,
+            #label="Manuscript Export File Type", 
+            data="manuscript", content_padding=0,
+            bgcolor=ft.Colors.SURFACE,
+            fill_color=ft.Colors.SURFACE, filled=True,
+            menu_style=ft.MenuStyle(ft.Alignment.BOTTOM_CENTER, padding=0),
+            border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
+            dense=True, width=100, on_select=set_widget_default_type,
             options=[
                 ft.DropdownOption(".docx"),
                 ft.DropdownOption(".pdf"),
                 ft.DropdownOption(".txt"),
-                ft.DropdownOption(".json"),
-            ]
-        )
-        canvas_default_dd = ft.Dropdown(
-            value=wd_data.get('canvas', {}).get('export_file_type'),
-            text=wd_data.get('canvas', {}).get('export_file_type'),
-            label="Canvas Export File Type", data="canvas",
-            dense=True, width=300, on_select=set_widget_default_type,
-            options=[
-                ft.DropdownOption(".png"),
-                ft.DropdownOption(".json"),
-            ]
-        )
-        map_default_dd = ft.Dropdown(
-            value=wd_data.get('map', {}).get('export_file_type'),
-            text=wd_data.get('map', {}).get('export_file_type'),
-            label="Map Export File Type", data="map",
-            dense=True, width=300, on_select=set_widget_default_type,
-            options=[
-                ft.DropdownOption(".png"),
-                ft.DropdownOption(".json"),
-            ]
-        )
-        plotline_default_dd = ft.Dropdown(
-            value=wd_data.get('plotline', {}).get('export_file_type'),
-            text=wd_data.get('plotline', {}).get('export_file_type'),
-            label="Plotline Export File Type", data="plotline",
-            dense=True, width=300, on_select=set_widget_default_type,
-            options=[
-                ft.DropdownOption(".png"),
-                ft.DropdownOption(".json"),
-            ]
-        )
-        plot_chart_default_dd = ft.Dropdown(
-            value=wd_data.get('plot_chart', {}).get('export_file_type'),
-            text=wd_data.get('plot_chart', {}).get('export_file_type'),
-            label="Plot Chart Export File Type", data="plot_chart",
-            dense=True, width=300, on_select=set_widget_default_type,
-            options=[
-                ft.DropdownOption(".png"),
-                ft.DropdownOption(".json"),
-            ]
-        )
-        crm_default_dd = ft.Dropdown(
-            value=wd_data.get('character_relationship_map', {}).get('export_file_type'),
-            text=wd_data.get('character_relationship_map', {}).get('export_file_type'),
-            label="Character Relationship Map Export File Type", data="character_relationship_map", 
-            dense=True, width=300, on_select=set_widget_default_type,
-            options=[
-                ft.DropdownOption(".png"),
-                ft.DropdownOption(".json"),
             ]
         )
         
 
         row = ft.Row([
             ft.Column([
-                manuscript_default_dd,
-                canvas_default_dd,
-                map_default_dd,
-                plotline_default_dd,
-                plot_chart_default_dd,
-                crm_default_dd,
-            ], width=300),
-            ft.Column([
-                ft.Text("Export Information", theme_style=ft.TextThemeStyle.TITLE_LARGE),
                 ft.Row([
-                    ft.Text(".json   -", weight=ft.FontWeight.BOLD),
-                    ft.Text("Used for importing widgets back into Story Board. All widgets export as .json if they have no other option", italic=True)
-                ]),
-                ft.Row([
-                    ft.Text(".png   -", weight=ft.FontWeight.BOLD),
-                    ft.Text("Used for exporting widgets as images.", italic=True)
-                ]),
-                ft.Row([
-                    ft.Text(".docx | .txt | .pdf   -", weight=ft.FontWeight.BOLD),
-                    ft.Text("Used for exporting Manuscript widgets as documents for other text editors.", italic=True)
-                ]),
-            ], tight=True, expand=True, horizontal_alignment=ft.MainAxisAlignment.CENTER)
+                    ft.Text(
+                        spans=[
+                            ft.TextSpan("Manuscript - ", ft.TextStyle(weight=ft.FontWeight.BOLD)),
+                        ]
+                    ),
+                    manuscript_default_dd
+                ], spacing=0),
+                ft.Text(
+                    spans=[
+                        ft.TextSpan("Canvas - ", ft.TextStyle(weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan(".png")
+                    ]
+                ),
+            ], expand=True),
+            
         ], vertical_alignment=ft.CrossAxisAlignment.START, spacing=30)
          
         dlg = ft.AlertDialog(

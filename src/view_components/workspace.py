@@ -26,7 +26,7 @@ class Workspace(ft.Container):
     def __init__(self, story: Story):
 
         # Set our container properties for the workspace
-        super().__init__(expand=True)
+        super().__init__(expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH)
 
         self.story: Story = story
 

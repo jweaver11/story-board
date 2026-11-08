@@ -32,7 +32,7 @@ class ActiveRail(ft.Container):
             animate_size=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            clip_behavior=ft.ClipBehavior.HARD_EDGE,
+            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
         )
         
     # Reload our rail on startup
