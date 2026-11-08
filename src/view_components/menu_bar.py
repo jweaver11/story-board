@@ -68,8 +68,8 @@ class MenuBar(ft.Container):
     
                 title = story_title_field.value.strip()
     
-                app.create_new_story(title, self.page) # Needs the story object
-                self.page.pop_dialog()
+                app.create_new_story(title, ft.context.page) # Needs the story object
+                ft.context.page.pop_dialog()
     
     
             
@@ -96,7 +96,7 @@ class MenuBar(ft.Container):
     
                 # Our two action buttons at the bottom of the dialog
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                    ft.TextButton("Cancel", on_click=lambda: ft.context.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                     ft.TextButton(
                         "Create Story", on_click=submit_new_story, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)
                     )
@@ -104,7 +104,7 @@ class MenuBar(ft.Container):
             )
     
             # Open our dialog in the overlay
-            self.page.show_dialog(dlg)
+            ft.context.page.show_dialog(dlg)
 
         
     
@@ -141,7 +141,7 @@ class MenuBar(ft.Container):
                 ''' Returns a list of all story titles available to open '''
     
                 # List of our story choices
-                ctrls = []
+                
     
                 # Set style for our options
                 style = ft.TextStyle(
@@ -149,6 +149,7 @@ class MenuBar(ft.Container):
                     color=ft.Colors.ON_SURFACE,
                     weight=ft.FontWeight.BOLD,
                 )
+                ctrls = [ft.Text("Local Stories", style=style)]
                 
     
                 # Use something better than radio in future, but for now this works
@@ -199,7 +200,7 @@ class MenuBar(ft.Container):
                 ''' Changes the route to the selected story '''
 
                 if selected_story is None:
-                    self.page.pop_dialog()
+                    ft.context.page.pop_dialog()
                     return
 
                 source, _, story_id = selected_story.partition(":")
@@ -209,18 +210,19 @@ class MenuBar(ft.Container):
                     if story_id in app.stories:
                         _confirm_cloud_action(
                             "Overwrite local story?",
-                            f"'{title}' also exists on this device. Opening the cloud version replaces the local version, and local changes will be lost.",
-                            "Open and overwrite local",
+                            f"'{title}' also exists on this device. Opening the cloud version replaces the local version, and local changes will be lost."
+                            "\n\nAre you sure you want to proceed?",
+                            "Confirm",
                             lambda: pull_story_from_cloud(story_id), "Opening from Google Drive...", "Opened from Google Drive",
                         )
                     else:
                         await _run_cloud_action(lambda: pull_story_from_cloud(story_id), "Opening from Google Drive...", "Opened from Google Drive")
                     return
 
-                await self.page.push_route(app.stories[story_id].route)
+                await ft.context.page.push_route(app.stories[story_id].route)
                 app.settings.story = app.stories[story_id]  # Gives our settings widget the story reference it needs
-                self.page.pop_dialog()
-                self.page.update()
+                ft.context.page.pop_dialog()
+                ft.context.page.update()
 
     
             open_button = ft.TextButton("Open", on_click=open_selected_story, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
@@ -239,13 +241,13 @@ class MenuBar(ft.Container):
                     on_change=change_selected_story
                 ),
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                    ft.TextButton("Cancel", on_click=lambda e: ft.context.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                     open_button,
                 ]
             )
     
             # Opens our dialog
-            self.page.show_dialog(dlg)
+            ft.context.page.show_dialog(dlg)
 
             if app.is_cloud_authenticated == True:
                 await load_cloud_stories()
@@ -262,9 +264,9 @@ class MenuBar(ft.Container):
                     try:
                         await story.save_file()
                         if await asyncio.to_thread(google_drive.push_story_if_in_cloud, story.data.get('directory_path')):
-                            self.page.show_dialog(SnackBar("Renamed in Google Drive too."))
+                            ft.context.page.show_dialog(SnackBar("Renamed in Google Drive too."))
                     except Exception as ex:
-                        self.page.show_dialog(SnackBar(f"Renamed locally, but the cloud copy was not updated: {google_drive.describe_error(ex)}"))
+                        ft.context.page.show_dialog(SnackBar(f"Renamed locally, but the cloud copy was not updated: {google_drive.describe_error(ex)}"))
 
             title_tf = ft.TextField(
                 value=self.story.data.get('title', ''),
@@ -293,13 +295,13 @@ class MenuBar(ft.Container):
     
                 # Our two action buttons at the bottom of the dialog
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                    ft.TextButton("Cancel", on_click=lambda e: ft.context.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                     ft.TextButton("Rename", on_click=rename_story,style=ft.ButtonStyle(mouse_cursor="click")),
                 ],
             )
     
             # Open our dialog in the overlay
-            self.page.show_dialog(dlg)
+            ft.context.page.show_dialog(dlg)
 
         def toggle_show_canvas_rail(e: ft.Event[ft.MenuItemButton]):
             ''' Toggles the visibility of the canvas rail on the left side of the page '''
@@ -319,67 +321,71 @@ class MenuBar(ft.Container):
 
         async def handle_settings_clicked(e=None):
             ''' Goes to the settings page '''
-            if self.page.route != "/settings":
-                await self.page.push_route("/settings")
+            if ft.context.page.route != "/settings":
+                await ft.context.page.push_route("/settings")
             else:
                 # Get the active story title and find its route
                 if self.story is not None:
-                    await self.page.push_route(self.story.route)
+                    await ft.context.page.push_route(self.story.route)
                 else:
-                    await self.page.push_route("/")
+                    await ft.context.page.push_route("/")
 
         async def handle_delete_story(e=None):
 
             async def confirm_delete(e=None):
                 try:
+                    ft.context.page.pop_dialog()
 
                     story_id = self.story.data.get('id')
-                    title = self.story.data.get('title', 'Story')
-                    story_dir_path = self.story.data.get('directory_path')
+                    delete_cloud = delete_from_cloud_switch.value and app.is_cloud_authenticated == True
 
-                    # Delete from the cloud first, so a failure leaves the story intact instead of resurrecting it on the next pull
-                    cloud_deleted = False
-                    if app.is_cloud_authenticated == True:
-                        try:
-                            cloud_deleted = await asyncio.to_thread(google_drive.delete_story, story_id)
-                        except Exception as ex:
-                            ft.context.page.show_dialog(SnackBar(f"Story not deleted. Could not delete the cloud copy: {google_drive.describe_error(ex)}"))
-                            return
+                    # Local delete first, so the UI doesn't wait on the network
+                    title = app.delete_story(story_id)
 
-                    app.stories.pop(story_id)
-                    app.settings.story = None
-
-                    full_norm = os.path.normcase(os.path.normpath(story_dir_path))
-                    
-                    # Delete the folder from storage
-                    shutil.rmtree(full_norm)
-
-                    ft.context.page.pop_dialog()
-                    await ft.context.page.push_route("/")
-                    suffix = " (also removed from Google Drive)" if cloud_deleted else ""
-                    ft.context.page.show_dialog(SnackBar(f"{title} deleted successfully{suffix}."))
-
+                    await ft.context.page.push_route("/loading")
                     ft.context.page.title = "Story Board (alpha)"
                     ft.context.page.update()
+                    await asyncio.sleep(0.2)
+
+                    if not delete_cloud:
+                        ft.context.page.show_dialog(SnackBar(f"{title} deleted successfully."))
+                        return
+
+                    page = ft.context.page
+                    async def delete_cloud_copy():
+                        try:
+                            await asyncio.to_thread(google_drive.delete_story, story_id)
+                            page.show_dialog(SnackBar(f"{title} deleted successfully (also removed from Google Drive)."))
+                        except Exception as ex:
+                            page.show_dialog(SnackBar(f"{title} deleted locally, but the cloud copy could not be deleted: {google_drive.describe_error(ex)}"))
+                    page.run_task(delete_cloud_copy)
 
                 except Exception as e:
                     ft.context.page.show_dialog(SnackBar(f"Error deleting story: {e}"))
+                await ft.context.page.push_route("/")
+                page.update()
                 
 
             delete_text = "Are you sure you want to delete this story? This action cannot be undone!"
-            if app.is_cloud_authenticated == True:
-                delete_text += "\n\nIf this story is saved in your Google Drive, the cloud copy will be deleted too."
 
             dlg = ft.AlertDialog(
                 title=ft.Text(f"Delete {self.story.data.get('title', 'Story')}?", weight=ft.FontWeight.BOLD),
-                content=ft.Text(delete_text),
+                content=ft.Column([
+                    ft.Text(delete_text),
+                    delete_from_cloud_switch := ft.Switch(
+                        label="Delete from cloud as well",
+                        value=app.is_cloud_authenticated == True,
+                        visible=app.is_cloud_authenticated == True,
+                    )
+                ], tight=True),
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                    ft.TextButton("Cancel", on_click=lambda: ft.context.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                     ft.TextButton("DELETE FOREVER", on_click=confirm_delete,style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.RED)),
                 ],
                 actions_alignment=ft.MainAxisAlignment.END,
             )
             ft.context.page.show_dialog(dlg)
+            
 
             
     
@@ -425,17 +431,10 @@ class MenuBar(ft.Container):
                             on_click=handle_rename_story,
                         ),
                         
-                        ft.MenuItemButton(
-                            content=ft.Text("Export", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
-                            close_on_click=True, disabled=self.story is None,
-                            tooltip="Export widgets from your story into other formats.",
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=self.story.handle_export if self.story else None,
-                        ),
+                        
                         
                         ft.MenuItemButton(
-                            content=ft.Text("Toggle Canvas Rail", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                            content=ft.Text("Drawing Controls", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                             leading=ft.Icon(
                                 ft.Icons.VISIBILITY_OUTLINED if app.settings.data.get('story', {}).get('show_canvas_rail', False) else ft.Icons.VISIBILITY_OFF_OUTLINED,
                                 ft.Colors.PRIMARY
@@ -444,6 +443,14 @@ class MenuBar(ft.Container):
                             disabled=self.story is None,
                             style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
                             on_click=toggle_show_canvas_rail,
+                        ),
+                        ft.MenuItemButton(
+                            content=ft.Text("Export", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                            leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
+                            close_on_click=True, disabled=self.story is None,
+                            tooltip="Export widgets from your story into other formats.",
+                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
+                            on_click=self.story.handle_export if self.story else None,
                         ),
                         ft.MenuItemButton(
                             content=ft.Text("Settings", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
@@ -481,25 +488,24 @@ class MenuBar(ft.Container):
             if app.is_cloud_authenticated == True:
                 return
             try:
-                self.page.show_dialog(SnackBar("Opening browser to connect your Google account..."))
+                ft.context.page.show_dialog(SnackBar("Opening browser to connect your Google account..."))
                 await asyncio.to_thread(google_drive.authenticate)
                 app.is_cloud_authenticated = True
-                self.page.show_dialog(SnackBar("Google account connected."))
+                ft.context.page.show_dialog(SnackBar("Google account connected."))
                 set_cloud_button()
                 self.cloud_button.update()
             except Exception as ex:
-                self.page.show_dialog(SnackBar(google_drive.describe_error(ex)))
+                ft.context.page.show_dialog(SnackBar(google_drive.describe_error(ex)))
             #finally:
                 #set_is_connecting(False)
 
         async def _run_cloud_action(action, busy_text: str, done_text: str, restart_after: bool = False):
             #set_is_connecting(True)
-            self.page.pop_dialog()
-            self.page.show_dialog(SnackBar(busy_text, duration=60000))
+            ft.context.page.pop_dialog()
             try:
                 if restart_after:
                     # Leave the story view first so its components unmount (and flush any saves) BEFORE the files are replaced
-                    self.page.navigate("/loading")
+                    ft.context.page.navigate("/loading")
                     await asyncio.sleep(0.3)
 
                 count = await action()
@@ -507,37 +513,42 @@ class MenuBar(ft.Container):
                 if restart_after:
                     app.stories.clear()
                     app.settings.story = None
-                    await app.load_previous_story(self.page)
+                    await app.load_previous_story(ft.context.page)
 
-                self.page.show_dialog(SnackBar(f"{done_text} ({count - 1} files)"))
+                ft.context.page.show_dialog(SnackBar(f"{done_text} ({count - 1} files)"))
             except Exception as ex:
-                self.page.show_dialog(SnackBar(google_drive.describe_error(ex)))
+                ft.context.page.show_dialog(SnackBar(google_drive.describe_error(ex)))
                 if restart_after:
-                    await self.page.push_route("/")
+                    await ft.context.page.push_route("/")
             #finally:
                 #set_is_connecting(False)
 
         def _confirm_cloud_action(title: str, message: str, confirm_label: str, action, busy_text: str, done_text: str, restart_after: bool = False):
-            self.page.show_dialog(ft.AlertDialog(
+            ft.context.page.show_dialog(ft.AlertDialog(
                 modal=True,
                 title=title,
                 content=ft.Text(message, size=16),
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                    ft.TextButton("Cancel", on_click=lambda: ft.context.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
                     ft.TextButton(
                         confirm_label, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click"),
-                        on_click=lambda: self.page.run_task(_run_cloud_action, action, busy_text, done_text, restart_after),
+                        on_click=lambda: ft.context.page.run_task(_run_cloud_action, action, busy_text, done_text, restart_after),
                     ),
                 ],
             ))
 
         def handle_push_clicked(e=None):
             if self.story is None:
-                self.page.show_dialog(SnackBar("No story is open to push."))
+                ft.context.page.show_dialog(SnackBar("No story is open to push."))
                 return
             story = self.story
             async def push_action():
-                return await app.push_story_cloud(story)
+                page = ft.context.page
+                await page.push_route("/pushing_to_cloud")
+                try:
+                    return await app.push_story_cloud(story)
+                finally:
+                    await page.push_route(story.route)
             _confirm_cloud_action(
                 "Push to Google Drive?",
                 f"This saves {story.data.get('title', '')} to your Google Drive from your current device."
@@ -549,24 +560,24 @@ class MenuBar(ft.Container):
         async def pull_story_from_cloud(story_id: str) -> int:
             ''' Replaces the local copy of a story with its cloud copy and opens it '''
             # Leave the story view first so its components unmount (and flush any saves) BEFORE the files are replaced
-            await self.page.push_route("/loading")
+            await ft.context.page.push_route("/pulling_from_cloud")
             await asyncio.sleep(0.3)
             old_story = app.stories.get(story_id)
             try:
                 story = await app.pull_story_cloud(story_id)
             except Exception:
                 if old_story is not None:
-                    await self.page.push_route(old_story.route)
+                    await ft.context.page.push_route(old_story.route)
                 else:
-                    await self.page.push_route("/")
+                    await ft.context.page.push_route("/")
                 raise
             app.settings.story = story
-            await self.page.push_route(story.route)
+            await ft.context.page.push_route(story.route)
             return len([f for _, _, files in os.walk(story.data.get('directory_path')) for f in files])
 
         def handle_pull_clicked(e=None):
             if self.story is None:
-                self.page.show_dialog(SnackBar("No story is open to pull."))
+                ft.context.page.show_dialog(SnackBar("No story is open to pull."))
                 return
             story_id = self.story.data.get('id')
             async def pull_action():
@@ -584,7 +595,7 @@ class MenuBar(ft.Container):
         # Create our menu bar with submenu items
         drawing_controls = ft.MenuBar(
             #expand=True,
-            visible=self.page.platform.is_mobile(),
+            visible=ft.context.page.platform.is_mobile(),
             style=ft.MenuStyle(     # Styling our menubar
                 alignment=ft.Alignment.CENTER,
                 bgcolor=ft.Colors.TRANSPARENT,
@@ -647,12 +658,12 @@ class MenuBar(ft.Container):
                             width=220   # Bind the width, since popupmenuitems styling are jacked up otherwise.
                         ), 
                         ft.Icon(ft.Icons.CLOUD_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), 
-                        on_click=handle_connect_clicked, expand=True
+                        on_click=handle_connect_clicked, expand=True, padding=10
                     )
                 ]
 
         invisble_routes = ["/settings", "/home", "/", "", "/tutorial"]
-        cloud_visible = self.page.route not in invisble_routes
+        cloud_visible = ft.context.page.route not in invisble_routes
 
         self.cloud_button = ft.PopupMenuButton(
             icon=ft.Icons.CLOUD_DONE_OUTLINED if app.is_cloud_authenticated == True else ft.Icons.CLOUD_OUTLINED,

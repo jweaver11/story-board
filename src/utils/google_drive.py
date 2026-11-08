@@ -62,7 +62,7 @@ def is_authenticated() -> bool:
         return False
     try:
         creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
-        return bool(creds.valid or creds.refresh_token)
+        return bool(creds.valid)
     except Exception:
         return False
 

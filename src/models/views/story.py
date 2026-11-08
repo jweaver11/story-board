@@ -783,7 +783,7 @@ class Story(ft.View):
         await self.close_menu()
 
         active_widget = self.workspace.get_active_widget()
-        if active_widget:
+        if active_widget and hasattr(active_widget, "save_file"):
             await active_widget.save_file() # Make sure widget is saved
         
         source_path_root = ""
@@ -815,14 +815,14 @@ class Story(ft.View):
                 ft.Row([
                     ft.Text(
                         spans=[
-                            ft.TextSpan("Manuscript - ", ft.TextStyle(weight=ft.FontWeight.BOLD)),
+                            ft.TextSpan("Manuscripts - ", ft.TextStyle(weight=ft.FontWeight.BOLD)),
                         ]
                     ),
                     manuscript_default_dd
                 ], spacing=0),
                 ft.Text(
                     spans=[
-                        ft.TextSpan("Canvas - ", ft.TextStyle(weight=ft.FontWeight.BOLD)),
+                        ft.TextSpan("Canvases - ", ft.TextStyle(weight=ft.FontWeight.BOLD)),
                         ft.TextSpan(".png")
                     ]
                 ),

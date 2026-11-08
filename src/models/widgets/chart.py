@@ -546,7 +546,7 @@ class Chart(Widget):
                             # Adjust max y value of the chart
                             ft.TextField(
                                 label="Max Y Value", value=str(self.data.get('bar_data', {}).get('max_y', 20)), 
-                                input_filter=ft.NumbersOnlyInputFilter(), data="max", on_change=set_max_y_value,
+                                input_filter=ft.NumbersOnlyInputFilter(), data="max", on_blur=set_max_y_value,
                                 margin=ft.Margin.only(top=6, left=10, right=10), 
                                 border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
                                 dense=True
@@ -1095,7 +1095,7 @@ class Chart(Widget):
                             ft.TextField(
                                 value=str(self.data.get('radar_data', {}).get('min_value', 0)),
                                 label="Min Value", expand=True,
-                                on_change=update_min_max_value,
+                                on_blur=update_min_max_value,
                                 data="min_value",
                                 input_filter=ft.NumbersOnlyInputFilter(),
                                 margin=ft.Margin.only(top=6, left=10, right=10), 
@@ -1105,7 +1105,7 @@ class Chart(Widget):
                             ft.TextField(
                                 value=str(self.data.get('radar_data', {}).get('max_value', 20)),
                                 label="Max Value", expand=True,
-                                on_change=update_min_max_value,
+                                on_blur=update_min_max_value,
                                 input_filter=ft.NumbersOnlyInputFilter(),
                                 data="max_value",
                                 margin=ft.Margin.only(top=6, left=10, right=10), 

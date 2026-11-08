@@ -6,6 +6,7 @@ from models.views.story import Story
 import flet as ft
 import os
 import json
+import shutil
 import asyncio
 from utils.route_change import route_change
 from constants import SETTINGS_FILE_PATH, STORIES_DIRECTORY_PATH
@@ -73,6 +74,18 @@ class App:
         story = Story(data.get('title', story_id), data)
         self.stories[story_id] = story
         return story
+
+    def delete_story(self, story_id: str) -> str:
+        ''' Deletes the story with this id locally (registry entry and its folder). Returns its title '''
+        story = self.stories.pop(story_id)
+        title = story.data.get('title', 'Story')
+        story_dir_path = story.data.get('directory_path')
+
+        if self.settings.story is story:
+            self.settings.story = None
+
+        shutil.rmtree(os.path.normcase(os.path.normpath(story_dir_path)))
+        return title
 
     # Called on app startup in main
     def load_settings(self, page: ft.Page):

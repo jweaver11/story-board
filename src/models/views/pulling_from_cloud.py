@@ -5,7 +5,7 @@ def PullingFromCloudView() -> ft.View:
     ''' Creates a loading view to be shown while the app is initializing '''
     return ft.View(
         controls=[
-            ft.Text("Syncing from Cloud...", size=24),
+            ft.Text("Pulling changes from your google drive...", size=24),
             ft.ProgressRing()
         ],
         route="/pulling_from_cloud",
