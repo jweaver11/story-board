@@ -26,10 +26,12 @@ STORIES_FOLDER_NAME = "stories"
 
 TOKEN_FILE_NAME = "google_token.json"
 TOKEN_PATH = os.path.join(APP_DATA_PATH, TOKEN_FILE_NAME)
-CLIENT_SECRET_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "google_client_secret.json")
+CLIENT_SECRET_FILE_NAME = "google_client_secret.json"
+BUNDLED_CLIENT_SECRET_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", CLIENT_SECRET_FILE_NAME)
+CLIENT_SECRET_PATH = os.path.join(APP_DATA_PATH, CLIENT_SECRET_FILE_NAME)
 
 # Never uploaded, downloaded, or deleted
-EXCLUDED_FILES = {TOKEN_FILE_NAME}
+EXCLUDED_FILES = {TOKEN_FILE_NAME, CLIENT_SECRET_FILE_NAME}
 
 
 def _load_credentials() -> Credentials | None:
@@ -67,11 +69,56 @@ def is_authenticated() -> bool:
         return False
 
 
+def _client_config(client_id: str, client_secret: str) -> dict:
+    return {"installed": {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "redirect_uris": ["http://localhost"],
+    }}
+
+
+def ensure_client_secret_file() -> str:
+    ''' Returns a usable OAuth client secret path, creating it in the app data folder if missing.
+    Sources, in order: bundled assets file, GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET env vars.
+    If neither exists, writes a placeholder template to fill in and raises FileNotFoundError '''
+    if os.path.exists(BUNDLED_CLIENT_SECRET_PATH):
+        return BUNDLED_CLIENT_SECRET_PATH
+
+    client_id = os.getenv("GOOGLE_CLIENT_ID")
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+    if client_id and client_secret:
+        os.makedirs(APP_DATA_PATH, exist_ok=True)
+        with open(CLIENT_SECRET_PATH, "w", encoding="utf-8") as f:
+            json.dump(_client_config(client_id, client_secret), f, indent=2)
+        return CLIENT_SECRET_PATH
+
+    if os.path.exists(CLIENT_SECRET_PATH):
+        try:
+            with open(CLIENT_SECRET_PATH, "r", encoding="utf-8") as f:
+                cid = json.load(f).get("installed", {}).get("client_id", "")
+            if cid and not cid.startswith("YOUR_"):
+                return CLIENT_SECRET_PATH
+        except (OSError, ValueError):
+            pass
+    else:
+        os.makedirs(APP_DATA_PATH, exist_ok=True)
+        with open(CLIENT_SECRET_PATH, "w", encoding="utf-8") as f:
+            json.dump(_client_config("YOUR_CLIENT_ID", "YOUR_CLIENT_SECRET"), f, indent=2)
+
+    raise FileNotFoundError(
+        f"Google sign-in isn't configured. Put your OAuth client ID and secret in {CLIENT_SECRET_PATH} "
+        "(or set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)."
+    )
+
+
 def authenticate() -> bool:
     ''' Opens the browser for Google sign-in. Blocks until the user finishes or closes the flow '''
     # Imported lazily: it needs wsgiref, which the packaged Python runtime lacks
     from google_auth_oauthlib.flow import InstalledAppFlow
-    flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_PATH, SCOPES)
+    flow = InstalledAppFlow.from_client_secrets_file(ensure_client_secret_file(), SCOPES)
     creds = flow.run_local_server(port=0, prompt="consent")
     _save_credentials(creds)
     return True

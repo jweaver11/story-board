@@ -1,9 +1,9 @@
 [project]
 name = "story-board"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 authors = [
     { name = "Josh Weaver", email = "nunyabusiness@gmail.com" },
     { name = "Cory Malichar", email = "nunyabusiness@gmail.com" }
@@ -25,7 +25,7 @@ org = "com.mycompany"
 
 # project display name that is used as an app title on Android and iOS home screens,
 # shown in window titles and about app dialogs on desktop.
-product = "story-board"
+product = "Story Board"
 
 # company name to display in about app dialogs
 company = "Flet"
@@ -47,11 +47,15 @@ ref = "material-ui"
 
 [tool.uv]
 dev-dependencies = [
-    "flet[all]==1.0.0",
+    "flet[all]==1.1.0",
 ]
 
 [tool.poetry]
 package-mode = false
 
 [tool.poetry.group.dev.dependencies]
-flet = {extras = ["all"], version = "1.0.0"}
+flet = {extras = ["all"], version = "1.1.0"}
+
+[tool.flet.macos]
+target_arch = ["arm64"]
+icon_background = "#1c1c1c"

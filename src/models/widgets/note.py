@@ -217,7 +217,7 @@ class Note(Widget):
                 ft.Container(
                     ft.Column([
                         label_tf,
-                        ft.Divider(2, 2, leading_indent=10, trailing_indent=10),
+                        ft.Divider(ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE), 2, leading_indent=10, trailing_indent=10),
                         body_tf
                     ], spacing=0, expand=True),
                     bgcolor=ft.Colors.with_opacity(0.05, color),

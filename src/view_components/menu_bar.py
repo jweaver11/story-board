@@ -609,7 +609,6 @@ class MenuBar(ft.Container):
 
         def set_cloud_button() -> list[ft.PopupMenuItem]:
             if app.is_cloud_authenticated == True:
-                self.cloud_button.tooltip = None
                 self.cloud_button.icon = ft.Icon(ft.Icons.CLOUD_DONE_OUTLINED, ft.Colors.PRIMARY)
                 self.cloud_button.items = [
                     ft.PopupMenuItem(
@@ -643,7 +642,6 @@ class MenuBar(ft.Container):
                     )
                 ]
             else:
-                self.cloud_button.tooltip = None
                 self.cloud_button.icon = ft.Icon(ft.Icons.CLOUD_OUTLINED, ft.Colors.PRIMARY)
                 self.cloud_button.items = [
                     ft.PopupMenuItem(
@@ -669,7 +667,7 @@ class MenuBar(ft.Container):
             icon=ft.Icons.CLOUD_DONE_OUTLINED if app.is_cloud_authenticated == True else ft.Icons.CLOUD_OUTLINED,
             icon_color="primary",
             visible=cloud_visible,
-            #tooltip="Working..." if is_connecting else "Google Drive",
+            tooltip="Google Drive options",
             #disabled=is_connecting,
             #items=get_cloud_sync_
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
