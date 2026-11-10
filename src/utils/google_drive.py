@@ -116,10 +116,15 @@ def ensure_client_secret_file() -> str:
 
 def authenticate() -> bool:
     ''' Opens the browser for Google sign-in. Blocks until the user finishes or closes the flow '''
-    # Not using InstalledAppFlow.run_local_server: it needs wsgiref, which the packaged macOS Python runtime lacks
+    # Not using google_auth_oauthlib: its flow module imports wsgiref at import time,
+    # which the packaged macOS Python runtime lacks
     import webbrowser
     from http.server import BaseHTTPRequestHandler, HTTPServer
-    from google_auth_oauthlib.flow import Flow
+    from requests_oauthlib import OAuth2Session
+
+    with open(ensure_client_secret_file(), "r", encoding="utf-8") as f:
+        client = json.load(f)
+        client = client.get("installed") or client["web"]
 
     captured: dict[str, str] = {}
 
@@ -136,9 +141,9 @@ def authenticate() -> bool:
 
     server = HTTPServer(("127.0.0.1", 0), _Handler)
     try:
-        flow = Flow.from_client_secrets_file(ensure_client_secret_file(), scopes=SCOPES)
-        flow.redirect_uri = f"http://127.0.0.1:{server.server_port}/"
-        auth_url, _ = flow.authorization_url(prompt="consent")
+        redirect_uri = f"http://127.0.0.1:{server.server_port}/"
+        session = OAuth2Session(client["client_id"], scope=SCOPES, redirect_uri=redirect_uri)
+        auth_url, _ = session.authorization_url(client["auth_uri"], access_type="offline", prompt="consent")
         webbrowser.open(auth_url)
         server.handle_request()
     finally:
@@ -146,8 +151,20 @@ def authenticate() -> bool:
 
     # Loopback redirect is plain http; oauthlib refuses that unless told otherwise
     os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", "1")
-    flow.fetch_token(authorization_response=f"http://127.0.0.1:{server.server_port}{captured.get('path', '')}")
-    _save_credentials(flow.credentials)
+    token = session.fetch_token(
+        client["token_uri"],
+        authorization_response=redirect_uri.rstrip("/") + captured.get("path", ""),
+        client_secret=client["client_secret"],
+    )
+    creds = Credentials(
+        token=token["access_token"],
+        refresh_token=token.get("refresh_token"),
+        token_uri=client["token_uri"],
+        client_id=client["client_id"],
+        client_secret=client["client_secret"],
+        scopes=SCOPES,
+    )
+    _save_credentials(creds)
     return True
 
 
@@ -281,7 +298,7 @@ def push_all(settings_data: dict, story_dir: str | None = None) -> int:
     count = 1
     if story_dir and os.path.isdir(story_dir):
         stories_id = _ensure_folder(service, children, root_id, STORIES_FOLDER_NAME)
-        story_id = _ensure_folder(service, children, stories_id, os.path.basename(os.path.normpath(story_dir)))
+        story_id = _ensure_folder(service, children, os.path.basename(os.path.normpath(story_dir)), stories_id)
         count += _push_dir(service, children, story_dir, story_id, False)
     return count
 
