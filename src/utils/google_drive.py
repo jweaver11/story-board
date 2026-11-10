@@ -116,11 +116,38 @@ def ensure_client_secret_file() -> str:
 
 def authenticate() -> bool:
     ''' Opens the browser for Google sign-in. Blocks until the user finishes or closes the flow '''
-    # Imported lazily: it needs wsgiref, which the packaged Python runtime lacks
-    from google_auth_oauthlib.flow import InstalledAppFlow
-    flow = InstalledAppFlow.from_client_secrets_file(ensure_client_secret_file(), SCOPES)
-    creds = flow.run_local_server(port=0, prompt="consent")
-    _save_credentials(creds)
+    # Not using InstalledAppFlow.run_local_server: it needs wsgiref, which the packaged macOS Python runtime lacks
+    import webbrowser
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    from google_auth_oauthlib.flow import Flow
+
+    captured: dict[str, str] = {}
+
+    class _Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            captured["path"] = self.path
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"<html><body>Sign-in complete. You can close this tab and return to Story Board.</body></html>")
+
+        def log_message(self, *args):
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), _Handler)
+    try:
+        flow = Flow.from_client_secrets_file(ensure_client_secret_file(), scopes=SCOPES)
+        flow.redirect_uri = f"http://127.0.0.1:{server.server_port}/"
+        auth_url, _ = flow.authorization_url(prompt="consent")
+        webbrowser.open(auth_url)
+        server.handle_request()
+    finally:
+        server.server_close()
+
+    # Loopback redirect is plain http; oauthlib refuses that unless told otherwise
+    os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", "1")
+    flow.fetch_token(authorization_response=f"http://127.0.0.1:{server.server_port}{captured.get('path', '')}")
+    _save_credentials(flow.credentials)
     return True
 
 
