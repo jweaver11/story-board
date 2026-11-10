@@ -349,6 +349,7 @@ class MenuBar(ft.Container):
 
                     if not delete_cloud:
                         ft.context.page.show_dialog(SnackBar(f"{title} deleted successfully."))
+                        await ft.context.page.push_route("/")
                         return
 
                     page = ft.context.page
@@ -623,7 +624,8 @@ class MenuBar(ft.Container):
                                 width=220   # Bind the width, since popupmenuitems styling are jacked up otherwise.
                             ),
                         icon=ft.Icon(ft.Icons.CLOUD_UPLOAD_OUTLINED, ft.Colors.PRIMARY), on_click=handle_push_clicked,
-                        padding=10
+                        padding=10,
+                        disabled=not self.story
                     ),
                     ft.PopupMenuItem(ft.Divider(), height=10, disabled=True),
                     ft.PopupMenuItem(
@@ -638,7 +640,8 @@ class MenuBar(ft.Container):
                             width=220   # Bind the width, since popupmenuitems styling are jacked up otherwise.
                         ), 
                         ft.Icon(ft.Icons.CLOUD_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), 
-                        on_click=handle_pull_clicked, expand=True, padding=10
+                        on_click=handle_pull_clicked, expand=True, padding=10,
+                        disabled=not self.story
                     )
                 ]
             else:
@@ -660,13 +663,11 @@ class MenuBar(ft.Container):
                     )
                 ]
 
-        invisble_routes = ["/settings", "/home", "/", "", "/tutorial"]
-        cloud_visible = ft.context.page.route not in invisble_routes
+        
 
         self.cloud_button = ft.PopupMenuButton(
             icon=ft.Icons.CLOUD_DONE_OUTLINED if app.is_cloud_authenticated == True else ft.Icons.CLOUD_OUTLINED,
             icon_color="primary",
-            visible=cloud_visible,
             tooltip="Google Drive options",
             #disabled=is_connecting,
             #items=get_cloud_sync_
