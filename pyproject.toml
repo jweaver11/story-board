@@ -1,9 +1,9 @@
 [project]
 name = "story-board"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 authors = [
     { name = "Josh Weaver", email = "nunyabusiness@gmail.com" },
     { name = "Cory Malichar", email = "nunyabusiness@gmail.com" }
@@ -11,7 +11,7 @@ authors = [
 dependencies = [
   "flet-quill @ git+https://github.com/jweaver11/Flet-Quill",
   "flet-color-pickers",
-  "flet>=1.0.0",
+  "flet>=1.1.0",
   "flet-charts",
   "google-api-python-client",
   "google-auth-oauthlib",
@@ -25,7 +25,7 @@ org = "com.mycompany"
 
 # project display name that is used as an app title on Android and iOS home screens,
 # shown in window titles and about app dialogs on desktop.
-product = "story-board"
+product = "Story Board"
 
 # company name to display in about app dialogs
 company = "Flet"
@@ -40,13 +40,22 @@ path = "src"
 [tool.flet.flutter.pubspec.dependency_overrides]
 jni = "^1.1.0"
 
+# Fix build error for flet color pickers
+[tool.flet.flutter.pubspec.dependency_overrides.flutter_colorpicker.git]
+url = "https://github.com/flet-dev/flutter_colorpicker"
+ref = "material-ui"
+
 [tool.uv]
 dev-dependencies = [
-    "flet[all]==1.0.0",
+    "flet[all]==1.1.0",
 ]
 
 [tool.poetry]
 package-mode = false
 
 [tool.poetry.group.dev.dependencies]
-flet = {extras = ["all"], version = "1.0.0"}
+flet = {extras = ["all"], version = "1.1.0"}
+
+[tool.flet.macos]
+target_arch = ["arm64"]
+icon_background = "#1c1c1c"
