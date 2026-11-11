@@ -57,18 +57,14 @@ def sort_entries(entrys: list, entry_type: str="file") -> list:
 
 
 
-def load_directory_data(
+def load_directory_controls(
     story: Story,                                         # Story reference for any story related data
     directory: str,                                       # The directory to load data from
-    rail: ft.Control,                                     # The rail this tree view is in
-    folder: RailFolder = None,             # Optional parent expansion tile for when recursively called
-    column: ft.Column = None,                             # Optional column to add to if this is the top most call with no parent expansion tile
-) -> ft.Control:
+    in_base_directory: bool=False                           # Optional column to add to if this is the top most call with no parent expansion tile
+) -> list[ft.Control]:
     
     def _canon_path(p: str) -> str:
         return os.path.normcase(os.path.normpath(p))
-
-    
 
     try: 
 
@@ -78,6 +74,9 @@ def load_directory_data(
         # Keep track of directories vs files so we can add them in the order we want
         directories = []
         files = []  
+
+        directory_ctrls = []
+        file_ctrls = []
 
         # Goes through all the folders and files
         for entry in entrys:
@@ -110,26 +109,13 @@ def load_directory_data(
                 full_path=full_path,
                 title=capital_dir_path,
                 story=story,
-                color=color, rail=rail,
+                color=color, 
                 is_expanded=is_expanded,
                 created_at=created_at,
-                father=folder,
+                in_base_directory=in_base_directory,
             )
 
-            # Since its a folder, load all its content recursively
-            load_directory_data(
-                story=story,                                            
-                directory=full_path,                                      
-                folder=new_folder,                     
-                rail=rail,
-            )
-
-
-            # After loading the folders content, add it to either a parent folder (if it has one) or the column for the rail
-            if folder is not None:
-                folder.expansion_tile.controls.append(new_folder)
-            else:
-                column.controls.append(new_folder)
+            directory_ctrls.append(new_folder)
 
         # Now go through our files
         for file_name in files:
@@ -154,36 +140,21 @@ def load_directory_data(
                 # Create the file item
                 file = RailFile(
                     widget,
-                    father=folder,
+                    in_base_directory=in_base_directory,
                 )       
 
-
-                # Add them to parent expansion tile if one exists, otherwise just add it to the column
-                if folder is not None:
-                    folder.expansion_tile.controls.append(file)
-                else: 
-                    column.controls.append(file)
-                
+                file_ctrls.append(file)
 
             else:
                 print("Could not find widget")
                 continue
 
-        controls = folder.expansion_tile.controls if folder is not None else column.controls
-
-        # Folders first, then files, each sorted by the chosen method
-        folder_controls = sort_entries([c for c in controls if isinstance(c, RailFolder)], "folder")
-        file_controls = sort_entries([c for c in controls if isinstance(c, RailFile)])
-        others = [c for c in controls if not isinstance(c, (RailFolder, RailFile))]
-        new_controls = others + folder_controls + file_controls
-
-        if folder is not None:
-            folder.expansion_tile.controls = new_controls
-        else:
-            column.controls = new_controls
+        
+        directory_ctrls = sort_entries(directory_ctrls, "folder")
+        file_ctrls = sort_entries(file_ctrls, "file")
 
         # Return the parent expansion tile or column depending on what was provided
-        return folder if folder is not None else column
+        return directory_ctrls + file_ctrls
     
     # Handle errors
     except Exception as e:

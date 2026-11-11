@@ -3,6 +3,7 @@
 import flet as ft
 from models.views.story import Story
 import os
+import flet_shadcn_ui as shad
 
 
 def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) -> ft.AlertDialog:
@@ -219,13 +220,12 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
     ]
     
 
-    alert_dialog = ft.AlertDialog(
-        title=ft.Text("Build Your Canvas", weight=ft.FontWeight.BOLD),
+    alert_dialog = shad.Dialog(
+        title="Build Your Canvas", 
         actions=[
-            ft.TextButton("Cancel", on_click=lambda e: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK)),
+            ft.TextButton("Cancel", on_click=lambda: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK)),
             create_button
         ],
-
         content=ft.Column(
             scroll=ft.ScrollMode.AUTO,
             controls=[

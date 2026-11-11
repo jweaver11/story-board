@@ -17,13 +17,13 @@ class RailFile(ft.GestureDetector):
     def __init__(
         self, 
         widget: Widget, 
-        father: RailFolder = None,
+        in_base_directory: bool = False,
     ):
         
         
         # Set our widget reference and tag
         self.widget = widget
-        self.father = father
+        self.in_base_directory = in_base_directory
         tag = widget.data.get('tag', None)
 
         match tag:
@@ -121,25 +121,33 @@ class RailFile(ft.GestureDetector):
             f"{self.widget.data.get('id', '')}.json",
         )
 
+        def toggle_color_popover(e=None):
+            color_popover.open = not color_popover.open
+            color_popover.update()
+
         return [
+            color_popover := shad.Popover(
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.widget.data.get('color', 'primary'), size=20),
+                    content=ft.Row([ft.Text("Color"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    trailing=ft.Icons.ARROW_RIGHT,
+                    on_click=toggle_color_popover,
+                    close_on_click=False,
+                ),
+                ft.Column(self.widget.get_color_options(), tight=True, spacing=0, width=100)
+            ), 
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.widget.data.get('color', 'primary'), size=20), 
                 content=f"Rename {self.widget.data.get('title')}", 
                 on_click=handle_rename, 
             ),   
             shad.MenuItem(
-                leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, self.widget.data.get('color', 'primary'), size=20), 
+                leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, self.widget.data.get('color', 'primary'), size=20), 
                 content=f"Export {self.widget.data.get('title')}", data=file_path,
                 on_click=self.widget.story.handle_export,
             ),   
-            shad.MenuItem(
-                leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.widget.data.get('color', 'primary'), size=20), 
-                content=f"Color {self.widget.data.get('title')}", data=file_path,
-                items=self.widget.get_color_options(),
-                close_on_click=True, 
-                trailing=ft.Icon(ft.Icons.ARROW_RIGHT)
-            ),   
-            
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR, size=20), content=f"Delete {self.widget.data.get('title')}", 
                 on_click=self.widget.delete_clicked, close_on_click=True, 
@@ -165,7 +173,7 @@ class RailFile(ft.GestureDetector):
         
         leading_control = ft.Container(
             ft.Icon(self.icon, color=self.icon_color),
-            border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if self.father is not None else None,
+            border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if self.in_base_directory == False else None,
             padding=ft.Padding.only(left=6)
         )
 

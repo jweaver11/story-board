@@ -18,6 +18,7 @@ from models.isolated_controls.tab_bar_view import IsolatedTabBarView
 import asyncio
 from styles.menu_option_style import MenuOptionStyle
 import os
+import flet_shadcn_ui as shad
 
 
 # Our workspace object that is stored in our story object
@@ -156,39 +157,9 @@ class Workspace(ft.Container):
             mouse_cursor=ft.MouseCursor.CLICK,
         )
 
-        file_path = os.path.join(
-            widget.data.get('directory_path', ''),
-            f"{widget.data.get('id', '')}.json",
-        )
-
-        menu_options = [
-            MenuOptionStyle(
-                on_click=handle_rename,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, widget.data.get('color', 'primary'),),
-                    ft.Text(
-                        "Rename", 
-                        weight=ft.FontWeight.BOLD, 
-                    ), 
-                ]),
-            ),
-            ft.MenuItemButton(
-                leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), content="Export Widget", 
-                on_click=widget.story.handle_export, close_on_click=True,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
-                tooltip="Export this part of your story.", data=file_path
-            ),
-        ] + widget.get_menu_options()  
-
         # Gesture Detector for opening menus that holds our tab icon, title, and hide button
-        tab_gd = ft.GestureDetector(
-            ft.Row([tab_icon, tab_title, edit_title_tf, hide_widget_button]),
-            mouse_cursor=ft.MouseCursor.CLICK,
-            hover_interval=40,
-            on_hover=widget.set_mouse_coords,
-            on_secondary_tap=lambda: self.story.open_menu(menu_options),
-        )
-
+        tab_gd = ft.Row([tab_icon, tab_title, edit_title_tf, hide_widget_button])
+            
         # Set the tab itself
         tab = ft.Tab(label=tab_gd) 
         return tab

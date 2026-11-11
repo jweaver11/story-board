@@ -7,7 +7,7 @@ And gives us the correct rail on startup based on selected workspace
 import flet as ft
 from models.app import app
 from models.views.story import Story
-from utils.tree_view import load_directory_data
+from utils.load_directory import load_directory_controls
 from styles.menu_option_style import MenuOptionStyle
 from models.isolated_controls.column import IsolatedColumn
 from models.isolated_controls.list_view import IsolatedListView
@@ -626,11 +626,12 @@ class ContentRail(ft.Column):
         )
         
         # Load our content directory data into the rail
-        load_directory_data(
-            story=self.story,
-            directory=self.story.data.get('content_directory_path'),
-            rail=self,
-            column=content,
+        content.controls.extend(
+            load_directory_controls(
+                story=self.story,
+                directory=self.story.data.get('content_directory_path'),
+                in_base_directory=True,
+            )
         )
 
         
