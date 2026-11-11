@@ -38,7 +38,8 @@ class Widget(ft.Container):
         super().__init__(
             data=data, 
             on_size_change=self._set_size, 
-            size_change_interval=50
+            size_change_interval=50,
+            padding=ft.Padding.all(20) if ft.context.page.platform.is_mobile() else None
         )
         
         self.is_new: bool = is_new 

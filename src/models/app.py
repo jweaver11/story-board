@@ -129,7 +129,7 @@ class App:
         # Sets our app title
         page.title = "StoryBoard (alpha)"
 
-        page.padding = ft.Padding.all(10) if page.platform.is_mobile() else ft.Padding.all(0)
+        #page.padding = ft.Padding.all(10) if page.platform.is_mobile() else ft.Padding.all(0)
 
         # Sets our themes and which one we use. Default to dark mode with blue
         page.theme = ft.Theme(color_scheme_seed=app.settings.data.get('page', {}).get('theme_color', "blue"))  

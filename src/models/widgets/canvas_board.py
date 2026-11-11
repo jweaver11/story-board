@@ -474,8 +474,6 @@ class CanvasBoard(Widget):
             elif row_data.get('preview_capture'): preview_capture = row_data.get('preview_capture', "")
             else: preview_capture = "canvas_bg.png"
 
-            #self.padding=ft.Padding.only(bottom=10)
-
             canvas_title = self.story.get_widget_by_id(row_data.get('canvas_id')).data.get('title', 'Untitled') if row_data.get('canvas_id') else ""
             
             row_ctrl = ft.Row(

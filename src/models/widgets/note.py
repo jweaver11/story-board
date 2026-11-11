@@ -43,7 +43,8 @@ class Note(Widget):
 
         super().build()
 
-        self.padding = ft.Padding.all(10)   # Set padding
+        if self.page.platform.is_mobile() != True:
+            self.padding = ft.Padding.all(10)
 
         def update_indices():
             for i, ctrl in enumerate(card_row.controls):
@@ -243,7 +244,8 @@ class Note(Widget):
 
         # Button to click to add a new card
         add_card_button = ft.Button(
-            "Add Card", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+            "Add Card", 
+            #icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, icon_color=ft.Colors.PRIMARY,
             tooltip="Add a new card to your note.", 
             on_click=handle_create_card, 
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
@@ -251,12 +253,11 @@ class Note(Widget):
         )
 
         
-
+        #self.content = ft.Column([card_row], expand=True, alignment=ft.MainAxisAlignment.START, scroll=ft.ScrollMode.AUTO)
 
         self.content = ft.Stack([
             ft.Column([card_row], expand=True, alignment=ft.MainAxisAlignment.START, scroll=ft.ScrollMode.AUTO),
             ft.Column([
-                
                 add_card_button, 
             ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
         ], alignment=ft.Alignment.TOP_LEFT, expand=True)

@@ -414,7 +414,8 @@ class World(Widget):
         
        
 
-        self.padding = ft.Padding.all(10)   # Set padding
+        if self.page.platform.is_mobile() != True:
+            self.padding = ft.Padding.all(10)
 
 
         about_section = ft.Column([

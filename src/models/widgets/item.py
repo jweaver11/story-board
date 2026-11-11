@@ -53,7 +53,8 @@ class Item(Widget):
 
         super().build()
 
-        self.padding = ft.Padding.all(10)   # Set padding
+        if self.page.platform.is_mobile() != True:
+            self.padding = ft.Padding.all(10)
 
         # Column to hold our fields textfields
         fields_column = ft.Column(

@@ -56,7 +56,8 @@ class Character(Widget):
 
         super().build()
 
-        self.padding = ft.Padding.all(10)   # Set padding
+        if self.page.platform.is_mobile() != True:
+            self.padding = ft.Padding.all(10)
 
 
         # Called when a field is changed in edit mode

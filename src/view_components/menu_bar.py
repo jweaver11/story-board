@@ -679,7 +679,7 @@ class MenuBar(ft.Container):
 
 
         self.content = ft.Row(
-            spacing=0,
+            spacing=0, visible=not self.page.platform.is_mobile(),
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             controls=[
                 file_options,    # File options button
@@ -700,3 +700,20 @@ class MenuBar(ft.Container):
                 ], tight=True, spacing=0)
             ]
         )
+
+        self.page.appbar = ft.AppBar(
+            file_options,
+            title=self.story.data.get('title') if self.story else "Story Board",
+            actions=[
+                ft.Text(
+                    "Alpha", color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD, 
+                    tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nJoin the Discord (Settings -> Resources) to suggest your features and report bugs"
+                ),  # Feedback button
+                ft.Icon(
+                    ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, 
+                    tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nJoin the Discord (Settings -> Resources) to suggest your features and report bugs"
+                ),
+                self.cloud_button,
+                ft.IconButton(ft.Icons.SETTINGS_OUTLINED, "primary", on_click=handle_settings_clicked, mouse_cursor=ft.MouseCursor.CLICK),   # Settings button
+            ]
+        ) if self.page.platform.is_mobile() else None
