@@ -1205,6 +1205,7 @@ class Story(ft.View):
             on_pan_update=resize_tree_view_rail, # Resize the active rail as app is dragging
             on_pan_end=lambda: app.settings.update_data(**{'story': {'tree_view_rail_width': self.tree_view_rail.width}}),  # Save the resize when app is done dragging
             drag_interval=20,
+            visible=not ft.context.page.platform.is_mobile()
         )
 
         

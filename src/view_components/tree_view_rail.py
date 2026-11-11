@@ -33,6 +33,7 @@ class ActiveRail(ft.Container):
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            visible=not ft.context.page.platform.is_mobile()
         )
         
     # Reload our rail on startup
