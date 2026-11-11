@@ -107,7 +107,7 @@ class Widget(ft.Container):
 
     # Writes our current data to the correct json file if we are dirty
     async def save_file(self):
-        if self.needs_file_write:
+        if self.needs_file_write == True:
             print("Saving widget to file: ", self.data.get('title', 'Untitled'))
 
             file_path = os.path.join(self.data.get('directory_path'), f"{self.data.get('id')}.json")

@@ -80,6 +80,11 @@ class ContentRail(ft.Column):
             on_blur=self.on_new_item_blur,                      # Called when clicking off the textfield and after submitting
             on_submit=self.submit_item,                         # Called when enter is pressed and textfield is focused
             icon=None,
+            suffix_icon=ft.IconButton(
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+                on_click=self.submit_item,
+                mouse_cursor="click",
+            ),
         )
         
 
@@ -263,13 +268,13 @@ class ContentRail(ft.Column):
         self.are_submitting = True
 
         # Grab our title from the textfield
-        title = e.control.value
+        title = self.new_item_textfield.value
 
         # Protect against empty titles. They break things
         if title is None or title.strip() == "":
             return
         
-        tag = e.control.data
+        tag = self.new_item_textfield.data
         if ":" in tag:
             tag, chart_type = tag.split(":")
             

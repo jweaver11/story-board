@@ -171,13 +171,7 @@ class App:
                 if app.settings.story:
                     app.settings.story.block_page()
                     await app.settings.save_story()
-                # Push everything to Google Drive if connected. Failures must never block closing the app
-                if app.settings.data.get('sync_with_cloud_on_close', False) and app.is_cloud_authenticated:
-                    page.navigate("/saving_to_cloud")
-                    try:
-                        await app.push_cloud()
-                    except Exception as ex:
-                        print(f"Cloud push on close failed: {google_drive.describe_error(ex)}")
+                
                 page.window.prevent_close = False
                 await page.window.destroy()
 
