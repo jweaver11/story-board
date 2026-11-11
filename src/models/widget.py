@@ -440,7 +440,7 @@ class Widget(ft.Container):
     async def submit_rename(self, e: ft.Event[ft.TextField]):
         ''' Checks that we're unique and renames the widget if so. on_blur is auto called after this, so we handle that as well '''          
 
-        name = e.control.value.strip()
+        name = e.control.value
                                                 
         # Update our live title, and associated data
         self.update_data(**{'title': name})   # Update our data with the new title and key
