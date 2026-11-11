@@ -258,6 +258,50 @@ class Story(ft.View):
         except Exception as e:
             print(f"Error changing folder data: {e}")
 
+    # Called when moving a folder to a new location
+    async def move_folder(self, old_path: str, new_path: str):
+        ''' Moves a folder and updates all folder metadata in story data '''
+        
+        try:
+            # Normalize paths for comparison
+            old_norm = os.path.normcase(os.path.normpath(old_path))
+            new_norm = os.path.normcase(os.path.normpath(new_path))
+            
+            folders = self.data.get('folders', {})
+            folders_to_update = {}
+            
+            # Find all folders that need updating (moved folder + all subfolders)
+            for folder_path in list(folders.keys()):
+                folder_norm = os.path.normcase(os.path.normpath(folder_path))
+                
+                # Check if this is the moved folder or a subfolder of it
+                if folder_norm == old_norm or folder_norm.startswith(old_norm + os.sep):
+                    # Calculate new path for this folder
+                    if folder_norm == old_norm:
+                        # This is the main folder being moved
+                        updated_path = new_norm
+                    else:
+                        # This is a subfolder, calculate its new path
+                        relative_path = folder_norm[len(old_norm) + len(os.sep):]
+                        updated_path = os.path.join(new_norm, relative_path)
+                    
+                    # Store the metadata from old path to new path
+                    folders_to_update[updated_path] = folders[folder_path]
+                    # Remove the old path entry
+                    del folders[folder_path]
+            
+            # Update the folders dict with new paths
+            folders.update(folders_to_update)
+            
+            # Save the updated folders data
+            self.update_data(**{'folders': folders})
+            await self.save_file()
+            
+            #print(f"Updated folder metadata: {old_path} → {new_path}")
+            
+        except Exception as e:
+            print(f"Error moving folder in story data: {e}")
+
     def rename(self, new_title: str):
         ''' Renames the story '''
         self.update_data(**{'title': new_title})

@@ -1391,11 +1391,9 @@ class Canvas(Widget):
                         dense=True, expand=True,
                         on_submit=update_layer_name,
                         on_blur=hide_layer_name_tf,
-                        #border=ft.InputBorder.NONE, 
-                        border_radius=4,
+                        
                         text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
-                        focused_bgcolor=ft.Colors.TRANSPARENT,
-                        bgcolor=ft.Colors.TRANSPARENT,
+                        border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
                         capitalization=ft.TextCapitalization.WORDS,
                     ),
                 ], expand=True),

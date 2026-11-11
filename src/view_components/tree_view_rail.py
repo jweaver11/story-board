@@ -13,6 +13,7 @@ from models.isolated_controls.column import IsolatedColumn
 from models.isolated_controls.list_view import IsolatedListView
 from utils.new_canvas import new_canvas_alert_dlg
 from styles.snack_bar import SnackBar
+import os
 
 
 
@@ -137,10 +138,20 @@ class ContentRail(ft.Column):
     
     # Called when a widget is dragged and dropped into this directory
     def move_widget_file(self, e: ft.DragTargetEvent, new_directory: str):
-        ''' Moves our widgets into this directory from wherever they were '''
+        ''' Moves our widgets or folders into this directory from wherever they were '''
 
         draggable = e.page.get_control(e.src_id)
 
+        # Import RailFolder here to avoid circular imports
+        from styles.rail_folder import RailFolder
+
+        # Check if the data is a RailFolder instance
+        if isinstance(draggable.data, RailFolder):
+            # Handle folder movement
+            self.page.run_task(self._move_folder_to_directory, draggable.data, new_directory)
+            return
+
+        # Otherwise treat as a widget (RailFile) - data contains the widget ID
         widget = self.story.get_widget_by_id(draggable.data)
 
         if widget is None:
@@ -148,6 +159,37 @@ class ContentRail(ft.Column):
             return
 
         self.page.run_task(widget.move_file, new_directory)
+
+    # Helper method to move a folder to a new directory
+    async def _move_folder_to_directory(self, folder, new_directory: str):
+        ''' Moves a folder and all its contents to a new directory '''
+        
+        # Prevent moving a folder into itself or its children
+        if new_directory.startswith(folder.full_path):
+            self.page.show_dialog(SnackBar("Cannot move a folder into itself or its subfolders"))
+            return
+        
+        # Prevent moving a folder to its current location
+        if new_directory == os.path.dirname(folder.full_path):
+            return
+        
+        # Get the folder name
+        folder_name = os.path.basename(folder.full_path)
+        new_folder_path = os.path.join(new_directory, folder_name)
+        
+        try:
+            # Move the folder using shutil
+            import shutil
+            shutil.move(folder.full_path, new_folder_path)
+            
+            # Update folder metadata in story data to maintain state
+            await self.story.move_folder(folder.full_path, new_folder_path)
+            
+            # Reload the rail to reflect the changes
+            self.story.tree_view_rail.reload_rail()
+            
+        except Exception as ex:
+            self.page.show_dialog(SnackBar(f"Error moving folder: {str(ex)}"))
 
 
     # Called when new category button or menu option is clicked
@@ -301,18 +343,19 @@ class ContentRail(ft.Column):
                         ft.MenuItemButton(      # Manuscripts
                             content=ft.Row([
                                 ft.Text("Manuscript"), 
-                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, visible=False,
-                                        tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                            ]),
+                                #ft.Icon(ft.Icons.WARNING_AMBER_OUTLINED, ft.Colors.OUTLINE, scale=0.8, visible=False,
+                                        #tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                             leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY), 
                             data="manuscript", on_click=self.new_item_clicked, close_on_click=True,
                             tooltip="Create a new manuscript for text chapters or scenes in your story",
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            trailing=ft.Icon(ft.Icons.WARNING_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
+                            trailing=ft.Icon(ft.Icons.WARNING_AMBER_OUTLINED, ft.Colors.ERROR, tooltip="This feature is still in development and may not work as expected. Proceed with caution."),
                         ), 
                         ft.MenuItemButton(
                             content=ft.Row([
                                 ft.Text("Canvas"), 
-                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, 
                                         tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                             leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
                             data="canvas", on_click=self.new_item_clicked, close_on_click=True,
@@ -336,7 +379,7 @@ class ContentRail(ft.Column):
                         ft.MenuItemButton(
                             content=ft.Row([
                                 ft.Text("Canvas Board"), 
-                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, 
                                         tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                             leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), 
                             data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
@@ -346,7 +389,7 @@ class ContentRail(ft.Column):
                         ft.MenuItemButton(
                             content=ft.Row([
                                 ft.Text("Map"), 
-                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                                ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, 
                                         tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                             leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
                             data="map", on_click=self.new_item_clicked, close_on_click=True,
@@ -415,7 +458,7 @@ class ContentRail(ft.Column):
     async def change_sort_method(self, e: ft.Event[ft.MenuItemButton]):
         sort_method = e.control.data
         app.settings.update_data(**{'story': {'rail_sort_method': sort_method}})
-        self.parent.reload_rail()
+        self.story.tree_view_rail.reload_rail()
 
     # Reload the rail whenever we need
     def build(self) -> ft.Control:
@@ -436,11 +479,12 @@ class ContentRail(ft.Column):
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                     ), 
                     ft.MenuItemButton(      # Manuscripts
-                        content=ft.Row([
-                            ft.Text("Manuscript"), 
-                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, visible=False, 
-                                    tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                        #content=ft.Row([
+                            #ft.Text("Manuscript"), 
+                            #ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, visible=False, 
+                                   # tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                         leading=ft.Icon(ft.Icons.DESCRIPTION_OUTLINED, ft.Colors.PRIMARY),
+                        content="Manuscript",
                         data="manuscript", on_click=self.new_item_clicked, close_on_click=True,
                         tooltip="Create a new manuscript for text chapters or scenes in your story",
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
@@ -448,7 +492,7 @@ class ContentRail(ft.Column):
                     ft.MenuItemButton(
                         content=ft.Row([
                             ft.Text("Canvas"), 
-                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, 
                                     tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                         leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
                         data="canvas", on_click=self.new_item_clicked, close_on_click=True,
@@ -471,7 +515,7 @@ class ContentRail(ft.Column):
                     ft.MenuItemButton(
                         content=ft.Row([
                             ft.Text("Canvas Board"), 
-                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, 
                                     tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                         leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY), 
                         data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
@@ -481,7 +525,7 @@ class ContentRail(ft.Column):
                     ft.MenuItemButton(
                         content=ft.Row([
                             ft.Text("Map"), 
-                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, scale=0.8, 
+                            ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, 
                                     tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
                         leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
                         data="map", on_click=self.new_item_clicked, close_on_click=True,

@@ -236,37 +236,7 @@ class RailFolder(ft.GestureDetector):
                 no_padding=True, no_effects=True
             ),
 
-            # Upload options
-            MenuOptionStyle(
-                content=ft.SubmenuButton(
-                    ft.Container(
-                        ft.Row([
-                            ft.Icon(ft.Icons.IMPORT_EXPORT_OUTLINED, ft.Colors.PRIMARY), 
-                            ft.Text("Import", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True),
-                            ft.Icon(ft.Icons.ARROW_RIGHT),
-                        ], expand=True),
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(6), shape=ft.RoundedRectangleBorder(radius=4),
-                    ),
-                    [
-                        ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.FOLDER_OUTLINED, ft.Colors.PRIMARY), content="Folder", 
-                            on_click=self.story.import_folder_clicked, close_on_click=True, data=self.full_path,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
-                            tooltip="Import a Folder into the Story's root directory",
-                        ),
-                        ft.MenuItemButton(
-                            leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Widget(s)", 
-                            on_click=self.story.import_files_clicked, close_on_click=True, data=self.full_path,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"), 
-                            tooltip="Import Widget files into the Story's root directory",
-                        ),
-                        
-                    ],
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                ),
-                no_padding=True, no_effects=True, 
-            ),
+            
             MenuOptionStyle(
                 on_click=self.story.handle_export,
                 data=self.full_path,
@@ -713,10 +683,17 @@ class RailFolder(ft.GestureDetector):
 
     # Called when a widget is dragged and dropped into this directory
     async def on_drag_accept(self, e: ft.DragTargetEvent):
-        ''' Moves our widgets into this directory from wherever they were '''
+        ''' Moves our widgets or folders into this directory from wherever they were '''
         
         draggable = e.page.get_control(e.src_id)
 
+        # Check if the data is a RailFolder instance
+        if isinstance(draggable.data, RailFolder):
+            # Handle folder movement
+            await self._move_folder(draggable.data, self.full_path)
+            return
+
+        # Otherwise treat as a widget (RailFile) - data contains the widget ID
         widget = self.story.get_widget_by_id(draggable.data)
 
         if widget is None:
@@ -725,6 +702,36 @@ class RailFolder(ft.GestureDetector):
 
         # Call the move file using the new directory path
         await widget.move_file(new_directory=self.full_path)
+
+    async def _move_folder(self, folder: 'RailFolder', new_parent_path: str):
+        ''' Moves a folder and all its contents to a new parent directory '''
+        
+        # Prevent moving a folder into itself or its children
+        if new_parent_path.startswith(folder.full_path):
+            print("Error: Cannot move a folder into itself or its subfolders")
+            return
+        
+        # Prevent moving a folder to its current location
+        if new_parent_path == os.path.dirname(folder.full_path):
+            return
+        
+        # Get the folder name
+        folder_name = os.path.basename(folder.full_path)
+        new_folder_path = os.path.join(new_parent_path, folder_name)
+        
+        try:
+            # Move the folder using shutil
+            import shutil
+            shutil.move(folder.full_path, new_folder_path)
+            
+            # Update folder metadata in story data to maintain state
+            await self.story.move_folder(folder.full_path, new_folder_path)
+            
+            # Reload the rail to reflect the changes
+            self.story.tree_view_rail.reload_rail()
+            
+        except Exception as ex:
+            print(f"Error moving folder: {ex}")
 
     # Called when we need to reload this directory tile
     def build(self):
@@ -736,6 +743,17 @@ class RailFolder(ft.GestureDetector):
             on_accept=self.on_drag_accept,
             content=self.expansion_tile,
         )
+
+        draggable = ft.Draggable(
+            group="widgets",
+            content=drag_target,
+            data=self,  # Store reference to this RailFolder for identification
+            content_feedback=ft.TextButton(
+                ft.Row([
+                    ft.Icon(ft.Icons.FOLDER_OUTLINED, self.color, expand=True), 
+                    ft.Text(self.title, style=self.text_style, expand=True)
+                        ], expand=True)),
+        )
         
         # Set the content
-        self.content = drag_target
+        self.content = draggable

@@ -202,10 +202,9 @@ class RailFile(ft.GestureDetector):
             on_blur=hide_edit_title_tf,
             on_submit=self.widget.submit_rename,
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            #border_radius=4, 
+            border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
             dense=True, capitalization=ft.TextCapitalization.SENTENCES,
-            #border_color=ft.Colors.TRANSPARENT,
-            #focused_border_color=ft.Colors.PRIMARY,
+            
         )
 
         self.title_text = ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS)
@@ -214,7 +213,6 @@ class RailFile(ft.GestureDetector):
             group="widgets",
             data=self.widget.data.get('id', ""),
             content_feedback=ft.TextButton(ft.Row([ft.Icon(self.icon, self.icon_color, expand=True), ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True)], expand=True)),
-            #on_drag_start=lambda _: self.widget.story.workspace.show_pin_drag_targets(),
             content=ft.Container(
                 ft.Row([
                     leading_control, 
