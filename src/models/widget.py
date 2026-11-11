@@ -429,7 +429,7 @@ class Widget(ft.Container):
             MenuOptionStyle(
                 on_click=close_tab,
                 content=ft.Row([
-                    ft.Icon(ft.Icons.CLOSE_ROUNDED, self.data.get('color', 'primary'),),
+                    ft.Icon(ft.Icons.CLOSE_ROUNDED, ft.Colors.ERROR,),
                     ft.Text("Close Tab", weight=ft.FontWeight.BOLD, ), 
                 ]),
             ),
